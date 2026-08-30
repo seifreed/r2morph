@@ -185,17 +185,20 @@ class VirtualizedFpPackedOp:
 
 
 class VirtualizedFpPackedMemOp:
-    """A packed 128-bit move between an xmm register and ``[base+disp]``.
+    """A packed 128-bit move between an xmm register and indexed memory.
 
-    ``kind`` is ``"fppload"`` (xmm <- [base+disp]) or ``"fppstore"``; the full 128
-    bits move via movups (no alignment assumption). ``base_index`` is the GP base
-    slot read at runtime for the program's real address.
+    ``kind`` is ``"fppload"``/``"fppstore"`` for ``[base+disp]`` or the corresponding
+    ``idx``/``idxnb`` form for scaled-index addressing. The full 128 bits move via
+    movups (no alignment assumption). ``base_index`` is the GP base slot, or ``-1``
+    for the no-base form; ``index_index`` and ``scale`` describe the scaled index.
     """
 
-    __slots__ = ("base_index", "disp", "kind", "xmm_index")
+    __slots__ = ("base_index", "disp", "index_index", "kind", "scale", "xmm_index")
 
-    def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int) -> None:
+    def __init__(self, kind: str, xmm_index: int, address: VirtualizedAddress) -> None:
         self.kind = kind
         self.xmm_index = xmm_index
-        self.base_index = base_index
-        self.disp = disp
+        self.base_index = address.base_index
+        self.disp = address.disp
+        self.index_index = address.index_index
+        self.scale = address.scale

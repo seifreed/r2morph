@@ -407,12 +407,12 @@ class EngineHandlerGenerator:
         )
 
     def _fp_packed_mem_handler_body(self, kind: str) -> str:
-        body = self._fp_base_addr_prologue()
+        kind, body, advance = self._fp_address(kind)
         if kind == "fppload":
             body += "  movups xmm0, xmmword ptr [r10]\n  movups xmmword ptr [r11], xmm0\n"
         else:
             body += "  movups xmm0, xmmword ptr [r11]\n  movups xmmword ptr [r10], xmm0\n"
-        return body + self._advance(7) + "  jmp vm_dispatch\n"
+        return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
     def _fp_handler_body(self, mnemonic: str, width: int) -> str | None:
         body = None

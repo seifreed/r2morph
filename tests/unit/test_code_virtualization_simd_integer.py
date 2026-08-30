@@ -1,8 +1,14 @@
 """Unit contracts for integer packed XMM operations."""
 
+from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization import _decode_run_item
-from r2morph.mutations.code_virtualization_engine_models import VirtualizedFpPackedOp
+from r2morph.mutations.code_virtualization_engine import build_vm_blob, build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_models import (
+    VirtualizedAddress,
+    VirtualizedFpPackedMemOp,
+    VirtualizedFpPackedOp,
+)
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_arith_idx,
@@ -23,6 +29,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
 _EXPECTED_BYTE_SHUFFLE_DESTINATION = 2
+_EXPECTED_INDEX_SHIFT = 3
 
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
@@ -176,6 +183,34 @@ def test_decode_engine_vex128_byte_shuffle_returns_packed_item() -> None:
 
 def test_decode_engine_vex256_byte_shuffle_is_rejected_by_linear_engine() -> None:
     expect(_decode_run_item("vpshufb ymm2, ymm0, ymm1") is None)
+
+
+def test_decode_engine_packed_indexed_move_uses_indexed_memory_item() -> None:
+    item = _decode_run_item("movups xmm0, xmmword ptr [rax + rcx*8 + 0x402000]")
+    expect(
+        isinstance(item, VirtualizedFpPackedMemOp)
+        and item.kind == "fpploadidx"
+        and item.base_index == 0
+        and item.index_index == 1
+        and item.scale == _EXPECTED_INDEX_SHIFT
+    )
+
+
+def test_decode_engine_packed_no_base_indexed_move_uses_indexed_memory_item() -> None:
+    item = _decode_run_item("movups xmm0, xmmword ptr [rcx*8 + 0x402000]")
+    expect(
+        isinstance(item, VirtualizedFpPackedMemOp)
+        and item.kind == "fpploadidxnb"
+        and item.base_index == -1
+        and item.index_index == 1
+        and item.scale == _EXPECTED_INDEX_SHIFT
+    )
+
+
+def test_engine_assembles_packed_indexed_memory_moves() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260830))
+    item = VirtualizedFpPackedMemOp("fpploadidxnb", 0, VirtualizedAddress(-1, 0x402000, 1, 4))
+    expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
 
 
 def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:

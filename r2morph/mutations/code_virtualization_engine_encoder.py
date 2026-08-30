@@ -132,9 +132,7 @@ class _BytecodeEncoder:
                 order = [*triple_permuted_fields("dst", "src1", "src2", self.field_perm), ("op", 1)]
             self._emit_fields(position, order, fields)
         elif isinstance(op, VirtualizedFpPackedMemOp):
-            position = self._opcode(op.kind, _FP_PACKED_WIDTH)
-            fields = self._base_fields(op.xmm_index, op.base_index, op.disp)
-            self._emit_fields(position, mem_permuted_fields(False, self.field_perm), fields)
+            self._emit_fp_packed_memory(op)
         elif isinstance(op, VirtualizedFpArithMemOp):
             self._emit_fp_arith_memory(op)
         elif isinstance(op, VirtualizedFpConvertOp):
@@ -150,6 +148,19 @@ class _BytecodeEncoder:
         else:
             return False
         return True
+
+    def _emit_fp_packed_memory(self, op: VirtualizedFpPackedMemOp) -> None:
+        position = self._opcode(op.kind, _FP_PACKED_WIDTH)
+        if op.kind.endswith("idxnb"):
+            fields = self._indexed_no_base_fields((op.xmm_index, op.index_index, op.scale, op.disp))
+            order = idx_permuted_fields(True, self.field_perm)
+        elif op.kind.endswith("idx"):
+            fields = self._indexed_fields((op.xmm_index, op.base_index, op.index_index, op.scale, op.disp))
+            order = idx_permuted_fields(False, self.field_perm)
+        else:
+            fields = self._base_fields(op.xmm_index, op.base_index, op.disp)
+            order = mem_permuted_fields(False, self.field_perm)
+        self._emit_fields(position, order, fields)
 
     def _emit_fp_arith_memory(self, op: VirtualizedFpArithMemOp) -> None:
         if op.index_index >= 0:

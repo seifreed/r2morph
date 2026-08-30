@@ -306,7 +306,14 @@ _FP_SCALAR_VEX_OPERATIONS: tuple[str, ...] = (
     "vminsd",
     "vmaxsd",
 )
-_FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
+_FP_PACKED_MEM_KINDS: tuple[str, ...] = (
+    "fppload",
+    "fppstore",
+    "fpploadidx",
+    "fppstoreidx",
+    "fpploadidxnb",
+    "fppstoreidxnb",
+)
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to
 # a push/push/binop/pop sequence over the vstack rather than one handler computing
 # the result, so distinct native ops share the reused push/pop/binop handlers and a
@@ -488,7 +495,9 @@ class VMScheme:
 # above ``total`` so the exit marker itself stays varied across builds.
 # Keep several values above the dense handler range available for the exit
 # marker while leaving room for every operation the engine can emit.
-_EXIT_OPCODE_HEADROOM = 8
+# Four values above the dense handler range remain reserved for the randomized
+# exit marker while the packed indexed memory forms use the freed opcode slots.
+_EXIT_OPCODE_HEADROOM = 4
 _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 
 # Every operation is emitted as several interchangeable handler instances rather

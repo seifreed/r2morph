@@ -62,6 +62,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_indexed,
     _decode_fp_mem,
     _decode_fp_packed_arith,
+    _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
     _decode_fp_riprel,
     _decode_fp_vex_packed_arith,
@@ -85,6 +86,10 @@ logger = logging.getLogger(__name__)
 
 _FP_INDEXED_TUPLE_SIZE = 7
 _FP_INDEXED_NO_BASE_TUPLE_SIZE = 6
+_FP_PACKED_INDEXED_TUPLE_SIZE = 6
+_FP_PACKED_INDEXED_NO_BASE_TUPLE_SIZE = 5
+PackedIndexedItem = tuple[str, int, int, int, int, int]
+PackedIndexedNoBaseItem = tuple[str, int, int, int, int]
 _FP_SINGLE_WIDTH_BITS = 32
 _BYTE_WIDTH_BITS = 8
 _MIN_NESTING_DEPTH = 2
@@ -222,7 +227,20 @@ def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
     memory = _decode_fp_packed_mem(text)
     if memory is not None:
         kind, xmm_index, base_slot, disp = memory
-        return VirtualizedFpPackedMemOp(kind, xmm_index, base_slot, disp)
+        return VirtualizedFpPackedMemOp(kind, xmm_index, VirtualizedAddress(base_slot, disp))
+    return _decode_fp_packed_indexed_item(text)
+
+
+def _decode_fp_packed_indexed_item(text: str) -> VirtualizedFpPackedMemOp | None:
+    indexed = _decode_fp_packed_indexed(text)
+    if indexed is None:
+        return None
+    if len(indexed) == _FP_PACKED_INDEXED_TUPLE_SIZE:
+        kind, xmm_index, base_slot, index_slot, shift, disp = cast(PackedIndexedItem, indexed)
+        return VirtualizedFpPackedMemOp(kind, xmm_index, VirtualizedAddress(base_slot, disp, index_slot, shift))
+    if len(indexed) == _FP_PACKED_INDEXED_NO_BASE_TUPLE_SIZE:
+        kind, xmm_index, index_slot, shift, disp = cast(PackedIndexedNoBaseItem, indexed)
+        return VirtualizedFpPackedMemOp(kind, xmm_index, VirtualizedAddress(-1, disp, index_slot, shift))
     return None
 
 
