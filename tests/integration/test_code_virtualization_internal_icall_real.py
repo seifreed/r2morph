@@ -11,12 +11,11 @@ import pytest
 from r2morph.adapters.process import run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _EXPECTED_EXIT_CODE = 42
 _SOURCE = r"""
-__attribute__((noinline)) static int indirect_local(int value) {
+__attribute__((noinline)) int indirect_local(int value) {
     int result;
     asm volatile(
         "lea 1f(%%rip), %%rax\n"
@@ -28,9 +27,9 @@ __attribute__((noinline)) static int indirect_local(int value) {
         "mov %%edi, %%eax\n"
         "ret\n"
         "2:\n"
-        : "=r"(result)
-        : "D"(value)
-        : "rax", "rdi", "cc", "memory");
+        : "=a"(result), "+D"(value)
+        :
+        : "cc", "memory");
     return result;
 }
 
@@ -63,7 +62,7 @@ def _compile_fixture(tmp_path: Path, compiler: str) -> Path:
 
 
 @pytest.mark.integration
-def test_virtualized_static_local_indirect_call_preserves_exit_code(tmp_path: Path) -> None:
+def test_virtualized_local_indirect_call_preserves_exit_code(tmp_path: Path) -> None:
     """A local ``call reg`` is re-entered in the VM and returns through ``vret``."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("fixture requires x86-64 execution")
@@ -75,7 +74,7 @@ def test_virtualized_static_local_indirect_call_preserves_exit_code(tmp_path: Pa
     fixture = _compile_fixture(tmp_path, compiler)
     mutated = tmp_path / "mutated_internal_icall"
     shutil.copy(fixture, mutated)
-    original_exit = emulate_exit_code(fixture)
+    original_result = run_process([fixture])
     binary = Binary(str(mutated), writable=True)
     binary.open()
     try:
@@ -84,4 +83,5 @@ def test_virtualized_static_local_indirect_call_preserves_exit_code(tmp_path: Pa
     finally:
         binary.close()
     expect(stats["functions_virtualized"] >= 1)
-    expect(original_exit == emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+    mutated_result = run_process([mutated])
+    expect(original_result.returncode == mutated_result.returncode == _EXPECTED_EXIT_CODE)
