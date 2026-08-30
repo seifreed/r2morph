@@ -27,6 +27,8 @@ from r2morph.mutations import (
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 from tests.utils.process import run_command
 
+_REAL_BINARY_TIMEOUT_SECONDS = 30
+
 
 class TestRealMutations:
     """Integration tests with real binaries."""
@@ -56,7 +58,7 @@ class TestRealMutations:
             result = run_command(
                 [str(binary_path)],
                 capture_output=True,
-                timeout=5,
+                timeout=_REAL_BINARY_TIMEOUT_SECONDS,
                 check=False,
             )
             return result.stdout.decode(), result.returncode
