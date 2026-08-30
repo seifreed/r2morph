@@ -21,15 +21,17 @@ _SOURCE = r"""
 typedef float vector_float __attribute__((vector_size(16)));
 typedef double vector_double __attribute__((vector_size(16)));
 
-__attribute__((noinline)) static vector_float add_single(vector_float left, vector_float right) {
+__attribute__((noinline)) vector_float add_single(vector_float left, vector_float right) {
     vector_float result;
-    __asm__ volatile("vaddss %1, %2, %0" : "=x"(result) : "x"(left), "x"(right));
+    result = left;
+    __asm__ volatile("vaddss %2, %1, %0" : "+x"(result) : "x"(left), "x"(right));
     return result;
 }
 
-__attribute__((noinline)) static vector_double add_double(vector_double left, vector_double right) {
+__attribute__((noinline)) vector_double add_double(vector_double left, vector_double right) {
     vector_double result;
-    __asm__ volatile("vaddsd %1, %2, %0" : "=x"(result) : "x"(left), "x"(right));
+    result = left;
+    __asm__ volatile("vaddsd %2, %1, %0" : "+x"(result) : "x"(left), "x"(right));
     return result;
 }
 
