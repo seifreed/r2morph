@@ -303,6 +303,12 @@ _FP_SCALAR_VEX_OPERATIONS: tuple[str, ...] = (
     "vmaxsd",
 )
 _FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
+_FP_VEX_PACKED_MEM_KINDS: tuple[str, ...] = (
+    "fppackedvexmem",
+    "fppackedvexmemrip",
+    "fppackedvexmemidx",
+    "fppackedvexmemidxnb",
+)
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to
 # a push/push/binop/pop sequence over the vstack rather than one handler computing
 # the result, so distinct native ops share the reused push/pop/binop handlers and a
@@ -336,7 +342,11 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple(
         (kind, False, _FP_PACKED_WIDTH)
         for kind in (
-            _FP_PACKED_ARITH_KINDS + _FP_PACKED_VEX_ARITH_KINDS + _FP_SCALAR_VEX_ARITH_KINDS + _FP_PACKED_MEM_KINDS
+            _FP_PACKED_ARITH_KINDS
+            + _FP_PACKED_VEX_ARITH_KINDS
+            + _FP_SCALAR_VEX_ARITH_KINDS
+            + _FP_PACKED_MEM_KINDS
+            + _FP_VEX_PACKED_MEM_KINDS
         )
     )
 )

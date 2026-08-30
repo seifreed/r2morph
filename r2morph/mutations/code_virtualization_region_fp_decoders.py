@@ -823,6 +823,69 @@ def _decode_fp_vex_256_packed_arith_mem(
     return result
 
 
+def _decode_fp_vex_packed_arith_mem(
+    text: str, insn_addr: int, insn_size: int
+) -> (
+    tuple[str, str, int, int, int, int]
+    | tuple[str, str, int, int, int]
+    | tuple[str, str, int, int, int, int, int, int]
+    | tuple[str, str, int, int, int, int, int]
+    | None
+):
+    """Decode a VEX.128 packed arithmetic operation with a memory source."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    binary_operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
+    unary_operation = _FP_VEX_PACKED_UNARY_ARITH.get(mnemonic)
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) not in (_PACKED_VEX_MOVE_OPERAND_COUNT, _PACKED_VEX_OPERAND_COUNT):
+        return None
+    is_unary = len(operands) == _PACKED_VEX_MOVE_OPERAND_COUNT
+    operation = unary_operation if is_unary else binary_operation
+    if operation is None or "[" not in operands[-1]:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    first_source = destination if is_unary else _parse_xmm_operand(operands[1])
+    if destination is None or first_source is None:
+        return None
+    memory = operands[-1].lower().replace("xmmword", "")
+    result: (
+        tuple[str, str, int, int, int, int]
+        | tuple[str, str, int, int, int]
+        | tuple[str, str, int, int, int, int, int, int]
+        | tuple[str, str, int, int, int, int, int]
+        | None
+    ) = None
+    indexed = _parse_indexed_operand(memory, base_optional=True)
+    if indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        if base_slot < 0:
+            result = ("fppackedvexmemidxnb", operation, destination, first_source, index_slot, shift, displacement)
+        else:
+            result = (
+                "fppackedvexmemidx",
+                operation,
+                destination,
+                first_source,
+                base_slot,
+                index_slot,
+                shift,
+                displacement,
+            )
+    else:
+        rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+        if rip_relative is not None:
+            result = ("fppackedvexmemrip", operation, destination, first_source, rip_relative[0])
+        else:
+            parsed_memory = _parse_mem_operand(memory)
+            if parsed_memory is not None:
+                base_slot, displacement, _width = parsed_memory
+                result = ("fppackedvexmem", operation, destination, first_source, base_slot, displacement)
+    return result
+
+
 def _decode_fp_vex_256_packed_move(text: str) -> tuple[str, str, int, int] | None:
     """Decode a register-register VEX.256 packed move."""
     parts = text.split(None, 1)

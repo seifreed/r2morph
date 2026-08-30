@@ -284,8 +284,8 @@ class RegionEncoder:
 
     def _emit_fp_memory_move(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind.startswith("fppackedvex256mem"):
-            return self._emit_vex_256_memory_arithmetic(item)
+        if kind.startswith(("fppackedvexmem", "fppackedvex256mem")):
+            return self._emit_vex_memory_arithmetic(item)
         if kind in ("fppload", "fppstore"):
             _, xmm, base, disp = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
@@ -318,18 +318,18 @@ class RegionEncoder:
             return False
         return True
 
-    def _emit_vex_256_memory_arithmetic(self, item: RegionItem) -> bool:
+    def _emit_vex_memory_arithmetic(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind == "fppackedvex256mem":
+        if kind in ("fppackedvexmem", "fppackedvex256mem"):
             _, _operation, destination, source, base, disp = item
             self._mem_with_source(self._opcode(item), destination, source, base, disp)
-        elif kind == "fppackedvex256memrip":
+        elif kind in ("fppackedvexmemrip", "fppackedvex256memrip"):
             _, _operation, destination, source, target = item
             self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)
-        elif kind == "fppackedvex256memidx":
+        elif kind in ("fppackedvexmemidx", "fppackedvex256memidx"):
             _, _operation, destination, source, base, index, shift, disp = item
             self._idx_with_source(self._opcode(item), (destination, base, index, shift, disp), source)
-        elif kind == "fppackedvex256memidxnb":
+        elif kind in ("fppackedvexmemidxnb", "fppackedvex256memidxnb"):
             _, _operation, destination, source, index, shift, disp = item
             self._idx_with_source(self._opcode(item), (destination, None, index, shift, disp), source)
         else:

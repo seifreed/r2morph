@@ -9,6 +9,8 @@ area - and reuse the GP module's shared address prologues and frame offsets.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from r2morph.mutations.code_virtualization_layout import pair_offsets, triple_offsets
 from r2morph.mutations.code_virtualization_region_handlers import (
     _DWORD_WIDTH_BITS,
@@ -44,6 +46,13 @@ def avx128_upper_clear_asm(destinations: set[int]) -> str:
 
 
 _YMM_UPPER_SAVE_OFFSET = 0x300
+
+
+@dataclass(frozen=True)
+class VexMemoryHandlerConfig:
+    field_perm: int = 0
+    addr_variant: int = 0
+    preserve_ymm: bool = False
 
 
 def ymm_upper_spill_asm() -> str:
@@ -171,6 +180,31 @@ def _fp_vex_256_packed_arith_mem_handler_asm(
     )
     body += "  shl r8, 4\n"
     body += _store_ymm_to_frame("r8")
+    return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
+def _fp_vex_packed_arith_mem_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Run a VEX.128 packed operation with its third operand in memory."""
+    config = config or VexMemoryHandlerConfig()
+    kind, instruction = handler_key.split("_", 1)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+    body += "  shl r8, 4\n  shl r11, 4\n" f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n" "  movups xmm1, [r10]\n"
+    body += (
+        f"  v{instruction} xmm0, xmm1\n" if instruction.startswith("sqrt") else f"  v{instruction} xmm0, xmm0, xmm1\n"
+    )
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
+    body += f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper
     return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 
 

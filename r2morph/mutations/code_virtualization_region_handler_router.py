@@ -24,6 +24,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _vret_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
+    VexMemoryHandlerConfig,
     _fp_arith_handler_asm,
     _fp_arith_mem_handler_asm,
     _fp_compare_handler_asm,
@@ -44,6 +45,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_256_packed_arith_mem_handler_asm,
     _fp_vex_256_packed_shift_immediate_handler_asm,
     _fp_vex_move_handler_asm,
+    _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
     vzeroall_handler_asm,
@@ -642,7 +644,14 @@ class HandlerBodyRouter:
 
     def _fp_vex(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
         body = None
-        if key.startswith("fppackedvex256mem"):
+        if key.startswith("fppackedvexmem"):
+            body = _fp_vex_packed_arith_mem_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm),
+            )
+        elif key.startswith("fppackedvex256mem"):
             body = _fp_vex_256_packed_arith_mem_handler_asm(
                 key,
                 self.context.key,
