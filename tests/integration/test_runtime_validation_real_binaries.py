@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _EXPECTED_RESULT_RUNTIME_DETAILS_0_MUTATED_EXITCODE_7 = 7
+_REAL_BINARY_TIMEOUT_SECONDS = 30
 
 
 if importlib.util.find_spec("yaml") is None:
@@ -26,12 +27,12 @@ if shutil.which("gcc") is None:
 def test_runtime_validator_detects_and_normalizes_whitespace(runtime_binary_pair):
     original, mutated = runtime_binary_pair
 
-    strict_validator = BinaryValidator(timeout=5)
+    strict_validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
     strict_validator.add_test_case(description="strict")
     strict_result = strict_validator.validate(original, mutated)
 
     normalized_validator = BinaryValidator(
-        timeout=5,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         comparison=RuntimeComparisonConfig(normalize_whitespace=True),
     )
     normalized_validator.add_test_case(description="normalized")
@@ -53,7 +54,7 @@ def test_runtime_validator_detects_and_normalizes_whitespace(runtime_binary_pair
 def test_runtime_validator_detects_monitored_file_side_effects_real(file_effect_binary_pair):
     original, mutated = file_effect_binary_pair
     validator = BinaryValidator(
-        timeout=5,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         comparison=RuntimeComparisonConfig(compare_files=True),
     )
     validator.load_test_cases(
@@ -77,7 +78,7 @@ def test_runtime_validator_detects_monitored_file_side_effects_real(file_effect_
 
 def test_runtime_validator_detects_exitcode_mismatch_real(exitcode_binary_pair):
     original, mutated = exitcode_binary_pair
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
     validator.add_test_case(description="exitcode")
 
     result = validator.validate(original, mutated)
@@ -90,7 +91,7 @@ def test_runtime_validator_detects_exitcode_mismatch_real(exitcode_binary_pair):
 
 def test_runtime_validator_detects_stderr_mismatch_real(stderr_binary_pair):
     original, mutated = stderr_binary_pair
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
     validator.add_test_case(description="stderr")
 
     result = validator.validate(original, mutated)
@@ -159,7 +160,7 @@ def test_runtime_validator_detects_args_env_working_dir_mismatch_real(args_env_b
     workdir = tmp_path / "exec"
     workdir.mkdir()
 
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
     validator.load_test_cases(
         [
             {

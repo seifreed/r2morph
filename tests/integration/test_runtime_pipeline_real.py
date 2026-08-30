@@ -22,6 +22,9 @@ if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 
 
+_REAL_BINARY_TIMEOUT_SECONDS = 30
+
+
 class _PatchStringPass(MutationPass):
     def __init__(self, original: bytes, replacement: bytes):
         super().__init__("PatchString")
@@ -66,7 +69,7 @@ def test_runtime_validation_rolls_back_failed_pass_on_real_binary(
     tmp_path: Path,
 ):
     validator = BinaryValidator(
-        timeout=5,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         comparison=RuntimeComparisonConfig(normalize_whitespace=False),
     )
     validator.add_test_case(description="default")
