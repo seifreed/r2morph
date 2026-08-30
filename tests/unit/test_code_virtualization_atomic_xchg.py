@@ -104,6 +104,18 @@ def test_locked_memory_rmw_handler_emits_native_atomic_operation() -> None:
     expect("lock add dword ptr [r10], eax" in assembly)
 
 
+def test_locked_memory_rmw_decoder_accepts_xadd_register_result() -> None:
+    expect(
+        _decode_locked_memory_rmw("lock xadd dword ptr [rbx+8], ecx", 0x401000, 4) == ("atomicmem", "xadd", 1, 3, 8, 32)
+    )
+
+
+def test_locked_memory_xadd_handler_writes_previous_memory_value_back() -> None:
+    assembly = _atomic_memory_rmw_handler_asm("atomicmem_xadd_32", "0x12", "0x11223344")
+    expect("lock xadd dword ptr [r10], eax" in assembly)
+    expect("mov qword ptr [rsp+r8*8], eax" in assembly)
+
+
 def test_locked_memory_rmw_items_have_stable_handler_key_and_size() -> None:
     item = ("atomicmem", "add", 1, 3, 8, 32)
     expect(_op_key(item) == "atomicmem_add_32")
@@ -151,3 +163,7 @@ def test_cmpxchg_memory_direct_item_matches_handler_byte_length() -> None:
 
 def test_cmpxchg_memory_writes_accumulator_and_not_source() -> None:
     expect(_writes_register(("cmpxchgmem", 1, 3, 8, 64)) == frozenset({0}))
+
+
+def test_locked_memory_xadd_writes_source_register() -> None:
+    expect(_writes_register(("atomicmem", "xadd", 1, 3, 8, 32)) == frozenset({1}))

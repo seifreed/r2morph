@@ -258,7 +258,7 @@ def _decode_cmpxchg_memory(text: str) -> tuple[Any, ...] | None:
     return _decode_atomic_memory_exchange(text, "cmpxchg", "cmpxchgmem", True)
 
 
-_LOCKED_RMW_MNEMONICS = frozenset({"add", "sub", "and", "or", "xor"})
+_LOCKED_RMW_MNEMONICS = frozenset({"add", "sub", "and", "or", "xor", "xadd"})
 
 
 def _locked_memory_rmw_header(text: str) -> tuple[str, str, str] | None:

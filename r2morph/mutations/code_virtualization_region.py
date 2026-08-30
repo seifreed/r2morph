@@ -91,15 +91,21 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "loadidxnb",
         "not",
         "bswap",
+        "atomicmem",
+        "atomicmemrip",
+        "atomicmemidx",
+        "atomicmemidxnb",
     ):
+        if kind.startswith("atomic"):
+            return frozenset({int(item[2])}) if item[1] == "xadd" else frozenset()
         return frozenset({int(item[1])})
-    if kind in ("cmpxchgmem", "cmpxchgmemidx"):
-        return frozenset({_RAX_SLOT})
     if kind in ("shift", "shiftreg", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
         return frozenset({int(item[2])})
     if kind in ("movx", "movxidx", "movxreg"):
         return frozenset({int(item[4])})
     special_writes = {
+        "cmpxchgmem": frozenset({_RAX_SLOT}),
+        "cmpxchgmemidx": frozenset({_RAX_SLOT}),
         "div": frozenset({_RAX_SLOT, _RDX_SLOT}),
         "cqo": frozenset({_RDX_SLOT}),
         "syscall": frozenset({GP_REGISTERS.index("rax"), GP_REGISTERS.index("rcx"), GP_REGISTERS.index("r11")}),
