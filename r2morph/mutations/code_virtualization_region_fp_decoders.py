@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from r2morph.mutations.code_virtualization_region_decoders import (
     _INSTRUCTION_PART_COUNT,
     _REGISTER_COUNT,
@@ -667,6 +669,62 @@ def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int
         return None
     operation, width = spec
     return ("fparithvex", operation, destination, first_source, second_source, width)
+
+
+def _parse_fp_vex_scalar_memory_operands(text: str) -> tuple[str, int, int, int, str] | None:
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    spec = _FP_VEX_SCALAR_ARITH.get(parts[0].lower())
+    if spec is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_OPERAND_COUNT or "[" not in operands[2]:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    first_source = _parse_xmm_operand(operands[1])
+    if destination is None or first_source is None:
+        return None
+    operation, width = spec
+    return operation, width, destination, first_source, operands[2]
+
+
+def _decode_fp_vex_scalar_arith_mem(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode VEX scalar arithmetic with a memory third operand.
+
+    The first source is retained because VEX scalar instructions copy its upper
+    lanes, unlike the legacy two-operand SSE form.
+    """
+    parsed_operands = _parse_fp_vex_scalar_memory_operands(text)
+    if parsed_operands is None:
+        return None
+    operation, width, destination, first_source, memory = parsed_operands
+    memory_head = memory.lower().split(None, 1)[0]
+    explicit_width = {"dword": _DWORD_WIDTH_BITS, "qword": 64}.get(memory_head)
+    result: tuple[Any, ...] | None = None
+    if explicit_width is None or explicit_width == width:
+        indexed = _parse_indexed_operand(memory, base_optional=True)
+        if indexed is not None:
+            base_slot, index_slot, shift, displacement = indexed
+            kind = "fparithvexmemidxnb" if base_slot < 0 else "fparithvexmemidx"
+            result = (
+                (kind, operation, destination, first_source, index_slot, shift, displacement, width)
+                if base_slot < 0
+                else (kind, operation, destination, first_source, base_slot, index_slot, shift, displacement, width)
+            )
+        else:
+            rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+            if rip_relative is not None:
+                target, memory_width = rip_relative
+                if memory_width is None or memory_width == width:
+                    result = ("fparithvexmemrip", operation, destination, first_source, target, width)
+            else:
+                parsed_memory = _parse_mem_operand(memory)
+                if parsed_memory is not None:
+                    base_slot, displacement, memory_width = parsed_memory
+                    if memory_width is None or memory_width == width:
+                        result = ("fparithvexmem", operation, destination, first_source, base_slot, displacement, width)
+    return result
 
 
 def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:

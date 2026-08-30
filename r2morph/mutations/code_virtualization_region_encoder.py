@@ -338,6 +338,8 @@ class RegionEncoder:
 
     def _emit_fp_memory_arithmetic(self, item: RegionItem) -> bool:
         kind = item[0]
+        if kind in ("fparithvexmem", "fparithvexmemrip", "fparithvexmemidx", "fparithvexmemidxnb"):
+            return self._emit_vex_scalar_memory_arithmetic(item)
         if kind == "fparithmem":
             _, _op, xmm, base, disp, _width = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
@@ -351,6 +353,24 @@ class RegionEncoder:
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
         elif kind in ("fpcmpmemidx", "fpcmpmemidxnb"):
             self._emit_fp_compare_indexed(item)
+        else:
+            return False
+        return True
+
+    def _emit_vex_scalar_memory_arithmetic(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "fparithvexmem":
+            _, _operation, destination, source, base, disp, _width = item
+            self._mem_with_source(self._opcode(item), destination, source, self.slot_of[base], disp)
+        elif kind == "fparithvexmemrip":
+            _, _operation, destination, source, target, _width = item
+            self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)
+        elif kind == "fparithvexmemidx":
+            _, _operation, destination, source, base, index, shift, disp, _width = item
+            self._idx_with_source(self._opcode(item), (destination, base, index, shift, disp), source)
+        elif kind == "fparithvexmemidxnb":
+            _, _operation, destination, source, index, shift, disp, _width = item
+            self._idx_with_source(self._opcode(item), (destination, None, index, shift, disp), source)
         else:
             return False
         return True

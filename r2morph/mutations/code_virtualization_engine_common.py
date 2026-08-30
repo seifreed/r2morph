@@ -285,7 +285,13 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpunpcklbw",
     "vpunpcklwd",
 )
-_FP_SCALAR_VEX_ARITH_KINDS: tuple[str, ...] = ("fparithvex",)
+_FP_SCALAR_VEX_ARITH_KINDS: tuple[str, ...] = (
+    "fparithvex",
+    "fparithvexmem",
+    "fparithvexmemrip",
+    "fparithvexmemidx",
+    "fparithvexmemidxnb",
+)
 _FP_SCALAR_VEX_OPERATIONS: tuple[str, ...] = (
     "vaddss",
     "vsubss",

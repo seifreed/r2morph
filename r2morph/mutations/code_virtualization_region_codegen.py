@@ -78,6 +78,10 @@ _XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemi
 _YMM_HANDLER_KINDS = frozenset(
     {
         "fparithvex",
+        "fparithvexmem",
+        "fparithvexmemrip",
+        "fparithvexmemidx",
+        "fparithvexmemidxnb",
         "fppackedvex",
         "fppackedveximm",
         "fpmovvex",
@@ -129,6 +133,10 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
         if item[0]
         in (
             "fparithvex",
+            "fparithvexmem",
+            "fparithvexmemrip",
+            "fparithvexmemidx",
+            "fparithvexmemidxnb",
             "fppackedvex",
             "fppackedveximm",
             "fppackedvexmem",

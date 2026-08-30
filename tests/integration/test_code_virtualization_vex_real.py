@@ -38,6 +38,26 @@ int main(void) {
 }
 """
 
+_VEX_SCALAR_MEMORY_SOURCE = r"""
+__attribute__((noinline)) static void addss_memory(const float *source, float *target) {
+    __asm__ volatile(
+        "vmovups (%0), %%xmm1\n"
+        "vaddss (%0), %%xmm1, %%xmm0\n"
+        "vmovups %%xmm0, (%1)\n"
+        :
+        : "r"(source), "r"(target)
+        : "xmm0", "xmm1", "memory"
+    );
+}
+
+int main(void) {
+    const float source[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+    float target[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+    addss_memory(source, target);
+    return target[0] == 2.0f && target[1] == 2.0f && target[3] == 4.0f ? 42 : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -116,5 +136,51 @@ def test_virtualized_vex128_packed_memory_arithmetic_preserves_native_result(tmp
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.128 memory arithmetic changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_vex128_scalar_memory_arithmetic_preserves_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex128_scalar_memory.c"
+    original = tmp_path / "original_vex128_scalar_memory"
+    mutated = tmp_path / "mutated_vex128_scalar_memory"
+    source.write_text(_VEX_SCALAR_MEMORY_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 scalar memory fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260837}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.128 scalar memory arithmetic changed the result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )

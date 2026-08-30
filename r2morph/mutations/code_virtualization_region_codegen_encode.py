@@ -73,6 +73,7 @@ _FIXED_SIZE_GROUPS = {
         "fploadvex256rip",
         "fpstorevex256rip",
         "fparithmemrip",
+        "fparithvexmemrip",
         "riprel_load",
         "riprel_store",
         "cmpriprel",
@@ -99,6 +100,7 @@ _FIXED_SIZE_GROUPS = {
         "fppackedvexmemrip",
         "fppackedvex256memrip",
         "fparithmem",
+        "fparithvexmem",
         "fpcmpmem",
         "cmpmem",
         "opmem",
@@ -121,6 +123,7 @@ _FIXED_SIZE_GROUPS = {
         "fppackedvex256mem",
         "fppackedvexmem",
         "fparithmemidxnb",
+        "fparithvexmemidxnb",
         "fpcmpmemidxnb",
         "tlsloadidxnb",
         "tlsstoreidxnb",
@@ -157,7 +160,7 @@ _FIXED_SIZE_GROUPS = {
         "cmpxchgmemidx",
         "pushi",
     ),
-    10: ("fppackedvex256memidx", "fppackedvexmemidx"),
+    10: ("fppackedvex256memidx", "fppackedvexmemidx", "fparithvexmemidx"),
 }
 _FIXED_ITEM_SIZES = {kind: size for size, kinds in _FIXED_SIZE_GROUPS.items() for kind in kinds}
 _IMMEDIATE_MEMORY_BASE_SIZES = {

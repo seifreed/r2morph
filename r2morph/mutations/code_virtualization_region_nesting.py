@@ -310,6 +310,10 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         item[0]
         in (
             "fparithvex",
+            "fparithvexmem",
+            "fparithvexmemrip",
+            "fparithvexmemidx",
+            "fparithvexmemidxnb",
             "fppackedvex",
             "fppackedveximm",
             "fpmovvex",
@@ -335,6 +339,10 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         if item[0]
         in (
             "fparithvex",
+            "fparithvexmem",
+            "fparithvexmemrip",
+            "fparithvexmemidx",
+            "fparithvexmemidxnb",
             "fppackedvex",
             "fppackedveximm",
             "fppackedvexmem",

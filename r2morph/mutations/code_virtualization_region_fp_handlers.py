@@ -410,6 +410,35 @@ def _fp_vex_scalar_arith_handler_asm(
     )
 
 
+def _fp_vex_scalar_arith_mem_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Run VEX scalar arithmetic with its scalar third operand in memory."""
+    config = config or VexMemoryHandlerConfig()
+    kind, operation, width_text = handler_key.split("_")
+    width = int(width_text)
+    suffix = "ss" if width == _DWORD_WIDTH_BITS else "sd"
+    memory = "dword" if width == _DWORD_WIDTH_BITS else "qword"
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+    body += (
+        f"  shl r8, 4\n  shl r11, 4\n"
+        f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
+        f"  v{operation}{suffix} xmm0, xmm0, {memory} ptr [r10]\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    )
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
+    return body + clear_upper + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_move_handler_asm(handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False) -> str:
     """Copy the lower 128 bits of a VEX.128 move into the destination slot."""
     off = pair_offsets("dst", "src", field_perm)
