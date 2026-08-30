@@ -16,6 +16,7 @@ from tests.utils.process import run_command
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_x86_64"
 _EXPECTED_EXIT_CODE = 42
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 10
+_REGRESSION_SEED = 11
 
 _VEX_MEMORY_SOURCE = r"""
 __attribute__((noinline)) static void add128_memory(const float *source, float *target) {
@@ -47,7 +48,9 @@ def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
         binary.analyze()
         compute = next(function for function in binary.get_functions() if "compute" in function["name"])
         original_compute_prefix = binary.read_bytes(compute["addr"], 5)
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": _REGRESSION_SEED}).apply(
+            binary
+        )
         binary.save()
         mutated_compute_prefix = binary.read_bytes(compute["addr"], 5)
     finally:
