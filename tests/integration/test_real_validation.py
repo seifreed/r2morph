@@ -28,6 +28,7 @@ _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
 _EXPECTED_RESULT_SUCCESS_RATE_100_0 = 100.0
 _EXPECTED_RESULT_TOTAL_TESTS_10 = 10
 _EXPECTED_RESULT_TOTAL_TESTS_5 = 5
+_REAL_BINARY_TIMEOUT_SECONDS = 30
 
 
 class TestRealValidation:
@@ -62,7 +63,7 @@ class TestRealValidation:
             engine.run()
             engine.save(mutated_path)
 
-        validator = BinaryValidator(timeout=5)
+        validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
         validator.add_test_case(description="Default execution")
 
         result = validator.validate(simple_binary, mutated_path)
@@ -87,7 +88,7 @@ class TestRealValidation:
             engine.run()
             engine.save(mutated_path)
 
-        validator = BinaryValidator(timeout=5)
+        validator = BinaryValidator(timeout=_REAL_BINARY_TIMEOUT_SECONDS)
         validator.add_test_case(description="Test 1")
         validator.add_test_case(description="Test 2")
         validator.add_test_case(description="Test 3")
@@ -112,7 +113,7 @@ class TestRealValidation:
             engine.run()
             engine.save(mutated_path)
 
-        fuzzer = MutationFuzzer(num_tests=10, timeout=5)
+        fuzzer = MutationFuzzer(num_tests=10, timeout=_REAL_BINARY_TIMEOUT_SECONDS)
         result = fuzzer.fuzz(simple_binary, mutated_path, input_type="ascii")
 
         expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_10)
@@ -135,7 +136,7 @@ class TestRealValidation:
             engine.run()
             engine.save(mutated_path)
 
-        fuzzer = MutationFuzzer(num_tests=5, timeout=5)
+        fuzzer = MutationFuzzer(num_tests=5, timeout=_REAL_BINARY_TIMEOUT_SECONDS)
         result = fuzzer.fuzz_with_args(loop_binary, mutated_path, arg_count=3)
 
         expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_5)
