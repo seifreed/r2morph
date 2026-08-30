@@ -64,7 +64,7 @@ __attribute__((noinline)) static void move_scalar(const float *source, float *ta
         "vmovups (%0), %%xmm1\n"
         "vmovss (%0), %%xmm0\n"
         "vmovss %%xmm0, %%xmm1, %%xmm0\n"
-        "vmovss %%xmm0, (%1)\n"
+        "vmovups %%xmm0, (%1)\n"
         "vmovss 4(%0), %%xmm2\n"
         "vmovss %%xmm2, 4(%1)\n"
         :
