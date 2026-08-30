@@ -359,15 +359,20 @@ def _parse_riprel_operand(text: str, insn_addr: int, insn_size: int) -> tuple[in
     head = text.split(None, 1)
     if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
         width = {"qword": 64, "dword": 32, "word": _WORD_WIDTH_BITS, "byte": _BYTE_WIDTH_BITS}.get(head[0])
-        if width is None:
-            return None
-        text = head[1].strip() if len(head) > 1 else ""
+        text = head[1].strip() if len(head) > 1 and width is not None else ""
     rest = text.split(None, 1)
     if rest and rest[0] == "ptr":
         text = rest[1].strip() if len(rest) > 1 else ""
     if not (text.startswith("[") and text.endswith("]")):
         return None
     inner = text[1:-1].strip()
+    try:
+        absolute = int(inner, 0)
+    except ValueError:
+        pass
+    else:
+        if 0 <= absolute < 1 << 64:
+            return absolute, width
     if not inner.startswith("rip") or "*" in inner or ":" in inner:
         return None
     tail = inner[len("rip") :].strip()

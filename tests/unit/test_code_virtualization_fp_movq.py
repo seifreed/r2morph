@@ -42,6 +42,21 @@ def test_vector_classifier_virtualizes_movdqu_memory_load() -> None:
     )
 
 
+def test_vector_classifier_decodes_absolute_packed_store() -> None:
+    expect(
+        _classify(
+            {
+                "type": "mov",
+                "family": "vec",
+                "opcode": "movups xmmword ptr [0x402000], xmm1",
+                "addr": 0x1000,
+                "size": 8,
+            }
+        )
+        == ["fppstorerip", 1, 0x402000]
+    )
+
+
 def test_fp_move_handler_movq_emits_low_qword_instruction() -> None:
     assembly = _fp_move_handler_asm("fpmov_q", "byte ptr [rsp+136]")
     expect("movq xmm0, xmm1" in assembly)

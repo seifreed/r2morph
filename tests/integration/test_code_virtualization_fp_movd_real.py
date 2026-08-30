@@ -9,6 +9,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.code_virtualization_region_classification import _classify
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 from tests.utils.platform_binaries import supports_native_elf_x86_64
@@ -27,6 +28,16 @@ pytestmark = [
 
 def test_movd_fixture_original_has_expected_exit_code() -> None:
     expect(emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE)
+
+
+def test_movd_fixture_classifies_rip_relative_packed_store() -> None:
+    with Binary(_FIXTURE) as binary:
+        binary.analyze()
+        instructions = binary.get_function_disasm(int(binary.get_functions()[0]["addr"]))
+
+    packed_store = next(instruction for instruction in instructions if "movups" in instruction.get("opcode", ""))
+    classified = _classify(packed_store)
+    expect(classified is not None and classified[0] == "fppstorerip")
 
 
 def test_movd_fixture_virtualization_preserves_exit_code(tmp_path: Path) -> None:
