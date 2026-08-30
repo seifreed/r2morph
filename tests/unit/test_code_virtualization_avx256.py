@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_region import build_region_scheme
@@ -221,8 +223,16 @@ def test_vex_256_memory_move_handlers_use_ymm_width() -> None:
     expect("vmovups ymm0, [r10]" in assembly and "vmovups [r10], ymm0" in assembly)
 
 
-def test_vex_256_memory_move_encoding_uses_ymm_layout() -> None:
-    item = ("fploadvex256", 0, 1, 0)
+@pytest.mark.parametrize(
+    "item",
+    [
+        ("fploadvex256", 0, 1, 0),
+        ("fpstorevex256rip", 0, 0x1010),
+        ("fploadvex256idx", 0, 1, 2, 1, 8),
+        ("fpstorevex256idxnb", 0, 2, 1, 8),
+    ],
+)
+def test_vex_256_memory_move_encoding_uses_ymm_layout(item: tuple[object, ...]) -> None:
     region = Region(
         [item],
         _EXIT_VADDR,
