@@ -15,6 +15,7 @@ from tests.utils.platform_binaries import supports_native_elf_x86_64
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_varargs_x86_64"
+_EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE = 73
 
 pytestmark = [
     pytest.mark.integration,
@@ -159,4 +160,62 @@ int main(void) {
     expect(
         (original_result.returncode, mutated_result.returncode) == (55, 55),
         f"original={original_result.returncode}, mutated={mutated_result.returncode}, stats={stats}",
+    )
+
+
+def test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi(tmp_path: Path) -> None:
+    source = tmp_path / "floating_point_varargs.c"
+    original = tmp_path / "floating_point_varargs_original"
+    mutated = tmp_path / "floating_point_varargs_mutated"
+    source.write_text(r"""
+#include <stdarg.h>
+
+__attribute__((noinline)) static double sum_variadic_double(int count, ...) {
+    va_list arguments;
+    va_start(arguments, count);
+    double total = 0.0;
+    for (int index = 0; index < count; ++index) {
+        total += va_arg(arguments, double);
+    }
+    va_end(arguments);
+    return total;
+}
+
+int main(void) {
+    double total = sum_variadic_double(
+        10, 7.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25
+    );
+    return (int)(total * 4.0) & 127;
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the floating-point varargs fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 2, "seed": 20260836}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    mutated_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == mutated_result.returncode == _EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE,
+        f"floating-point varargs ABI changed the result: {stats=}",
     )
