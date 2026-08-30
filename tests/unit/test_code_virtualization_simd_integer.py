@@ -1,5 +1,6 @@
 """Unit contracts for integer packed XMM operations."""
 
+from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedFpPackedOp
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
@@ -190,6 +191,20 @@ def test_decode_vex128_byte_shuffle_returns_three_operand_item() -> None:
 
 def test_decode_vex256_byte_shuffle_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_extra("vpshufb ymm2, ymm0, ymm1") == ("fppackedvex256", "pshufb", 2, 0, 1))
+
+
+def test_classify_vex128_byte_shuffle_selects_region_item() -> None:
+    expect(
+        classification._classify({"type": "vec", "family": "vec", "opcode": "vpshufb xmm2, xmm0, xmm1"})
+        == ["fppackedvex", "pshufb", 2, 0, 1]
+    )
+
+
+def test_classify_vex256_byte_shuffle_selects_region_item() -> None:
+    expect(
+        classification._classify({"type": "vec", "family": "vec", "opcode": "vpshufb ymm2, ymm0, ymm1"})
+        == ["fppackedvex256", "pshufb", 2, 0, 1]
+    )
 
 
 def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
