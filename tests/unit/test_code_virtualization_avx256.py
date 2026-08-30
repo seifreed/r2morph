@@ -219,3 +219,16 @@ def test_vex_256_memory_move_handlers_use_ymm_width() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(9)))
 
     expect("vmovups ymm0, [r10]" in assembly and "vmovups [r10], ymm0" in assembly)
+
+
+def test_vex_256_memory_move_encoding_uses_ymm_layout() -> None:
+    item = ("fploadvex256", 0, 1, 0)
+    region = Region(
+        [item],
+        _EXIT_VADDR,
+        0x1000,
+        {_op_key(item)},
+        [(0x1000, 7)],
+    )
+
+    expect(isinstance(encode_region(region, build_region_scheme(region, randomness.Random(13)), 0x2000), bytes))

@@ -309,7 +309,7 @@ class RegionEncoder:
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:
-        if item[0].startswith(("fploadvex", "fpstorevex", "fpmovvexmem")):
+        if item[0].startswith(("fploadvex", "fpstorevex", "fpmovvexmem")) and not item[0].endswith("vex256"):
             return self._emit_vex_scalar_memory_move(item)
         if self._emit_fp_memory_move(item):
             return True
