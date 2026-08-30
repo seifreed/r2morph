@@ -39,14 +39,34 @@ int main(void) {
 """
 
 
-def test_virtualized_vzeroupper_preserves_low_lanes_and_clears_upper_lanes(tmp_path: Path) -> None:
-    if platform.machine().lower() not in {"x86_64", "amd64"}:
-        pytest.skip("native AVX execution requires an x86-64 host")
+_VZEROALL_SOURCE = r"""
+#include <stdint.h>
 
-    source = tmp_path / "vzeroupper.c"
-    original = tmp_path / "original"
-    mutated = tmp_path / "mutated"
-    source.write_text(_SOURCE)
+__attribute__((noinline)) static int clear_all(void) {
+    const uint32_t input[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint32_t output[8] = {0};
+    __asm__ volatile(
+        "vmovdqu (%0), %%ymm0\n"
+        "vzeroall\n"
+        "vmovdqu %%ymm0, (%1)\n"
+        :
+        : "r"(input), "r"(output)
+        : "ymm0", "memory"
+    );
+    return output[0] == 0 && output[4] == 0 ? 42 : 1;
+}
+
+int main(void) {
+    return clear_all();
+}
+"""
+
+
+def _virtualize_source(tmp_path: Path, source_text: str, name: str) -> tuple[int, int, dict[str, object]]:
+    source = tmp_path / f"{name}.c"
+    original = tmp_path / f"original-{name}"
+    mutated = tmp_path / f"mutated-{name}"
+    source.write_text(source_text)
     compile_result = run_command(
         [
             "gcc",
@@ -64,7 +84,7 @@ def test_virtualized_vzeroupper_preserves_low_lanes_and_clears_upper_lanes(tmp_p
         ],
         timeout=30,
     )
-    expect(compile_result.returncode == 0, "failed to compile the VZEROUPPER fixture")
+    expect(compile_result.returncode == 0, f"failed to compile the {name} fixture")
 
     original_result = run_command([original], timeout=30)
     original.rename(mutated)
@@ -73,5 +93,22 @@ def test_virtualized_vzeroupper_preserves_low_lanes_and_clears_upper_lanes(tmp_p
         binary.save()
 
     transformed_result = run_command([mutated], timeout=30)
+    return original_result.returncode, transformed_result.returncode, stats
+
+
+def test_virtualized_vzeroupper_preserves_low_lanes_and_clears_upper_lanes(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    original_exit, transformed_exit, stats = _virtualize_source(tmp_path, _SOURCE, "vzeroupper")
     expect(stats["functions_virtualized"] >= 1)
-    expect(original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE)
+    expect(original_exit == transformed_exit == _EXPECTED_EXIT_CODE)
+
+
+def test_virtualized_vzeroall_clears_all_lanes(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    original_exit, transformed_exit, stats = _virtualize_source(tmp_path, _VZEROALL_SOURCE, "vzeroall")
+    expect(stats["functions_virtualized"] >= 1)
+    expect(original_exit == transformed_exit == _EXPECTED_EXIT_CODE)
