@@ -6,6 +6,7 @@ from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
+from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_packed_vex_arith_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
 from tests.utils.assertions import expect
@@ -51,6 +52,12 @@ def test_vex_256_immediate_shuffle_assembly_uses_native_immediate() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(18)))
 
     expect("vpshufd ymm0, ymm0, 27" in assembly)
+
+
+def test_vex128_packed_handler_commits_zeroed_ymm_upper_slot() -> None:
+    assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_paddd", "0xAA")
+
+    expect("pxor xmm2, xmm2" in assembly and "[rsp + r8 + 768]" in assembly)
 
 
 def test_vex_256_region_builds_a_real_blob() -> None:

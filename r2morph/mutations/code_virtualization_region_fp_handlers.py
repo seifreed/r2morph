@@ -97,6 +97,11 @@ def _store_ymm_to_frame(offset: str) -> str:
     )
 
 
+def _clear_ymm_upper_slot_asm(offset: str) -> str:
+    """Commit a VEX.128 destination's zeroed YMM upper half to its slot."""
+    return f"  pxor xmm2, xmm2\n  movups [rsp + {offset} + {_YMM_UPPER_SAVE_OFFSET}], xmm2\n"
+
+
 def _fp_packed_vex_256_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Run a VEX.256 packed operation while preserving full YMM state."""
     instruction = handler_key.split("_", 1)[1]
@@ -309,7 +314,8 @@ def _fp_vex_packed_shift_immediate_handler_asm(handler_key: str, key: str, field
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  v{instruction} xmm0, xmm0, {immediate}\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        "  add rsi, 4\n  jmp vm_dispatch\n"
+        + _clear_ymm_upper_slot_asm("r8")
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
@@ -342,7 +348,8 @@ def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
         f"  {instr} xmm0, xmm1\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        "  add rsi, 4\n  jmp vm_dispatch\n"
+        + _clear_ymm_upper_slot_asm("r8")
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
@@ -361,7 +368,8 @@ def _fp_vex_scalar_arith_handler_asm(handler_key: str, key: str, field_perm: int
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
         f"  v{operation}{suffix} xmm0, xmm0, xmm1\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        "  add rsi, 4\n  jmp vm_dispatch\n"
+        + _clear_ymm_upper_slot_asm("r8")
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
@@ -374,7 +382,8 @@ def _fp_vex_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) ->
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        "  add rsi, 3\n  jmp vm_dispatch\n"
+        + _clear_ymm_upper_slot_asm("r8")
+        + "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
 
