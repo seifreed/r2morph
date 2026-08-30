@@ -398,6 +398,11 @@ def _fp_vex_scalar_arith_handler_asm(
     suffix = "ss" if width == _DWORD_WIDTH_BITS else "sd"
     off = triple_offsets("dst", "src1", "src2", field_perm)
     clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
+    operation_asm = (
+        f"  sqrt{suffix} xmm1, xmm1\n  mov{suffix} xmm0, xmm1\n"
+        if operation == "sqrt"
+        else f"  v{operation}{suffix} xmm0, xmm0, xmm1\n"
+    )
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
@@ -405,8 +410,10 @@ def _fp_vex_scalar_arith_handler_asm(
         "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
-        f"  v{operation}{suffix} xmm0, xmm0, xmm1\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
+        + operation_asm
+        + f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        + clear_upper
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
