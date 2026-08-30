@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_packed_move,
     _decode_fp_vex_scalar_arith,
 )
+from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
 from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
@@ -181,6 +182,14 @@ def test_decode_vex128_float_xor_returns_three_operand_item() -> None:
 
 def test_decode_vex128_integer_xor_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpxor xmm2, xmm0, xmm1") == ("fppackedvex", "pxor", 2, 0, 1))
+
+
+def test_decode_vex128_byte_shuffle_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_extra("vpshufb xmm2, xmm0, xmm1") == ("fppackedvex", "pshufb", 2, 0, 1))
+
+
+def test_decode_vex256_byte_shuffle_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_extra("vpshufb ymm2, ymm0, ymm1") == ("fppackedvex256", "pshufb", 2, 0, 1))
 
 
 def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
