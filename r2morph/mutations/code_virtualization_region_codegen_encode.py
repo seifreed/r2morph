@@ -157,22 +157,36 @@ _FIXED_SIZE_GROUPS = {
     10: ("fppackedvex256memidx",),
 }
 _FIXED_ITEM_SIZES = {kind: size for size, kinds in _FIXED_SIZE_GROUPS.items() for kind in kinds}
+_IMMEDIATE_MEMORY_BASE_SIZES = {
+    "storei": 7,
+    "storeirip": 6,
+    "storeiidx": 9,
+    "storeiidxnb": 8,
+}
+_IMMEDIATE_MEMORY_WIDTH_INDEXES = {
+    "storei": 4,
+    "storeirip": 3,
+    "storeiidx": 6,
+    "storeiidxnb": 5,
+}
 
 
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
+    size: int | None = None
     if kind == "vpushi":
-        return 1 + (8 if item[2] == ARCH_BITS_64 else 4)
-    if kind in ("op", "opmba", "opsynth"):
+        size = 1 + (8 if item[2] == ARCH_BITS_64 else 4)
+    elif kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
-        if op.is_immediate:
-            return 2 + (8 if op.width == ARCH_BITS_64 else 4)
-        return 3
-    if kind in ("cmp", "test"):
-        return (2 + item[4] // 8) if item[3] else 3
-    if kind in ("tlsload", "tlsstore"):
-        return 6 if item[3] is None else 7
-    return _FIXED_ITEM_SIZES.get(kind, 1)
+        size = 2 + (8 if op.width == ARCH_BITS_64 else 4) if op.is_immediate else 3
+    elif kind in ("cmp", "test"):
+        size = (2 + item[4] // 8) if item[3] else 3
+    elif kind in ("tlsload", "tlsstore"):
+        size = 6 if item[3] is None else 7
+    elif kind in _IMMEDIATE_MEMORY_BASE_SIZES:
+        width_index = _IMMEDIATE_MEMORY_WIDTH_INDEXES[kind]
+        size = _IMMEDIATE_MEMORY_BASE_SIZES[kind] + (8 if item[width_index] == ARCH_BITS_64 else 4)
+    return size if size is not None else _FIXED_ITEM_SIZES.get(kind, 1)
 
 
 def build_ijmp_targets(region: Region) -> list[tuple[int, int]]:

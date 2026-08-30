@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.mutations.code_virtualization_engine import REGISTER32_INDEX, REGISTER_INDEX
+from r2morph.mutations.code_virtualization_engine import (
+    REGISTER32_INDEX,
+    REGISTER_INDEX,
+    immediate_fits_width,
+)
 from r2morph.mutations.code_virtualization_region_decoders import (
     _BYTE_WIDTH_BITS,
     _INSTRUCTION_PART_COUNT,
@@ -129,6 +133,66 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     if mem_width is not None and mem_width != reg_width:
         return None
     return (kind, reg_slot, base_slot, disp, reg_width)
+
+
+def _decode_memory_immediate(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode ``mov [address], immediate`` for direct, RIP-relative, and indexed addresses."""
+    parts = text.split(None, 1)
+    result: tuple[Any, ...] | None = None
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == "mov" and "," in parts[1]:
+        memory_text, immediate_text = (token.strip() for token in parts[1].split(",", 1))
+        if "[" in memory_text and "[" not in immediate_text:
+            direct = _parse_mem_operand(memory_text)
+            if direct is not None:
+                base_slot, displacement, width = direct
+                if width is not None:
+                    result = _memory_immediate_item("storei", immediate_text, width, (base_slot, displacement))
+            else:
+                rip_relative = _parse_riprel_operand(memory_text, insn_addr, insn_size)
+                if rip_relative is not None:
+                    target, width = rip_relative
+                    if width is not None:
+                        result = _memory_immediate_item("storeirip", immediate_text, width, target)
+                else:
+                    width = _explicit_memory_width(memory_text)
+                    indexed = _parse_indexed_operand(memory_text, base_optional=True)
+                    if width is not None and indexed is not None:
+                        base_slot, index_slot, shift, displacement = indexed
+                        if base_slot < 0:
+                            operands: Any = (index_slot, shift, displacement)
+                            kind = "storeiidxnb"
+                        else:
+                            operands = (base_slot, index_slot, shift, displacement)
+                            kind = "storeiidx"
+                        result = _memory_immediate_item(kind, immediate_text, width, operands)
+    return result
+
+
+def _explicit_memory_width(text: str) -> int | None:
+    head = text.strip().lower().split(None, 1)
+    return _INDEXED_MEMORY_WIDTHS.get(head[0]) if head else None
+
+
+def _memory_immediate_item(kind: str, text: str, width: int, operands: Any) -> tuple[Any, ...] | None:
+    try:
+        value = int(text, 0)
+    except ValueError:
+        return None
+    if width == _QWORD_WIDTH_BITS and value >= 1 << 63:
+        value -= 1 << 64
+    accepted_width = 32 if width == _QWORD_WIDTH_BITS else width
+    if not immediate_fits_width(value, accepted_width):
+        return None
+    if kind == "storei":
+        base_slot, displacement = operands
+        return kind, value, base_slot, displacement, width
+    if kind == "storeirip":
+        return kind, value, operands, width
+    if kind == "storeiidxnb":
+        index_slot, shift, displacement = operands
+        return kind, value, index_slot, shift, displacement, width
+    base_slot, index_slot, shift, displacement = operands
+    return kind, value, base_slot, index_slot, shift, displacement, width
 
 
 def _decode_atomic_memory_exchange(text: str, mnemonic: str, item_kind: str, locked: bool) -> tuple[Any, ...] | None:

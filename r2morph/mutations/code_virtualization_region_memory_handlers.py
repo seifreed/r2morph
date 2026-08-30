@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from r2morph.mutations.code_virtualization_fold import addr_fold, arith_fold
-from r2morph.mutations.code_virtualization_layout import idx_offsets, mem_offsets
+from r2morph.mutations.code_virtualization_layout import (
+    idx_immediate_offsets,
+    idx_offsets,
+    mem_immediate_offsets,
+    mem_offsets,
+)
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
 from r2morph.mutations.code_virtualization_region_handlers import (
@@ -15,6 +20,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _QWORD_WIDTH_BITS,
     _WORD_WIDTH_BITS,
     _unmask_dword,
+    _unmask_qword,
 )
 
 
@@ -36,6 +42,16 @@ class AtomicMemoryOperationConfig:
     key: str
     key_dword: str
     slot: tuple[int, ...]
+    field_perm: int = 0
+    addr_variant: int = 0
+
+
+@dataclass(frozen=True)
+class MemoryImmediateOperationConfig:
+    handler_key: str
+    key: str
+    key_qword: str
+    key_dword: str
     field_perm: int = 0
     addr_variant: int = 0
 
@@ -86,8 +102,8 @@ def _memory_result_store_asm(width: int, address: str) -> str:
     return f"  mov {size} ptr {address}, {value}\n"
 
 
-def _mem_address_asm(
-    riprel: bool, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+def _mem_address_body(
+    riprel: bool, key: str, key_dword: str, offsets: dict[str, int], addr_variant: int
 ) -> tuple[str, int]:
     """Shared head of every memory handler: decrypt the register slot into r8
     and compute the effective address into r10.
@@ -98,23 +114,28 @@ def _mem_address_asm(
     (the encoder emits them in the same order), so the layout differs per build.
     Returns the assembly and the number of bytes to advance rsi by.
     """
-    off = mem_offsets(riprel, field_perm)
-    body = f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    body = f"  movzx r8d, byte ptr [rsi+{offsets['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if riprel:
         return (
             body
-            + f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            + f"  mov eax, dword ptr [rsi+{offsets['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             + _unmask_dword("r11")
             + "  movsxd rax, eax\n  mov r10, r15\n"
             + addr_fold("rax", "rcx", 0, addr_variant)
         ), 6
     return (
-        body + f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        body + f"  movzx r9d, byte ptr [rsi+{offsets['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  mov eax, dword ptr [rsi+{offsets['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
         + _unmask_dword("r11")
         + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r9*8]\n"
         + addr_fold("rax", "rcx", 0, addr_variant)
     ), 7
+
+
+def _mem_address_asm(
+    riprel: bool, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> tuple[str, int]:
+    return _mem_address_body(riprel, key, key_dword, mem_offsets(riprel, field_perm), addr_variant)
 
 
 def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
@@ -134,6 +155,40 @@ def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     else:
         body += _memory_store_slot_asm(width)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _memory_immediate_handler_asm(config: MemoryImmediateOperationConfig) -> str:
+    """Store a sign/zero-preserving immediate through a decoded effective address."""
+    kind, width_text = config.handler_key.rsplit("_", 1)
+    width = int(width_text)
+    immediate_size = 8 if width == _QWORD_WIDTH_BITS else 4
+    if kind == "storeirip":
+        offsets = mem_immediate_offsets(True, width, config.field_perm)
+        body, advance = _mem_address_body(True, config.key, config.key_dword, offsets, config.addr_variant)
+    elif kind == "storeiidxnb":
+        offsets = idx_immediate_offsets(True, width, config.field_perm)
+        body, advance = _indexed_address_body(config.key, config.key_dword, offsets, config.addr_variant, False)
+    elif kind == "storeiidx":
+        offsets = idx_immediate_offsets(False, width, config.field_perm)
+        body, advance = _indexed_address_body(config.key, config.key_dword, offsets, config.addr_variant, True)
+    else:
+        offsets = mem_immediate_offsets(False, width, config.field_perm)
+        body, advance = _mem_address_body(False, config.key, config.key_dword, offsets, config.addr_variant)
+
+    if width == _QWORD_WIDTH_BITS:
+        body += (
+            f"  mov rax, qword ptr [rsi+{offsets['imm']}]\n  mov r11, {config.key_qword}\n"
+            "  xor rax, r11\n" + _unmask_qword("r11", "rcx") + "  mov qword ptr [r10], rax\n"
+        )
+    else:
+        body += (
+            f"  mov eax, dword ptr [rsi+{offsets['imm']}]\n  mov r11d, {config.key_dword}\n"
+            "  xor eax, r11d\n" + _unmask_dword("r11")
+        )
+        value = "eax" if width == _DWORD_WIDTH_BITS else "ax" if width == _WORD_WIDTH_BITS else "al"
+        size = "dword" if width == _DWORD_WIDTH_BITS else "word" if width == _WORD_WIDTH_BITS else "byte"
+        body += f"  mov {size} ptr [r10], {value}\n"
+    return body + f"  add rsi, {advance + immediate_size}\n  jmp vm_dispatch\n"
 
 
 def _xchg_memory_handler_asm(
@@ -396,7 +451,9 @@ def _movx_indexed_handler_asm(
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
-def _indexed_address_asm(key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> tuple[str, int]:
+def _indexed_address_body(
+    key: str, key_dword: str, offsets: dict[str, int], addr_variant: int, has_base: bool
+) -> tuple[str, int]:
     """Shared head of every indexed memory handler: decrypt the register slot
     into r8 and compute ``base + index*scale + disp`` into r10.
 
@@ -405,22 +462,23 @@ def _indexed_address_asm(key: str, key_dword: str, field_perm: int = 0, addr_var
     build's permuted offsets (the encoder emits them in the same order). Returns
     the assembly and the rsi advance (the bytecode item width).
     """
-    off = idx_offsets(False, field_perm)
+    base = f"  movzx r9d, byte ptr [rsi+{offsets['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n" if has_base else ""
+    tail = "  mov r11, qword ptr [rsp+r9*8]\n" + addr_fold("r11", "rcx", 0, addr_variant) if has_base else ""
     return (
-        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
-        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        f"  movzx r8d, byte ptr [rsi+{offsets['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        + base
+        + f"  movzx r11d, byte ptr [rsi+{offsets['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+{offsets['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+{offsets['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
         + _unmask_dword("r10")
         + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
-        # Fold the base with MBA too (r11 holds the base value), so neither the
-        # base nor the displacement add is a literal add. rcx and r11 are free
-        # here (the index slot and scale were already consumed).
-        "  mov r11, qword ptr [rsp+r9*8]\n"
-        + addr_fold("r11", "rcx", 0, addr_variant)
+        + tail
         + addr_fold("rax", "rcx", 0, addr_variant)
-    ), 9
+    ), (9 if has_base else 8)
+
+
+def _indexed_address_asm(key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> tuple[str, int]:
+    return _indexed_address_body(key, key_dword, idx_offsets(False, field_perm), addr_variant, True)
 
 
 def _indexed_address_nobase_asm(
@@ -429,16 +487,7 @@ def _indexed_address_nobase_asm(
     """Like :func:`_indexed_address_asm` but with no base register: the address is
     ``index*scale + disp``, computed into r10 (r8 holds the decrypted register
     field). The item has no base-slot byte, so the rsi advance is 8."""
-    off = idx_offsets(True, field_perm)
-    return (
-        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
-        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
-        + _unmask_dword("r10")
-        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
-        + addr_fold("rax", "rcx", 0, addr_variant)
-    ), 8
+    return _indexed_address_body(key, key_dword, idx_offsets(True, field_perm), addr_variant, False)
 
 
 def _lea_store_asm(width: int, advance: int) -> str:

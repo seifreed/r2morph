@@ -6,10 +6,13 @@ import struct
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp, pack_immediate
 from r2morph.mutations.code_virtualization_layout import (
+    idx_immediate_permuted_fields,
     idx_permuted_fields,
     imul3_permuted_fields,
+    mem_immediate_permuted_fields,
     mem_permuted_fields,
     op_permuted_fields,
     pair_permuted_fields,
@@ -104,6 +107,31 @@ class RegionEncoder:
         if base_slot is not None:
             fields["base"] = bytes([base_slot])
         for name, _size in idx_permuted_fields(base_slot is None, self.scheme.field_perm):
+            self.plain.extend(byte ^ position for byte in fields[name])
+
+    def _mem_immediate(self, position: int, base_slot: int | None, disp: int, value: int, width: int) -> None:
+        fields = {
+            "reg": b"\x00",
+            "disp": struct.pack("<i", disp),
+            "imm": pack_immediate(value, ARCH_BITS_64 if width == ARCH_BITS_64 else 32),
+        }
+        if base_slot is not None:
+            fields["base"] = bytes([base_slot])
+        for name, _size in mem_immediate_permuted_fields(base_slot is None, width, self.scheme.field_perm):
+            self.plain.extend(byte ^ position for byte in fields[name])
+
+    def _idx_immediate(self, position: int, operands: tuple[int | None, int, int, int, int, int]) -> None:
+        base_slot, index_slot, shift, disp, value, width = operands
+        fields = {
+            "reg": b"\x00",
+            "index": bytes([index_slot]),
+            "shift": bytes([shift]),
+            "disp": struct.pack("<i", disp),
+            "imm": pack_immediate(value, ARCH_BITS_64 if width == ARCH_BITS_64 else 32),
+        }
+        if base_slot is not None:
+            fields["base"] = bytes([base_slot])
+        for name, _size in idx_immediate_permuted_fields(base_slot is None, width, self.scheme.field_perm):
             self.plain.extend(byte ^ position for byte in fields[name])
 
     def _mem_with_source(self, position: int, destination: int, source: int, base: int | None, disp: int) -> None:
@@ -372,6 +400,8 @@ class RegionEncoder:
         self._idx(self._opcode(item), operands)
 
     def _emit_gp_memory(self, item: RegionItem) -> bool:
+        if self._emit_memory_immediate(item):
+            return True
         kind = item[0]
         if kind in ("load", "store"):
             _, reg, base, disp, _width = item
@@ -381,12 +411,8 @@ class RegionEncoder:
         elif kind in ("riprel_load", "riprel_store"):
             _, reg, target, _width = item
             self._gp_rip(item, reg, target)
-        elif kind == "cmpmem":
-            _, reg, base, disp, _width = item
-            self._gp_mem(item, reg, base, disp)
-        elif kind == "cmpriprel":
-            _, reg, target, _width = item
-            self._gp_rip(item, reg, target)
+        elif kind in ("cmpmem", "cmpriprel"):
+            self._emit_compare_memory(item)
         elif kind in ("opmem", "lea"):
             reg, base, disp = item[2], item[3], item[4]
             self._gp_mem(item, reg, base, disp)
@@ -404,6 +430,35 @@ class RegionEncoder:
         elif kind == "opmemidx":
             _, _mnemonic, reg, base, index, shift, disp, _width = item
             self._gp_idx(item, (reg, base, index, shift, disp))
+        else:
+            return False
+        return True
+
+    def _emit_compare_memory(self, item: RegionItem) -> None:
+        if item[0] == "cmpmem":
+            _, reg, base, disp, _width = item
+            self._gp_mem(item, reg, base, disp)
+        else:
+            _, reg, target, _width = item
+            self._gp_rip(item, reg, target)
+
+    def _emit_memory_immediate(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "storei":
+            _, value, base, disp, width = item
+            self._mem_immediate(self._opcode(item), self.slot_of[base], disp, value, width)
+        elif kind == "storeirip":
+            _, value, target, width = item
+            self._mem_immediate(self._opcode(item), None, target - self.bytecode_base, value, width)
+        elif kind == "storeiidx":
+            _, value, base, index, shift, disp, width = item
+            self._idx_immediate(
+                self._opcode(item),
+                (self.slot_of[base], self.slot_of[index], shift, disp, value, width),
+            )
+        elif kind == "storeiidxnb":
+            _, value, index, shift, disp, width = item
+            self._idx_immediate(self._opcode(item), (None, self.slot_of[index], shift, disp, value, width))
         else:
             return False
         return True

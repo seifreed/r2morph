@@ -22,6 +22,7 @@ only the byte offsets, never how a byte is decrypted.
 from __future__ import annotations
 
 import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64
 
 # (field name, byte size). The opcode is implicit at offset 0; these are operands.
 Field = tuple[str, int]
@@ -139,6 +140,17 @@ def mem_offsets(riprel: bool, field_perm: int) -> dict[str, int]:
     return _offsets(mem_permuted_fields(riprel, field_perm))
 
 
+def mem_immediate_permuted_fields(riprel: bool, width: int, field_perm: int) -> list[Field]:
+    """Return memory-store fields with a masked immediate appended."""
+    immediate_size = 8 if width == ARCH_BITS_64 else 4
+    return _permute([*_mem_fields(riprel), ("imm", immediate_size)], field_perm)
+
+
+def mem_immediate_offsets(riprel: bool, width: int, field_perm: int) -> dict[str, int]:
+    """Byte offsets for an immediate memory store."""
+    return _offsets(mem_immediate_permuted_fields(riprel, width, field_perm))
+
+
 def shift_permuted_fields(field_perm: int) -> list[Field]:
     """Shift operand fields (slot, count) in this build's order."""
     return _permute([("slot", 1), ("count", 1)], field_perm)
@@ -176,3 +188,14 @@ def idx_permuted_fields(nobase: bool, field_perm: int) -> list[Field]:
 def idx_offsets(nobase: bool, field_perm: int) -> dict[str, int]:
     """Byte offset of each scaled-index operand field for this build."""
     return _offsets(idx_permuted_fields(nobase, field_perm))
+
+
+def idx_immediate_permuted_fields(nobase: bool, width: int, field_perm: int) -> list[Field]:
+    """Return scaled-index store fields with a masked immediate appended."""
+    immediate_size = 8 if width == ARCH_BITS_64 else 4
+    return _permute([*_idx_fields(nobase), ("imm", immediate_size)], field_perm)
+
+
+def idx_immediate_offsets(nobase: bool, width: int, field_perm: int) -> dict[str, int]:
+    """Byte offsets for an immediate scaled-index memory store."""
+    return _offsets(idx_immediate_permuted_fields(nobase, width, field_perm))

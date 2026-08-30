@@ -74,6 +74,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
     AtomicMemoryOperationConfig,
+    MemoryImmediateOperationConfig,
     MemoryOperationConfig,
     _cmp_memory_handler_asm,
     _cmpxchg_memory_handler_asm,
@@ -81,6 +82,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
     _memory_handler_asm,
+    _memory_immediate_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
     _op_mem_indexed_handler_asm,
@@ -172,6 +174,7 @@ class HandlerBodyRouter:
             self._integer_misc,
             self._tls_memory,
             self._atomic_memory,
+            self._memory_immediate,
             self._memory,
             self._fp_immediate,
             self._fp_vex,
@@ -483,6 +486,20 @@ class HandlerBodyRouter:
         elif key.startswith(("load_", "store_")):
             body = _memory_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
+
+    def _memory_immediate(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if not key.startswith(("storei_", "storeirip_", "storeiidx_", "storeiidxnb_")):
+            return None
+        return _memory_immediate_handler_asm(
+            MemoryImmediateOperationConfig(
+                key,
+                self.context.key,
+                self.context.key_qword,
+                self.context.key_dword,
+                self.context.field_perm,
+                variants[4],
+            )
+        )
 
     def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         if key.startswith("cmpxchgmemidx_"):
