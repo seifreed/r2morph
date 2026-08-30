@@ -61,7 +61,7 @@ def test_virtualized_internal_ret_immediate_preserves_exit_code(tmp_path: Path) 
         pytest.skip("fixture requires gcc")
     original = _compile_fixture(tmp_path)
     mutated = tmp_path / "ret_immediate_mutated"
-    shutil.copyfile(original, mutated)
+    shutil.copy2(original, mutated)
     original_result = run_command([original], timeout=30)
 
     binary = Binary(mutated, writable=True)
