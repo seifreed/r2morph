@@ -83,7 +83,7 @@ output:
         f"failed to compile the packed indexed engine fixture: {compile_result.stderr}",
     )
     original_result = run_command([original], timeout=30)
-    shutil.copyfile(original, mutated)
+    shutil.copy2(original, mutated)
 
     binary = Binary(mutated, writable=True)
     binary.open()
