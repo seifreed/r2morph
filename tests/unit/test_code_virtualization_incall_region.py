@@ -101,6 +101,14 @@ def test_extract_region_converts_every_ret_to_vret_with_an_in_function_call() ->
     expect(not (any(item[0] == "exit" for item in region.instructions)))
 
 
+def test_extract_region_preserves_ret_immediate_for_internal_return() -> None:
+    instructions = _in_function_call_instructions()
+    instructions[-1] = _insn(0x100C, 2, "ret", "ret 0x10")
+    region = extract_region(instructions, randomness.Random(1))
+    expect(region is not None)
+    expect(("vret", 0x100C, 16) in region.instructions)
+
+
 def test_extract_region_in_function_call_assembles_to_real_bytes() -> None:
     """The lowered region builds a full interpreter blob end to end."""
     region = extract_region(_in_function_call_instructions(), randomness.Random(1))

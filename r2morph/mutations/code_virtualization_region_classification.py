@@ -81,6 +81,24 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 
 _DIRECT_REGISTER_CALL_PART_COUNT = 2
+_MAX_RET_CLEANUP = 0xFFFF
+
+
+def _decode_ret_cleanup(text: str) -> int | None:
+    """Return the immediate stack cleanup encoded by ret, if valid."""
+    parts = text.strip().lower().split()
+    if not parts or parts[0] not in ("ret", "retn"):
+        return None
+    if len(parts) == 1:
+        return 0
+    if len(parts) != _DIRECT_REGISTER_CALL_PART_COUNT:
+        return None
+    try:
+        cleanup = int(parts[1], 0)
+    except ValueError:
+        return None
+    return cleanup if 0 <= cleanup <= _MAX_RET_CLEANUP else None
+
 
 # r2 branch mnemonic -> the native conditional jump the interpreter emits.
 _CONDITION: dict[str, str] = {

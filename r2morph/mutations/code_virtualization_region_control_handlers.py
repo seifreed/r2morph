@@ -440,6 +440,7 @@ class VRetHandlerConfig:
     bytecode_len: int
     reload_seq: str
     frame_size: int
+    stack_cleanup: int = 0
 
 
 @dataclass(frozen=True)
@@ -465,11 +466,12 @@ def _vret_handler_asm(config: VRetHandlerConfig) -> str:
     the real rsp, and return natively to ``ret_addr``. The bytecode range is a build-
     known invariant: a resume vIP always lands in the injected blob, and the floor cell
     and every genuine value below it never do."""
+    cleanup = f"  add r10, {config.stack_cleanup}\n" if config.stack_cleanup else ""
     return (
         f"  mov r10, qword ptr [rsp+{config.rsp_off}]\n  mov r9, qword ptr [r10]\n"
         f"  mov r11, r9\n  sub r11, r15\n  cmp r11, {config.bytecode_len}\n"
         f"  jae vret_native_{config.index}\n"
-        f"  add r10, 8\n  mov qword ptr [rsp+{config.rsp_off}], r10\n  mov rsi, r9\n  jmp vm_dispatch\n"
+        f"  add r10, 8\n" + cleanup + f"  mov qword ptr [rsp+{config.rsp_off}], r10\n  mov rsi, r9\n  jmp vm_dispatch\n"
         f"vret_native_{config.index}:\n{config.reload_seq}  add rsp, {config.frame_size}\n"
         f"  jmp {hex(config.ret_addr)}\n"
     )

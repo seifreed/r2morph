@@ -22,6 +22,7 @@ from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_control_handlers import VRetHandlerConfig, _vret_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
@@ -56,6 +57,10 @@ def test_op_key_vret_is_keyed_per_return_address() -> None:
     expect(_op_key(("vret", _RET_ADDR)) == f"vret_{_RET_ADDR}")
 
 
+def test_op_key_vret_includes_immediate_stack_cleanup() -> None:
+    expect(_op_key(("vret", _RET_ADDR, 16)) == f"vret_{_RET_ADDR}_16")
+
+
 def test_item_size_vcall_is_opcode_plus_four_byte_offset() -> None:
     # Same 5-byte layout as a jmp: the resume vIP is rsi + 5.
     expect(_item_size(("vcall", 2)) == _EXPECTED_ITEM_SIZE_VCALL_2_5)
@@ -83,8 +88,26 @@ def test_interpreter_emits_the_vret_bytecode_range_discriminator() -> None:
     expect("sub r11, r15" in asm and "vret_native_" in asm)
 
 
+def test_vret_handler_applies_callee_stack_cleanup_on_internal_return() -> None:
+    config = VRetHandlerConfig(0, _RET_ADDR, 0x90, 0x100, "", 0x300, 16)
+    assembly = _vret_handler_asm(config)
+    expect("add r10, 16" in assembly)
+
+
 def test_incall_region_assembles_to_real_bytes() -> None:
     """A region using vcall and vret assembles cleanly through the full blob build."""
     region = _incall_region()
+    scheme = build_region_scheme(region, randomness.Random(7))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
+
+
+def test_incall_region_with_ret_immediate_assembles_to_real_bytes() -> None:
+    region = Region(
+        instructions=[("vcall", 2), ("vret", _RET_ADDR), ("nop",), ("vret", _RET_ADDR, 16)],
+        exit_vaddr=_RET_ADDR,
+        entry_vaddr=0x1000,
+        op_keys={"vcall", "vret_8192", "vret_8192_16", "nop"},
+        body_ranges=[(0x1000, 5), (0x1005, 1), (0x1006, 1), (0x1007, 2)],
+    )
     scheme = build_region_scheme(region, randomness.Random(7))
     expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

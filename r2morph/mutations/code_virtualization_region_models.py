@@ -233,6 +233,7 @@ _CALL_KEY_LENGTHS = {
     "callmemidx": 6,
     "callmemidxnb": 5,
 }
+_VRET_CLEANUP_INDEX = 2
 
 
 def _call_key(item: tuple[Any, ...]) -> str:
@@ -261,6 +262,8 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
 
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind: str = item[0]
+    if kind == "vret" and len(item) > _VRET_CLEANUP_INDEX and int(item[_VRET_CLEANUP_INDEX]) != 0:
+        return f"vret_{item[1]}_{item[2]}"
     if kind in _CALL_KEY_LENGTHS:
         return _call_key(item)
     simple_key = _simple_op_key(item)

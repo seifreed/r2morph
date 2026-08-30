@@ -116,6 +116,8 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vstorerip_handler_asm,
 )
 
+_VRET_CLEANUP_INDEX = 2
+
 _FP_MOVE_HANDLERS = {
     "fpmovd": _fp_movd_handler_asm,
     "fpmov": _fp_move_handler_asm,
@@ -286,7 +288,9 @@ class HandlerBodyRouter:
         elif key == "nop":
             body = "  add rsi, 1\n  jmp vm_dispatch\n"
         elif key.startswith("vret_"):
-            ret_addr = int(key.split("_", 1)[1])
+            parts = key.split("_")
+            ret_addr = int(parts[1])
+            stack_cleanup = int(parts[_VRET_CLEANUP_INDEX]) if len(parts) > _VRET_CLEANUP_INDEX else 0
             body = _vret_handler_asm(
                 VRetHandlerConfig(
                     index,
@@ -295,6 +299,7 @@ class HandlerBodyRouter:
                     self.context.bytecode_len,
                     self.context.reload_seq,
                     self.context.frame_size,
+                    stack_cleanup,
                 )
             )
         elif key.startswith("exit_"):

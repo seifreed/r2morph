@@ -359,6 +359,14 @@ def _inject_junk_movs(
 def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
     if not instructions:
         return None
+    ret_cleanup: dict[int, int] = {}
+    for instruction in instructions:
+        if instruction.get("type") != "ret":
+            continue
+        cleanup = classification._decode_ret_cleanup(str(instruction.get("opcode", "")))
+        if cleanup is None:
+            return None
+        ret_cleanup[int(instruction["addr"])] = cleanup
     exit_addrs = sorted(
         {
             instruction["addr"]
@@ -389,7 +397,10 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
         if item[0] not in ("jmp", "ijmp") and next_address in exit_set:
             items.append(["jmp", next_address])
     for address in exit_addrs:
-        items.append(["exit", address])
+        if address in ret_cleanup:
+            items.append(["exit", address, ret_cleanup[address]])
+        else:
+            items.append(["exit", address])
     return _RegionBuild(items, item_index_of, exit_addrs, ret_addrs, body)
 
 
