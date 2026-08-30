@@ -17,20 +17,14 @@ _EXPECTED_EXIT_CODE = 42
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 2
 
 _SOURCE = r"""
-__attribute__((noinline)) static float scalar_single(float value) {
-    float result;
-    __asm__ volatile("vsqrtss %2, %1, %0" : "=x"(result) : "x"(value), "x"(value));
-    return result;
-}
-
-__attribute__((noinline)) static double scalar_double(double value) {
-    double result;
-    __asm__ volatile("vsqrtsd %2, %1, %0" : "=x"(result) : "x"(value), "x"(value));
-    return result;
-}
-
 int main(void) {
-    return scalar_single(16.0f) == 4.0f && scalar_double(81.0) == 9.0 ? 42 : 1;
+    float single_input = 16.0f;
+    double double_input = 81.0;
+    float single_result;
+    double double_result;
+    __asm__ volatile("vsqrtss %2, %1, %0" : "=x"(single_result) : "x"(single_input), "x"(single_input));
+    __asm__ volatile("vsqrtsd %2, %1, %0" : "=x"(double_result) : "x"(double_input), "x"(double_input));
+    return single_result == 4.0f && double_result == 9.0 ? 42 : 1;
 }
 """
 
