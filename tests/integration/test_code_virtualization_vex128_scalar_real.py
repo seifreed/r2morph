@@ -34,7 +34,10 @@ def test_vex128_scalar_fixture_original_returns_expected_code() -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native VEX execution requires an x86-64 host")
     result = run_command([_FIXTURE])
-    expect(result.returncode == _EXPECTED_EXIT_CODE)
+    expect(
+        result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX.128 scalar fixture returned {result.returncode}, expected {_EXPECTED_EXIT_CODE}",
+    )
 
 
 def test_vex128_scalar_fixture_virtualization_applies(tmp_path: Path) -> None:
@@ -50,4 +53,7 @@ def test_vex128_scalar_fixture_virtualization_preserves_result(tmp_path: Path) -
     _mutate_fixture(mutated)
 
     result = run_command([mutated])
-    expect(result.returncode == _EXPECTED_EXIT_CODE)
+    expect(
+        result.returncode == _EXPECTED_EXIT_CODE,
+        f"virtualized VEX.128 scalar fixture returned {result.returncode}, expected {_EXPECTED_EXIT_CODE}",
+    )

@@ -45,4 +45,7 @@ def test_vex128_mutation_preserves_native_exit_code(tmp_path: Path) -> None:
         pytest.skip("native VEX execution requires an x86-64 host")
     mutated, _instructions_virtualized, _compute_changed = _mutate_fixture(tmp_path)
     result = run_command([mutated])
-    expect(result.returncode == _EXPECTED_EXIT_CODE)
+    expect(
+        result.returncode == _EXPECTED_EXIT_CODE,
+        f"virtualized VEX.128 fixture returned {result.returncode}, expected {_EXPECTED_EXIT_CODE}",
+    )

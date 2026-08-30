@@ -79,5 +79,6 @@ def test_virtualized_vex256_shuffle_preserves_native_result(tmp_path: Path) -> N
     expect(
         stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
-        f"VEX.256 shuffle virtualization changed the result: {stats=}",
+        f"VEX.256 shuffle returned original={original_result.returncode}, "
+        f"transformed={transformed_result.returncode}: {stats=}",
     )
