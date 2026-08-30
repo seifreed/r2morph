@@ -120,6 +120,7 @@ _MEM_OP_KINDS: tuple[str, ...] = (
     + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
     + _MEM_MOVX_KINDS
     + tuple(f"{kind}idx" for kind in _MEM_IDX_KINDS)
+    + tuple(f"{kind}idxnb" for kind in ("load", "store"))
 )
 # Scalar-FP memory moves: ``movsd``/``movss`` between an xmm register and
 # ``[base+disp]``. They reuse the (kind, is_immediate, width) key shape and the
@@ -288,13 +289,7 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpunpcklwd",
     "vpshufb",
 )
-_FP_SCALAR_VEX_ARITH_KINDS: tuple[str, ...] = (
-    "fparithvex",
-    "fparithvexmem",
-    "fparithvexmemrip",
-    "fparithvexmemidx",
-    "fparithvexmemidxnb",
-)
+_FP_SCALAR_VEX_ARITH_KINDS: tuple[str, ...] = ("fparithvex",)
 _FP_SCALAR_VEX_OPERATIONS: tuple[str, ...] = (
     "vaddss",
     "vsubss",

@@ -194,6 +194,12 @@ class _BytecodeEncoder:
         if op.kind.endswith("rip"):
             fields = self._rip_fields(op.reg_index, op.disp, permute_register=True)
             order = mem_permuted_fields(True, self.field_perm)
+        elif op.kind.endswith("idxnb"):
+            fields = self._indexed_no_base_fields(
+                (op.reg_index, op.index_index, op.scale, op.disp),
+                permute_register=True,
+            )
+            order = idx_permuted_fields(True, self.field_perm)
         elif op.kind.endswith("idx"):
             fields = self._indexed_fields(
                 (op.reg_index, op.base_index, op.index_index, op.scale, op.disp),
@@ -254,10 +260,12 @@ class _BytecodeEncoder:
     def _indexed_no_base_fields(
         self,
         operands: tuple[int, int, int, int],
+        *,
+        permute_register: bool = False,
     ) -> dict[str, bytes]:
         register, index, scale, disp = operands
         fields = {
-            "reg": bytes([register]),
+            "reg": bytes([self.slot_of[register] if permute_register else register]),
             "index": bytes([self.slot_of[index]]),
             "shift": bytes([scale]),
             "disp": struct.pack("<i", disp),

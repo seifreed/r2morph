@@ -8,8 +8,10 @@ the lowering on the real lifter (no mocks, no binary).
 
 from __future__ import annotations
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization import _decode_run_item
-from r2morph.mutations.code_virtualization_engine_models import VirtualizedMemOp
+from r2morph.mutations.code_virtualization_engine import build_vm_blob, build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress, VirtualizedMemOp
 from r2morph.mutations.code_virtualization_region import _lower_arith_to_microops
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_memory_decoders import _decode_memory_mov_indexed
@@ -17,6 +19,8 @@ from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
 _EXPECTED_ITEM_SIZE_VSTOREIDX_1_2_2_0_64_9 = 9
+_ENGINE_BLOB_ADDRESS = 0x500000
+_ENGINE_CONTINUATION_ADDRESS = 0x401000
 
 
 def test_decode_indexed_mov_load_returns_loadidx_with_reg_slot_and_width() -> None:
@@ -51,12 +55,40 @@ def test_decode_no_base_indexed_mov_load_returns_loadidxnb() -> None:
     expect(_decode_memory_mov_indexed("mov eax, [rdx*4 + 16]") == ("loadidxnb", 0, 2, 2, 16, 32))
 
 
-def test_linear_engine_no_base_indexed_mov_load_is_rejected() -> None:
-    expect(_decode_run_item("mov eax, [rdx*4 + 16]") is None)
+def test_linear_engine_no_base_indexed_mov_load_returns_memory_item() -> None:
+    item = _decode_run_item("mov eax, [rdx*4 + 16]")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.index_index, item.scale, item.disp, item.width)
+        == ("loadidxnb", 0, -1, 2, 2, 16, 32)
+    )
 
 
 def test_decode_no_base_indexed_mov_store_returns_storeidxnb() -> None:
     expect(_decode_memory_mov_indexed("mov [rdx*8 + 16], rax") == ("storeidxnb", 0, 2, 3, 16, 64))
+
+
+def test_linear_engine_no_base_indexed_mov_store_returns_memory_item() -> None:
+    item = _decode_run_item("mov [rdx*8 + 16], rax")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.index_index, item.scale, item.disp, item.width)
+        == ("storeidxnb", 0, -1, 2, 3, 16, 64)
+    )
+
+
+def test_linear_engine_assembles_no_base_indexed_memory_operations() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260830))
+    blob = build_vm_blob(
+        [
+            VirtualizedMemOp("loadidxnb", 0, VirtualizedAddress(-1, 16, 2, 2), 32),
+            VirtualizedMemOp("storeidxnb", 0, VirtualizedAddress(-1, 24, 2, 3), 64),
+        ],
+        _ENGINE_BLOB_ADDRESS,
+        _ENGINE_CONTINUATION_ADDRESS,
+        scheme,
+    )
+    expect(blob is not None)
 
 
 def test_decode_indexed_mov_rejects_non_indexed_base_disp() -> None:

@@ -232,7 +232,8 @@ def _decode_indexed_gp_memory_item(text: str) -> VirtualizedMemOp | None:
         return None
     kind = indexed[0]
     if kind.endswith("nb"):
-        return None
+        _, register_slot, index_slot, shift, disp, width = indexed
+        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(-1, disp, index_slot, shift), width)
     _, register_slot, base_slot, index_slot, shift, disp, width = indexed
     return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp, index_slot, shift), width)
 

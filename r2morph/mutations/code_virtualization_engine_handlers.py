@@ -174,9 +174,23 @@ class EngineHandlerGenerator:
             + addr_fold("rax", "rcx", 0, self.isa.addr_variant)
         )
 
+    def _mem_idx_no_base_prologue(self) -> str:
+        off = idx_offsets(True, self.scheme.field_perm)
+        return (
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['index']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {self.key}\n  xor cl, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {self.key_dword}\n  xor eax, r10d\n"
+            f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n  shl r10, cl\n"
+            + addr_fold("rax", "rcx", 0, self.isa.addr_variant)
+        )
+
     def _mem_handler_body(self, kind: str, width: int, arith_variant: int) -> str:
         if kind.endswith("rip"):
             kind, body, advance = kind[: -len("rip")], self._mem_riprel_prologue(), 6
+        elif kind.endswith("idxnb"):
+            kind, body, advance = kind[: -len("idxnb")], self._mem_idx_no_base_prologue(), 8
         elif kind.endswith("idx"):
             kind, body, advance = kind[: -len("idx")], self._mem_idx_prologue(), 9
         else:
