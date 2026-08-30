@@ -233,19 +233,20 @@ class RegionEncoder:
 
     def _emit_fp_scalar(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind in ("fpload", "fpstore"):
-            _, xmm, base, disp, _width = item
-            self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
-        elif kind in ("fploadrip", "fpstorerip"):
-            _, xmm, target, _width = item
-            self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
-        elif kind in ("fploadidx", "fpstoreidx"):
-            _, xmm, base, index, shift, disp, _width = item
-            self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
-        elif kind in ("fploadidxnb", "fpstoreidxnb"):
-            _, xmm, index, shift, disp, _width = item
-            self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
-        elif kind == "fparith":
+        if kind in ("fpmovvexscalar", "fpmovvexscalar3"):
+            return self._emit_vex_scalar_register_move(item)
+        if kind in (
+            "fpload",
+            "fpstore",
+            "fploadrip",
+            "fpstorerip",
+            "fploadidx",
+            "fpstoreidx",
+            "fploadidxnb",
+            "fpstoreidxnb",
+        ):
+            return self._emit_fp_scalar_memory_move(item)
+        if kind == "fparith":
             self._pair(self._opcode(item), item[2], item[3])
         elif kind == "fparithvex":
             self._triple(self._opcode(item), item[2], item[3], item[4])
@@ -264,6 +265,33 @@ class RegionEncoder:
             return False
         return True
 
+    def _emit_fp_scalar_memory_move(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind in ("fpload", "fpstore"):
+            _, xmm, base, disp, _width = item
+            self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
+        elif kind in ("fploadrip", "fpstorerip"):
+            _, xmm, target, _width = item
+            self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
+        elif kind in ("fploadidx", "fpstoreidx"):
+            _, xmm, base, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind in ("fploadidxnb", "fpstoreidxnb"):
+            _, xmm, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
+        else:
+            return False
+        return True
+
+    def _emit_vex_scalar_register_move(self, item: RegionItem) -> bool:
+        kind = item[0]
+        position = self._opcode(item)
+        if kind == "fpmovvexscalar":
+            self._pair(position, item[2], item[3])
+        else:
+            self._triple(position, item[2], item[3], item[4])
+        return True
+
     def _emit_fp_shift_immediate(self, item: RegionItem) -> bool:
         kind = item[0]
         if kind not in ("fppackedimm", "fppackedveximm", "fppackedvex256imm"):
@@ -278,6 +306,8 @@ class RegionEncoder:
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:
+        if item[0].startswith(("fploadvex", "fpstorevex", "fpmovvexmem")):
+            return self._emit_vex_scalar_memory_move(item)
         if self._emit_fp_memory_move(item):
             return True
         return self._emit_fp_memory_arithmetic(item)
@@ -314,6 +344,39 @@ class RegionEncoder:
         elif kind in ("fploadvex256idxnb", "fpstorevex256idxnb"):
             _, ymm, index, shift, disp = item
             self._idx(self._opcode(item), (ymm, None, self.slot_of[index], shift, disp))
+        else:
+            return False
+        return True
+
+    def _emit_vex_scalar_memory_move(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind.startswith(("fploadvex", "fpstorevex")):
+            _, xmm, *operands, _width = item
+            if kind.endswith("idxnb"):
+                _, index, shift, disp = operands
+                self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
+            elif kind.endswith("idx"):
+                _, base, index, shift, disp = operands
+                self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
+            elif kind.endswith("rip"):
+                (target,) = operands
+                self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
+            else:
+                base, disp = operands
+                self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
+            return True
+        if kind == "fpmovvexmem":
+            _, destination, source, base, disp, _width = item
+            self._mem_with_source(self._opcode(item), destination, source, self.slot_of[base], disp)
+        elif kind == "fpmovvexmemrip":
+            _, destination, source, target, _width = item
+            self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)
+        elif kind == "fpmovvexmemidx":
+            _, destination, source, base, index, shift, disp, _width = item
+            self._idx_with_source(self._opcode(item), (destination, base, index, shift, disp), source)
+        elif kind == "fpmovvexmemidxnb":
+            _, destination, source, index, shift, disp, _width = item
+            self._idx_with_source(self._opcode(item), (destination, None, index, shift, disp), source)
         else:
             return False
         return True

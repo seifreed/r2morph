@@ -49,6 +49,9 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
+    _fp_vex_scalar_memory_move_handler_asm,
+    _fp_vex_scalar_merge_handler_asm,
+    _fp_vex_scalar_move_handler_asm,
     vzeroall_handler_asm,
     vzeroupper_handler_asm,
 )
@@ -643,7 +646,26 @@ class HandlerBodyRouter:
             )
         return body
 
+    def _fp_vex_scalar_move(self, key: str, variants: tuple[int, ...]) -> str | None:
+        if key.startswith(("fploadvex_", "fpstorevex_", "fpmovvexmem_")):
+            return _fp_vex_scalar_memory_move_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                VexMemoryHandlerConfig(self.context.field_perm, variants[4], self.context.has_ymm),
+            )
+        if key.startswith("fpmovvexscalar3_"):
+            return _fp_vex_scalar_merge_handler_asm(
+                key, self.context.key, self.context.field_perm, self.context.has_ymm
+            )
+        if key.startswith("fpmovvexscalar_"):
+            return _fp_vex_scalar_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+        return None
+
     def _fp_vex(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
+        scalar_move = self._fp_vex_scalar_move(key, _variants)
+        if scalar_move is not None:
+            return scalar_move
         body = None
         if key.startswith("fparithvexmem"):
             body = _fp_vex_scalar_arith_mem_handler_asm(

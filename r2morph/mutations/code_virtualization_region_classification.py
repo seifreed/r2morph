@@ -57,6 +57,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_packed_move,
     _decode_fp_vex_scalar_arith,
     _decode_fp_vex_scalar_arith_mem,
+    _decode_fp_vex_scalar_move,
 )
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
@@ -153,6 +154,7 @@ def _first_item(decoders: Iterable[Callable[[], Any]], prefix: tuple[Any, ...] =
 def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
     return _first_item(
         (
+            lambda: _decode_fp_vex_scalar_move(text, address, size),
             lambda: _decode_fp_vex_scalar_arith(text),
             lambda: _decode_fp_vex_scalar_arith_mem(text, address, size),
             lambda: _decode_fp_vex_packed_immediate(text),

@@ -1,4 +1,4 @@
-"""Contracts for VEX.128 packed arithmetic with a memory source."""
+"""Contracts for VEX.128 arithmetic and scalar moves with memory operands."""
 
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
@@ -8,11 +8,15 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import _item_si
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_packed_arith_mem,
     _decode_fp_vex_scalar_arith_mem,
+    _decode_fp_vex_scalar_move,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
+    _fp_vex_scalar_memory_move_handler_asm,
+    _fp_vex_scalar_merge_handler_asm,
+    _fp_vex_scalar_move_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
@@ -39,6 +43,20 @@ def test_decode_vex128_scalar_memory_arithmetic_preserves_indexed_shapes() -> No
     expect(
         indexed == ("fparithvexmemidx", "add", 2, 3, 0, 1, 2, 64, 64)
         and no_base == ("fparithvexmemidxnb", "add", 2, 3, 1, 2, 64, 64)
+    )
+
+
+def test_decode_vex128_scalar_moves_preserves_zero_and_merge_forms() -> None:
+    register = _decode_fp_vex_scalar_move("vmovss xmm0, xmm1", 0x1000, 4)
+    merge = _decode_fp_vex_scalar_move("vmovsd xmm2, xmm3, xmm4", 0x1000, 5)
+    load = _decode_fp_vex_scalar_move("vmovss xmm5, dword ptr [rax + 8]", 0x1000, 5)
+    store = _decode_fp_vex_scalar_move("vmovsd qword ptr [rax + rcx*8 + 16], xmm5", 0x1000, 6)
+
+    expect(
+        register == ("fpmovvexscalar", 32, 0, 1)
+        and merge == ("fpmovvexscalar3", 64, 2, 3, 4)
+        and load == ("fploadvex", 5, 0, 8, 32)
+        and store == ("fpstorevexidx", 5, 0, 1, 3, 16, 64)
     )
 
 
@@ -110,4 +128,21 @@ def test_vex128_scalar_memory_handler_preserves_source_lanes_and_clears_upper_st
         "movups xmm0, [rsp + r11 + 256]" in assembly
         and "vaddss xmm0, xmm0, dword ptr [r10]" in assembly
         and "pxor xmm2, xmm2" in assembly
+    )
+
+
+def test_vex128_scalar_move_handlers_preserve_vex_zero_and_merge_semantics() -> None:
+    move = _fp_vex_scalar_move_handler_asm("fpmovvexscalar_32", "0xAA", preserve_ymm=True)
+    merge = _fp_vex_scalar_merge_handler_asm("fpmovvexscalar3_32", "0xAA", preserve_ymm=True)
+    memory = _fp_vex_scalar_memory_move_handler_asm(
+        "fpmovvexmem_32",
+        "0xAA",
+        "0x01010101",
+        VexMemoryHandlerConfig(preserve_ymm=True),
+    )
+
+    expect(
+        "vmovss xmm0, xmm0" in move
+        and "vmovss xmm0, xmm0, xmm1" in merge
+        and "vmovss xmm0, xmm0, dword ptr [r10]" in memory
     )

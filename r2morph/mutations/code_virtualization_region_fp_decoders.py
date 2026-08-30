@@ -604,6 +604,7 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vminsd": ("min", 64),
     "vmaxsd": ("max", 64),
 }
+_FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovss": 32, "vmovsd": 64}
 
 
 def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
@@ -669,6 +670,96 @@ def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int
         return None
     operation, width = spec
     return ("fparithvex", operation, destination, first_source, second_source, width)
+
+
+def _vex_scalar_memory_item(
+    operation: tuple[str, int, int | None],
+    memory: str,
+    width: int,
+    instruction: tuple[int, int],
+) -> tuple[Any, ...] | None:
+    kind, destination, source = operation
+    insn_addr, insn_size = instruction
+    result: tuple[Any, ...] | None = None
+    explicit_width = {"dword": 32, "qword": 64}.get(memory.lower().split(None, 1)[0])
+    if explicit_width is None or explicit_width == width:
+        indexed = _parse_indexed_operand(memory, base_optional=True)
+        if indexed is not None:
+            base_slot, index_slot, shift, displacement = indexed
+            if base_slot < 0:
+                result = (kind + "idxnb", destination, index_slot, shift, displacement, width)
+            else:
+                result = (kind + "idx", destination, base_slot, index_slot, shift, displacement, width)
+        else:
+            rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+            if rip_relative is not None:
+                target, memory_width = rip_relative
+                if memory_width is None or memory_width == width:
+                    result = (kind + "rip", destination, target, width)
+            else:
+                parsed_memory = _parse_mem_operand(memory)
+                if parsed_memory is not None:
+                    base_slot, displacement, memory_width = parsed_memory
+                    if memory_width is None or memory_width == width:
+                        result = (kind, destination, base_slot, displacement, width)
+    if result is not None and source is not None:
+        result = (result[0], result[1], source, *result[2:])
+    return result
+
+
+def _decode_fp_vex_scalar_move_pair(
+    operands: list[str], width: int, instruction: tuple[int, int]
+) -> tuple[Any, ...] | None:
+    destination = _parse_xmm_operand(operands[0])
+    source = _parse_xmm_operand(operands[1])
+    if destination is not None and source is not None:
+        return ("fpmovvexscalar", width, destination, source)
+    left_mem, right_mem = "[" in operands[0], "[" in operands[1]
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        if source is None:
+            return None
+        return _vex_scalar_memory_item(("fpstorevex", source, None), operands[0], width, instruction)
+    if destination is None:
+        return None
+    return _vex_scalar_memory_item(("fploadvex", destination, None), operands[1], width, instruction)
+
+
+def _decode_fp_vex_scalar_move_triple(
+    operands: list[str], width: int, instruction: tuple[int, int]
+) -> tuple[Any, ...] | None:
+    destination = _parse_xmm_operand(operands[0])
+    first_source = _parse_xmm_operand(operands[1])
+    if destination is None or first_source is None:
+        return None
+    second_source = _parse_xmm_operand(operands[2])
+    if second_source is not None:
+        return ("fpmovvexscalar3", width, destination, first_source, second_source)
+    if "[" not in operands[2]:
+        return None
+    return _vex_scalar_memory_item(("fpmovvexmem", destination, first_source), operands[2], width, instruction)
+
+
+def _decode_fp_vex_scalar_move(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode VEX scalar moves in register and memory forms.
+
+    Two-operand moves zero the unused low-XMM lanes. Three-operand moves copy
+    the upper lanes from the first source and the scalar from the second.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    width = _FP_VEX_SCALAR_MOVE.get(parts[0].lower())
+    if width is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    instruction = (insn_addr, insn_size)
+    if len(operands) == _PACKED_VEX_MOVE_OPERAND_COUNT:
+        return _decode_fp_vex_scalar_move_pair(operands, width, instruction)
+    if len(operands) == _PACKED_VEX_OPERAND_COUNT:
+        return _decode_fp_vex_scalar_move_triple(operands, width, instruction)
+    return None
 
 
 def _parse_fp_vex_scalar_memory_operands(text: str) -> tuple[str, int, int, int, str] | None:

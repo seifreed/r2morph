@@ -82,6 +82,16 @@ _YMM_HANDLER_KINDS = frozenset(
         "fparithvexmemrip",
         "fparithvexmemidx",
         "fparithvexmemidxnb",
+        "fpmovvexscalar",
+        "fpmovvexscalar3",
+        "fploadvex",
+        "fploadvexrip",
+        "fploadvexidx",
+        "fploadvexidxnb",
+        "fpmovvexmem",
+        "fpmovvexmemrip",
+        "fpmovvexmemidx",
+        "fpmovvexmemidxnb",
         "fppackedvex",
         "fppackedveximm",
         "fpmovvex",
@@ -108,6 +118,7 @@ _YMM_HANDLER_KINDS = frozenset(
         "vzeroall",
     }
 )
+_VEX_LOAD_KINDS = frozenset({"fploadvex", "fploadvexrip", "fploadvexidx", "fploadvexidxnb"})
 
 
 def _region_has_ymm(region: Region) -> bool:
@@ -128,7 +139,7 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
         spill += ymm_upper_spill_asm()
         reload += ymm_upper_reload_asm()
     vex_destinations = {
-        int(item[2])
+        int(item[1] if item[0] in _VEX_LOAD_KINDS else item[2])
         for item in region.instructions
         if item[0]
         in (
@@ -144,6 +155,16 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
             "fppackedvexmemidx",
             "fppackedvexmemidxnb",
             "fpmovvex",
+            "fpmovvexscalar",
+            "fpmovvexscalar3",
+            "fploadvex",
+            "fploadvexrip",
+            "fploadvexidx",
+            "fploadvexidxnb",
+            "fpmovvexmem",
+            "fpmovvexmemrip",
+            "fpmovvexmemidx",
+            "fpmovvexmemidxnb",
         )
     }
     return spill, reload + avx128_upper_clear_asm(vex_destinations)

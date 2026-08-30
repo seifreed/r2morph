@@ -410,6 +410,76 @@ def _fp_vex_scalar_arith_handler_asm(
     )
 
 
+def _fp_vex_scalar_move_handler_asm(handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False) -> str:
+    """Run a two-operand VEX scalar move, which clears unused XMM lanes."""
+    _, width_text = handler_key.split("_")
+    suffix = "ss" if int(width_text) == _DWORD_WIDTH_BITS else "sd"
+    off = pair_offsets("dst", "src", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  vmov{suffix} xmm0, xmm0\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_scalar_merge_handler_asm(
+    handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
+) -> str:
+    """Run a three-operand VEX scalar move with a non-destructive source."""
+    _, width_text = handler_key.split("_")
+    suffix = "ss" if int(width_text) == _DWORD_WIDTH_BITS else "sd"
+    off = triple_offsets("dst", "src1", "src2", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['src2']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
+        f"  vmov{suffix} xmm0, xmm0, xmm1\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_scalar_memory_move_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Run a VEX scalar load/store or merge-load memory form."""
+    config = config or VexMemoryHandlerConfig()
+    kind, width_text = handler_key.rsplit("_", 1)
+    suffix = "ss" if int(width_text) == _DWORD_WIDTH_BITS else "sd"
+    memory = "dword" if suffix == "ss" else "qword"
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += "  shl r8, 4\n"
+    if kind.startswith("fpmovvexmem"):
+        body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n  shl r11, 4\n"
+        body += f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
+        body += f"  vmov{suffix} xmm0, xmm0, {memory} ptr [r10]\n"
+        body += f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        clear_upper = _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
+        return body + clear_upper + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+    if kind.startswith("fploadvex"):
+        body += f"  vmov{suffix} xmm0, {memory} ptr [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        clear_upper = _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
+        body += clear_upper
+    else:
+        body += f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  vmov{suffix} {memory} ptr [r10], xmm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_scalar_arith_mem_handler_asm(
     handler_key: str,
     key: str,

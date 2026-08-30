@@ -81,6 +81,7 @@ from r2morph.mutations.code_virtualization_region_models import (
 from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
 
 logger = logging.getLogger(__name__)
+_VEX_LOAD_KINDS = frozenset({"fploadvex", "fploadvexrip", "fploadvexidx", "fploadvexidxnb"})
 
 # Frame slots above the checksum byte (0x88) and below the preserved red zone
 # (0x100): the dispatcher reads the active layer's parameters from these, the
@@ -317,6 +318,16 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
             "fppackedvex",
             "fppackedveximm",
             "fpmovvex",
+            "fpmovvexscalar",
+            "fpmovvexscalar3",
+            "fploadvex",
+            "fploadvexrip",
+            "fploadvexidx",
+            "fploadvexidxnb",
+            "fpmovvexmem",
+            "fpmovvexmemrip",
+            "fpmovvexmemidx",
+            "fpmovvexmemidxnb",
             "fppackedvex256",
             "fppackedvex256imm",
             "fppackedvex256mem",
@@ -333,7 +344,7 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         for item in layer.instructions
     )
     vex_destinations = {
-        int(item[2])
+        int(item[1] if item[0] in _VEX_LOAD_KINDS else item[2])
         for layer in layers
         for item in layer.instructions
         if item[0]
@@ -350,6 +361,16 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
             "fppackedvexmemidx",
             "fppackedvexmemidxnb",
             "fpmovvex",
+            "fpmovvexscalar",
+            "fpmovvexscalar3",
+            "fploadvex",
+            "fploadvexrip",
+            "fploadvexidx",
+            "fploadvexidxnb",
+            "fpmovvexmem",
+            "fpmovvexmemrip",
+            "fpmovvexmemidx",
+            "fpmovvexmemidxnb",
         )
     }
     spill = xmm_spill_asm()
