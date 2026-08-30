@@ -235,6 +235,9 @@ class RegionEncoder:
         kind = item[0]
         if kind in ("fpmovvexscalar", "fpmovvexscalar3"):
             return self._emit_vex_scalar_register_move(item)
+        if kind == "fpmovvexgp":
+            self._pair(self._opcode(item), item[2], self.slot_of[item[3]])
+            return True
         if kind in (
             "fpload",
             "fpstore",

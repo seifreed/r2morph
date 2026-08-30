@@ -16,6 +16,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 
 _DWORD_WIDTH_BITS = 32
+_QWORD_WIDTH_BITS = 64
 _PACKED_VEX_OPERAND_COUNT = 3
 _PACKED_VEX_MOVE_OPERAND_COUNT = 2
 _PACKED_OPERAND_COUNT = 2
@@ -739,6 +740,27 @@ def _decode_fp_vex_scalar_move_triple(
     if "[" not in operands[2]:
         return None
     return _vex_scalar_memory_item(("fpmovvexmem", destination, first_source), operands[2], width, instruction)
+
+
+def _decode_fp_vex_gp_move(text: str) -> tuple[str, str, int, int] | None:
+    """Decode VEX.128 ``vmovq`` transfers between XMM and 64-bit GP registers."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "vmovq" or "," not in parts[1]:
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    left_xmm = _parse_xmm_operand(left)
+    right_xmm = _parse_xmm_operand(right)
+    if left_xmm is not None:
+        gp = _register_operand(right)
+        if gp is None or gp[1] != _QWORD_WIDTH_BITS:
+            return None
+        return ("fpmovvexgp", "gp_to_xmm", left_xmm, gp[0])
+    if right_xmm is not None:
+        gp = _register_operand(left)
+        if gp is None or gp[1] != _QWORD_WIDTH_BITS:
+            return None
+        return ("fpmovvexgp", "xmm_to_gp", right_xmm, gp[0])
+    return None
 
 
 def _decode_fp_vex_scalar_move(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:

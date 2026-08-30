@@ -6,12 +6,14 @@ from r2morph.mutations.code_virtualization_region_classification import _classif
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_vex_gp_move,
     _decode_fp_vex_packed_arith_mem,
     _decode_fp_vex_scalar_arith_mem,
     _decode_fp_vex_scalar_move,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
+    _fp_vex_gp_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
     _fp_vex_scalar_memory_move_handler_asm,
@@ -22,6 +24,7 @@ from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
 _VEX128_MEMORY_ITEM_SIZE = 8
+_VEX128_REGISTER_ITEM_SIZE = 3
 
 
 def test_decode_vex128_packed_memory_arithmetic_preserves_base_shape() -> None:
@@ -69,6 +72,43 @@ def test_decode_vex128_vmovq_preserves_qword_register_and_memory_forms() -> None
         register == ("fpmovvexscalar", 64, 0, 1)
         and load == ("fploadvex", 2, 0, 8, 64)
         and store == ("fpstorevex", 2, 0, 16, 64)
+    )
+
+
+def test_decode_vex128_vmovq_preserves_gp_transfer_slots() -> None:
+    gp_to_xmm = _decode_fp_vex_gp_move("vmovq xmm0, rax")
+    xmm_to_gp = _decode_fp_vex_gp_move("vmovq rdx, xmm3")
+
+    expect(gp_to_xmm == ("fpmovvexgp", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgp", "xmm_to_gp", 3, 2))
+
+
+def test_classify_vex128_vmovq_gp_transfer_routes_to_qword_item() -> None:
+    item = _classify({"type": "vec", "family": "vec", "opcode": "vmovq xmm0, rax", "addr": 0x1000, "size": 5})
+
+    expect(item == ["fpmovvexgp", "gp_to_xmm", 0, 0])
+
+
+def test_vex128_vmovq_gp_handler_uses_qword_transfer_and_clears_upper_state() -> None:
+    gp_to_xmm = _fp_vex_gp_move_handler_asm("fpmovvexgp_gp_to_xmm", "0xAA", preserve_ymm=True)
+    xmm_to_gp = _fp_vex_gp_move_handler_asm("fpmovvexgp_xmm_to_gp", "0xAA", preserve_ymm=True)
+
+    expect("vmovq xmm0, rax" in gp_to_xmm and "pxor xmm2, xmm2" in gp_to_xmm and "vmovq rax, xmm0" in xmm_to_gp)
+
+
+def test_vex128_vmovq_gp_item_is_encoded_and_routed() -> None:
+    item = ("fpmovvexgp", "gp_to_xmm", 0, 1)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 5)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect(
+        _item_size(item) == _VEX128_REGISTER_ITEM_SIZE and "vmovq xmm0," in assembly and "qword ptr [rsp +" in assembly
     )
 
 

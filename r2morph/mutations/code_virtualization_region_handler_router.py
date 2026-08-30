@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_256_move_handler_asm,
     _fp_vex_256_packed_arith_mem_handler_asm,
     _fp_vex_256_packed_shift_immediate_handler_asm,
+    _fp_vex_gp_move_handler_asm,
     _fp_vex_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
@@ -647,6 +648,8 @@ class HandlerBodyRouter:
         return body
 
     def _fp_vex_scalar_move(self, key: str, variants: tuple[int, ...]) -> str | None:
+        if key.startswith("fpmovvexgp_"):
+            return _fp_vex_gp_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         if key.startswith(("fploadvex_", "fpstorevex_", "fpmovvexmem_")):
             return _fp_vex_scalar_memory_move_handler_asm(
                 key,

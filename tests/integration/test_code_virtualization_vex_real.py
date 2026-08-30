@@ -92,11 +92,24 @@ __attribute__((noinline)) static void move_qword(const unsigned long *source, un
     );
 }
 
+__attribute__((noinline)) static unsigned long move_qword_gp(unsigned long value) {
+    unsigned long result;
+    __asm__ volatile(
+        "vmovq %1, %%xmm0\n"
+        "vmovq %%xmm0, %%rax\n"
+        "mov %%rax, %0\n"
+        : "=r"(result)
+        : "r"(value)
+        : "rax", "xmm0"
+    );
+    return result;
+}
+
 int main(void) {
     const unsigned long source[1] = {0xFEDCBA9876543210UL};
     unsigned long target[1] = {0};
     move_qword(source, target);
-    return target[0] == source[0] ? 42 : 1;
+    return target[0] == source[0] && move_qword_gp(source[0]) == source[0] ? 42 : 1;
 }
 """
 
