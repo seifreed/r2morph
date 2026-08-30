@@ -70,6 +70,17 @@ def vzeroupper_handler_asm() -> str:
     return clear + "  add rsi, 1\n  jmp vm_dispatch\n"
 
 
+def vzeroall_handler_asm() -> str:
+    """Clear all saved XMM and YMM upper halves."""
+    clear = "  pxor xmm0, xmm0\n"
+    clear += "".join(
+        f"  movups [rsp + {_XMM_SAVE_OFFSET + index * 16}], xmm0\n"
+        f"  movups [rsp + {_YMM_UPPER_SAVE_OFFSET + index * 16}], xmm0\n"
+        for index in range(16)
+    )
+    return clear + "  add rsi, 1\n  jmp vm_dispatch\n"
+
+
 def _load_ymm_from_frame(offset: str, register: int) -> str:
     return (
         f"  movups xmm{register}, [rsp + {offset} + {_XMM_SAVE_OFFSET}]\n"

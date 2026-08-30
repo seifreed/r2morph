@@ -46,6 +46,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_move_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
+    vzeroall_handler_asm,
     vzeroupper_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_handlers import (
@@ -532,6 +533,8 @@ class HandlerBodyRouter:
     def _fp(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         if key == "vzeroupper":
             return vzeroupper_handler_asm()
+        if key == "vzeroall":
+            return vzeroall_handler_asm()
         address = variants[4]
         if key in _FP_VEX_256_MEMORY_KEYS:
             return _fp_vex_256_memory_handler_asm(

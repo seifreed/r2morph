@@ -93,6 +93,7 @@ _YMM_HANDLER_KINDS = frozenset(
         "fploadvex256idxnb",
         "fpstorevex256idxnb",
         "vzeroupper",
+        "vzeroall",
     }
 )
 
@@ -103,7 +104,7 @@ def _region_has_ymm(region: Region) -> bool:
 
 def _fp_state_asm(region: Region) -> tuple[str, str]:
     has_fp = any(
-        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", "vzeroupper", *_XMM_CALL_KINDS)
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", "vzeroupper", "vzeroall", *_XMM_CALL_KINDS)
         for item in region.instructions
     )
     if not has_fp:

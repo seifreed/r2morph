@@ -7,7 +7,7 @@ from r2morph.mutations import code_virtualization_region_classification as class
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_fp_handlers import vzeroupper_handler_asm
+from r2morph.mutations.code_virtualization_region_fp_handlers import vzeroall_handler_asm, vzeroupper_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
@@ -21,18 +21,38 @@ def _vzeroupper_region() -> Region:
     return Region(items, _EXIT_VADDR, 0x1000, op_keys, [(0x1000, 3)])
 
 
+def _vzeroall_region() -> Region:
+    items = [("vzeroall",), ("exit", _EXIT_VADDR)]
+    op_keys = {key for item in items if (key := _op_key(item)) is not None}
+    return Region(items, _EXIT_VADDR, 0x1000, op_keys, [(0x1000, 3)])
+
+
 def test_classify_vzeroupper_yields_state_clear_item() -> None:
     expect(classification._classify({"type": "vec", "opcode": "vzeroupper"}) == ["vzeroupper"])
+
+
+def test_classify_vzeroall_yields_state_clear_item() -> None:
+    expect(classification._classify({"type": "vec", "opcode": "vzeroall"}) == ["vzeroall"])
 
 
 def test_vzeroupper_item_encodes_as_single_opcode_byte() -> None:
     expect(_item_size(("vzeroupper",)) == 1)
 
 
+def test_vzeroall_item_encodes_as_single_opcode_byte() -> None:
+    expect(_item_size(("vzeroall",)) == 1)
+
+
 def test_vzeroupper_handler_clears_saved_upper_halves() -> None:
     assembly = vzeroupper_handler_asm()
 
     expect("pxor xmm0, xmm0" in assembly and "[rsp + 768]" in assembly and "[rsp + 1008]" in assembly)
+
+
+def test_vzeroall_handler_clears_saved_lower_and_upper_halves() -> None:
+    assembly = vzeroall_handler_asm()
+
+    expect("[rsp + 256]" in assembly and "[rsp + 768]" in assembly and "[rsp + 1008]" in assembly)
 
 
 def test_vzeroupper_region_uses_ymm_state() -> None:
@@ -46,4 +66,13 @@ def test_vzeroupper_region_builds_a_real_blob() -> None:
     region = _vzeroupper_region()
     scheme = build_region_scheme(region, randomness.Random(7))
 
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
+
+
+def test_vzeroall_region_uses_ymm_state_and_builds_blob() -> None:
+    region = _vzeroall_region()
+    scheme = build_region_scheme(region, randomness.Random(7))
+    assembly = _interpreter_asm(region, scheme)
+
+    expect("pxor xmm0, xmm0" in assembly and "vextractf128 xmm0, ymm0, 1" in assembly)
     expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

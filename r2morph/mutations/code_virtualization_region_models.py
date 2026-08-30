@@ -217,6 +217,7 @@ _IDENTITY_KEYS = {
     "fsave",
     "frestore",
     "vzeroupper",
+    "vzeroall",
     "nop",
     "enter_inner",
     "inner_exit",
