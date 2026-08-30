@@ -6,8 +6,9 @@ from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
+from r2morph.mutations.code_virtualization_region_codegen_encode import encode_region
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_packed_vex_arith_handler_asm
-from r2morph.mutations.code_virtualization_region_models import Region, _op_key
+from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
 from tests.utils.assertions import expect
 
@@ -152,6 +153,27 @@ def test_vex_256_memory_arithmetic_handler_loads_memory_source() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(11)))
 
     expect("vmovups ymm1, [r10]" in assembly and "vaddps ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_memory_arithmetic_encoding_keeps_ymm_indices_logical() -> None:
+    region = Region(
+        [("fppackedvex256mem", "addps", 0, 1, 2, 32)],
+        _EXIT_VADDR,
+        0x1000,
+        {"fppackedvex256mem_addps"},
+        [(0x1000, 8)],
+    )
+    scheme = RegionScheme(
+        {"fppackedvex256mem_addps": (7,)},
+        0,
+        1,
+        tuple(reversed(range(17))),
+        1,
+    )
+
+    encoded = encode_region(region, scheme, 0x1000)
+
+    expect(encoded == bytes((7, 0, 14, 32, 0, 0, 0, 1)))
 
 
 def test_vex_256_memory_unary_handler_uses_unary_instruction() -> None:

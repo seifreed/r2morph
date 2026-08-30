@@ -170,6 +170,7 @@ def _fp_vex_256_packed_arith_mem_handler_asm(
     body += (
         f"  v{instruction} ymm0, ymm1\n" if instruction.startswith("sqrt") else f"  v{instruction} ymm0, ymm0, ymm1\n"
     )
+    body += "  shl r8, 4\n"
     body += _store_ymm_to_frame("r8")
     return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 

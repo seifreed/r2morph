@@ -107,22 +107,22 @@ class RegionEncoder:
             self.plain.extend(byte ^ position for byte in fields[name])
 
     def _mem_with_source(self, position: int, destination: int, source: int, base: int | None, disp: int) -> None:
-        self._mem(position, (self.slot_of[destination], None if base is None else self.slot_of[base], disp))
-        self.plain.append(self.slot_of[source] ^ position)
+        self._mem(position, (destination, None if base is None else self.slot_of[base], disp))
+        self.plain.append(source ^ position)
 
     def _idx_with_source(self, position: int, operands: tuple[int, int | None, int, int, int], source: int) -> None:
         destination, base, index, shift, disp = operands
         self._idx(
             position,
             (
-                self.slot_of[destination],
+                destination,
                 None if base is None else self.slot_of[base],
                 self.slot_of[index],
                 shift,
                 disp,
             ),
         )
-        self.plain.append(self.slot_of[source] ^ position)
+        self.plain.append(source ^ position)
 
     def _emit_virtual(self, item: RegionItem) -> bool:
         kind = item[0]

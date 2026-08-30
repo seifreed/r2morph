@@ -51,7 +51,7 @@ int main(void) {
 """
 
 _MEMORY_ARITHMETIC_SOURCE = r"""
-__attribute__((noinline)) static void add256_memory(const float *source, float *target) {
+__attribute__((noinline)) void add256_memory(const float *source, float *target) {
     __asm__ volatile(
         "vmovups (%0), %%ymm1\n"
         "vaddps (%0), %%ymm1, %%ymm0\n"
@@ -98,7 +98,7 @@ __attribute__((noinline)) static void shift256(
     __asm__ volatile(
         "vmovdqu (%0), %%ymm1\n"
         "vmovdqu (%1), %%ymm2\n"
-        "vpslld %%ymm2, %%ymm1, %%ymm0\n"
+        "vpsllvd %%ymm2, %%ymm1, %%ymm0\n"
         "vmovdqu %%ymm0, (%2)\n"
         "vpsrad $1, %%ymm1, %%ymm0\n"
         "vmovdqu %%ymm0, (%3)\n"
