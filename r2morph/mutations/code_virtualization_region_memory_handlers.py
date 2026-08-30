@@ -249,6 +249,28 @@ def _cmpxchg_memory_handler_asm(config: AtomicMemoryOperationConfig, indexed: bo
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _atomic_memory_rmw_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Run a locked GP-register read-modify-write and capture its flags."""
+    kind, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
+    memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    register = "rax" if width == _QWORD_WIDTH_BITS else "eax"
+    body += (
+        f"  mov {register}, {memory} ptr [rsp+r8*8]\n"
+        f"  lock {mnemonic} {memory} ptr [r10], {register}\n"
+        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _tls_address_asm(
     has_base: bool,
     key: str,

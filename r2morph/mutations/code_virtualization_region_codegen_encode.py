@@ -87,6 +87,7 @@ _FIXED_SIZE_GROUPS = {
         "learip",
         "opmemdstrip",
         "callmemrip",
+        "atomicmemrip",
     ),
     7: (
         "vload",
@@ -119,6 +120,7 @@ _FIXED_SIZE_GROUPS = {
         "callmem",
         "xchgmem",
         "cmpxchgmem",
+        "atomicmem",
     ),
     8: (
         "vleaidxnb",
@@ -144,6 +146,7 @@ _FIXED_SIZE_GROUPS = {
         "leaidxnb",
         "ijmpmemnb",
         "callmemidxnb",
+        "atomicmemidxnb",
     ),
     9: (
         "vloadidx",
@@ -172,6 +175,7 @@ _FIXED_SIZE_GROUPS = {
         "callmemidx",
         "xchgmemidx",
         "cmpxchgmemidx",
+        "atomicmemidx",
         "pushi",
     ),
     10: ("fppackedvex256memidx", "fppackedvexmemidx", "fparithvexmemidx", "fpmovvexmemidx"),

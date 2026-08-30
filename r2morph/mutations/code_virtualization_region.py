@@ -250,6 +250,10 @@ _FLAG_KILLER_KINDS = frozenset(
         "callmemidxnb",
         "cmpxchgmem",
         "cmpxchgmemidx",
+        "atomicmem",
+        "atomicmemrip",
+        "atomicmemidx",
+        "atomicmemidxnb",
         "syscall",
     }
 )

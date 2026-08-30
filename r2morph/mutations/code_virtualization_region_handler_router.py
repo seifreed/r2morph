@@ -83,6 +83,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     AtomicMemoryOperationConfig,
     MemoryImmediateOperationConfig,
     MemoryOperationConfig,
+    _atomic_memory_rmw_handler_asm,
     _cmp_memory_handler_asm,
     _cmpxchg_memory_handler_asm,
     _lea_handler_asm,
@@ -509,6 +510,14 @@ class HandlerBodyRouter:
         )
 
     def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if key.startswith(("atomicmem_", "atomicmemrip_", "atomicmemidx_", "atomicmemidxnb_")):
+            return _atomic_memory_rmw_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                self.context.field_perm,
+                variants[4],
+            )
         if key.startswith("cmpxchgmemidx_"):
             return _cmpxchg_memory_handler_asm(
                 AtomicMemoryOperationConfig(

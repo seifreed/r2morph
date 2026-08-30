@@ -70,6 +70,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_incdec,
     _decode_lea,
     _decode_lea_indexed,
+    _decode_locked_memory_rmw,
     _decode_memory_immediate,
     _decode_memory_mov,
     _decode_memory_mov_indexed,
@@ -345,18 +346,19 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         return ["vzeroupper"]
     if text.strip().lower() == "vzeroall":
         return ["vzeroall"]
+    address = insn.get("addr", 0)
+    size = insn.get("size", 0)
     result = _first_item(
         (
             lambda: _decode_fp_convert(text),
             lambda: _decode_fp_compare(text),
             lambda: _decode_cmpxchg_memory(text),
+            lambda: _decode_locked_memory_rmw(text, address, size),
             lambda: _decode_xchg_memory(text),
             lambda: _decode_bswap(text),
             lambda: _decode_cqo(text),
         )
     )
-    address = insn.get("addr", 0)
-    size = insn.get("size", 0)
     opcode_lower = text.lower()
     has_vector_operand = any(register in opcode_lower for register in ("xmm", "ymm", "zmm"))
     if result is None and (insn.get("family") == "vec" or has_vector_operand):

@@ -281,6 +281,8 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
         return f"{kind}_{operand_kind}_{item[4]}"
     if kind == "shift":
         return f"{item[1]}_{item[4]}"
+    if kind in ("atomicmem", "atomicmemrip", "atomicmemidx", "atomicmemidxnb"):
+        return f"{kind}_{item[1]}_{item[-1]}"
     if kind in _IDENTITY_KEYS:
         return kind
 

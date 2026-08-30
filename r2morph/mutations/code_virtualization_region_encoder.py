@@ -515,7 +515,16 @@ class RegionEncoder:
         elif kind in ("opmem", "lea"):
             reg, base, disp = item[2], item[3], item[4]
             self._gp_mem(item, reg, base, disp)
-        elif kind in ("xchgmem", "xchgmemidx", "cmpxchgmem", "cmpxchgmemidx"):
+        elif kind in (
+            "xchgmem",
+            "xchgmemidx",
+            "cmpxchgmem",
+            "cmpxchgmemidx",
+            "atomicmem",
+            "atomicmemrip",
+            "atomicmemidx",
+            "atomicmemidxnb",
+        ):
             self._emit_atomic_memory(item)
         elif kind in ("opriprel", "learip"):
             reg, target = item[2], item[3]
@@ -695,6 +704,23 @@ class RegionEncoder:
     def _emit_atomic_memory(self, item: RegionItem) -> None:
         if item[0] in ("xchgmem", "cmpxchgmem"):
             self._gp_mem(item, item[1], item[2], item[3])
+            return
+        if item[0] == "atomicmem":
+            self._gp_mem(item, item[2], item[3], item[4])
+            return
+        if item[0] == "atomicmemrip":
+            self._gp_rip(item, item[2], item[3])
+            return
+        if item[0] == "atomicmemidxnb":
+            _, _mnemonic, register, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[register], None, self.slot_of[index], shift, disp))
+            return
+        if item[0] == "atomicmemidx":
+            _, _mnemonic, register, base, index, shift, disp, _width = item
+            self._idx(
+                self._opcode(item),
+                (self.slot_of[register], self.slot_of[base], self.slot_of[index], shift, disp),
+            )
             return
         _, register, base, index, shift, disp, _width = item
         self._gp_idx(item, (register, base, index, shift, disp))

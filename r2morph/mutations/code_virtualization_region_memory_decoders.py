@@ -258,6 +258,65 @@ def _decode_cmpxchg_memory(text: str) -> tuple[Any, ...] | None:
     return _decode_atomic_memory_exchange(text, "cmpxchg", "cmpxchgmem", True)
 
 
+_LOCKED_RMW_MNEMONICS = frozenset({"add", "sub", "and", "or", "xor"})
+
+
+def _locked_memory_rmw_header(text: str) -> tuple[str, str, str] | None:
+    """Return mnemonic and operands for a locked register-source RMW."""
+    parts = text.split(None, 2)
+    if len(parts) != _LOCKED_INSTRUCTION_PART_COUNT or parts[0].lower() != "lock":
+        return None
+    mnemonic = parts[1].lower()
+    if mnemonic not in _LOCKED_RMW_MNEMONICS or "," not in parts[2]:
+        return None
+    memory_text, register_text = (token.strip() for token in parts[2].split(",", 1))
+    if "[" not in memory_text or "[" in register_text:
+        return None
+    return mnemonic, memory_text, register_text
+
+
+def _decode_locked_memory_rmw_indexed(mnemonic: str, memory_text: str, register_text: str) -> tuple[Any, ...] | None:
+    """Decode an indexed locked register-source RMW."""
+    indexed = _parse_indexed_operand(memory_text, base_optional=True)
+    if indexed is None:
+        return None
+    register = _memory_register_operand(register_text.lower())
+    if register is None or register[1] not in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+        return None
+    register_slot, register_width = register
+    width_name = memory_text.lower().split(None, 1)[0]
+    memory_width = _INDEXED_MEMORY_WIDTHS.get(width_name)
+    if memory_width is not None and memory_width != register_width:
+        return None
+    base_slot, index_slot, shift, displacement = indexed
+    kind = "atomicmemidxnb" if base_slot < 0 else "atomicmemidx"
+    if base_slot < 0:
+        return kind, mnemonic, register_slot, index_slot, shift, displacement, register_width
+    return kind, mnemonic, register_slot, base_slot, index_slot, shift, displacement, register_width
+
+
+def _decode_locked_memory_rmw(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode a locked GP-register read-modify-write with memory as destination."""
+    header = _locked_memory_rmw_header(text)
+    if header is None:
+        return None
+    mnemonic, memory_text, register_text = header
+    direct_or_rip = _decode_reg_memory(
+        f"{mnemonic} {memory_text}, {register_text}",
+        insn_addr,
+        insn_size,
+        _MemorySourceSpec(
+            mnemonic,
+            ("atomicmem", mnemonic),
+            ("atomicmemrip", mnemonic),
+            memory_destination=True,
+        ),
+    )
+    if direct_or_rip is not None:
+        return direct_or_rip
+    return _decode_locked_memory_rmw_indexed(mnemonic, memory_text, register_text)
+
+
 def _decode_memory_mov_indexed(text: str) -> tuple[Any, ...] | None:
     """Decode indexed GP loads/stores with or without a base register.
 
