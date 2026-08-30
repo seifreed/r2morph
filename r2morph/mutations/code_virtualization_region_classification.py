@@ -313,6 +313,8 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     text = insn.get("opcode", "")
     if kind == "syscall":
         return ["syscall"]
+    if text.strip().lower() == "vzeroupper":
+        return ["vzeroupper"]
     result = _first_item(
         (
             lambda: _decode_fp_convert(text),

@@ -216,6 +216,7 @@ _IDENTITY_KEYS = {
     "ijmpmemnb",
     "fsave",
     "frestore",
+    "vzeroupper",
     "nop",
     "enter_inner",
     "inner_exit",

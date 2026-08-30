@@ -504,7 +504,7 @@ class RegionEncoder:
             self.plain.extend((self.slot_of[item[2]] ^ position, self.slot_of[item[3]] ^ position))
         elif kind == "nop":
             self._opcode(item, "nop")
-        elif kind in ("exit", "vret", "enter_inner", "inner_exit", "fsave", "frestore"):
+        elif kind in ("exit", "vret", "enter_inner", "inner_exit", "fsave", "frestore", "vzeroupper"):
             self._opcode(item)
         else:
             return False

@@ -18,7 +18,7 @@ from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme
 
 _FIXED_SIZE_GROUPS = {
-    1: ("vbinop", "vbinopsynth", "vcmpsynth", "fsave", "frestore", "syscall"),
+    1: ("vbinop", "vbinopsynth", "vcmpsynth", "fsave", "frestore", "vzeroupper", "syscall"),
     2: (
         "vpush",
         "vpop",
