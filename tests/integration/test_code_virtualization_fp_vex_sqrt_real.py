@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import platform
+import shutil
 from pathlib import Path
 
 import pytest
@@ -71,6 +72,15 @@ def test_virtualized_vex_scalar_sqrt_preserves_native_result(tmp_path: Path) -> 
         binary.close()
 
     transformed_result = run_command([mutated], timeout=30)
+    crash_diagnostic = ""
+    debugger = shutil.which("gdb")
+    if transformed_result.returncode < 0 and debugger is not None:
+        debug_result = run_command(
+            [debugger, "-q", "-batch", "-ex", "run", "-ex", "bt", "--args", mutated],
+            timeout=30,
+            text=True,
+        )
+        crash_diagnostic = f" gdb_stdout={debug_result.stdout!r} gdb_stderr={debug_result.stderr!r}"
     expect(
         original_result.returncode == _EXPECTED_EXIT_CODE,
         f"native VEX sqrt fixture returned {original_result.returncode}: {original_result.stderr!r}",
@@ -82,5 +92,5 @@ def test_virtualized_vex_scalar_sqrt_preserves_native_result(tmp_path: Path) -> 
     expect(
         transformed_result.returncode == _EXPECTED_EXIT_CODE,
         f"VEX sqrt virtualization changed the result: returncode={transformed_result.returncode}, "
-        f"stdout={transformed_result.stdout!r}, stderr={transformed_result.stderr!r}, {stats=}",
+        f"stdout={transformed_result.stdout!r}, stderr={transformed_result.stderr!r}, {stats=}{crash_diagnostic}",
     )
