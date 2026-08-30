@@ -72,7 +72,15 @@ def test_virtualized_vex_scalar_sqrt_preserves_native_result(tmp_path: Path) -> 
 
     transformed_result = run_command([mutated], timeout=30)
     expect(
-        stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS
-        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
-        f"VEX sqrt virtualization changed the result: {stats=}",
+        original_result.returncode == _EXPECTED_EXIT_CODE,
+        f"native VEX sqrt fixture returned {original_result.returncode}: {original_result.stderr!r}",
+    )
+    expect(
+        stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS,
+        f"VEX sqrt fixture was not sufficiently virtualized: {stats=}",
+    )
+    expect(
+        transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX sqrt virtualization changed the result: returncode={transformed_result.returncode}, "
+        f"stdout={transformed_result.stdout!r}, stderr={transformed_result.stderr!r}, {stats=}",
     )
