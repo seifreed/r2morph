@@ -72,6 +72,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
     _decode_lea_indexed,
     _decode_memory_mov,
+    _decode_memory_mov_indexed,
     _decode_movx,
     _decode_op_mem,
     _decode_op_mem_indexed,
@@ -225,7 +226,21 @@ def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
     return None
 
 
+def _decode_indexed_gp_memory_item(text: str) -> VirtualizedMemOp | None:
+    indexed = _decode_memory_mov_indexed(text)
+    if indexed is None:
+        return None
+    kind = indexed[0]
+    if kind.endswith("nb"):
+        return None
+    _, register_slot, base_slot, index_slot, shift, disp, width = indexed
+    return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp, index_slot, shift), width)
+
+
 def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
+    indexed = _decode_indexed_gp_memory_item(text)
+    if indexed is not None:
+        return indexed
     decoded = _decode_memory_mov(text)
     if decoded is not None:
         kind, register_slot, base_slot, disp, width = decoded

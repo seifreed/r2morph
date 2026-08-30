@@ -8,6 +8,8 @@ the lowering on the real lifter (no mocks, no binary).
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization import _decode_run_item
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedMemOp
 from r2morph.mutations.code_virtualization_region import _lower_arith_to_microops
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_memory_decoders import _decode_memory_mov_indexed
@@ -22,13 +24,35 @@ def test_decode_indexed_mov_load_returns_loadidx_with_reg_slot_and_width() -> No
     expect(_decode_memory_mov_indexed("mov eax, [rcx + rdx*4]") == ("loadidx", 0, 1, 2, 2, 0, 32))
 
 
+def test_linear_engine_indexed_mov_load_returns_memory_item() -> None:
+    item = _decode_run_item("mov eax, [rcx + rdx*4]")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.index_index, item.scale, item.disp, item.width)
+        == ("loadidx", 0, 1, 2, 2, 0, 32)
+    )
+
+
 def test_decode_indexed_mov_store_returns_storeidx() -> None:
     # mov [rcx + rdx*8 + 16], rax: source rax(0), base rcx(1), index rdx(2), shift 3.
     expect(_decode_memory_mov_indexed("mov [rcx + rdx*8 + 16], rax") == ("storeidx", 0, 1, 2, 3, 16, 64))
 
 
+def test_linear_engine_indexed_mov_store_returns_memory_item() -> None:
+    item = _decode_run_item("mov [rcx + rdx*8 + 16], rax")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.index_index, item.scale, item.disp, item.width)
+        == ("storeidx", 0, 1, 2, 3, 16, 64)
+    )
+
+
 def test_decode_no_base_indexed_mov_load_returns_loadidxnb() -> None:
     expect(_decode_memory_mov_indexed("mov eax, [rdx*4 + 16]") == ("loadidxnb", 0, 2, 2, 16, 32))
+
+
+def test_linear_engine_no_base_indexed_mov_load_is_rejected() -> None:
+    expect(_decode_run_item("mov eax, [rdx*4 + 16]") is None)
 
 
 def test_decode_no_base_indexed_mov_store_returns_storeidxnb() -> None:

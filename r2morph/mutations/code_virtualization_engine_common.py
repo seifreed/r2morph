@@ -105,11 +105,16 @@ _MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea", *tuple(f"mem{m}" for
 # movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
 # (No rip-relative counterpart: the decoder only produces the base+disp form.)
 _MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
-# Indexed [base+index*scale+disp] forms (arrays). lea, arithmetic, and the
-# byte/word extends; the handler strips the ``idx`` suffix and reuses the base
-# kind's body with the indexed address prologue (a 9-byte item:
-# opcode+reg+base+index+scale+disp).
-_MEM_IDX_KINDS: tuple[str, ...] = ("lea", *tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS), *_MEM_MOVX_KINDS)
+# Indexed [base+index*scale+disp] forms (arrays). Loads, stores, lea,
+# arithmetic, and byte/word extends reuse the base kind's body with the
+# indexed address prologue (a 9-byte item: opcode+reg+base+index+scale+disp).
+_MEM_IDX_KINDS: tuple[str, ...] = (
+    "load",
+    "store",
+    "lea",
+    *tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS),
+    *_MEM_MOVX_KINDS,
+)
 _MEM_OP_KINDS: tuple[str, ...] = (
     _MEM_BASE_KINDS
     + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
@@ -145,9 +150,6 @@ _FP_MEM_KINDS: tuple[str, ...] = (
 # back to the real add/sub/mul/div instruction in the handler.
 _FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div", "sqrt", "min", "max")
 _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
-# Scalar-FP register-versus-memory compares. The width is part of the handler key
-# so the interpreter emits the exact scalar memory operand size.
-_FP_COMPARE_MEM_KINDS: tuple[str, ...] = ("fpcmpmem",)
 # Int<->float conversions: cvtsi2sd/ss (int->float) and cvttsd2si/ss (float->int).
 # The GP width is part of the kind ("cvti2f"/"cvtf2i" + "32"/"64") so the handler
 # selects eax vs rax faithfully (a 32-bit cvtsi2sd converts only the int32; a
@@ -310,12 +312,6 @@ _FP_SCALAR_VEX_OPERATIONS: tuple[str, ...] = (
     "vmaxsd",
 )
 _FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
-_FP_VEX_PACKED_MEM_KINDS: tuple[str, ...] = (
-    "fppackedvexmem",
-    "fppackedvexmemrip",
-    "fppackedvexmemidx",
-    "fppackedvexmemidxnb",
-)
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to
 # a push/push/binop/pop sequence over the vstack rather than one handler computing
 # the result, so distinct native ops share the reused push/pop/binop handlers and a
@@ -343,17 +339,12 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
-    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_COMPARE_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
     + tuple(
         (kind, False, _FP_PACKED_WIDTH)
         for kind in (
-            _FP_PACKED_ARITH_KINDS
-            + _FP_PACKED_VEX_ARITH_KINDS
-            + _FP_SCALAR_VEX_ARITH_KINDS
-            + _FP_PACKED_MEM_KINDS
-            + _FP_VEX_PACKED_MEM_KINDS
+            _FP_PACKED_ARITH_KINDS + _FP_PACKED_VEX_ARITH_KINDS + _FP_SCALAR_VEX_ARITH_KINDS + _FP_PACKED_MEM_KINDS
         )
     )
 )
@@ -500,6 +491,8 @@ class VMScheme:
 # against ``total``, so the assigned opcode indices plus at least one exit-marker
 # byte (any value ``>= total``) must all fit in ``[0, 256)``. Reserve a small band
 # above ``total`` so the exit marker itself stays varied across builds.
+# Keep several values above the dense handler range available for the exit
+# marker while leaving room for every operation the engine can emit.
 _EXIT_OPCODE_HEADROOM = 8
 _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 
