@@ -243,10 +243,10 @@ class RegionEncoder:
         position = self._opcode(item)
         if kind == "fppackedimm":
             self.plain.append(item[2] ^ position)
-            self._imm(item[3], 1, position)
+            self.plain.append(item[3] ^ position)
         else:
             self._pair(position, item[2], item[3])
-            self._imm(item[4], 1, position)
+            self.plain.append(item[4] ^ position)
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:

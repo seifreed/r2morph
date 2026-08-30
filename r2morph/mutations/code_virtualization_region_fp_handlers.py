@@ -57,8 +57,7 @@ def ymm_upper_spill_asm() -> str:
 def ymm_upper_reload_asm() -> str:
     """Restore the upper 128 bits after the lower XMM slots are reloaded."""
     return "".join(
-        f"  movups xmm0, [rsp + {_YMM_UPPER_SAVE_OFFSET + index * 16}]\n"
-        f"  vinsertf128 ymm{index}, ymm{index}, xmm0, 1\n"
+        f"  vinsertf128 ymm{index}, ymm{index}, xmmword ptr [rsp + {_YMM_UPPER_SAVE_OFFSET + index * 16}], 1\n"
         for index in range(16)
     )
 

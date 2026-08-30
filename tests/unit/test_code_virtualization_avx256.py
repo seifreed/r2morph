@@ -55,6 +55,31 @@ def test_vex_256_immediate_shuffle_assembly_uses_native_immediate() -> None:
     expect("vpshufd ymm0, ymm0, 27" in assembly)
 
 
+def test_vex_256_immediate_shuffle_encoding_keeps_branch_offsets_aligned() -> None:
+    items = [
+        ("fppackedvex256imm", "pshufd", 0, 1, 0x1B),
+        ("jmp", 2),
+        ("exit", _EXIT_VADDR),
+    ]
+    op_keys = {_op_key(item) for item in items}
+    scheme = RegionScheme(
+        {
+            "fppackedvex256imm_pshufd_27": (7,),
+            "jmp": (8,),
+            f"exit_{_EXIT_VADDR}": (9,),
+        },
+        0,
+        1,
+        tuple(range(17)),
+        1,
+    )
+    region = Region(items, _EXIT_VADDR, 0x1000, {key for key in op_keys if key is not None}, [(0x1000, 6)])
+
+    encoded = encode_region(region, scheme, 0x2000)
+
+    expect(encoded == bytes((7, 0, 1, 0x1B, 0x0C, 13, 4, 4, 4, 0)))
+
+
 def test_vex128_packed_handler_commits_zeroed_ymm_upper_slot() -> None:
     assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_paddd", "0xAA", preserve_ymm=True)
 
@@ -80,7 +105,7 @@ def test_nested_vex_256_state_preserves_upper_halves() -> None:
 
     spill, reload = _nested_xmm_state_asm(region, [region])
 
-    expect("vextractf128 xmm0, ymm0, 1" in spill and "vinsertf128 ymm0, ymm0, xmm0, 1" in reload)
+    expect("vextractf128 xmm0, ymm0, 1" in spill and "vinsertf128 ymm0, ymm0, xmmword ptr [rsp + 768], 1" in reload)
 
 
 def test_vex_256_memory_move_classification_preserves_address_shape() -> None:
