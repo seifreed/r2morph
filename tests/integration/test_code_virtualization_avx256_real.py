@@ -281,6 +281,31 @@ int main(void) {
 }
 """
 
+_ADDSUB_SOURCE = r"""
+#include <immintrin.h>
+
+__attribute__((noinline)) static __m256 addsub_float(__m256 left, __m256 right) {
+    return _mm256_addsub_ps(left, right);
+}
+
+__attribute__((noinline)) static __m256d addsub_double(__m256d left, __m256d right) {
+    return _mm256_addsub_pd(left, right);
+}
+
+int main(void) {
+    const __m256 float_left = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    const __m256 float_right = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
+    const __m256d double_left = {1.0, 2.0, 3.0, 4.0};
+    const __m256d double_right = {10.0, 20.0, 30.0, 40.0};
+    const __m256 float_result = addsub_float(float_left, float_right);
+    const __m256d double_result = addsub_double(double_left, double_right);
+    return float_result[0] == 11.0f && float_result[1] == -18.0f
+        && float_result[6] == 77.0f && float_result[7] == -72.0f
+        && double_result[0] == 11.0 && double_result[1] == -18.0
+        && double_result[2] == 33.0 && double_result[3] == -36.0 ? 42 : 1;
+}
+"""
+
 
 def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
@@ -688,6 +713,51 @@ def test_virtualized_vex_256_variable_permutations_preserve_native_result(tmp_pa
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.256 variable-permutation virtualization changed the result: "
         f"original={original_result.returncode}, transformed={transformed_result.returncode}, {stats=}",
+    )
+
+
+def test_virtualized_vex_256_addsub_preserves_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex256_addsub.c"
+    original = tmp_path / "original_addsub"
+    mutated = tmp_path / "mutated_addsub"
+    source.write_text(_ADDSUB_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.256 add-sub fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260842}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.256 add-sub function was not virtualized: {stats=}")
+    expect(
+        original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX.256 add-sub virtualization changed the result: {stats=}",
     )
 
 

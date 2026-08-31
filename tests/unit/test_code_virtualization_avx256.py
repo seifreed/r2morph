@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_region_codegen import _interpreter_as
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_lane_permute_immediate,
+    _decode_fp_vex_256_packed_arith,
     _decode_fp_vex_256_permute_immediate,
     _decode_fp_vex_256_variable_blend,
     _decode_fp_vex_256_variable_permute,
@@ -48,6 +49,20 @@ def test_vex_256_region_assembly_uses_ymm_handler() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(7)))
 
     expect("vaddps ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_addsub_float_assembly_uses_native_instruction() -> None:
+    items = [("fppackedvex256", "addsubps", 0, 1, 2), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(9)))
+
+    expect("vaddsubps ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_addsub_double_decoder_preserves_sources() -> None:
+    decoded = _decode_fp_vex_256_packed_arith("vaddsubpd ymm0, ymm1, ymm2")
+
+    expect(decoded == ("fppackedvex256", "addsubpd", 0, 1, 2))
 
 
 def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:

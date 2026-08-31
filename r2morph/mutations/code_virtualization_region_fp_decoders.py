@@ -552,6 +552,8 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vminpd": "minpd",
     "vmaxps": "maxps",
     "vmaxpd": "maxpd",
+    "vaddsubps": "addsubps",
+    "vaddsubpd": "addsubpd",
     "vandps": "andps",
     "vandpd": "andpd",
     "vorps": "orps",
