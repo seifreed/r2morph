@@ -205,7 +205,9 @@ def test_virtualized_vex_256_variable_shift_preserves_native_result(tmp_path: Pa
     expect(stats["functions_virtualized"] >= 1, f"VEX.256 variable-shift function was not virtualized: {stats=}")
     expect(
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
-        f"VEX.256 variable-shift virtualization changed the result: {stats=}",
+        "VEX.256 variable-shift virtualization changed the result: "
+        f"original={original_result.returncode}, transformed={transformed_result.returncode}, "
+        f"stdout={transformed_result.stdout!r}, stderr={transformed_result.stderr!r}, {stats=}",
     )
 
 
