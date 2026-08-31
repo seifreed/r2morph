@@ -8,7 +8,7 @@ from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
-from r2morph.mutations.code_virtualization_region_codegen_encode import encode_region
+from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_packed_vex_arith_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
@@ -16,6 +16,7 @@ from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 _EXIT_VADDR = 0x2000
+_VEX_PACKED_REGISTER_ITEM_SIZE = 4
 
 
 def _vex_256_region() -> Region:
@@ -37,6 +38,10 @@ def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(8)))
 
     expect("vpslld ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_packed_arithmetic_item_accounts_for_three_operand_fields() -> None:
+    expect(_item_size(("fppackedvex256", "pslld", 0, 1, 2)) == _VEX_PACKED_REGISTER_ITEM_SIZE)
 
 
 def test_vex_256_immediate_shift_assembly_uses_native_immediate() -> None:

@@ -52,8 +52,6 @@ _FIXED_SIZE_GROUPS = {
         "fpcmp",
         "fpmov",
         "fppacked",
-        "fppackedvex",
-        "fppackedvex256",
         "fpmovvex",
         "fpmovvex256",
         "fpmovvexscalar",
@@ -67,7 +65,7 @@ _FIXED_SIZE_GROUPS = {
         "cmov",
         "fppackedimm",
     ),
-    4: ("div", "fppackedveximm", "fppackedvex256imm"),
+    4: ("div", "fppackedvex", "fppackedvex256", "fppackedveximm", "fppackedvex256imm"),
     5: ("rspadj", "jmp", "jcc", "vcall", "call"),
     6: (
         "vloadrip",
