@@ -114,6 +114,25 @@ int main(void) {
 }
 """
 
+_VEX_DWORD_GP_MOVE_SOURCE = r"""
+__attribute__((noinline)) static unsigned int move_dword_gp(unsigned int value) {
+    unsigned int result;
+    __asm__ volatile(
+        "vmovd %1, %%xmm0\n"
+        "vmovd %%xmm0, %0\n"
+        : "=a"(result)
+        : "r"(value)
+        : "xmm0"
+    );
+    return result;
+}
+
+int main(void) {
+    const unsigned int value = 0xA5B6C7D8U;
+    return move_dword_gp(value) == value ? 42 : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -330,5 +349,51 @@ def test_virtualized_vex128_qword_moves_preserve_native_result(tmp_path: Path) -
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.128 qword moves changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_vex128_dword_gp_moves_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex128_dword_gp_move.c"
+    original = tmp_path / "original_vex128_dword_gp_move"
+    mutated = tmp_path / "mutated_vex128_dword_gp_move"
+    source.write_text(_VEX_DWORD_GP_MOVE_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 dword GP move fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260840}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.128 dword GP moves changed the result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )

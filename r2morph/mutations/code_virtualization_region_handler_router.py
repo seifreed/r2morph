@@ -658,7 +658,7 @@ class HandlerBodyRouter:
         return body
 
     def _fp_vex_scalar_move(self, key: str, variants: tuple[int, ...]) -> str | None:
-        if key.startswith("fpmovvexgp_"):
+        if key.startswith(("fpmovvexgp_", "fpmovvexgpd_")):
             return _fp_vex_gp_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         if key.startswith(("fploadvex_", "fpstorevex_", "fpmovvexmem_")):
             return _fp_vex_scalar_memory_move_handler_asm(

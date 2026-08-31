@@ -82,10 +82,23 @@ def test_decode_vex128_vmovq_preserves_gp_transfer_slots() -> None:
     expect(gp_to_xmm == ("fpmovvexgp", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgp", "xmm_to_gp", 3, 2))
 
 
+def test_decode_vex128_vmovd_preserves_dword_transfer_slots() -> None:
+    gp_to_xmm = _decode_fp_vex_gp_move("vmovd xmm0, eax")
+    xmm_to_gp = _decode_fp_vex_gp_move("vmovd edx, xmm3")
+
+    expect(gp_to_xmm == ("fpmovvexgpd", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgpd", "xmm_to_gp", 3, 2))
+
+
 def test_classify_vex128_vmovq_gp_transfer_routes_to_qword_item() -> None:
     item = _classify({"type": "vec", "family": "vec", "opcode": "vmovq xmm0, rax", "addr": 0x1000, "size": 5})
 
     expect(item == ["fpmovvexgp", "gp_to_xmm", 0, 0])
+
+
+def test_classify_vex128_vmovd_gp_transfer_routes_to_dword_item() -> None:
+    item = _classify({"type": "vec", "family": "vec", "opcode": "vmovd xmm0, eax", "addr": 0x1000, "size": 5})
+
+    expect(item == ["fpmovvexgpd", "gp_to_xmm", 0, 0])
 
 
 def test_vex128_vmovq_gp_handler_uses_qword_transfer_and_clears_upper_state() -> None:
@@ -93,6 +106,13 @@ def test_vex128_vmovq_gp_handler_uses_qword_transfer_and_clears_upper_state() ->
     xmm_to_gp = _fp_vex_gp_move_handler_asm("fpmovvexgp_xmm_to_gp", "0xAA", preserve_ymm=True)
 
     expect("vmovq xmm0, rax" in gp_to_xmm and "pxor xmm2, xmm2" in gp_to_xmm and "vmovq rax, xmm0" in xmm_to_gp)
+
+
+def test_vex128_vmovd_gp_handler_uses_dword_transfer_and_clears_upper_state() -> None:
+    gp_to_xmm = _fp_vex_gp_move_handler_asm("fpmovvexgpd_gp_to_xmm", "0xAA", preserve_ymm=True)
+    xmm_to_gp = _fp_vex_gp_move_handler_asm("fpmovvexgpd_xmm_to_gp", "0xAA", preserve_ymm=True)
+
+    expect("vmovd xmm0, eax" in gp_to_xmm and "pxor xmm2, xmm2" in gp_to_xmm and "vmovd eax, xmm0" in xmm_to_gp)
 
 
 def test_vex128_vmovq_gp_item_is_encoded_and_routed() -> None:
@@ -109,6 +129,23 @@ def test_vex128_vmovq_gp_item_is_encoded_and_routed() -> None:
 
     expect(
         _item_size(item) == _VEX128_REGISTER_ITEM_SIZE and "vmovq xmm0," in assembly and "qword ptr [rsp +" in assembly
+    )
+
+
+def test_vex128_vmovd_gp_item_is_encoded_and_routed() -> None:
+    item = ("fpmovvexgpd", "gp_to_xmm", 0, 1)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 5)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect(
+        _item_size(item) == _VEX128_REGISTER_ITEM_SIZE and "vmovd xmm0," in assembly and "dword ptr [rsp +" in assembly
     )
 
 

@@ -454,8 +454,12 @@ def _fp_vex_scalar_merge_handler_asm(
 
 
 def _fp_vex_gp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False) -> str:
-    """Transfer a qword between a GP frame slot and an XMM frame slot."""
-    _, direction = handler_key.split("_", 1)
+    """Transfer a dword or qword between a GP frame slot and an XMM frame slot."""
+    kind, direction = handler_key.split("_", 1)
+    is_dword = kind == "fpmovvexgpd"
+    gp_register = "eax" if is_dword else "rax"
+    gp_width = "dword" if is_dword else "qword"
+    move_mnemonic = "vmovd" if is_dword else "vmovq"
     off = pair_offsets("xmm", "gp", field_perm)
     decode = (
         f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
@@ -464,14 +468,14 @@ def _fp_vex_gp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0,
     if direction == "gp_to_xmm":
         clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
         return decode + (
-            "  mov rax, qword ptr [rsp + r9*8]\n  vmovq xmm0, rax\n"
+            f"  mov {gp_register}, {gp_width} ptr [rsp + r9*8]\n  {move_mnemonic} xmm0, {gp_register}\n"
             f"  shl r8, 4\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
             + clear_upper
             + "  add rsi, 3\n  jmp vm_dispatch\n"
         )
     return decode + (
         f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
-        "  vmovq rax, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
+        f"  {move_mnemonic} {gp_register}, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
         "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 

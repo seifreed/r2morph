@@ -178,13 +178,15 @@ def _decode_fp_gp_move(text: str, mnemonic: str, kind: str, width: int) -> tuple
         gp = _register_operand(right)
         if gp is None or gp[1] != width:
             return None
-        return (kind, "gp_to_xmm", left_xmm, gp[0])
-    if right_xmm is not None:
+        direction, xmm_index = "gp_to_xmm", left_xmm
+    elif right_xmm is not None:
         gp = _register_operand(left)
         if gp is None or gp[1] != width:
             return None
-        return (kind, "xmm_to_gp", right_xmm, gp[0])
-    return None
+        direction, xmm_index = "xmm_to_gp", right_xmm
+    else:
+        return None
+    return (kind, direction, xmm_index, gp[0])
 
 
 def _decode_fp_movd(text: str) -> tuple[str, str, int, int] | None:
@@ -752,24 +754,32 @@ def _decode_fp_vex_scalar_move_triple(
 
 
 def _decode_fp_vex_gp_move(text: str) -> tuple[str, str, int, int] | None:
-    """Decode VEX.128 ``vmovq`` transfers between XMM and 64-bit GP registers."""
+    """Decode VEX.128 ``vmovd``/``vmovq`` transfers between XMM and GP registers."""
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "vmovq" or "," not in parts[1]:
+    if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
+    spec = {"vmovd": ("fpmovvexgpd", _DWORD_WIDTH_BITS), "vmovq": ("fpmovvexgp", _QWORD_WIDTH_BITS)}.get(
+        parts[0].lower()
+    )
+    if spec is None:
+        return None
+    kind, width = spec
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     left_xmm = _parse_xmm_operand(left)
     right_xmm = _parse_xmm_operand(right)
     if left_xmm is not None:
         gp = _register_operand(right)
-        if gp is None or gp[1] != _QWORD_WIDTH_BITS:
+        if gp is None or gp[1] != width:
             return None
-        return ("fpmovvexgp", "gp_to_xmm", left_xmm, gp[0])
-    if right_xmm is not None:
+        direction, xmm_index = "gp_to_xmm", left_xmm
+    elif right_xmm is not None:
         gp = _register_operand(left)
-        if gp is None or gp[1] != _QWORD_WIDTH_BITS:
+        if gp is None or gp[1] != width:
             return None
-        return ("fpmovvexgp", "xmm_to_gp", right_xmm, gp[0])
-    return None
+        direction, xmm_index = "xmm_to_gp", right_xmm
+    else:
+        return None
+    return (kind, direction, xmm_index, gp[0])
 
 
 def _decode_fp_vex_scalar_move(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:

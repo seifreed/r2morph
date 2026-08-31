@@ -59,6 +59,7 @@ _FIXED_SIZE_GROUPS = {
         "fpmovvexscalar",
         "fpmovvexscalar3",
         "fpmovvexgp",
+        "fpmovvexgpd",
         "movxreg",
         "cmov",
         "fppackedimm",
