@@ -263,7 +263,7 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         expect(
             False,
             f"VEX scalar FP compare callee crashed: returncode={transformed_result.returncode}; "
-            f"gdb={trace.stdout}{trace.stderr}",
+            f"stats={stats}; gdb={trace.stdout}{trace.stderr}",
         )
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
