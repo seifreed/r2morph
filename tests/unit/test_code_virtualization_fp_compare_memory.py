@@ -1,7 +1,11 @@
 """Unit contracts for scalar FP compares against memory."""
 
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_fp_decoders import _decode_fp_compare_mem, _decode_fp_compare_riprel
+from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_compare,
+    _decode_fp_compare_mem,
+    _decode_fp_compare_riprel,
+)
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_compare_memory_handler_asm
 from tests.utils.assertions import expect
 
@@ -14,6 +18,14 @@ def test_decode_fp_compare_memory_double_returns_width_and_address() -> None:
 
 def test_decode_fp_compare_memory_rejects_width_mismatch() -> None:
     expect(_decode_fp_compare_mem("ucomisd xmm0, dword ptr [rax]") is None)
+
+
+def test_decode_vex_scalar_fp_compare_registers() -> None:
+    expect(_decode_fp_compare("vucomiss xmm2, xmm3") == ("fpcmp", "vucomiss", 2, 3))
+
+
+def test_decode_vex_scalar_fp_compare_memory_width() -> None:
+    expect(_decode_fp_compare_mem("vcomisd xmm1, qword ptr [rax+8]") == ("fpcmpmem", "vcomisd", 1, 0, 8, 64))
 
 
 def test_decode_fp_compare_riprel_resolves_target_and_width() -> None:

@@ -202,7 +202,20 @@ def _decode_fp_movq(text: str) -> tuple[str, str, int, int] | None:
 
 
 _FP_COMPARE_MNEMONICS: frozenset[str] = frozenset(
-    {"ucomisd", "comisd", "ucomiss", "comiss", "ptest", "vptest", "vtestps", "vtestpd"}
+    {
+        "ucomisd",
+        "comisd",
+        "ucomiss",
+        "comiss",
+        "vucomisd",
+        "vcomisd",
+        "vucomiss",
+        "vcomiss",
+        "ptest",
+        "vptest",
+        "vtestps",
+        "vtestpd",
+    }
 )
 
 
@@ -249,6 +262,10 @@ def _decode_fp_compare_mem(text: str) -> tuple[str, str, int, int, int, int] | N
         "comisd": 64,
         "ucomiss": 32,
         "comiss": 32,
+        "vucomisd": 64,
+        "vcomisd": 64,
+        "vucomiss": 32,
+        "vcomiss": 32,
     }
     mnemonic = parts[0].lower()
     width = widths.get(mnemonic)
@@ -275,6 +292,10 @@ def _decode_fp_compare_idx(text: str) -> tuple[str, str, int, int, int, int, int
         "comisd": 64,
         "ucomiss": 32,
         "comiss": 32,
+        "vucomisd": 64,
+        "vcomisd": 64,
+        "vucomiss": 32,
+        "vcomiss": 32,
     }
     mnemonic = parts[0].lower()
     width = widths.get(mnemonic)
@@ -300,6 +321,10 @@ def _decode_fp_compare_riprel(text: str, insn_addr: int, insn_size: int) -> tupl
         "comisd": 64,
         "ucomiss": 32,
         "comiss": 32,
+        "vucomisd": 64,
+        "vcomisd": 64,
+        "vucomiss": 32,
+        "vcomiss": 32,
     }
     mnemonic = parts[0].lower()
     width = widths.get(mnemonic)

@@ -241,6 +241,8 @@ _FLAG_KILLER_KINDS = frozenset(
         "test",
         "cmpmem",
         "cmpriprel",
+        "fpcmp",
+        "fpcmpvex256",
         "fpcmpmem",
         "fpcmpmemrip",
         "opmem",
