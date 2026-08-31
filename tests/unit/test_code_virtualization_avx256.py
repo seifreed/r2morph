@@ -105,6 +105,22 @@ def test_vex_256_test_assembly_uses_native_instruction() -> None:
     expect("vptest ymm0, ymm1" in assembly)
 
 
+def test_vex128_float_test_assembly_uses_native_instruction() -> None:
+    items = [("fpcmp", "vtestps", 0, 1), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 3)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(13)))
+
+    expect("vtestps xmm0, xmm1" in assembly)
+
+
+def test_vex256_double_test_assembly_uses_native_instruction() -> None:
+    items = [("fpcmpvex256", "vtestpd", 0, 1), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 3)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(14)))
+
+    expect("vtestpd ymm0, ymm1" in assembly)
+
+
 def test_vex_packed_float_compare_decoder_preserves_xmm_operands_and_predicate() -> None:
     decoded = _decode_fp_vex_packed_compare("vcmpps xmm0, xmm1, xmm2, 0")
 

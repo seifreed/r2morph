@@ -201,7 +201,9 @@ def _decode_fp_movq(text: str) -> tuple[str, str, int, int] | None:
     return _decode_fp_gp_move(text, "movq", "fpmovq", _QWORD_WIDTH_BITS)
 
 
-_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss", "ptest", "vptest"})
+_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset(
+    {"ucomisd", "comisd", "ucomiss", "comiss", "ptest", "vptest", "vtestps", "vtestpd"}
+)
 
 
 def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
@@ -224,7 +226,7 @@ def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
     right_index = _parse_xmm_operand(right)  # register-register only; a memory operand yields None
     if left_index is not None and right_index is not None:
         return ("fpcmp", mnemonic, left_index, right_index)
-    if mnemonic == "vptest":
+    if mnemonic in {"vptest", "vtestps", "vtestpd"}:
         left_ymm = _parse_ymm_operand(left)
         right_ymm = _parse_ymm_operand(right)
         if left_ymm is not None and right_ymm is not None:

@@ -27,6 +27,22 @@ __attribute__((noinline)) static __m256d compare_double(__m256d left, __m256d ri
     return _mm256_cmp_pd(left, right, _CMP_GT_OQ);
 }
 
+__attribute__((noinline)) static int test_float128(__m128 left, __m128 right) {
+    return _mm_testz_ps(left, right);
+}
+
+__attribute__((noinline)) static int test_double128(__m128d left, __m128d right) {
+    return _mm_testc_pd(left, right);
+}
+
+__attribute__((noinline)) static int test_float256(__m256 left, __m256 right) {
+    return _mm256_testz_ps(left, right);
+}
+
+__attribute__((noinline)) static int test_double256(__m256d left, __m256d right) {
+    return _mm256_testc_pd(left, right);
+}
+
 int main(void) {
     volatile float float_left_data[8] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
     volatile float float_right_data[8] = {1.0f, 0.0f, 3.0f, 9.0f, 5.0f, 0.0f, 7.0f, 10.0f};
@@ -36,7 +52,15 @@ int main(void) {
                                                _mm256_loadu_ps((const float *)float_right_data));
     const __m256d double_result = compare_double(_mm256_loadu_pd((const double *)double_left_data),
                                                   _mm256_loadu_pd((const double *)double_right_data));
+    const __m128 float128_values = {1.0f, 2.0f, 3.0f, 4.0f};
+    const __m128d double128_values = {1.0, 2.0};
+    const __m256 float256_values = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    const __m256d double256_values = {1.0, 2.0, 3.0, 4.0};
     return _mm256_movemask_ps(float_result) == 0x55 && _mm256_movemask_pd(double_result) == 0x5
+        && test_float128(_mm_setzero_ps(), float128_values) == 1
+        && test_double128(double128_values, double128_values) == 1
+        && test_float256(_mm256_setzero_ps(), float256_values) == 1
+        && test_double256(double256_values, double256_values) == 1
         ? 42
         : 1;
 }
