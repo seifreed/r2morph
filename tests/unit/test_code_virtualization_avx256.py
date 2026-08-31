@@ -86,6 +86,30 @@ def test_vex_256_lane_permutation_handler_uses_native_instruction() -> None:
     expect("vperm2f128 ymm0, ymm0, ymm1, 49" in assembly)
 
 
+def test_vex_256_float_shuffle_decoder_preserves_sources_and_immediate() -> None:
+    decoded = _decode_fp_vex_256_permute_immediate("vshufps ymm0, ymm1, ymm2, 0x1B")
+
+    expect(decoded == ("fppackedvex256permimm", "shufps", 0, 1, 2, 0x1B))
+
+
+def test_vex_256_float_shuffle_handler_uses_native_instruction() -> None:
+    assembly = _fp_vex_256_permute_immediate_handler_asm("fppackedvex256permimm_shufps_27", "0xAA")
+
+    expect("vshufps ymm0, ymm0, ymm1, 27" in assembly)
+
+
+def test_vex_256_double_shuffle_decoder_preserves_sources_and_immediate() -> None:
+    decoded = _decode_fp_vex_256_permute_immediate("vshufpd ymm0, ymm1, ymm2, 0x05")
+
+    expect(decoded == ("fppackedvex256permimm", "shufpd", 0, 1, 2, 5))
+
+
+def test_vex_256_double_shuffle_handler_uses_native_instruction() -> None:
+    assembly = _fp_vex_256_permute_immediate_handler_asm("fppackedvex256permimm_shufpd_5", "0xAA")
+
+    expect("vshufpd ymm0, ymm0, ymm1, 5" in assembly)
+
+
 def test_vex_256_lane_permutation_item_includes_immediate_byte() -> None:
     expect(
         _item_size(("fppackedvex256permimm", "perm2f128", 0, 1, 2, _VEX_256_PERMUTE_IMMEDIATE))
