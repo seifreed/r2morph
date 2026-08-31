@@ -151,6 +151,22 @@ int main(void) {
 }
 """
 
+_DOUBLE_LANE_SHUFFLE_SOURCE = r"""
+typedef double vector256 __attribute__((vector_size(32)));
+
+__attribute__((noinline)) static vector256 shuffle256(vector256 value) {
+    vector256 result;
+    __asm__ volatile("vpermilpd $0x05, %1, %0" : "=x"(result) : "x"(value));
+    return result;
+}
+
+int main(void) {
+    vector256 value = {1.0, 2.0, 3.0, 4.0};
+    vector256 result = shuffle256(value);
+    return result[0] == 2.0 && result[3] == 3.0 ? 42 : 1;
+}
+"""
+
 
 def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
@@ -331,6 +347,51 @@ def test_virtualized_vex_256_lane_shuffle_preserves_native_result(tmp_path: Path
     expect(
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         f"VEX.256 lane-shuffle virtualization changed the result: {stats=}",
+    )
+
+
+def test_virtualized_vex_256_double_lane_shuffle_preserves_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex256_double_lane_shuffle.c"
+    original = tmp_path / "original_double_lane_shuffle"
+    mutated = tmp_path / "mutated_double_lane_shuffle"
+    source.write_text(_DOUBLE_LANE_SHUFFLE_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.256 double lane-shuffle fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260835}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.256 double lane-shuffle function was not virtualized: {stats=}")
+    expect(
+        original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX.256 double lane-shuffle virtualization changed the result: {stats=}",
     )
 
 

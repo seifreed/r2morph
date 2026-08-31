@@ -114,6 +114,18 @@ def test_vex_256_lane_shuffle_handler_uses_native_instruction() -> None:
     expect("vpermilps ymm0, ymm0, 27" in assembly)
 
 
+def test_vex_256_double_lane_shuffle_decoder_preserves_register_and_immediate() -> None:
+    decoded = _decode_fp_vex_256_lane_permute_immediate("vpermilpd ymm0, ymm1, 0x05")
+
+    expect(decoded == ("fppackedvex256permilimm", "permilpd", 0, 1, 5))
+
+
+def test_vex_256_double_lane_shuffle_handler_uses_native_instruction() -> None:
+    assembly = _fp_vex_256_permute_lane_immediate_handler_asm("fppackedvex256permilimm_permilpd_5", "0xAA")
+
+    expect("vpermilpd ymm0, ymm0, 5" in assembly)
+
+
 def test_vex_256_lane_shuffle_item_uses_pair_stride() -> None:
     expect(
         _item_size(
