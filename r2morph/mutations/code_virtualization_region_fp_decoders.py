@@ -23,6 +23,7 @@ _PACKED_VEX_MOVE_OPERAND_COUNT = 2
 _PACKED_OPERAND_COUNT = 2
 _PACKED_SHIFT_IMMEDIATE_COUNT = 3
 _PACKED_IMMEDIATE_MAX = 0xFF
+_FP_PACKED_COMPARE_OPERAND_COUNT = 4
 
 
 def _parse_xmm_operand(text: str) -> int | None:
@@ -653,6 +654,31 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vmaxsd": ("max", 64),
 }
 _FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovq": 64, "vmovss": 32, "vmovsd": 64}
+_FP_VEX_PACKED_COMPARE: frozenset[str] = frozenset({"vcmpps", "vcmppd"})
+
+
+def _decode_fp_vex_packed_compare(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode VEX packed floating-point comparisons with an immediate predicate."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_COMPARE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _FP_PACKED_COMPARE_OPERAND_COUNT:
+        return None
+    parser = _parse_ymm_operand if operands[0].lower().startswith("ymm") else _parse_xmm_operand
+    destination, first_source, second_source = (parser(operand) for operand in operands[:3])
+    if destination is None or first_source is None or second_source is None:
+        return None
+    try:
+        immediate = int(operands[3], 0)
+    except ValueError:
+        return None
+    kind = "fppackedvex256cmp" if operands[0].lower().startswith("ymm") else "fppackedvexcmp"
+    return (
+        (kind, parts[0].lower(), destination, first_source, second_source, immediate)
+        if 0 <= immediate <= _PACKED_IMMEDIATE_MAX
+        else None
+    )
 
 
 def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:

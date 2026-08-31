@@ -75,7 +75,17 @@ _FIXED_SIZE_GROUPS = {
         "fppackedvex256permilimm",
         "fppackedvex256varpermil",
     ),
-    5: ("rspadj", "jmp", "jcc", "vcall", "call", "fppackedvex256var", "fppackedvex256permimm"),
+    5: (
+        "rspadj",
+        "jmp",
+        "jcc",
+        "vcall",
+        "call",
+        "fppackedvex256var",
+        "fppackedvex256permimm",
+        "fppackedvexcmp",
+        "fppackedvex256cmp",
+    ),
     6: (
         "vloadrip",
         "vstorerip",

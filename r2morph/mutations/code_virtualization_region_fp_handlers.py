@@ -144,6 +144,34 @@ def _fp_vex_256_move_handler_asm(handler_key: str, key: str, field_perm: int = 0
     return body + "  add rsi, 3\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_packed_compare_handler_asm(
+    handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
+) -> str:
+    """Run a VEX packed floating-point comparison with its predicate byte."""
+    kind, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = triple_offsets("dst", "src1", "src2", field_perm)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['src2']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+    )
+    if kind == "fppackedvex256cmp":
+        body += _load_ymm_from_frame("r9", 0) + _load_ymm_from_frame("r10", 1)
+        body += f"  {instruction} ymm0, ymm0, ymm1, {immediate}\n" + _store_ymm_to_frame("r8")
+    else:
+        body += (
+            f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
+            f"  {instruction} xmm0, xmm0, xmm1, {immediate}\n"
+            f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        )
+        if preserve_ymm:
+            body += _clear_ymm_upper_slot_asm("r8")
+    return body + "  add rsi, 5\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_256_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_permute_immediate,
     _decode_fp_vex_256_variable_blend,
     _decode_fp_vex_256_variable_permute,
+    _decode_fp_vex_packed_compare,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_vex_arith_handler_asm,
@@ -24,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_256_permute_lane_immediate_handler_asm,
     _fp_vex_256_variable_blend_handler_asm,
     _fp_vex_256_variable_permute_handler_asm,
+    _fp_vex_packed_compare_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
@@ -32,6 +34,7 @@ from tests.utils.assertions import expect
 _CAVE_VADDR = 0x500000
 _EXIT_VADDR = 0x2000
 _VEX_PACKED_REGISTER_ITEM_SIZE = 4
+_VEX_PACKED_COMPARE_ITEM_SIZE = 5
 _VEX_256_PERMUTE_ITEM_SIZE = 5
 _VEX_256_PERMUTE_IMMEDIATE = 0x31
 _VEX_256_LANE_PERMUTE_ITEM_SIZE = 4
@@ -100,6 +103,33 @@ def test_vex_256_test_assembly_uses_native_instruction() -> None:
 
     expect(_decode_fp_compare("vptest ymm0, ymm1") == ("fpcmpvex256", "vptest", 0, 1))
     expect("vptest ymm0, ymm1" in assembly)
+
+
+def test_vex_packed_float_compare_decoder_preserves_xmm_operands_and_predicate() -> None:
+    decoded = _decode_fp_vex_packed_compare("vcmpps xmm0, xmm1, xmm2, 0")
+
+    expect(decoded == ("fppackedvexcmp", "vcmpps", 0, 1, 2, 0))
+
+
+def test_vex256_packed_double_compare_decoder_preserves_ymm_operands_and_predicate() -> None:
+    decoded = _decode_fp_vex_packed_compare("vcmppd ymm0, ymm1, ymm2, 14")
+
+    expect(decoded == ("fppackedvex256cmp", "vcmppd", 0, 1, 2, 14))
+
+
+def test_vex256_packed_float_compare_assembly_uses_native_instruction() -> None:
+    items = [("fppackedvex256cmp", "vcmpps", 0, 1, 2, 0), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(12)))
+
+    expect(_item_size(items[0]) == _VEX_PACKED_COMPARE_ITEM_SIZE)
+    expect("vcmpps ymm0, ymm0, ymm1, 0" in assembly)
+
+
+def test_vex_packed_float_compare_handler_clears_vex128_upper_state() -> None:
+    assembly = _fp_vex_packed_compare_handler_asm("fppackedvexcmp_vcmpps_0", "0xAA", preserve_ymm=True)
+
+    expect("vcmpps xmm0, xmm0, xmm1, 0" in assembly and "movups [rsp + r8 + 768], xmm2" in assembly)
 
 
 def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:

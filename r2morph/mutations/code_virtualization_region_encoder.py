@@ -326,6 +326,8 @@ class RegionEncoder:
             "fppackedimm",
             "fppackedveximm",
             "fppackedvex256imm",
+            "fppackedvexcmp",
+            "fppackedvex256cmp",
             "fppackedvex256permimm",
             "fppackedvex256permilimm",
         ):
@@ -334,7 +336,7 @@ class RegionEncoder:
         if kind == "fppackedimm":
             self.plain.append(item[2] ^ position)
             self.plain.append(item[3] ^ position)
-        elif kind == "fppackedvex256permimm":
+        elif kind in ("fppackedvexcmp", "fppackedvex256cmp", "fppackedvex256permimm"):
             self._triple(position, item[2], item[3], item[4])
             self.plain.append(item[5] ^ position)
         elif kind == "fppackedvex256permilimm":
