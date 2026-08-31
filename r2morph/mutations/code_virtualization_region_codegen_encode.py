@@ -215,6 +215,16 @@ _IMMEDIATE_MEMORY_WIDTH_INDEXES = {
     "storeiidx": 6,
     "storeiidxnb": 5,
 }
+_VEX_PACKED_COMPARE_MEMORY_SIZES = {
+    "fppackedvexcmpmem": 9,
+    "fppackedvexcmpmemrip": 8,
+    "fppackedvexcmpmemidx": 11,
+    "fppackedvexcmpmemidxnb": 10,
+    "fppackedvex256cmpmem": 9,
+    "fppackedvex256cmpmemrip": 8,
+    "fppackedvex256cmpmemidx": 11,
+    "fppackedvex256cmpmemidxnb": 10,
+}
 
 
 def _item_size(item: tuple[Any, ...]) -> int:
@@ -232,6 +242,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
     elif kind in _IMMEDIATE_MEMORY_BASE_SIZES:
         width_index = _IMMEDIATE_MEMORY_WIDTH_INDEXES[kind]
         size = _IMMEDIATE_MEMORY_BASE_SIZES[kind] + (8 if item[width_index] == ARCH_BITS_64 else 4)
+    elif kind in _VEX_PACKED_COMPARE_MEMORY_SIZES:
+        size = _VEX_PACKED_COMPARE_MEMORY_SIZES[kind]
     return size if size is not None else _FIXED_ITEM_SIZES.get(kind, 1)
 
 

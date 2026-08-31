@@ -172,6 +172,36 @@ def _fp_vex_packed_compare_handler_asm(
     return body + "  add rsi, 5\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_packed_compare_memory_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Run a VEX packed comparison whose second source is in memory."""
+    config = config or VexMemoryHandlerConfig()
+    kind, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+    body += "  shl r8, 4\n  shl r11, 4\n"
+    if kind.startswith("fppackedvex256cmpmem"):
+        body += _load_ymm_from_frame("r11", 0) + "  vmovups ymm1, [r10]\n"
+        body += f"  {instruction} ymm0, ymm0, ymm1, {immediate}\n" + _store_ymm_to_frame("r8")
+    else:
+        body += f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
+        body += f"  movups xmm1, [r10]\n  {instruction} xmm0, xmm0, xmm1, {immediate}\n"
+        body += f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        if config.preserve_ymm:
+            body += _clear_ymm_upper_slot_asm("r8")
+    return body + f"  add rsi, {advance + 2}\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_256_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

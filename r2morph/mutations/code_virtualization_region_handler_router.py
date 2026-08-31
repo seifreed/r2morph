@@ -53,6 +53,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_packed_compare_handler_asm,
+    _fp_vex_packed_compare_memory_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
@@ -694,7 +695,14 @@ class HandlerBodyRouter:
             return _fp_vex_256_permute_lane_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         return None
 
-    def _fp_vex_packed_compare(self, key: str) -> str | None:
+    def _fp_vex_packed_compare(self, key: str, variants: tuple[int, ...]) -> str | None:
+        if key.startswith(("fppackedvexcmpmem_", "fppackedvex256cmpmem_")):
+            return _fp_vex_packed_compare_memory_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                VexMemoryHandlerConfig(self.context.field_perm, variants[4], self.context.has_ymm),
+            )
         if not key.startswith(("fppackedvexcmp_", "fppackedvex256cmp_")):
             return None
         return _fp_vex_packed_compare_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
@@ -713,7 +721,7 @@ class HandlerBodyRouter:
         immediate = self._fp_vex_256_immediate(key)
         if immediate is not None:
             return immediate
-        compare = self._fp_vex_packed_compare(key)
+        compare = self._fp_vex_packed_compare(key, _variants)
         if compare is not None:
             return compare
         packed_256 = self._fp_vex_256_packed(key)

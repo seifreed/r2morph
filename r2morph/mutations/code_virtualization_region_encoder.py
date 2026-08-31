@@ -348,6 +348,8 @@ class RegionEncoder:
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:
+        if item[0].startswith(("fppackedvexcmpmem", "fppackedvex256cmpmem")):
+            return self._emit_vex_packed_compare_memory(item)
         if item[0] in (
             "fploadvex",
             "fploadvexrip",
@@ -401,6 +403,24 @@ class RegionEncoder:
             self._idx(self._opcode(item), (ymm, None, self.slot_of[index], shift, disp))
         else:
             return False
+        return True
+
+    def _emit_vex_packed_compare_memory(self, item: RegionItem) -> bool:
+        kind = item[0]
+        position = self._opcode(item)
+        if kind.endswith("idxnb"):
+            _, _mnemonic, destination, source, index, shift, displacement, immediate = item
+            self._idx_with_source(position, (destination, None, index, shift, displacement), source)
+        elif kind.endswith("idx"):
+            _, _mnemonic, destination, source, base, index, shift, displacement, immediate = item
+            self._idx_with_source(position, (destination, base, index, shift, displacement), source)
+        elif kind.endswith("rip"):
+            _, _mnemonic, destination, source, target, immediate = item
+            self._mem_with_source(position, destination, source, None, target - self.bytecode_base)
+        else:
+            _, _mnemonic, destination, source, base, displacement, immediate = item
+            self._mem_with_source(position, destination, source, base, displacement)
+        self.plain.append(immediate ^ position)
         return True
 
     def _emit_vex_scalar_memory_move(self, item: RegionItem) -> bool:

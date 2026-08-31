@@ -683,6 +683,80 @@ def _decode_fp_vex_packed_compare(text: str) -> tuple[str, str, int, int, int, i
     )
 
 
+def _decode_fp_vex_packed_compare_mem(
+    text: str, insn_addr: int, insn_size: int
+) -> (
+    tuple[str, str, int, int, int, int, int]
+    | tuple[str, str, int, int, int, int]
+    | tuple[str, str, int, int, int, int, int, int, int]
+    | tuple[str, str, int, int, int, int, int, int]
+    | None
+):
+    """Decode a VEX packed floating comparison with a memory third operand."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_COMPARE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _FP_PACKED_COMPARE_OPERAND_COUNT or "[" not in operands[2]:
+        return None
+    parser = _parse_ymm_operand if operands[0].lower().startswith("ymm") else _parse_xmm_operand
+    destination, first_source = (parser(operand) for operand in operands[:2])
+    if destination is None or first_source is None:
+        return None
+    try:
+        immediate = int(operands[3], 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
+        return None
+    is_ymm = operands[0].lower().startswith("ymm")
+    memory = operands[2].lower().replace("ymmword", "").replace("xmmword", "")
+    prefix = "fppackedvex256cmpmem" if is_ymm else "fppackedvexcmpmem"
+    indexed = _parse_indexed_operand(memory, base_optional=True)
+    result: (
+        tuple[str, str, int, int, int, int, int]
+        | tuple[str, str, int, int, int, int]
+        | tuple[str, str, int, int, int, int, int, int, int]
+        | tuple[str, str, int, int, int, int, int, int]
+        | None
+    ) = None
+    if indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        if base_slot < 0:
+            result = (
+                prefix + "idxnb",
+                parts[0].lower(),
+                destination,
+                first_source,
+                index_slot,
+                shift,
+                displacement,
+                immediate,
+            )
+        else:
+            result = (
+                prefix + "idx",
+                parts[0].lower(),
+                destination,
+                first_source,
+                base_slot,
+                index_slot,
+                shift,
+                displacement,
+                immediate,
+            )
+    else:
+        rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+        if rip_relative is not None:
+            result = (prefix + "rip", parts[0].lower(), destination, first_source, rip_relative[0], immediate)
+        else:
+            parsed_memory = _parse_mem_operand(memory)
+            if parsed_memory is not None:
+                base_slot, displacement, _width = parsed_memory
+                result = (prefix, parts[0].lower(), destination, first_source, base_slot, displacement, immediate)
+    return result
+
+
 def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
     """Decode a legacy packed integer operation with an immediate byte."""
     parts = text.split(None, 1)
