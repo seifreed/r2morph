@@ -64,6 +64,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_arith,
     _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
+    _decode_fp_packed_riprel,
     _decode_fp_riprel,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_scalar_arith,
@@ -204,21 +205,19 @@ def _decode_fp_vex_extra_item(text: str) -> VirtualizedFpPackedOp | None:
     )
 
 
-def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
+def _decode_fp_packed_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedRunItem | None:
     extra = _decode_fp_vex_extra_item(text)
     if extra is not None:
         return extra
     vex = _decode_fp_vex_packed_arith(text)
     if vex is not None:
         _kind, mnemonic, destination, first_source, second_source = vex
-        if destination == first_source:
-            return VirtualizedFpPackedOp(mnemonic, destination, second_source, vex=True)
         return VirtualizedFpPackedOp(
-            f"v{mnemonic}",
+            mnemonic if destination == first_source else f"v{mnemonic}",
             destination,
             second_source,
             vex=True,
-            src1_index=first_source,
+            src1_index=None if destination == first_source else first_source,
         )
     decoded = _decode_fp_packed_arith(text)
     if decoded is not None:
@@ -228,6 +227,10 @@ def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
     if memory is not None:
         kind, xmm_index, base_slot, disp = memory
         return VirtualizedFpPackedMemOp(kind, xmm_index, VirtualizedAddress(base_slot, disp))
+    rip_relative = _decode_fp_packed_riprel(text, insn_addr, insn_size)
+    if rip_relative is not None:
+        kind, xmm_index, target = rip_relative
+        return VirtualizedFpPackedMemOp(kind, xmm_index, VirtualizedAddress(-1, target))
     return _decode_fp_packed_indexed_item(text)
 
 
@@ -347,7 +350,7 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
         _decode_fp_memory_item(text, insn_addr, insn_size),
         _decode_fp_scalar_vex_item(text),
         _decode_fp_arithmetic_item(text, insn_addr, insn_size),
-        _decode_fp_packed_item(text),
+        _decode_fp_packed_item(text, insn_addr, insn_size),
         _decode_gp_memory_item(text, insn_addr, insn_size),
         _decode_memory_arithmetic_item(text, mnemonic, insn_addr, insn_size),
         _decode_lea_item(text, mnemonic, insn_addr, insn_size),

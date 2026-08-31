@@ -30,6 +30,7 @@ from tests.utils.assertions import expect
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
 _EXPECTED_BYTE_SHUFFLE_DESTINATION = 2
 _EXPECTED_INDEX_SHIFT = 3
+_EXPECTED_RIP_TARGET = 0x401108
 
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
@@ -207,9 +208,25 @@ def test_decode_engine_packed_no_base_indexed_move_uses_indexed_memory_item() ->
     )
 
 
+def test_decode_engine_packed_rip_relative_move_uses_rip_memory_item() -> None:
+    item = _decode_run_item("movups xmm0, xmmword ptr [rip + 0x100]", 0x401000, 8)
+    expect(
+        isinstance(item, VirtualizedFpPackedMemOp)
+        and item.kind == "fpploadrip"
+        and item.base_index == -1
+        and item.disp == _EXPECTED_RIP_TARGET
+    )
+
+
 def test_engine_assembles_packed_indexed_memory_moves() -> None:
     scheme = build_vm_scheme(randomness.Random(20260830))
     item = VirtualizedFpPackedMemOp("fpploadidxnb", 0, VirtualizedAddress(-1, 0x402000, 1, 4))
+    expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
+
+
+def test_engine_assembles_packed_rip_relative_memory_moves() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260830))
+    item = VirtualizedFpPackedMemOp("fpploadrip", 0, VirtualizedAddress(-1, _EXPECTED_RIP_TARGET))
     expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
 
 

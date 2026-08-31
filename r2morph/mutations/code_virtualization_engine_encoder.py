@@ -157,6 +157,9 @@ class _BytecodeEncoder:
         elif op.kind.endswith("idx"):
             fields = self._indexed_fields((op.xmm_index, op.base_index, op.index_index, op.scale, op.disp))
             order = idx_permuted_fields(False, self.field_perm)
+        elif op.kind.endswith("rip"):
+            fields = self._rip_fields(op.xmm_index, op.disp)
+            order = mem_permuted_fields(True, self.field_perm)
         else:
             fields = self._base_fields(op.xmm_index, op.base_index, op.disp)
             order = mem_permuted_fields(False, self.field_perm)

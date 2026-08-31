@@ -313,6 +313,8 @@ _FP_PACKED_MEM_KINDS: tuple[str, ...] = (
     "fppstoreidx",
     "fpploadidxnb",
     "fppstoreidxnb",
+    "fpploadrip",
+    "fppstorerip",
 )
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to
 # a push/push/binop/pop sequence over the vstack rather than one handler computing
