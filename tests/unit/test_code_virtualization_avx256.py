@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
+from r2morph.mutations.code_virtualization_engine_common import _FP_PACKED_VEX_OPERATIONS
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
@@ -75,6 +76,12 @@ def test_vex_256_qword_compare_decoder_preserves_sources() -> None:
     decoded = _decode_fp_vex_256_packed_arith("vpcmpeqq ymm0, ymm1, ymm2")
 
     expect(decoded == ("fppackedvex256", "pcmpeqq", 0, 1, 2))
+
+
+def test_vex_128_compare_operations_have_engine_handlers() -> None:
+    expected = {"vpcmpeqb", "vpcmpeqw", "vpcmpeqq", "vpcmpgtb", "vpcmpgtw", "vpcmpgtq"}
+
+    expect(expected.issubset(set(_FP_PACKED_VEX_OPERATIONS)))
 
 
 def test_vex_256_word_compare_assembly_uses_native_instruction() -> None:

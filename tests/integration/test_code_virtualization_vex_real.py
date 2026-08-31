@@ -215,6 +215,45 @@ int main(void) {
 }
 """
 
+_VEX_COMPARE_SOURCE = r"""
+typedef unsigned char vector128_bytes __attribute__((vector_size(16)));
+typedef short vector128_words __attribute__((vector_size(16)));
+typedef long vector128_qwords __attribute__((vector_size(16)));
+
+__attribute__((noinline)) static vector128_bytes compare_bytes(vector128_bytes left, vector128_bytes right) {
+    vector128_bytes result;
+    __asm__ volatile("vpcmpeqb %2, %1, %0" : "=x"(result) : "x"(left), "x"(right));
+    return result;
+}
+
+__attribute__((noinline)) static vector128_words compare_words(vector128_words left, vector128_words right) {
+    vector128_words result;
+    __asm__ volatile("vpcmpgtw %2, %1, %0" : "=x"(result) : "x"(left), "x"(right));
+    return result;
+}
+
+__attribute__((noinline)) static vector128_qwords compare_qwords(vector128_qwords left, vector128_qwords right) {
+    vector128_qwords result;
+    __asm__ volatile("vpcmpgtq %2, %1, %0" : "=x"(result) : "x"(left), "x"(right));
+    return result;
+}
+
+int main(void) {
+    vector128_bytes bytes_left = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    vector128_bytes bytes_right = {1, 0, 3, 0, 5, 0, 7, 0, 9, 0, 11, 0, 13, 0, 15, 0};
+    vector128_words words_left = {1, 2, 3, 4, 5, 6, 7, 8};
+    vector128_words words_right = {0, 2, 1, 4, 4, 6, 6, 8};
+    vector128_qwords qwords_left = {1, 2};
+    vector128_qwords qwords_right = {0, 2};
+    vector128_bytes bytes = compare_bytes(bytes_left, bytes_right);
+    vector128_words words = compare_words(words_left, words_right);
+    vector128_qwords qwords = compare_qwords(qwords_left, qwords_right);
+    return bytes[0] == 255 && bytes[1] == 0 && words[0] == -1 && words[1] == 0 && qwords[0] == -1 && qwords[1] == 0
+               ? 42
+               : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -615,5 +654,51 @@ def test_virtualized_movmskb_variants_preserve_native_result(tmp_path: Path) -> 
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "movmskb variants changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_vex128_integer_compares_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX2 execution requires an x86-64 host")
+
+    source = tmp_path / "vex128_compare.c"
+    original = tmp_path / "original_vex128_compare"
+    mutated = tmp_path / "mutated_vex128_compare"
+    source.write_text(_VEX_COMPARE_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx2",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 compare fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260844}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.128 integer compares changed the result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )
