@@ -132,5 +132,6 @@ def test_vex_scalar_fp_compare_native_fixture_preserves_result(tmp_path: Path) -
     transformed_result = run_command([mutated], timeout=30)
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
-        f"VEX scalar FP compare virtualization changed the result: {stats=}",
+        f"VEX scalar FP compare virtualization changed the result: original={original_result.returncode}, "
+        f"transformed={transformed_result.returncode}, {stats=}",
     )
