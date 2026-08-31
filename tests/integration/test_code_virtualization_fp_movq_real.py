@@ -1,4 +1,4 @@
-"""Native regression for movq xmm,xmm upper-lane clearing."""
+"""Native regression for scalar and legacy GP/XMM movq transfers."""
 
 from __future__ import annotations
 
@@ -27,6 +27,15 @@ pytestmark = [
 
 def test_movq_fixture_original_has_expected_exit_code() -> None:
     expect(emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE)
+
+
+def test_movq_fixture_classifies_legacy_gp_to_xmm_transfer() -> None:
+    with Binary(_FIXTURE) as binary:
+        binary.analyze()
+        instructions = binary.get_function_disasm(int(binary.get_functions()[0]["addr"]))
+
+    transfer = next(instruction for instruction in instructions if "movq xmm3" in instruction.get("opcode", ""))
+    expect(transfer.get("opcode", "").startswith("movq xmm3, r8"))
 
 
 def test_movq_fixture_virtualization_preserves_exit_code(tmp_path: Path) -> None:

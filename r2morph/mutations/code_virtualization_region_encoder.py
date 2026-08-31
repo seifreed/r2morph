@@ -257,7 +257,7 @@ class RegionEncoder:
             self._pair(self._opcode(item), item[3], self.slot_of[item[4]])
         elif kind == "cvtf2i":
             self._pair(self._opcode(item), item[4], self.slot_of[item[3]])
-        elif kind == "fpmovd":
+        elif kind in ("fpmovd", "fpmovq"):
             _, _direction, xmm, gp = item
             self._pair(self._opcode(item), xmm, self.slot_of[gp])
         elif kind in ("fpcmp", "fpmov", "fppacked", "fpmovvex", "fpmovvex256"):

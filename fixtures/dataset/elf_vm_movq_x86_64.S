@@ -13,6 +13,18 @@ _start:
     test rdi, rdi
     jne fail
     mov edi, dword ptr [rip + result]
+    mov r8, qword ptr [rip + source + 8]
+    pcmpeqd xmm3, xmm3
+    movq xmm3, r8
+    movups xmmword ptr [rip + result], xmm3
+    mov rdi, qword ptr [rip + result + 8]
+    test rdi, rdi
+    jne fail
+    movq r9, xmm3
+    cmp r9, r8
+    jne fail
+    mov eax, 42
+    mov edi, eax
     mov eax, 60
     syscall
 fail:

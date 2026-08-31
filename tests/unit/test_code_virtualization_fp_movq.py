@@ -8,6 +8,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_mem,
     _decode_fp_movd,
     _decode_fp_move,
+    _decode_fp_movq,
     _decode_fp_packed_mem,
     _decode_fp_riprel,
 )
@@ -82,6 +83,29 @@ def test_fp_movd_decoder_xmm_source_uses_xmm_and_gp_slots() -> None:
     expect(_decode_fp_movd("movd edi, xmm3") == ("fpmovd", "xmm_to_gp", 3, 7))
 
 
+def test_fp_movq_decoder_gp_source_uses_xmm_and_gp_slots() -> None:
+    expect(_decode_fp_movq("movq xmm3, rdi") == ("fpmovq", "gp_to_xmm", 3, 7))
+
+
+def test_fp_movq_decoder_xmm_source_uses_xmm_and_gp_slots() -> None:
+    expect(_decode_fp_movq("movq rdi, xmm3") == ("fpmovq", "xmm_to_gp", 3, 7))
+
+
+def test_vector_classifier_virtualizes_legacy_movq_transfer() -> None:
+    expect(
+        _classify(
+            {
+                "type": "mov",
+                "family": "vec",
+                "opcode": "movq xmm3, rdi",
+                "addr": 0x1000,
+                "size": 5,
+            }
+        )
+        == ["fpmovq", "gp_to_xmm", 3, 7]
+    )
+
+
 def test_fp_movd_handler_gp_source_zeroes_xmm_destination() -> None:
     assembly = _fp_movd_handler_asm("fpmovd_gp_to_xmm", "byte ptr [rsp+136]")
     expect("movd xmm0, eax" in assembly)
@@ -90,3 +114,8 @@ def test_fp_movd_handler_gp_source_zeroes_xmm_destination() -> None:
 def test_fp_movd_handler_xmm_source_zero_extends_gp_destination() -> None:
     assembly = _fp_movd_handler_asm("fpmovd_xmm_to_gp", "byte ptr [rsp+136]")
     expect("movd eax, xmm0" in assembly)
+
+
+def test_fp_movq_handler_preserves_qword_transfer() -> None:
+    assembly = _fp_movd_handler_asm("fpmovq_gp_to_xmm", "byte ptr [rsp+136]")
+    expect("mov rax, qword ptr [rsp + r9*8]" in assembly and "movq xmm0, rax" in assembly)

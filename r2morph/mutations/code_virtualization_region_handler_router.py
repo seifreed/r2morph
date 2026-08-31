@@ -130,6 +130,7 @@ _VRET_CLEANUP_INDEX = 2
 
 _FP_MOVE_HANDLERS = {
     "fpmovd": _fp_movd_handler_asm,
+    "fpmovq": _fp_movd_handler_asm,
     "fpmov": _fp_move_handler_asm,
 }
 
@@ -614,7 +615,7 @@ class HandlerBodyRouter:
             body = _fp_arith_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith(("cvti2f_", "cvtf2i_")):
             body = _fp_convert_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key.startswith(("fpmovd_", "fpmov_")):
+        elif key.startswith(("fpmovd_", "fpmovq_", "fpmov_")):
             body = _FP_MOVE_HANDLERS[key.split("_", 1)[0]](key, self.context.key, self.context.field_perm)
         elif key.startswith(("fpcmp_", "fpcmpmem_", "fpcmpmemidx_", "fpcmpmemidxnb_")):
             if key.startswith(("fpcmpmem_", "fpcmpmemidx_", "fpcmpmemidxnb_")):

@@ -48,6 +48,7 @@ _FIXED_SIZE_GROUPS = {
         "cvti2f",
         "cvtf2i",
         "fpmovd",
+        "fpmovq",
         "fpcmp",
         "fpmov",
         "fppacked",

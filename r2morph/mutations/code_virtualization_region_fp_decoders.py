@@ -160,32 +160,41 @@ def _decode_fp_convert(text: str) -> tuple[str, int, int, int, int] | None:
     return None
 
 
-def _decode_fp_movd(text: str) -> tuple[str, str, int, int] | None:
-    """Decode a 32-bit integer transfer between a GP and XMM register.
+def _decode_fp_gp_move(text: str, mnemonic: str, kind: str, width: int) -> tuple[str, str, int, int] | None:
+    """Decode an integer transfer between a GP and XMM register.
 
-    Returns ``("fpmovd", direction, xmm_index, gp_slot)``. ``movd`` zeroes the
-    destination XMM register when sourced from GP, and zero-extends its low
-    dword when sourced from XMM; both details are preserved by the handler.
+    ``movd`` and ``movq`` use the same bytecode shape while their handlers
+    preserve the instruction-specific width and zeroing semantics.
     Stack-pointer operands remain native because the region VM reserves that
     register for its relocated program stack.
     """
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "movd" or "," not in parts[1]:
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != mnemonic or "," not in parts[1]:
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     left_xmm = _parse_xmm_operand(left)
     right_xmm = _parse_xmm_operand(right)
     if left_xmm is not None:
         gp = _register_operand(right)
-        if gp is None or gp[1] != _DWORD_WIDTH_BITS:
+        if gp is None or gp[1] != width:
             return None
-        return ("fpmovd", "gp_to_xmm", left_xmm, gp[0])
+        return (kind, "gp_to_xmm", left_xmm, gp[0])
     if right_xmm is not None:
         gp = _register_operand(left)
-        if gp is None or gp[1] != _DWORD_WIDTH_BITS:
+        if gp is None or gp[1] != width:
             return None
-        return ("fpmovd", "xmm_to_gp", right_xmm, gp[0])
+        return (kind, "xmm_to_gp", right_xmm, gp[0])
     return None
+
+
+def _decode_fp_movd(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a 32-bit integer transfer between a GP and XMM register."""
+    return _decode_fp_gp_move(text, "movd", "fpmovd", _DWORD_WIDTH_BITS)
+
+
+def _decode_fp_movq(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a 64-bit integer transfer between a GP and XMM register."""
+    return _decode_fp_gp_move(text, "movq", "fpmovq", _QWORD_WIDTH_BITS)
 
 
 _FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss", "ptest"})
