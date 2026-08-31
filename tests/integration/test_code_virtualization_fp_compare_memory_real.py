@@ -64,6 +64,29 @@ int main(void) {
 }
 """
 
+_VEX_COMPARE_NATIVE_CALLER_SOURCE = r"""
+static volatile double threshold = 3.0;
+
+__attribute__((noinline)) static int compare_vex_scalar(double value) {
+    unsigned char result;
+    __asm__ volatile(
+        "vucomisd %[memory], %[value]\n"
+        "seta %[result]\n"
+        : [result] "=a"(result)
+        : [memory] "m"(threshold), [value] "x"(value)
+        : "cc");
+    return result;
+}
+
+int main(void) {
+    unsigned int low;
+    unsigned int high;
+    int result = compare_vex_scalar(4.0);
+    __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
+    return result == 1 ? 0 : 1;
+}
+"""
+
 pytestmark = pytest.mark.integration
 
 
@@ -181,5 +204,42 @@ def test_vex_scalar_fp_compare_in_main_native_fixture_preserves_result(tmp_path:
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
         f"VEX scalar FP compare in main changed the result: original={original_result.returncode}, "
+        f"transformed={transformed_result.returncode}, {stats=}",
+    )
+
+
+def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native VEX execution requires an x86-64 host")
+
+    source = tmp_path / "vex_fpcmp_native_caller.c"
+    original = tmp_path / "original"
+    mutated = tmp_path / "mutated"
+    source.write_text(_VEX_COMPARE_NATIVE_CALLER_SOURCE, encoding="utf-8")
+    compile_result = run_command(
+        ["gcc", "-O2", "-mavx", "-fno-pie", "-no-pie", source, "-o", original],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the native caller VEX compare fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "max_functions": 20,
+                "reject_partial_virtualization": True,
+                "seed": 20260831,
+            }
+        ).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
+        f"VEX scalar FP compare callee changed the result: original={original_result.returncode}, "
         f"transformed={transformed_result.returncode}, {stats=}",
     )
