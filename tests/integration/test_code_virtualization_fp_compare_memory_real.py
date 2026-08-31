@@ -229,7 +229,7 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         stats = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
-                "max_functions": 20,
+                "max_functions": 1,
                 "reject_partial_virtualization": True,
                 "seed": 20260831,
             }
