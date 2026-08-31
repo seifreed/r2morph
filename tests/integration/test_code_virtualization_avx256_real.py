@@ -197,6 +197,37 @@ int main(void) {
 }
 """
 
+_TWO_SOURCE_BLEND_SOURCE = r"""
+typedef float vector256 __attribute__((vector_size(32)));
+typedef double double_vector256 __attribute__((vector_size(32)));
+
+__attribute__((noinline)) static vector256 blend_float(vector256 left, vector256 right) {
+    vector256 result;
+    __asm__ volatile("vblendps $0x5a, %2, %1, %0" : "=x"(result) : "x"(left), "x"(right));
+    return result;
+}
+
+__attribute__((noinline)) static double_vector256 blend_double(
+    double_vector256 left, double_vector256 right
+) {
+    double_vector256 result;
+    __asm__ volatile("vblendpd $0x05, %2, %1, %0" : "=x"(result) : "x"(left), "x"(right));
+    return result;
+}
+
+int main(void) {
+    vector256 float_left = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    vector256 float_right = {11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f};
+    double_vector256 double_left = {1.0, 2.0, 3.0, 4.0};
+    double_vector256 double_right = {11.0, 12.0, 13.0, 14.0};
+    vector256 float_result = blend_float(float_left, float_right);
+    double_vector256 double_result = blend_double(double_left, double_right);
+    return float_result[0] == 1.0f && float_result[1] == 12.0f
+        && float_result[7] == 18.0f && double_result[0] == 1.0
+        && double_result[3] == 14.0 ? 42 : 1;
+}
+"""
+
 
 def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
@@ -467,6 +498,51 @@ def test_virtualized_vex_256_two_source_shuffles_preserve_native_result(tmp_path
     expect(
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         f"VEX.256 two-source shuffle virtualization changed the result: {stats=}",
+    )
+
+
+def test_virtualized_vex_256_two_source_blends_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex256_two_source_blend.c"
+    original = tmp_path / "original_two_source_blend"
+    mutated = tmp_path / "mutated_two_source_blend"
+    source.write_text(_TWO_SOURCE_BLEND_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.256 two-source blend fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260839}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.256 two-source blend function was not virtualized: {stats=}")
+    expect(
+        original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX.256 two-source blend virtualization changed the result: {stats=}",
     )
 
 

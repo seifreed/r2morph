@@ -607,6 +607,8 @@ _FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vperm2f128": "perm2f128",
     "vshufps": "shufps",
     "vshufpd": "shufpd",
+    "vblendps": "blendps",
+    "vblendpd": "blendpd",
 }
 _FP_VEX_256_LANE_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vpermilps": "permilps",
