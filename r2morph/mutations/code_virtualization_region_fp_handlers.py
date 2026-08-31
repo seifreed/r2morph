@@ -483,6 +483,29 @@ def _fp_vex_gp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0,
     )
 
 
+def _fp_movmskb_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Extract the sign-bit mask of an XMM/YMM source into a GP frame slot."""
+    kind = handler_key.split("_", 1)[0]
+    source = "ymm0" if kind == "fpmovmskbvex256" else "xmm0"
+    instruction = "vpmovmskb" if kind.startswith("fpmovmskbvex") else "pmovmskb"
+    off = pair_offsets("xmm", "gp", field_perm)
+    load = (
+        f"  movups {source.replace('ymm', 'xmm')}, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        if source == "xmm0"
+        else f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r8 + {_YMM_UPPER_SAVE_OFFSET}]\n"
+        "  vinsertf128 ymm0, ymm0, xmm1, 1\n"
+    )
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n"
+        + load
+        + f"  {instruction} eax, {source}\n"
+        + "  mov qword ptr [rsp + r9*8], rax\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_vex_scalar_memory_move_handler_asm(
     handler_key: str,
     key: str,

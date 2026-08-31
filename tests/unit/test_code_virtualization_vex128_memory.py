@@ -6,6 +6,7 @@ from r2morph.mutations.code_virtualization_region_classification import _classif
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_movmskb,
     _decode_fp_vex_gp_move,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_arith_mem,
@@ -14,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
+    _fp_movmskb_handler_asm,
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_gp_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
@@ -108,6 +110,44 @@ def test_decode_vex128_vmovd_preserves_dword_transfer_slots() -> None:
     xmm_to_gp = _decode_fp_vex_gp_move("vmovd edx, xmm3")
 
     expect(gp_to_xmm == ("fpmovvexgpd", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgpd", "xmm_to_gp", 3, 2))
+
+
+def test_decode_movmskb_variants_preserve_vector_width_and_gp_slot() -> None:
+    expect(
+        _decode_fp_movmskb("pmovmskb eax, xmm2") == ("fpmovmskb", 0, 2)
+        and _decode_fp_movmskb("vpmovmskb r8d, xmm3") == ("fpmovmskbvex", 8, 3)
+        and _decode_fp_movmskb("vpmovmskb ecx, ymm4") == ("fpmovmskbvex256", 1, 4)
+    )
+
+
+def test_classify_movmskb_routes_to_mask_extraction_item() -> None:
+    item = _classify({"type": "vec", "family": "vec", "opcode": "vpmovmskb eax, ymm0", "addr": 0x1000, "size": 5})
+
+    expect(item == ["fpmovmskbvex256", 0, 0])
+
+
+def test_movmskb_handlers_emit_matching_native_widths() -> None:
+    legacy = _fp_movmskb_handler_asm("fpmovmskb_0", "0xAA")
+    wide = _fp_movmskb_handler_asm("fpmovmskbvex256_0", "0xAA")
+
+    expect(
+        "pmovmskb eax, xmm0" in legacy and "vpmovmskb eax, ymm0" in wide and "vinsertf128 ymm0, ymm0, xmm1, 1" in wide
+    )
+
+
+def test_movmskb_item_is_encoded_and_routed() -> None:
+    item = ("fpmovmskbvex256", 0, 1)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 5)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect(_item_size(item) == _VEX128_REGISTER_ITEM_SIZE and "vpmovmskb r10d, ymm0" in assembly)
 
 
 def test_classify_vex128_vmovq_gp_transfer_routes_to_qword_item() -> None:

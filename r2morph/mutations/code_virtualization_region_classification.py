@@ -38,6 +38,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_mem,
     _decode_fp_movd,
     _decode_fp_move,
+    _decode_fp_movmskb,
     _decode_fp_movq,
     _decode_fp_packed_arith,
     _decode_fp_packed_arith_idx,
@@ -355,6 +356,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     result = _first_item(
         (
             lambda: _decode_fp_convert(text),
+            lambda: _decode_fp_movmskb(text),
             lambda: _decode_fp_compare(text),
             lambda: _decode_cmpxchg_memory(text),
             lambda: _decode_locked_memory_rmw(text, address, size),

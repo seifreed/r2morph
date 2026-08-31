@@ -174,6 +174,47 @@ int main(void) {
 }
 """
 
+_VEX_MOVMSKB_SOURCE = r"""
+__attribute__((noinline)) static unsigned mask128_legacy(const unsigned char *source) {
+    unsigned result;
+    __asm__ volatile(
+        "vmovdqu (%1), %%xmm0\n"
+        "pmovmskb %%xmm0, %0\n"
+        : "=r"(result)
+        : "r"(source)
+        : "xmm0", "memory");
+    return result;
+}
+
+__attribute__((noinline)) static unsigned mask128_vex(const unsigned char *source) {
+    unsigned result;
+    __asm__ volatile(
+        "vmovdqu (%1), %%xmm0\n"
+        "vpmovmskb %%xmm0, %0\n"
+        : "=r"(result)
+        : "r"(source)
+        : "xmm0", "memory");
+    return result;
+}
+
+__attribute__((noinline)) static unsigned mask256_vex(const unsigned char *source) {
+    unsigned result;
+    __asm__ volatile(
+        "vmovdqu (%1), %%ymm0\n"
+        "vpmovmskb %%ymm0, %0\n"
+        : "=r"(result)
+        : "r"(source)
+        : "ymm0", "memory");
+    return result;
+}
+
+int main(void) {
+    const unsigned char source128[16] = {0x80};
+    const unsigned char source256[32] = {0x80};
+    return mask128_legacy(source128) == 1U && mask128_vex(source128) == 1U && mask256_vex(source256) == 1U ? 42 : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -528,5 +569,51 @@ def test_virtualized_vex256_variable_integer_shift_preserves_native_result(tmp_p
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.256 variable integer shift changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_movmskb_variants_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX2 execution requires an x86-64 host")
+
+    source = tmp_path / "vex_movmskb.c"
+    original = tmp_path / "original_vex_movmskb"
+    mutated = tmp_path / "mutated_vex_movmskb"
+    source.write_text(_VEX_MOVMSKB_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx2",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the movmskb fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260843}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "movmskb variants changed the result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )

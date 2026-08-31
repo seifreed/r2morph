@@ -238,6 +238,9 @@ class RegionEncoder:
         if kind in ("fpmovvexgp", "fpmovvexgpd"):
             self._pair(self._opcode(item), item[2], self.slot_of[item[3]])
             return True
+        if kind in ("fpmovmskb", "fpmovmskbvex", "fpmovmskbvex256"):
+            self._pair(self._opcode(item), item[2], self.slot_of[item[1]])
+            return True
         if kind in (
             "fpload",
             "fpstore",

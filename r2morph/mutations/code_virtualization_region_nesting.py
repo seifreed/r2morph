@@ -322,6 +322,7 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
             "fpmovvexscalar3",
             "fpmovvexgp",
             "fpmovvexgpd",
+            "fpmovmskbvex256",
             "fploadvex",
             "fploadvexrip",
             "fploadvexidx",

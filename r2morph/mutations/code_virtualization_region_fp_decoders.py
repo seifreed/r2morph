@@ -785,6 +785,28 @@ def _decode_fp_vex_gp_move(text: str) -> tuple[str, str, int, int] | None:
     return (kind, direction, xmm_index, gp[0])
 
 
+def _decode_fp_movmskb(text: str) -> tuple[str, int, int] | None:
+    """Decode byte-mask extraction from an XMM or YMM register to a 32-bit GP."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in {"pmovmskb", "vpmovmskb"}:
+        return None
+    destination, source = (token.strip().lower() for token in parts[1].split(",", 1))
+    gp = _register_operand(destination)
+    if gp is None or gp[1] != _DWORD_WIDTH_BITS:
+        return None
+    xmm = _parse_xmm_operand(source)
+    if xmm is not None:
+        kind = "fpmovmskb" if mnemonic == "pmovmskb" else "fpmovmskbvex"
+        return kind, gp[0], xmm
+    ymm = _parse_ymm_operand(source)
+    if ymm is not None and mnemonic == "vpmovmskb":
+        return "fpmovmskbvex256", gp[0], ymm
+    return None
+
+
 def _decode_fp_vex_scalar_move(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode VEX scalar moves in register and memory forms.
 
