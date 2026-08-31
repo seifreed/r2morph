@@ -299,10 +299,10 @@ int main(void) {
     const __m256d double_right = {10.0, 20.0, 30.0, 40.0};
     const __m256 float_result = addsub_float(float_left, float_right);
     const __m256d double_result = addsub_double(double_left, double_right);
-    return float_result[0] == 11.0f && float_result[1] == -18.0f
-        && float_result[6] == 77.0f && float_result[7] == -72.0f
-        && double_result[0] == 11.0 && double_result[1] == -18.0
-        && double_result[2] == 33.0 && double_result[3] == -36.0 ? 42 : 1;
+    return float_result[0] == -9.0f && float_result[1] == 22.0f
+        && float_result[6] == -63.0f && float_result[7] == 88.0f
+        && double_result[0] == -9.0 && double_result[1] == 22.0
+        && double_result[2] == -27.0 && double_result[3] == 44.0 ? 42 : 1;
 }
 """
 
