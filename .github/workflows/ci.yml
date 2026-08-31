@@ -212,7 +212,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget cmake
+            git build-essential pkg-config wget cmake gdb
 
       - name: Install radare2
         run: |

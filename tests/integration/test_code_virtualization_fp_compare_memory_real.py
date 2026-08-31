@@ -238,6 +238,17 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
     finally:
         binary.close()
     transformed_result = run_command([mutated], timeout=30)
+    if transformed_result.returncode not in {0, original_result.returncode}:
+        trace = run_command(
+            ["gdb", "-batch", "-ex", "set pagination off", "-ex", "run", "-ex", "bt", str(mutated)],
+            text=True,
+            timeout=30,
+        )
+        expect(
+            False,
+            f"VEX scalar FP compare callee crashed: returncode={transformed_result.returncode}; "
+            f"gdb={trace.stdout}{trace.stderr}",
+        )
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
         f"VEX scalar FP compare callee changed the result: original={original_result.returncode}, "
