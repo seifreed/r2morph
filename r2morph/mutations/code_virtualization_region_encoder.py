@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_layout import (
     op_permuted_fields,
     pair_permuted_fields,
     permuted_fields,
+    quad_permuted_fields,
     shift_permuted_fields,
     triple_permuted_fields,
 )
@@ -48,6 +49,7 @@ class RegionEncoder:
             self._emit_virtual,
             self._emit_integer,
             self._emit_fp_shift_immediate,
+            self._emit_fp_variable_blend,
             self._emit_fp_scalar,
             self._emit_fp_memory,
             self._emit_gp_memory,
@@ -86,6 +88,11 @@ class RegionEncoder:
     def _triple(self, position: int, first: int, second: int, third: int) -> None:
         values = {"a": first, "b": second, "c": third}
         for name, _size in triple_permuted_fields("a", "b", "c", self.scheme.field_perm):
+            self.plain.append(values[name] ^ position)
+
+    def _quad(self, position: int, first: int, second: int, third: int, fourth: int) -> None:
+        values = {"a": first, "b": second, "c": third, "d": fourth}
+        for name, _size in quad_permuted_fields("a", "b", "c", "d", self.scheme.field_perm):
             self.plain.append(values[name] ^ position)
 
     def _mem(self, position: int, operands: tuple[int, int | None, int]) -> None:
@@ -269,6 +276,13 @@ class RegionEncoder:
             self._triple(self._opcode(item), item[2], item[3], item[4])
         else:
             return False
+        return True
+
+    def _emit_fp_variable_blend(self, item: RegionItem) -> bool:
+        """Encode the four YMM fields of a vector-mask blend."""
+        if item[0] != "fppackedvex256var":
+            return False
+        self._quad(self._opcode(item), item[2], item[3], item[4], item[5])
         return True
 
     def _emit_fp_scalar_memory_move(self, item: RegionItem) -> bool:

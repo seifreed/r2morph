@@ -47,6 +47,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_256_packed_shift_immediate_handler_asm,
     _fp_vex_256_permute_immediate_handler_asm,
     _fp_vex_256_permute_lane_immediate_handler_asm,
+    _fp_vex_256_variable_blend_handler_asm,
     _fp_vex_gp_move_handler_asm,
     _fp_vex_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
@@ -681,6 +682,8 @@ class HandlerBodyRouter:
         return None
 
     def _fp_vex_256_immediate(self, key: str) -> str | None:
+        if key.startswith("fppackedvex256var_"):
+            return _fp_vex_256_variable_blend_handler_asm(key, self.context.key, self.context.field_perm)
         if key.startswith("fppackedvex256permimm_"):
             return _fp_vex_256_permute_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         if key.startswith("fppackedvex256permilimm_"):

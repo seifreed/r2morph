@@ -610,6 +610,10 @@ _FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vblendps": "blendps",
     "vblendpd": "blendpd",
 }
+_FP_VEX_256_VARIABLE_BLEND: dict[str, str] = {
+    "vblendvps": "blendvps",
+    "vblendvpd": "blendvpd",
+}
 _FP_VEX_256_LANE_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vpermilps": "permilps",
     "vpermilpd": "permilpd",
@@ -700,6 +704,24 @@ def _decode_fp_vex_256_permute_immediate(text: str) -> tuple[str, str, int, int,
     if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
         return None
     return ("fppackedvex256permimm", operation, destination, first_source, second_source, immediate)
+
+
+def _decode_fp_vex_256_variable_blend(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode a VEX.256 blend selected by a vector mask register."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    operation = _FP_VEX_256_VARIABLE_BLEND.get(parts[0].lower())
+    if operation is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _VEX_256_PERMUTE_OPERAND_COUNT:
+        return None
+    registers = tuple(_parse_ymm_operand(operand) for operand in operands)
+    destination, first_source, second_source, mask = registers
+    if destination is None or first_source is None or second_source is None or mask is None:
+        return None
+    return ("fppackedvex256var", operation, destination, first_source, second_source, mask)
 
 
 def _decode_fp_vex_256_lane_permute_immediate(text: str) -> tuple[str, str, int, int, int] | None:

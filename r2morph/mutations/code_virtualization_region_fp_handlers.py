@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from r2morph.mutations.code_virtualization_layout import pair_offsets, triple_offsets
+from r2morph.mutations.code_virtualization_layout import pair_offsets, quad_offsets, triple_offsets
 from r2morph.mutations.code_virtualization_region_handlers import (
     _DWORD_WIDTH_BITS,
     _FLAGS_OFFSET,
@@ -385,6 +385,25 @@ def _fp_vex_256_permute_immediate_handler_asm(handler_key: str, key: str, field_
     body += _load_ymm_from_frame("r9", 0)
     body += _load_ymm_from_frame("r10", 1)
     body += f"  v{instruction} ymm0, ymm0, ymm1, {immediate}\n"
+    return body + _store_ymm_to_frame("r8") + "  add rsi, 5\n  jmp vm_dispatch\n"
+
+
+def _fp_vex_256_variable_blend_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Blend two YMM sources using a third YMM register as the lane mask."""
+    _, instruction = handler_key.split("_", 1)
+    off = quad_offsets("dst", "src1", "src2", "mask", field_perm)
+    body = ""
+    for register, name in (("r8", "dst"), ("r9", "src1"), ("r10", "src2"), ("r11", "mask")):
+        body += (
+            f"  movzx {register}d, byte ptr [rsi+{off[name]}]\n"
+            f"  xor {register}b, {key}\n"
+            f"  xor {register}b, r13b\n"
+            f"  shl {register}, 4\n"
+        )
+    body += _load_ymm_from_frame("r9", 0)
+    body += _load_ymm_from_frame("r10", 1)
+    body += _load_ymm_from_frame("r11", 2)
+    body += f"  v{instruction} ymm0, ymm0, ymm1, ymm2\n"
     return body + _store_ymm_to_frame("r8") + "  add rsi, 5\n  jmp vm_dispatch\n"
 
 
