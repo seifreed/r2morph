@@ -65,6 +65,20 @@ def test_vex_256_addsub_double_decoder_preserves_sources() -> None:
     expect(decoded == ("fppackedvex256", "addsubpd", 0, 1, 2))
 
 
+def test_vex_256_byte_compare_decoder_preserves_sources() -> None:
+    decoded = _decode_fp_vex_256_packed_arith("vpcmpeqb ymm0, ymm1, ymm2")
+
+    expect(decoded == ("fppackedvex256", "pcmpeqb", 0, 1, 2))
+
+
+def test_vex_256_word_compare_assembly_uses_native_instruction() -> None:
+    items = [("fppackedvex256", "pcmpgtw", 0, 1, 2), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(10)))
+
+    expect("vpcmpgtw ymm0, ymm0, ymm1" in assembly)
+
+
 def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:
     items = [("fppackedvex256", "pslld", 0, 1, 2), ("exit", _EXIT_VADDR)]
     region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
