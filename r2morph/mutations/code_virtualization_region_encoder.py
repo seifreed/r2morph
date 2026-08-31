@@ -300,12 +300,15 @@ class RegionEncoder:
 
     def _emit_fp_shift_immediate(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind not in ("fppackedimm", "fppackedveximm", "fppackedvex256imm"):
+        if kind not in ("fppackedimm", "fppackedveximm", "fppackedvex256imm", "fppackedvex256permimm"):
             return False
         position = self._opcode(item)
         if kind == "fppackedimm":
             self.plain.append(item[2] ^ position)
             self.plain.append(item[3] ^ position)
+        elif kind == "fppackedvex256permimm":
+            self._triple(position, item[2], item[3], item[4])
+            self.plain.append(item[5] ^ position)
         else:
             self._pair(position, item[2], item[3])
             self.plain.append(item[4] ^ position)

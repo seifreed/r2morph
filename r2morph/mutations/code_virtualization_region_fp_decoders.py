@@ -18,6 +18,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 _DWORD_WIDTH_BITS = 32
 _QWORD_WIDTH_BITS = 64
 _PACKED_VEX_OPERAND_COUNT = 3
+_VEX_256_PERMUTE_OPERAND_COUNT = 4
 _PACKED_VEX_MOVE_OPERAND_COUNT = 2
 _PACKED_OPERAND_COUNT = 2
 _PACKED_SHIFT_IMMEDIATE_COUNT = 3
@@ -602,6 +603,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpunpcklwd": "punpcklwd",
 }
 _FP_VEX_PACKED_UNARY_ARITH: dict[str, str] = {"vsqrtps": "sqrtps", "vsqrtpd": "sqrtpd"}
+_FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {"vperm2f128": "perm2f128"}
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vaddss": ("add", 32),
@@ -666,6 +668,28 @@ def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int]
         return None
     kind = "fppackedvex256imm" if operands[0].lower().startswith("ymm") else "fppackedveximm"
     return (kind, operation, destination, source, immediate) if 0 <= immediate <= _PACKED_IMMEDIATE_MAX else None
+
+
+def _decode_fp_vex_256_permute_immediate(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode a VEX.256 lane permutation controlled by an immediate byte."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    operation = _FP_VEX_256_PERMUTE_IMMEDIATE.get(parts[0].lower())
+    operands = [token.strip() for token in parts[1].split(",")]
+    if operation is None or len(operands) != _VEX_256_PERMUTE_OPERAND_COUNT:
+        return None
+    registers = tuple(_parse_ymm_operand(operand) for operand in operands[:3])
+    destination, first_source, second_source = registers
+    if destination is None or first_source is None or second_source is None:
+        return None
+    try:
+        immediate = int(operands[3], 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
+        return None
+    return ("fppackedvex256permimm", operation, destination, first_source, second_source, immediate)
 
 
 def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int] | None:

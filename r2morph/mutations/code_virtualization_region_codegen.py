@@ -100,6 +100,7 @@ _YMM_HANDLER_KINDS = frozenset(
         "fpmovvex",
         "fppackedvex256",
         "fppackedvex256imm",
+        "fppackedvex256permimm",
         "fppackedvex256mem",
         "fppackedvex256memrip",
         "fppackedvex256memidx",

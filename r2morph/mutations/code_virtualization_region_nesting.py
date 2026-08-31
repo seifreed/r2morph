@@ -333,6 +333,7 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
             "fpmovvexmemidxnb",
             "fppackedvex256",
             "fppackedvex256imm",
+            "fppackedvex256permimm",
             "fppackedvex256mem",
             "fppackedvex256memrip",
             "fppackedvex256memidx",
