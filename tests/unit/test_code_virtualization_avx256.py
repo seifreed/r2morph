@@ -13,12 +13,14 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_lane_permute_immediate,
     _decode_fp_vex_256_permute_immediate,
     _decode_fp_vex_256_variable_blend,
+    _decode_fp_vex_256_variable_permute,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_256_permute_immediate_handler_asm,
     _fp_vex_256_permute_lane_immediate_handler_asm,
     _fp_vex_256_variable_blend_handler_asm,
+    _fp_vex_256_variable_permute_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
@@ -32,6 +34,7 @@ _VEX_256_PERMUTE_IMMEDIATE = 0x31
 _VEX_256_LANE_PERMUTE_ITEM_SIZE = 4
 _VEX_256_LANE_PERMUTE_IMMEDIATE = 0x1B
 _VEX_256_VARIABLE_BLEND_ITEM_SIZE = 5
+_VEX_256_VARIABLE_PERMUTE_ITEM_SIZE = 4
 
 
 def _vex_256_region() -> Region:
@@ -165,6 +168,36 @@ def test_vex_256_variable_blend_classification_preserves_all_operands() -> None:
     )
 
     expect(classified == ["fppackedvex256var", "blendvps", 0, 1, 2, 3])
+
+
+def test_vex_256_variable_permute_decoder_preserves_control_register() -> None:
+    decoded = _decode_fp_vex_256_variable_permute("vpermilps ymm0, ymm1, ymm2")
+
+    expect(decoded == ("fppackedvex256varpermil", "permilps", 0, 1, 2))
+
+
+def test_vex_256_variable_double_permute_decoder_preserves_control_register() -> None:
+    decoded = _decode_fp_vex_256_variable_permute("vpermilpd ymm4, ymm5, ymm6")
+
+    expect(decoded == ("fppackedvex256varpermil", "permilpd", 4, 5, 6))
+
+
+def test_vex_256_variable_permute_handler_uses_native_instruction() -> None:
+    assembly = _fp_vex_256_variable_permute_handler_asm("fppackedvex256varpermil_permilps", "0xAA")
+
+    expect("vpermilps ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_variable_permute_item_accounts_for_three_register_fields() -> None:
+    expect(_item_size(("fppackedvex256varpermil", "permilps", 0, 1, 2)) == _VEX_256_VARIABLE_PERMUTE_ITEM_SIZE)
+
+
+def test_vex_256_variable_permute_classification_preserves_all_operands() -> None:
+    classified = classification._classify(
+        {"type": "vec", "opcode": "vpermilps ymm0, ymm1, ymm2", "addr": 0x1000, "size": 5}
+    )
+
+    expect(classified == ["fppackedvex256varpermil", "permilps", 0, 1, 2])
 
 
 def test_vex_256_lane_permutation_item_includes_immediate_byte() -> None:

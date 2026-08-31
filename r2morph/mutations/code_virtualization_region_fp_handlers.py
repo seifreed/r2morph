@@ -407,6 +407,24 @@ def _fp_vex_256_variable_blend_handler_asm(handler_key: str, key: str, field_per
     return body + _store_ymm_to_frame("r8") + "  add rsi, 5\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_256_variable_permute_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Permute packed YMM lanes using a third YMM register's control fields."""
+    _, instruction = handler_key.split("_", 1)
+    off = triple_offsets("dst", "src", "controls", field_perm)
+    body = ""
+    for register, name in (("r8", "dst"), ("r9", "src"), ("r10", "controls")):
+        body += (
+            f"  movzx {register}d, byte ptr [rsi+{off[name]}]\n"
+            f"  xor {register}b, {key}\n"
+            f"  xor {register}b, r13b\n"
+            f"  shl {register}, 4\n"
+        )
+    body += _load_ymm_from_frame("r9", 0)
+    body += _load_ymm_from_frame("r10", 1)
+    body += f"  v{instruction} ymm0, ymm0, ymm1\n"
+    return body + _store_ymm_to_frame("r8") + "  add rsi, 4\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_256_permute_lane_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Permute packed lanes in one YMM source using an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")

@@ -50,6 +50,7 @@ class RegionEncoder:
             self._emit_integer,
             self._emit_fp_shift_immediate,
             self._emit_fp_variable_blend,
+            self._emit_fp_variable_permute,
             self._emit_fp_scalar,
             self._emit_fp_memory,
             self._emit_gp_memory,
@@ -283,6 +284,13 @@ class RegionEncoder:
         if item[0] != "fppackedvex256var":
             return False
         self._quad(self._opcode(item), item[2], item[3], item[4], item[5])
+        return True
+
+    def _emit_fp_variable_permute(self, item: RegionItem) -> bool:
+        """Encode the destination, source, and control YMM fields."""
+        if item[0] != "fppackedvex256varpermil":
+            return False
+        self._triple(self._opcode(item), item[2], item[3], item[4])
         return True
 
     def _emit_fp_scalar_memory_move(self, item: RegionItem) -> bool:

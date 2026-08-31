@@ -256,6 +256,31 @@ int main(void) {
 }
 """
 
+_VARIABLE_PERMUTE_SOURCE = r"""
+#include <immintrin.h>
+
+__attribute__((noinline)) static __m256 permute_float(__m256 value, __m256i controls) {
+    return _mm256_permutevar_ps(value, controls);
+}
+
+__attribute__((noinline)) static __m256d permute_double(__m256d value, __m256i controls) {
+    return _mm256_permutevar_pd(value, controls);
+}
+
+int main(void) {
+    const __m256 float_value = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    const __m256i float_controls = _mm256_set_epi32(3, 2, 1, 0, 0, 1, 2, 3);
+    const __m256d double_value = {1.0, 2.0, 3.0, 4.0};
+    const __m256i double_controls = _mm256_set_epi64x(0, 1, 0, 1);
+    const __m256 float_result = permute_float(float_value, float_controls);
+    const __m256d double_result = permute_double(double_value, double_controls);
+    return float_result[0] == 4.0f && float_result[3] == 1.0f
+        && float_result[4] == 5.0f && float_result[7] == 8.0f
+        && double_result[0] == 2.0 && double_result[1] == 1.0
+        && double_result[2] == 4.0 && double_result[3] == 3.0 ? 42 : 1;
+}
+"""
+
 
 def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
@@ -616,6 +641,52 @@ def test_virtualized_vex_256_variable_blends_preserve_native_result(tmp_path: Pa
     expect(
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.256 variable-blend virtualization changed the result: "
+        f"original={original_result.returncode}, transformed={transformed_result.returncode}, {stats=}",
+    )
+
+
+def test_virtualized_vex_256_variable_permutations_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX2 execution requires an x86-64 host")
+
+    source = tmp_path / "vex256_variable_permute.c"
+    original = tmp_path / "original_variable_permute"
+    mutated = tmp_path / "mutated_variable_permute"
+    source.write_text(_VARIABLE_PERMUTE_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx2",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.256 variable-permutation fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260841}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.256 variable-permutation function was not virtualized: {stats=}")
+    expect(
+        original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.256 variable-permutation virtualization changed the result: "
         f"original={original_result.returncode}, transformed={transformed_result.returncode}, {stats=}",
     )
 
