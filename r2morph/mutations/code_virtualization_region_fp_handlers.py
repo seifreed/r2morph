@@ -46,6 +46,7 @@ def avx128_upper_clear_asm(destinations: set[int]) -> str:
 
 
 _YMM_UPPER_SAVE_OFFSET = 0x300
+_VEX_VARIABLE_SHIFT_INSTRUCTIONS = frozenset({"psllvd", "psrlvd", "psravd"})
 
 
 @dataclass(frozen=True)
@@ -384,8 +385,10 @@ def _fp_packed_vex_arith_handler_asm(
         "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
-        f"  {instr} xmm0, xmm1\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
+        + (f"  v{instr} xmm0, xmm0, xmm1\n" if instr in _VEX_VARIABLE_SHIFT_INSTRUCTIONS else f"  {instr} xmm0, xmm1\n")
+        + f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        + clear_upper
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 

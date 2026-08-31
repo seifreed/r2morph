@@ -7,12 +7,14 @@ from r2morph.mutations.code_virtualization_region_codegen import _interpreter_as
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_gp_move,
+    _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_arith_mem,
     _decode_fp_vex_scalar_arith_mem,
     _decode_fp_vex_scalar_move,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
+    _fp_packed_vex_arith_handler_asm,
     _fp_vex_gp_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
@@ -31,6 +33,25 @@ def test_decode_vex128_packed_memory_arithmetic_preserves_base_shape() -> None:
     item = _decode_fp_vex_packed_arith_mem("vaddps xmm0, xmm1, xmmword ptr [rax + 32]", 0x1000, 8)
 
     expect(item == ("fppackedvexmem", "addps", 0, 1, 0, 32))
+
+
+def test_decode_vex128_variable_integer_shifts_preserves_three_operand_shape() -> None:
+    left = _decode_fp_vex_packed_arith("vpsllvd xmm0, xmm1, xmm2")
+    right = _decode_fp_vex_packed_arith("vpsravd xmm3, xmm4, xmm5")
+
+    expect(left == ("fppackedvex", "psllvd", 0, 1, 2) and right == ("fppackedvex", "psravd", 3, 4, 5))
+
+
+def test_classify_vex128_variable_integer_shift_routes_to_packed_handler() -> None:
+    item = _classify({"type": "vec", "family": "vec", "opcode": "vpsrlvd xmm0, xmm1, xmm2", "addr": 0x1000, "size": 5})
+
+    expect(item == ["fppackedvex", "psrlvd", 0, 1, 2])
+
+
+def test_vex128_variable_integer_shift_handler_emits_three_operand_instruction() -> None:
+    assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_psllvd", "0xAA", preserve_ymm=True)
+
+    expect("vpsllvd xmm0, xmm0, xmm1" in assembly and "pxor xmm2, xmm2" in assembly)
 
 
 def test_decode_vex128_scalar_memory_arithmetic_preserves_base_shape() -> None:

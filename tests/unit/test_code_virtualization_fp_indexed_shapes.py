@@ -66,5 +66,9 @@ def test_vex_256_variable_shift_reports_a_dedicated_item_shape() -> None:
     expect(_decode_fp_vex_256_packed_arith("vpslld ymm0, ymm1, ymm2") == ("fppackedvex256", "pslld", 0, 1, 2))
 
 
+def test_vex_256_variable_integer_shift_reports_a_dedicated_item_shape() -> None:
+    expect(_decode_fp_vex_256_packed_arith("vpsravd ymm0, ymm1, ymm2") == ("fppackedvex256", "psravd", 0, 1, 2))
+
+
 def test_vex_256_packed_move_reports_a_dedicated_item_shape() -> None:
     expect(_decode_fp_vex_256_packed_move("vmovups ymm3, ymm4") == ("fpmovvex256", "full", 3, 4))
