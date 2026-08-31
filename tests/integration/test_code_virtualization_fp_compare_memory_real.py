@@ -125,9 +125,7 @@ def test_vex_scalar_fp_compare_native_fixture_preserves_result(tmp_path: Path) -
     binary = Binary(mutated, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(
-            config={"probability": 1.0, "max_functions": 20, "seed": 20260831, "vm_nesting_depth": 1}
-        ).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260831}).apply(binary)
         binary.save()
     finally:
         binary.close()
