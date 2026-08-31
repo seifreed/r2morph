@@ -486,9 +486,13 @@ class RegionEncoder:
             self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
         elif kind in ("fparithmemidx", "fparithmemidxnb"):
             self._emit_fp_arith_indexed(item)
-        elif kind == "fpcmpmem":
-            _, _mnemonic, xmm, base, disp, _width = item
-            self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
+        elif kind in ("fpcmpmem", "fpcmpmemrip"):
+            if kind == "fpcmpmemrip":
+                _, _mnemonic, xmm, target, _width = item
+                self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
+            else:
+                _, _mnemonic, xmm, base, disp, _width = item
+                self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
         elif kind in ("fpcmpmemidx", "fpcmpmemidxnb"):
             self._emit_fp_compare_indexed(item)
         else:

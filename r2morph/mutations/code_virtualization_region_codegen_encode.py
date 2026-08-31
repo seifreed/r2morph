@@ -102,6 +102,7 @@ _FIXED_SIZE_GROUPS = {
         "fploadvexrip",
         "fpstorevexrip",
         "fpmovvexmemrip",
+        "fpcmpmemrip",
         "riprel_load",
         "riprel_store",
         "cmpriprel",

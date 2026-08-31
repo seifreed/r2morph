@@ -915,7 +915,7 @@ def _fp_compare_memory_handler_asm(
     elif kind.endswith("idx"):
         body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
-        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
     memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
     body += (
         f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"

@@ -290,6 +290,32 @@ def _decode_fp_compare_idx(text: str) -> tuple[str, str, int, int, int, int, int
     return (kind, mnemonic, xmm_index, base_slot, index_slot, shift, displacement, width)
 
 
+def _decode_fp_compare_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, str, int, int, int] | None:
+    """Decode a scalar-FP compare whose memory source is RIP-relative."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
+        return None
+    widths = {
+        "ucomisd": 64,
+        "comisd": 64,
+        "ucomiss": 32,
+        "comiss": 32,
+    }
+    mnemonic = parts[0].lower()
+    width = widths.get(mnemonic)
+    if width is None:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    parsed = _parse_riprel_operand(right, insn_addr, insn_size)
+    if xmm_index is None or parsed is None:
+        return None
+    target, memory_width = parsed
+    if memory_width is not None and memory_width != width:
+        return None
+    return ("fpcmpmemrip", mnemonic, xmm_index, target, width)
+
+
 # Full 128-bit xmm-xmm copies vs scalar copies that preserve the destination's
 # upper lane(s). (movsd/movss xmm,xmm preserve the high lanes, unlike the memory
 # load forms which zero them - so they get the "sd"/"ss" preserving handler.
