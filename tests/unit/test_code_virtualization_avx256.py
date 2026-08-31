@@ -9,10 +9,14 @@ from r2morph.mutations import code_virtualization_region_classification as class
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
-from r2morph.mutations.code_virtualization_region_fp_decoders import _decode_fp_vex_256_permute_immediate
+from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_vex_256_lane_permute_immediate,
+    _decode_fp_vex_256_permute_immediate,
+)
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_256_permute_immediate_handler_asm,
+    _fp_vex_256_permute_lane_immediate_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
@@ -23,6 +27,8 @@ _EXIT_VADDR = 0x2000
 _VEX_PACKED_REGISTER_ITEM_SIZE = 4
 _VEX_256_PERMUTE_ITEM_SIZE = 5
 _VEX_256_PERMUTE_IMMEDIATE = 0x31
+_VEX_256_LANE_PERMUTE_ITEM_SIZE = 4
+_VEX_256_LANE_PERMUTE_IMMEDIATE = 0x1B
 
 
 def _vex_256_region() -> Region:
@@ -84,6 +90,42 @@ def test_vex_256_lane_permutation_item_includes_immediate_byte() -> None:
     expect(
         _item_size(("fppackedvex256permimm", "perm2f128", 0, 1, 2, _VEX_256_PERMUTE_IMMEDIATE))
         == _VEX_256_PERMUTE_ITEM_SIZE
+    )
+
+
+def test_vex_256_lane_shuffle_decoder_preserves_register_and_immediate() -> None:
+    decoded = _decode_fp_vex_256_lane_permute_immediate("vpermilps ymm0, ymm1, 0x1B")
+
+    expect(
+        decoded
+        == (
+            "fppackedvex256permilimm",
+            "permilps",
+            0,
+            1,
+            _VEX_256_LANE_PERMUTE_IMMEDIATE,
+        )
+    )
+
+
+def test_vex_256_lane_shuffle_handler_uses_native_instruction() -> None:
+    assembly = _fp_vex_256_permute_lane_immediate_handler_asm("fppackedvex256permilimm_permilps_27", "0xAA")
+
+    expect("vpermilps ymm0, ymm0, 27" in assembly)
+
+
+def test_vex_256_lane_shuffle_item_uses_pair_stride() -> None:
+    expect(
+        _item_size(
+            (
+                "fppackedvex256permilimm",
+                "permilps",
+                0,
+                1,
+                _VEX_256_LANE_PERMUTE_IMMEDIATE,
+            )
+        )
+        == _VEX_256_LANE_PERMUTE_ITEM_SIZE
     )
 
 

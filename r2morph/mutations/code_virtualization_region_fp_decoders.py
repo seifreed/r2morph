@@ -604,6 +604,10 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
 }
 _FP_VEX_PACKED_UNARY_ARITH: dict[str, str] = {"vsqrtps": "sqrtps", "vsqrtpd": "sqrtpd"}
 _FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {"vperm2f128": "perm2f128"}
+_FP_VEX_256_LANE_PERMUTE_IMMEDIATE: dict[str, str] = {
+    "vpermilps": "permilps",
+    "vpermilpd": "permilpd",
+}
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vaddss": ("add", 32),
@@ -690,6 +694,32 @@ def _decode_fp_vex_256_permute_immediate(text: str) -> tuple[str, str, int, int,
     if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
         return None
     return ("fppackedvex256permimm", operation, destination, first_source, second_source, immediate)
+
+
+def _decode_fp_vex_256_lane_permute_immediate(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode a VEX.256 single-source lane permutation with an immediate byte."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    operation = _FP_VEX_256_LANE_PERMUTE_IMMEDIATE.get(parts[0].lower())
+    if operation is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:
+        return None
+    destination = _parse_ymm_operand(operands[0])
+    source = _parse_ymm_operand(operands[1])
+    if destination is None or source is None:
+        return None
+    try:
+        immediate = int(operands[2], 0)
+    except ValueError:
+        return None
+    return (
+        ("fppackedvex256permilimm", operation, destination, source, immediate)
+        if 0 <= immediate <= _PACKED_IMMEDIATE_MAX
+        else None
+    )
 
 
 def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int] | None:

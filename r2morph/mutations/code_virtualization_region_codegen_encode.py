@@ -65,7 +65,14 @@ _FIXED_SIZE_GROUPS = {
         "cmov",
         "fppackedimm",
     ),
-    4: ("div", "fppackedvex", "fppackedvex256", "fppackedveximm", "fppackedvex256imm"),
+    4: (
+        "div",
+        "fppackedvex",
+        "fppackedvex256",
+        "fppackedveximm",
+        "fppackedvex256imm",
+        "fppackedvex256permilimm",
+    ),
     5: ("rspadj", "jmp", "jcc", "vcall", "call", "fppackedvex256permimm"),
     6: (
         "vloadrip",

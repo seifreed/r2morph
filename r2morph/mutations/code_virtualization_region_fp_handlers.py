@@ -388,6 +388,22 @@ def _fp_vex_256_permute_immediate_handler_asm(handler_key: str, key: str, field_
     return body + _store_ymm_to_frame("r8") + "  add rsi, 5\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_256_permute_lane_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Permute packed lanes in one YMM source using an immediate byte."""
+    _, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = pair_offsets("dst", "src", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        + _load_ymm_from_frame("r9", 0)
+        + f"  v{instruction} ymm0, ymm0, {immediate}\n"
+        + _store_ymm_to_frame("r8")
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_packed_vex_arith_handler_asm(
     handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
 ) -> str:

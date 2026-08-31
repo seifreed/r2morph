@@ -46,6 +46,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_256_packed_arith_mem_handler_asm,
     _fp_vex_256_packed_shift_immediate_handler_asm,
     _fp_vex_256_permute_immediate_handler_asm,
+    _fp_vex_256_permute_lane_immediate_handler_asm,
     _fp_vex_gp_move_handler_asm,
     _fp_vex_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
@@ -679,10 +680,20 @@ class HandlerBodyRouter:
             return _fp_vex_scalar_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         return None
 
+    def _fp_vex_256_immediate(self, key: str) -> str | None:
+        if key.startswith("fppackedvex256permimm_"):
+            return _fp_vex_256_permute_immediate_handler_asm(key, self.context.key, self.context.field_perm)
+        if key.startswith("fppackedvex256permilimm_"):
+            return _fp_vex_256_permute_lane_immediate_handler_asm(key, self.context.key, self.context.field_perm)
+        return None
+
     def _fp_vex(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
         scalar_move = self._fp_vex_scalar_move(key, _variants)
         if scalar_move is not None:
             return scalar_move
+        immediate = self._fp_vex_256_immediate(key)
+        if immediate is not None:
+            return immediate
         body = None
         if key.startswith("fparithvexmem"):
             body = _fp_vex_scalar_arith_mem_handler_asm(
@@ -710,8 +721,6 @@ class HandlerBodyRouter:
             body = _fp_packed_vex_256_arith_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fppackedvex256imm_"):
             body = _fp_vex_256_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key.startswith("fppackedvex256permimm_"):
-            body = _fp_vex_256_permute_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fpmovvex256_"):
             body = _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fparithvex_"):
