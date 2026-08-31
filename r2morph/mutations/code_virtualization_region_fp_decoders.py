@@ -200,7 +200,7 @@ def _decode_fp_movq(text: str) -> tuple[str, str, int, int] | None:
     return _decode_fp_gp_move(text, "movq", "fpmovq", _QWORD_WIDTH_BITS)
 
 
-_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss", "ptest"})
+_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss", "ptest", "vptest"})
 
 
 def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:

@@ -277,6 +277,22 @@ int main(void) {
 }
 """
 
+_VEX_TEST_SOURCE = r"""
+typedef unsigned long long vector128_qwords __attribute__((vector_size(16)));
+
+__attribute__((noinline)) static unsigned char test_zero(vector128_qwords left, vector128_qwords right) {
+    unsigned char result;
+    __asm__ volatile("vptest %2, %1\n sete %0" : "=q"(result) : "x"(left), "x"(right) : "cc");
+    return result;
+}
+
+int main(void) {
+    vector128_qwords nonzero = {1, 0};
+    vector128_qwords zero = {0, 0};
+    return test_zero(nonzero, nonzero) == 0 && test_zero(nonzero, zero) == 1 ? 42 : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -723,5 +739,51 @@ def test_virtualized_vex128_integer_compares_preserve_native_result(tmp_path: Pa
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.128 integer compares changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_vex128_test_preserves_zero_flag_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex128_test.c"
+    original = tmp_path / "original_vex128_test"
+    mutated = tmp_path / "mutated_vex128_test"
+    source.write_text(_VEX_TEST_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 test fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260845}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.128 test changed the zero-flag result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )
