@@ -819,6 +819,21 @@ def _fp_compare_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> 
     """
     instr = handler_key.split("_", 1)[1]
     off = pair_offsets("left", "right", field_perm)
+    if handler_key.startswith("fpcmpvex256_"):
+        return (
+            f"  movzx r8d, byte ptr [rsi+{off['left']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['right']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            "  shl r8, 4\n  shl r9, 4\n"
+            f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+            f"  movups xmm1, [rsp + r8 + {_YMM_UPPER_SAVE_OFFSET}]\n"
+            "  vinsertf128 ymm0, ymm0, xmm1, 1\n"
+            f"  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            f"  movups xmm2, [rsp + r9 + {_YMM_UPPER_SAVE_OFFSET}]\n"
+            "  vinsertf128 ymm1, ymm1, xmm2, 1\n"
+            f"  {instr} ymm0, ymm1\n"
+            f"  pushfq\n  pop qword ptr [rsp + {_FLAGS_OFFSET}]\n"
+            "  add rsi, 3\n  jmp vm_dispatch\n"
+        )
     return (
         f"  movzx r8d, byte ptr [rsi+{off['left']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['right']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"

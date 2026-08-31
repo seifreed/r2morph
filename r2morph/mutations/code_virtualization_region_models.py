@@ -136,6 +136,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "cvti2f": (1, 2),
     "cvtf2i": (1, 2),
     "fpcmp": (1,),
+    "fpcmpvex256": (1,),
     "fpcmpmem": (1, 5),
     "fpcmpmemidx": (1, 7),
     "fpcmpmemidxnb": (1, 7),

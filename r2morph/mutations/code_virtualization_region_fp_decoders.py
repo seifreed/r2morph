@@ -221,9 +221,14 @@ def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
     left, right = (token.strip() for token in parts[1].split(",", 1))
     left_index = _parse_xmm_operand(left)
     right_index = _parse_xmm_operand(right)  # register-register only; a memory operand yields None
-    if left_index is None or right_index is None:
-        return None
-    return ("fpcmp", mnemonic, left_index, right_index)
+    if left_index is not None and right_index is not None:
+        return ("fpcmp", mnemonic, left_index, right_index)
+    if mnemonic == "vptest":
+        left_ymm = _parse_ymm_operand(left)
+        right_ymm = _parse_ymm_operand(right)
+        if left_ymm is not None and right_ymm is not None:
+            return ("fpcmpvex256", mnemonic, left_ymm, right_ymm)
+    return None
 
 
 def _decode_fp_compare_mem(text: str) -> tuple[str, str, int, int, int, int] | None:

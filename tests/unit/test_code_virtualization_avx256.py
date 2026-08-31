@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_compare,
     _decode_fp_vex_256_lane_permute_immediate,
     _decode_fp_vex_256_packed_arith,
     _decode_fp_vex_256_permute_immediate,
@@ -90,6 +91,15 @@ def test_vex_256_word_compare_assembly_uses_native_instruction() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(10)))
 
     expect("vpcmpgtw ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_test_assembly_uses_native_instruction() -> None:
+    items = [("fpcmpvex256", "vptest", 0, 1), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(11)))
+
+    expect(_decode_fp_compare("vptest ymm0, ymm1") == ("fpcmpvex256", "vptest", 0, 1))
+    expect("vptest ymm0, ymm1" in assembly)
 
 
 def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:

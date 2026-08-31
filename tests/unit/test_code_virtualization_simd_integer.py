@@ -145,6 +145,10 @@ def test_decode_vex128_packed_test_returns_flag_compare_item() -> None:
     expect(_decode_fp_compare("vptest xmm2, xmm3") == ("fpcmp", "vptest", 2, 3))
 
 
+def test_decode_vex256_packed_test_returns_flag_compare_item() -> None:
+    expect(_decode_fp_compare("vptest ymm2, ymm3") == ("fpcmpvex256", "vptest", 2, 3))
+
+
 def test_decode_vex128_packed_float_add_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vaddps xmm0, xmm1, xmm2") == ("fppackedvex", "addps", 0, 1, 2))
 

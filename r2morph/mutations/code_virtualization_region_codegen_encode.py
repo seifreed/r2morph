@@ -50,6 +50,7 @@ _FIXED_SIZE_GROUPS = {
         "fpmovd",
         "fpmovq",
         "fpcmp",
+        "fpcmpvex256",
         "fpmov",
         "fppacked",
         "fpmovvex",
