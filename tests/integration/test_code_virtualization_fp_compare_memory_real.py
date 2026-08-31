@@ -37,7 +37,7 @@ __attribute__((noinline)) static int compare_vex_scalar(double value) {
     __asm__ volatile(
         "vucomisd %[memory], %[value]\n"
         "seta %[result]\n"
-        : [result] "=qm"(result)
+        : [result] "=a"(result)
         : [memory] "m"(threshold), [value] "x"(value)
         : "cc");
     return result;
