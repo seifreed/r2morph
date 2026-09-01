@@ -10,10 +10,13 @@ import json
 import shlex
 import shutil
 import struct
+import sys
 import tempfile
 import time
 from collections.abc import Mapping
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.core.binary import Binary
 from r2morph.mutations import (

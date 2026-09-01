@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from r2morph.adapters.process import run_process
 from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
@@ -24,6 +25,7 @@ _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 _VARARGS_FIXTURE = _DATASET / "elf_vm_varargs_x86_64"
 _EXPECTED_VARARGS_EXIT_CODE = 69
+_BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
 def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
@@ -51,6 +53,15 @@ def test_measure_fixture_supports_a_named_non_virtualization_pass(tmp_path: Path
 
 def test_parse_pass_names_expands_the_public_corpus_selection() -> None:
     expect(_parse_pass_names("all") == CORPUS_PASS_NAMES)
+
+
+def test_baseline_script_runs_directly_from_the_repository(tmp_path: Path) -> None:
+    output = tmp_path / "baseline.json"
+    result = run_process(
+        [sys.executable, str(_BASELINE_SCRIPT), str(_FIXTURE), "--count", "1", "--output", str(output)]
+    )
+
+    expect(result.returncode == 0 and output.is_file())
 
 
 def test_transformation_evidence_records_unsupported_capability() -> None:
