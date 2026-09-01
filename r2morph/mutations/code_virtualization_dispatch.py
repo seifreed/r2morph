@@ -18,9 +18,9 @@ interpreter once and stays well within budget.
 
 The decode head (position-mask setup + opcode load) is identical across both VMs;
 the caller supplies the pieces that differ (immediate vs frame-slot key/count/table,
-spacing). The indirect transfer can use either ``jmp rax`` or ``push rax; ret``;
-callers that use the VM stack for native control flow can require the stack-neutral
-form.
+spacing). The indirect transfer uses either ``jmp rax`` or ``push rax; ret`` per
+generated copy; the latter consumes its own pushed return address and preserves the
+handler's stack contract while removing one fixed tail signature.
 
 This is the only dispatch mechanism either VM emits. A central dispatcher ending
 in a compare/branch ladder over the opcode indices was tried and removed: a
@@ -44,9 +44,9 @@ _DECODE_TAIL = "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
 _STACK_TRANSFER_TAIL = "  movsxd rax, eax\n  add rax, r14\n  push rax\n  ret\n"
 
 
-def _indirect_transfer_tail(rng: random.Random, stack_neutral: bool) -> str:
-    """Choose an indirect transfer, optionally preserving the VM stack pointer."""
-    return _DECODE_TAIL if stack_neutral else _STACK_TRANSFER_TAIL if rng.getrandbits(1) else _DECODE_TAIL
+def _indirect_transfer_tail(rng: random.Random) -> str:
+    """Choose an equivalent indirect transfer for one generated dispatch copy."""
+    return _STACK_TRANSFER_TAIL if rng.getrandbits(1) else _DECODE_TAIL
 
 
 def offset_jump_block(
@@ -56,7 +56,6 @@ def offset_jump_block(
     table_load: str,
     table_xors: list[str],
     rng: random.Random,
-    stack_neutral: bool = False,
 ) -> str:
     """Jump through one runtime-encrypted relative-offset table."""
     return (
@@ -64,7 +63,7 @@ def offset_jump_block(
         + bounds
         + table_load
         + "".join(rng.sample(table_xors, len(table_xors)))
-        + _indirect_transfer_tail(rng, stack_neutral)
+        + _indirect_transfer_tail(rng)
     )
 
 
@@ -75,7 +74,6 @@ def decode_block(
     table_load: str,
     table_xors: list[str],
     rng: random.Random,
-    stack_neutral: bool = False,
 ) -> str:
     """Assemble one polymorphic decode copy with its two XOR groups shuffled."""
     return offset_jump_block(
@@ -84,7 +82,6 @@ def decode_block(
         table_load=table_load,
         table_xors=table_xors,
         rng=rng,
-        stack_neutral=stack_neutral,
     )
 
 
