@@ -280,6 +280,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                 ),
             ],
             rng=poly_rng,
+            stack_neutral=True,
         )
 
     # Capture the program's entry rsp, then relocate its virtual stack a guard
