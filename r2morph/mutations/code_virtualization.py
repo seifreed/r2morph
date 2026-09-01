@@ -264,10 +264,9 @@ def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> Virtual
     if indexed is not None and indexed.width in (32, 64):
         return indexed
     decoded = _decode_memory_mov(text)
-    if decoded is not None:
+    if decoded is not None and decoded[-1] in (32, 64):
         kind, register_slot, base_slot, disp, width = decoded
-        if width in (32, 64):
-            return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
+        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
     extended = _decode_movx(text)
     if extended is not None and extended[0] == "movx":
         _, extension, source_size, width, register_slot, base_slot, disp = extended
