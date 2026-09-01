@@ -415,12 +415,16 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # decode copy in for each so control flows handler -> decode -> next handler
     # with no shared hub block and no two copies sharing a byte layout.
     interpreter = thread_back_jumps("".join(lines), make_decode)
-    # Relocate the flags slot: every flag capture/restore and the branch-free jcc's
-    # flags read renders as the memory operand `[rsp + 128]` (the canonical 0x80
-    # slot). GP outliers use 0x90/0xA8, the checksum never uses 0x80, and the xmm
-    # area is indexed (`[rsp + r8 + ...]`), so this rewrites exactly the flag
-    # references without threading the offset through every handler.
-    return re.sub(r"\[rsp\s*\+\s*128\]", f"[rsp + {scheme.flags_offset}]", interpreter)
+    return _relocate_flags_slot(interpreter, scheme.flags_offset)
+
+
+def _relocate_flags_slot(assembly: str, flags_offset: int) -> str:
+    """Relocate flag-frame operands without changing native-call frame math."""
+    return re.sub(
+        r"(?m)^(\s*(?:mov|push|pop)\b[^\n]*?)\[rsp\s*\+\s*128\]",
+        rf"\1[rsp + {flags_offset}]",
+        assembly,
+    )
 
 
 def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> bytes | None:

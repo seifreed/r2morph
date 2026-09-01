@@ -28,10 +28,9 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration import test_code_virtualization_real as vm_real
 from tests.utils.assertions import expect
 
-# An engine-path fixture: it contains a call, so the whole-function region VM
-# rejects it and the engine virtualizes the straight-line run before the call -
-# guaranteeing the engine dispatch runs.
-FIXTURE = vm_real._DATASET / "elf_vm_engarith_x86_64"
+# An engine-path fixture: its non-terminal system call rejects whole-function
+# virtualization, so the engine virtualizes the straight-line run before it.
+FIXTURE = vm_real._DATASET / "elf_vm_syscall_x86_64"
 
 # The threaded shape's decode tail: ``movsxd rax, eax`` + ``add rax, r14`` and
 # either equivalent indirect transfer. Only a threaded build emits these bytes.

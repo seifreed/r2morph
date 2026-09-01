@@ -1028,9 +1028,8 @@ def _has_engine_frame_signature(data: bytes) -> bool:
     return any(signature in data for signature in _ENGINE_FRAME_SIGNATURES)
 
 
-def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # The function contains a call, so the region rejects it and the engine
-    # virtualizes the straight-line run before the call. That run carries a movsd
+def test_region_fp_load_store_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region carries a native call after a movsd
     # load and store through an xmm register, exercising the engine's xmm save area
     # and scalar-FP memory handlers. The decode check first proves the movsd ops
     # lower to FP items - were they silently left native, the run would still exit
@@ -1051,13 +1050,12 @@ def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> No
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_14)
 
 
-def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run materializes 20.0 and 22.0,
-    # loads them into xmm and adds them with a reg-reg addsd, exercising the engine's
+def test_region_fp_arithmetic_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region materializes 20.0 and 22.0, loads them into xmm and adds them with
+    # a reg-reg addsd, exercising the region's
     # scalar FP arithmetic handler. The decode check proves addsd lowers to an FP
     # arith item (else, left native, it would still exit 69 - a false green). The
     # exit code is the IEEE high byte of 42.0 (0x45 == 69); sub/mul/div would differ.
@@ -1077,13 +1075,12 @@ def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> No
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69)
 
 
-def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run converts int 42 to a double
-    # and back (cvtsi2sd / cvttsd2si), exercising the engine's 64-bit int<->float
+def test_region_fp_convert_roundtrip_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region converts int 42 to a double and back (cvtsi2sd / cvttsd2si),
+    # exercising the region's 64-bit int<->float
     # convert handlers. The decode check proves the conversions lower to FP convert
     # items (else left native, the value would still round-trip to 42 - a false
     # green). The 64-bit value round-trips to exit 42.
@@ -1104,11 +1101,10 @@ def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_15)
 
 
-def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_path: Path) -> None:
+def test_region_fp_convert_32bit_saturation_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
     # Pins GP-width faithfulness: the run truncates 2147483690.0 (= 2^31 + 42, out
     # of int32 range) into edi with a 32-bit cvttsd2si. x86 saturates to 0x80000000,
     # so the exit code (low byte) is 0. A width-blind handler using rax would give
@@ -1129,13 +1125,12 @@ def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_pat
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0)
 
 
-def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run loads 20.0 into xmm0 and
-    # adds 22.0 straight from memory (addsd xmm0, [rsp-16]), exercising the engine's
+def test_region_fp_arithmetic_memory_source_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region loads 20.0 into xmm0 and adds 22.0 straight from memory (addsd
+    # xmm0, [rsp-16]), exercising the region's
     # memory-source FP arithmetic handler. The decode check proves addsd-with-memory
     # lowers to an FP arith-mem item (else left native, still exit 69 - a false
     # green). The IEEE high byte of 42.0 is 0x45 == 69; sub/mul/div would differ.
@@ -1155,12 +1150,11 @@ def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_pat
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_2)
 
 
-def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run loads a .rodata double
+def test_region_fp_rip_relative_load_store_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region loads a .rodata double
     # constant via movsd [rip+const], stores it to a .data global via movsd
     # [rip+slot], reloads it, and truncates to an int - exercising the engine's
     # rip-relative FP load/store handlers (the dominant FP memory form). The fixture
@@ -1184,12 +1178,11 @@ def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_16)
 
 
-def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run loads 20.0 and adds a
+def test_region_fp_arithmetic_rip_relative_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region loads 20.0 and adds a
     # .rodata double constant straight from the constant pool (addsd xmm0,
     # [rip+c22]) - the compiler's usual float-literal form - exercising the engine's
     # rip-relative FP arithmetic handler. The decode check proves addsd-with-rip
@@ -1212,12 +1205,11 @@ def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_3)
 
 
-def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run builds a two-element double
+def test_region_fp_scaled_index_load_store_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region builds a two-element double
     # array on the stack and accesses it with movsd [rsp+rcx*8-16] (the a[i] form),
     # exercising the engine's scaled-index FP load/store handlers. The decode check
     # proves the indexed movsd lowers to an *idx FP item (else left native, still
@@ -1239,12 +1231,11 @@ def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_4)
 
 
-def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run builds a two-element double
+def test_region_fp_scaled_index_arithmetic_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region contains a native call after a two-element double
     # array on the stack, loads a[0] and adds a[1] straight from the array via
     # addsd xmm0, [rsp+rcx*8-16] (the sum += a[i] form), exercising the engine's
     # scaled-index FP arithmetic handler. The decode check proves the indexed addsd
@@ -1267,12 +1258,11 @@ def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_5)
 
 
-def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run builds two __m128d vectors
+def test_region_fp_packed_simd_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region builds two __m128d vectors
     # on the stack, loads them with movups (fppload), adds all lanes with addpd
     # (fppacked), and stores with movups (fppstore), exercising the engine's packed
     # 128-bit SIMD handlers. It reads out the HIGH lane (5.0 + 37.0 = 42.0): a
@@ -1297,7 +1287,6 @@ def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> N
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_6)
 
 
@@ -2903,8 +2892,8 @@ def test_decode_instruction_widths_and_rejections() -> None:
     expect(not (decode_instruction("shl rax") is not None))
 
 
-def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
-    # Engine fallback (the function has a call): the run uses immediate-count
+def test_region_shift_run_with_native_call_preserves_exit_code(tmp_path: Path) -> None:
+    # The region uses immediate-count
     # shifts (shl/sar/shr, 64-bit, plus a 32-bit shl) netting exit 42 in rdi,
     # exercising the engine's shift handlers. The decode checks prove the shifts
     # lower to VM ops - were they left native, the run would still exit 42 (a false
@@ -2927,7 +2916,6 @@ def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76)
 
 
@@ -2964,9 +2952,9 @@ def test_reg_reg_arithmetic_lowers_to_shared_microop_primitives() -> None:
     expect(add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding)
 
 
-def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
-    # Semantic parity: an engine-path run of reg-reg add/sub/xor/and/or (a call
-    # forces the engine over the region VM) nets exit 42 after micro-op lowering. A
+def test_region_reg_reg_arithmetic_microops_with_native_call_preserve_exit_code(tmp_path: Path) -> None:
+    # Semantic parity: a region run of reg-reg add/sub/xor/and/or nets exit 42 after
+    # micro-op lowering. A
     # wrong lowering - especially the order-sensitive sub - would change the code.
     if not FIXTURE_ENGARITH.exists():
         pytest.skip(f"fixture missing: {FIXTURE_ENGARITH}")
@@ -2982,7 +2970,6 @@ def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(
         _emulate_exit_code(FIXTURE_ENGARITH)
         == _emulate_exit_code(mutated)
@@ -3084,9 +3071,9 @@ def test_immediate_logical_decomposition_varies_by_build() -> None:
     expect(all(split_size > unsplit_size for split_size, unsplit_size in zip(split_sizes, unsplit_sizes, strict=True)))
 
 
-def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
-    # Semantic parity: an engine-path run of immediate add/sub/xor/and/or (a call
-    # forces the engine over the region VM) nets exit 42 after micro-op lowering,
+def test_region_immediate_arithmetic_microops_with_native_call_preserve_exit_code(tmp_path: Path) -> None:
+    # Semantic parity: a region run of immediate add/sub/xor/and/or nets exit 42
+    # after micro-op lowering,
     # including the order-sensitive immediate sub.
     if not FIXTURE_ENGARITHIMM.exists():
         pytest.skip(f"fixture missing: {FIXTURE_ENGARITHIMM}")
@@ -3102,7 +3089,6 @@ def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path)
         binary.close()
 
     expect(not (stats["functions_virtualized"] < 1))
-    expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(
         _emulate_exit_code(FIXTURE_ENGARITHIMM)
         == _emulate_exit_code(mutated)
