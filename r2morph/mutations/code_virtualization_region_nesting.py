@@ -710,7 +710,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         entry
         + "".join(layer_bodies)
         + (
-            f"vm_exit:\n{reload_seq}  add rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
+            f"vm_exit:\n{cipher_register_slots(reload_seq, frozenset(index * 8 for index in slot))}"
+            f"  add rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
             f"  jmp {hex(layers[0].exit_vaddr)}\n"
         )
     )

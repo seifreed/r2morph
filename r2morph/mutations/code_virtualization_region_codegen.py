@@ -406,7 +406,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # The bootstrap table and tracer-constant island trail the main dispatch table,
     # outside the checksummed span and before the appended bytecode.
     lines.append(
-        f"vm_exit:\n{reload_seq}  add rsp, {frame_size}\n  jmp {hex(region.exit_vaddr)}\n"
+        f"vm_exit:\n{cipher_register_slots(reload_seq, frozenset(index * 8 for index in slot))}"
+        f"  add rsp, {frame_size}\n  jmp {hex(region.exit_vaddr)}\n"
         f"{ijmp_map}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
