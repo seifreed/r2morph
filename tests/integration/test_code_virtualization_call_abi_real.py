@@ -271,6 +271,7 @@ __attribute__((noreturn)) void _start(void) {
             "-fno-asynchronous-unwind-tables",
             "-fno-stack-protector",
             "-fno-toplevel-reorder",
+            "-fcf-protection=none",
             "-nostdlib",
             "-Wl,-e,_start",
             "-Wl,--build-id=none",
