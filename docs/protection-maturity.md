@@ -1,15 +1,16 @@
 # Protection Maturity Report
 
-Commit: `77fa317`
+Commit: `ed10ab4`
 Date: `2026-09-01`
 
 ## Current verification status
 
 The supported Python 3.13 environment passed the required static and security
-gates locally. GitHub Actions run `33533787637` completed successfully with all
-15 jobs on commit `77fa317`, including the Linux x86-64 suite and cross-platform
+gates locally. GitHub Actions run `33539858870` completed successfully with all
+15 jobs on commit `ed10ab4`, including the Linux x86-64 suite and cross-platform
 matrix. The packed and scalar VEX FMA regressions, including memory operands,
-passed in the Linux integration job.
+and the virtualized incoming stack-argument regression passed in the Linux
+integration job.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -48,7 +49,7 @@ The latest per-pass differential campaign ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33535437743`. Code virtualization recorded 136
+artifact from workflow run `33541306748`. Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
 
@@ -156,6 +157,9 @@ The main maturity limit is not the happy path; it is the unsupported-input polic
 The pass conservatively leaves a function unchanged when it cannot prove the
 required invariants. That is correct behavior, but it is not coverage parity with
 a mature commercial protector across arbitrary PE, Mach-O, and non-x86 samples.
+The System V incoming stack-argument path now preserves a bounded 512-byte
+argument area in the relocated VM stack; larger or non-proven ABI cases still
+require explicit coverage before being treated as supported.
 
 ## 6. IDA/Hex-Rays
 
