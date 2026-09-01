@@ -248,11 +248,15 @@ x/12i $rip-8
 info registers
 x/gx $rsp+0x88
 continue
+x/12i $rip-8
+info registers r14 r15 rsi rsp
+x/gx $rsp+0xf8
 set {unsigned char}($rsp+0xf8) = 0x2f
 continue
 info registers
 x/16gx $rsp
 x/16gx $rsp+0x200
+x/16wx $r14
 x/8i $rax
 x/8i $rsi
 x/8i $r13
