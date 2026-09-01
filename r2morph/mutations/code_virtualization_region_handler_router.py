@@ -26,7 +26,10 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
 from r2morph.mutations.code_virtualization_region_fp_fma import (
     _fp_vex_fma_handler_asm,
     _fp_vex_fma_memory_handler_asm,
+    _fp_vex_scalar_fma_handler_asm,
+    _fp_vex_scalar_fma_memory_handler_asm,
     is_fp_vex_fma_handler_key,
+    is_fp_vex_scalar_fma_handler_key,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
@@ -784,11 +787,11 @@ class HandlerBodyRouter:
             return packed_256
         body = None
         if key.startswith("fparithvexmem"):
-            body = _fp_vex_scalar_arith_mem_handler_asm(
-                key,
-                self.context.key,
-                self.context.key_dword,
-                VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm),
+            config = VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm)
+            body = (
+                _fp_vex_scalar_fma_memory_handler_asm(key, self.context.key, self.context.key_dword, config)
+                if is_fp_vex_scalar_fma_handler_key(key)
+                else _fp_vex_scalar_arith_mem_handler_asm(key, self.context.key, self.context.key_dword, config)
             )
         elif key.startswith("fppackedvexmem"):
             config = VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm)
@@ -809,8 +812,12 @@ class HandlerBodyRouter:
         elif key.startswith("fpmovvex256_"):
             body = _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fparithvex_"):
-            body = _fp_vex_scalar_arith_handler_asm(
-                key, self.context.key, self.context.field_perm, self.context.has_ymm
+            body = (
+                _fp_vex_scalar_fma_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+                if is_fp_vex_scalar_fma_handler_key(key)
+                else _fp_vex_scalar_arith_handler_asm(
+                    key, self.context.key, self.context.field_perm, self.context.has_ymm
+                )
             )
         elif key.startswith("fppackedvex_"):
             handler = _fp_vex_fma_handler_asm if is_fp_vex_fma_handler_key(key) else _fp_packed_vex_arith_handler_asm

@@ -35,6 +35,14 @@ __attribute__((noinline)) static vector256 fma256_memory(vector256 a, vector256 
     return _mm256_fmadd_ps(b, *c, a);
 }
 
+__attribute__((noinline)) static vector128 fma128_scalar(vector128 a, vector128 b, vector128 c) {
+    return _mm_fmadd_ss(a, b, c);
+}
+
+__attribute__((noinline)) static vector128 fma128_scalar_memory(vector128 a, vector128 b, const float *c) {
+    return _mm_fmadd_ss(a, b, _mm_load_ss(c));
+}
+
 int main(void) {
     const vector128 a128 = {1.0f, 2.0f, 3.0f, 4.0f};
     const vector128 b128 = {2.0f, 3.0f, 4.0f, 5.0f};
@@ -42,13 +50,22 @@ int main(void) {
     const vector256 a256 = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
     const vector256 b256 = {2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
     const vector256 c256 = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
+    const float scalar_c = 4.0f;
     const vector128 result128 = fma128(a128, b128, c128);
     const vector256 result256 = fma256(a256, b256, c256);
     const vector128 result128_memory = fma128_memory(a128, b128, &c128);
     const vector256 result256_memory = fma256_memory(a256, b256, &c256);
+    const vector128 result_scalar = fma128_scalar((vector128){2.0f, 11.0f, 12.0f, 13.0f},
+                                                   (vector128){3.0f, 21.0f, 22.0f, 23.0f},
+                                                   (vector128){4.0f, 31.0f, 32.0f, 33.0f});
+    const vector128 result_scalar_memory = fma128_scalar_memory((vector128){2.0f, 11.0f, 12.0f, 13.0f},
+                                                                 (vector128){3.0f, 21.0f, 22.0f, 23.0f},
+                                                                 &scalar_c);
     return result128[0] == 21.0f && result128[3] == 204.0f && result256[0] == 21.0f && result256[7] == 728.0f
                && result128_memory[0] == 21.0f && result128_memory[3] == 204.0f
                && result256_memory[0] == 21.0f && result256_memory[7] == 728.0f
+               && result_scalar[0] == 10.0f && result_scalar[1] == 11.0f
+               && result_scalar_memory[0] == 10.0f && result_scalar_memory[1] == 11.0f
                ? 47
                : 1;
 }

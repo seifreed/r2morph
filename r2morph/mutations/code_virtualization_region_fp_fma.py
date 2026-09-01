@@ -24,11 +24,20 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
 _FMA_FORMS = ("132", "213", "231")
 _FMA_ROOTS = ("vfmadd", "vfmsub", "vfnmadd", "vfnmsub")
 _FMA_SUFFIXES = ("ps", "pd")
+_FMA_SCALAR_SUFFIXES = ("ss", "sd")
 _FMA_OPERAND_COUNT = 3
 _INSTRUCTION_PART_COUNT = 2
+_HANDLER_KEY_PART_COUNT = 3
+_SCALAR_FMA_WIDTHS = {"ss": 32, "sd": 64}
 _FP_VEX_FMA_MNEMONICS = frozenset(
     f"{root}{form}{suffix}" for root in _FMA_ROOTS for form in _FMA_FORMS for suffix in _FMA_SUFFIXES
 )
+_FP_VEX_SCALAR_FMA_WIDTHS = {
+    f"{root}{form}{suffix}": _SCALAR_FMA_WIDTHS[suffix]
+    for root in _FMA_ROOTS
+    for form in _FMA_FORMS
+    for suffix in _FMA_SCALAR_SUFFIXES
+}
 FmaMemoryItem = (
     tuple[str, str, int, int, int, int]
     | tuple[str, str, int, int, int]
@@ -62,6 +71,91 @@ def _decode_fp_vex_fma(text: str) -> tuple[str, str, int, int, int] | None:
     destination, first_source, second_source, is_ymm = parsed
     kind = "fppackedvex256" if is_ymm else "fppackedvex"
     return kind, mnemonic, destination, first_source, second_source
+
+
+def _decode_fp_vex_scalar_fma(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode register-only scalar VEX FMA while preserving its form."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    width = _FP_VEX_SCALAR_FMA_WIDTHS.get(mnemonic)
+    if width is None:
+        return None
+    parsed = _parse_fma_registers(parts[1])
+    if parsed is None or parsed[3]:
+        return None
+    destination, first_source, second_source, _is_ymm = parsed
+    return "fparithvex", mnemonic, destination, first_source, second_source, width
+
+
+def _decode_fp_vex_scalar_fma_mem(text: str, insn_addr: int, insn_size: int) -> tuple[object, ...] | None:
+    """Decode scalar VEX FMA with a scalar third source in memory."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    width = _FP_VEX_SCALAR_FMA_WIDTHS.get(mnemonic)
+    if width is None:
+        return None
+    operands = [operand.strip() for operand in parts[1].split(",")]
+    if len(operands) != _FMA_OPERAND_COUNT or "[" not in operands[2]:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    first_source = _parse_xmm_operand(operands[1])
+    if destination is None or first_source is None:
+        return None
+    memory = operands[2].lower()
+    explicit_width = {"dword": 32, "qword": 64}.get(memory.split(None, 1)[0])
+    if explicit_width is not None and explicit_width != width:
+        return None
+    result: tuple[object, ...] | None = None
+    indexed = _parse_indexed_operand(memory, base_optional=True)
+    if indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        kind = "fparithvexmemidxnb" if base_slot < 0 else "fparithvexmemidx"
+        result = (
+            (
+                kind,
+                mnemonic,
+                destination,
+                first_source,
+                index_slot,
+                shift,
+                displacement,
+                width,
+            )
+            if base_slot < 0
+            else (
+                kind,
+                mnemonic,
+                destination,
+                first_source,
+                base_slot,
+                index_slot,
+                shift,
+                displacement,
+                width,
+            )
+        )
+    rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+    if result is None and rip_relative is not None:
+        target, memory_width = rip_relative
+        result = (
+            ("fparithvexmemrip", mnemonic, destination, first_source, target, width)
+            if memory_width in (None, width)
+            else None
+        )
+    if result is None and rip_relative is None:
+        parsed_memory = _parse_mem_operand(memory)
+        if parsed_memory is not None:
+            base_slot, displacement, memory_width = parsed_memory
+            result = (
+                ("fparithvexmem", mnemonic, destination, first_source, base_slot, displacement, width)
+                if memory_width in (None, width)
+                else None
+            )
+    return result
 
 
 def _decode_fp_vex_fma_memory(text: str, insn_addr: int, insn_size: int, is_ymm: bool) -> FmaMemoryItem | None:
@@ -155,6 +249,76 @@ def is_fp_vex_fma_handler_key(key: str) -> bool:
             "fppackedvex256memidxnb",
         }
     )
+
+
+def is_fp_vex_scalar_fma_handler_key(key: str) -> bool:
+    """Return whether a handler key names a supported scalar FMA."""
+    parts = key.split("_")
+    return (
+        len(parts) == _HANDLER_KEY_PART_COUNT
+        and parts[0]
+        in {
+            "fparithvex",
+            "fparithvexmem",
+            "fparithvexmemrip",
+            "fparithvexmemidx",
+            "fparithvexmemidxnb",
+        }
+        and parts[1] in _FP_VEX_SCALAR_FMA_WIDTHS
+        and parts[2] == str(_FP_VEX_SCALAR_FMA_WIDTHS[parts[1]])
+    )
+
+
+def _fp_vex_scalar_fma_handler_asm(handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False) -> str:
+    """Run a register-only scalar VEX FMA with native operand ordering."""
+    _kind, instruction, _width_text = handler_key.split("_")
+    offsets = triple_offsets("dst", "src1", "src2", field_perm)
+    clear_upper = f"  pxor xmm2, xmm2\n  movups [rsp + r8 + {_YMM_UPPER_SAVE_OFFSET}], xmm2\n" if preserve_ymm else ""
+    body = "".join(
+        f"  movzx r{register}d, byte ptr [rsi+{offsets[name]}]\n"
+        f"  xor r{register}b, {key}\n"
+        f"  xor r{register}b, r13b\n"
+        f"  shl r{register}, 4\n"
+        for register, name in ((8, "dst"), (9, "src1"), (10, "src2"))
+    )
+    body += (
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm2, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instruction} xmm0, xmm1, xmm2\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper
+    )
+    return body + "  add rsi, 4\n  jmp vm_dispatch\n"
+
+
+def _fp_vex_scalar_fma_memory_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig,
+) -> str:
+    """Run a scalar VEX FMA whose third source is the addressed memory operand."""
+    kind, instruction, width_text = handler_key.split("_")
+    width = int(width_text)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+    body += "  shl r8, 4\n  shl r11, 4\n"
+    suffix = "ss" if width == _SCALAR_FMA_WIDTHS["ss"] else "sd"
+    memory = "dword" if suffix == "ss" else "qword"
+    body += (
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instruction} xmm0, xmm1, {memory} ptr [r10]\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    )
+    if config.preserve_ymm:
+        body += f"  pxor xmm2, xmm2\n  movups [rsp + r8 + {_YMM_UPPER_SAVE_OFFSET}], xmm2\n"
+    return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 
 
 def _fp_vex_fma_handler_asm(

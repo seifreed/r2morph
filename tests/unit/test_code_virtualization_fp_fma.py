@@ -11,8 +11,12 @@ from r2morph.mutations.code_virtualization_region_fp_fma import (
     _decode_fp_vex_256_fma_mem,
     _decode_fp_vex_fma,
     _decode_fp_vex_fma_mem,
+    _decode_fp_vex_scalar_fma,
+    _decode_fp_vex_scalar_fma_mem,
     _fp_vex_fma_handler_asm,
     _fp_vex_fma_memory_handler_asm,
+    _fp_vex_scalar_fma_handler_asm,
+    _fp_vex_scalar_fma_memory_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import VexMemoryHandlerConfig
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
@@ -41,6 +45,21 @@ def test_decode_vex_fma_memory_preserves_source_and_address_shape() -> None:
         xmm == ("fppackedvexmem", "vfmadd231ps", 0, 1, 0, 32)
         and ymm == ("fppackedvex256memidxnb", "vfnmsub132pd", 3, 4, 1, 2, 64)
     )
+
+
+def test_decode_vex_scalar_fma_preserves_form_and_width() -> None:
+    single = _decode_fp_vex_scalar_fma("vfmadd132ss xmm0, xmm1, xmm2")
+    double = _decode_fp_vex_scalar_fma("vfnmsub231sd xmm3, xmm4, xmm5")
+
+    expect(
+        single == ("fparithvex", "vfmadd132ss", 0, 1, 2, 32) and double == ("fparithvex", "vfnmsub231sd", 3, 4, 5, 64)
+    )
+
+
+def test_decode_vex_scalar_fma_memory_preserves_address_shape() -> None:
+    item = _decode_fp_vex_scalar_fma_mem("vfmadd213sd xmm2, xmm3, qword ptr [rax + rcx*4 + 64]", 0x1000, 8)
+
+    expect(item == ("fparithvexmemidx", "vfmadd213sd", 2, 3, 0, 1, 2, 64, 64))
 
 
 def test_classify_vex_fma_uses_existing_three_register_bytecode_shape() -> None:
@@ -81,3 +100,16 @@ def test_vex_fma_memory_handler_uses_memory_as_third_source() -> None:
     )
 
     expect("vfmadd231ps ymm0, ymm1, ymmword ptr [r10]" in assembly and "add rsi, 8" in assembly)
+
+
+def test_vex_scalar_fma_handlers_preserve_native_form() -> None:
+    register = _fp_vex_scalar_fma_handler_asm("fparithvex_vfnmsub132ss_32", "0xAA", preserve_ymm=True)
+    memory = _fp_vex_scalar_fma_memory_handler_asm(
+        "fparithvexmem_vfmadd231sd_64", "0xAA", "0xAABBCCDD", VexMemoryHandlerConfig(preserve_ymm=True)
+    )
+
+    expect(
+        "vfnmsub132ss xmm0, xmm1, xmm2" in register
+        and "vfmadd231sd xmm0, xmm1, qword ptr [r10]" in memory
+        and "add rsi, 8" in memory
+    )
