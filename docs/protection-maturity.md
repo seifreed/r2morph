@@ -1,13 +1,13 @@
 # Protection Maturity Report
 
-Commit: `ed10ab4`
+Commit: `5a00dd1`
 Date: `2026-09-01`
 
 ## Current verification status
 
 The supported Python 3.13 environment passed the required static and security
-gates locally. GitHub Actions run `33539858870` completed successfully with all
-15 jobs on commit `ed10ab4`, including the Linux x86-64 suite and cross-platform
+gates locally. GitHub Actions run `33545868428` completed successfully with all
+16 jobs on commit `5a00dd1`, including the Linux x86-64 suite and cross-platform
 matrix. The packed and scalar VEX FMA regressions, including memory operands,
 and the virtualized incoming stack-argument regression passed in the Linux
 integration job.
@@ -45,11 +45,11 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `5a00dd1` ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33541306748`. Code virtualization recorded 136
+artifact from workflow run `33547486290`. Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
 
@@ -157,9 +157,10 @@ The main maturity limit is not the happy path; it is the unsupported-input polic
 The pass conservatively leaves a function unchanged when it cannot prove the
 required invariants. That is correct behavior, but it is not coverage parity with
 a mature commercial protector across arbitrary PE, Mach-O, and non-x86 samples.
-The System V incoming stack-argument path now preserves a bounded 512-byte
-argument area in the relocated VM stack; larger or non-proven ABI cases still
-require explicit coverage before being treated as supported.
+The System V incoming stack-argument path now preserves a bounded 920-byte
+argument area in the relocated VM stack, including a native regression at the
+maximum supported boundary; larger or non-proven ABI cases still require
+explicit coverage before being treated as supported.
 
 ## 6. IDA/Hex-Rays
 
