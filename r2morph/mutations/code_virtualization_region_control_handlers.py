@@ -14,6 +14,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _GUARD,
     _KEY_QWORD_SLOT,
+    _MXCSR_SAVE_OFFSET,
     _XMM_SAVE_OFFSET,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
@@ -214,6 +215,7 @@ def _call_frame_spills_asm(slot: tuple[int, ...], flags_offset: int, preserve_ym
         + xmm_spills
         + ymm_spills
         + register_spills
+        + f"  ldmxcsr dword ptr [r12+{_MXCSR_SAVE_OFFSET}]\n"
         + f"  mov rsi, qword ptr [r12+{_CALL_VPC_OFFSET}]\n"
         + f"  mov r15, qword ptr [r12+{_CALL_BASE_OFFSET}]\n"
         + "  mov rsp, r12\n"
@@ -267,6 +269,7 @@ def _call_bridge_asm(
         target_asm
         + f"  mov r12, rsp\n  mov rbx, rsi\n  mov qword ptr [rsp+{_CALL_VPC_OFFSET}], rsi\n"
         + f"  mov qword ptr [rsp+{_CALL_BASE_OFFSET}], r15\n"
+        + f"  stmxcsr dword ptr [rsp+{_MXCSR_SAVE_OFFSET}]\n"
         + loads
         + xmm_loads
         + ymm_loads

@@ -219,3 +219,70 @@ int main(void) {
         and original_result.returncode == mutated_result.returncode == _EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE,
         f"floating-point varargs ABI changed the result: {stats=}",
     )
+
+
+def test_virtualized_elf_restores_mxcsr_after_native_call(tmp_path: Path) -> None:
+    source = tmp_path / "mxcsr_call.c"
+    original = tmp_path / "mxcsr_original"
+    mutated = tmp_path / "mxcsr_mutated"
+    source.write_text(r"""
+static unsigned read_mxcsr(void);
+static void clobber_mxcsr(void);
+
+__attribute__((noinline)) static int check_mxcsr(void) {
+    unsigned before = read_mxcsr();
+    clobber_mxcsr();
+    unsigned after = read_mxcsr();
+    return before == after ? 42 : 1;
+}
+
+__attribute__((noinline)) static unsigned read_mxcsr(void) {
+    unsigned value;
+    __asm__ volatile("stmxcsr %0" : "=m"(value));
+    return value;
+}
+
+__attribute__((noinline)) static void clobber_mxcsr(void) {
+    unsigned value = 0x5f80u;
+    __asm__ volatile("ldmxcsr %0" : : "m"(value));
+}
+
+int main(void) {
+    return check_mxcsr();
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fno-toplevel-reorder",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the MXCSR ABI fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260902}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"MXCSR test function was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        f"native-call MXCSR state was not preserved: original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}, stats={stats}",
+    )

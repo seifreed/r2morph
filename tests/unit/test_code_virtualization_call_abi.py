@@ -36,6 +36,12 @@ def test_call_bridge_captures_callee_flags_before_register_spills() -> None:
     expect(assembly.index(flags_capture) < assembly.index(first_spill))
 
 
+def test_call_bridge_restores_mxcsr_after_native_return() -> None:
+    assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)))
+
+    expect("stmxcsr dword ptr [rsp+528]" in assembly and "ldmxcsr dword ptr [r12+528]" in assembly)
+
+
 def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)))
 
