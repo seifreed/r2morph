@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_packed_arith,
     _decode_fp_vex_256_packed_move,
 )
+from r2morph.mutations.code_virtualization_region_handler_router import HandlerBodyRouter, HandlerContext
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
@@ -56,6 +57,13 @@ def test_straight_line_engine_virtualizes_the_no_base_fp_indexed_arithmetic() ->
     item = _decode_run_item("addsd xmm1, [rdx*8 + 16]")
 
     expect(item is not None and item.base_index < 0 and item.index_index >= 0)
+
+
+def test_region_router_routes_vex_rip_load_to_a_real_handler() -> None:
+    context = HandlerContext("key", "key_qword", "key_dword", 0, "", "", "", 0, ())
+    body = HandlerBodyRouter(context).body("fploadvexrip_64", 0, (0, 0, 0, 0, 0))
+
+    expect(body != "")
 
 
 def test_vex_256_packed_add_reports_a_dedicated_item_shape() -> None:

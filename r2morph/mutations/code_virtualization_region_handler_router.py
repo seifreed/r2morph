@@ -669,7 +669,19 @@ class HandlerBodyRouter:
             return _fp_movmskb_handler_asm(key, self.context.key, self.context.field_perm)
         if key.startswith(("fpmovvexgp_", "fpmovvexgpd_")):
             return _fp_vex_gp_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
-        if key.startswith(("fploadvex_", "fpstorevex_", "fpmovvexmem_")):
+        if key.startswith(
+            (
+                "fploadvex_",
+                "fploadvexrip_",
+                "fploadvexidx_",
+                "fploadvexidxnb_",
+                "fpstorevex_",
+                "fpstorevexrip_",
+                "fpstorevexidx_",
+                "fpstorevexidxnb_",
+                "fpmovvexmem_",
+            )
+        ):
             return _fp_vex_scalar_memory_move_handler_asm(
                 key,
                 self.context.key,
