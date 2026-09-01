@@ -272,7 +272,7 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
         "rcr": lambda: _classify_shift(text),
         "mul": lambda: _classify_mul(text),
         "not": lambda: _first_item((lambda: _decode_not(text, address, size),)),
-        "div": lambda: _first_item((lambda: _decode_div(text),)),
+        "div": lambda: _first_item((lambda: _decode_div(text, address, size),)),
         "lea": lambda: _first_item((lambda: _decode_lea(text, address, size), lambda: _decode_lea_indexed(text))),
         "cmov": lambda: _first_item((lambda: _decode_setcc(text), lambda: _decode_cmov(text))),
     }

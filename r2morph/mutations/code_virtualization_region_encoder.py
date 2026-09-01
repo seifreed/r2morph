@@ -56,6 +56,7 @@ class RegionEncoder:
             self._emit_memory_immediate,
             self._emit_gp_memory,
             self._emit_bt_memory,
+            self._emit_div_memory,
             self._emit_misc,
             self._emit_calls,
             self._emit_branches,
@@ -725,6 +726,25 @@ class RegionEncoder:
             self._idx(position, (self.slot_of[0], None, self.slot_of[index], shift, disp))
         encoded_bit = bit if immediate else self.slot_of[bit]
         self.plain.append(encoded_bit ^ position)
+        return True
+
+    def _emit_div_memory(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if not kind.startswith("divmem"):
+            return False
+        position = self._opcode(item)
+        if kind == "divmem":
+            _, _signedness, base, disp, _width = item
+            self._mem(position, (self.slot_of[0], self.slot_of[base], disp))
+        elif kind == "divmemrip":
+            _, _signedness, target, _width = item
+            self._mem(position, (self.slot_of[0], None, target - self.bytecode_base))
+        elif kind == "divmemidx":
+            _, _signedness, base, index, shift, disp, _width = item
+            self._idx(position, (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        else:
+            _, _signedness, index, shift, disp, _width = item
+            self._idx(position, (self.slot_of[0], None, self.slot_of[index], shift, disp))
         return True
 
     def _emit_calls(self, item: RegionItem) -> bool:

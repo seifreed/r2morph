@@ -20,6 +20,7 @@ _EXPECTED_ARITHMETIC_EXIT_CODE = 42
 _EXPECTED_IMMEDIATE_STORE_EXIT_CODE = 77
 _EXPECTED_MEMORY_NOT_EXIT_CODE = 42
 _EXPECTED_MEMORY_BT_EXIT_CODE = 42
+_EXPECTED_MEMORY_DIV_EXIT_CODE = 42
 
 _BYTE_WORD_ARITHMETIC_SOURCE = r"""
 #include <stdint.h>
@@ -306,4 +307,80 @@ int main(void) {
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_BT_EXIT_CODE,
         f"memory bt changed the result: {stats=}",
+    )
+
+
+def test_virtualized_memory_div_preserves_unsigned_and_signed_results(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86 memory div requires an x86-64 host")
+
+    source = tmp_path / "memory_div.c"
+    original = tmp_path / "original_div"
+    mutated = tmp_path / "mutated_div"
+    source.write_text(r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int divide_memory(uint32_t *unsigned_divisor, int32_t *signed_divisor) {
+    uint32_t unsigned_quotient = 0;
+    uint32_t unsigned_remainder = 0;
+    int32_t signed_quotient = 0;
+    int32_t signed_remainder = 0;
+    __asm__ volatile(
+        "movl $100, %%eax\n"
+        "xorl %%edx, %%edx\n"
+        "divl (%[unsigned_divisor])\n"
+        "movl %%eax, %[unsigned_quotient]\n"
+        "movl %%edx, %[unsigned_remainder]\n"
+        "movl $-55, %%eax\n"
+        "cdq\n"
+        "idivl (%[signed_divisor])\n"
+        "movl %%eax, %[signed_quotient]\n"
+        "movl %%edx, %[signed_remainder]\n"
+        : [unsigned_quotient] "=m" (unsigned_quotient),
+          [unsigned_remainder] "=m" (unsigned_remainder),
+          [signed_quotient] "=m" (signed_quotient),
+          [signed_remainder] "=m" (signed_remainder)
+        : [unsigned_divisor] "r" (unsigned_divisor),
+          [signed_divisor] "r" (signed_divisor)
+        : "eax", "edx", "cc", "memory");
+    return unsigned_quotient == 14 && unsigned_remainder == 2
+        && signed_quotient == -13 && signed_remainder == -3 ? 42 : 1;
+}
+
+int main(void) {
+    uint32_t unsigned_divisor = 7;
+    int32_t signed_divisor = 4;
+    return divide_memory(&unsigned_divisor, &signed_divisor);
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile memory div fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260903}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_DIV_EXIT_CODE,
+        f"memory div changed the result: {stats=}",
     )

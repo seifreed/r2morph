@@ -8,6 +8,7 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import _item_si
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bt,
     _decode_cmp_mem,
+    _decode_div,
     _decode_memory_immediate,
     _decode_memory_mov,
     _decode_memory_mov_indexed,
@@ -110,6 +111,22 @@ def test_memory_bt_decodes_rip_relative_immediate_bit() -> None:
 
 def test_memory_bt_handler_key_uses_mode_letter() -> None:
     expect(_op_key(("btmem", 3, 8, 1, False, 32)) == "btmem_r_32")
+
+
+def test_memory_div_decodes_direct_signed_dword() -> None:
+    expect(_decode_div("idiv dword ptr [rbx+8]") == ("divmem", "s", 3, 8, 32))
+
+
+def test_memory_div_decodes_indexed_unsigned_qword() -> None:
+    expect(_decode_div("div qword ptr [rax+rcx*4+8]") == ("divmemidx", "u", 0, 1, 2, 8, 64))
+
+
+def test_memory_div_decodes_rip_relative_unsigned_qword() -> None:
+    expect(_decode_div("div qword ptr [rip+0x20]", 0x1000, 6) == ("divmemrip", "u", 0x1026, 64))
+
+
+def test_memory_div_handler_key_includes_signedness_and_width() -> None:
+    expect(_op_key(("divmem", "s", 3, 8, 32)) == "divmem_s_32")
 
 
 def test_memory_not_decodes_direct_width() -> None:

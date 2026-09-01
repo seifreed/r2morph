@@ -691,8 +691,35 @@ def _decode_bt(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[Any, 
     return result
 
 
-def _decode_div(text: str) -> tuple[Any, ...] | None:
-    """Decode ``div reg`` / ``idiv reg`` (register divisor, 32/64-bit).
+def _decode_div_memory(mnemonic: str, operand: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    signedness = "s" if mnemonic == "idiv" else "u"
+    result: tuple[Any, ...] | None = None
+    memory = _parse_mem_operand(operand)
+    if memory is not None:
+        base_slot, displacement, width = memory
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            result = ("divmem", signedness, base_slot, displacement, width)
+    rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
+    if result is None and rip_relative is not None:
+        target, width = rip_relative
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            result = ("divmemrip", signedness, target, width)
+    indexed = _parse_indexed_operand(operand, base_optional=True)
+    if result is None and indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        width = _explicit_memory_width(operand)
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            kind = "divmemidxnb" if base_slot < 0 else "divmemidx"
+            result = (
+                (kind, signedness, index_slot, shift, displacement, width)
+                if base_slot < 0
+                else (kind, signedness, base_slot, index_slot, shift, displacement, width)
+            )
+    return result
+
+
+def _decode_div(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[Any, ...] | None:
+    """Decode register and direct/indexed/RIP-relative memory ``div`` forms.
 
     The dividend is the implicit ``rdx:rax`` pair and the results are the quotient in
     rax and the remainder in rdx; the handler runs the real ``div``/``idiv`` so the
@@ -700,13 +727,19 @@ def _decode_div(text: str) -> tuple[Any, ...] | None:
     flags are architecturally undefined, so none are captured). A memory divisor is
     left native. Returns ``("div", "s"|"u", divisor_slot, width)``.
     """
-    parts = text.split()
-    if len(parts) != _INSTRUCTION_PART_COUNT or "[" in parts[1]:
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
         return None
     mnemonic = parts[0].lower()
     if mnemonic not in ("div", "idiv"):
         return None
-    reg = _register_operand(parts[1].lower())
+    operand = parts[1].strip().lower()
+    memory = _decode_div_memory(mnemonic, operand, insn_addr, insn_size)
+    if memory is not None:
+        return memory
+    if "[" in operand:
+        return None
+    reg = _register_operand(operand)
     if reg is None or reg[1] not in (32, 64):
         return None
     return ("div", "s" if mnemonic == "idiv" else "u", reg[0], reg[1])

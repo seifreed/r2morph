@@ -88,12 +88,14 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
     AtomicMemoryOperationConfig,
+    DivisionMemoryOperationConfig,
     MemoryImmediateOperationConfig,
     MemoryOperationConfig,
     _atomic_memory_rmw_handler_asm,
     _bt_memory_handler_asm,
     _cmp_memory_handler_asm,
     _cmpxchg_memory_handler_asm,
+    _div_memory_handler_asm,
     _lea_handler_asm,
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
@@ -193,6 +195,7 @@ class HandlerBodyRouter:
             self._tls_memory,
             self._atomic_memory,
             self._memory_immediate,
+            self._div_memory,
             self._memory,
             self._fp_immediate,
             self._fp_vex,
@@ -512,6 +515,20 @@ class HandlerBodyRouter:
             )
             body = handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
+
+    def _div_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if not key.startswith("divmem_"):
+            return None
+        return _div_memory_handler_asm(
+            DivisionMemoryOperationConfig(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                self.context.slot,
+                self.context.field_perm,
+                variants[4],
+            )
+        )
 
     def _memory_immediate(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         if not key.startswith(("storei_", "storeirip_", "storeiidx_", "storeiidxnb_")):

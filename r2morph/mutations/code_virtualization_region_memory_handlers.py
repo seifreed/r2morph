@@ -37,6 +37,16 @@ class MemoryOperationConfig:
 
 
 @dataclass(frozen=True)
+class DivisionMemoryOperationConfig:
+    handler_key: str
+    key: str
+    key_dword: str
+    slot: tuple[int, ...]
+    field_perm: int = 0
+    addr_variant: int = 0
+
+
+@dataclass(frozen=True)
 class AtomicMemoryOperationConfig:
     handler_key: str
     key: str
@@ -200,6 +210,38 @@ def _bt_memory_handler_asm(
         f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
     )
     return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
+def _div_memory_handler_asm(
+    config: DivisionMemoryOperationConfig,
+) -> str:
+    """Divide the implicit RDX:RAX pair by a divisor loaded from memory."""
+    kind, signedness, width_text = config.handler_key.split("_")
+    width = int(width_text)
+    if kind == "divmemrip":
+        body, advance = _mem_address_asm(True, config.key, config.key_dword, config.field_perm, config.addr_variant)
+    elif kind == "divmemidxnb":
+        body, advance = _indexed_address_nobase_asm(
+            config.key, config.key_dword, config.field_perm, config.addr_variant
+        )
+    elif kind == "divmemidx":
+        body, advance = _indexed_address_asm(config.key, config.key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, config.key, config.key_dword, config.field_perm, config.addr_variant)
+    memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    register = "r11" if width == _QWORD_WIDTH_BITS else "r11d"
+    accumulator = "rax" if width == _QWORD_WIDTH_BITS else "eax"
+    remainder = "rdx" if width == _QWORD_WIDTH_BITS else "edx"
+    mnemonic = "idiv" if signedness == "s" else "div"
+    body += (
+        f"  mov {register}, {memory} ptr [r10]\n"
+        f"  mov {accumulator}, {memory} ptr [rsp+{config.slot[0] * 8}]\n"
+        f"  mov {remainder}, {memory} ptr [rsp+{config.slot[2] * 8}]\n"
+        f"  {mnemonic} {register}\n"
+        f"  mov qword ptr [rsp+{config.slot[0] * 8}], rax\n"
+        f"  mov qword ptr [rsp+{config.slot[2] * 8}], rdx\n"
+    )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _memory_immediate_handler_asm(config: MemoryImmediateOperationConfig) -> str:
