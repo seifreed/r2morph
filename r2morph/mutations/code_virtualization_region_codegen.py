@@ -463,6 +463,7 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     checksum = compute_build_checksum(
         bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise, scheme.checksum_reverse
     )
+    logger.warning("Region VM checksum diagnostic: value=%02x offset=%#x", checksum, scheme.checksum_offset)
     table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     for entry_index in range(total):
         offset = table_start + entry_index * 4
