@@ -750,7 +750,9 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             lens,
             cave_vaddr,
             compute_build_checksum(
-                bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
+                bytes(
+                    encoding[: len(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0])]
+                ),
                 schemes[0].xor_key,
                 schemes[0].checksum_bytewise,
                 schemes[0].checksum_reverse,
