@@ -22,23 +22,27 @@ def test_virtualized_elf_preserves_additional_packed_integer_operations(tmp_path
     executable = tmp_path / "packed_extra"
     source.write_text(
         r"""
-#include <emmintrin.h>
+#include <immintrin.h>
 
 __attribute__((noinline)) static int packed_operations(void) {
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
     __m128i minimum = _mm_set1_epi8(-1);
+    __m128i maximum = _mm_set1_epi8(0);
     __m128i right = _mm_set1_epi8(7);
+    __m128i vex_right = _mm_set1_epi8(-1);
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum)
-        : [right] "x"(right)
+        "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
+        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum)
+        : [right] "x"(right), [vex_right] "x"(vex_right)
     );
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
         && _mm_movemask_epi8(minimum) == 0
+        && _mm_movemask_epi8(maximum) == 0xffff
         ? 46
         : 1;
 }
@@ -52,7 +56,7 @@ int main(void) {
         [
             "gcc",
             "-O0",
-            "-msse2",
+            "-mavx",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",

@@ -282,6 +282,7 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpcmpgtb",
     "vpcmpgtw",
     "vpcmpgtq",
+    "vpmaxub",
     "vpaddusb",
     "vpsubusb",
     "vpaddusw",

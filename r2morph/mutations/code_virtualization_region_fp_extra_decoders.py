@@ -11,7 +11,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 
 _PART_COUNT = 2
 _OPERAND_COUNT = 3
-_EXTRA_VEX_OPERATIONS = {"vpshufb": "pshufb"}
+_EXTRA_VEX_OPERATIONS = {"vpshufb": "pshufb", "vpmaxub": "pmaxub"}
 
 
 def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:
