@@ -34,6 +34,16 @@ angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
+A fresh local run on commit `4a042d6` covered all 140 executable fixtures
+discovered in the current dataset. It recorded 697 completed tool runs, 560
+explicit unavailable-tool rows, and 3 Unicorn errors. The per-pass result for
+`CodeVirtualization` was 137 applied, 3 omitted, and 0 transformation errors,
+covering 143 functions with 12 unsupported functions. The three Unicorn errors
+are limited to the `vex128` fixtures and report `UC_ERR_INSN_INVALID` while
+executing an AVX `vextractf128` instruction; the full sample-level evidence is
+in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
+This run is not represented as a zero-error release gate.
+
 The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
 campaign runs Ghidra headless over the same 120 original/protected pairs. It
 completed 240 analyses with zero errors or timeouts and records the
