@@ -3,16 +3,16 @@
   "measurement": "ghidra-headless-corpus",
   "pass_summary": {
     "CodeVirtualization": {
-      "applied": 117,
+      "applied": 137,
       "errors": 0,
-      "functions_virtualized": 121,
+      "functions_virtualized": 143,
       "no_op": 0,
       "omitted": 3,
-      "samples": 120,
-      "unsupported_functions": 10
+      "samples": 140,
+      "unsupported_functions": 12
     }
   },
-  "sample_count": 120,
+  "sample_count": 140,
   "samples": [
     {
       "original": "elf_blockswap_x86_64",
@@ -457,6 +457,58 @@
       ]
     },
     {
+      "original": "elf_vm_call_callee_saved_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": false,
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_call_stack_args_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 2,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_call_x86_64",
       "passes": [
         {
@@ -497,6 +549,32 @@
           "changed": false,
           "original": {
             "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_carry_rotate_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
             "status": "completed"
           },
           "protected": {
@@ -821,6 +899,32 @@
       ]
     },
     {
+      "original": "elf_vm_fparithidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_fparithmem_x86_64",
       "passes": [
         {
@@ -874,6 +978,32 @@
     },
     {
       "original": "elf_vm_fpcmp_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fpcmpidxnb_x86_64",
       "passes": [
         {
           "functions_virtualized": 1,
@@ -1147,6 +1277,32 @@
           "changed": false,
           "original": {
             "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fpengineidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
             "status": "completed"
           },
           "protected": {
@@ -1445,6 +1601,32 @@
       ]
     },
     {
+      "original": "elf_vm_fppackedidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_fppackedmem_x86_64",
       "passes": [
         {
@@ -1575,6 +1757,32 @@
       ]
     },
     {
+      "original": "elf_vm_gs_tlsidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_icall_x86_64",
       "passes": [
         {
@@ -1602,6 +1810,32 @@
     },
     {
       "original": "elf_vm_idxcall_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_idxcallnb_x86_64",
       "passes": [
         {
           "functions_virtualized": 1,
@@ -2147,6 +2381,32 @@
       ]
     },
     {
+      "original": "elf_vm_movd_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": false,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_movidx_x86_64",
       "passes": [
         {
@@ -2165,6 +2425,58 @@
           },
           "protected": {
             "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_movidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_movq_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": false,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 1,
             "status": "completed"
           },
           "status": "completed",
@@ -2901,6 +3213,32 @@
       ]
     },
     {
+      "original": "elf_vm_simdextra_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_simdint_x86_64",
       "passes": [
         {
@@ -2945,6 +3283,32 @@
           },
           "protected": {
             "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_simdmove_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": false,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 1,
             "status": "completed"
           },
           "status": "completed",
@@ -3031,6 +3395,58 @@
       ]
     },
     {
+      "original": "elf_vm_thread_cmpxchg_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_thread_xchg_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_tls_x86_64",
       "passes": [
         {
@@ -3057,6 +3473,32 @@
       ]
     },
     {
+      "original": "elf_vm_varargs_scalar_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 1
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_varargs_x86_64",
       "passes": [
         {
@@ -3075,6 +3517,84 @@
           },
           "protected": {
             "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_integer_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_scalar_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 2,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 1
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -3137,7 +3657,7 @@
   ],
   "schema_version": 1,
   "summary": {
-    "completed_analysis_runs": 240,
+    "completed_analysis_runs": 280,
     "error_analysis_runs": 0,
     "timeout_analysis_runs": 0
   }

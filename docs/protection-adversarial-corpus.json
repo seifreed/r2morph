@@ -3,16 +3,16 @@
   "measurement": "protection-adversarial-corpus",
   "pass_summary": {
     "CodeVirtualization": {
-      "applied": 117,
+      "applied": 137,
       "errors": 0,
-      "functions_virtualized": 121,
+      "functions_virtualized": 143,
       "no_op": 0,
       "omitted": 3,
-      "samples": 120,
-      "unsupported_functions": 10
+      "samples": 140,
+      "unsupported_functions": 12
     }
   },
-  "sample_count": 120,
+  "sample_count": 140,
   "samples": [
     {
       "original": "elf_blockswap_x86_64",
@@ -60,12 +60,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.014960374974180013,
+            "duration_seconds": 0.008798499999102205,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008530709019396454,
+            "duration_seconds": 0.0071816670242697,
             "functions": 1,
             "status": "completed"
           },
@@ -75,12 +75,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007694159867241979,
+            "duration_seconds": 0.0008134159725159407,
             "exit_code": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002472541993483901,
+            "duration_seconds": 0.0021473329979926348,
             "exit_code": 2,
             "status": "completed"
           },
@@ -167,12 +167,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01135033299215138,
+            "duration_seconds": 0.010956790996715426,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00888204196235165,
+            "duration_seconds": 0.00791454198770225,
             "functions": 3,
             "status": "completed"
           },
@@ -182,12 +182,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005205419729463756,
+            "duration_seconds": 0.00037541601341217756,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0027735410258173943,
+            "duration_seconds": 0.0025950000272132456,
             "exit_code": 0,
             "status": "completed"
           },
@@ -274,12 +274,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.009925417019985616,
+            "duration_seconds": 0.012465916981454939,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007310417015105486,
+            "duration_seconds": 0.005154040991328657,
             "functions": 1,
             "status": "completed"
           },
@@ -289,12 +289,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0004820000031031668,
+            "duration_seconds": 0.0003802499850280583,
             "exit_code": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002375458017922938,
+            "duration_seconds": 0.0021857090177945793,
             "exit_code": 7,
             "status": "completed"
           },
@@ -381,12 +381,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.011581042024772614,
+            "duration_seconds": 0.012151458009611815,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010022500006016344,
+            "duration_seconds": 0.01048412499949336,
             "functions": 3,
             "status": "completed"
           },
@@ -396,12 +396,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0004918330232612789,
+            "duration_seconds": 0.00045208295341581106,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002763208991382271,
+            "duration_seconds": 0.002689375018235296,
             "exit_code": 0,
             "status": "completed"
           },
@@ -488,12 +488,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013965041958726943,
+            "duration_seconds": 0.0110921660088934,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005747416988015175,
+            "duration_seconds": 0.0048574169632047415,
             "functions": 1,
             "status": "completed"
           },
@@ -503,12 +503,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0004550000303424895,
+            "duration_seconds": 0.0004084590473212302,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0031597079942002892,
+            "duration_seconds": 0.0028356670518405735,
             "exit_code": 0,
             "status": "completed"
           },
@@ -595,13 +595,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01581420801812783,
+            "duration_seconds": 0.010121250001247972,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014938167005311698,
-            "functions": 6,
+            "duration_seconds": 0.009497708000708371,
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -610,12 +610,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006181659991852939,
+            "duration_seconds": 0.0005311249988153577,
             "exit_code": 17,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005810333008412272,
+            "duration_seconds": 0.004505500022787601,
             "exit_code": 17,
             "status": "completed"
           },
@@ -702,13 +702,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.04074154101544991,
+            "duration_seconds": 0.020246916043106467,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.5031934159924276,
-            "functions": 97,
+            "duration_seconds": 0.38848795800004154,
+            "functions": 108,
             "status": "completed"
           },
           "status": "completed",
@@ -717,12 +717,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000564665999263525,
+            "duration_seconds": 0.00044770800741389394,
             "exit_code": 30,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0027730409638024867,
+            "duration_seconds": 0.0025427500368095934,
             "exit_code": 30,
             "status": "completed"
           },
@@ -809,13 +809,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.029667207971215248,
+            "duration_seconds": 0.03318500000750646,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.40568433300359175,
-            "functions": 94,
+            "duration_seconds": 0.3610438749892637,
+            "functions": 196,
             "status": "completed"
           },
           "status": "completed",
@@ -824,12 +824,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005360420327633619,
+            "duration_seconds": 0.00047141703544184566,
             "exit_code": 30,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0026461660163477063,
+            "duration_seconds": 0.002590666990727186,
             "exit_code": 30,
             "status": "completed"
           },
@@ -916,12 +916,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.014425082947127521,
+            "duration_seconds": 0.011575457989238203,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006901666987687349,
+            "duration_seconds": 0.005343624972738326,
             "functions": 1,
             "status": "completed"
           },
@@ -931,12 +931,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005201249732635915,
+            "duration_seconds": 0.00041466602124273777,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003361458017025143,
+            "duration_seconds": 0.002704167040064931,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1023,12 +1023,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.011908333981409669,
+            "duration_seconds": 0.01215424999827519,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009064333979040384,
+            "duration_seconds": 0.007265958993230015,
             "functions": 3,
             "status": "completed"
           },
@@ -1038,12 +1038,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005301250494085252,
+            "duration_seconds": 0.00048624997725710273,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0029208339983597398,
+            "duration_seconds": 0.0024838329991325736,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1130,12 +1130,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.010711125039961189,
+            "duration_seconds": 0.00977404200239107,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005973583029117435,
+            "duration_seconds": 0.005363459000363946,
             "functions": 1,
             "status": "completed"
           },
@@ -1145,12 +1145,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.00048762501683086157,
+            "duration_seconds": 0.0004003749927505851,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003166083013638854,
+            "duration_seconds": 0.0026840840000659227,
             "exit_code": 45,
             "status": "completed"
           },
@@ -1237,12 +1237,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.010288916004355997,
+            "duration_seconds": 0.01190083398250863,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009023500024341047,
+            "duration_seconds": 0.00697550002951175,
             "functions": 3,
             "status": "completed"
           },
@@ -1252,12 +1252,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005302089848555624,
+            "duration_seconds": 0.00041266699554398656,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00301708304323256,
+            "duration_seconds": 0.0027662909706123173,
             "exit_code": 45,
             "status": "completed"
           },
@@ -1344,12 +1344,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.012957917002495378,
+            "duration_seconds": 0.009291249967645854,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00538012501783669,
+            "duration_seconds": 0.004641708976123482,
             "functions": 1,
             "status": "completed"
           },
@@ -1359,12 +1359,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005482499836944044,
+            "duration_seconds": 0.00039499998092651367,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0023864999529905617,
+            "duration_seconds": 0.0020184580353088677,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1451,12 +1451,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013294000003952533,
+            "duration_seconds": 0.012195707997307181,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01643533300375566,
+            "duration_seconds": 0.00992562499595806,
             "functions": 3,
             "status": "completed"
           },
@@ -1466,12 +1466,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006208750419318676,
+            "duration_seconds": 0.00048391701420769095,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0044437499600462615,
+            "duration_seconds": 0.0035399580374360085,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1558,12 +1558,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.07938941696193069,
+            "duration_seconds": 0.01307799998903647,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00892504199873656,
+            "duration_seconds": 0.00819962500827387,
             "functions": 2,
             "status": "completed"
           },
@@ -1573,12 +1573,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0004729589563794434,
+            "duration_seconds": 0.0004571249592117965,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004229125042911619,
+            "duration_seconds": 0.003627958009019494,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1665,12 +1665,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013334666029550135,
+            "duration_seconds": 0.06905208295211196,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012986958026885986,
+            "duration_seconds": 0.008437290962319821,
             "functions": 4,
             "status": "completed"
           },
@@ -1680,12 +1680,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0004870830453000963,
+            "duration_seconds": 0.00046970800030976534,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004265666997525841,
+            "duration_seconds": 0.003558124997653067,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1772,12 +1772,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01746037497650832,
+            "duration_seconds": 0.011862999992445111,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008669791975989938,
+            "duration_seconds": 0.007502082968130708,
             "functions": 2,
             "status": "completed"
           },
@@ -1787,12 +1787,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000604083004873246,
+            "duration_seconds": 0.00047987495781853795,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0039239159668795764,
+            "duration_seconds": 0.003328208054881543,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1826,6 +1826,220 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_call_callee_saved_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 39,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 63,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.012130499992053956,
+            "functions": 3,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.011323959042783827,
+            "functions": 5,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0004752500099129975,
+            "exit_code": 79,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.003235916025005281,
+            "exit_code": 79,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_call_stack_args_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 2,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 14,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 22,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010112582996953279,
+            "functions": 3,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 1.17813216696959,
+            "functions": 368,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0004531670128926635,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.006426291016396135,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -1879,12 +2093,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015146374993491918,
+            "duration_seconds": 0.010896582971327007,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015591125003993511,
+            "duration_seconds": 0.007410708989482373,
             "functions": 4,
             "status": "completed"
           },
@@ -1894,12 +2108,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005250410176813602,
+            "duration_seconds": 0.0004142080433666706,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0027302500093355775,
+            "duration_seconds": 0.002523167000617832,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1986,12 +2200,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018904207972809672,
+            "duration_seconds": 0.08540370897389948,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010914457961916924,
+            "duration_seconds": 0.005927999969571829,
             "functions": 2,
             "status": "completed"
           },
@@ -2001,13 +2215,120 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007248329930007458,
+            "duration_seconds": 0.0004300419823266566,
             "exit_code": 73,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002640874998178333,
+            "duration_seconds": 0.0024631250416859984,
             "exit_code": 73,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_carry_rotate_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 25,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 41,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.011940374970436096,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.009566833032295108,
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.00043754198122769594,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.00414791697403416,
+            "exit_code": 42,
             "status": "completed"
           },
           "status": "completed",
@@ -2093,12 +2414,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013645583007019013,
+            "duration_seconds": 0.01131895900471136,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016455625009257346,
+            "duration_seconds": 0.011445125041063875,
             "functions": 4,
             "status": "completed"
           },
@@ -2108,12 +2429,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005549999768845737,
+            "duration_seconds": 0.0005028750165365636,
             "exit_code": 22,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005072208005003631,
+            "duration_seconds": 0.0039712919970043,
             "exit_code": 22,
             "status": "completed"
           },
@@ -2200,12 +2521,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016828291991259903,
+            "duration_seconds": 0.011226208007428795,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012487417028751224,
+            "duration_seconds": 0.009718083019834012,
             "functions": 3,
             "status": "completed"
           },
@@ -2215,12 +2536,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005675830179825425,
+            "duration_seconds": 0.0004028339753858745,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00399841699982062,
+            "duration_seconds": 0.003067667013965547,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2307,12 +2628,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022943624993786216,
+            "duration_seconds": 0.016632042010314763,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00963495799805969,
+            "duration_seconds": 0.007561874983366579,
             "functions": 1,
             "status": "completed"
           },
@@ -2322,12 +2643,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006269170553423464,
+            "duration_seconds": 0.000437250011600554,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004583208006806672,
+            "duration_seconds": 0.0033300420036539435,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2414,12 +2735,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01669750001747161,
+            "duration_seconds": 0.015205791976768523,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014193708018865436,
+            "duration_seconds": 0.011741499998606741,
             "functions": 3,
             "status": "completed"
           },
@@ -2429,12 +2750,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008115830132737756,
+            "duration_seconds": 0.0004932499723508954,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0036710419808514416,
+            "duration_seconds": 0.002867500006686896,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2521,12 +2842,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020486416993662715,
+            "duration_seconds": 0.013174249965231866,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017416708986274898,
+            "duration_seconds": 0.013579250022303313,
             "functions": 4,
             "status": "completed"
           },
@@ -2536,12 +2857,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005385419935919344,
+            "duration_seconds": 0.00045912497444078326,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0045175839914008975,
+            "duration_seconds": 0.0035412500146776438,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2628,12 +2949,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01671620801789686,
+            "duration_seconds": 0.014078000036533922,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016414958983659744,
+            "duration_seconds": 0.00883812498068437,
             "functions": 3,
             "status": "completed"
           },
@@ -2643,12 +2964,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007334999972954392,
+            "duration_seconds": 0.00043766602175310254,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00593116699019447,
+            "duration_seconds": 0.004480374976992607,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2735,12 +3056,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018650957965292037,
+            "duration_seconds": 0.01352550002047792,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01132637495175004,
+            "duration_seconds": 0.007305582985281944,
             "functions": 3,
             "status": "completed"
           },
@@ -2750,12 +3071,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000557459017727524,
+            "duration_seconds": 0.0004563329857774079,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0036867090384475887,
+            "duration_seconds": 0.0028107499820180237,
             "exit_code": 45,
             "status": "completed"
           },
@@ -2842,12 +3163,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01588945899857208,
+            "duration_seconds": 0.011994624976068735,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0147464579786174,
+            "duration_seconds": 0.006767333019524813,
             "functions": 4,
             "status": "completed"
           },
@@ -2857,12 +3178,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005803339881822467,
+            "duration_seconds": 0.000411542016081512,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004860583983827382,
+            "duration_seconds": 0.0033608750090934336,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2949,12 +3270,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016925791976973414,
+            "duration_seconds": 0.012399750004988164,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013063791033346206,
+            "duration_seconds": 0.0084283750038594,
             "functions": 4,
             "status": "completed"
           },
@@ -2964,12 +3285,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007086250116117299,
+            "duration_seconds": 0.000530916964635253,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005786792025901377,
+            "duration_seconds": 0.004270499979611486,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3056,12 +3377,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018016292015090585,
+            "duration_seconds": 0.016063583025243133,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017449458013288677,
+            "duration_seconds": 0.008106541994493455,
             "functions": 2,
             "status": "completed"
           },
@@ -3071,12 +3392,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006119580357335508,
+            "duration_seconds": 0.00045425002463161945,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005790916969999671,
+            "duration_seconds": 0.004106667009182274,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3163,12 +3484,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015139459050260484,
+            "duration_seconds": 0.011257125006522983,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011511959019117057,
+            "duration_seconds": 0.007341707998421043,
             "functions": 2,
             "status": "completed"
           },
@@ -3178,12 +3499,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005805840482935309,
+            "duration_seconds": 0.00040979101322591305,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004569582990370691,
+            "duration_seconds": 0.0033268750412389636,
             "exit_code": 69,
             "status": "completed"
           },
@@ -3270,12 +3591,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016897124995011836,
+            "duration_seconds": 0.013283125008456409,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020839041040744632,
+            "duration_seconds": 0.01035350002348423,
             "functions": 4,
             "status": "completed"
           },
@@ -3285,12 +3606,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0012822090066038072,
+            "duration_seconds": 0.0004253750084899366,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004998083983082324,
+            "duration_seconds": 0.003179166989866644,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3324,6 +3645,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fparithidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 8,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 20,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010685332992579788,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.23075345798861235,
+            "functions": 15,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005303749931044877,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.002300458960235119,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -3377,12 +3805,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01690649997908622,
+            "duration_seconds": 0.010551665967795998,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009246208996046335,
+            "duration_seconds": 0.0060697090229950845,
             "functions": 1,
             "status": "completed"
           },
@@ -3392,12 +3820,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005832090391777456,
+            "duration_seconds": 0.00042058300459757447,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0029910830198787153,
+            "duration_seconds": 0.0020810830174013972,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3484,13 +3912,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01593970798421651,
+            "duration_seconds": 0.012619040964636952,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.3351665830123238,
-            "functions": 67,
+            "duration_seconds": 0.19511400000192225,
+            "functions": 58,
             "status": "completed"
           },
           "status": "completed",
@@ -3499,12 +3927,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006347919697873294,
+            "duration_seconds": 0.0005135419778525829,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0021286249975673854,
+            "duration_seconds": 0.00225629098713398,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3591,12 +4019,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019626458000857383,
+            "duration_seconds": 0.013754333020187914,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012038291024509817,
+            "duration_seconds": 0.008105833025183529,
             "functions": 2,
             "status": "completed"
           },
@@ -3606,12 +4034,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007842500344850123,
+            "duration_seconds": 0.00048587500350549817,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00334995798766613,
+            "duration_seconds": 0.002814540988765657,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3645,6 +4073,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fpcmpidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 11,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 26,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010945709014777094,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.26797170797362924,
+            "functions": 86,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005732499994337559,
+            "exit_code": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.0029917089850641787,
+            "exit_code": 1,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -3698,12 +4233,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018144041998311877,
+            "duration_seconds": 0.011584999971091747,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015553292003460228,
+            "duration_seconds": 0.009791707969270647,
             "functions": 2,
             "status": "completed"
           },
@@ -3713,12 +4248,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005913749919272959,
+            "duration_seconds": 0.0004479170311242342,
             "exit_code": 44,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004166541970334947,
+            "duration_seconds": 0.002992000023368746,
             "exit_code": 44,
             "status": "completed"
           },
@@ -3805,13 +4340,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.014902875002007931,
+            "duration_seconds": 0.0097095409873873,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.2576264580129646,
-            "functions": 59,
+            "duration_seconds": 0.20491037500323728,
+            "functions": 46,
             "status": "completed"
           },
           "status": "completed",
@@ -3820,12 +4355,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006609580013900995,
+            "duration_seconds": 0.00043591600842773914,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0024183749919757247,
+            "duration_seconds": 0.001813083013985306,
             "exit_code": 0,
             "status": "completed"
           },
@@ -3912,12 +4447,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02038166596321389,
+            "duration_seconds": 0.010170458001084626,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015856500016525388,
+            "duration_seconds": 0.007618792005814612,
             "functions": 3,
             "status": "completed"
           },
@@ -3927,12 +4462,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005747919785790145,
+            "duration_seconds": 0.0004313329700380564,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0034790830104611814,
+            "duration_seconds": 0.001948041026480496,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4019,12 +4554,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015925416024401784,
+            "duration_seconds": 0.0098425829783082,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010245249955914915,
+            "duration_seconds": 0.009297999960836023,
             "functions": 4,
             "status": "completed"
           },
@@ -4034,12 +4569,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006686659762635827,
+            "duration_seconds": 0.00045612495159730315,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005646416975650936,
+            "duration_seconds": 0.003827500040642917,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4126,12 +4661,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018921041977591813,
+            "duration_seconds": 0.009448666998650879,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012580375012475997,
+            "duration_seconds": 0.007024290971457958,
             "functions": 4,
             "status": "completed"
           },
@@ -4141,12 +4676,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007812499534338713,
+            "duration_seconds": 0.0005089589976705611,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006639832979999483,
+            "duration_seconds": 0.003920332994312048,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4233,12 +4768,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024659665999934077,
+            "duration_seconds": 0.009491916978731751,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017628040979616344,
+            "duration_seconds": 0.009197375038638711,
             "functions": 4,
             "status": "completed"
           },
@@ -4248,12 +4783,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0011275829747319221,
+            "duration_seconds": 0.00043758301762863994,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007112333027180284,
+            "duration_seconds": 0.0038394589792005718,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4340,12 +4875,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.025988000037614256,
+            "duration_seconds": 0.008578250010032207,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016777459008153528,
+            "duration_seconds": 0.006607374991290271,
             "functions": 4,
             "status": "completed"
           },
@@ -4355,12 +4890,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008980410057120025,
+            "duration_seconds": 0.0005123330047354102,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007241583953145891,
+            "duration_seconds": 0.004480917006731033,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4447,12 +4982,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019221083028241992,
+            "duration_seconds": 0.017563915986102074,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0194811659748666,
+            "duration_seconds": 0.011572166986297816,
             "functions": 4,
             "status": "completed"
           },
@@ -4462,12 +4997,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008015839848667383,
+            "duration_seconds": 0.0006170000415295362,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005032124987337738,
+            "duration_seconds": 0.003823417006060481,
             "exit_code": 0,
             "status": "completed"
           },
@@ -4554,12 +5089,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.027786082995589823,
+            "duration_seconds": 0.008839707996230572,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020709042029920965,
+            "duration_seconds": 0.006885125010740012,
             "functions": 5,
             "status": "completed"
           },
@@ -4569,12 +5104,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008193749818019569,
+            "duration_seconds": 0.0004643340362235904,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0053164169657975435,
+            "duration_seconds": 0.003970291989389807,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4661,12 +5196,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0175521660130471,
+            "duration_seconds": 0.012041167006827891,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014462292019743472,
+            "duration_seconds": 0.007382709009107202,
             "functions": 4,
             "status": "completed"
           },
@@ -4676,13 +5211,120 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006697080098092556,
+            "duration_seconds": 0.0005490839830599725,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0049961250042542815,
+            "duration_seconds": 0.00382795900804922,
             "exit_code": 69,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fpengineidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 17,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 41,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.018804999999701977,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.008685541979502887,
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0006470829830504954,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.0038499999791383743,
+            "exit_code": 42,
             "status": "completed"
           },
           "status": "completed",
@@ -4768,12 +5410,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022899166971910745,
+            "duration_seconds": 0.019086374959442765,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018804042018018663,
+            "duration_seconds": 0.010444292041938752,
             "functions": 4,
             "status": "completed"
           },
@@ -4783,12 +5425,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.001035250024870038,
+            "duration_seconds": 0.0006845000316388905,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00668200000654906,
+            "duration_seconds": 0.004472542030271143,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4875,12 +5517,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01775399997131899,
+            "duration_seconds": 0.010254000022541732,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017346458975225687,
+            "duration_seconds": 0.009912791021633893,
             "functions": 4,
             "status": "completed"
           },
@@ -4890,12 +5532,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006879169959574938,
+            "duration_seconds": 0.00046125001972541213,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004629332979675382,
+            "duration_seconds": 0.003906833007931709,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4982,12 +5624,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017752417013980448,
+            "duration_seconds": 0.010460541991051286,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014078334032092243,
+            "duration_seconds": 0.0073564169579185545,
             "functions": 4,
             "status": "completed"
           },
@@ -4997,12 +5639,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009626669925637543,
+            "duration_seconds": 0.0004694160306826234,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005165958020370454,
+            "duration_seconds": 0.003248333989176899,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5089,13 +5731,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018659874971490353,
+            "duration_seconds": 0.012129334034398198,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.530546958965715,
-            "functions": 12,
+            "duration_seconds": 0.32174470799509436,
+            "functions": 89,
             "status": "completed"
           },
           "status": "completed",
@@ -5104,12 +5746,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005709580145776272,
+            "duration_seconds": 0.000535291968844831,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003224375017452985,
+            "duration_seconds": 0.0027615000144578516,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5196,12 +5838,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01661079202312976,
+            "duration_seconds": 0.012415959034115076,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011171124991960824,
+            "duration_seconds": 0.008233333006501198,
             "functions": 2,
             "status": "completed"
           },
@@ -5211,12 +5853,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005898340023122728,
+            "duration_seconds": 0.00050708296475932,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00478570896666497,
+            "duration_seconds": 0.0033548749634064734,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5303,12 +5945,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.012995166995096952,
+            "duration_seconds": 0.010762540972791612,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007872666988987476,
+            "duration_seconds": 0.0055086250067688525,
             "functions": 1,
             "status": "completed"
           },
@@ -5318,12 +5960,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006965000065974891,
+            "duration_seconds": 0.0004070419818162918,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003408542019315064,
+            "duration_seconds": 0.0021257500047795475,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5410,12 +6052,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018494416028261185,
+            "duration_seconds": 0.013062209007330239,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014217249990906566,
+            "duration_seconds": 0.00947908399393782,
             "functions": 3,
             "status": "completed"
           },
@@ -5425,12 +6067,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005784590030089021,
+            "duration_seconds": 0.000428917002864182,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004192165972199291,
+            "duration_seconds": 0.003107124997768551,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5517,12 +6159,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01624183403328061,
+            "duration_seconds": 0.012213374953716993,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016276333015412092,
+            "duration_seconds": 0.010144999949261546,
             "functions": 2,
             "status": "completed"
           },
@@ -5532,12 +6174,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000666750012896955,
+            "duration_seconds": 0.0004438749747350812,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004902624990791082,
+            "duration_seconds": 0.0028643329860642552,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5624,12 +6266,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015229916025418788,
+            "duration_seconds": 0.012270416948013008,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014171042013913393,
+            "duration_seconds": 0.009119082998950034,
             "functions": 2,
             "status": "completed"
           },
@@ -5639,12 +6281,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006444589816965163,
+            "duration_seconds": 0.000509292003698647,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005158166983164847,
+            "duration_seconds": 0.0036259169573895633,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5731,13 +6373,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01426437497138977,
+            "duration_seconds": 0.010232125001493841,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.25704850000329316,
-            "functions": 67,
+            "duration_seconds": 0.21564479201333597,
+            "functions": 60,
             "status": "completed"
           },
           "status": "completed",
@@ -5746,12 +6388,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000607708003371954,
+            "duration_seconds": 0.00045837502693757415,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0021969160297885537,
+            "duration_seconds": 0.0020201249863021076,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5838,12 +6480,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016235749993938953,
+            "duration_seconds": 0.011633749993052334,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014824917016085237,
+            "duration_seconds": 0.013608667009975761,
             "functions": 4,
             "status": "completed"
           },
@@ -5853,12 +6495,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005785829853266478,
+            "duration_seconds": 0.0005124579765833914,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005016166949644685,
+            "duration_seconds": 0.0032401669886894524,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5892,6 +6534,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_fppackedidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 8,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 21,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010748083994258195,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.26319279201561585,
+            "functions": 73,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0004604170098900795,
+            "exit_code": 6,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.002387500018812716,
+            "exit_code": 6,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -5945,12 +6694,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01614812499610707,
+            "duration_seconds": 0.014105250011198223,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02026249998016283,
+            "duration_seconds": 0.011888334003742784,
             "functions": 2,
             "status": "completed"
           },
@@ -5960,12 +6709,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005944999866187572,
+            "duration_seconds": 0.0005298750475049019,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004916375037282705,
+            "duration_seconds": 0.0034171249717473984,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6052,13 +6801,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.09710170899052173,
+            "duration_seconds": 0.01237745804246515,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.27435529202921316,
-            "functions": 58,
+            "duration_seconds": 0.16822966700419784,
+            "functions": 53,
             "status": "completed"
           },
           "status": "completed",
@@ -6067,12 +6816,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007327499915845692,
+            "duration_seconds": 0.0005062909913249314,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002815999963786453,
+            "duration_seconds": 0.0019052079878747463,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6159,13 +6908,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015403084049466997,
+            "duration_seconds": 0.010396041965577751,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.2714820000110194,
-            "functions": 60,
+            "duration_seconds": 0.18468029197538272,
+            "functions": 66,
             "status": "completed"
           },
           "status": "completed",
@@ -6174,12 +6923,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006274579791352153,
+            "duration_seconds": 0.0005281249759718776,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00221333303488791,
+            "duration_seconds": 0.001958999957423657,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6266,13 +7015,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016036125016398728,
+            "duration_seconds": 0.00964654196286574,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.22014299995498732,
-            "functions": 59,
+            "duration_seconds": 0.20857462496496737,
+            "functions": 61,
             "status": "completed"
           },
           "status": "completed",
@@ -6281,12 +7030,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007242910214699805,
+            "duration_seconds": 0.0004200419643893838,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0026266659842804074,
+            "duration_seconds": 0.0020191670046187937,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6373,12 +7122,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02329487504903227,
+            "duration_seconds": 0.013391792017500848,
             "functions": 4,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01682937500299886,
+            "duration_seconds": 0.011689916020259261,
             "functions": 5,
             "status": "completed"
           },
@@ -6388,12 +7137,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006648330017924309,
+            "duration_seconds": 0.0004456670139916241,
             "exit_code": 46,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005476124992128462,
+            "duration_seconds": 0.0031216670176945627,
             "exit_code": 46,
             "status": "completed"
           },
@@ -6427,6 +7176,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_gs_tlsidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 18,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 40,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.013334000017493963,
+            "functions": 4,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.7775745000108145,
+            "functions": 282,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0007008329848758876,
+            "exit_code": 46,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.0032681250013411045,
+            "exit_code": 46,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -6480,12 +7336,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018181583029218018,
+            "duration_seconds": 0.010114207980223,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01682937500299886,
+            "duration_seconds": 0.00825733394594863,
             "functions": 4,
             "status": "completed"
           },
@@ -6495,12 +7351,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007907910039648414,
+            "duration_seconds": 0.0004252500366419554,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0035761669860221446,
+            "duration_seconds": 0.0027419590041972697,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6587,13 +7443,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.11765529203694314,
+            "duration_seconds": 0.009783082990907133,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.5829708329983987,
-            "functions": 106,
+            "duration_seconds": 0.38954354100860655,
+            "functions": 104,
             "status": "completed"
           },
           "status": "completed",
@@ -6602,12 +7458,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007055419846437871,
+            "duration_seconds": 0.0005109580233693123,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005043167038820684,
+            "duration_seconds": 0.003018332994543016,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6637,6 +7493,113 @@
         {
           "original": {
             "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_idxcallnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 11,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 17,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010901707981247455,
+            "functions": 3,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.35520029201870784,
+            "functions": 118,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0004658750258386135,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.0030449999612756073,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 2,
             "status": "completed"
           },
           "protected": {
@@ -6694,12 +7657,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016759500023908913,
+            "duration_seconds": 0.010826417012140155,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016445916960947216,
+            "duration_seconds": 0.01016412500757724,
             "functions": 3,
             "status": "completed"
           },
@@ -6709,12 +7672,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007369579980149865,
+            "duration_seconds": 0.0005231249961070716,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0055332499905489385,
+            "duration_seconds": 0.0038463340024463832,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6801,12 +7764,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01511041703633964,
+            "duration_seconds": 0.009516499994788319,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008725165971554816,
+            "duration_seconds": 0.006262083014007658,
             "functions": 2,
             "status": "completed"
           },
@@ -6816,12 +7779,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007477910257875919,
+            "duration_seconds": 0.0004358329460956156,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006005500035826117,
+            "duration_seconds": 0.004809167003259063,
             "exit_code": 45,
             "status": "completed"
           },
@@ -6908,12 +7871,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018918250047136098,
+            "duration_seconds": 0.01682562503265217,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011891958012711257,
+            "duration_seconds": 0.009343375044409186,
             "functions": 3,
             "status": "completed"
           },
@@ -6923,12 +7886,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006170000415295362,
+            "duration_seconds": 0.0005452500190585852,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0037227499997243285,
+            "duration_seconds": 0.0030575839919038117,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7015,12 +7978,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018626042001415044,
+            "duration_seconds": 0.011260333005338907,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014654916012659669,
+            "duration_seconds": 0.007182458997704089,
             "functions": 3,
             "status": "completed"
           },
@@ -7030,12 +7993,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005425839917734265,
+            "duration_seconds": 0.00041283300379291177,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0031947920215316117,
+            "duration_seconds": 0.0027423750143498182,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7122,12 +8085,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02015462500276044,
+            "duration_seconds": 0.012008041958324611,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014739709033165127,
+            "duration_seconds": 0.008434625051449984,
             "functions": 3,
             "status": "completed"
           },
@@ -7137,12 +8100,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007107499986886978,
+            "duration_seconds": 0.0004988750442862511,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004252667014952749,
+            "duration_seconds": 0.0031633750186301768,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7229,12 +8192,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.034740875009447336,
+            "duration_seconds": 0.024046083039138466,
             "functions": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.029968999966513366,
+            "duration_seconds": 0.08860487502533942,
             "functions": 7,
             "status": "completed"
           },
@@ -7244,12 +8207,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000840499997138977,
+            "duration_seconds": 0.0005072079948149621,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0005795829929411411,
+            "duration_seconds": 0.00030370900640264153,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7336,12 +8299,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.03291083301883191,
+            "duration_seconds": 0.021296582999639213,
             "functions": 8,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.03236975002801046,
+            "duration_seconds": 0.01737741701072082,
             "functions": 8,
             "status": "completed"
           },
@@ -7351,12 +8314,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000703292025718838,
+            "duration_seconds": 0.0005124580347910523,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00046333298087120056,
+            "duration_seconds": 0.0003523330087773502,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7443,12 +8406,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.03332637500716373,
+            "duration_seconds": 0.020363333984278142,
             "functions": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.024091375002171844,
+            "duration_seconds": 0.0160173749900423,
             "functions": 7,
             "status": "completed"
           },
@@ -7458,12 +8421,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008452089969068766,
+            "duration_seconds": 0.0004937920020893216,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00047733396058902144,
+            "duration_seconds": 0.00035924999974668026,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7550,12 +8513,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.014606041018851101,
+            "duration_seconds": 0.012515666952822357,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01064112497260794,
+            "duration_seconds": 0.007763875008095056,
             "functions": 1,
             "status": "completed"
           },
@@ -7565,12 +8528,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005133330123499036,
+            "duration_seconds": 0.0004741250304505229,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004664082953240722,
+            "duration_seconds": 0.0039014160283841193,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7657,12 +8620,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.09355541598051786,
+            "duration_seconds": 0.010435834003146738,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012735791970044374,
+            "duration_seconds": 0.00665416702395305,
             "functions": 2,
             "status": "completed"
           },
@@ -7672,12 +8635,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006108750239945948,
+            "duration_seconds": 0.00045545800821855664,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0058992080157622695,
+            "duration_seconds": 0.0039102500304579735,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7764,13 +8727,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013298875011969358,
+            "duration_seconds": 0.009475417027715594,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.25912395800696686,
-            "functions": 68,
+            "duration_seconds": 0.15407579200109467,
+            "functions": 67,
             "status": "completed"
           },
           "status": "completed",
@@ -7779,12 +8742,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006574590224772692,
+            "duration_seconds": 0.0004496670444495976,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002851583994925022,
+            "duration_seconds": 0.00197275000391528,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7871,12 +8834,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01544404198648408,
+            "duration_seconds": 0.009559250029269606,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011328166991006583,
+            "duration_seconds": 0.00657545798458159,
             "functions": 3,
             "status": "completed"
           },
@@ -7886,12 +8849,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006159170297905803,
+            "duration_seconds": 0.00036708300467580557,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0024149579694494605,
+            "duration_seconds": 0.0016505000530742109,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7978,12 +8941,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.013292165996972471,
+            "duration_seconds": 0.010333999991416931,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011623541999142617,
+            "duration_seconds": 0.007751209021080285,
             "functions": 4,
             "status": "completed"
           },
@@ -7993,12 +8956,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005273330025374889,
+            "duration_seconds": 0.0004707079497165978,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004741124983411282,
+            "duration_seconds": 0.0037645830307155848,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8085,12 +9048,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019191665982361883,
+            "duration_seconds": 0.011764499999117106,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01485541695728898,
+            "duration_seconds": 0.007857084041461349,
             "functions": 3,
             "status": "completed"
           },
@@ -8100,12 +9063,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007848339737392962,
+            "duration_seconds": 0.0004165000282227993,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004561292007565498,
+            "duration_seconds": 0.002927707973867655,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8192,13 +9155,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015611750015523285,
+            "duration_seconds": 0.010232834029011428,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 2.2548398750368506,
-            "functions": 150,
+            "duration_seconds": 0.5454922090284526,
+            "functions": 143,
             "status": "completed"
           },
           "status": "completed",
@@ -8207,12 +9170,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000639582984149456,
+            "duration_seconds": 0.0006005830364301801,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004545082978438586,
+            "duration_seconds": 0.004638415994122624,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8299,13 +9262,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02020004199584946,
+            "duration_seconds": 0.013000000035390258,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.7143155409721658,
-            "functions": 144,
+            "duration_seconds": 0.42983920901315287,
+            "functions": 145,
             "status": "completed"
           },
           "status": "completed",
@@ -8314,12 +9277,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007576249772682786,
+            "duration_seconds": 0.0005333750159479678,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005517916986718774,
+            "duration_seconds": 0.0038899590144865215,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8406,12 +9369,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01821875001769513,
+            "duration_seconds": 0.010746875021141022,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01902895898092538,
+            "duration_seconds": 0.01129891601158306,
             "functions": 3,
             "status": "completed"
           },
@@ -8421,12 +9384,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005624160403385758,
+            "duration_seconds": 0.0004238330293446779,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003963374998420477,
+            "duration_seconds": 0.0031842090538702905,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8513,12 +9476,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017491457983851433,
+            "duration_seconds": 0.010571541031822562,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014180708036292344,
+            "duration_seconds": 0.007441958994604647,
             "functions": 3,
             "status": "completed"
           },
@@ -8528,12 +9491,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009844580199569464,
+            "duration_seconds": 0.00043329200707376003,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002760333998594433,
+            "duration_seconds": 0.0020074580097571015,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8620,12 +9583,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01719241595128551,
+            "duration_seconds": 0.013866749999579042,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013608125038444996,
+            "duration_seconds": 0.00990391697268933,
             "functions": 2,
             "status": "completed"
           },
@@ -8635,12 +9598,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000655125011689961,
+            "duration_seconds": 0.000494041945785284,
             "exit_code": 80,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007020291988737881,
+            "duration_seconds": 0.006307584000751376,
             "exit_code": 80,
             "status": "completed"
           },
@@ -8727,12 +9690,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017686666978988796,
+            "duration_seconds": 0.011489375028759241,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015190500009339303,
+            "duration_seconds": 0.008992791990749538,
             "functions": 3,
             "status": "completed"
           },
@@ -8742,12 +9705,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006865839823149145,
+            "duration_seconds": 0.00047374999849125743,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005339458002708852,
+            "duration_seconds": 0.0034368339693173766,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8781,6 +9744,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_movd_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 18,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 26,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.014566583966370672,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.9850071659893729,
+            "functions": 289,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.000621457991655916,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.004174791043624282,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -8834,12 +9904,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02374000003328547,
+            "duration_seconds": 0.014084666967391968,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018048041965812445,
+            "duration_seconds": 0.011112875014077872,
             "functions": 4,
             "status": "completed"
           },
@@ -8849,12 +9919,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006492920219898224,
+            "duration_seconds": 0.00042379199294373393,
             "exit_code": 35,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0073024170123972,
+            "duration_seconds": 0.004922459018416703,
             "exit_code": 35,
             "status": "completed"
           },
@@ -8888,6 +9958,220 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_movidxnb_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 8,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 19,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.01031141699058935,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.3563910000375472,
+            "functions": 93,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005402920069172978,
+            "exit_code": 35,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.00311933399643749,
+            "exit_code": 35,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_movq_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 25,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 40,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0127993329660967,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.8638357080053538,
+            "functions": 291,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005006249994039536,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.004302042012568563,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -8941,12 +10225,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0216999159893021,
+            "duration_seconds": 0.011360582953784615,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.024616167007479817,
+            "duration_seconds": 0.008978958008810878,
             "functions": 3,
             "status": "completed"
           },
@@ -8956,12 +10240,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007349579827859998,
+            "duration_seconds": 0.0004196249647065997,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005067249992862344,
+            "duration_seconds": 0.0030356250354088843,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9048,12 +10332,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022208499955013394,
+            "duration_seconds": 0.010439499979838729,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01921829197090119,
+            "duration_seconds": 0.01029983296757564,
             "functions": 3,
             "status": "completed"
           },
@@ -9063,12 +10347,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000654083036351949,
+            "duration_seconds": 0.0004189999890513718,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0054120420245453715,
+            "duration_seconds": 0.0034927919623441994,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9155,12 +10439,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019801084010396153,
+            "duration_seconds": 0.011434334039222449,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020271541958209127,
+            "duration_seconds": 0.008467708015814424,
             "functions": 3,
             "status": "completed"
           },
@@ -9170,12 +10454,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007076669717207551,
+            "duration_seconds": 0.0004891669959761202,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005364499986171722,
+            "duration_seconds": 0.003926665987819433,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9262,12 +10546,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02142850001109764,
+            "duration_seconds": 0.014325458032544702,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02189183299196884,
+            "duration_seconds": 0.01001458300743252,
             "functions": 4,
             "status": "completed"
           },
@@ -9277,12 +10561,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007121250382624567,
+            "duration_seconds": 0.00043650000588968396,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0068917080061510205,
+            "duration_seconds": 0.00391970801865682,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9369,12 +10653,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.025914333993569016,
+            "duration_seconds": 0.011744583025574684,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015526624978519976,
+            "duration_seconds": 0.007564875006210059,
             "functions": 5,
             "status": "completed"
           },
@@ -9384,12 +10668,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006718750228174031,
+            "duration_seconds": 0.00039300002390518785,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0007102919626049697,
+            "duration_seconds": 0.00044895801693201065,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9476,12 +10760,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02210083295358345,
+            "duration_seconds": 0.08404599997447804,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.022521542035974562,
+            "duration_seconds": 0.01028470799792558,
             "functions": 4,
             "status": "completed"
           },
@@ -9491,12 +10775,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006993749993853271,
+            "duration_seconds": 0.0004089580033905804,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005999499990139157,
+            "duration_seconds": 0.0037085420335642993,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9583,13 +10867,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.025328457995783538,
+            "duration_seconds": 0.009987707948312163,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.6427045830059797,
-            "functions": 102,
+            "duration_seconds": 0.27078345796326175,
+            "functions": 208,
             "status": "completed"
           },
           "status": "completed",
@@ -9598,12 +10882,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006791669875383377,
+            "duration_seconds": 0.0004487499827519059,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004581708984915167,
+            "duration_seconds": 0.0026743329945020378,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9690,12 +10974,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021184082957915962,
+            "duration_seconds": 0.012952208984643221,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.022390374972019345,
+            "duration_seconds": 0.01200770802097395,
             "functions": 3,
             "status": "completed"
           },
@@ -9705,12 +10989,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007040829514153302,
+            "duration_seconds": 0.0004362089675851166,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0052433329983614385,
+            "duration_seconds": 0.0033400420215912163,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9797,13 +11081,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02062458300497383,
+            "duration_seconds": 0.011023958039004356,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.1481518329819664,
-            "functions": 277,
+            "duration_seconds": 0.6006089590373449,
+            "functions": 225,
             "status": "completed"
           },
           "status": "completed",
@@ -9812,12 +11096,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000645417021587491,
+            "duration_seconds": 0.0005786669789813459,
             "exit_code": 73,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008484958030749112,
+            "duration_seconds": 0.005689874989911914,
             "exit_code": 73,
             "status": "completed"
           },
@@ -9904,12 +11188,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019610291987191886,
+            "duration_seconds": 0.01455541601171717,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013147333986125886,
+            "duration_seconds": 0.006458791031036526,
             "functions": 1,
             "status": "completed"
           },
@@ -9919,12 +11203,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008072499767877162,
+            "duration_seconds": 0.0004775839624926448,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005174540972802788,
+            "duration_seconds": 0.0035384169896133244,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10011,12 +11295,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0195929579786025,
+            "duration_seconds": 0.010374457982834429,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019209083984605968,
+            "duration_seconds": 0.007235375000163913,
             "functions": 3,
             "status": "completed"
           },
@@ -10026,12 +11310,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008234999841079116,
+            "duration_seconds": 0.000418792013078928,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005648540973197669,
+            "duration_seconds": 0.003158832958433777,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10118,12 +11402,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.029290958016645163,
+            "duration_seconds": 0.013674000045284629,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018573375011328608,
+            "duration_seconds": 0.009848417015746236,
             "functions": 4,
             "status": "completed"
           },
@@ -10133,12 +11417,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009683749522082508,
+            "duration_seconds": 0.0004919579951092601,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005177750019356608,
+            "duration_seconds": 0.004061124986037612,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10225,12 +11509,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021822707960382104,
+            "duration_seconds": 0.009644709003623575,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01589145796606317,
+            "duration_seconds": 0.006233250023797154,
             "functions": 4,
             "status": "completed"
           },
@@ -10240,12 +11524,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007255829987116158,
+            "duration_seconds": 0.00042641599429771304,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007371666957624257,
+            "duration_seconds": 0.004526833014097065,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10332,13 +11616,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.031242083001416177,
+            "duration_seconds": 0.014063916984014213,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.8429932909784839,
-            "functions": 297,
+            "duration_seconds": 0.9274297920055687,
+            "functions": 294,
             "status": "completed"
           },
           "status": "completed",
@@ -10347,12 +11631,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006272500031627715,
+            "duration_seconds": 0.0004243750008754432,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00669341697357595,
+            "duration_seconds": 0.003910917032044381,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10439,12 +11723,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02741608303040266,
+            "duration_seconds": 0.013308833003975451,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015984416007995605,
+            "duration_seconds": 0.0052969580283388495,
             "functions": 1,
             "status": "completed"
           },
@@ -10454,12 +11738,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008068750030361116,
+            "duration_seconds": 0.0004230000195093453,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005218875012360513,
+            "duration_seconds": 0.003451958007644862,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10546,12 +11830,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01570587494643405,
+            "duration_seconds": 0.008243207994382828,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.15906220802571625,
+            "duration_seconds": 0.008201791031751782,
             "functions": 5,
             "status": "completed"
           },
@@ -10561,12 +11845,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005694580031558871,
+            "duration_seconds": 0.0004801250179298222,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00503620901145041,
+            "duration_seconds": 0.004390207992400974,
             "exit_code": 45,
             "status": "completed"
           },
@@ -10653,13 +11937,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016277207992970943,
+            "duration_seconds": 0.00938375003170222,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 2.171042457979638,
-            "functions": 284,
+            "duration_seconds": 0.8655146249802783,
+            "functions": 285,
             "status": "completed"
           },
           "status": "completed",
@@ -10668,12 +11952,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006780000403523445,
+            "duration_seconds": 0.0004925419925712049,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004083334002643824,
+            "duration_seconds": 0.0035744999768212438,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10760,12 +12044,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01805887499358505,
+            "duration_seconds": 0.010767832980491221,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019209332996979356,
+            "duration_seconds": 0.006876207946334034,
             "functions": 5,
             "status": "completed"
           },
@@ -10775,12 +12059,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006100000464357436,
+            "duration_seconds": 0.00046658399514853954,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004396874981466681,
+            "duration_seconds": 0.00301670900080353,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10867,12 +12151,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016355749976355582,
+            "duration_seconds": 0.011652749963104725,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012755417032167315,
+            "duration_seconds": 0.006361417006701231,
             "functions": 4,
             "status": "completed"
           },
@@ -10882,12 +12166,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006372500211000443,
+            "duration_seconds": 0.0005218749865889549,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004002832982223481,
+            "duration_seconds": 0.0030412920168600976,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10974,12 +12258,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018095333012752235,
+            "duration_seconds": 0.01125987496925518,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009658584021963179,
+            "duration_seconds": 0.00790445797611028,
             "functions": 4,
             "status": "completed"
           },
@@ -10989,12 +12273,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006335409707389772,
+            "duration_seconds": 0.00046087498776614666,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003707874973770231,
+            "duration_seconds": 0.0035266250488348305,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11081,12 +12365,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017161083000246435,
+            "duration_seconds": 0.012775334005709738,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011210582975763828,
+            "duration_seconds": 0.006610375014133751,
             "functions": 4,
             "status": "completed"
           },
@@ -11096,12 +12380,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007175840437412262,
+            "duration_seconds": 0.0004965830012224615,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003868000057991594,
+            "duration_seconds": 0.003110458026640117,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11188,13 +12472,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017324750020634383,
+            "duration_seconds": 0.010003792005591094,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.3064637500210665,
-            "functions": 288,
+            "duration_seconds": 0.8958638330223039,
+            "functions": 287,
             "status": "completed"
           },
           "status": "completed",
@@ -11203,12 +12487,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006580000044777989,
+            "duration_seconds": 0.0004469580017030239,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004060832958202809,
+            "duration_seconds": 0.0039034580113366246,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11295,13 +12579,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016734541044570506,
+            "duration_seconds": 0.009415875014383346,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.3337240000255406,
-            "functions": 286,
+            "duration_seconds": 0.9338776670047082,
+            "functions": 287,
             "status": "completed"
           },
           "status": "completed",
@@ -11310,12 +12594,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007443330250680447,
+            "duration_seconds": 0.00045608298387378454,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0041017080075107515,
+            "duration_seconds": 0.00400812498992309,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11402,13 +12686,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016775250027421862,
+            "duration_seconds": 0.010267624980770051,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.4343042080290616,
-            "functions": 286,
+            "duration_seconds": 1.0724187499727122,
+            "functions": 340,
             "status": "completed"
           },
           "status": "completed",
@@ -11417,12 +12701,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006183750228956342,
+            "duration_seconds": 0.0004930419963784516,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004186792008113116,
+            "duration_seconds": 0.0029034579638391733,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11509,12 +12793,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0171827920130454,
+            "duration_seconds": 0.012077166989911348,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017123582947533578,
+            "duration_seconds": 0.008131834038067609,
             "functions": 4,
             "status": "completed"
           },
@@ -11524,12 +12808,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000689124979544431,
+            "duration_seconds": 0.0004461670177988708,
             "exit_code": 171,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004803624993655831,
+            "duration_seconds": 0.0032967919833026826,
             "exit_code": 171,
             "status": "completed"
           },
@@ -11616,12 +12900,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01772299996810034,
+            "duration_seconds": 0.01135874999454245,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010207624989561737,
+            "duration_seconds": 0.006545082957018167,
             "functions": 4,
             "status": "completed"
           },
@@ -11631,12 +12915,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006179590127430856,
+            "duration_seconds": 0.0004402920021675527,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004727667022962123,
+            "duration_seconds": 0.0033875840017572045,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11723,12 +13007,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01658875000430271,
+            "duration_seconds": 0.010651500022504479,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007502208987716585,
+            "duration_seconds": 0.0053884589578956366,
             "functions": 1,
             "status": "completed"
           },
@@ -11738,12 +13022,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005713329883292317,
+            "duration_seconds": 0.0004365839995443821,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0029577090172097087,
+            "duration_seconds": 0.002013834018725902,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11830,12 +13114,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017071584006771445,
+            "duration_seconds": 0.014809667016379535,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012837833957746625,
+            "duration_seconds": 0.007417874992825091,
             "functions": 2,
             "status": "completed"
           },
@@ -11845,13 +13129,120 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007005420047789812,
+            "duration_seconds": 0.00045066699385643005,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006414833012968302,
+            "duration_seconds": 0.004588583949953318,
             "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_simdextra_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 21,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 38,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.017466292018070817,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.011036791023798287,
+            "functions": 4,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.00041974999476224184,
+            "exit_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.004270874953363091,
+            "exit_code": 0,
             "status": "completed"
           },
           "status": "completed",
@@ -11937,12 +13328,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017312082985881716,
+            "duration_seconds": 0.011662625009194016,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017500083020422608,
+            "duration_seconds": 0.009676084038801491,
             "functions": 3,
             "status": "completed"
           },
@@ -11952,12 +13343,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007357079884968698,
+            "duration_seconds": 0.0004694580566138029,
             "exit_code": 46,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0036304169916547835,
+            "duration_seconds": 0.0022000830504111946,
             "exit_code": 46,
             "status": "completed"
           },
@@ -12044,12 +13435,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021154874993953854,
+            "duration_seconds": 0.01076341699808836,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016070457990281284,
+            "duration_seconds": 0.010857957997359335,
             "functions": 2,
             "status": "completed"
           },
@@ -12059,12 +13450,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007512920419685543,
+            "duration_seconds": 0.0004202499985694885,
             "exit_code": 62,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005938375019468367,
+            "duration_seconds": 0.003619958006311208,
             "exit_code": 62,
             "status": "completed"
           },
@@ -12098,6 +13489,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_simdmove_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 15,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 24,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.011011374997906387,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.9794471670174971,
+            "functions": 354,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005566669860854745,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.004394042014610022,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -12141,7 +13639,7 @@
             "status": "completed"
           },
           "protected": {
-            "instruction_lines": 81,
+            "instruction_lines": 41,
             "return_code": 0,
             "status": "completed"
           },
@@ -12151,13 +13649,13 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02173412503907457,
+            "duration_seconds": 0.01381074998062104,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016018374997656792,
-            "functions": 3,
+            "duration_seconds": 0.00970545900054276,
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -12166,12 +13664,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006692910101264715,
+            "duration_seconds": 0.0004594579804688692,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006535667052958161,
+            "duration_seconds": 0.004730458953417838,
             "exit_code": 0,
             "status": "completed"
           },
@@ -12258,12 +13756,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016879583010450006,
+            "duration_seconds": 0.08250166702782735,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009777583996765316,
+            "duration_seconds": 0.005222334002610296,
             "functions": 1,
             "status": "completed"
           },
@@ -12273,12 +13771,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000613166019320488,
+            "duration_seconds": 0.00043512502452358603,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003861500008497387,
+            "duration_seconds": 0.002778791997116059,
             "exit_code": 42,
             "status": "completed"
           },
@@ -12365,12 +13863,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016132624994497746,
+            "duration_seconds": 0.011452292033936828,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.11755316599737853,
+            "duration_seconds": 0.0077936669695191085,
             "functions": 4,
             "status": "completed"
           },
@@ -12380,12 +13878,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000664208026137203,
+            "duration_seconds": 0.00042150000808760524,
             "exit_code": 47,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00538179196882993,
+            "duration_seconds": 0.0031741249840706587,
             "exit_code": 47,
             "status": "completed"
           },
@@ -12419,6 +13917,220 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_thread_cmpxchg_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 40,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 67,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.01886037504300475,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.5728212499525398,
+            "functions": 210,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0004903340013697743,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.005337374983355403,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_thread_xchg_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 24,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 32,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0119193330174312,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.9099200000055134,
+            "functions": 285,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.000584250024985522,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.003998291969764978,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 4,
             "status": "completed"
           },
           "status": "completed",
@@ -12472,12 +14184,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018555250018835068,
+            "duration_seconds": 0.016234542010352015,
             "functions": 4,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01516612496925518,
+            "duration_seconds": 0.0117567089619115,
             "functions": 5,
             "status": "completed"
           },
@@ -12487,12 +14199,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006461669690907001,
+            "duration_seconds": 0.0005335839814506471,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005303375015500933,
+            "duration_seconds": 0.0038626249879598618,
             "exit_code": 45,
             "status": "completed"
           },
@@ -12526,6 +14238,113 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_varargs_scalar_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 1
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 2,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 18,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 25,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.014980708016082644,
+            "functions": 3,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.2632940420298837,
+            "functions": 64,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0005596249829977751,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.002226124983280897,
+            "exit_code": 42,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 5,
             "status": "completed"
           },
           "status": "completed",
@@ -12579,12 +14398,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017492374987341464,
+            "duration_seconds": 0.012195458984933794,
             "functions": 4,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010734250012319535,
+            "duration_seconds": 0.007913708977866918,
             "functions": 5,
             "status": "completed"
           },
@@ -12594,12 +14413,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006987089873291552,
+            "duration_seconds": 0.00045612500980496407,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003112790989689529,
+            "duration_seconds": 0.0029682079912163317,
             "exit_code": 69,
             "status": "completed"
           },
@@ -12633,6 +14452,297 @@
           },
           "protected": {
             "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_integer_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 13,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 28,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.010764666018076241,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.009966459008865058,
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "error_type": "UcError",
+          "status": "error",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_scalar_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 13,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 25,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.0117383329779841,
+            "functions": 2,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.009085249970667064,
+            "functions": 4,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "error_type": "UcError",
+          "status": "error",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 3,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "custom"
+        }
+      ]
+    },
+    {
+      "original": "elf_vm_vex128_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 2,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 1
+        }
+      ],
+      "protected": "protected",
+      "schema_version": 2,
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 4,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 6,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "radare2"
+        },
+        {
+          "changed": true,
+          "original": {
+            "instruction_lines": 52,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "protected": {
+            "instruction_lines": 63,
+            "return_code": 0,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "objdump"
+        },
+        {
+          "changed": true,
+          "original": {
+            "duration_seconds": 0.014825333026237786,
+            "functions": 4,
+            "status": "completed"
+          },
+          "protected": {
+            "duration_seconds": 0.11276070796884596,
+            "functions": 8,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "angr"
+        },
+        {
+          "error_type": "UcError",
+          "status": "error",
+          "tool": "unicorn"
+        },
+        {
+          "reason": "module 'triton' is unavailable",
+          "status": "unavailable",
+          "tool": "triton"
+        },
+        {
+          "reason": "executable 'ida64' is unavailable",
+          "status": "unavailable",
+          "tool": "ida-pro"
+        },
+        {
+          "reason": "executable 'ghidra' is unavailable",
+          "status": "unavailable",
+          "tool": "ghidra"
+        },
+        {
+          "reason": "executable 'bndb' is unavailable",
+          "status": "unavailable",
+          "tool": "binary-ninja"
+        },
+        {
+          "original": {
+            "functions": 4,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 6,
             "status": "completed"
           },
           "status": "completed",
@@ -12686,12 +14796,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019231292011681944,
+            "duration_seconds": 0.010944000037852675,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013569792034104466,
+            "duration_seconds": 0.008698208024725318,
             "functions": 3,
             "status": "completed"
           },
@@ -12701,12 +14811,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000677208008710295,
+            "duration_seconds": 0.00044137495569884777,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005061375035438687,
+            "duration_seconds": 0.0034682080149650574,
             "exit_code": 42,
             "status": "completed"
           },
@@ -12793,12 +14903,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016864416014868766,
+            "duration_seconds": 0.013038832985330373,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007893125002738088,
+            "duration_seconds": 0.007551458023954183,
             "functions": 3,
             "status": "completed"
           },
@@ -12808,12 +14918,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.00047987501602619886,
+            "duration_seconds": 0.00045487500028684735,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0023347079986706376,
+            "duration_seconds": 0.0020865839906036854,
             "exit_code": 0,
             "status": "completed"
           },
@@ -12857,8 +14967,8 @@
   ],
   "schema_version": 3,
   "summary": {
-    "completed_tool_runs": 600,
-    "error_tool_runs": 0,
-    "unavailable_tool_runs": 480
+    "completed_tool_runs": 697,
+    "error_tool_runs": 3,
+    "unavailable_tool_runs": 560
   }
 }

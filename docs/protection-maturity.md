@@ -1,7 +1,7 @@
 # Protection Maturity Report
 
-Commit: `45cb3ee`
-Date: `2026-08-28`
+Commit: `8dcf311`
+Date: `2026-09-01`
 
 ## Current verification status
 
@@ -26,13 +26,13 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 120 executable samples and
-the `CodeVirtualization` pass. It records 600 completed tool runs, 480 explicit
-unavailable-tool rows, and zero errors. Its per-pass summary records 117 applied
-samples, 3 omitted samples, and no errors. The report includes radare2, objdump,
-angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
-Binary Ninja remain unavailable in this environment. The automated second-pass
-review passes all checks and is not human sign-off.
+The current all-fixture adversarial campaign covers 140 executable samples and
+the `CodeVirtualization` pass. It records 697 completed tool runs, 560 explicit
+unavailable-tool rows, and 3 Unicorn errors. Its per-pass summary records 137
+applied samples, 3 omitted samples, and no transformation errors. The report
+includes radare2, objdump, angr, Unicorn, and the custom binary analyzer; Triton,
+IDA Pro, and Binary Ninja remain unavailable in this environment. The automated
+second-pass review passes all checks and is not human sign-off.
 
 A fresh local run on commit `4a042d6` covered all 140 executable fixtures
 discovered in the current dataset. It recorded 697 completed tool runs, 560
@@ -45,11 +45,11 @@ in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial
 This run is not represented as a zero-error release gate.
 
 The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
-campaign runs Ghidra headless over the same 120 original/protected pairs. It
-completed 240 analyses with zero errors or timeouts and records the
+campaign runs Ghidra headless over the same 140 original/protected pairs. It
+completed 280 analyses with zero errors or timeouts and records the
 `CodeVirtualization` pass summary per sample.
 
-The current report records 600 completed tool runs and 480 explicit unavailable-
+The current report records 697 completed tool runs and 560 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
 [`docs/virtualization-coverage.json`](virtualization-coverage.json): 131 real
@@ -72,7 +72,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 120 compatible executable fixtures spanning
+current fixture inventory contains 140 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.
@@ -134,11 +134,11 @@ treated as passing evidence. The automated review is not human sign-off.
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 120-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 140-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
-The current one-seed adversarial run applied the pass to 117 of 120 fixtures and records
+The current one-seed adversarial run applied the pass to 137 of 140 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret

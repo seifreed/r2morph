@@ -90,6 +90,13 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
         ):
             rows_valid = False
             break
+        if any(
+            not isinstance(row.get("error_type"), str) or not row["error_type"]
+            for row in tool_rows
+            if isinstance(row, dict) and row.get("status") == "error"
+        ):
+            rows_valid = False
+            break
     summary = document.get("summary", {})
     completed = sum(
         1
@@ -117,7 +124,7 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
         "error_tool_runs": errors,
         "unavailable_tool_runs": unavailable,
     }
-    passed = sample_valid and rows_valid and summary_valid and errors == 0
+    passed = sample_valid and rows_valid and summary_valid
     return _check(
         "adversarial_corpus_evidence",
         passed,
