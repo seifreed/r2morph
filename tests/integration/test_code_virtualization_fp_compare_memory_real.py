@@ -76,9 +76,11 @@ static volatile double threshold = 3.0;
 
 static void report_segfault(int signal_number, siginfo_t *info, void *context) {
     ucontext_t *state = context;
+    unsigned char *instruction = (unsigned char *)state->uc_mcontext.gregs[REG_RIP];
+    unsigned long long *frame = (unsigned long long *)state->uc_mcontext.gregs[REG_RSP];
     dprintf(
         STDERR_FILENO,
-        "signal=%d address=%p rip=%llx rsp=%llx rax=%llx rbx=%llx rcx=%llx rsi=%llx r8=%llx r9=%llx r10=%llx r11=%llx r12=%llx r13=%llx r14=%llx r15=%llx eflags=%llx\n",
+        "signal=%d address=%p rip=%llx rsp=%llx rax=%llx rbx=%llx rcx=%llx rsi=%llx r8=%llx r9=%llx r10=%llx r11=%llx r12=%llx r13=%llx r14=%llx r15=%llx eflags=%llx bytes=%02x%02x%02x%02x%02x%02x state=%llx\n",
         signal_number,
         info->si_addr,
         (unsigned long long)state->uc_mcontext.gregs[REG_RIP],
@@ -95,7 +97,14 @@ static void report_segfault(int signal_number, siginfo_t *info, void *context) {
         (unsigned long long)state->uc_mcontext.gregs[REG_R13],
         (unsigned long long)state->uc_mcontext.gregs[REG_R14],
         (unsigned long long)state->uc_mcontext.gregs[REG_R15],
-        (unsigned long long)state->uc_mcontext.gregs[REG_EFL]
+        (unsigned long long)state->uc_mcontext.gregs[REG_EFL],
+        instruction[0],
+        instruction[1],
+        instruction[2],
+        instruction[3],
+        instruction[4],
+        instruction[5],
+        frame[0x218 / sizeof(*frame)]
     );
     _Exit(128 + signal_number);
 }
