@@ -247,10 +247,13 @@ hbreak *0x407405
 continue
 set {unsigned char}($rsp+0x88) = 0xab
 continue
-x/8i $rip-16
-info registers rax rsi r13 r14 r15 rsp
-x/16gx $rsp+0x200
 info registers
+x/16gx $rsp
+x/16gx $rsp+0x200
+x/8i $rax
+x/8i $rsi
+x/8i $r13
+x/8i $r14
 x/12gx $rsp
 bt
 """,
