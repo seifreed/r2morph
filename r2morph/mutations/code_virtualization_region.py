@@ -438,7 +438,7 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
     function_end = max(instruction["addr"] + instruction.get("size", 0) for instruction in instructions)
     has_internal_call = False
     for item in build.items:
-        if item[0] == "call" and function_start <= item[1] < function_end:
+        if item[0] == "call" and function_start <= item[1] < function_end and item[1] not in build.ret_addrs:
             resolved = build.item_index_of.get(item[1])
             if resolved is None:
                 return False

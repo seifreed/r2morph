@@ -11,10 +11,12 @@ import pytest
 from r2morph.adapters.process import run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _EXPECTED_EXIT_CODE = 42
 _EXPECTED_MEMORY_INDIRECT_EXIT_CODE = 43
+_CALL_FALLBACK_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_run_callfallback_x86_64"
 _SOURCE = r"""
 __attribute__((noinline)) int indirect_local(int value) {
     int result;
@@ -144,3 +146,21 @@ def test_virtualized_memory_indirect_call_preserves_external_result(tmp_path: Pa
     mutated_result = run_process([mutated])
     expect(stats["functions_virtualized"] >= 1)
     expect(original_result.returncode == mutated_result.returncode == _EXPECTED_MEMORY_INDIRECT_EXIT_CODE)
+
+
+def test_virtualized_direct_call_to_separate_function_preserves_exit_code(tmp_path: Path) -> None:
+    """A caller whose callee ret is included by linear disassembly stays whole-function virtualized."""
+    mutated = tmp_path / "mutated_direct_call"
+    shutil.copyfile(_CALL_FALLBACK_FIXTURE, mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(
+            config={"probability": 1.0, "max_functions": 2, "reject_partial_virtualization": True, "seed": 20260903}
+        ).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1 and stats["partial_virtualization_total"] == 0)
+    expect(emulate_exit_code(mutated) == emulate_exit_code(_CALL_FALLBACK_FIXTURE))
