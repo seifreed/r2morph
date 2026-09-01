@@ -23,6 +23,10 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _vcall_handler_asm,
     _vret_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_fp_fma import (
+    _fp_vex_fma_handler_asm,
+    is_fp_vex_fma_handler_key,
+)
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
     _fp_arith_handler_asm,
@@ -756,7 +760,10 @@ class HandlerBodyRouter:
 
     def _fp_vex_256_packed(self, key: str) -> str | None:
         if key.startswith("fppackedvex256_"):
-            return _fp_packed_vex_256_arith_handler_asm(key, self.context.key, self.context.field_perm)
+            handler = (
+                _fp_vex_fma_handler_asm if is_fp_vex_fma_handler_key(key) else _fp_packed_vex_256_arith_handler_asm
+            )
+            return handler(key, self.context.key, self.context.field_perm)
         if key.startswith("fppackedvex256imm_"):
             return _fp_vex_256_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         return None
@@ -804,9 +811,8 @@ class HandlerBodyRouter:
                 key, self.context.key, self.context.field_perm, self.context.has_ymm
             )
         elif key.startswith("fppackedvex_"):
-            body = _fp_packed_vex_arith_handler_asm(
-                key, self.context.key, self.context.field_perm, self.context.has_ymm
-            )
+            handler = _fp_vex_fma_handler_asm if is_fp_vex_fma_handler_key(key) else _fp_packed_vex_arith_handler_asm
+            body = handler(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         elif key.startswith("fppackedveximm_"):
             body = _fp_vex_packed_shift_immediate_handler_asm(
                 key, self.context.key, self.context.field_perm, self.context.has_ymm
