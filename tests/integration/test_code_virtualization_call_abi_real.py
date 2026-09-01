@@ -221,6 +221,68 @@ int main(void) {
     )
 
 
+def test_virtualized_elf_preserves_incoming_stack_argument(tmp_path: Path) -> None:
+    source = tmp_path / "incoming_stack_argument.c"
+    original = tmp_path / "incoming_stack_argument_original"
+    mutated = tmp_path / "incoming_stack_argument_mutated"
+    source.write_text(r"""
+__attribute__((noinline)) long read_seventh_argument(
+    long first, long second, long third, long fourth, long fifth, long sixth, long seventh
+) {
+    return seventh + first - second + third - fourth + fifth - sixth;
+}
+
+int main(void) {
+    volatile long seventh = 40;
+    return read_seventh_argument(1, 2, 3, 4, 5, 6, seventh) == 37 ? 0 : 1;
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fcf-protection=none",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the incoming stack-argument fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        binary.analyze()
+        target = next(
+            function
+            for function in binary.get_functions()
+            if function.get("name", "").endswith("read_seventh_argument")
+        )
+        original_prefix = binary.read_bytes(target["addr"], 5)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260903}).apply(binary)
+        mutated_prefix = binary.read_bytes(target["addr"], 5)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_prefix != mutated_prefix
+        and (original_result.returncode, mutated_result.returncode) == (0, 0),
+        f"incoming stack argument changed: {stats=}, original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}",
+    )
+
+
 def test_virtualized_elf_restores_mxcsr_after_native_call(tmp_path: Path) -> None:
     source = tmp_path / "mxcsr_call.c"
     original = tmp_path / "mxcsr_original"

@@ -65,6 +65,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _KEY_QWORD_SLOT,
     _VSP_OFFSET,
     frame_size_for_seed,
+    stack_argument_copy_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
@@ -609,6 +610,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             if name != "rsp"
         )
         + _set_layer_slots(0, counts[0])
+        + stack_argument_copy_asm(frame_size_for_seed(schemes[0].junk_seed))
         + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"

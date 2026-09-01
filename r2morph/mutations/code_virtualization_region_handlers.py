@@ -87,7 +87,22 @@ _VSTACK_BASE = 0x288
 # function's own push/pop traffic never collides with the spilled context. Must
 # be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
 # stays below the frame.
-_GUARD = 0x480
+# The relocated stack leaves room below every supported frame for a bounded copy
+# of incoming ABI stack arguments before normal push/pop traffic begins.
+_GUARD = 0x800
+_STACK_ARGUMENT_COPY_BYTES = 0x200
+_STACK_ARGUMENT_COPY_QWORDS = _STACK_ARGUMENT_COPY_BYTES // 8
+
+
+def stack_argument_copy_asm(frame_size: int) -> str:
+    """Copy the bounded System V stack-argument area to the relocated stack."""
+    return (
+        "  cld\n"
+        f"  lea rsi, [rsp + {frame_size + 8}]\n"
+        f"  lea rdi, [rsp - {_GUARD - frame_size - 8}]\n"
+        f"  mov ecx, {_STACK_ARGUMENT_COPY_QWORDS}\n"
+        "  rep movsq\n"
+    )
 
 
 def _unmask_dword(scratch: str) -> str:

@@ -1,7 +1,11 @@
 """Contracts for native-call register bridges in the region VM."""
 
 from r2morph.mutations.code_virtualization_region_codegen import _relocate_flags_slot
-from r2morph.mutations.code_virtualization_region_control_handlers import CallBridgeConfig, _call_handler_asm
+from r2morph.mutations.code_virtualization_region_control_handlers import (
+    _GUARD,
+    CallBridgeConfig,
+    _call_handler_asm,
+)
 from tests.utils.assertions import expect
 
 
@@ -52,7 +56,7 @@ def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:
 def test_call_bridge_reconstructs_frame_after_native_return() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)), CallBridgeConfig(frame_size=0x340))
 
-    expect("call_resume_0:\n  lea r12, [rsp+320]" in assembly)
+    expect(f"call_resume_0:\n  lea r12, [rsp+{_GUARD - 0x340}]" in assembly)
 
 
 def test_flags_slot_relocation_preserves_call_resume_frame_base() -> None:

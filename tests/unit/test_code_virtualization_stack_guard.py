@@ -10,13 +10,23 @@ graphs (no r2, no binary) — real calls into the real function, no mocks.
 from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_region import _stack_balanced
-from r2morph.mutations.code_virtualization_region_handlers import _GUARD
+from r2morph.mutations.code_virtualization_region_handlers import (
+    _GUARD,
+    _STACK_ARGUMENT_COPY_BYTES,
+    stack_argument_copy_asm,
+)
 from tests.utils.assertions import expect
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
     # The relocation must preserve the program's 16-byte stack alignment.
     expect(_GUARD % 16 == 0)
+
+
+def test_stack_argument_copy_is_bounded_and_relocated() -> None:
+    assembly = stack_argument_copy_asm(0x400)
+    expect(f"mov ecx, {_STACK_ARGUMENT_COPY_BYTES // 8}" in assembly)
+    expect("rep movsq" in assembly and "lea rdi, [rsp - 1016]" in assembly)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:
