@@ -258,7 +258,11 @@ class HandlerBodyRouter:
                 stack_depth,
                 self.context.has_ymm,
             )
-            body = _call_mem_handler_asm(config, key.startswith("callmemrip_"))
+            body = _call_mem_handler_asm(
+                config,
+                key.startswith("callmemrip_"),
+                self.context.has_internal_indirect_call,
+            )
         elif key.startswith(("callmemidx_", "callmemidxnb_")):
             config = CallMemoryHandlerConfig(
                 index,
@@ -272,7 +276,11 @@ class HandlerBodyRouter:
                 stack_depth,
                 self.context.has_ymm,
             )
-            body = _call_mem_idx_handler_asm(config, key.startswith("callmemidxnb_"))
+            body = _call_mem_idx_handler_asm(
+                config,
+                key.startswith("callmemidxnb_"),
+                self.context.has_internal_indirect_call,
+            )
         elif key == "vcall":
             body = _vcall_handler_asm(self.context.retarget_target, self.context.rsp_off)
         elif key == "syscall":

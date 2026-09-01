@@ -453,7 +453,12 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
 
 
 def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
-    """Recognize an indirect call whose target is proven by local dataflow."""
+    """Recognize an indirect call whose target is proven by local dataflow.
+
+    Register-indirect calls use the last value producer directly. A memory-
+    indirect call can use the same proof when the pointer was just stored to
+    the exact memory slot from a known local address.
+    """
     boundary_kinds = frozenset(
         {
             "call",
@@ -470,22 +475,40 @@ def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
         }
     )
 
-    for index, item in enumerate(build.items):
-        if item[0] != "icall" or index == 0:
-            continue
-        target: int | None = None
+    def register_target(index: int, register: int) -> int | None:
         for producer in reversed(build.items[:index]):
             if producer[0] in boundary_kinds:
                 break
-            if item[1] not in _writes_register(tuple(producer)):
+            if register not in _writes_register(tuple(producer)):
                 continue
-            if producer[0] == "learip" and producer[1] == item[1]:
-                target = producer[2]
-            elif producer[0] == "op":
+            if producer[0] == "learip" and producer[1] == register:
+                target_value: object = producer[2]
+                return target_value if isinstance(target_value, int) else None
+            if producer[0] == "op":
                 operation: VirtualizedOp = producer[1]
-                if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == item[1]:
-                    target = operation.value
+                if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == register:
+                    immediate_value: object = operation.value
+                    return immediate_value if isinstance(immediate_value, int) else None
             break
+        return None
+
+    for index, item in enumerate(build.items):
+        if item[0] == "icall" and index:
+            target = register_target(index, int(item[1]))
+        elif item[0] == "callmem" and index:
+            base_slot, displacement = int(item[1]), int(item[2])
+            target = None
+            for store_index in range(index - 1, -1, -1):
+                producer = build.items[store_index]
+                if producer[0] in boundary_kinds:
+                    break
+                if producer[0] == "store" and (int(producer[2]), int(producer[3])) == (base_slot, displacement):
+                    target = register_target(store_index, int(producer[1]))
+                    break
+            if target is None:
+                continue
+        else:
+            continue
         if target is not None and target in build.item_index_of:
             return True
     return False

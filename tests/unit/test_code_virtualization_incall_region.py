@@ -20,6 +20,7 @@ from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 _INTERNAL_CALL_TARGET = 0x100C
+_INTERNAL_MEMORY_CALL_TARGET = 0x100F
 
 
 def _insn(addr: int, size: int, itype: str, opcode: str, **extra: object) -> dict[str, object]:
@@ -76,6 +77,19 @@ def _in_function_indirect_call_with_clobbered_target() -> list[dict[str, object]
         _insn(0x100C, 1, "ret", "ret"),
         _insn(0x100D, 2, "add", "add eax, ebx"),
         _insn(0x100F, 1, "ret", "ret"),
+    ]
+
+
+def _in_function_memory_indirect_call_instructions() -> list[dict[str, object]]:
+    """A local call target is stored in a stack slot before ``call [mem]``."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0x8]"),
+        _insn(0x1007, 4, "mov", "mov qword ptr [rsp - 8], rax"),
+        _insn(0x100B, 5, "ircall", "call qword ptr [rsp - 8]"),
+        _insn(0x1010, 2, "add", "add eax, ebx"),
+        _insn(0x1012, 1, "ret", "ret"),
+        _insn(0x100F, 2, "add", "add eax, ebx"),
+        _insn(0x1014, 1, "ret", "ret"),
     ]
 
 
@@ -174,5 +188,16 @@ def test_extract_region_static_local_indirect_call_assembles() -> None:
     """The local indirect-call route produces a valid interpreter blob."""
     region = extract_region(_in_function_indirect_call_instructions(), randomness.Random(1))
     expect(region is not None)
+    scheme = build_region_scheme(region, randomness.Random(1))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
+
+
+def test_extract_region_virtualizes_static_memory_indirect_call() -> None:
+    """A stack-stored local target gets the same VM return path as ``call reg``."""
+    region = extract_region(_in_function_memory_indirect_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    expect(region.has_internal_indirect_call)
+    expect(_INTERNAL_MEMORY_CALL_TARGET in region.target_map)
+    expect(any(item[0] == "vret" for item in region.instructions))
     scheme = build_region_scheme(region, randomness.Random(1))
     expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

@@ -480,7 +480,7 @@ def _vret_handler_asm(config: VRetHandlerConfig) -> str:
     )
 
 
-def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool) -> str:
+def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool, internal_target_map: bool = False) -> str:
     """Memory-indirect ``call qword [mem]``: the callee address is a pointer loaded
     from memory (vtable / IAT-GOT dispatch). The shared memory-address prologue
     computes the pointer's address into r10 (base+disp from a frame slot, or
@@ -495,16 +495,26 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool) -> str:
         config.addr_variant,
     )
     target = address + "  mov r10, qword ptr [r10]\n"
-    return _call_bridge_asm(
+    native = _call_bridge_asm(
         config.index,
         config.slot,
         target,
         advance,
         CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
     )
+    if not internal_target_map:
+        return native
+    return (
+        target
+        + _internal_call_target_asm(config.index, config.slot[RSP_INDEX] * 8)
+        + f"icall_native_{config.index}:\n"
+        + native
+    )
 
 
-def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig, no_base: bool = False) -> str:
+def _call_mem_idx_handler_asm(
+    config: CallMemoryHandlerConfig, no_base: bool = False, internal_target_map: bool = False
+) -> str:
     """Indexed memory-indirect call through a function-pointer table.
 
     ``no_base`` selects the absolute ``index*scale+disp`` form; both forms use
@@ -518,12 +528,20 @@ def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig, no_base: bool = F
         config.addr_variant,
     )
     target = address + "  mov r10, qword ptr [r10]\n"
-    return _call_bridge_asm(
+    native = _call_bridge_asm(
         config.index,
         config.slot,
         target,
         advance,
         CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
+    )
+    if not internal_target_map:
+        return native
+    return (
+        target
+        + _internal_call_target_asm(config.index, config.slot[RSP_INDEX] * 8)
+        + f"icall_native_{config.index}:\n"
+        + native
     )
 
 
