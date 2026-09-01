@@ -175,6 +175,33 @@ def _not_memory_handler_asm(
     return body + f"  not {size} ptr [r10]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _bt_memory_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Run a native bit test against memory, preserving out-of-range index semantics."""
+    kind, mode, width_text = handler_key.split("_")
+    width = int(width_text)
+    if kind == "btmemrip":
+        body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
+    elif kind == "btmemidxnb":
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind == "btmemidx":
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+    if mode == "r":
+        body += "  mov r11, qword ptr [rsp+r11*8]\n"
+    operand_size = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    bit_register = "r11" if width == _QWORD_WIDTH_BITS else "r11d"
+    body += (
+        f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+        f"  bt {operand_size} ptr [r10], {bit_register}\n"
+        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    )
+    return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
 def _memory_immediate_handler_asm(config: MemoryImmediateOperationConfig) -> str:
     """Store a sign/zero-preserving immediate through a decoded effective address."""
     kind, width_text = config.handler_key.rsplit("_", 1)

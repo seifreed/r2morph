@@ -246,7 +246,7 @@ def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
     compare = _decode_two_operand(text, "cmp")
     if compare is not None:
         return ["cmp", *compare]
-    return _first_item((lambda: _decode_bt(text), lambda: _decode_cmp_mem(text, address, size)))
+    return _first_item((lambda: _decode_bt(text, address, size), lambda: _decode_cmp_mem(text, address, size)))
 
 
 def _classify_shift(text: str) -> list[Any] | None:

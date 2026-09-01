@@ -6,6 +6,7 @@ from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
+    _decode_bt,
     _decode_cmp_mem,
     _decode_memory_immediate,
     _decode_memory_mov,
@@ -15,6 +16,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_memdst,
 )
 from r2morph.mutations.code_virtualization_region_microops import _vpop_partial_handler_asm
+from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
 _EXPECTED_STOREI_BYTE_SIZE = 11
@@ -92,6 +94,22 @@ def test_memory_region_lowers_byte_load_to_partial_pop() -> None:
 
 def test_partial_pop_handler_preserves_upper_destination_bits() -> None:
     expect("and r11, -256" in _vpop_partial_handler_asm("vpop8", "0x12"))
+
+
+def test_memory_bt_decodes_direct_register_bit() -> None:
+    expect(_decode_bt("bt dword ptr [rbx+8], ecx") == ("btmem", 3, 8, 1, False, 32))
+
+
+def test_memory_bt_decodes_indexed_immediate_bit() -> None:
+    expect(_decode_bt("bt qword ptr [rax+rcx*4+8], 65") == ("btmemidx", 0, 1, 2, 8, 65, True, 64))
+
+
+def test_memory_bt_decodes_rip_relative_immediate_bit() -> None:
+    expect(_decode_bt("bt dword ptr [rip+0x20], 3", 0x1000, 6) == ("btmemrip", 0x1026, 3, True, 32))
+
+
+def test_memory_bt_handler_key_uses_mode_letter() -> None:
+    expect(_op_key(("btmem", 3, 8, 1, False, 32)) == "btmem_r_32")
 
 
 def test_memory_not_decodes_direct_width() -> None:

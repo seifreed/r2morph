@@ -19,6 +19,7 @@ _EXPECTED_EXIT_CODE = 80
 _EXPECTED_ARITHMETIC_EXIT_CODE = 42
 _EXPECTED_IMMEDIATE_STORE_EXIT_CODE = 77
 _EXPECTED_MEMORY_NOT_EXIT_CODE = 42
+_EXPECTED_MEMORY_BT_EXIT_CODE = 42
 
 _BYTE_WORD_ARITHMETIC_SOURCE = r"""
 #include <stdint.h>
@@ -241,4 +242,68 @@ int main(void) {
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_NOT_EXIT_CODE,
         f"memory not changed the result: {stats=}",
+    )
+
+
+def test_virtualized_memory_bt_preserves_immediate_and_register_bits(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86 memory bt requires an x86-64 host")
+
+    source = tmp_path / "memory_bt.c"
+    original = tmp_path / "original_bt"
+    mutated = tmp_path / "mutated_bt"
+    source.write_text(r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int test_memory_bits(uint32_t *word, uint64_t *wide) {
+    uint8_t immediate_bit = 0;
+    uint8_t register_bit = 0;
+    uint64_t index = 1;
+    __asm__ volatile(
+        "bt $3, (%[word])\n"
+        "setc %[immediate]\n"
+        "bt %[index], (%[wide])\n"
+        "setc %[register]\n"
+        : [immediate] "=q" (immediate_bit), [register] "=q" (register_bit)
+        : [word] "r" (word), [wide] "r" (wide), [index] "r" (index)
+        : "cc", "memory");
+    return immediate_bit == 1 && register_bit == 1 ? 42 : 1;
+}
+
+int main(void) {
+    uint32_t word = 8;
+    uint64_t wide = 2;
+    return test_memory_bits(&word, &wide);
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile memory bt fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260902}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_BT_EXIT_CODE,
+        f"memory bt changed the result: {stats=}",
     )

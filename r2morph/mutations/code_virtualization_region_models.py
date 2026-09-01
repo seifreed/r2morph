@@ -86,6 +86,10 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "movxreg": (1, 2, 3),
     "load": (4,),
     "store": (4,),
+    "btmem": (4, 5),
+    "btmemrip": (3, 4),
+    "btmemidx": (6, 7),
+    "btmemidxnb": (5, 6),
     "notmem": (3,),
     "notmemrip": (2,),
     "notmemidx": (5,),
@@ -306,8 +310,18 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
         return f"{kind}_{operand_kind}_{item[4]}"
     if kind == "shift":
         return f"{item[1]}_{item[4]}"
-    if kind in ("atomicmem", "atomicmemrip", "atomicmemidx", "atomicmemidxnb"):
-        return f"{kind}_{item[1]}_{item[-1]}"
+    if kind in (
+        "atomicmem",
+        "atomicmemrip",
+        "atomicmemidx",
+        "atomicmemidxnb",
+        "btmem",
+        "btmemrip",
+        "btmemidx",
+        "btmemidxnb",
+    ):
+        suffix = f"{'i' if item[-2] else 'r'}_{item[-1]}" if kind.startswith("btmem") else f"{item[1]}_{item[-1]}"
+        return f"{kind}_{suffix}"
     if kind in _IDENTITY_KEYS:
         return kind
 

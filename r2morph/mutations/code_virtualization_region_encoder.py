@@ -55,6 +55,7 @@ class RegionEncoder:
             self._emit_fp_memory,
             self._emit_memory_immediate,
             self._emit_gp_memory,
+            self._emit_bt_memory,
             self._emit_misc,
             self._emit_calls,
             self._emit_branches,
@@ -703,6 +704,27 @@ class RegionEncoder:
             self._gp_rip(item, item[2], item[3])
         else:
             return False
+        return True
+
+    def _emit_bt_memory(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if not kind.startswith("btmem"):
+            return False
+        position = self._opcode(item)
+        if kind == "btmem":
+            _, base, disp, bit, immediate, _width = item
+            self._mem(position, (self.slot_of[0], self.slot_of[base], disp))
+        elif kind == "btmemrip":
+            _, target, bit, immediate, _width = item
+            self._mem(position, (self.slot_of[0], None, target - self.bytecode_base))
+        elif kind == "btmemidx":
+            _, base, index, shift, disp, bit, immediate, _width = item
+            self._idx(position, (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        else:
+            _, index, shift, disp, bit, immediate, _width = item
+            self._idx(position, (self.slot_of[0], None, self.slot_of[index], shift, disp))
+        encoded_bit = bit if immediate else self.slot_of[bit]
+        self.plain.append(encoded_bit ^ position)
         return True
 
     def _emit_calls(self, item: RegionItem) -> bool:

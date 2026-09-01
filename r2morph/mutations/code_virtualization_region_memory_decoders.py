@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
 )
 
 _DWORD_WIDTH_BITS = 32
+_BYTE_IMMEDIATE_MAX = 0xFF
 _LOCKED_INSTRUCTION_PART_COUNT = 3
 _INDEXED_MEMORY_WIDTHS = {
     "byte": _BYTE_WIDTH_BITS,
@@ -606,8 +607,55 @@ def _decode_not(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[Any,
     return result
 
 
-def _decode_bt(text: str) -> tuple[Any, ...] | None:
-    """Decode ``bt reg, reg`` / ``bt reg, imm`` (bit test, 32/64-bit).
+def _decode_bit_index(text: str, width: int) -> tuple[int, bool] | None:
+    result: tuple[int, bool] | None = None
+    register = _register_operand(text)
+    if register is not None and register[1] == width:
+        result = (register[0], False)
+    elif not any(marker in text for marker in ("[", "]", "rip", ":", "ptr")):
+        try:
+            immediate = int(text, 0)
+        except ValueError:
+            immediate = -1
+        if 0 <= immediate <= _BYTE_IMMEDIATE_MAX:
+            result = (immediate, True)
+    return result
+
+
+def _decode_bt_memory(left: str, right: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    result: tuple[Any, ...] | None = None
+    memory = _parse_mem_operand(left)
+    if memory is not None:
+        base_slot, displacement, width = memory
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            bit = _decode_bit_index(right, width)
+            if bit is not None:
+                result = ("btmem", base_slot, displacement, bit[0], bit[1], width)
+    rip_relative = _parse_riprel_operand(left, insn_addr, insn_size)
+    if result is None and rip_relative is not None:
+        target, width = rip_relative
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            bit = _decode_bit_index(right, width)
+            if bit is not None:
+                result = ("btmemrip", target, bit[0], bit[1], width)
+    indexed = _parse_indexed_operand(left, base_optional=True)
+    if result is None and indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        width = _explicit_memory_width(left)
+        if width in (_DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            bit = _decode_bit_index(right, width)
+            if bit is not None:
+                kind = "btmemidxnb" if base_slot < 0 else "btmemidx"
+                result = (
+                    (kind, index_slot, shift, displacement, bit[0], bit[1], width)
+                    if base_slot < 0
+                    else (kind, base_slot, index_slot, shift, displacement, bit[0], bit[1], width)
+                )
+    return result
+
+
+def _decode_bt(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[Any, ...] | None:
+    """Decode register and direct/indexed/RIP-relative memory bit tests.
 
     ``bt`` copies the selected bit into CF and leaves ZF unchanged (the other status
     flags are architecturally undefined); the handler runs the real ``bt`` and merges
@@ -619,6 +667,11 @@ def _decode_bt(text: str) -> tuple[Any, ...] | None:
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "bt" or "," not in parts[1]:
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    memory = _decode_bt_memory(left, right, insn_addr, insn_size)
+    if memory is not None:
+        return memory
+    if "[" in left or "[" in right:
+        return None
     value = _register_operand(left)
     if value is None or value[1] not in (32, 64):
         return None

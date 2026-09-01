@@ -91,6 +91,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     MemoryImmediateOperationConfig,
     MemoryOperationConfig,
     _atomic_memory_rmw_handler_asm,
+    _bt_memory_handler_asm,
     _cmp_memory_handler_asm,
     _cmpxchg_memory_handler_asm,
     _lea_handler_asm,
@@ -500,8 +501,15 @@ class HandlerBodyRouter:
             body = _movx_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         elif key.startswith(("riprel_load_", "riprel_store_")):
             body = _riprel_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
-        elif key.startswith(("notmem_", "notmemrip_", "notmemidx_", "notmemidxnb_", "load_", "store_")):
-            handler = _not_memory_handler_asm if key.startswith("notmem") else _memory_handler_asm
+        elif key.startswith(("btmem_", "notmem_", "notmemrip_", "notmemidx_", "notmemidxnb_", "load_", "store_")):
+            handler = next(
+                (
+                    handler
+                    for prefix, handler in (("btmem", _bt_memory_handler_asm), ("notmem", _not_memory_handler_asm))
+                    if key.startswith(prefix)
+                ),
+                _memory_handler_asm,
+            )
             body = handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
 
