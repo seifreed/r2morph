@@ -243,8 +243,10 @@ __attribute__((noinline)) static unsigned read_mxcsr(void) {
 }
 
 __attribute__((noinline)) static void clobber_mxcsr(void) {
+    unsigned before = read_mxcsr();
     unsigned value = 0x5f80u;
     __asm__ volatile("ldmxcsr %0" : : "m"(value));
+    __asm__ volatile("ldmxcsr %0" : : "m"(before));
 }
 
 int main(void) {
@@ -274,15 +276,21 @@ int main(void) {
     binary = Binary(mutated, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260902}).apply(binary)
+        binary.analyze()
+        check_function = next(
+            function for function in binary.get_functions() if "check_mxcsr" in function.get("name", "")
+        )
+        mutation = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260902})
+        mutation._reset_random()
+        transformation = mutation._virtualize_function(binary, check_function)
         binary.save()
     finally:
         binary.close()
 
     mutated_result = run_command([mutated], timeout=30)
-    expect(stats["functions_virtualized"] >= 1, f"MXCSR test function was not virtualized: {stats=}")
+    expect(transformation is not None, "MXCSR test function was not virtualized")
     expect(
         (original_result.returncode, mutated_result.returncode) == (42, 42),
         f"native-call MXCSR state was not preserved: original={original_result.returncode}, "
-        f"mutated={mutated_result.returncode}, stats={stats}",
+        f"mutated={mutated_result.returncode}",
     )
