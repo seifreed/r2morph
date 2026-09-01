@@ -17,6 +17,7 @@ from tests.utils.assertions import expect
 _EXPECTED_EXIT_CODE = 42
 _EXPECTED_MEMORY_INDIRECT_EXIT_CODE = 43
 _EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE = 43
+_EXPECTED_STACK_ARGUMENT_EXIT_CODE = 44
 _CALL_FALLBACK_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_run_callfallback_x86_64"
 _SOURCE = r"""
 __attribute__((noinline)) int indirect_local(int value) {
@@ -272,7 +273,7 @@ def test_virtualized_memory_indirect_call_with_stack_arguments_preserves_exit_co
         binary.close()
     mutated_result = run_process([mutated])
     expect(stats["functions_virtualized"] >= 1)
-    expect(original_result.returncode == mutated_result.returncode == 44)
+    expect(original_result.returncode == mutated_result.returncode == _EXPECTED_STACK_ARGUMENT_EXIT_CODE)
 
 
 def test_virtualized_direct_call_to_separate_function_preserves_exit_code(tmp_path: Path) -> None:
