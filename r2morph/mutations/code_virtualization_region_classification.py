@@ -77,6 +77,7 @@ from r2morph.mutations.code_virtualization_region_fp_fma import (
     _decode_fp_vex_scalar_fma,
     _decode_fp_vex_scalar_fma_mem,
 )
+from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
     _decode_bt,
@@ -212,6 +213,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
             lambda: _decode_fp_vex_packed_arith(text),
             lambda: _decode_fp_vex_packed_move(text),
             lambda: _decode_fp_packed_arith(text),
+            lambda: _decode_fp_packed_arith_extra(text),
             lambda: _decode_fp_packed_immediate(text),
             lambda: _decode_fp_packed_arith_mem(text),
             lambda: _decode_fp_packed_arith_riprel(text, address, size),
