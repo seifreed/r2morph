@@ -494,6 +494,7 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
         context.schemes[0].checksum_bytewise,
         context.schemes[0].checksum_reverse,
     )
+    logger.warning("Nested VM checksum diagnostic: value=%02x", checksum)
     checksum_broadcast = checksum * 0x01010101
     for layer in range(count):
         _encrypt_table(
