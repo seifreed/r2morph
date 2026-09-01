@@ -243,15 +243,12 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         gdb_script.write_text(
             """set pagination off
 start
-hbreak *0x407438
+hbreak *0x407405
+continue
+set {unsigned char}($rsp+0x88) = 0xab
 continue
 x/8i $rip-16
 info registers rax rsi r13 r14 r15 rsp
-x/3wx $r14
-p/x $eax
-p/x $ecx
-p/x $edx
-x/16gx $rsp+0x80
 x/16gx $rsp+0x200
 info registers
 x/12gx $rsp

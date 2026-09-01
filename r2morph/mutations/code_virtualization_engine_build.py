@@ -96,9 +96,8 @@ def build_vm_blob(
     island_start = len(data) - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - total * 4
-    bootstrap_prefix = engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]
     bootstrap_checksum = compute_build_checksum(
-        bytes(data[: len(bootstrap_prefix)]),
+        bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
         scheme.xor_key,
         scheme.checksum_bytewise,
         scheme.checksum_reverse,
