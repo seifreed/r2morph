@@ -52,7 +52,7 @@ completed 240 analyses with zero errors or timeouts and records the
 The current report records 600 completed tool runs and 480 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 111 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 131 real
 fixtures cover ten capability families with no unclassified fixture.
 
 ## 1. Current architecture
