@@ -275,18 +275,19 @@ int main(void) {
     binary.open()
     try:
         binary.analyze()
-        check_function = next(
-            function for function in binary.get_functions() if "check_mxcsr" in function.get("name", "")
-        )
-        mutation = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260902})
-        mutation._reset_random()
-        transformation = mutation._virtualize_function(binary, check_function)
+        main_function = next(function for function in binary.get_functions() if function.get("name", "") == "main")
+        original_prefix = binary.read_bytes(main_function["addr"], 5)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260902}).apply(binary)
+        mutated_prefix = binary.read_bytes(main_function["addr"], 5)
         binary.save()
     finally:
         binary.close()
 
     mutated_result = run_command([mutated], timeout=30)
-    expect(transformation is not None, "MXCSR test function was not virtualized")
+    expect(
+        stats["functions_virtualized"] >= 1 and original_prefix != mutated_prefix,
+        f"main function was not virtualized: {stats=}",
+    )
     expect(
         (original_result.returncode, mutated_result.returncode) == (42, 42),
         f"native-call MXCSR state was not preserved: original={original_result.returncode}, "
