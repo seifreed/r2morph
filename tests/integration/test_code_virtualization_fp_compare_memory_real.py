@@ -248,7 +248,7 @@ x/12i $rip-8
 info registers
 x/gx $rsp+0x88
 continue
-set {unsigned char}($rsp+0x88) = 0xab
+set {unsigned char}($rsp+0xf8) = 0x2f
 continue
 info registers
 x/16gx $rsp
