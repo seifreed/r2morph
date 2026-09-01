@@ -2,8 +2,8 @@
   "schema_version": 1,
   "measurement": "protection-maturity-corpus-by-pass",
   "generated_at": "2026-09-01",
-  "commit": "c72f15452910f65e1ea3e0381d89a5a7eab34d5e",
-  "workflow_run": 33554994449,
+  "commit": "4e1ae420d6602e4329f03c3294db1d7f02b903c6",
+  "workflow_run": 33561664940,
   "dataset": "fixtures/dataset",
   "fixture_count": 140,
   "passes": {
@@ -50,5 +50,6 @@
       "semantic_failures": 1
     }
   },
-  "source_artifact": "GitHub Actions artifact differential-corpus-by-pass from workflow run 33554994449"
+  "source_artifact": "GitHub Actions artifact differential-corpus-by-pass from workflow run 33561664940",
+  "artifact_sha256": "742c17eff372d09ca65ffb4718b3a620957dbb0f6f9ec8de2bc707680b32ae71"
 }

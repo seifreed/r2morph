@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `d0f50ad`
+Commit: `4e1ae42`
 Date: `2026-09-01`
 
 ## Current verification status
 
 The supported Python 3.13 environment passed the required static and security
-gates locally. GitHub Actions run `33557705638` completed successfully with all
-16 jobs on commit `d0f50ad`, including the Linux x86-64 suite and cross-platform
+gates locally. GitHub Actions run `33561577689` completed successfully with all
+16 jobs on commit `4e1ae42`, including the Linux x86-64 suite and cross-platform
 matrix. The packed and scalar VEX FMA regressions, the virtualized incoming
-stack-argument regression, and the aggregate-return ABI regression passed in the
-Linux integration job.
+stack-argument regression, the aggregate-return ABI regression, and the legacy
+packed-byte comparison regression passed in the Linux integration job.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -45,11 +45,12 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `c72f154` ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `4e1ae42` ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33554994449`. Code virtualization recorded 136
+artifact from workflow run `33561664940` (SHA-256
+`742c17eff372d09ca65ffb4718b3a620957dbb0f6f9ec8de2bc707680b32ae71`). Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
 
