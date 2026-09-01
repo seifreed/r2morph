@@ -290,10 +290,14 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         binary.close()
     transformed_result = run_command([mutated], timeout=30)
     if transformed_result.returncode not in {0, original_result.returncode}:
+        disassembly = run_command(
+            ["objdump", "-d", "--start-address=0x407d00", "--stop-address=0x407e20", mutated],
+            timeout=30,
+        )
         expect(
             False,
             f"VEX scalar FP compare callee crashed: returncode={transformed_result.returncode}; "
-            f"stats={stats}; stderr={transformed_result.stderr!r}",
+            f"stats={stats}; stderr={transformed_result.stderr!r}; disassembly={disassembly.stdout!r}",
         )
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
