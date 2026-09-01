@@ -250,6 +250,16 @@ __attribute__((noinline)) static int clobber_mxcsr(void) {
 int main(void) {
     return check_mxcsr();
 }
+
+__attribute__((noreturn)) void _start(void) {
+    __asm__(
+        "call main\n"
+        "mov %eax, %edi\n"
+        "mov $60, %eax\n"
+        "syscall\n"
+    );
+    __builtin_unreachable();
+}
 """)
     compile_result = run_command(
         [
@@ -261,6 +271,9 @@ int main(void) {
             "-fno-asynchronous-unwind-tables",
             "-fno-stack-protector",
             "-fno-toplevel-reorder",
+            "-nostdlib",
+            "-Wl,-e,_start",
+            "-Wl,--build-id=none",
             source,
             "-o",
             original,
