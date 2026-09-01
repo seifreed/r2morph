@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
@@ -29,6 +30,10 @@ def test_memory_mov_decodes_byte_load_with_low_byte_width() -> None:
 
 def test_memory_mov_decodes_word_store_with_low_word_width() -> None:
     expect(_decode_memory_mov("mov word ptr [rbp-2], ax") == ("store", 0, 5, -2, 16))
+
+
+def test_engine_memory_decoder_leaves_byte_store_native() -> None:
+    expect(_decode_run_item("mov byte ptr [rbp-2], al") is None)
 
 
 def test_memory_classifier_decodes_absolute_load_as_fixed_address() -> None:

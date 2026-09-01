@@ -261,12 +261,13 @@ def _decode_indexed_gp_memory_item(text: str) -> VirtualizedMemOp | None:
 
 def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
     indexed = _decode_indexed_gp_memory_item(text)
-    if indexed is not None:
+    if indexed is not None and indexed.width in (32, 64):
         return indexed
     decoded = _decode_memory_mov(text)
     if decoded is not None:
         kind, register_slot, base_slot, disp, width = decoded
-        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
+        if width in (32, 64):
+            return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
     extended = _decode_movx(text)
     if extended is not None and extended[0] == "movx":
         _, extension, source_size, width, register_slot, base_slot, disp = extended
