@@ -265,7 +265,7 @@ __attribute__((noinline)) static int test_memory_bits(uint32_t *word, uint64_t *
         "setc %b[immediate]\n"
         "btq %[index], (%[wide])\n"
         "setc %b[reg_bit]\n"
-        : [immediate] "=r" (immediate_bit), [reg_bit] "=r" (register_bit)
+        : [immediate] "=&r" (immediate_bit), [reg_bit] "=&r" (register_bit)
         : [word] "r" (word), [wide] "r" (wide), [index] "r" (index)
         : "cc", "memory");
     return immediate_bit == 1 && register_bit == 1 ? 42 : 1;
@@ -306,7 +306,7 @@ int main(void) {
     expect(
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_BT_EXIT_CODE,
-        f"memory bt changed the result: {stats=}",
+        f"memory bt changed the result: {original_result.returncode=}, {transformed_result.returncode=}, {stats=}",
     )
 
 
