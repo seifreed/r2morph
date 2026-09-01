@@ -87,10 +87,10 @@ _VSTACK_BASE = 0x288
 # function's own push/pop traffic never collides with the spilled context. Must
 # be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
 # stays below the frame.
-# The relocated stack leaves room below every supported frame for a bounded copy
-# of incoming ABI stack arguments before normal push/pop traffic begins.
+# The relocated stack leaves room below the largest supported frame for the
+# largest bounded copy of incoming ABI stack arguments before push/pop traffic.
 _GUARD = 0x800
-_STACK_ARGUMENT_COPY_BYTES = 0x200
+_STACK_ARGUMENT_COPY_BYTES = _GUARD - max(_FRAME_SIZES) - 8
 _STACK_ARGUMENT_COPY_QWORDS = _STACK_ARGUMENT_COPY_BYTES // 8
 
 
