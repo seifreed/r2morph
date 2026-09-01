@@ -53,12 +53,13 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
-    _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
+    _STACK_ARGUMENT_COPY_BYTES,
     _VSP_OFFSET,
     frame_size_for_seed,
     stack_argument_copy_asm,
+    stack_guard_for_copy,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     ChecksumPrologue,
@@ -212,6 +213,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
     frame_size = frame_size_for_seed(scheme.junk_seed)
+    stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     # Preserve XMM state for every FP operation and every native-call bridge. Calls
     # need the saved vector arguments and must write back caller-clobbered results.
@@ -303,7 +306,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # range. rax is free scratch here (every GP register was already spilled).
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
     entry_setup = (
-        stack_argument_copy_asm(frame_size) + f"  lea rax, [rsp+{frame_size}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        stack_argument_copy_asm(frame_size, stack_copy_bytes, stack_guard)
+        + f"  lea rax, [rsp+{frame_size}]\n  sub rax, {stack_guard}\n{floor_cell}"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
@@ -380,6 +384,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.flags_offset,
                     _region_has_ymm(region),
                     region.has_internal_indirect_call,
+                    stack_guard,
                 ),
                 junk_rng,
                 entry_prefix=state_decode,

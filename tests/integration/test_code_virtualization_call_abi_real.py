@@ -342,6 +342,58 @@ int main(void) {{
     )
 
 
+def test_virtualized_elf_expands_stack_argument_window_from_access(tmp_path: Path) -> None:
+    parameters = ", ".join(f"long argument_{index}" for index in range(1, 123))
+    arguments = ", ".join(str(index) for index in range(1, 123))
+    source = tmp_path / "expanded_stack_arguments.c"
+    original = tmp_path / "expanded_stack_arguments_original"
+    mutated = tmp_path / "expanded_stack_arguments_mutated"
+    source.write_text(f"""
+__attribute__((noinline)) long read_last_argument({parameters}) {{
+    return argument_122;
+}}
+
+int main(void) {{
+    return read_last_argument({arguments}) == 122 ? 0 : 1;
+}}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-fomit-frame-pointer",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fcf-protection=none",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the expanded stack-argument fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260905}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1 and (original_result.returncode, mutated_result.returncode) == (0, 0),
+        f"expanded stack argument changed: {stats=}, original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}",
+    )
+
+
 def test_virtualized_elf_restores_mxcsr_after_native_call(tmp_path: Path) -> None:
     source = tmp_path / "mxcsr_call.c"
     original = tmp_path / "mxcsr_original"

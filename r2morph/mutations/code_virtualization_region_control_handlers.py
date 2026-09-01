@@ -179,6 +179,7 @@ class CallBridgeConfig:
     flags_offset: int = _FLAGS_OFFSET
     stack_depth: int = 0
     preserve_ymm: bool = False
+    stack_guard: int = _GUARD
 
 
 def _call_frame_load_asm(register: str, offset: int) -> str:
@@ -278,7 +279,7 @@ def _call_bridge_asm(
         + "  mov rsp, r11\n"
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
-        + f"call_resume_{index}:\n  lea r12, [rsp+{_GUARD - bridge.frame_size + bridge.stack_depth}]\n"
+        + f"call_resume_{index}:\n  lea r12, [rsp+{bridge.stack_guard - bridge.frame_size + bridge.stack_depth}]\n"
         + _call_frame_spills_asm(slot, bridge.flags_offset, bridge.preserve_ymm)
         + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
     )
@@ -458,6 +459,7 @@ class CallMemoryHandlerConfig:
     flags_offset: int = _FLAGS_OFFSET
     stack_depth: int = 0
     preserve_ymm: bool = False
+    stack_guard: int = _GUARD
 
 
 def _vret_handler_asm(config: VRetHandlerConfig) -> str:
@@ -500,7 +502,13 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool, interna
         config.slot,
         target,
         advance,
-        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
+        CallBridgeConfig(
+            config.frame_size,
+            config.flags_offset,
+            config.stack_depth,
+            config.preserve_ymm,
+            config.stack_guard,
+        ),
     )
     if not internal_target_map:
         return native
@@ -533,7 +541,13 @@ def _call_mem_idx_handler_asm(
         config.slot,
         target,
         advance,
-        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
+        CallBridgeConfig(
+            config.frame_size,
+            config.flags_offset,
+            config.stack_depth,
+            config.preserve_ymm,
+            config.stack_guard,
+        ),
     )
     if not internal_target_map:
         return native

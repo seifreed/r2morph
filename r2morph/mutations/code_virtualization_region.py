@@ -60,6 +60,75 @@ class _RegionBuild:
     body: list[dict[str, Any]]
 
 
+_STACK_ARGUMENT_START = 8
+_STACK_WORD_BYTES = 8
+_DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
+    "load": (2, 3, 4),
+    "store": (2, 3, 4),
+    "opmem": (3, 4, 5),
+    "opmemdst": (3, 4, 5),
+    "cmpmem": (2, 3, 4),
+    "btmem": (1, 2, 5),
+    "divmem": (2, 3, 4),
+    "notmem": (1, 2, 3),
+    "storei": (2, 3, 4),
+    "movx": (5, 6, 2),
+    "xchgmem": (2, 3, 4),
+    "cmpxchgmem": (2, 3, 4),
+    "atomicmem": (2, 3, 4),
+    "lea": (2, 3, 4),
+    "callmem": (1, 2, None),
+    "fpload": (2, 3, 4),
+    "fpstore": (2, 3, 4),
+    "fpcmpmem": (3, 4, 5),
+    "fparithmem": (3, 4, 5),
+    "fparithvexmem": (4, 5, 6),
+    "fppackedmem": (3, 4, None),
+    "fploadvex": (2, 3, 4),
+    "fpstorevex": (2, 3, 4),
+    "fploadvex256": (2, 3, None),
+    "fpstorevex256": (2, 3, None),
+    "fppackedvexmem": (4, 5, None),
+    "fppackedvex256mem": (4, 5, None),
+    "fppackedvexcmpmem": (4, 5, None),
+    "fppackedvex256cmpmem": (4, 5, None),
+}
+
+
+def _direct_stack_access(item: list[Any]) -> tuple[int, int, int] | None:
+    """Return ``(base_slot, displacement, width_bytes)`` for direct memory items."""
+    kind = item[0]
+    layout = _DIRECT_STACK_LAYOUTS.get(kind)
+    if layout is None or len(item) <= max(layout[:2]):
+        return None
+    base_index, displacement_index, width_index = layout
+    if width_index is None:
+        width = 8 if kind == "callmem" else 16 if "256" not in kind else 32
+    elif len(item) <= width_index:
+        return None
+    else:
+        width = int(item[width_index]) // 8
+    return int(item[base_index]), int(item[displacement_index]), width
+
+
+def _stack_argument_copy_bytes(
+    items: list[list[Any]], stack_states: list[tuple[int, tuple[int, int] | None] | None]
+) -> int:
+    """Find the largest incoming stack range directly addressed by a region."""
+    required_end = _STACK_ARGUMENT_START
+    for index, item in enumerate(items):
+        access = _direct_stack_access(item)
+        state = stack_states[index]
+        if access is None or state is None or access[0] != RSP_INDEX:
+            continue
+        _base_slot, displacement, width = access
+        original_offset = displacement - state[0]
+        if original_offset >= _STACK_ARGUMENT_START:
+            required_end = max(required_end, original_offset + width)
+    required_bytes = required_end - _STACK_ARGUMENT_START
+    return (required_bytes + _STACK_WORD_BYTES - 1) // _STACK_WORD_BYTES * _STACK_WORD_BYTES
+
+
 def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
     """The logical register slots an item writes (empty if it writes no GP register:
     a comparison, a memory store, a stack adjustment, or a branch).
@@ -552,6 +621,7 @@ def extract_region(
     stack_states = _stack_states(items)
     if stack_states is None:
         return None
+    stack_argument_copy_bytes = _stack_argument_copy_bytes(items, stack_states)
     for index, item in enumerate(items):
         if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"):
             state = stack_states[index]
@@ -602,6 +672,7 @@ def extract_region(
         body_ranges,
         target_map if target_map is not None else {},
         has_internal_indirect_call,
+        stack_argument_copy_bytes,
     )
 
 

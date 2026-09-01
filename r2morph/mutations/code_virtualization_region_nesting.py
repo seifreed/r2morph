@@ -60,12 +60,13 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
-    _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
+    _STACK_ARGUMENT_COPY_BYTES,
     _VSP_OFFSET,
     frame_size_for_seed,
     stack_argument_copy_asm,
+    stack_guard_for_copy,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
@@ -97,6 +98,14 @@ _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 # Cap layers so the per-transition return slots stay below the red zone (0x100).
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
 _XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "vcall"})
+
+
+def _stack_copy_bytes(region: Region) -> int:
+    return max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
+
+
+def _region_stack_guard(region: Region, junk_seed: int) -> int:
+    return stack_guard_for_copy(frame_size_for_seed(junk_seed), _stack_copy_bytes(region))
 
 
 @dataclass(frozen=True)
@@ -233,6 +242,7 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
         region.entry_vaddr,
         {k for it in outer_items if (k := _op_key(it)) is not None},
         region.body_ranges,
+        stack_argument_copy_bytes=region.stack_argument_copy_bytes,
     )
     inner = Region(
         inner_items,
@@ -240,6 +250,7 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
         region.entry_vaddr,
         {k for it in inner_items if (k := _op_key(it)) is not None},
         [],
+        stack_argument_copy_bytes=region.stack_argument_copy_bytes,
     )
     return outer, inner
 
@@ -610,8 +621,13 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             if name != "rsp"
         )
         + _set_layer_slots(0, counts[0])
-        + stack_argument_copy_asm(frame_size_for_seed(schemes[0].junk_seed))
-        + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        + stack_argument_copy_asm(
+            frame_size_for_seed(schemes[0].junk_seed),
+            _stack_copy_bytes(region),
+            _region_stack_guard(region, schemes[0].junk_seed),
+        )
+        + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n"
+        f"  sub rax, {_region_stack_guard(region, schemes[0].junk_seed)}\n{floor_cell}"
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
@@ -686,6 +702,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                         scheme.field_perm,
                         scheme.body_seed,
                         scheme.isa_seed,
+                        stack_guard=_region_stack_guard(region, schemes[0].junk_seed),
                     ),
                     junk_rng,
                     extra,

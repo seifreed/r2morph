@@ -72,6 +72,7 @@ class Region:
     body_ranges: list[tuple[int, int]]
     target_map: dict[int, int] = field(default_factory=dict)
     has_internal_indirect_call: bool = False
+    stack_argument_copy_bytes: int = 0
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

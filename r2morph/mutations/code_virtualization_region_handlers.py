@@ -92,15 +92,28 @@ _VSTACK_BASE = 0x288
 _GUARD = 0x800
 _STACK_ARGUMENT_COPY_BYTES = _GUARD - max(_FRAME_SIZES) - 8
 _STACK_ARGUMENT_COPY_QWORDS = _STACK_ARGUMENT_COPY_BYTES // 8
+_STACK_GUARD_ALIGNMENT = 16
 
 
-def stack_argument_copy_asm(frame_size: int) -> str:
-    """Copy the bounded System V stack-argument area to the relocated stack."""
+def stack_guard_for_copy(frame_size: int, copy_bytes: int) -> int:
+    """Return an aligned relocation distance that contains the VM frame and copy."""
+    required = frame_size + 8 + max(copy_bytes, 0)
+    aligned = (required + _STACK_GUARD_ALIGNMENT - 1) // _STACK_GUARD_ALIGNMENT * _STACK_GUARD_ALIGNMENT
+    return max(_GUARD, aligned)
+
+
+def stack_argument_copy_asm(
+    frame_size: int,
+    copy_bytes: int = _STACK_ARGUMENT_COPY_BYTES,
+    stack_guard: int = _GUARD,
+) -> str:
+    """Copy the required System V stack-argument area to the relocated stack."""
+    copy_qwords = (max(copy_bytes, 0) + 7) // 8
     return (
         "  cld\n"
         f"  lea rsi, [rsp + {frame_size + 8}]\n"
-        f"  lea rdi, [rsp - {_GUARD - frame_size - 8}]\n"
-        f"  mov ecx, {_STACK_ARGUMENT_COPY_QWORDS}\n"
+        f"  lea rdi, [rsp - {stack_guard - frame_size - 8}]\n"
+        f"  mov ecx, {copy_qwords}\n"
         "  rep movsq\n"
     )
 

@@ -72,6 +72,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     vzeroupper_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_handlers import (
+    _GUARD,
     IntegerHandlerConfig,
     _bswap_handler_asm,
     _bt_handler_asm,
@@ -185,6 +186,7 @@ class HandlerContext:
     flags_offset: int = 0x80
     has_ymm: bool = False
     has_internal_indirect_call: bool = False
+    stack_guard: int = _GUARD
 
 
 class HandlerBodyRouter:
@@ -238,6 +240,7 @@ class HandlerBodyRouter:
                     self.context.flags_offset,
                     stack_depth,
                     self.context.has_ymm,
+                    stack_guard=self.context.stack_guard,
                 ),
             )
         elif key.startswith("icall_"):
@@ -250,6 +253,7 @@ class HandlerBodyRouter:
                     self.context.flags_offset,
                     stack_depth,
                     self.context.has_ymm,
+                    stack_guard=self.context.stack_guard,
                 ),
                 self.context.has_internal_indirect_call,
             )
@@ -265,6 +269,7 @@ class HandlerBodyRouter:
                 self.context.flags_offset,
                 stack_depth,
                 self.context.has_ymm,
+                self.context.stack_guard,
             )
             body = _call_mem_handler_asm(
                 config,
@@ -283,6 +288,7 @@ class HandlerBodyRouter:
                 self.context.flags_offset,
                 stack_depth,
                 self.context.has_ymm,
+                self.context.stack_guard,
             )
             body = _call_mem_idx_handler_asm(
                 config,

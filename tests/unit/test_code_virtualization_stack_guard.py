@@ -9,13 +9,15 @@ graphs (no r2, no binary) — real calls into the real function, no mocks.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_region import _stack_balanced
+from r2morph.mutations.code_virtualization_region import _stack_balanced, extract_region
 from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _STACK_ARGUMENT_COPY_BYTES,
     stack_argument_copy_asm,
 )
 from tests.utils.assertions import expect
+
+_EXPANDED_STACK_ARGUMENT_OFFSET = 928
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
@@ -27,6 +29,20 @@ def test_stack_argument_copy_is_bounded_and_relocated() -> None:
     assembly = stack_argument_copy_asm(0x400)
     expect(f"mov ecx, {_STACK_ARGUMENT_COPY_BYTES // 8}" in assembly)
     expect("rep movsq" in assembly and "lea rdi, [rsp - 1016]" in assembly)
+
+
+def test_region_stack_argument_window_covers_direct_rsp_access() -> None:
+    instructions = [
+        {
+            "addr": 0x1000,
+            "size": 8,
+            "type": "mov",
+            "opcode": f"mov rax, qword ptr [rsp+{_EXPANDED_STACK_ARGUMENT_OFFSET}]",
+        },
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(region is not None and region.stack_argument_copy_bytes == _EXPANDED_STACK_ARGUMENT_OFFSET)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:
