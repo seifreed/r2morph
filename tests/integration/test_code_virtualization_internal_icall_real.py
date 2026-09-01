@@ -16,6 +16,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_EXIT_CODE = 42
 _EXPECTED_MEMORY_INDIRECT_EXIT_CODE = 43
+_EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE = 43
 _CALL_FALLBACK_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_run_callfallback_x86_64"
 _SOURCE = r"""
 __attribute__((noinline)) int indirect_local(int value) {
@@ -54,6 +55,31 @@ __attribute__((noinline)) static int external_indirect(int value) {
 
 int main(void) {
     return external_indirect(-43) == 43 ? 43 : 1;
+}
+"""
+
+_LOCAL_MEMORY_INDIRECT_SOURCE = r"""
+__attribute__((noinline)) int local_memory_indirect(int value) {
+    int result;
+    asm volatile(
+        "lea 1f(%%rip), %%rax\n"
+        "mov %%rax, -8(%%rsp)\n"
+        "call *-8(%%rsp)\n"
+        "mov %%eax, %0\n"
+        "jmp 2f\n"
+        "1:\n"
+        "add $6, %%edi\n"
+        "mov %%edi, %%eax\n"
+        "ret\n"
+        "2:\n"
+        : "=a"(result), "+D"(value)
+        :
+        : "cc", "memory");
+    return result;
+}
+
+int main(void) {
+    return local_memory_indirect(37) == 43 ? 43 : 1;
 }
 """
 
@@ -146,6 +172,46 @@ def test_virtualized_memory_indirect_call_preserves_external_result(tmp_path: Pa
     mutated_result = run_process([mutated])
     expect(stats["functions_virtualized"] >= 1)
     expect(original_result.returncode == mutated_result.returncode == _EXPECTED_MEMORY_INDIRECT_EXIT_CODE)
+
+
+def test_virtualized_local_memory_indirect_call_preserves_exit_code(tmp_path: Path) -> None:
+    """A stack-stored local target keeps its native result after virtualization."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("fixture requires x86-64 execution")
+    compiler = shutil.which("gcc")
+    if compiler is None:
+        pytest.skip("fixture requires gcc")
+    source = tmp_path / "local_memory_indirect.c"
+    fixture = tmp_path / "local_memory_indirect"
+    mutated = tmp_path / "mutated_local_memory_indirect"
+    source.write_text(_LOCAL_MEMORY_INDIRECT_SOURCE)
+    run_process(
+        [
+            compiler,
+            "-O2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            str(source),
+            "-o",
+            str(fixture),
+        ],
+        check=True,
+    )
+    shutil.copy(fixture, mutated)
+    original_result = run_process([fixture])
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260904}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    mutated_result = run_process([mutated])
+    expect(stats["functions_virtualized"] >= 1)
+    expect(original_result.returncode == mutated_result.returncode == _EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE)
 
 
 def test_virtualized_direct_call_to_separate_function_preserves_exit_code(tmp_path: Path) -> None:

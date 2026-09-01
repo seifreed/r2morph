@@ -13,6 +13,8 @@ no mocks. Runtime semantic parity is covered by the integration suite.
 
 from __future__ import annotations
 
+import pytest
+
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
@@ -21,6 +23,7 @@ from tests.utils.assertions import expect
 _CAVE_VADDR = 0x500000
 _INTERNAL_CALL_TARGET = 0x100C
 _INTERNAL_MEMORY_CALL_TARGET = 0x100F
+_INTERNAL_MEMORY_SHAPE_TARGET = 0x1020
 
 
 def _insn(addr: int, size: int, itype: str, opcode: str, **extra: object) -> dict[str, object]:
@@ -90,6 +93,38 @@ def _in_function_memory_indirect_call_instructions() -> list[dict[str, object]]:
         _insn(0x1012, 1, "ret", "ret"),
         _insn(0x100F, 2, "add", "add eax, ebx"),
         _insn(0x1014, 1, "ret", "ret"),
+    ]
+
+
+def _in_function_memory_indirect_call_shape(shape: str) -> list[dict[str, object]]:
+    prefix = [_insn(0x1000, 7, "lea", "lea rax, [rip + 0x19]")]
+    if shape == "rip":
+        prefix.extend(
+            [
+                _insn(0x1007, 7, "mov", "mov qword ptr [rip + 0x9], rax"),
+                _insn(0x100E, 6, "ircall", "call qword ptr [rip + 0x3]"),
+            ]
+        )
+    elif shape == "indexed":
+        prefix.extend(
+            [
+                _insn(0x1007, 8, "mov", "mov qword ptr [rbx + rcx*8 + 0x20], rax"),
+                _insn(0x100F, 8, "ucall", "call qword ptr [rbx + rcx*8 + 0x20]"),
+            ]
+        )
+    else:
+        prefix.extend(
+            [
+                _insn(0x1007, 8, "mov", "mov qword ptr [rcx*8 + 0x2000], rax"),
+                _insn(0x100F, 8, "ucall", "call qword ptr [rcx*8 + 0x2000]"),
+            ]
+        )
+    return [
+        *prefix,
+        _insn(0x1017, 2, "add", "add eax, ebx"),
+        _insn(0x1019, 1, "ret", "ret"),
+        _insn(_INTERNAL_MEMORY_SHAPE_TARGET, 2, "add", "add eax, ebx"),
+        _insn(0x1022, 1, "ret", "ret"),
     ]
 
 
@@ -199,5 +234,16 @@ def test_extract_region_virtualizes_static_memory_indirect_call() -> None:
     expect(region.has_internal_indirect_call)
     expect(_INTERNAL_MEMORY_CALL_TARGET in region.target_map)
     expect(any(item[0] == "vret" for item in region.instructions))
+    scheme = build_region_scheme(region, randomness.Random(1))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
+
+
+@pytest.mark.parametrize("shape", ("rip", "indexed", "no_base"))
+def test_extract_region_virtualizes_static_memory_indirect_call_shapes(shape: str) -> None:
+    """Each supported memory address form reuses the local call target proof."""
+    region = extract_region(_in_function_memory_indirect_call_shape(shape), randomness.Random(1))
+    expect(region is not None)
+    expect(region.has_internal_indirect_call)
+    expect(_INTERNAL_MEMORY_SHAPE_TARGET in region.target_map)
     scheme = build_region_scheme(region, randomness.Random(1))
     expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

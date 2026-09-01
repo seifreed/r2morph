@@ -492,17 +492,29 @@ def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
             break
         return None
 
+    def matches_memory_store(store: list[Any], call: list[Any]) -> bool:
+        pairs = {
+            "callmem": ("store", (2, 3), (1, 2)),
+            "callmemrip": ("riprel_store", (2,), (1,)),
+            "callmemidx": ("storeidx", (2, 3, 4, 5), (1, 2, 3, 4)),
+            "callmemidxnb": ("storeidxnb", (2, 3, 4), (1, 2, 3)),
+        }
+        spec = pairs.get(call[0])
+        if spec is None or store[0] != spec[0]:
+            return False
+        store_fields, call_fields = spec[1], spec[2]
+        return tuple(store[index] for index in store_fields) == tuple(call[index] for index in call_fields)
+
     for index, item in enumerate(build.items):
         if item[0] == "icall" and index:
             target = register_target(index, int(item[1]))
-        elif item[0] == "callmem" and index:
-            base_slot, displacement = int(item[1]), int(item[2])
+        elif item[0] in ("callmem", "callmemrip", "callmemidx", "callmemidxnb") and index:
             target = None
             for store_index in range(index - 1, -1, -1):
                 producer = build.items[store_index]
                 if producer[0] in boundary_kinds:
                     break
-                if producer[0] == "store" and (int(producer[2]), int(producer[3])) == (base_slot, displacement):
+                if matches_memory_store(producer, item):
                     target = register_target(store_index, int(producer[1]))
                     break
             if target is None:
