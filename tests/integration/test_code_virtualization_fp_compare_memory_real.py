@@ -239,51 +239,51 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         binary.close()
     transformed_result = run_command([mutated], timeout=30)
     if transformed_result.returncode not in {0, original_result.returncode}:
+        gdb_script = tmp_path / "trace.gdb"
+        gdb_script.write_text(
+            """set pagination off
+start
+python
+import gdb
+
+class DispatchBreakpoint(gdb.Breakpoint):
+    def stop(self):
+        inferior = gdb.selected_inferior()
+        pc = int(gdb.parse_and_eval('$pc'))
+        opcode = int.from_bytes(inferior.read_memory(pc, 1).tobytes(), 'little')
+        if opcode == 0xff:
+            target = int(gdb.parse_and_eval('$rax'))
+        else:
+            rsp = int(gdb.parse_and_eval('$rsp'))
+            target = int.from_bytes(inferior.read_memory(rsp, 8).tobytes(), 'little')
+        table = int(gdb.parse_and_eval('$r14'))
+        if target >= table or target < table - 0x10000:
+            message = 'BAD_DISPATCH pc=%s target=%#x table=%#x' % (
+                gdb.parse_and_eval('$pc'), target, table)
+            gdb.write(message + chr(10))
+            gdb.execute('x/8i $pc-16')
+            gdb.execute('info registers rax rsi r13 r14 r15 rsp')
+            return True
+        return False
+
+base = 0x407000
+code = gdb.selected_inferior().read_memory(base, 0x3000).tobytes()
+for offset in range(len(code) - 1):
+    if code[offset:offset + 2] == bytes((0xff, 0xe0)):
+        DispatchBreakpoint('*0x%x' % (base + offset))
+    if code[offset:offset + 2] == bytes((0x50, 0xc3)):
+        DispatchBreakpoint('*0x%x' % (base + offset + 1))
+end
+continue
+x/8i $rip-16
+info registers
+x/12gx $rsp
+bt
+""",
+            encoding="utf-8",
+        )
         trace = run_command(
-            [
-                "gdb",
-                "-batch",
-                "-ex",
-                "set pagination off",
-                "-ex",
-                "start",
-                "-ex",
-                "python",
-                "import gdb",
-                "class DispatchBreakpoint(gdb.Breakpoint):",
-                "    def stop(self):",
-                "        target = int(gdb.parse_and_eval('$rax'))",
-                "        table = int(gdb.parse_and_eval('$r14'))",
-                "        if target >= table or target < table - 0x10000:",
-                (
-                    "            message = 'BAD_DISPATCH pc=%s target=%#x table=%#x' % ("
-                    "gdb.parse_and_eval('$pc'), target, table)"
-                ),
-                "            gdb.write(message + chr(10))",
-                "            gdb.execute('x/8i $pc-16')",
-                "            gdb.execute('info registers rax rsi r13 r14 r15 rsp')",
-                "            return True",
-                "        return False",
-                "base = 0x407000",
-                "code = gdb.selected_inferior().read_memory(base, 0x3000).tobytes()",
-                "for offset in range(len(code) - 1):",
-                "    if code[offset:offset + 2] == bytes((0xff, 0xe0)):",
-                "        DispatchBreakpoint('*0x%x' % (base + offset))",
-                "    if code[offset:offset + 2] == bytes((0x50, 0xc3)):",
-                "        DispatchBreakpoint('*0x%x' % (base + offset + 1))",
-                "end",
-                "-ex",
-                "continue",
-                "-ex",
-                "x/8i $rip-16",
-                "-ex",
-                "info registers",
-                "-ex",
-                "x/12gx $rsp",
-                "-ex",
-                "bt",
-                str(mutated),
-            ],
+            ["gdb", "-batch", "-x", str(gdb_script), str(mutated)],
             text=True,
             timeout=30,
         )
