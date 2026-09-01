@@ -456,6 +456,13 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         scheme.checksum_bytewise,
         scheme.checksum_reverse,
     )
+    logger.warning(
+        "VM bootstrap checksum diagnostic: value=%02x prefix_size=%d bytewise=%s reverse=%s",
+        bootstrap_checksum,
+        len(bootstrap_prefix),
+        scheme.checksum_bytewise,
+        scheme.checksum_reverse,
+    )
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
     # perturbs it); the encoder folds it into the opcodes, the table is encrypted
