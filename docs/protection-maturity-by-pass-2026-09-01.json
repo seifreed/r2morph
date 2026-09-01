@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "measurement": "protection-maturity-corpus-by-pass",
+  "generated_at": "2026-09-01",
+  "commit": "7b3f248d2725a7c45a88050ee3016a405d17e887",
+  "workflow_run": 33517106450,
+  "dataset": "fixtures/dataset",
+  "fixture_count": 140,
+  "passes": {
+    "BlockReordering": {
+      "successful_seed_runs": 139,
+      "failed_seed_runs": 1,
+      "semantic_passes": 139,
+      "semantic_failures": 1
+    },
+    "CodeVirtualization": {
+      "successful_seed_runs": 136,
+      "failed_seed_runs": 4,
+      "semantic_passes": 136,
+      "semantic_failures": 4,
+      "known_baseline_discrepancies": [
+        "elf_vm_fppackedidxnb_x86_64",
+        "elf_vm_vex128_integer_x86_64",
+        "elf_vm_vex128_scalar_x86_64",
+        "elf_vm_vex128_x86_64"
+      ]
+    },
+    "InstructionExpansion": {
+      "successful_seed_runs": 139,
+      "failed_seed_runs": 1,
+      "semantic_passes": 139,
+      "semantic_failures": 1
+    },
+    "InstructionSubstitution": {
+      "successful_seed_runs": 139,
+      "failed_seed_runs": 1,
+      "semantic_passes": 139,
+      "semantic_failures": 1
+    },
+    "NopInsertion": {
+      "successful_seed_runs": 139,
+      "failed_seed_runs": 1,
+      "semantic_passes": 139,
+      "semantic_failures": 1
+    },
+    "RegisterSubstitution": {
+      "successful_seed_runs": 139,
+      "failed_seed_runs": 1,
+      "semantic_passes": 139,
+      "semantic_failures": 1
+    }
+  },
+  "source_artifact": "GitHub Actions artifact differential-corpus-by-pass from workflow run 33517106450"
+}
