@@ -261,8 +261,9 @@ class DispatchBreakpoint(gdb.Breakpoint):
             message = 'BAD_DISPATCH pc=%s target=%#x table=%#x' % (
                 gdb.parse_and_eval('$pc'), target, table)
             gdb.write(message + chr(10))
-            gdb.execute('x/8i $pc-16')
+            gdb.execute('x/32i $pc-96')
             gdb.execute('info registers rax rsi r13 r14 r15 rsp')
+            gdb.execute('x/16gx $rsp+0x200')
             return True
         return False
 
