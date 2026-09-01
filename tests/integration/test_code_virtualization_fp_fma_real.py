@@ -27,6 +27,16 @@ __attribute__((noinline)) static vector256 fma256(vector256 a, vector256 b, vect
     return a;
 }
 
+__attribute__((noinline)) static vector128 fma128_memory(vector128 a, vector128 b, const vector128 *c) {
+    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+x"(a) : "x"(b), "m"(*c));
+    return a;
+}
+
+__attribute__((noinline)) static vector256 fma256_memory(vector256 a, vector256 b, const vector256 *c) {
+    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+v"(a) : "v"(b), "m"(*c));
+    return a;
+}
+
 int main(void) {
     const vector128 a128 = {1.0f, 2.0f, 3.0f, 4.0f};
     const vector128 b128 = {2.0f, 3.0f, 4.0f, 5.0f};
@@ -36,7 +46,11 @@ int main(void) {
     const vector256 c256 = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
     const vector128 result128 = fma128(a128, b128, c128);
     const vector256 result256 = fma256(a256, b256, c256);
+    const vector128 result128_memory = fma128_memory(a128, b128, &c128);
+    const vector256 result256_memory = fma256_memory(a256, b256, &c256);
     return result128[0] == 21.0f && result128[3] == 204.0f && result256[0] == 21.0f && result256[7] == 728.0f
+               && result128_memory[0] == 21.0f && result128_memory[3] == 204.0f
+               && result256_memory[0] == 21.0f && result256_memory[7] == 728.0f
                ? 47
                : 1;
 }
