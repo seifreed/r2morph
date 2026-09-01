@@ -129,3 +129,15 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
         and '--commit "$GITHUB_SHA"' in workflow
         and 'test "$ci_conclusion" = "success"' in workflow
     )
+
+
+def test_corpus_workflows_run_the_full_pass_selection() -> None:
+    adversarial = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    differential = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+
+    expect(
+        "--passes all" in adversarial
+        and "--passes all" in differential
+        and "--count 1" in differential
+        and "differential-corpus-by-pass" in differential
+    )

@@ -1,14 +1,14 @@
-name: Adversarial Analysis Benchmark
+name: Differential Corpus By Pass
 
 "on":
   schedule:
-    - cron: "47 3 * * 1"
+    - cron: "17 4 * * 1"
   workflow_dispatch:
 
 jobs:
-  benchmark:
+  differential-corpus:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,16 +32,18 @@ jobs:
           pip install -r requirements.txt
           python -m pip install --editable .
 
-      - name: Run benchmark
+      - name: Run full differential corpus
         run: |
-          python scripts/adversarial_benchmark.py \
+          python scripts/protection_maturity_baseline.py \
             --all \
             --dataset fixtures/dataset \
             --passes all \
-            --output adversarial-benchmark.json
+            --first-seed 20260901 \
+            --count 1 \
+            --output differential-corpus.json
 
-      - name: Upload benchmark report
+      - name: Upload per-pass differential report
         uses: actions/upload-artifact@v4
         with:
-          name: adversarial-benchmark
-          path: adversarial-benchmark.json
+          name: differential-corpus-by-pass
+          path: differential-corpus.json

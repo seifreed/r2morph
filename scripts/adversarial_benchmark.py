@@ -20,8 +20,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
-from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from scripts.protection_maturity_baseline import discover_executables
+from scripts.protection_maturity_baseline import (
+    DEFAULT_MUTATION_NAME,
+    _build_mutation_pass,
+    _parse_pass_names,
+    discover_executables,
+)
 from tests.integration.elf_emulator import emulate_exit_code
 
 _COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra", "binary-ninja": "bndb"}
@@ -178,34 +182,41 @@ def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, objec
     return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
 
 
-def _protected_copy(original: Path, directory: Path) -> tuple[Path, dict[str, object]]:
+def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Path, dict[str, object]]:
     protected = directory / "protected"
     shutil.copyfile(original, protected)
     binary = Binary(protected, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260827}).apply(binary)
+        stats = _build_mutation_pass(pass_name, 20260827).apply(binary)
         binary.save()
     finally:
         binary.close()
-    return protected, stats
+    return protected, _pass_result(stats, pass_name)
 
 
-def _pass_result(stats: dict[str, object]) -> dict[str, object]:
+def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
-    if isinstance(virtualized, int) and virtualized > 0:
+    applied = virtualized
+    if not isinstance(applied, int) or applied == 0:
+        applied = stats.get("mutations_applied", 0)
+    if isinstance(applied, int) and applied > 0:
         status = "applied"
     elif isinstance(unsupported, int) and unsupported > 0:
         status = "omitted"
     else:
         status = "no-op"
-    return {
-        "pass_name": "CodeVirtualization",
+    result: dict[str, object] = {
+        "pass_name": pass_name,
         "status": status,
-        "functions_virtualized": virtualized,
-        "unsupported_functions": unsupported,
     }
+    if pass_name == DEFAULT_MUTATION_NAME:
+        result["functions_virtualized"] = virtualized
+        result["unsupported_functions"] = unsupported
+    else:
+        result["mutations_applied"] = applied
+    return result
 
 
 def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]:
@@ -241,45 +252,80 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]
                 value = row.get(field)
                 if isinstance(value, int):
                     counters[field] += value
+            if "mutations_applied" in row:
+                counters.setdefault("mutations_applied", 0)
+                value = row["mutations_applied"]
+                if isinstance(value, int):
+                    counters["mutations_applied"] += value
     return dict(sorted(summary.items()))
 
 
-def benchmark_pair(original: Path, protected: Path | None = None) -> dict[str, object]:
+def _measure_pair_tools(original: Path, protected: Path) -> list[dict[str, object]]:
+    tools = [_measure_tool(tool, original, protected) for tool in _EXPECTED_TOOLS]
+    tools.append(
+        {
+            "tool": "custom",
+            "status": "completed",
+            "original": _binary_metric(original),
+            "protected": _binary_metric(protected),
+        }
+    )
+    return tools
+
+
+def benchmark_pair(
+    original: Path,
+    protected: Path | None = None,
+    pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
+) -> dict[str, object]:
     """Benchmark every configured analyzer and preserve unavailable evidence."""
     if not original.is_file():
         raise ValueError(f"original binary does not exist: {original}")
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
-        stats: dict[str, object] | None = None
+        pass_rows: list[dict[str, object]] = []
+        tools: list[dict[str, object]] = []
         if protected is None:
-            protected_path, stats = _protected_copy(original, Path(directory))
+            protected_path = Path(directory) / "protected"
+            for pass_name in pass_names:
+                try:
+                    protected_path, pass_row = _protected_copy(original, Path(directory), pass_name)
+                except Exception as error:  # Transformation boundary records per-pass failures.
+                    pass_rows.append(
+                        {
+                            "pass_name": pass_name,
+                            "status": "error",
+                            "error_type": type(error).__name__,
+                        }
+                    )
+                    continue
+                pass_rows.append(pass_row)
+                tools.extend({**tool, "pass_name": pass_name} for tool in _measure_pair_tools(original, protected_path))
         else:
             protected_path = protected
-        tools = [_measure_tool(tool, original, protected_path) for tool in _EXPECTED_TOOLS]
-        tools.append(
-            {
-                "tool": "custom",
-                "status": "completed",
-                "original": _binary_metric(original),
-                "protected": _binary_metric(protected_path),
-            }
-        )
+            tools = _measure_pair_tools(original, protected_path)
     report: dict[str, object] = {
-        "schema_version": 2,
+        "schema_version": 3,
         "original": original.name,
         "protected": protected_path.name,
         "tools": tools,
     }
-    if stats is not None:
-        report["passes"] = [_pass_result(stats)]
+    if protected is None:
+        report["passes"] = pass_rows
+        report["pass_names"] = list(pass_names)
     return report
 
 
-def benchmark_corpus(dataset: Path) -> dict[str, object]:
+def benchmark_corpus(
+    dataset: Path,
+    pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
+) -> dict[str, object]:
     """Run the pair benchmark for every supported executable in the corpus."""
     fixtures = discover_executables(dataset)
     if not fixtures:
         raise ValueError(f"no supported executable fixtures found in {dataset}")
-    samples = [benchmark_pair(fixture) for fixture in fixtures]
+    if not pass_names:
+        raise ValueError("at least one corpus pass is required")
+    samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
     completed_tools = sum(
         1
         for sample in samples
@@ -302,7 +348,9 @@ def benchmark_corpus(dataset: Path) -> dict[str, object]:
         "summary": {
             "completed_tool_runs": completed_tools,
             "unavailable_tool_runs": unavailable_tools,
-            "error_tool_runs": len(fixtures) * (len(_EXPECTED_TOOLS) + 1) - completed_tools - unavailable_tools,
+            "error_tool_runs": len(fixtures) * len(pass_names) * (len(_EXPECTED_TOOLS) + 1)
+            - completed_tools
+            - unavailable_tools,
         },
     }
 
@@ -315,10 +363,23 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, default=Path("fixtures/dataset"))
     parser.add_argument("--protected", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--passes",
+        default=DEFAULT_MUTATION_NAME,
+        help="comma-separated pass names or 'all' (default: CodeVirtualization)",
+    )
     args = parser.parse_args()
     if args.all_fixtures and args.protected:
         parser.error("--protected is valid only with one original binary")
-    report = benchmark_corpus(args.dataset) if args.all_fixtures else benchmark_pair(args.original, args.protected)
+    try:
+        pass_names = _parse_pass_names(args.passes)
+    except ValueError as error:
+        parser.error(str(error))
+    report = (
+        benchmark_corpus(args.dataset, pass_names)
+        if args.all_fixtures
+        else benchmark_pair(args.original, args.protected)
+    )
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")
