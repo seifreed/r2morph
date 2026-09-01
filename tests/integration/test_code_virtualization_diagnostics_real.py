@@ -10,7 +10,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.utils.assertions import expect
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
-_FIXTURE = _DATASET / "elf_vm_engarith_x86_64"
+_FIXTURE = _DATASET / "elf_vm_fpengineidxnb_x86_64"
 
 
 def test_straight_line_fallback_reports_partial_function_warning(tmp_path: Path) -> None:
