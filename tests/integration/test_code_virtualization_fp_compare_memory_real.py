@@ -78,16 +78,24 @@ static void report_segfault(int signal_number, siginfo_t *info, void *context) {
     ucontext_t *state = context;
     dprintf(
         STDERR_FILENO,
-        "signal=%d address=%p rip=%llx rsp=%llx rax=%llx rsi=%llx r13=%llx r14=%llx r15=%llx\n",
+        "signal=%d address=%p rip=%llx rsp=%llx rax=%llx rbx=%llx rcx=%llx rsi=%llx r8=%llx r9=%llx r10=%llx r11=%llx r12=%llx r13=%llx r14=%llx r15=%llx eflags=%llx\n",
         signal_number,
         info->si_addr,
         (unsigned long long)state->uc_mcontext.gregs[REG_RIP],
         (unsigned long long)state->uc_mcontext.gregs[REG_RSP],
         (unsigned long long)state->uc_mcontext.gregs[REG_RAX],
+        (unsigned long long)state->uc_mcontext.gregs[REG_RBX],
+        (unsigned long long)state->uc_mcontext.gregs[REG_RCX],
         (unsigned long long)state->uc_mcontext.gregs[REG_RSI],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R8],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R9],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R10],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R11],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R12],
         (unsigned long long)state->uc_mcontext.gregs[REG_R13],
         (unsigned long long)state->uc_mcontext.gregs[REG_R14],
-        (unsigned long long)state->uc_mcontext.gregs[REG_R15]
+        (unsigned long long)state->uc_mcontext.gregs[REG_R15],
+        (unsigned long long)state->uc_mcontext.gregs[REG_EFL]
     );
     _Exit(128 + signal_number);
 }
