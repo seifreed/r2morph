@@ -83,6 +83,27 @@ int main(void) {
 }
 """
 
+_MEMORY_INDIRECT_STACK_ARGUMENT_SOURCE = r"""
+typedef long (*sum_fn)(long, long, long, long, long, long, long, long);
+
+__attribute__((noinline)) static long sum_eight(
+    long first, long second, long third, long fourth,
+    long fifth, long sixth, long seventh, long eighth
+) {
+    return first + second + third + fourth + fifth + sixth + seventh + eighth;
+}
+
+static sum_fn volatile target = sum_eight;
+
+__attribute__((noinline)) static long invoke_indirect_sum(void) {
+    return target(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+}
+
+int main(void) {
+    return invoke_indirect_sum() == 36L ? 44 : 1;
+}
+"""
+
 
 def _compile_fixture(tmp_path: Path, compiler: str) -> Path:
     source = tmp_path / "internal_icall.c"
@@ -212,6 +233,46 @@ def test_virtualized_local_memory_indirect_call_preserves_exit_code(tmp_path: Pa
     mutated_result = run_process([mutated])
     expect(stats["functions_virtualized"] >= 1)
     expect(original_result.returncode == mutated_result.returncode == _EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE)
+
+
+def test_virtualized_memory_indirect_call_with_stack_arguments_preserves_exit_code(tmp_path: Path) -> None:
+    """A memory-indirect call keeps arguments beyond the six register slots."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("fixture requires x86-64 execution")
+    compiler = shutil.which("gcc")
+    if compiler is None:
+        pytest.skip("fixture requires gcc")
+    source = tmp_path / "memory_indirect_stack_arguments.c"
+    fixture = tmp_path / "memory_indirect_stack_arguments"
+    mutated = tmp_path / "mutated_memory_indirect_stack_arguments"
+    source.write_text(_MEMORY_INDIRECT_STACK_ARGUMENT_SOURCE)
+    run_process(
+        [
+            compiler,
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            str(source),
+            "-o",
+            str(fixture),
+        ],
+        check=True,
+    )
+    shutil.copy(fixture, mutated)
+    original_result = run_process([fixture])
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 8, "seed": 20260906}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    mutated_result = run_process([mutated])
+    expect(stats["functions_virtualized"] >= 1)
+    expect(original_result.returncode == mutated_result.returncode == 44)
 
 
 def test_virtualized_direct_call_to_separate_function_preserves_exit_code(tmp_path: Path) -> None:
