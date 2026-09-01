@@ -553,27 +553,57 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
     return _decode_movx_register(ext, dst, right.lower().strip())
 
 
-def _decode_not(text: str) -> tuple[Any, ...] | None:
-    """Decode ``not reg`` (bitwise complement, register operand).
+def _decode_not_memory(operand: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    result: tuple[Any, ...] | None = None
+    memory = _parse_mem_operand(operand)
+    if memory is not None:
+        base_slot, displacement, width = memory
+        if width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS, _DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            result = ("notmem", base_slot, displacement, width)
+    rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
+    if result is None and rip_relative is not None:
+        target, width = rip_relative
+        if width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS, _DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            result = ("notmemrip", target, width)
+    indexed = _parse_indexed_operand(operand, base_optional=True)
+    if result is None and indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        width = _explicit_memory_width(operand)
+        if width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS, _DWORD_WIDTH_BITS, _QWORD_WIDTH_BITS):
+            result = (
+                ("notmemidxnb", index_slot, shift, displacement, width)
+                if base_slot < 0
+                else ("notmemidx", base_slot, index_slot, shift, displacement, width)
+            )
+    return result
+
+
+def _decode_not(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[Any, ...] | None:
+    """Decode register and direct/indexed/RIP-relative memory ``not`` forms.
 
     ``not`` sets no flags and touches only its operand, so the handler runs the real
     complement on the slot with no flag capture. A sub-32-bit form complements only
     the low byte/word of the loaded slot, preserving the upper bytes; a 32-bit form
-    zero-extends, both exactly as the native instruction. Returns
-    ``("not", reg_slot, width)`` or ``None`` for a memory operand.
+    zero-extends, both exactly as the native instruction. Memory forms carry a
+    dummy register field in the bytecode so they can reuse
+    the existing address layouts.
     """
-    parts = text.split()
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "not" or "[" in parts[1]:
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "not":
         return None
-    operand = parts[1].lower()
+    operand = parts[1].strip().lower()
+    memory = _decode_not_memory(operand, insn_addr, insn_size)
+    if memory is not None:
+        return memory
+    if "[" in operand:
+        return None
     reg = _register_operand(operand)
-    if reg is not None:
-        return ("not", reg[0], reg[1])
-    if operand in REGISTER8_INDEX:
-        return ("not", REGISTER8_INDEX[operand], 8)
-    if operand in REGISTER16_INDEX:
-        return ("not", REGISTER16_INDEX[operand], 16)
-    return None
+    result = ("not", reg[0], reg[1]) if reg is not None else None
+    if result is None and operand in REGISTER8_INDEX:
+        result = ("not", REGISTER8_INDEX[operand], 8)
+    if result is None and operand in REGISTER16_INDEX:
+        result = ("not", REGISTER16_INDEX[operand], 16)
+    return result
 
 
 def _decode_bt(text: str) -> tuple[Any, ...] | None:

@@ -53,6 +53,7 @@ class RegionEncoder:
             self._emit_fp_variable_permute,
             self._emit_fp_scalar,
             self._emit_fp_memory,
+            self._emit_memory_immediate,
             self._emit_gp_memory,
             self._emit_misc,
             self._emit_calls,
@@ -562,12 +563,12 @@ class RegionEncoder:
         self._idx(self._opcode(item), operands)
 
     def _emit_gp_memory(self, item: RegionItem) -> bool:
-        if self._emit_memory_immediate(item):
-            return True
         kind = item[0]
         if kind in ("load", "store"):
             _, reg, base, disp, _width = item
             self._gp_mem(item, reg, base, disp)
+        elif kind.startswith("notmem"):
+            self._emit_not_memory(item)
         elif kind in ("tlsload", "tlsstore", "tlsloadidx", "tlsloadidxnb", "tlsstoreidx", "tlsstoreidxnb"):
             self._emit_tls_memory(item)
         elif kind in ("riprel_load", "riprel_store"):
@@ -575,8 +576,9 @@ class RegionEncoder:
             self._gp_rip(item, reg, target)
         elif kind in ("cmpmem", "cmpriprel"):
             self._emit_compare_memory(item)
-        elif kind in ("opmem", "lea"):
-            reg, base, disp = item[2], item[3], item[4]
+        elif kind in ("load", "store", "opmem", "lea"):
+            offset = 1 if kind in ("load", "store") else 2
+            reg, base, disp = item[offset], item[offset + 1], item[offset + 2]
             self._gp_mem(item, reg, base, disp)
         elif kind in (
             "xchgmem",
@@ -604,6 +606,21 @@ class RegionEncoder:
         else:
             return False
         return True
+
+    def _emit_not_memory(self, item: RegionItem) -> None:
+        kind = item[0]
+        if kind == "notmem":
+            _, base, disp, _width = item
+            self._mem(self._opcode(item), (self.slot_of[0], self.slot_of[base], disp))
+        elif kind == "notmemrip":
+            _, target, _width = item
+            self._mem(self._opcode(item), (self.slot_of[0], None, target - self.bytecode_base))
+        elif kind == "notmemidx":
+            _, base, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        else:
+            _, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
 
     def _emit_compare_memory(self, item: RegionItem) -> None:
         if item[0] == "cmpmem":

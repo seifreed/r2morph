@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_memory_immediate,
     _decode_memory_mov,
     _decode_memory_mov_indexed,
+    _decode_not,
     _decode_op_mem,
     _decode_op_memdst,
 )
@@ -91,3 +92,15 @@ def test_memory_region_lowers_byte_load_to_partial_pop() -> None:
 
 def test_partial_pop_handler_preserves_upper_destination_bits() -> None:
     expect("and r11, -256" in _vpop_partial_handler_asm("vpop8", "0x12"))
+
+
+def test_memory_not_decodes_direct_width() -> None:
+    expect(_decode_not("not word ptr [rbx+8]") == ("notmem", 3, 8, 16))
+
+
+def test_memory_not_decodes_indexed_without_base() -> None:
+    expect(_decode_not("not byte ptr [rcx*4+8]") == ("notmemidxnb", 1, 2, 8, 8))
+
+
+def test_memory_not_decodes_rip_relative_width() -> None:
+    expect(_decode_not("not qword ptr [rip+0x20]", 0x1000, 7) == ("notmemrip", 0x1027, 64))

@@ -100,6 +100,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _memory_immediate_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
+    _not_memory_handler_asm,
     _op_mem_indexed_handler_asm,
     _op_memdst_handler_asm,
     _op_memory_handler_asm,
@@ -499,8 +500,9 @@ class HandlerBodyRouter:
             body = _movx_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         elif key.startswith(("riprel_load_", "riprel_store_")):
             body = _riprel_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
-        elif key.startswith(("load_", "store_")):
-            body = _memory_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
+        elif key.startswith(("notmem_", "notmemrip_", "notmemidx_", "notmemidxnb_", "load_", "store_")):
+            handler = _not_memory_handler_asm if key.startswith("notmem") else _memory_handler_asm
+            body = handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
 
     def _memory_immediate(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:

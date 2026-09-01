@@ -157,6 +157,24 @@ def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _not_memory_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Apply a width-specific bitwise complement to a computed memory address."""
+    kind, width_text = handler_key.rsplit("_", 1)
+    width = int(width_text)
+    if kind == "notmemrip":
+        body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
+    elif kind == "notmemidxnb":
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind == "notmemidx":
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    size = {8: "byte", 16: "word", 32: "dword", 64: "qword"}[width]
+    return body + f"  not {size} ptr [r10]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _memory_immediate_handler_asm(config: MemoryImmediateOperationConfig) -> str:
     """Store a sign/zero-preserving immediate through a decoded effective address."""
     kind, width_text = config.handler_key.rsplit("_", 1)

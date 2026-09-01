@@ -18,6 +18,7 @@ _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" /
 _EXPECTED_EXIT_CODE = 80
 _EXPECTED_ARITHMETIC_EXIT_CODE = 42
 _EXPECTED_IMMEDIATE_STORE_EXIT_CODE = 77
+_EXPECTED_MEMORY_NOT_EXIT_CODE = 42
 
 _BYTE_WORD_ARITHMETIC_SOURCE = r"""
 #include <stdint.h>
@@ -174,4 +175,70 @@ int main(void) { return store_immediates(); }
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_IMMEDIATE_STORE_EXIT_CODE,
         f"immediate memory stores changed the result: {stats=}",
+    )
+
+
+def test_virtualized_memory_not_preserves_all_widths(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86 memory not requires an x86-64 host")
+
+    source = tmp_path / "memory_not.c"
+    original = tmp_path / "original_not"
+    mutated = tmp_path / "mutated_not"
+    source.write_text(r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int complement_memory(
+    uint8_t *byte_value, uint16_t *word_value, uint32_t *dword_value, uint64_t *qword_value
+) {
+    __asm__ volatile(
+        "notb (%0)\n"
+        "notw (%1)\n"
+        "notl (%2)\n"
+        "notq (%3)\n"
+        :
+        : "r"(byte_value), "r"(word_value), "r"(dword_value), "r"(qword_value)
+        : "memory");
+    return *byte_value == 0xf0 && *word_value == 0xff0f
+        && *dword_value == 0xf0f0f0f0U && *qword_value == 0xf0f0f0f0f0f0f0f0ULL ? 42 : 1;
+}
+
+int main(void) {
+    uint8_t byte_value = 0x0f;
+    uint16_t word_value = 0x00f0;
+    uint32_t dword_value = 0x0f0f0f0f;
+    uint64_t qword_value = 0x0f0f0f0f0f0f0f0fULL;
+    return complement_memory(&byte_value, &word_value, &dword_value, &qword_value);
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile memory not fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260901}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_MEMORY_NOT_EXIT_CODE,
+        f"memory not changed the result: {stats=}",
     )
