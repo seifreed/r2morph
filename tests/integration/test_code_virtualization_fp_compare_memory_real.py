@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import platform
-import resource
 import shutil
 from pathlib import Path
 
@@ -66,7 +65,40 @@ int main(void) {
 """
 
 _VEX_COMPARE_NATIVE_CALLER_SOURCE = r"""
+#define _GNU_SOURCE
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ucontext.h>
+#include <unistd.h>
+
 static volatile double threshold = 3.0;
+
+static void report_segfault(int signal_number, siginfo_t *info, void *context) {
+    ucontext_t *state = context;
+    dprintf(
+        STDERR_FILENO,
+        "signal=%d address=%p rip=%llx rsp=%llx rax=%llx rsi=%llx r13=%llx r14=%llx r15=%llx\n",
+        signal_number,
+        info->si_addr,
+        (unsigned long long)state->uc_mcontext.gregs[REG_RIP],
+        (unsigned long long)state->uc_mcontext.gregs[REG_RSP],
+        (unsigned long long)state->uc_mcontext.gregs[REG_RAX],
+        (unsigned long long)state->uc_mcontext.gregs[REG_RSI],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R13],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R14],
+        (unsigned long long)state->uc_mcontext.gregs[REG_R15]
+    );
+    _Exit(128 + signal_number);
+}
+
+static void install_segfault_reporter(void) {
+    struct sigaction action = {0};
+    action.sa_sigaction = report_segfault;
+    action.sa_flags = SA_SIGINFO;
+    sigemptyset(&action.sa_mask);
+    sigaction(SIGSEGV, &action, NULL);
+}
 
 __attribute__((noinline)) static int compare_vex_scalar(double value) {
     unsigned char result;
@@ -80,6 +112,7 @@ __attribute__((noinline)) static int compare_vex_scalar(double value) {
 }
 
 int main(void) {
+    install_segfault_reporter();
     unsigned int low;
     unsigned int high;
     int result = compare_vex_scalar(4.0);
@@ -238,38 +271,12 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         binary.save()
     finally:
         binary.close()
-    core_path = tmp_path / "core"
-    core_limit = resource.getrlimit(resource.RLIMIT_CORE)
-    resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, core_limit[1]))
-    try:
-        transformed_result = run_command([mutated], cwd=tmp_path, timeout=30)
-    finally:
-        resource.setrlimit(resource.RLIMIT_CORE, core_limit)
+    transformed_result = run_command([mutated], timeout=30)
     if transformed_result.returncode not in {0, original_result.returncode}:
-        trace = "core unavailable"
-        if core_path.exists():
-            trace_result = run_command(
-                [
-                    "gdb",
-                    "-batch",
-                    "-ex",
-                    "set pagination off",
-                    "-ex",
-                    f"core {core_path}",
-                    "-ex",
-                    "info registers",
-                    "-ex",
-                    "bt",
-                    str(mutated),
-                ],
-                text=True,
-                timeout=30,
-            )
-            trace = trace_result.stdout + trace_result.stderr
         expect(
             False,
             f"VEX scalar FP compare callee crashed: returncode={transformed_result.returncode}; "
-            f"stats={stats}; gdb={trace}",
+            f"stats={stats}; stderr={transformed_result.stderr!r}",
         )
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
