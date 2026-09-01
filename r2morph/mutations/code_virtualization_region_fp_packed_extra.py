@@ -5,11 +5,11 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region_fp_decoders import _parse_xmm_operand
 
 _PACKED_OPERAND_COUNT = 2
-_EXTRA_PACKED_ARITHMETIC = frozenset({"pcmpeqb", "pcmpgtb"})
+_EXTRA_PACKED_ARITHMETIC = frozenset({"pcmpeqb", "pcmpgtb", "pminub"})
 
 
 def _decode_fp_packed_arith_extra(text: str) -> tuple[str, str, int, int] | None:
-    """Decode the additional two-operand legacy packed integer operations."""
+    """Decode additional two-operand legacy packed integer operations."""
     parts = text.split(None, 1)
     if len(parts) != _PACKED_OPERAND_COUNT or "," not in parts[1]:
         return None

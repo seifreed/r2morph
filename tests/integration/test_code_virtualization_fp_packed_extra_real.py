@@ -27,15 +27,18 @@ def test_virtualized_elf_preserves_additional_packed_integer_operations(tmp_path
 __attribute__((noinline)) static int packed_operations(void) {
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
+    __m128i minimum = _mm_set1_epi8(-1);
     __m128i right = _mm_set1_epi8(7);
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater)
+        "pminub %[right], %[minimum]\n\t"
+        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum)
         : [right] "x"(right)
     );
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
+        && _mm_movemask_epi8(minimum) == 0
         ? 46
         : 1;
 }
