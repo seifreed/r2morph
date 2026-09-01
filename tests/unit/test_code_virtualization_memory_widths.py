@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization import _decode_run_item
+from r2morph.mutations.code_virtualization_engine import encode_bytecode
+from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress, VirtualizedMemOp
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
@@ -16,11 +20,15 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_not,
     _decode_op_mem,
     _decode_op_memdst,
+    _decode_riprel_mov,
 )
 from r2morph.mutations.code_virtualization_region_microops import _vpop_partial_handler_asm
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
+_BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
+_TRANSFER_WIDTH_COUNT = 4
 _EXPECTED_STOREI_BYTE_SIZE = 11
 
 
@@ -32,8 +40,34 @@ def test_memory_mov_decodes_word_store_with_low_word_width() -> None:
     expect(_decode_memory_mov("mov word ptr [rbp-2], ax") == ("store", 0, 5, -2, 16))
 
 
-def test_engine_memory_decoder_leaves_byte_store_native() -> None:
-    expect(_decode_run_item("mov byte ptr [rbp-2], al") is None)
+def test_engine_memory_decoder_preserves_byte_store_width() -> None:
+    item = _decode_run_item("mov byte ptr [rbp-2], al")
+    expect(isinstance(item, VirtualizedMemOp) and item.width == _BYTE_WIDTH_BITS)
+
+
+def test_engine_memory_decoder_preserves_word_load_width() -> None:
+    item = _decode_run_item("mov ax, word ptr [rbp-2]")
+    expect(isinstance(item, VirtualizedMemOp) and item.width == _WORD_WIDTH_BITS)
+
+
+def test_rip_relative_memory_decoder_preserves_byte_store_width() -> None:
+    expect(
+        _decode_riprel_mov("mov byte ptr [rip+0x20], al", 0x1000, 6) == ("riprel_store", 0, 0x1026, _BYTE_WIDTH_BITS)
+    )
+
+
+def test_engine_memory_decoder_preserves_word_rip_relative_load_width() -> None:
+    item = _decode_run_item("mov ax, word ptr [rip+0x20]", 0x1000, 6)
+    expect(isinstance(item, VirtualizedMemOp) and item.width == _WORD_WIDTH_BITS)
+
+
+def test_engine_memory_encoder_accepts_all_transfer_widths() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260902))
+    encoded = tuple(
+        encode_bytecode([VirtualizedMemOp("load", 0, VirtualizedAddress(1, 8), width)], scheme)
+        for width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS, 32, 64)
+    )
+    expect(len({item[0] for item in encoded}) == 1 and len(set(encoded)) == _TRANSFER_WIDTH_COUNT)
 
 
 def test_memory_classifier_decodes_absolute_load_as_fixed_address() -> None:

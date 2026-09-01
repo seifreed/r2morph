@@ -15,6 +15,9 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_SCALAR_VEX_ARITH_KINDS,
     _FP_SCALAR_VEX_OPERATIONS,
     _MEM_OP_KINDS,
+    _MEMORY_REGISTER_MASK,
+    _MEMORY_WIDTH_CODES,
+    _MEMORY_WIDTH_SHIFT,
     _MICROOP_BINOP_KINDS,
     _MICROOP_IMM_KINDS,
     _MICROOP_STACK_KINDS,
@@ -140,30 +143,36 @@ class EngineHandlerGenerator:
         )
         return f"  mov ecx, eax\n{load}  {mnemonic} {register}, cl\n{store}"
 
-    def _mem_addr_prologue(self) -> str:
+    def _memory_register(self, offset: int, packed_width: bool) -> str:
+        body = f"  movzx r8d, byte ptr [rsi+{offset}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
+        if packed_width:
+            body += f"  mov r12d, r8d\n  shr r12d, {_MEMORY_WIDTH_SHIFT}\n" f"  and r8d, {_MEMORY_REGISTER_MASK}\n"
+        return body
+
+    def _mem_addr_prologue(self, packed_width: bool = False) -> str:
         off = mem_offsets(False, self.scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            self._memory_register(off["reg"], packed_width)
+            + f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {self.key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + addr_fold("rax", "rcx", 0, self.isa.addr_variant)
         )
 
-    def _mem_riprel_prologue(self) -> str:
+    def _mem_riprel_prologue(self, packed_width: bool = False) -> str:
         off = mem_offsets(True, self.scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
-            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {self.key_dword}\n  xor eax, r11d\n"
+            self._memory_register(off["reg"], packed_width)
+            + f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {self.key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, r15\n" + addr_fold("rax", "rcx", 0, self.isa.addr_variant)
         )
 
-    def _mem_idx_prologue(self) -> str:
+    def _mem_idx_prologue(self, packed_width: bool = False) -> str:
         off = idx_offsets(False, self.scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            self._memory_register(off["reg"], packed_width)
+            + f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
             f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {self.key}\n  xor r11b, r13b\n"
             f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {self.key}\n  xor cl, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {self.key_dword}\n  xor eax, r10d\n"
@@ -174,11 +183,11 @@ class EngineHandlerGenerator:
             + addr_fold("rax", "rcx", 0, self.isa.addr_variant)
         )
 
-    def _mem_idx_no_base_prologue(self) -> str:
+    def _mem_idx_no_base_prologue(self, packed_width: bool = False) -> str:
         off = idx_offsets(True, self.scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+{off['index']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            self._memory_register(off["reg"], packed_width)
+            + f"  movzx r9d, byte ptr [rsi+{off['index']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
             f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {self.key}\n  xor cl, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {self.key_dword}\n  xor eax, r10d\n"
             f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
@@ -188,48 +197,93 @@ class EngineHandlerGenerator:
 
     def _mem_handler_body(self, kind: str, width: int, arith_variant: int) -> str:
         if kind.endswith("rip"):
-            kind, body, advance = kind[: -len("rip")], self._mem_riprel_prologue(), 6
+            kind = kind[: -len("rip")]
+            body, advance = self._mem_riprel_prologue(kind in ("load", "store")), 6
         elif kind.endswith("idxnb"):
-            kind, body, advance = kind[: -len("idxnb")], self._mem_idx_no_base_prologue(), 8
+            kind = kind[: -len("idxnb")]
+            body, advance = self._mem_idx_no_base_prologue(kind in ("load", "store")), 8
         elif kind.endswith("idx"):
-            kind, body, advance = kind[: -len("idx")], self._mem_idx_prologue(), 9
+            kind = kind[: -len("idx")]
+            body, advance = self._mem_idx_prologue(kind in ("load", "store")), 9
         else:
-            body, advance = self._mem_addr_prologue(), 7
+            body, advance = self._mem_addr_prologue(kind in ("load", "store")), 7
         body += self._mem_transfer_body(kind, width, arith_variant)
         return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
-    @staticmethod
-    def _mem_transfer_body(kind: str, width: int, arith_variant: int) -> str:
+    def _mem_transfer_body(self, kind: str, width: int, arith_variant: int) -> str:
+        if kind in ("load", "store") and width == _DWORD_WIDTH_BITS:
+            return EngineHandlerGenerator._memory_load_store_body(kind, self.handler_index)
         if kind == "load":
             load = "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
-            return load + "  mov qword ptr [rsp + r8*8], rax\n"
-        if kind == "store":
-            return (
+            body = load + "  mov qword ptr [rsp + r8*8], rax\n"
+        elif kind == "store":
+            body = (
                 "  mov rax, qword ptr [rsp + r8*8]\n  mov qword ptr [r10], rax\n"
                 if width == _QWORD_WIDTH_BITS
                 else "  mov eax, dword ptr [rsp + r8*8]\n  mov dword ptr [r10], eax\n"
             )
-        if kind == "lea":
+        elif kind == "lea":
             normalize = "  mov r10d, r10d\n" if width == _DWORD_WIDTH_BITS else ""
-            return normalize + "  mov qword ptr [rsp + r8*8], r10\n"
-        if kind.startswith(("movzx", "movsx")):
+            body = normalize + "  mov qword ptr [rsp + r8*8], r10\n"
+        elif kind.startswith(("movzx", "movsx")):
             return EngineHandlerGenerator._extend_memory_body(kind, width)
-        mnemonic = kind[len("mem") :]
-        body = "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
-        if mnemonic == "sub":
-            body += "  neg rax\n"
-        body += (
-            "  mov r10, qword ptr [rsp + r8*8]\n"
-            if width == _QWORD_WIDTH_BITS
-            else "  mov r10d, dword ptr [rsp + r8*8]\n"
+        else:
+            mnemonic = kind[len("mem") :]
+            body = "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
+            if mnemonic == "sub":
+                body += "  neg rax\n"
+            body += (
+                "  mov r10, qword ptr [rsp + r8*8]\n"
+                if width == _QWORD_WIDTH_BITS
+                else "  mov r10d, dword ptr [rsp + r8*8]\n"
+            )
+            body += arith_fold(mnemonic, 0, arith_variant)
+            store = (
+                "  mov qword ptr [rsp + r8*8], r10\n"
+                if width == _QWORD_WIDTH_BITS
+                else "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
+            )
+            body += store
+        return body
+
+    @staticmethod
+    def _memory_load_store_body(kind: str, handler_index: int) -> str:
+        byte_code = _MEMORY_WIDTH_CODES[8]
+        word_code = _MEMORY_WIDTH_CODES[16]
+        qword_code = _MEMORY_WIDTH_CODES[64]
+        label = f"mem_{handler_index}"
+        if kind == "load":
+            return (
+                f"  cmp r12b, {byte_code}\n  je {label}_byte\n"
+                f"  cmp r12b, {word_code}\n  je {label}_word\n"
+                f"  cmp r12b, {qword_code}\n  je {label}_qword\n"
+                "  mov eax, dword ptr [r10]\n"
+                "  mov qword ptr [rsp + r8*8], rax\n"
+                f"  jmp {label}_done\n"
+                f"{label}_byte:\n  mov rax, qword ptr [rsp + r8*8]\n"
+                "  and rax, -256\n  movzx r11d, byte ptr [r10]\n"
+                f"  or rax, r11\n  mov qword ptr [rsp + r8*8], rax\n  jmp {label}_done\n"
+                f"{label}_word:\n  mov rax, qword ptr [rsp + r8*8]\n"
+                "  and rax, -65536\n  movzx r11d, word ptr [r10]\n"
+                f"  or rax, r11\n  mov qword ptr [rsp + r8*8], rax\n  jmp {label}_done\n"
+                f"{label}_qword:\n  mov rax, qword ptr [r10]\n"
+                "  mov qword ptr [rsp + r8*8], rax\n"
+                f"{label}_done:\n"
+            )
+        return (
+            f"  cmp r12b, {byte_code}\n  je {label}_byte\n"
+            f"  cmp r12b, {word_code}\n  je {label}_word\n"
+            f"  cmp r12b, {qword_code}\n  je {label}_qword\n"
+            "  mov eax, dword ptr [rsp + r8*8]\n"
+            f"  mov dword ptr [r10], eax\n  jmp {label}_done\n"
+            f"{label}_byte:\n  mov rax, qword ptr [rsp + r8*8]\n"
+            f"  mov byte ptr [r10], al\n  jmp {label}_done\n"
+            f"{label}_word:\n  mov rax, qword ptr [rsp + r8*8]\n"
+            f"  mov word ptr [r10], ax\n  jmp {label}_done\n"
+            f"{label}_qword:\n  mov rax, qword ptr [rsp + r8*8]\n"
+            "  mov qword ptr [r10], rax\n"
+            f"{label}_done:\n"
         )
-        body += arith_fold(mnemonic, 0, arith_variant)
-        store = (
-            "  mov qword ptr [rsp + r8*8], r10\n"
-            if width == _QWORD_WIDTH_BITS
-            else "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
-        )
-        return body + store
 
     @staticmethod
     def _extend_memory_body(kind: str, width: int) -> str:

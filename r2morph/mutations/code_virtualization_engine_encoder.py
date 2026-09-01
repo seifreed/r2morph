@@ -9,6 +9,8 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_PACKED_VEX_OPERATIONS,
     _FP_PACKED_WIDTH,
     _FP_SCALAR_VEX_OPERATIONS,
+    _MEMORY_WIDTH_CODES,
+    _MEMORY_WIDTH_SHIFT,
     VMScheme,
     pack_immediate,
 )
@@ -204,7 +206,13 @@ class _BytecodeEncoder:
     def _emit_memory(self, op: object) -> bool:
         if not isinstance(op, VirtualizedMemOp):
             return False
-        position = self._opcode(op.kind, op.width)
+        base_kind = op.kind
+        for suffix in ("rip", "idxnb", "idx"):
+            if base_kind.endswith(suffix):
+                base_kind = base_kind[: -len(suffix)]
+                break
+        is_load_store = base_kind in ("load", "store")
+        position = self._opcode(op.kind, 32 if is_load_store else op.width)
         if op.kind.endswith("rip"):
             fields = self._rip_fields(op.reg_index, op.disp, permute_register=True)
             order = mem_permuted_fields(True, self.field_perm)
@@ -223,6 +231,8 @@ class _BytecodeEncoder:
         else:
             fields = self._base_fields(op.reg_index, op.base_index, op.disp, permute_register=True)
             order = mem_permuted_fields(False, self.field_perm)
+        if is_load_store:
+            fields["reg"] = bytes([fields["reg"][0] | (_MEMORY_WIDTH_CODES[op.width] << _MEMORY_WIDTH_SHIFT)])
         self._emit_fields(position, order, fields)
         return True
 

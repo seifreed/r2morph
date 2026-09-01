@@ -261,10 +261,10 @@ def _decode_indexed_gp_memory_item(text: str) -> VirtualizedMemOp | None:
 
 def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
     indexed = _decode_indexed_gp_memory_item(text)
-    if indexed is not None and indexed.width in (32, 64):
+    if indexed is not None and (indexed.width in (32, 64) or indexed.kind.startswith(("load", "store"))):
         return indexed
     decoded = _decode_memory_mov(text)
-    if decoded is not None and decoded[-1] in (32, 64):
+    if decoded is not None and (decoded[-1] in (32, 64) or decoded[0] in ("load", "store")):
         kind, register_slot, base_slot, disp, width = decoded
         return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
     extended = _decode_movx(text)
@@ -297,14 +297,14 @@ def _decode_memory_arithmetic_item(text: str, mnemonic: str, insn_addr: int, ins
     if mnemonic not in _MEM_ARITH_MNEMONICS:
         return None
     decoded = _decode_op_mem(text, mnemonic, insn_addr, insn_size)
-    if decoded is not None and decoded[0] == "opmem":
+    if decoded is not None and decoded[0] == "opmem" and decoded[-1] in (32, 64):
         _, _mnemonic, register_slot, base_slot, disp, width = decoded
         return VirtualizedMemOp(f"mem{mnemonic}", register_slot, VirtualizedAddress(base_slot, disp), width)
-    if decoded is not None and decoded[0] == "opriprel":
+    if decoded is not None and decoded[0] == "opriprel" and decoded[-1] in (32, 64):
         _, _mnemonic, register_slot, target, width = decoded
         return VirtualizedMemOp(f"mem{mnemonic}rip", register_slot, VirtualizedAddress(-1, target), width)
     indexed = _decode_op_mem_indexed(text, mnemonic)
-    if indexed is not None and indexed[0] == "opmemidx":
+    if indexed is not None and indexed[0] == "opmemidx" and indexed[-1] in (32, 64):
         _, _mnemonic, register_slot, base_slot, index_slot, shift, disp, width = indexed
         return VirtualizedMemOp(
             f"mem{mnemonic}idx",

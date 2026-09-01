@@ -406,7 +406,7 @@ def _decode_riprel_mov(text: str, insn_addr: int, insn_size: int) -> tuple[str, 
     else:
         kind, mem_text, reg_text = "riprel_load", right, left
     parsed = _parse_riprel_operand(mem_text, insn_addr, insn_size)
-    reg = _register_operand(reg_text.lower())
+    reg = _memory_register_operand(reg_text.lower())
     if parsed is None or reg is None:
         return None
     target, mem_width = parsed

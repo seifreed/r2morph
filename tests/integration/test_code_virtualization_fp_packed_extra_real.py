@@ -25,6 +25,13 @@ def test_virtualized_elf_preserves_additional_packed_integer_operations(tmp_path
 #include <immintrin.h>
 
 __attribute__((noinline)) static int packed_operations(void) {
+    unsigned char byte_value = 0xa5;
+    unsigned short word_value = 0x1234;
+    unsigned long long byte_after = 0;
+    unsigned long long word_after = 0;
+    unsigned char byte_roundtrip = 0;
+    unsigned short word_roundtrip = 0;
+    unsigned long long seed = 0x1122334455667788ULL;
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
     __m128i minimum = _mm_set1_epi8(-1);
@@ -36,13 +43,29 @@ __attribute__((noinline)) static int packed_operations(void) {
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
         "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum)
-        : [right] "x"(right), [vex_right] "x"(vex_right)
+        "mov %[seed], %%rax\n\t"
+        "movb (%[byte_source]), %%al\n\t"
+        "mov %%rax, %[byte_after]\n\t"
+        "mov %[seed], %%rax\n\t"
+        "movw (%[word_source]), %%ax\n\t"
+        "mov %%rax, %[word_after]\n\t"
+        "movb %%al, (%[byte_destination])\n\t"
+        "movw %%ax, (%[word_destination])\n\t"
+        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
+          [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
+        : [right] "x"(right), [vex_right] "x"(vex_right), [seed] "m"(seed),
+          [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
+          [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
+        : "rax", "memory"
     );
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
         && _mm_movemask_epi8(minimum) == 0
         && _mm_movemask_epi8(maximum) == 0xffff
+        && byte_after == 0x11223344556677a5ULL
+        && word_after == 0x1122334455661234ULL
+        && byte_roundtrip == byte_value
+        && word_roundtrip == word_value
         ? 46
         : 1;
 }

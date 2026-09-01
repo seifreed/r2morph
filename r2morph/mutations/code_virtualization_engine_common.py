@@ -122,6 +122,11 @@ _MEM_OP_KINDS: tuple[str, ...] = (
     + tuple(f"{kind}idx" for kind in _MEM_IDX_KINDS)
     + tuple(f"{kind}idxnb" for kind in ("load", "store"))
 )
+# Load/store records reuse the register field's high bits for transfer width,
+# keeping the existing opcode and record layout unchanged.
+_MEMORY_WIDTH_CODES: dict[int, int] = {32: 0, 64: 1, 8: 2, 16: 3}
+_MEMORY_WIDTH_SHIFT = 5
+_MEMORY_REGISTER_MASK = (1 << _MEMORY_WIDTH_SHIFT) - 1
 # Scalar-FP memory moves: ``movsd``/``movss`` between an xmm register and
 # ``[base+disp]``. They reuse the (kind, is_immediate, width) key shape and the
 # reg/base/disp operand layout, but the ``reg`` field carries an xmm index (0-15,

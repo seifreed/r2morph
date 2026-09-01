@@ -21,8 +21,8 @@ Correctness contract (why this preserves semantics):
   not be reproduced and is rejected.
 - The interpreter clobbers flags, so a run is only virtualized when the
   caller has proven flags are dead after it.
-- Memory, RIP-relative, segment, and control-flow operands end the run;
-  the VM only models register transfers.
+- Memory, RIP-relative, segment, and control-flow operands are modeled only for
+  the supported general-purpose transfer forms; unsupported forms end the run.
 
 A run that cannot be proven correct yields ``None`` - the caller leaves
 the function untouched. Zero virtualizations always beats a corrupt one.
