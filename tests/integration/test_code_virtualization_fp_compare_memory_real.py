@@ -243,40 +243,11 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         gdb_script.write_text(
             """set pagination off
 start
-python
-import gdb
-
-class DispatchBreakpoint(gdb.Breakpoint):
-    def stop(self):
-        inferior = gdb.selected_inferior()
-        pc = int(gdb.parse_and_eval('$pc'))
-        opcode = int.from_bytes(inferior.read_memory(pc, 1).tobytes(), 'little')
-        if opcode == 0xff:
-            target = int(gdb.parse_and_eval('$rax'))
-        else:
-            rsp = int(gdb.parse_and_eval('$rsp'))
-            target = int.from_bytes(inferior.read_memory(rsp, 8).tobytes(), 'little')
-        table = int(gdb.parse_and_eval('$r14'))
-        if target >= table or target < table - 0x10000:
-            message = 'BAD_DISPATCH pc=%s target=%#x table=%#x' % (
-                gdb.parse_and_eval('$pc'), target, table)
-            gdb.write(message + chr(10))
-            gdb.execute('x/32i $pc-96')
-            gdb.execute('info registers rax rsi r13 r14 r15 rsp')
-            gdb.execute('x/16gx $rsp+0x200')
-            return True
-        return False
-
-base = 0x407000
-code = gdb.selected_inferior().read_memory(base, 0x3000).tobytes()
-for offset in range(len(code) - 1):
-    if code[offset:offset + 2] == bytes((0xff, 0xe0)):
-        DispatchBreakpoint('*0x%x' % (base + offset))
-    if code[offset:offset + 2] == bytes((0x50, 0xc3)):
-        DispatchBreakpoint('*0x%x' % (base + offset + 1))
-end
+hbreak *0x407438
 continue
 x/8i $rip-16
+info registers rax rsi r13 r14 r15 rsp
+x/16gx $rsp+0x200
 info registers
 x/12gx $rsp
 bt
