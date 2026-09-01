@@ -1,14 +1,15 @@
 # Protection Maturity Report
 
-Commit: `59f7005`
-Date: `2026-09-01`
+Commit: `2d89015`
+Date: `2026-09-02`
 
 ## Current verification status
 
 The supported Python 3.13 environment passed the required static and security
 gates locally. GitHub Actions run `33564155524` completed successfully with all
 16 jobs on commit `59f7005`, including the Linux x86-64 suite and cross-platform
-matrix. The packed and scalar VEX FMA regressions, the virtualized incoming
+matrix. The packed and scalar VEX FMA regressions, the VEX packed-byte maximum,
+the virtualized incoming
 stack-argument regression, the aggregate-return ABI regression, and the legacy
 packed-byte comparison regression passed in the Linux integration job.
 
@@ -45,12 +46,12 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `59f7005` ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `2d89015` ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33564167298` (SHA-256
-`9364c20842b511c91164f844f4708eff096912203eae56d25f9050254d34b007`). Code virtualization recorded 136
+artifact from workflow run `33566723180` (SHA-256
+`72dd4bfed037740600f7f313fdc6d4bd5eb25e245862f42be26ee18e4ac7f7be`). Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
 
