@@ -14,27 +14,25 @@ from tests.utils.process import run_command
 
 _EXPECTED_EXIT_CODE = 47
 _FMA_SOURCE = r"""
-typedef float vector128 __attribute__((vector_size(16)));
-typedef float vector256 __attribute__((vector_size(32)));
+#include <immintrin.h>
+
+typedef __m128 vector128;
+typedef __m256 vector256;
 
 __attribute__((noinline)) static vector128 fma128(vector128 a, vector128 b, vector128 c) {
-    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+x"(a) : "x"(b), "x"(c));
-    return a;
+    return _mm_fmadd_ps(b, c, a);
 }
 
 __attribute__((noinline)) static vector256 fma256(vector256 a, vector256 b, vector256 c) {
-    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+v"(a) : "v"(b), "v"(c));
-    return a;
+    return _mm256_fmadd_ps(b, c, a);
 }
 
 __attribute__((noinline)) static vector128 fma128_memory(vector128 a, vector128 b, const vector128 *c) {
-    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+x"(a) : "x"(b), "m"(*c));
-    return a;
+    return _mm_fmadd_ps(b, *c, a);
 }
 
 __attribute__((noinline)) static vector256 fma256_memory(vector256 a, vector256 b, const vector256 *c) {
-    __asm__ volatile("vfmadd231ps %1, %2, %0" : "+v"(a) : "v"(b), "m"(*c));
-    return a;
+    return _mm256_fmadd_ps(b, *c, a);
 }
 
 int main(void) {
