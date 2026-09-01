@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `c72f154`
+Commit: `d0f50ad`
 Date: `2026-09-01`
 
 ## Current verification status
 
 The supported Python 3.13 environment passed the required static and security
-gates locally. GitHub Actions run `33554984492` completed successfully with all
-16 jobs on commit `c72f154`, including the Linux x86-64 suite and cross-platform
-matrix. The packed and scalar VEX FMA regressions, including memory operands,
-and the virtualized incoming stack-argument regression passed in the Linux
-integration job.
+gates locally. GitHub Actions run `33557705638` completed successfully with all
+16 jobs on commit `d0f50ad`, including the Linux x86-64 suite and cross-platform
+matrix. The packed and scalar VEX FMA regressions, the virtualized incoming
+stack-argument regression, and the aggregate-return ABI regression passed in the
+Linux integration job.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -56,7 +56,9 @@ recorded 139 semantic passes each with one baseline discrepancy.
 The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
 campaign runs Ghidra headless over the same 140 original/protected pairs. It
 completed 280 analyses with zero errors or timeouts and records the
-`CodeVirtualization` pass summary per sample.
+`CodeVirtualization` pass summary per sample. A fresh rerun on `d0f50ad`
+produced the same artifact byte-for-byte
+(`SHA-256 dbd02def075cb3a53c4c6b6aa63c4a9d6d907c59c74adb30c44792116c8b5ab8`).
 
 The current report records 697 completed tool runs and 560 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
