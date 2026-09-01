@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import platform
+import resource
 import shutil
 from pathlib import Path
 
@@ -237,44 +238,38 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
         binary.save()
     finally:
         binary.close()
-    transformed_result = run_command([mutated], timeout=30)
+    core_path = tmp_path / "core"
+    core_limit = resource.getrlimit(resource.RLIMIT_CORE)
+    resource.setrlimit(resource.RLIMIT_CORE, (resource.RLIM_INFINITY, core_limit[1]))
+    try:
+        transformed_result = run_command([mutated], cwd=tmp_path, timeout=30)
+    finally:
+        resource.setrlimit(resource.RLIMIT_CORE, core_limit)
     if transformed_result.returncode not in {0, original_result.returncode}:
-        gdb_script = tmp_path / "trace.gdb"
-        gdb_script.write_text(
-            """set pagination off
-start
-hbreak *0x407405
-x/12i $rip-8
-info registers
-x/gx $rsp+0x88
-continue
-x/12i $rip-8
-info registers r14 r15 rsi rsp
-x/gx $rsp+0xf8
-set {unsigned char}($rsp+0xf8) = 0x2f
-continue
-info registers
-x/16gx $rsp
-x/16gx $rsp+0x200
-x/16wx $r14
-x/8i $rax
-x/8i $rsi
-x/8i $r13
-x/8i $r14
-x/12gx $rsp
-bt
-""",
-            encoding="utf-8",
-        )
-        trace = run_command(
-            ["gdb", "-batch", "-x", str(gdb_script), str(mutated)],
-            text=True,
-            timeout=30,
-        )
+        trace = "core unavailable"
+        if core_path.exists():
+            trace_result = run_command(
+                [
+                    "gdb",
+                    "-batch",
+                    "-ex",
+                    "set pagination off",
+                    "-ex",
+                    f"core {core_path}",
+                    "-ex",
+                    "info registers",
+                    "-ex",
+                    "bt",
+                    str(mutated),
+                ],
+                text=True,
+                timeout=30,
+            )
+            trace = trace_result.stdout + trace_result.stderr
         expect(
             False,
             f"VEX scalar FP compare callee crashed: returncode={transformed_result.returncode}; "
-            f"stats={stats}; gdb={trace.stdout}{trace.stderr}",
+            f"stats={stats}; gdb={trace}",
         )
     expect(
         stats["functions_virtualized"] >= 1 and original_result.returncode == transformed_result.returncode == 0,
