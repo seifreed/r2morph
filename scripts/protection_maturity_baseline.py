@@ -16,6 +16,14 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from r2morph.core.binary import Binary
+from r2morph.mutations import (
+    BlockReorderingPass,
+    InstructionExpansionPass,
+    InstructionSubstitutionPass,
+    NopInsertionPass,
+    RegisterSubstitutionPass,
+)
+from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
 
@@ -28,6 +36,31 @@ _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
+DEFAULT_MUTATION_NAME = "CodeVirtualization"
+CORPUS_PASS_NAMES = (
+    "BlockReordering",
+    "CodeVirtualization",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "RegisterSubstitution",
+)
+_PASS_TYPES: dict[str, type[MutationPass]] = {
+    "BlockReordering": BlockReorderingPass,
+    "CodeVirtualization": CodeVirtualizationPass,
+    "InstructionExpansion": InstructionExpansionPass,
+    "InstructionSubstitution": InstructionSubstitutionPass,
+    "NopInsertion": NopInsertionPass,
+    "RegisterSubstitution": RegisterSubstitutionPass,
+}
+_PASS_LABELS = {
+    "BlockReordering": "block-reordering",
+    "CodeVirtualization": "code-virtualization",
+    "InstructionExpansion": "instruction-expansion",
+    "InstructionSubstitution": "instruction-substitution",
+    "NopInsertion": "nop-insertion",
+    "RegisterSubstitution": "register-substitution",
+}
 
 
 class _ArtifactAccumulator:
@@ -258,41 +291,56 @@ def _semantic_run_matches(baseline: object, baseline_runtime: object, run: objec
     return _runtime_observables_equal(baseline_runtime, run.get("runtime"))
 
 
-def _transformation_evidence(status: str, stats: object, error: object = None) -> dict[str, object]:
+def _build_mutation_pass(pass_name: str, seed: int) -> MutationPass:
+    pass_type = _PASS_TYPES.get(pass_name)
+    if pass_type is None:
+        raise ValueError(f"unsupported corpus pass: {pass_name}")
+    return pass_type(config={"probability": 1.0, "seed": seed})
+
+
+def _transformation_evidence(
+    status: str,
+    stats: object,
+    error: object = None,
+    pass_name: str = DEFAULT_MUTATION_NAME,
+) -> dict[str, object]:
     """Describe whether the selected pass changed the fixture and why not."""
+    label = _PASS_LABELS[pass_name]
     if status == "error":
         if isinstance(error, Mapping):
             reason = error.get("error") or error.get("error_type") or "transformation failed"
         else:
             reason = "transformation failed"
-        return {"pass_name": "code-virtualization", "status": "error", "reason": str(reason)}
+        return {"pass_name": label, "status": "error", "reason": str(reason)}
 
     if not isinstance(stats, Mapping):
-        return {"pass_name": "code-virtualization", "status": "omitted", "reason": "no pass statistics"}
+        return {"pass_name": label, "status": "omitted", "reason": "no pass statistics"}
     virtualized = stats.get("functions_virtualized")
-    if isinstance(virtualized, int) and virtualized > 0:
+    applied = virtualized if isinstance(virtualized, int) and virtualized > 0 else stats.get("mutations_applied")
+    if isinstance(applied, int) and applied > 0:
+        count_field = "functions_virtualized" if pass_name == DEFAULT_MUTATION_NAME else "mutations_applied"
         return {
-            "pass_name": "code-virtualization",
+            "pass_name": label,
             "status": "applied",
-            "functions_virtualized": virtualized,
+            count_field: applied,
         }
     diagnostics = stats.get("unsupported_functions")
     if isinstance(diagnostics, list) and diagnostics and isinstance(diagnostics[0], Mapping):
         capability = diagnostics[0].get("capability", "unsupported capability")
         reason = diagnostics[0].get("reason", "pass precondition was not met")
         return {
-            "pass_name": "code-virtualization",
+            "pass_name": label,
             "status": "omitted",
             "reason": f"{capability}: {reason}",
         }
     return {
-        "pass_name": "code-virtualization",
+        "pass_name": label,
         "status": "omitted",
-        "reason": "no eligible function was virtualized",
+        "reason": "no eligible function was transformed",
     }
 
 
-def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, object]:
+def _measure_seed(fixture: Path, seed: int, output_dir: Path, pass_name: str) -> dict[str, object]:
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
     started = time.perf_counter()
@@ -300,7 +348,7 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, objec
         binary = Binary(output, writable=True)
         binary.open()
         try:
-            stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": seed}).apply(binary)
+            stats = _build_mutation_pass(pass_name, seed).apply(binary)
             binary.save()
         finally:
             binary.close()
@@ -314,7 +362,7 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, objec
     run: dict[str, object] = {
         "seed": seed,
         "status": status,
-        "transformation": _transformation_evidence(status, stats, error if status == "error" else None),
+        "transformation": _transformation_evidence(status, stats, error if status == "error" else None, pass_name),
         "output_sha256": sha256(output),
         "output_size": output.stat().st_size,
         "transform_duration_seconds": time.perf_counter() - started,
@@ -325,6 +373,7 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, objec
         run.update(
             {
                 "functions_virtualized": stats.get("functions_virtualized", 0),
+                "mutations_applied": stats.get("mutations_applied", 0),
                 "total_instructions": stats.get("total_instructions", 0),
                 "total_bytecode_bytes": stats.get("total_bytecode_bytes", 0),
                 "after": _safe_inspect(output),
@@ -335,13 +384,18 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, objec
     return run
 
 
-def measure_fixture(fixture: Path, seeds: range, output_root: Path) -> dict[str, object]:
+def measure_fixture(
+    fixture: Path,
+    seeds: range,
+    output_root: Path,
+    pass_name: str = DEFAULT_MUTATION_NAME,
+) -> dict[str, object]:
     baseline_runtime = _runtime_artifacts(fixture)
     baseline_unicorn = _semantic_artifacts(fixture)
     baseline = _safe_inspect(fixture)
-    output_dir = output_root / fixture.name
-    output_dir.mkdir()
-    runs = [_measure_seed(fixture, seed, output_dir) for seed in seeds]
+    output_dir = output_root / _PASS_LABELS[pass_name] / fixture.name
+    output_dir.mkdir(parents=True)
+    runs = [_measure_seed(fixture, seed, output_dir, pass_name) for seed in seeds]
     semantic_runs = []
     for run in runs:
         runtime_equal = _runtime_observables_equal(baseline_runtime, run.get("runtime"))
@@ -378,7 +432,7 @@ def discover_executables(dataset: Path) -> list[Path]:
     return executables
 
 
-def _render_result(fixtures: list[dict[str, object]]) -> dict[str, object]:
+def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     successful_seed_runs = sum(
         value if isinstance(value := fixture.get("successful_runs"), int) else 0 for fixture in fixtures
     )
@@ -386,6 +440,7 @@ def _render_result(fixtures: list[dict[str, object]]) -> dict[str, object]:
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
+        "pass_name": pass_name,
         "compatible_fixture_count": len(fixtures),
         "fixtures": fixtures,
         "summary": {
@@ -397,6 +452,31 @@ def _render_result(fixtures: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def _parse_pass_names(value: str) -> tuple[str, ...]:
+    if value.strip().lower() == "all":
+        return CORPUS_PASS_NAMES
+    names = tuple(item.strip() for item in value.split(",") if item.strip())
+    if not names or any(name not in _PASS_TYPES for name in names):
+        valid = ", ".join((*CORPUS_PASS_NAMES, "all"))
+        raise ValueError(f"unknown pass in {value!r}; choose from {valid}")
+    if len(set(names)) != len(names):
+        raise ValueError("--passes must not contain duplicates")
+    return names
+
+
+def _render_multi_pass_result(
+    measurements: dict[str, list[dict[str, object]]],
+) -> dict[str, object]:
+    rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
+    return {
+        "schema_version": 3,
+        "measurement": "protection-maturity-corpus-by-pass",
+        "pass_names": list(rendered),
+        "passes": rendered,
+        "summary": {name: result["summary"] for name, result in rendered.items()},
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
@@ -404,6 +484,11 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, default=Path("fixtures/dataset"))
     parser.add_argument("--first-seed", type=int, default=20260820)
     parser.add_argument("--count", type=int, default=10)
+    parser.add_argument(
+        "--passes",
+        default=DEFAULT_MUTATION_NAME,
+        help="comma-separated pass names or 'all' (default: CodeVirtualization)",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.count < 1:
@@ -413,11 +498,21 @@ def main() -> None:
     fixtures = discover_executables(args.dataset) if args.all_fixtures else args.fixtures
     if not fixtures:
         parser.error("no executable fixtures selected")
+    try:
+        pass_names = _parse_pass_names(args.passes)
+    except ValueError as error:
+        parser.error(str(error))
 
     seeds = range(args.first_seed, args.first_seed + args.count)
     with tempfile.TemporaryDirectory(prefix="r2morph-maturity-") as temp_dir:
-        measurements = [measure_fixture(fixture, seeds, Path(temp_dir)) for fixture in fixtures]
-    rendered = json.dumps(_render_result(measurements), indent=2, sort_keys=True) + "\n"
+        measurements = {
+            pass_name: [measure_fixture(fixture, seeds, Path(temp_dir), pass_name) for fixture in fixtures]
+            for pass_name in pass_names
+        }
+    report = _render_result(measurements[pass_names[0]], pass_names[0])
+    if len(pass_names) > 1:
+        report = _render_multi_pass_result(measurements)
+    rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered)
     print(rendered, end="")

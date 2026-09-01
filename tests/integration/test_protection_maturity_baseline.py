@@ -7,7 +7,9 @@ from pathlib import Path
 
 from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
+    CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
+    _parse_pass_names,
     _runtime_artifacts,
     _runtime_observables_equal,
     _semantic_run_matches,
@@ -39,6 +41,16 @@ def test_measure_fixture_emits_transformation_evidence(tmp_path: Path) -> None:
 
     evidence = result["runs"][0]["transformation"]
     expect(any(value == "code-virtualization" for value in evidence.values()))
+
+
+def test_measure_fixture_supports_a_named_non_virtualization_pass(tmp_path: Path) -> None:
+    result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path, "NopInsertion")
+
+    expect("nop-insertion" in result["runs"][0]["transformation"].values())
+
+
+def test_parse_pass_names_expands_the_public_corpus_selection() -> None:
+    expect(_parse_pass_names("all") == CORPUS_PASS_NAMES)
 
 
 def test_transformation_evidence_records_unsupported_capability() -> None:
