@@ -83,7 +83,11 @@ def test_virtualized_packed_vex_fma_preserves_native_result(tmp_path: Path) -> N
         ],
         timeout=30,
     )
-    expect(compile_result.returncode == 0, "failed to compile the packed FMA fixture")
+    expect(
+        compile_result.returncode == 0,
+        "failed to compile the packed FMA fixture: "
+        f"stdout={compile_result.stdout!r}, stderr={compile_result.stderr!r}",
+    )
 
     original_result = run_command([original], timeout=30)
     original.rename(mutated)
