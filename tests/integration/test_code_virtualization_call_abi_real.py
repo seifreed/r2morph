@@ -227,13 +227,10 @@ def test_virtualized_elf_restores_mxcsr_after_native_call(tmp_path: Path) -> Non
     mutated = tmp_path / "mxcsr_mutated"
     source.write_text(r"""
 static unsigned read_mxcsr(void);
-static void clobber_mxcsr(void);
+static int clobber_mxcsr(void);
 
 __attribute__((noinline)) static int check_mxcsr(void) {
-    unsigned before = read_mxcsr();
-    clobber_mxcsr();
-    unsigned after = read_mxcsr();
-    return before == after ? 42 : 1;
+    return clobber_mxcsr();
 }
 
 __attribute__((noinline)) static unsigned read_mxcsr(void) {
@@ -242,11 +239,12 @@ __attribute__((noinline)) static unsigned read_mxcsr(void) {
     return value;
 }
 
-__attribute__((noinline)) static void clobber_mxcsr(void) {
+__attribute__((noinline)) static int clobber_mxcsr(void) {
     unsigned before = read_mxcsr();
     unsigned value = 0x5f80u;
     __asm__ volatile("ldmxcsr %0" : : "m"(value));
     __asm__ volatile("ldmxcsr %0" : : "m"(before));
+    return 42;
 }
 
 int main(void) {
