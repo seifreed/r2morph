@@ -261,9 +261,9 @@ __attribute__((noinline)) static int test_memory_bits(uint32_t *word, uint64_t *
     uint8_t register_bit = 0;
     uint64_t index = 1;
     __asm__ volatile(
-        "bt $3, (%[word])\n"
+        "btl $3, (%[word])\n"
         "setc %[immediate]\n"
-        "bt %[index], (%[wide])\n"
+        "btq %[index], (%[wide])\n"
         "setc %[register]\n"
         : [immediate] "=q" (immediate_bit), [register] "=q" (register_bit)
         : [word] "r" (word), [wide] "r" (wide), [index] "r" (index)
