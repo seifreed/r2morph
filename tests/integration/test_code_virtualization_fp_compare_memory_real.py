@@ -244,6 +244,9 @@ def test_vex_scalar_fp_compare_callee_with_native_caller_preserves_result(tmp_pa
             """set pagination off
 start
 hbreak *0x407405
+x/12i $rip-8
+info registers
+x/gx $rsp+0x88
 continue
 set {unsigned char}($rsp+0x88) = 0xab
 continue
