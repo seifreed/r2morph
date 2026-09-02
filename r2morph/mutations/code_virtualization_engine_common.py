@@ -511,11 +511,9 @@ class VMScheme:
 # against ``total``, so the assigned opcode indices plus at least one exit-marker
 # byte (any value ``>= total``) must all fit in ``[0, 256)``. Reserve a small band
 # above ``total`` so the exit marker itself stays varied across builds.
-# Keep several values above the dense handler range available for the exit
-# marker while leaving room for every operation the engine can emit.
-# Two values above the dense handler range remain reserved for the randomized
-# exit marker while the packed SIMD comparison forms use the freed opcode slots.
-_EXIT_OPCODE_HEADROOM = 2
+# Keep one value above the dense handler range available for the exit marker
+# while leaving room for every operation the engine can emit.
+_EXIT_OPCODE_HEADROOM = 1
 _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 
 # Every operation is emitted as several interchangeable handler instances rather
