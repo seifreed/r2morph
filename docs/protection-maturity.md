@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `ed36d06`
+Commit: `45b8ef5`
 Date: `2026-09-02`
 
 ## Current verification status
@@ -28,7 +28,7 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 140 executable samples and
+An earlier all-fixture adversarial campaign covered 140 executable samples and
 the `CodeVirtualization` pass. It records 697 completed tool runs, 560 explicit
 unavailable-tool rows, and 3 Unicorn errors. Its per-pass summary records 137
 applied samples, 3 omitted samples, and no transformation errors. The report
@@ -36,7 +36,7 @@ includes radare2, objdump, angr, Unicorn, and the custom binary analyzer; Triton
 IDA Pro, and Binary Ninja remain unavailable in this environment. The automated
 second-pass review passes all checks and is not human sign-off.
 
-A fresh local run on commit `4a042d6` covered all 140 executable fixtures
+The preceding local run on commit `4a042d6` covered all 140 executable fixtures
 discovered in the current dataset. It recorded 697 completed tool runs, 560
 explicit unavailable-tool rows, and 3 Unicorn errors. The per-pass result for
 `CodeVirtualization` was 137 applied, 3 omitted, and 0 transformation errors,
@@ -46,23 +46,23 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `ed36d06` ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `45b8ef5` ran all 141 fixtures with all six
 passes. Its machine-readable summary is in
-[`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
+[`docs/protection-maturity-by-pass-2026-09-02-45b8ef5.json`](protection-maturity-by-pass-2026-09-02-45b8ef5.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33580812734` (SHA-256
-`9cce59c2eb394f18a4815db8144cc5fd618b0bc75743fe178f5a7371f9eb0438`). Code virtualization recorded 136
+artifact from workflow run `33595083628` (SHA-256
+`fd6b5a67fb7d096d053d942c4dc27a1ec20ef726534c1a862da53c0b5a71af68`). Code virtualization recorded 137
 semantic passes and four known baseline discrepancies; the other five passes
-recorded 139 semantic passes each with one baseline discrepancy.
+recorded 140 semantic passes each with one baseline discrepancy.
 
-The latest all-pass adversarial campaign on commit `ed36d06` ran the complete
-140-fixture dataset. Its compact per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-summary.json`](protection-adversarial-corpus-2026-09-02-summary.json);
+The latest all-pass adversarial campaign on commit `45b8ef5` ran the complete
+141-fixture dataset. Its compact per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-02-45b8ef5-summary.json`](protection-adversarial-corpus-2026-09-02-45b8ef5-summary.json);
 the raw report is retained as the `adversarial-benchmark` artifact from workflow
-run `33580813118` (SHA-256
-`f68084add3edde81d00640e0f7558c3ecc59d02a9b43b2e042b229c8fc41de52`). It
-recorded 4,192 completed tool runs, 3,360 unavailable-tool rows and 8 tool
-errors. Code virtualization applied to 137 samples, omitted 3, and reported
+run `33595083815` (SHA-256
+`659c24591a984820d702a9ca6ad538e7832f8732b7357ee244c4a177b93afd5f`). It
+recorded 4,222 completed tool runs, 3,384 unavailable-tool rows and 8 tool
+errors. Code virtualization applied to 138 samples, omitted 3, and reported
 zero transformation errors; unavailable tools and tool errors are not treated
 as passing evidence.
 
@@ -73,7 +73,7 @@ completed 280 analyses with zero errors or timeouts and records the
 produced the same artifact byte-for-byte
 (`SHA-256 dbd02def075cb3a53c4c6b6aa63c4a9d6d907c59c74adb30c44792116c8b5ab8`).
 
-The current report records 697 completed tool runs and 560 explicit unavailable-
+The latest report records 4,222 completed tool runs and 3,384 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
 [`docs/virtualization-coverage.json`](virtualization-coverage.json): 131 real
@@ -96,7 +96,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 140 compatible executable fixtures spanning
+current fixture inventory contains 141 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.
@@ -158,11 +158,11 @@ treated as passing evidence. The automated review is not human sign-off.
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 140-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 141-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
-The current one-seed adversarial run applied the pass to 137 of 140 fixtures and records
+The current one-seed adversarial run applied the pass to 138 of 141 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
