@@ -37,6 +37,20 @@ class _NonTerminalSyscallBinary:
     r2 = _Disassembler()
 
 
+class _PaddedTerminalSyscallBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
+            return {
+                "ops": [
+                    {"type": "syscall", "opcode": "syscall", "addr": 0x1000, "size": 2},
+                    {"type": "trap", "opcode": "int3", "addr": 0x1002, "size": 1},
+                ]
+            }
+
+    r2 = _Disassembler()
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
@@ -49,6 +63,14 @@ def test_non_terminal_syscall_is_classified_for_native_bridge() -> None:
     instruction = pass_instance._find_first_unvirtualizable_instruction(_NonTerminalSyscallBinary(), {"addr": 0x1000})
 
     expect(instruction is None)
+
+
+def test_terminal_syscall_with_disassembler_padding_is_preserved_as_region_exit() -> None:
+    pass_instance = CodeVirtualizationPass(config={})
+
+    expect(
+        pass_instance._find_first_unvirtualizable_instruction(_PaddedTerminalSyscallBinary(), {"addr": 0x1000}) is None
+    )
 
 
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:

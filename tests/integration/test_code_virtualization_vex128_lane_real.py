@@ -24,7 +24,7 @@ pytestmark = [
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_x86_64"
 _MINIMUM_VIRTUALIZED_FUNCTIONS = 2
-_EXPECTED_UNSUPPORTED_FUNCTIONS = 1
+_EXPECTED_UNSUPPORTED_FUNCTIONS = 0
 _EXPECTED_EXIT_CODE = 42
 
 

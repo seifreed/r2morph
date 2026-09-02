@@ -55,6 +55,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
 from r2morph.mutations.code_virtualization_region import (
+    _trim_trailing_padding,
     build_region_scheme,
     extract_region,
 )
@@ -638,7 +639,9 @@ class CodeVirtualizationPass(MutationPass):
             return None
         if not isinstance(disasm, dict):
             return None
-        instructions = [instruction for instruction in disasm.get("ops", []) if isinstance(instruction, dict)]
+        instructions = _trim_trailing_padding(
+            [instruction for instruction in disasm.get("ops", []) if isinstance(instruction, dict)]
+        )
         for index, instruction in enumerate(instructions):
             kind = instruction.get("type")
             if kind == "ret":
@@ -648,7 +651,7 @@ class CodeVirtualizationPass(MutationPass):
                 if next_instruction is None or next_instruction.get("type") == "ret":
                     continue
             if classification._classify(instruction, allow_computed_jump=self.virtualize_dispatch) is None:
-                return cast(dict[str, Any], instruction)
+                return instruction
         return None
 
     @staticmethod

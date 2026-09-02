@@ -49,6 +49,8 @@ _RAX_SLOT = GP_REGISTERS.index("rax")
 _RDX_SLOT = GP_REGISTERS.index("rdx")
 _CANONICAL_FLAGS_OFFSET = 0x80
 _STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
+_TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
+_TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 
 
 @dataclass
@@ -58,6 +60,22 @@ class _RegionBuild:
     exit_addrs: list[int]
     ret_addrs: set[int]
     body: list[dict[str, Any]]
+
+
+def _is_trailing_padding(instruction: dict[str, Any]) -> bool:
+    """Recognize disassembler padding that cannot be reached after a terminator."""
+    if instruction.get("type") in _TRAILING_PADDING_TYPES:
+        return True
+    mnemonic = str(instruction.get("opcode", "")).strip().lower().split(" ", 1)[0]
+    return mnemonic in _TRAILING_PADDING_MNEMONICS
+
+
+def _trim_trailing_padding(instructions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop only unreachable padding emitted after the last real instruction."""
+    end = len(instructions)
+    while end and _is_trailing_padding(instructions[end - 1]):
+        end -= 1
+    return instructions[:end]
 
 
 _STACK_ARGUMENT_START = 8
@@ -443,6 +461,7 @@ def _inject_junk_movs(
 
 
 def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
+    instructions = _trim_trailing_padding(instructions)
     if not instructions:
         return None
     ret_cleanup: dict[int, int] = {}
