@@ -41,8 +41,6 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i shift_left = _mm_set1_epi16(0x0011);
     __m128i shift_right = _mm_set1_epi16(0x0044);
     __m128i shift_arithmetic = _mm_set1_epi16(-16);
-    __m128i immediate_shift = _mm_set1_epi32(1);
-    __m128i expected_immediate_shift = _mm_set1_epi32(32);
     __m128i shift_count = _mm_cvtsi64_si128(1);
     __m128i legacy_maximum = _mm_setzero_si128();
     __asm__ volatile(
@@ -54,7 +52,6 @@ __attribute__((noinline)) static int packed_operations(void) {
         "psllw %[shift_count], %[shift_left]\n\t"
         "psrlw %[shift_count], %[shift_right]\n\t"
         "psraw %[shift_count], %[shift_arithmetic]\n\t"
-        "pslld $5, %[immediate_shift]\n\t"
         "vpmaxub %[right], %[right], %[maximum]\n\t"
         "mov %[seed], %%rax\n\t"
         "movb (%[byte_source]), %%al\n\t"
@@ -66,9 +63,7 @@ __attribute__((noinline)) static int packed_operations(void) {
         "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
-          [shift_arithmetic] "+x"(shift_arithmetic),
-          [immediate_shift] "+x"(immediate_shift),
-          [shuffled] "+x"(shuffled),
+          [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
         : [right] "x"(right),
           [shift_count] "x"(shift_count), [seed] "m"(seed),
@@ -83,7 +78,6 @@ __attribute__((noinline)) static int packed_operations(void) {
         && _mm_movemask_epi8(shift_left) == 0
         && _mm_movemask_epi8(shift_right) == 0
         && _mm_movemask_epi8(shift_arithmetic) == 0xffff
-        && _mm_movemask_epi8(_mm_cmpeq_epi32(immediate_shift, expected_immediate_shift)) == 0xffff
         && _mm_movemask_epi8(maximum) == 0xffff
         && _mm_movemask_epi8(shuffled) == 0
         && byte_after == 0x11223344556677a5ULL
@@ -94,8 +88,15 @@ __attribute__((noinline)) static int packed_operations(void) {
         : 1;
 }
 
+__attribute__((noinline)) static int packed_immediate_shift(void) {
+    __m128i immediate_shift = _mm_set1_epi32(1);
+    __m128i expected_immediate_shift = _mm_set1_epi32(32);
+    __asm__ volatile("pslld $5, %[immediate_shift]\n\t" : [immediate_shift] "+x"(immediate_shift));
+    return _mm_movemask_epi8(_mm_cmpeq_epi32(immediate_shift, expected_immediate_shift)) == 0xffff ? 0 : 1;
+}
+
 int main(void) {
-    return packed_operations();
+    return packed_operations() + packed_immediate_shift();
 }
 """,
     )
