@@ -1,12 +1,12 @@
 # Protection Maturity Report
 
-Commit: `45b8ef5`
+Commit: `ada9c84`
 Date: `2026-09-02`
 
 ## Current verification status
 
 The supported Python environment passed the required static and security gates
-locally on commit `45b8ef5`. GitHub Actions run `33595002506` completed
+locally on commit `ada9c84`. GitHub Actions run `33597737656` completed
 successfully with all jobs for that commit, including the Linux x86-64 suite and
 cross-platform matrix. The dword sign-extension memory regression and the
 legacy packed-word comparison regression passed in the Linux integration job.
@@ -44,21 +44,21 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `45b8ef5` ran all 141 fixtures with all six
+The latest per-pass differential campaign on commit `ada9c84` ran all 141 fixtures with all six
 passes. Its machine-readable summary is in
-[`docs/protection-maturity-by-pass-2026-09-02-45b8ef5.json`](protection-maturity-by-pass-2026-09-02-45b8ef5.json)
+[`docs/protection-maturity-by-pass-2026-09-02-ada9c84.json`](protection-maturity-by-pass-2026-09-02-ada9c84.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33595083628` (SHA-256
-`fd6b5a67fb7d096d053d942c4dc27a1ec20ef726534c1a862da53c0b5a71af68`). Code virtualization recorded 137
+artifact from workflow run `33597773792` (SHA-256
+`fce2f2b862a4b06b734bd941e3106e1761dae90294b531c64fd7acb39ac5ad89`). Code virtualization recorded 137
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 140 semantic passes each with one baseline discrepancy.
 
-The latest all-pass adversarial campaign on commit `45b8ef5` ran the complete
+The latest all-pass adversarial campaign on commit `ada9c84` ran the complete
 141-fixture dataset. Its compact per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-45b8ef5-summary.json`](protection-adversarial-corpus-2026-09-02-45b8ef5-summary.json);
+[`docs/protection-adversarial-corpus-2026-09-02-ada9c84-summary.json`](protection-adversarial-corpus-2026-09-02-ada9c84-summary.json);
 the raw report is retained as the `adversarial-benchmark` artifact from workflow
-run `33595083815` (SHA-256
-`659c24591a984820d702a9ca6ad538e7832f8732b7357ee244c4a177b93afd5f`). It
+run `33597773481` (SHA-256
+`b87e03b2ba5b55a6428fd58619670c36fa905c2ea295f68f85e3dd878f14616e`). It
 recorded 4,222 completed tool runs, 3,384 unavailable-tool rows and 8 tool
 errors. Code virtualization applied to 138 samples, omitted 3, and reported
 zero transformation errors; unavailable tools and tool errors are not treated
@@ -66,7 +66,7 @@ as passing evidence.
 
 The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
 campaign ran Ghidra headless over all 141 original/protected pairs from
-`45b8ef5`. It completed 282 analyses with zero errors or timeouts and records
+`45b8ef5`; it has not yet been rerun for `ada9c84`. It completed 282 analyses with zero errors or timeouts and records
 the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
