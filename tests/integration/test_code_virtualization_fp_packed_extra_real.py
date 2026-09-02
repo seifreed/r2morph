@@ -45,12 +45,12 @@ __attribute__((noinline)) static int packed_operations(void) {
         "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
         "mov %[seed], %%rax\n\t"
         "movb (%[byte_source]), %%al\n\t"
+        "movb %%al, (%[byte_destination])\n\t"
         "mov %%rax, %[byte_after]\n\t"
         "mov %[seed], %%rax\n\t"
         "movw (%[word_source]), %%ax\n\t"
-        "mov %%rax, %[word_after]\n\t"
-        "movb %%al, (%[byte_destination])\n\t"
         "movw %%ax, (%[word_destination])\n\t"
+        "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
         : [right] "x"(right), [vex_right] "x"(vex_right), [seed] "m"(seed),
