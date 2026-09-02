@@ -286,8 +286,8 @@ class FPHandlerRouterMixin:
                 key, self.context.key, self.context.field_perm, self.context.has_ymm
             )
         elif key.startswith("fpmovvex_"):
-            handler = (
+            move_handler = (
                 _fp_vex_lane_extract_handler_asm if key.startswith("fpmovvex_extract") else _fp_vex_move_handler_asm
             )
-            body = handler(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+            body = move_handler(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         return body

@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_layout import pair_offsets
-from r2morph.mutations.code_virtualization_region_fp_handlers import (
-    _XMM_SAVE_OFFSET,
-    _YMM_UPPER_SAVE_OFFSET,
-)
+from r2morph.mutations.code_virtualization_region_handlers import _XMM_SAVE_OFFSET
 
 _LANE_WIDTH_BYTES = 16
+_YMM_UPPER_SAVE_OFFSET = 0x300
 
 
 def _fp_vex_lane_extract_handler_asm(
