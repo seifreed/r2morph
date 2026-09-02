@@ -107,7 +107,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _parse_indexed_operand,
     _parse_riprel_operand,
 )
-from r2morph.mutations.code_virtualization_region_push import _decode_push_memory
+from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
 
 _DIRECT_REGISTER_CALL_PART_COUNT = 2
 _MAX_RET_CLEANUP = 0xFFFF
@@ -310,7 +310,9 @@ def _classify_stack(kind: str, text: str, address: int, size: int, allow_compute
     if kind in ("push", "upush", "rpush"):
         return _first_item((lambda: _decode_push_memory(text, address, size), lambda: _decode_push(text)))
     if kind in ("pop", "rpop"):
-        return _first_item((lambda: _decode_leave(text), lambda: _decode_pop(text)))
+        return _first_item(
+            (lambda: _decode_pop_memory(text, address, size), lambda: _decode_leave(text), lambda: _decode_pop(text))
+        )
     return None
 
 

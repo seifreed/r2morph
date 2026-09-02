@@ -102,7 +102,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vstoreidx_handler_asm,
     _vstorerip_handler_asm,
 )
-from r2morph.mutations.code_virtualization_region_push import _push_memory_handler_asm
+from r2morph.mutations.code_virtualization_region_push import _pop_memory_handler_asm, _push_memory_handler_asm
 
 _VRET_CLEANUP_INDEX = 2
 
@@ -145,7 +145,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             self._atomic_memory,
             self._memory_immediate,
             self._div_memory,
-            self._push_memory,
+            self._stack_memory,
             self._memory,
             self._fp_immediate,
             self._fp_vex,
@@ -480,10 +480,18 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
 
-    def _push_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
-        if not key.startswith(("pushmem_", "pushmemrip_", "pushmemidx_", "pushmemidxnb_")):
+    def _stack_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if key.startswith(("pushmem_", "pushmemrip_", "pushmemidx_", "pushmemidxnb_")):
+            return _push_memory_handler_asm(
+                key,
+                (self.context.key, self.context.key_dword),
+                self.context.field_perm,
+                variants[4],
+                self.context.rsp_off,
+            )
+        if not key.startswith(("popmem_", "popmemrip_", "popmemidx_", "popmemidxnb_")):
             return None
-        return _push_memory_handler_asm(
+        return _pop_memory_handler_asm(
             key,
             (self.context.key, self.context.key_dword),
             self.context.field_perm,

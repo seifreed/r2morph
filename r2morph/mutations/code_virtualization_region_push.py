@@ -1,4 +1,4 @@
-"""Memory-backed push decoding and emission for region virtualization."""
+"""Memory-backed stack decoding and emission for region virtualization."""
 
 from __future__ import annotations
 
@@ -50,6 +50,14 @@ def _decode_push_memory(text: str, insn_addr: int = 0, insn_size: int = 0) -> tu
     return result
 
 
+def _decode_pop_memory(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[object, ...] | None:
+    """Decode 64-bit ``pop [memory]`` forms into a region item."""
+    decoded = _decode_push_memory(text.replace("pop", "push", 1), insn_addr, insn_size)
+    if decoded is None:
+        return None
+    return ("pop" + str(decoded[0])[4:], *decoded[1:])
+
+
 def _push_memory_handler_asm(
     handler_key: str,
     keys: tuple[str, str],
@@ -76,6 +84,37 @@ def _push_memory_handler_asm(
         "  sub r9, 8\n"
         f"  mov qword ptr [rsp+{rsp_off}], r9\n"
         "  mov qword ptr [r9], rax\n"
+        f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+    )
+    return body
+
+
+def _pop_memory_handler_asm(
+    handler_key: str,
+    keys: tuple[str, str],
+    field_perm: int,
+    addr_variant: int,
+    rsp_off: int,
+) -> str:
+    """Read a qword from the relocated program stack and store it in memory."""
+    key, key_dword = keys
+    kind, width_text = handler_key.rsplit("_", 1)
+    if int(width_text) != _QWORD_WIDTH_BITS:
+        raise ValueError(f"unsupported pop memory width: {width_text}")
+    if kind == "popmemrip":
+        body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
+    elif kind == "popmemidxnb":
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind == "popmemidx":
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    body += (
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n"
+        "  mov rax, qword ptr [r9]\n"
+        "  add r9, 8\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [r10], rax\n"
         f"  add rsi, {advance}\n  jmp vm_dispatch\n"
     )
     return body
