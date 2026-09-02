@@ -762,6 +762,7 @@ def test_call_virtualization_preserves_sysv_varargs_state(tmp_path: Path) -> Non
         binary.close()
 
     expect(stats["functions_virtualized"] >= 1)
+    expect(stats["unsupported_functions_total"] == 0, f"stats={stats}")
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_VARARGS)
 
 

@@ -279,6 +279,7 @@ _IDENTITY_KEYS = {
     "frestore",
     "vzeroupper",
     "vzeroall",
+    "rdtsc",
     "nop",
     "enter_inner",
     "inner_exit",

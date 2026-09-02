@@ -375,6 +375,8 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     text = insn.get("opcode", "")
     if kind == "syscall":
         return ["syscall"]
+    if text.strip().lower() == "rdtsc":
+        return ["rdtsc"]
     if text.strip().lower() == "vzeroupper":
         return ["vzeroupper"]
     if text.strip().lower() == "vzeroall":

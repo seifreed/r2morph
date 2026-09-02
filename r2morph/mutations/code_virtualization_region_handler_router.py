@@ -18,6 +18,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _ijmpmemnb_handler_asm,
     _jcc_handler_asm,
     _movx_reg_handler_asm,
+    _rdtsc_handler_asm,
     _setcc_handler_asm,
     _syscall_handler_asm,
     _vcall_handler_asm,
@@ -299,6 +300,8 @@ class HandlerBodyRouter:
             body = _vcall_handler_asm(self.context.retarget_target, self.context.rsp_off)
         elif key == "syscall":
             body = _syscall_handler_asm(self.context.slot)
+        elif key == "rdtsc":
+            body = _rdtsc_handler_asm(self.context.slot)
         return body
 
     def _branches(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:

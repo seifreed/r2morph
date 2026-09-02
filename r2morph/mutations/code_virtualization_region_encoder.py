@@ -798,6 +798,7 @@ class RegionEncoder:
             "frestore",
             "vzeroupper",
             "vzeroall",
+            "rdtsc",
         ):
             self._opcode(item)
         else:

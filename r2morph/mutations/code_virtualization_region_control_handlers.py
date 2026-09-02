@@ -359,6 +359,16 @@ def _syscall_handler_asm(slot: tuple[int, ...]) -> str:
     )
 
 
+def _rdtsc_handler_asm(slot: tuple[int, ...]) -> str:
+    """Execute ``rdtsc`` and preserve its EDX:EAX result in the VM frame."""
+    return (
+        "  rdtsc\n"
+        f"  mov qword ptr [rsp+{slot[GP_REGISTERS.index('rax')] * 8}], rax\n"
+        f"  mov qword ptr [rsp+{slot[GP_REGISTERS.index('rdx')] * 8}], rdx\n"
+        "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _ijmp_handler_asm(index: int, key: str) -> str:
     """Register-indirect jump (``jmp reg``): re-enter the VM at the virtualized copy
     of the computed target. The target is the program value of a GP register (read
