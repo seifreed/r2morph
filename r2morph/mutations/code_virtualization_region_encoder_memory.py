@@ -10,6 +10,24 @@ RegionItem = tuple[Any, ...]
 class RegionEncoderMemoryMixin:
     """Emit memory-shaped region items using the encoder's shared primitives."""
 
+    def _emit_push_memory(self: Any, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "pushmem":
+            _, base, disp, _width = item
+            self._gp_mem(item, 0, base, disp)
+        elif kind == "pushmemrip":
+            _, target, _width = item
+            self._gp_rip(item, 0, target)
+        elif kind == "pushmemidx":
+            _, base, index, shift, disp, _width = item
+            self._gp_idx(item, (0, base, index, shift, disp))
+        elif kind == "pushmemidxnb":
+            _, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
+        else:
+            return False
+        return True
+
     def _emit_gp_memory(self: Any, item: RegionItem) -> bool:
         kind = item[0]
         if kind in ("load", "store"):

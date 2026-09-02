@@ -1,0 +1,81 @@
+"""Memory-backed push decoding and emission for region virtualization."""
+
+from __future__ import annotations
+
+from r2morph.mutations.code_virtualization_region_decoders import _INSTRUCTION_PART_COUNT, _parse_mem_operand
+from r2morph.mutations.code_virtualization_region_memory_decoders import (
+    _explicit_memory_width,
+    _parse_indexed_operand,
+    _parse_riprel_operand,
+)
+from r2morph.mutations.code_virtualization_region_memory_handlers import (
+    _indexed_address_asm,
+    _indexed_address_nobase_asm,
+    _mem_address_asm,
+)
+
+_QWORD_WIDTH_BITS = 64
+
+
+def _push_memory_width(operand: str) -> int:
+    width = _explicit_memory_width(operand)
+    return _QWORD_WIDTH_BITS if width is None else width
+
+
+def _decode_push_memory(text: str, insn_addr: int = 0, insn_size: int = 0) -> tuple[object, ...] | None:
+    """Decode 64-bit ``push [memory]`` forms into a region item."""
+    parts = text.split(None, 1)
+    result: tuple[object, ...] | None = None
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == "push":
+        operand = parts[1].strip().lower()
+        if _push_memory_width(operand) == _QWORD_WIDTH_BITS:
+            direct = _parse_mem_operand(operand)
+            if direct is not None:
+                base, displacement, width = direct
+                if width in (None, _QWORD_WIDTH_BITS):
+                    result = ("pushmem", base, displacement, _QWORD_WIDTH_BITS)
+            if result is None:
+                rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
+                if rip_relative is not None and rip_relative[1] in (None, _QWORD_WIDTH_BITS):
+                    result = ("pushmemrip", rip_relative[0], _QWORD_WIDTH_BITS)
+            if result is None:
+                indexed = _parse_indexed_operand(operand, base_optional=True)
+                if indexed is not None:
+                    base, index, shift, displacement = indexed
+                    result = (
+                        ("pushmemidxnb", index, shift, displacement, _QWORD_WIDTH_BITS)
+                        if base < 0
+                        else ("pushmemidx", base, index, shift, displacement, _QWORD_WIDTH_BITS)
+                    )
+    return result
+
+
+def _push_memory_handler_asm(
+    handler_key: str,
+    keys: tuple[str, str],
+    field_perm: int,
+    addr_variant: int,
+    rsp_off: int,
+) -> str:
+    """Load a qword from memory and push it onto the relocated program stack."""
+    key, key_dword = keys
+    kind, width_text = handler_key.rsplit("_", 1)
+    if int(width_text) != _QWORD_WIDTH_BITS:
+        raise ValueError(f"unsupported push memory width: {width_text}")
+    if kind == "pushmemrip":
+        body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
+    elif kind == "pushmemidxnb":
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind == "pushmemidx":
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    body += (
+        "  mov rax, qword ptr [r10]\n"
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n"
+        "  sub r9, 8\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [r9], rax\n"
+        f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+    )
+    return body

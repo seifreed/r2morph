@@ -21,8 +21,8 @@ from r2morph.mutations.code_virtualization_layout import (
     shift_permuted_fields,
     triple_permuted_fields,
 )
-from r2morph.mutations.code_virtualization_region_models import RegionScheme, _required_key
 from r2morph.mutations.code_virtualization_region_encoder_memory import RegionEncoderMemoryMixin
+from r2morph.mutations.code_virtualization_region_models import RegionScheme, _required_key
 
 RegionItem = tuple[Any, ...]
 
@@ -55,6 +55,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_fp_scalar,
             self._emit_fp_memory,
             self._emit_memory_immediate,
+            self._emit_push_memory,
             self._emit_gp_memory,
             self._emit_bt_memory,
             self._emit_div_memory,

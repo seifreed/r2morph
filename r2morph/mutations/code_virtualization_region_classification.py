@@ -107,6 +107,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _parse_indexed_operand,
     _parse_riprel_operand,
 )
+from r2morph.mutations.code_virtualization_region_push import _decode_push_memory
 
 _DIRECT_REGISTER_CALL_PART_COUNT = 2
 _MAX_RET_CLEANUP = 0xFFFF
@@ -300,14 +301,14 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
     return classifier() if classifier is not None else None
 
 
-def _classify_stack(kind: str, text: str, allow_computed_jump: bool) -> list[Any] | None:
+def _classify_stack(kind: str, text: str, address: int, size: int, allow_computed_jump: bool) -> list[Any] | None:
     mnemonic = text.partition(" ")[0].lower()
     if allow_computed_jump and mnemonic in ("pushfq", "pushfd", "pushf"):
         return ["fsave"]
     if allow_computed_jump and mnemonic in ("popfq", "popfd", "popf"):
         return ["frestore"]
     if kind in ("push", "upush", "rpush"):
-        return _first_item((lambda: _decode_push(text),))
+        return _first_item((lambda: _decode_push_memory(text, address, size), lambda: _decode_push(text)))
     if kind in ("pop", "rpop"):
         return _first_item((lambda: _decode_leave(text), lambda: _decode_pop(text)))
     return None
@@ -412,7 +413,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     elif result is None:
         result = _classify_simple(kind, text, address, size)
     if result is None:
-        result = _classify_stack(kind, text, allow_computed_jump)
+        result = _classify_stack(kind, text, address, size, allow_computed_jump)
     if result is None and kind in ("call", "rcall", "ircall", "ucall"):
         result = _classify_call(kind, text, insn)
     if result is None:

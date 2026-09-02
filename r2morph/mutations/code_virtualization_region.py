@@ -72,6 +72,7 @@ _DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
     "divmem": (2, 3, 4),
     "notmem": (1, 2, 3),
     "storei": (2, 3, 4),
+    "pushmem": (1, 2, 3),
     "movx": (5, 6, 2),
     "xchgmem": (2, 3, 4),
     "cmpxchgmem": (2, 3, 4),
@@ -215,7 +216,7 @@ def _stack_transition(
     item: list[Any], depth: int, snapshot: tuple[int, int] | None
 ) -> tuple[int, tuple[int, int] | None] | None:
     kind = item[0]
-    if kind in ("push", "pushi"):
+    if kind in ("push", "pushi", "pushmem", "pushmemrip", "pushmemidx", "pushmemidxnb"):
         out_depth = depth + 8
     elif kind == "pop":
         out_depth = depth - 8
