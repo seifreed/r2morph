@@ -1,11 +1,10 @@
 """
-The dispatch-region extraction contract: opt-in virtualization of a computed jump.
+The dispatch-region extraction contract for a computed jump.
 
 ``extract_region(..., allow_computed_jump=True)`` lowers a register-indirect jump to
 an ``ijmp`` item and builds a target map (native address -> item index) so the ijmp
-handler can re-enter the VM at the virtualized target. The contract is opt-in: with
-the default flag a computed jump is unsupported and the region is rejected, exactly
-as before, and an ordinary region carries an empty target map.
+handler can re-enter the VM at the virtualized target. Callers can reject computed
+jumps explicitly, and an ordinary region carries an empty target map.
 
 These drive the pure extraction function with hand-built instruction dicts - no r2,
 no mocks.

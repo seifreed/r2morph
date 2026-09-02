@@ -3,16 +3,16 @@ Literal recursion: virtualizing a real interpreter's own dispatch loop.
 
 ``fixtures/dataset/elf_vm_interp_reg_x86_64`` is a generic bytecode interpreter whose
 dispatch is the classic two-instruction register-indirect form (load the handler
-address from the table, jump through the register). The opt-in dispatch-region
-contract lowers that computed goto to an ``ijmp`` and builds a target map so the
-interpreter's own dispatch re-enters the VM at the virtualized copy of each handler
-- literal recursion of the interpreter.
+address from the table, jump through the register). The dispatch-region contract
+lowers that computed goto to an ``ijmp`` and builds a target map so the interpreter's
+own dispatch re-enters the VM at the virtualized copy of each handler - literal
+recursion of the interpreter.
 
-These drive the real pass on a real binary: with ``virtualize_dispatch`` enabled the
-whole function extracts into an ``ijmp`` region and the mutated binary - now running
-a virtualized copy of its own fetch/decode/dispatch cycle - still emulates to the
-interpreter's original exit code. With the flag off (the default) the dispatch
-function is left untouched.
+These drive the real pass on a real binary: the normal path infers the dispatch
+capability, extracts the whole function into an ``ijmp`` region, and the mutated
+binary - now running a virtualized copy of its own fetch/decode/dispatch cycle -
+still emulates to the interpreter's original exit code. An explicit false override
+leaves the dispatch function untouched.
 """
 
 from __future__ import annotations
@@ -52,11 +52,13 @@ def _dispatch_region(binary: Binary) -> Region | None:
     return extract_region(ops, randomness.Random(1), allow_computed_jump=True)
 
 
-def _run_pass(dest: Path, *, virtualize_dispatch: bool) -> dict[str, object]:
+def _run_pass(dest: Path, *, virtualize_dispatch: bool | None = None) -> dict[str, object]:
     binary = Binary(str(dest), writable=True)
     binary.open()
     try:
-        config = {"probability": 1.0, "seed": 20260802, "virtualize_dispatch": virtualize_dispatch}
+        config: dict[str, object] = {"probability": 1.0, "seed": 20260802}
+        if virtualize_dispatch is not None:
+            config["virtualize_dispatch"] = virtualize_dispatch
         stats = CodeVirtualizationPass(config=config).apply(binary)
         binary.save()
         return stats
@@ -111,4 +113,14 @@ def test_dispatch_function_left_untouched_without_opt_in(tmp_path: Path) -> None
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=False)
     expect(stats["functions_virtualized"] == 0)
+    expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_dispatch_function_is_inferred_without_override(tmp_path: Path) -> None:
+    """The normal single-binary path infers and virtualizes computed dispatch."""
+    mutated = tmp_path / "automatic"
+    shutil.copy(FIXTURE, mutated)
+    stats = _run_pass(mutated)
+
+    expect(stats["functions_virtualized"] >= 1)
     expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)

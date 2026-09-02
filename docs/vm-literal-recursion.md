@@ -224,11 +224,10 @@ opcode misdecoded and the first computed jump landed in junk. Emitting the map
 before the table fixed it. (The value chain — rip-relative table-base `lea`, shift,
 add, indexed load — was correct all along, confirmed by isolated round trips.)
 
-The dispatch path is wired into `CodeVirtualizationPass` behind an opt-in
-`virtualize_dispatch` config flag (default off): a dispatch-shaped function the
-reducible path rejects is gathered linearly and virtualized through the contract.
-With the flag off the pass never touches computed jumps, so the shipping behaviour
-and its suite are unchanged.
+The dispatch path is wired into `CodeVirtualizationPass` as the inferred default:
+a dispatch-shaped function the reducible path rejects is gathered linearly and
+virtualized through the contract. An explicit `virtualize_dispatch: false` override
+keeps computed jumps native for debugging and regression reproduction.
 
 - **(b) Flag-transfer items.** A native `pushfq`/`popfq` bracketing the dispatch lowers
   to `fsave`/`frestore` items that save and restore the virtual RFLAGS through the

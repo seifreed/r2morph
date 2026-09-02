@@ -14,9 +14,9 @@ The fixture is load-bearing: the accumulator only stays 45 if the preserved
 condition survives the bracket, so a broken save/restore changes the exit code.
 
 These drive the real pass on a real binary - no r2 stubs, no mocks. With
-``virtualize_dispatch`` enabled the function extracts into an ijmp region carrying
-fsave/frestore items and the mutated binary still emulates to 45; with the flag off
-(the default) the dispatch function is left untouched.
+the inferred dispatch capability extracts the function into an ijmp region carrying
+fsave/frestore items and the mutated binary still emulates to 45; an explicit false
+override leaves the dispatch function untouched.
 """
 
 from __future__ import annotations
@@ -34,11 +34,13 @@ FIXTURE = vm_real._DATASET / "elf_vm_interp_stack_x86_64"
 _EXPECTED_EXIT_CODE = 45
 
 
-def _run_pass(dest: Path, *, virtualize_dispatch: bool) -> dict[str, object]:
+def _run_pass(dest: Path, *, virtualize_dispatch: bool | None = None) -> dict[str, object]:
     binary = Binary(str(dest), writable=True)
     binary.open()
     try:
-        config = {"probability": 1.0, "seed": 20260802, "virtualize_dispatch": virtualize_dispatch}
+        config: dict[str, object] = {"probability": 1.0, "seed": 20260802}
+        if virtualize_dispatch is not None:
+            config["virtualize_dispatch"] = virtualize_dispatch
         stats = CodeVirtualizationPass(config=config).apply(binary)
         binary.save()
         return stats

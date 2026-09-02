@@ -441,10 +441,9 @@ class CodeVirtualizationPass(MutationPass):
         self.max_functions = self.config.get("max_functions", 5)
         self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
         self.reject_partial_virtualization = self.config.get("reject_partial_virtualization", False)
-        # Opt-in: also virtualize dispatch-shaped functions (a computed-goto loop
-        # whose register-indirect jump becomes an ijmp re-entering the VM). Off by
-        # default - the ordinary path never touches computed jumps.
-        self.virtualize_dispatch = self.config.get("virtualize_dispatch", False)
+        # Dispatch-shaped functions are inferred automatically; an explicit False
+        # remains available for debugging and regression reproduction.
+        self.virtualize_dispatch = self.config.get("virtualize_dispatch", True)
         self.set_support(
             formats=("ELF",),
             architectures=("x86_64",),
