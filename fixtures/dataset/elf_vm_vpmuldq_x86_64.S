@@ -9,7 +9,11 @@ _start:
     vpmuldq xmm2, xmm0, xmm1
     movdqu xmmword ptr [rsp - 16], xmm2
     mov rax, qword ptr [rsp - 16]
-    mov rdx, 0x0000001500000005
+    mov rdx, 5
+    cmp rax, rdx
+    jne failure
+    mov rax, qword ptr [rsp - 8]
+    mov rdx, 21
     cmp rax, rdx
     jne failure
     mov eax, 60
