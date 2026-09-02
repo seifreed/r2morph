@@ -52,6 +52,15 @@ def test_packed_handler_selector_emits_register_shift_family() -> None:
     expect("cmp ecx" in body and "psllw xmm0, xmm1" in body and "pmaxub xmm0, xmm1" in body)
 
 
+def test_packed_handler_selector_emits_word_compare_family() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    body = generator.handler_body("fppacked", False, 128, 0)
+
+    expect("pcmpeqw xmm0, xmm1" in body and "pcmpgtw xmm0, xmm1" in body)
+
+
 def test_packed_immediate_handler_emits_shift_family() -> None:
     scheme = build_vm_scheme(randomness.Random(20260820))
     generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())

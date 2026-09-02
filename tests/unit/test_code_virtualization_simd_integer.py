@@ -72,6 +72,14 @@ def test_decode_packed_integer_compare_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pcmpeqd xmm0, xmm1") == ("fppacked", "pcmpeqd", 0, 1))
 
 
+def test_decode_packed_integer_word_equal_compare_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith("pcmpeqw xmm0, xmm1") == ("fppacked", "pcmpeqw", 0, 1))
+
+
+def test_decode_packed_integer_word_greater_compare_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith("pcmpgtw xmm0, xmm1") == ("fppacked", "pcmpgtw", 0, 1))
+
+
 def test_decode_legacy_byte_shuffle_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith_extra("pshufb xmm2, xmm3") == ("fppacked", "pshufb", 2, 3))
 

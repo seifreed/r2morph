@@ -34,6 +34,8 @@ __attribute__((noinline)) static int packed_operations(void) {
     unsigned long long seed = 0x1122334455667788ULL;
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
+    __m128i word_equal = _mm_set1_epi16(7);
+    __m128i word_greater = _mm_set1_epi16(8);
     __m128i minimum = _mm_set1_epi8(-1);
     __m128i maximum = _mm_set1_epi8(0);
     __m128i shuffled = _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
@@ -48,6 +50,8 @@ __attribute__((noinline)) static int packed_operations(void) {
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
+        "pcmpeqw %[right_word], %[word_equal]\n\t"
+        "pcmpgtw %[right_word], %[word_greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
         "pmaxub %[right], %[legacy_maximum]\n\t"
         "psllw %[shift_count], %[shift_left]\n\t"
@@ -63,11 +67,13 @@ __attribute__((noinline)) static int packed_operations(void) {
         "movw (%[word_source]), %%ax\n\t"
         "movw %%ax, (%[word_destination])\n\t"
         "mov %%rax, %[word_after]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
+        : [equal] "+x"(equal), [greater] "+x"(greater), [word_equal] "+x"(word_equal),
+          [word_greater] "+x"(word_greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
           [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
+        : [right] "x"(right), [right_word] "x"(_mm_set1_epi16(7)), [vex_right] "x"(vex_right),
+          [shuffle_mask] "x"(shuffle_mask),
           [shift_count] "x"(shift_count), [seed] "m"(seed),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
@@ -75,6 +81,8 @@ __attribute__((noinline)) static int packed_operations(void) {
     );
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
+        && _mm_movemask_epi8(word_equal) == 0xffff
+        && _mm_movemask_epi8(word_greater) == 0xffff
         && _mm_movemask_epi8(minimum) == 0
         && _mm_movemask_epi8(legacy_maximum) == 0
         && _mm_movemask_epi8(shift_left) == 0
