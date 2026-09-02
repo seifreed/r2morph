@@ -51,7 +51,7 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
             for function in binary.get_functions()
             if "protected_function" in function.get("name", "")
         )
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
 
     runtime_result = run_command([executable], timeout=30)
     unsupported_addresses = {record["function_address"] for record in stats["unsupported_functions"]}
