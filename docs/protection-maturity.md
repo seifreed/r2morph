@@ -1,27 +1,27 @@
 # Protection Maturity Report
 
-Commit: `5163913`
+Commit: `442907c`
 Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `5163913` and covered 145
+The latest full local-fixture campaign ran against `442907c` and covered 145
 fixtures with all six selected passes. The differential report completed in
-workflow `33691655271` (artifact SHA-256
-`2fba000fe986ad6eb51cec3e6f830e196c3cdb438e54cdc5fe9ec8d5dc9b470a`). Its
+workflow `33693228805` (artifact SHA-256
+`b54b8cd73e939c5563dd4a6d01ab589324282fc800c9b3ca3aa07fd9dbb04f42`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-5163913.json`](protection-maturity-by-pass-2026-09-03-5163913.json):
+[`docs/protection-maturity-by-pass-2026-09-03-442907c.json`](protection-maturity-by-pass-2026-09-03-442907c.json):
 CodeVirtualization recorded 141 semantic passes and four known failures; the
 other five passes recorded 144 semantic passes and one known failure each.
 The four CodeVirtualization failures are `elf_vm_fppackedidxnb_x86_64` and the
 three `vex128` fixtures. The matching adversarial campaign completed in
-workflow `33691655035` and covered 145 samples, 4,342 completed tool runs,
+workflow `33693228648` and covered 145 samples, 4,342 completed tool runs,
 3,480 unavailable-tool rows, and 8 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-03-5163913-summary.json`](protection-adversarial-corpus-2026-09-03-5163913-summary.json):
+[`docs/protection-adversarial-corpus-2026-09-03-442907c-summary.json`](protection-adversarial-corpus-2026-09-03-442907c-summary.json):
 CodeVirtualization applied to all 145 samples and virtualized 156 functions,
 with no unsupported functions or transformation errors.
 
-CI run `33691648004` for `5163913` was in progress when this report was generated.
+CI run `33693223075` for `442907c` was in progress when this report was generated.
 The local full command produced 5,337 passed, 15 failed, and 108 skipped tests;
 the focused 16-bit memory-stack regression passed, while the full suite remains
 blocked by existing environment/dependency and execution-contract failures.
