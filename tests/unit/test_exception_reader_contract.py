@@ -78,6 +78,14 @@ class _InMemoryElfExceptionBinary:
         return cie + cls._entry64(fde_body) + b"\x00\x00\x00\x00"
 
 
+class _InMemoryR2VaddrElfExceptionBinary(_InMemoryElfExceptionBinary):
+    def get_sections(self) -> list[dict[str, int | str]]:
+        return [
+            {"name": ".eh_frame", "vaddr": _EH_FRAME_ADDRESS, "size": len(self._eh_frame)},
+            {"name": ".gcc_except_table", "vaddr": _LSDA_ADDRESS, "size": len(self._lsda)},
+        ]
+
+
 class _InMemoryDwarf64ExceptionBinary(_InMemoryElfExceptionBinary):
     def __init__(self) -> None:
         super().__init__()
@@ -112,6 +120,12 @@ def test_exception_reader_decodes_elf_fde_lsda_and_landing_pad() -> None:
     expect(frame.function_end == _FUNCTION_ADDRESS + 0x40)
     expect(frame.lsda_address == _LSDA_ADDRESS)
     expect(len(frame.landing_pads) == 1)
+
+
+def test_exception_reader_accepts_radare2_vaddr_sections() -> None:
+    frames = ExceptionInfoReader(_InMemoryR2VaddrElfExceptionBinary()).read_exception_frames()
+
+    expect(frames[_FUNCTION_ADDRESS].lsda_address == _LSDA_ADDRESS)
 
 
 def test_exception_reader_classifies_elf_landing_pad_action_as_catch() -> None:

@@ -72,7 +72,7 @@ class _LsdaContext:
 
 
 def _section_int(section: dict[str, Any], primary: str, fallback: str) -> int:
-    value = section.get(primary, section.get(fallback, 0))
+    value = section.get(primary, section.get(fallback, section.get("vaddr", 0)))
     return value if isinstance(value, int) else 0
 
 
