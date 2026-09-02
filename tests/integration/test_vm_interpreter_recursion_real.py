@@ -127,10 +127,19 @@ def test_dispatch_function_is_inferred_without_override(tmp_path: Path) -> None:
     expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 
-def test_unproven_dispatch_shape_preserves_runtime_behavior(tmp_path: Path) -> None:
-    """A dispatch shape that cannot be proven remains semantically unchanged."""
+def test_memory_dispatch_shape_with_complete_table_virtualizes(tmp_path: Path) -> None:
+    """A complete absolute table permits generic memory-dispatch virtualization."""
     mutated = tmp_path / "complex_dispatch"
     shutil.copy(COMPLEX_FIXTURE, mutated)
-    _run_pass(mutated)
+    stats = _run_pass(mutated, virtualize_dispatch=True)
+
+    expect(stats["functions_virtualized"] >= 1)
+
+
+def test_memory_dispatch_shape_with_complete_table_preserves_exit_code(tmp_path: Path) -> None:
+    """The newly virtualized memory-dispatch interpreter preserves its result."""
+    mutated = tmp_path / "complex_dispatch_runtime"
+    shutil.copy(COMPLEX_FIXTURE, mutated)
+    _run_pass(mutated, virtualize_dispatch=True)
 
     expect(vm_real._emulate_exit_code(mutated) == vm_real._emulate_exit_code(COMPLEX_FIXTURE))

@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.switch_table import SwitchTableAnalyzer
 from r2morph.mutations.code_virtualization_region import extract_region
 
 _MAX_DISPATCH_INSNS = 256
+_MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
 
 
 def gather_dispatch_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
@@ -86,6 +88,32 @@ def gather_cfg_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | 
     return ops or None
 
 
+def _dispatch_table_address(item: tuple[Any, ...]) -> int | None:
+    if item[0] == "ijmpmem":
+        return int(item[4])
+    if item[0] == "ijmpmemnb":
+        return int(item[3])
+    return None
+
+
+def _memory_dispatch_targets(binary: Any, function_address: int, region: Any) -> bool:
+    """Prove every resolved memory-dispatch target is inside the VM region."""
+    tables, _other_jumps = SwitchTableAnalyzer(binary).detect_switch_pattern(function_address)
+    targets_by_table = {
+        table.table_address: {entry.target_address for entry in table.entries}
+        for table in tables
+        if table.table_address is not None
+    }
+    for item in region.instructions:
+        if item[0] not in _MEMORY_DISPATCH_KINDS:
+            continue
+        table_address = _dispatch_table_address(item)
+        targets = targets_by_table.get(table_address)
+        if not targets or not targets.issubset(region.target_map):
+            return False
+    return True
+
+
 def virtualize_dispatch_function(owner: Any, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
     """Virtualize a dispatch-shaped function through the region VM."""
     cfg_ops = gather_cfg_ops(binary, func)
@@ -99,7 +127,12 @@ def virtualize_dispatch_function(owner: Any, binary: Any, func: dict[str, Any]) 
     computed = {item[0] for item in region.instructions} & {"ijmp", "ijmpmem", "ijmpmemnb"}
     if not computed:
         return None
-    # A memory-indirect switch needs CFG closure so every case target is in the VM map.
-    if cfg_ops is None and (computed & {"ijmpmem", "ijmpmemnb"}):
+    # A memory-indirect switch needs every resolved case target in the VM map. r2 may
+    # stop CFG analysis at a computed jump, so a complete static table is sufficient.
+    if (
+        cfg_ops is None
+        and computed & _MEMORY_DISPATCH_KINDS
+        and not _memory_dispatch_targets(binary, func["addr"], region)
+    ):
         return None
     return owner._emit_region(binary, func, region, rng, use_nesting=False)
