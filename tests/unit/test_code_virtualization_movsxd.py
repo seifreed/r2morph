@@ -12,6 +12,10 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.core import randomness
+from r2morph.mutations.code_virtualization import _decode_run_item
+from r2morph.mutations.code_virtualization_engine import build_vm_blob, build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_handlers import EngineHandlerGenerator
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress, VirtualizedMemOp
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_control_handlers import _movx_reg_handler_asm
@@ -61,6 +65,42 @@ def test_movsxd_memory_load_emits_native_sign_extend_dword() -> None:
 
 def test_movsxd_register_handler_emits_native_sign_extend_dword() -> None:
     expect(not ("movsxd r10, eax" not in _movx_reg_handler_asm("movxreg_s_32_64", 0x5A)))
+
+
+def test_linear_engine_decodes_movsxd_plain_memory_as_dword_load() -> None:
+    item = _decode_run_item("movsxd rax, dword ptr [rbx-4]")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.disp, item.width) == ("movsxd", 0, 3, -4, 64)
+    )
+
+
+def test_linear_engine_decodes_movsxd_indexed_memory_as_dword_load() -> None:
+    item = _decode_run_item("movsxd rax, dword ptr [rbx+rcx*4+8]")
+    expect(
+        isinstance(item, VirtualizedMemOp)
+        and (item.kind, item.reg_index, item.base_index, item.index_index, item.scale, item.disp, item.width)
+        == ("movsxdidx", 0, 3, 1, 2, 8, 64)
+    )
+
+
+def test_linear_engine_movsxd_handler_reads_dword_and_sign_extends() -> None:
+    body = EngineHandlerGenerator._extend_memory_body("movsxd", 64)
+    expect(body == "  movsxd rax, dword ptr [r10]\n  mov qword ptr [rsp + r8*8], rax\n")
+
+
+def test_linear_engine_assembles_movsxd_memory_operations() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260903))
+    blob = build_vm_blob(
+        [
+            VirtualizedMemOp("movsxd", 0, VirtualizedAddress(1, -4), 64),
+            VirtualizedMemOp("movsxdidx", 0, VirtualizedAddress(1, 8, 2, 2), 64),
+        ],
+        0x500000,
+        0x401000,
+        scheme,
+    )
+    expect(blob is not None)
 
 
 def _movsxd_region_instructions() -> list[dict[str, Any]]:

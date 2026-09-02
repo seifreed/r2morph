@@ -96,6 +96,8 @@ PackedIndexedItem = tuple[str, int, int, int, int, int]
 PackedIndexedNoBaseItem = tuple[str, int, int, int, int]
 _FP_SINGLE_WIDTH_BITS = 32
 _BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
+_DWORD_WIDTH_BITS = 32
 _MIN_NESTING_DEPTH = 2
 
 # Minimum instructions in a run worth virtualizing.
@@ -110,6 +112,13 @@ _COMPUTED_JUMP_TYPES = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
+_MOVX_MEMORY_SUFFIXES = {
+    ("z", _BYTE_WIDTH_BITS): "b",
+    ("z", _WORD_WIDTH_BITS): "w",
+    ("s", _BYTE_WIDTH_BITS): "b",
+    ("s", _WORD_WIDTH_BITS): "w",
+    ("s", _DWORD_WIDTH_BITS): "d",
+}
 
 VirtualizedRunItem = (
     VirtualizedOp
@@ -123,6 +132,13 @@ VirtualizedRunItem = (
     | VirtualizedFpPackedImmediateOp
     | VirtualizedFpPackedMemOp
 )
+
+
+def _movx_memory_kind(extension: str, source_size: int, indexed: bool) -> str | None:
+    suffix = _MOVX_MEMORY_SUFFIXES.get((extension, source_size))
+    if suffix is None:
+        return None
+    return f"mov{extension}x{suffix}{'idx' if indexed else ''}"
 
 
 def _decode_fp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedFpMemOp | None:
@@ -271,6 +287,30 @@ def _decode_indexed_gp_memory_item(text: str) -> VirtualizedMemOp | None:
     return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp, index_slot, shift), width)
 
 
+def _decode_gp_movx_item(text: str) -> VirtualizedMemOp | None:
+    extended = _decode_movx(text)
+    if extended is None:
+        return None
+    if extended[0] == "movx":
+        _, extension, source_size, width, register_slot, base_slot, disp = extended
+        kind = _movx_memory_kind(extension, source_size, indexed=False)
+        if kind is None:
+            return None
+        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
+    if extended[0] == "movxidx":
+        _, extension, source_size, width, register_slot, base_slot, index_slot, shift, disp = extended
+        kind = _movx_memory_kind(extension, source_size, indexed=True)
+        if kind is None:
+            return None
+        return VirtualizedMemOp(
+            kind,
+            register_slot,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    return None
+
+
 def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
     indexed = _decode_indexed_gp_memory_item(text)
     if indexed is not None and (indexed.width in (32, 64) or indexed.kind.startswith(("load", "store"))):
@@ -279,20 +319,9 @@ def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> Virtual
     if decoded is not None and (decoded[-1] in (32, 64) or decoded[0] in ("load", "store")):
         kind, register_slot, base_slot, disp, width = decoded
         return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
-    extended = _decode_movx(text)
-    if extended is not None and extended[0] == "movx":
-        _, extension, source_size, width, register_slot, base_slot, disp = extended
-        kind = f"mov{extension}x{'b' if source_size == _BYTE_WIDTH_BITS else 'w'}"
-        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
-    if extended is not None and extended[0] == "movxidx":
-        _, extension, source_size, width, register_slot, base_slot, index_slot, shift, disp = extended
-        kind = f"mov{extension}x{'b' if source_size == _BYTE_WIDTH_BITS else 'w'}idx"
-        return VirtualizedMemOp(
-            kind,
-            register_slot,
-            VirtualizedAddress(base_slot, disp, index_slot, shift),
-            width,
-        )
+    movx = _decode_gp_movx_item(text)
+    if movx is not None:
+        return movx
     rip_relative = _decode_riprel_mov(text, insn_addr, insn_size)
     if rip_relative is not None:
         kind, register_slot, target, width = rip_relative

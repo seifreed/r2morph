@@ -291,6 +291,8 @@ class EngineHandlerGenerator:
     @staticmethod
     def _extend_memory_body(kind: str, width: int) -> str:
         size_word = "byte" if kind.endswith("b") else "word"
+        if kind == "movsxd":
+            return "  movsxd rax, dword ptr [r10]\n" "  mov qword ptr [rsp + r8*8], rax\n"
         if kind.startswith("movzx"):
             body = f"  movzx eax, {size_word} ptr [r10]\n"
         elif width == _QWORD_WIDTH_BITS:

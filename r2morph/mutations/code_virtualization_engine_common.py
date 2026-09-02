@@ -102,11 +102,11 @@ _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
 # handler strips the ``rip`` suffix and reuses the base kind's body with the
 # rip-relative address prologue, so every base+disp form has a global counterpart.
 _MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea", *tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS))
-# movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
+# movzx/movsx of a byte/word, plus movsxd of a dword, from [base+disp].
 # (No rip-relative counterpart: the decoder only produces the base+disp form.)
-_MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
+_MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw", "movsxd")
 # Indexed [base+index*scale+disp] forms (arrays). Loads, stores, lea,
-# arithmetic, and byte/word extends reuse the base kind's body with the
+# arithmetic, and byte/word/dword extends reuse the base kind's body with the
 # indexed address prologue (a 9-byte item: opcode+reg+base+index+scale+disp).
 _MEM_IDX_KINDS: tuple[str, ...] = (
     "load",
