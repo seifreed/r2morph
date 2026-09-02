@@ -135,7 +135,7 @@
       ]
     },
     "memory_addressing": {
-      "fixture_count": 34,
+      "fixture_count": 35,
       "fixtures": [
         "elf_vm_cmpmem_x86_64",
         "elf_vm_fparithmem_x86_64",
@@ -163,6 +163,7 @@
         "elf_vm_opmemidx_x86_64",
         "elf_vm_popmem_x86_64",
         "elf_vm_pushmem_x86_64",
+        "elf_vm_pushpop16_x86_64",
         "elf_vm_riprelmicroop_x86_64",
         "elf_vm_run_leafallback_x86_64",
         "elf_vm_run_memarithfallback_x86_64",
@@ -180,7 +181,7 @@
       ]
     },
     "stack_and_abi": {
-      "fixture_count": 9,
+      "fixture_count": 10,
       "fixtures": [
         "elf_vm_leave_x86_64",
         "elf_vm_prologue_x86_64",
@@ -188,6 +189,7 @@
         "elf_vm_pushimm_x86_64",
         "elf_vm_pushmem_x86_64",
         "elf_vm_pushpop_x86_64",
+        "elf_vm_pushpop16_x86_64",
         "elf_vm_redzone_x86_64",
         "elf_vm_varargs_scalar_x86_64",
         "elf_vm_varargs_x86_64"
@@ -224,7 +226,7 @@
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 133,
+  "fixture_count": 134,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

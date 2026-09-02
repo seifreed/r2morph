@@ -217,10 +217,12 @@ def _stack_transition(
     item: list[Any], depth: int, snapshot: tuple[int, int] | None
 ) -> tuple[int, tuple[int, int] | None] | None:
     kind = item[0]
-    if kind in ("push", "pushi", "pushmem", "pushmemrip", "pushmemidx", "pushmemidxnb"):
+    if kind in ("push", "pushi"):
         out_depth = depth + 8
+    elif kind in ("pushmem", "pushmemrip", "pushmemidx", "pushmemidxnb"):
+        out_depth = depth + int(item[-1]) // 8
     elif kind in ("pop", "popmem", "popmemrip", "popmemidx", "popmemidxnb"):
-        out_depth = depth - 8
+        out_depth = depth - (8 if kind == "pop" else int(item[-1]) // 8)
     elif kind == "rspadj":
         out_depth = depth + (item[2] if item[1] == "sub" else -item[2])
     elif kind == "movtorsp":

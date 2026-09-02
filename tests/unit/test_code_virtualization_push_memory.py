@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization_region import _stack_transition
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_models import _op_key
@@ -27,6 +28,16 @@ def test_decode_push_memory_rip_relative_form_returns_absolute_target() -> None:
 
 def test_decode_push_memory_rejects_non_qword_form() -> None:
     expect(_decode_push_memory("push dword ptr [rax]") is None)
+
+
+def test_decode_push_and_pop_memory_support_word_width() -> None:
+    expect(
+        (
+            _decode_push_memory("push word ptr [rax]"),
+            _decode_pop_memory("pop word ptr [rax]"),
+        )
+        == (("pushmem", 0, 0, 16), ("popmem", 0, 0, 16))
+    )
 
 
 def test_decode_pop_memory_supports_all_address_shapes() -> None:
@@ -81,3 +92,7 @@ def test_classify_pop_memory_uses_region_item() -> None:
     expect(
         _classify({"type": "pop", "opcode": "pop qword ptr [rax]", "addr": 0x1000, "size": 4}) == ["popmem", 0, 0, 64]
     )
+
+
+def test_stack_balance_uses_declared_memory_width() -> None:
+    expect(_stack_transition(["pushmem", 0, 0, 16], 0, None) == (2, None))
