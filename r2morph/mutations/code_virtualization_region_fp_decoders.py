@@ -646,6 +646,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpsravd": "psravd",
     "vpshufd": "pshufd",
     "vpmulld": "pmulld",
+    "vpmuldq": "pmuldq",
     "vpminsd": "pminsd",
     "vpmaxsd": "pmaxsd",
     "vpcmpeqd": "pcmpeqd",
