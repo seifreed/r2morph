@@ -303,7 +303,7 @@ def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
         binary.analyze()
         compute = next(function for function in binary.get_functions() if "compute" in function["name"])
         original_compute_prefix = binary.read_bytes(compute["addr"], 5)
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": _REGRESSION_SEED}).apply(
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 2, "seed": _REGRESSION_SEED}).apply(
             binary
         )
         binary.save()
