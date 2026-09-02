@@ -1,23 +1,23 @@
 # Protection Maturity Report
 
-Commit: `edf6ea7`
+Commit: `108d7bd`
 Date: `2026-09-02`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `edf6ea7` and covered 142
+The latest full local-fixture campaign ran against `108d7bd` and covered 143
 fixtures with all six selected passes. The differential report completed in
-workflow `33683681189` (artifact SHA-256
-`79fd312b597f6f558bf3fbb60dea5ff2e02d245f10a25ff0de5f99a9a287367c`). Its
+workflow `33685347458` (artifact SHA-256
+`9a7dcb0e28880383ba6ebea5c9bb819246b2e8d64fcdeb3ed5a90bf955629200`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-02-edf6ea7.json`](protection-maturity-by-pass-2026-09-02-edf6ea7.json):
-CodeVirtualization recorded 138 semantic passes and four known failures; the
-other five passes recorded 141 semantic passes and one known failure each.
-The matching adversarial campaign completed in workflow `33683681348` and
-covered 142 samples, 4,252 completed tool runs, 3,408 unavailable-tool rows,
+[`docs/protection-maturity-by-pass-2026-09-02-108d7bd.json`](protection-maturity-by-pass-2026-09-02-108d7bd.json):
+CodeVirtualization recorded 139 semantic passes and four known failures; the
+other five passes recorded 142 semantic passes and one known failure each.
+The matching adversarial campaign completed in workflow `33685350131` and
+covered 143 samples, 4,282 completed tool runs, 3,432 unavailable-tool rows,
 and 8 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-edf6ea7-summary.json`](protection-adversarial-corpus-2026-09-02-edf6ea7-summary.json):
-CodeVirtualization applied to all 142 samples and virtualized 151 functions,
+[`docs/protection-adversarial-corpus-2026-09-02-108d7bd-summary.json`](protection-adversarial-corpus-2026-09-02-108d7bd-summary.json):
+CodeVirtualization applied to all 143 samples and virtualized 152 functions,
 with one unsupported function and no transformation errors.
 
 The CI run for `edf6ea7` was still in progress when this report was generated;
@@ -113,7 +113,7 @@ the `CodeVirtualization` pass summary per sample. Its compact contract is in
 The latest report records 4,222 completed tool runs and 3,384 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 131 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 133 real
 fixtures cover ten capability families with no unclassified fixture.
 
 ## 1. Current architecture
