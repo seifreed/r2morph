@@ -1,16 +1,17 @@
 # Protection Maturity Report
 
-Commit: `139fb5d`
+Commit: `f503a20`
 Date: `2026-09-02`
 
 ## Current verification status
 
-The supported Python environment passed Black, Ruff, Bandit, and pip-audit
-locally on commit `c2a7924`; mypy is blocked locally only by missing third-party
-stubs for `networkx` and `yaml`. GitHub Actions run `33671185971` passed the
-published tree, including lint, typecheck, unit, core, integration, wheel-smoke,
-property/fuzz, and the supported platform matrix. The VEX.128 lane-extraction
-regression passes locally and is covered natively on Linux amd64 in CI.
+The supported Python environment passes Black, Ruff, Bandit, and pip-audit
+locally. The targeted dispatch regression passes locally with `-W error`.
+GitHub Actions CI run `33678518222` passed `f503a20` through lint, typecheck,
+unit, core, integration, wheel-smoke, property/fuzz, and the supported platform
+matrix. The VEX.128 lane-extraction regression is covered natively on Linux
+amd64 in CI. GitHub currently reports deprecation annotations for the workflow's
+Node.js 20 action runtimes; they did not affect the successful gate.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -45,7 +46,7 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `c2a7924` ran all 141 fixtures with all six
+The previous per-pass differential campaign on commit `c2a7924` ran all 141 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-02-c2a7924.json`](protection-maturity-by-pass-2026-09-02-c2a7924.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
@@ -54,7 +55,7 @@ artifact from workflow run `33669837281` (SHA-256
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 140 semantic passes each with one baseline discrepancy.
 
-The latest all-pass adversarial campaign on commit `c2a7924` ran the complete
+The previous all-pass adversarial campaign on commit `c2a7924` ran the complete
 141-fixture dataset. Its compact per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-02-c2a7924-summary.json`](protection-adversarial-corpus-2026-09-02-c2a7924-summary.json);
 the raw report is retained as the `adversarial-benchmark` artifact from workflow
@@ -65,6 +66,24 @@ errors. Code virtualization applied to 140 samples, omitted 1, virtualized
 149 functions, and reported 2 unsupported functions with zero transformation
 errors. The `elf_vm_vex128_x86_64` sample now has no partial virtualization;
 unavailable tools and tool errors are not treated as passing evidence.
+
+The current all-fixture campaigns ran against `dbe6c40`, after enabling proven
+absolute memory-dispatch tables. The differential summary is in
+[`docs/protection-maturity-by-pass-2026-09-02-dbe6c40.json`](protection-maturity-by-pass-2026-09-02-dbe6c40.json)
+and its raw artifact is from workflow `33677174762` (SHA-256
+`d5bf17c9e2a41682f0bf49956db57ba223a586a9723e96dcae4b19c740ef95e5`). It
+covered all 141 fixtures and all six passes: CodeVirtualization recorded 137
+semantic passes and four known baseline discrepancies; every other pass recorded
+140 semantic passes and one baseline discrepancy.
+
+The matching adversarial summary is in
+[`docs/protection-adversarial-corpus-2026-09-02-dbe6c40-summary.json`](protection-adversarial-corpus-2026-09-02-dbe6c40-summary.json)
+and its raw artifact is from workflow `33677184561` (SHA-256
+`464d698c1c554880d89371aae99079fe7c78a91007f094499635187f4999ec4b`). It
+covered 141 samples, with 4,222 completed tool runs, 3,384 unavailable-tool
+rows, and 8 tool errors. CodeVirtualization applied to all 141 samples and
+virtualized 150 functions, with one unsupported function and no transformation
+errors. These unavailable tools and errors remain explicit non-passing evidence.
 
 The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
 campaign ran Ghidra headless over all 141 original/protected pairs from

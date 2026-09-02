@@ -1,0 +1,48 @@
+{
+  "schema_version": 3,
+  "measurement": "protection-maturity-corpus-by-pass",
+  "commit": "dbe6c40",
+  "workflow_run": 33677174762,
+  "dataset": "fixtures/dataset",
+  "fixture_count": 141,
+  "passes": {
+    "BlockReordering": {
+      "successful_seed_runs": 140,
+      "failed_seed_runs": 1,
+      "semantic_passes": 140,
+      "semantic_failures": 1
+    },
+    "CodeVirtualization": {
+      "successful_seed_runs": 137,
+      "failed_seed_runs": 4,
+      "semantic_passes": 137,
+      "semantic_failures": 4
+    },
+    "InstructionExpansion": {
+      "successful_seed_runs": 140,
+      "failed_seed_runs": 1,
+      "semantic_passes": 140,
+      "semantic_failures": 1
+    },
+    "InstructionSubstitution": {
+      "successful_seed_runs": 140,
+      "failed_seed_runs": 1,
+      "semantic_passes": 140,
+      "semantic_failures": 1
+    },
+    "NopInsertion": {
+      "successful_seed_runs": 140,
+      "failed_seed_runs": 1,
+      "semantic_passes": 140,
+      "semantic_failures": 1
+    },
+    "RegisterSubstitution": {
+      "successful_seed_runs": 140,
+      "failed_seed_runs": 1,
+      "semantic_passes": 140,
+      "semantic_failures": 1
+    }
+  },
+  "source_artifact": "GitHub Actions artifact differential-corpus-by-pass from workflow run 33677174762",
+  "artifact_sha256": "d5bf17c9e2a41682f0bf49956db57ba223a586a9723e96dcae4b19c740ef95e5"
+}
