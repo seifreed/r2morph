@@ -1,0 +1,51 @@
+{
+  "commit": "3e7b99a",
+  "workflow": 33689803351,
+  "sample_count": 145,
+  "summary": {
+    "completed_tool_runs": 4342,
+    "error_tool_runs": 8,
+    "unavailable_tool_runs": 3480
+  },
+  "pass_summary": {
+    "CodeVirtualization": {
+      "samples": 145,
+      "applied": 145,
+      "functions_virtualized": 155,
+      "unsupported_functions": 1,
+      "errors": 0
+    },
+    "BlockReordering": {
+      "samples": 145,
+      "applied": 1,
+      "no_op": 144,
+      "errors": 0
+    },
+    "InstructionExpansion": {
+      "samples": 145,
+      "applied": 2,
+      "no_op": 143,
+      "errors": 0
+    },
+    "InstructionSubstitution": {
+      "samples": 145,
+      "applied": 30,
+      "mutations_applied": 35,
+      "no_op": 115,
+      "errors": 0
+    },
+    "NopInsertion": {
+      "samples": 145,
+      "applied": 0,
+      "no_op": 145,
+      "errors": 0
+    },
+    "RegisterSubstitution": {
+      "samples": 145,
+      "applied": 2,
+      "no_op": 143,
+      "errors": 0
+    }
+  },
+  "artifact_sha256": "0bf5d6564176e0cfad52fb0297fe7757feecbc99551e0a4e08527055331229bc"
+}

@@ -1,0 +1,38 @@
+{
+  "commit": "3e7b99a",
+  "workflow": 33689803254,
+  "fixture_count": 145,
+  "summary": {
+    "BlockReordering": {
+      "semantic_passes": 144,
+      "semantic_failures": 1
+    },
+    "CodeVirtualization": {
+      "semantic_passes": 141,
+      "semantic_failures": 4
+    },
+    "InstructionExpansion": {
+      "semantic_passes": 144,
+      "semantic_failures": 1
+    },
+    "InstructionSubstitution": {
+      "semantic_passes": 144,
+      "semantic_failures": 1
+    },
+    "NopInsertion": {
+      "semantic_passes": 144,
+      "semantic_failures": 1
+    },
+    "RegisterSubstitution": {
+      "semantic_passes": 144,
+      "semantic_failures": 1
+    }
+  },
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64",
+    "elf_vm_vex128_integer_x86_64",
+    "elf_vm_vex128_scalar_x86_64",
+    "elf_vm_vex128_x86_64"
+  ],
+  "artifact_sha256": "bdac70cd66b8e414efeb0d2197276c3dc53097df11c27ac326017ec43b6d2e02"
+}

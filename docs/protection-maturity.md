@@ -1,23 +1,24 @@
 # Protection Maturity Report
 
-Commit: `290c828`
+Commit: `3e7b99a`
 Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `290c828` and covered 144
+The latest full local-fixture campaign ran against `3e7b99a` and covered 145
 fixtures with all six selected passes. The differential report completed in
-workflow `33688092665` (artifact SHA-256
-`bf8815919b445b5bbad623a29b6304391877d86057a635c5e3fa241c186b5340`). Its
+workflow `33689803254` (artifact SHA-256
+`bdac70cd66b8e414efeb0d2197276c3dc53097df11c27ac326017ec43b6d2e02`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-290c828.json`](protection-maturity-by-pass-2026-09-03-290c828.json):
-CodeVirtualization recorded 140 semantic passes and four known failures; the
-other five passes recorded 143 semantic passes and one known failure each.
-The matching adversarial campaign completed in workflow `33688093007` and
-covered 144 samples, 4,312 completed tool runs, 3,456 unavailable-tool rows,
-and 8 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-03-290c828-summary.json`](protection-adversarial-corpus-2026-09-03-290c828-summary.json):
-CodeVirtualization applied to all 144 samples and virtualized 153 functions,
+[`docs/protection-maturity-by-pass-2026-09-03-3e7b99a.json`](protection-maturity-by-pass-2026-09-03-3e7b99a.json):
+CodeVirtualization recorded 141 semantic passes and four known failures; the
+other five passes recorded 144 semantic passes and one known failure each.
+The four CodeVirtualization failures are `elf_vm_fppackedidxnb_x86_64` and the
+three `vex128` fixtures. The matching adversarial campaign completed in
+workflow `33689803351` and covered 145 samples, 4,342 completed tool runs,
+3,480 unavailable-tool rows, and 8 tool errors. Its per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-03-3e7b99a-summary.json`](protection-adversarial-corpus-2026-09-03-3e7b99a-summary.json):
+CodeVirtualization applied to all 145 samples and virtualized 155 functions,
 with one unsupported function and no transformation errors.
 
 CI run `33688295320` for `d03632e` was queued when this report was generated.
@@ -112,7 +113,7 @@ the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
 
-The latest report records 4,312 completed tool runs and 3,456 explicit unavailable-
+The latest report records 4,342 completed tool runs and 3,480 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
 [`docs/virtualization-coverage.json`](virtualization-coverage.json): 134 real

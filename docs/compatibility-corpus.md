@@ -31,15 +31,15 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `290c828` covered 144 fixtures
+The latest repository-fixture campaign against `3e7b99a` covered 145 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-03-290c828.json`](protection-maturity-by-pass-2026-09-03-290c828.json),
-from workflow `33688092665` (artifact SHA-256
-`bf8815919b445b5bbad623a29b6304391877d86057a635c5e3fa241c186b5340`). The
+[`protection-maturity-by-pass-2026-09-03-3e7b99a.json`](protection-maturity-by-pass-2026-09-03-3e7b99a.json),
+from workflow `33689803254` (artifact SHA-256
+`bdac70cd66b8e414efeb0d2197276c3dc53097df11c27ac326017ec43b6d2e02`). The
 matching adversarial report is summarized in
-[`protection-adversarial-corpus-2026-09-03-290c828-summary.json`](protection-adversarial-corpus-2026-09-03-290c828-summary.json),
-from workflow `33688093007` (artifact SHA-256
-`74fafb1105b7026cba979b42386d796450111ece7898b0d58719e5e0257a9338`).
+[`protection-adversarial-corpus-2026-09-03-3e7b99a-summary.json`](protection-adversarial-corpus-2026-09-03-3e7b99a-summary.json),
+from workflow `33689803351` (artifact SHA-256
+`0bf5d6564176e0cfad52fb0297fe7757feecbc99551e0a4e08527055331229bc`).
 
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording
