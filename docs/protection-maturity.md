@@ -5,13 +5,11 @@ Date: `2026-09-02`
 
 ## Current verification status
 
-The supported Python 3.13 environment passed the required static and security
-gates locally. GitHub Actions run `33564155524` completed successfully with all
-16 jobs on commit `59f7005`, including the Linux x86-64 suite and cross-platform
-matrix. The packed and scalar VEX FMA regressions, the VEX packed-byte maximum,
-the virtualized incoming
-stack-argument regression, the aggregate-return ABI regression, and the legacy
-packed-byte comparison regression passed in the Linux integration job.
+The supported Python environment passed the required static and security gates
+locally on commit `45b8ef5`. GitHub Actions run `33595002506` completed
+successfully with all jobs for that commit, including the Linux x86-64 suite and
+cross-platform matrix. The dword sign-extension memory regression and the
+legacy packed-word comparison regression passed in the Linux integration job.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -66,12 +64,12 @@ errors. Code virtualization applied to 138 samples, omitted 3, and reported
 zero transformation errors; unavailable tools and tool errors are not treated
 as passing evidence.
 
-The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
-campaign runs Ghidra headless over the same 140 original/protected pairs. It
-completed 280 analyses with zero errors or timeouts and records the
-`CodeVirtualization` pass summary per sample. A fresh rerun on `d0f50ad`
-produced the same artifact byte-for-byte
-(`SHA-256 dbd02def075cb3a53c4c6b6aa63c4a9d6d907c59c74adb30c44792116c8b5ab8`).
+The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
+campaign ran Ghidra headless over all 141 original/protected pairs from
+`45b8ef5`. It completed 282 analyses with zero errors or timeouts and records
+the `CodeVirtualization` pass summary per sample. Its compact contract is in
+[`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
+(`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
 
 The latest report records 4,222 completed tool runs and 3,384 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
