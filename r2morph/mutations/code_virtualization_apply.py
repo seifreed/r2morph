@@ -82,6 +82,29 @@ def _transform_unsupported_function(
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
 
 
+def _transform_dispatch_function(
+    pass_instance: Any, binary: Any, func: dict[str, Any], unsupported: list[dict[str, Any]]
+) -> dict[str, int]:
+    """Transform a computed-dispatch function without falling back to a partial run."""
+    region_result = pass_instance._virtualize_dispatch_function(binary, func)
+    if region_result is not None:
+        return {
+            "skipped": 0,
+            "unsupported": 0,
+            "virtualized": 1,
+            "instructions": region_result["instructions"],
+            "bytecode": region_result["bytecode"],
+            "partial": 0,
+        }
+    pass_instance._record_unsupported_function(
+        unsupported,
+        func,
+        pass_instance._find_computed_jump(binary, func),
+        "dispatch-region virtualization was not proven; ",
+    )
+    return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+
+
 def _transform_function(
     pass_instance: Any,
     binary: Any,
@@ -103,33 +126,25 @@ def _transform_function(
             ),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+    if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
+        return _transform_dispatch_function(pass_instance, binary, func, unsupported)
     unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
     if unsupported_instruction is not None:
         return _transform_unsupported_function(pass_instance, binary, func, unsupported_instruction, records)
 
     region_result = pass_instance._virtualize_function(binary, func)
-    if region_result is None and pass_instance.virtualize_dispatch:
-        region_result = pass_instance._virtualize_dispatch_function(binary, func)
-    if region_result is not None:
-        return {
-            "skipped": 0,
-            "unsupported": 0,
-            "virtualized": 1,
-            "instructions": region_result["instructions"],
-            "bytecode": region_result["bytecode"],
-            "partial": 0,
-        }
-
-    if pass_instance.reject_partial_virtualization:
-        pass_instance._record_unsupported_function(
-            unsupported,
-            func,
-            None,
-            "whole-function virtualization was not proven; partial virtualization is disabled: ",
-        )
-        return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
-
-    result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
+    if region_result is None:
+        if pass_instance.reject_partial_virtualization:
+            pass_instance._record_unsupported_function(
+                unsupported,
+                func,
+                None,
+                "whole-function virtualization was not proven; partial virtualization is disabled: ",
+            )
+            return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+        result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
+    else:
+        result, partial_count = region_result, 0
     if result is not None:
         return {
             "skipped": 0,
