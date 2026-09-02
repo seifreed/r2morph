@@ -29,6 +29,13 @@ import r2morph.core.randomness as random
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_apply import apply_code_virtualization
+from r2morph.mutations.code_virtualization_dispatch_lifting import (
+    block_ops,
+    gather_cfg_ops,
+    gather_dispatch_ops,
+    reachable_blocks,
+    virtualize_dispatch_function,
+)
 from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithMemOp,
     VirtualizedFpArithOp,
@@ -563,20 +570,7 @@ class CodeVirtualizationPass(MutationPass):
         jump (r2 cannot follow it), so ``pdfj`` returns a truncated body. Read the
         function linearly from its entry to the first terminator instead.
         """
-        try:
-            ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}")
-        except Exception:
-            return None
-        if not ops:
-            return None
-        gathered: list[dict[str, Any]] = []
-        for insn in ops:
-            if insn.get("type") == "invalid" or insn.get("opcode") == "invalid":
-                break
-            gathered.append(insn)
-            if insn.get("type") in ("ret", "swi", "syscall"):
-                return gathered
-        return None  # no terminator found within the window
+        return gather_dispatch_ops(binary, func)
 
     def _reachable_blocks(self, by_addr: dict[int, dict[str, Any]], entry: int) -> set[int]:
         """Block addresses reachable from ``entry`` over r2's resolved edges.
@@ -585,21 +579,7 @@ class CodeVirtualizationPass(MutationPass):
         switch block, its ``switch_op`` case targets and default - so every case block
         r2 discovered is gathered without reading or guessing the jump table.
         """
-        reachable: set[int] = set()
-        work = [entry]
-        while work:
-            addr = work.pop()
-            if addr in reachable or addr not in by_addr:
-                continue
-            reachable.add(addr)
-            block = by_addr[addr]
-            successors: list[Any] = [block.get("jump"), block.get("fail")]
-            switch_op = block.get("switch_op")
-            if isinstance(switch_op, dict):
-                successors.extend(case.get("jump") for case in switch_op.get("cases", []))
-                successors.append(switch_op.get("def_val"))
-            work.extend(succ for succ in successors if isinstance(succ, int) and succ in by_addr)
-        return reachable
+        return reachable_blocks(by_addr, entry)
 
     def _block_ops(
         self, binary: Any, entry: int, by_addr: dict[int, dict[str, Any]], reachable: set[int]
@@ -609,24 +589,7 @@ class CodeVirtualizationPass(MutationPass):
         Prefers ``pdfj`` (one call covering a fully-resolved function) and fills any
         reachable block it did not cover with a per-block ``pdbj``.
         """
-        ranges = [(by_addr[a]["addr"], by_addr[a]["addr"] + by_addr[a].get("size", 0)) for a in reachable]
-
-        def in_reachable(addr: int) -> bool:
-            return any(lo <= addr < hi for lo, hi in ranges)
-
-        ops_by_addr: dict[int, dict[str, Any]] = {}
-        for op in binary.get_function_disasm(entry):
-            addr = op.get("addr")
-            if isinstance(addr, int) and in_reachable(addr):
-                ops_by_addr[addr] = op
-        for lo, hi in ranges:
-            if any(lo <= addr < hi for addr in ops_by_addr):
-                continue
-            for op in binary.r2.cmdj(f"pdbj @ {lo}") or []:
-                addr = op.get("addr")
-                if isinstance(addr, int) and lo <= addr < hi:
-                    ops_by_addr[addr] = op
-        return [ops_by_addr[addr] for addr in sorted(ops_by_addr)]
+        return block_ops(binary, entry, by_addr, reachable)
 
     def _gather_cfg_ops(self, binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
         """Gather a function's full CFG closure from r2's block analysis.
@@ -638,46 +601,12 @@ class CodeVirtualizationPass(MutationPass):
         ``pdfj`` path responsible for ordinary multi-block functions and never guesses
         an extent for an unresolved computed jump.
         """
-        entry = func["addr"]
-        try:
-            blocks = binary.get_basic_blocks(entry)
-        except Exception:
-            return None
-        by_addr = {b["addr"]: b for b in blocks if isinstance(b.get("addr"), int)}
-        if entry not in by_addr:
-            return None
-        reachable = self._reachable_blocks(by_addr, entry)
-        if not any(isinstance(by_addr[a].get("switch_op"), dict) for a in reachable):
-            return None
-        ops = self._block_ops(binary, entry, by_addr, reachable)
-        return ops or None
+        return gather_cfg_ops(binary, func)
 
     def _virtualize_dispatch_function(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
         """Virtualize a dispatch-shaped function (opt-in), lowering its computed
         jump to an ijmp that re-enters the VM at the virtualized target."""
-        cfg_ops = self._gather_cfg_ops(binary, func)
-        ops = cfg_ops if cfg_ops is not None else self._gather_dispatch_ops(binary, func)
-        if ops is None:
-            return None
-        rng = random.Random(random.getrandbits(64))
-        region = extract_region(ops, rng, allow_computed_jump=True)
-        if region is None:
-            return None
-        computed = {item[0] for item in region.instructions} & {"ijmp", "ijmpmem", "ijmpmemnb"}
-        if not computed:
-            return None
-        # A memory-indirect switch (ijmpmem/ijmpmemnb) re-enters the VM at a case block
-        # via the target map, so every case must be gathered. That is only guaranteed
-        # by the CFG-closure gather over r2's resolved switch_op; the linear gather may
-        # miss a case, which would make a runtime target-map lookup fall through to the
-        # wrong default exit, so a memory-indirect switch outside the CFG path stays
-        # native.
-        if cfg_ops is None and (computed & {"ijmpmem", "ijmpmemnb"}):
-            return None
-        # The dispatch path never nests: nesting peels straight-line arithmetic runs
-        # and does not model the computed-jump re-entry, so the region VM is emitted
-        # as a single layer.
-        return self._emit_region(binary, func, region, rng, use_nesting=False)
+        return virtualize_dispatch_function(self, binary, func)
 
     def _has_computed_jump(self, binary: Any, func: dict[str, Any]) -> bool:
         """Detect dispatch-shaped functions before the ordinary region path."""

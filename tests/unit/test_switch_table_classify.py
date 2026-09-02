@@ -72,3 +72,9 @@ def test_classify_indirect_jump_contract() -> None:
 
     # A non-jump instruction is not classified.
     expect(not (_classify("add rax, rbx") is not None))
+
+
+def test_classify_sized_indirect_jump_extracts_table_index() -> None:
+    """Sized memory operands retain their jump-table index and displacement."""
+    jump = _classify("jmp qword [rax*8 + 0x405000]")
+    expect(jump is not None and jump.index_register == "rax")
