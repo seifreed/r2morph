@@ -287,6 +287,12 @@ def test_engine_assembles_packed_rip_relative_memory_moves() -> None:
     expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
 
 
+def test_engine_assembles_vex128_even_dword_multiply() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260910))
+    item = VirtualizedFpPackedOp("vpmuldq", 0, 2, vex=True, src1_index=1)
+    expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
+
+
 def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vminps xmm0, xmm0, xmm1") == ("fppackedvex", "minps", 0, 0, 1))
 

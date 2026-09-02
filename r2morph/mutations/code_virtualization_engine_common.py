@@ -298,6 +298,7 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpsrld",
     "vpsrad",
     "vpmulld",
+    "vpmuldq",
     "vpminsd",
     "vpmaxsd",
     "vpcmpeqd",
