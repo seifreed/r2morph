@@ -51,6 +51,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     vzeroall_handler_asm,
     vzeroupper_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_fp_lane_handlers import _fp_vex_lane_extract_handler_asm
 
 _FP_MOVE_HANDLERS = {
     "fpmovd": _fp_movd_handler_asm,
@@ -285,5 +286,8 @@ class FPHandlerRouterMixin:
                 key, self.context.key, self.context.field_perm, self.context.has_ymm
             )
         elif key.startswith("fpmovvex_"):
-            body = _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+            handler = (
+                _fp_vex_lane_extract_handler_asm if key.startswith("fpmovvex_extract") else _fp_vex_move_handler_asm
+            )
+            body = handler(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         return body
