@@ -32,3 +32,12 @@ def test_handler_body_variant_uses_equivalent_vip_advance_form() -> None:
     lea_form = generator.handler_body("mov", False, 64, 0, body_variant=2)
 
     expect("add rsi" in add_form and "lea rsi" in lea_form)
+
+
+def test_packed_byte_shuffle_handler_emits_ssse3_operation() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    body = generator.handler_body("pshufb", False, 128, 0)
+
+    expect("pshufb xmm0, xmm1" in body)

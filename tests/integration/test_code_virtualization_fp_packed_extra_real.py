@@ -36,6 +36,8 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i greater = _mm_set1_epi8(7);
     __m128i minimum = _mm_set1_epi8(-1);
     __m128i maximum = _mm_set1_epi8(0);
+    __m128i shuffled = _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+    __m128i shuffle_mask = _mm_setzero_si128();
     __m128i right = _mm_set1_epi8(7);
     __m128i vex_right = _mm_set1_epi8(-1);
     __asm__ volatile(
@@ -43,6 +45,7 @@ __attribute__((noinline)) static int packed_operations(void) {
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
         "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
+        "pshufb %[shuffle_mask], %[shuffled]\n\t"
         "mov %[seed], %%rax\n\t"
         "movb (%[byte_source]), %%al\n\t"
         "movb %%al, (%[byte_destination])\n\t"
@@ -52,8 +55,9 @@ __attribute__((noinline)) static int packed_operations(void) {
         "movw %%ax, (%[word_destination])\n\t"
         "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
+          [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [vex_right] "x"(vex_right), [seed] "m"(seed),
+        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask), [seed] "m"(seed),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
         : "rax", "memory"
@@ -62,6 +66,7 @@ __attribute__((noinline)) static int packed_operations(void) {
         && _mm_movemask_epi8(greater) == 0
         && _mm_movemask_epi8(minimum) == 0
         && _mm_movemask_epi8(maximum) == 0xffff
+        && _mm_movemask_epi8(shuffled) == 0
         && byte_after == 0x11223344556677a5ULL
         && word_after == 0x1122334455661234ULL
         && byte_roundtrip == byte_value
@@ -80,6 +85,7 @@ int main(void) {
             "gcc",
             "-O0",
             "-mavx",
+            "-mssse3",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",

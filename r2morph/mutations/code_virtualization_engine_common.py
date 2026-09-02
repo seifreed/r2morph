@@ -208,6 +208,7 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "pmulld",
     "pminsd",
     "pmaxsd",
+    "pshufb",
     "pcmpeqd",
     "pcmpeqb",
     "pcmpgtd",

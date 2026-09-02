@@ -70,6 +70,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_scalar_arith,
 )
 from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
+from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
     _decode_lea_indexed,
@@ -219,7 +220,7 @@ def _decode_fp_packed_item(text: str, insn_addr: int, insn_size: int) -> Virtual
             vex=True,
             src1_index=None if destination == first_source else first_source,
         )
-    decoded = _decode_fp_packed_arith(text)
+    decoded = _decode_fp_packed_arith(text) or _decode_fp_packed_arith_extra(text)
     if decoded is not None:
         _kind, mnemonic, destination, source = decoded
         return VirtualizedFpPackedOp(mnemonic, destination, source)

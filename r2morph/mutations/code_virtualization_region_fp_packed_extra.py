@@ -5,7 +5,7 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region_fp_decoders import _parse_xmm_operand
 
 _PACKED_OPERAND_COUNT = 2
-_EXTRA_PACKED_ARITHMETIC = frozenset({"pcmpeqb", "pcmpgtb", "pminub"})
+_EXTRA_PACKED_ARITHMETIC = frozenset({"pcmpeqb", "pcmpgtb", "pminub", "pshufb"})
 
 
 def _decode_fp_packed_arith_extra(text: str) -> tuple[str, str, int, int] | None:

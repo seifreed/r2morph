@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_scalar_arith,
 )
 from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
+from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
 from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
@@ -67,6 +68,10 @@ def test_decode_packed_integer_minimum_returns_vector_item() -> None:
 
 def test_decode_packed_integer_compare_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pcmpeqd xmm0, xmm1") == ("fppacked", "pcmpeqd", 0, 1))
+
+
+def test_decode_legacy_byte_shuffle_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith_extra("pshufb xmm2, xmm3") == ("fppacked", "pshufb", 2, 3))
 
 
 def test_decode_packed_integer_shift_returns_vector_item() -> None:
@@ -195,6 +200,15 @@ def test_decode_engine_vex128_byte_shuffle_returns_packed_item() -> None:
         and item.dst_index == _EXPECTED_BYTE_SHUFFLE_DESTINATION
         and item.src1_index == 0
         and item.src_index == 1
+    )
+
+
+def test_decode_engine_legacy_byte_shuffle_returns_packed_item() -> None:
+    item = _decode_run_item("pshufb xmm2, xmm0")
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and item.mnemonic == "pshufb"
+        and item.dst_index == _EXPECTED_BYTE_SHUFFLE_DESTINATION
     )
 
 
