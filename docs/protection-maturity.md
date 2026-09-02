@@ -1,27 +1,29 @@
 # Protection Maturity Report
 
-Commit: `108d7bd`
-Date: `2026-09-02`
+Commit: `290c828`
+Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `108d7bd` and covered 143
+The latest full local-fixture campaign ran against `290c828` and covered 144
 fixtures with all six selected passes. The differential report completed in
-workflow `33685347458` (artifact SHA-256
-`9a7dcb0e28880383ba6ebea5c9bb819246b2e8d64fcdeb3ed5a90bf955629200`). Its
+workflow `33688092665` (artifact SHA-256
+`bf8815919b445b5bbad623a29b6304391877d86057a635c5e3fa241c186b5340`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-02-108d7bd.json`](protection-maturity-by-pass-2026-09-02-108d7bd.json):
-CodeVirtualization recorded 139 semantic passes and four known failures; the
-other five passes recorded 142 semantic passes and one known failure each.
-The matching adversarial campaign completed in workflow `33685350131` and
-covered 143 samples, 4,282 completed tool runs, 3,432 unavailable-tool rows,
+[`docs/protection-maturity-by-pass-2026-09-03-290c828.json`](protection-maturity-by-pass-2026-09-03-290c828.json):
+CodeVirtualization recorded 140 semantic passes and four known failures; the
+other five passes recorded 143 semantic passes and one known failure each.
+The matching adversarial campaign completed in workflow `33688093007` and
+covered 144 samples, 4,312 completed tool runs, 3,456 unavailable-tool rows,
 and 8 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-108d7bd-summary.json`](protection-adversarial-corpus-2026-09-02-108d7bd-summary.json):
-CodeVirtualization applied to all 143 samples and virtualized 152 functions,
+[`docs/protection-adversarial-corpus-2026-09-03-290c828-summary.json`](protection-adversarial-corpus-2026-09-03-290c828-summary.json):
+CodeVirtualization applied to all 144 samples and virtualized 153 functions,
 with one unsupported function and no transformation errors.
 
-The CI run for `edf6ea7` was still in progress when this report was generated;
-lint, typecheck, wheel smoke, and the completed Windows jobs had passed.
+CI run `33688295320` for `d03632e` was queued when this report was generated.
+The local full command produced 5,337 passed, 15 failed, and 108 skipped tests;
+the focused 16-bit memory-stack regression passed, while the full suite remains
+blocked by existing environment/dependency and execution-contract failures.
 
 The supported Python environment passes Black, Ruff, Bandit, and pip-audit
 locally. The targeted dispatch regression passes locally with `-W error`.
@@ -110,10 +112,10 @@ the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
 
-The latest report records 4,222 completed tool runs and 3,384 explicit unavailable-
+The latest report records 4,312 completed tool runs and 3,456 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 133 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 134 real
 fixtures cover ten capability families with no unclassified fixture.
 
 ## 1. Current architecture
