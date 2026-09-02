@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `2d89015`
+Commit: `bde818a`
 Date: `2026-09-02`
 
 ## Current verification status
@@ -46,12 +46,12 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `2d89015` ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `bde818a` ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33566723180` (SHA-256
-`72dd4bfed037740600f7f313fdc6d4bd5eb25e245862f42be26ee18e4ac7f7be`). Code virtualization recorded 136
+artifact from workflow run `33574998760` (SHA-256
+`9b25cf33d003604048cefed7a30c8778016c35d24d2bcb78c44318a450bd6147`). Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
 
