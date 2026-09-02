@@ -25,6 +25,7 @@ pytestmark = [
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_x86_64"
 _MINIMUM_VIRTUALIZED_FUNCTIONS = 2
 _EXPECTED_UNSUPPORTED_FUNCTIONS = 1
+_EXPECTED_EXIT_CODE = 42
 
 
 def test_vex128_lane_extract_virtualization_preserves_native_result(tmp_path: Path) -> None:
@@ -45,6 +46,6 @@ def test_vex128_lane_extract_virtualization_preserves_native_result(tmp_path: Pa
     expect(stats["unsupported_functions_total"] == _EXPECTED_UNSUPPORTED_FUNCTIONS, f"stats={stats}")
     expect(stats["partial_virtualization_total"] == 0, f"stats={stats}")
     expect(
-        (original_result.returncode, mutated_result.returncode) == (0, 0),
+        (original_result.returncode, mutated_result.returncode) == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE),
         f"original={original_result.returncode}, mutated={mutated_result.returncode}",
     )
