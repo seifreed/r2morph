@@ -1,9 +1,27 @@
 # Protection Maturity Report
 
-Commit: `f503a20`
+Commit: `edf6ea7`
 Date: `2026-09-02`
 
 ## Current verification status
+
+The latest full local-fixture campaign ran against `edf6ea7` and covered 142
+fixtures with all six selected passes. The differential report completed in
+workflow `33683681189` (artifact SHA-256
+`79fd312b597f6f558bf3fbb60dea5ff2e02d245f10a25ff0de5f99a9a287367c`). Its
+per-pass summary is in
+[`docs/protection-maturity-by-pass-2026-09-02-edf6ea7.json`](protection-maturity-by-pass-2026-09-02-edf6ea7.json):
+CodeVirtualization recorded 138 semantic passes and four known failures; the
+other five passes recorded 141 semantic passes and one known failure each.
+The matching adversarial campaign completed in workflow `33683681348` and
+covered 142 samples, 4,252 completed tool runs, 3,408 unavailable-tool rows,
+and 8 tool errors. Its per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-02-edf6ea7-summary.json`](protection-adversarial-corpus-2026-09-02-edf6ea7-summary.json):
+CodeVirtualization applied to all 142 samples and virtualized 151 functions,
+with one unsupported function and no transformation errors.
+
+The CI run for `edf6ea7` was still in progress when this report was generated;
+lint, typecheck, wheel smoke, and the completed Windows jobs had passed.
 
 The supported Python environment passes Black, Ruff, Bandit, and pip-audit
 locally. The targeted dispatch regression passes locally with `-W error`.

@@ -1,0 +1,76 @@
+{
+  "schema_version": 3,
+  "measurement": "protection-adversarial-corpus",
+  "commit": "edf6ea7",
+  "workflow_run": 33683681348,
+  "source_artifact": "GitHub Actions artifact adversarial-benchmark from workflow run 33683681348",
+  "artifact_sha256": "14c920298b2a9df9c7a548665066e26085bf7e5369bf51926ee09bb569c481be",
+  "corpus": "dataset",
+  "sample_count": 142,
+  "summary": {
+    "completed_tool_runs": 4252,
+    "error_tool_runs": 8,
+    "unavailable_tool_runs": 3408
+  },
+  "pass_summary": {
+    "BlockReordering": {
+      "samples": 142,
+      "applied": 1,
+      "no_op": 141,
+      "omitted": 0,
+      "errors": 0,
+      "mutations_applied": 1,
+      "functions_virtualized": 0,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "samples": 142,
+      "applied": 142,
+      "no_op": 0,
+      "omitted": 0,
+      "errors": 0,
+      "functions_virtualized": 151,
+      "unsupported_functions": 1
+    },
+    "InstructionExpansion": {
+      "samples": 142,
+      "applied": 2,
+      "no_op": 140,
+      "omitted": 0,
+      "errors": 0,
+      "mutations_applied": 2,
+      "functions_virtualized": 0,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "samples": 142,
+      "applied": 29,
+      "no_op": 113,
+      "omitted": 0,
+      "errors": 0,
+      "mutations_applied": 34,
+      "functions_virtualized": 0,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "samples": 142,
+      "applied": 0,
+      "no_op": 142,
+      "omitted": 0,
+      "errors": 0,
+      "mutations_applied": 0,
+      "functions_virtualized": 0,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "samples": 142,
+      "applied": 2,
+      "no_op": 140,
+      "omitted": 0,
+      "errors": 0,
+      "mutations_applied": 8,
+      "functions_virtualized": 0,
+      "unsupported_functions": 0
+    }
+  }
+}
