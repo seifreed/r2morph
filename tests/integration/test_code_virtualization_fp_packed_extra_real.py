@@ -34,8 +34,6 @@ __attribute__((noinline)) static int packed_operations(void) {
     unsigned long long seed = 0x1122334455667788ULL;
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
-    __m128i word_equal = _mm_set1_epi16(7);
-    __m128i word_greater = _mm_set1_epi16(8);
     __m128i minimum = _mm_set1_epi8(-1);
     __m128i maximum = _mm_set1_epi8(0);
     __m128i shuffled = _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
@@ -50,8 +48,6 @@ __attribute__((noinline)) static int packed_operations(void) {
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
-        "pcmpeqw %[right_word], %[word_equal]\n\t"
-        "pcmpgtw %[right_word], %[word_greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
         "pmaxub %[right], %[legacy_maximum]\n\t"
         "psllw %[shift_count], %[shift_left]\n\t"
@@ -67,13 +63,11 @@ __attribute__((noinline)) static int packed_operations(void) {
         "movw (%[word_source]), %%ax\n\t"
         "movw %%ax, (%[word_destination])\n\t"
         "mov %%rax, %[word_after]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater), [word_equal] "+x"(word_equal),
-          [word_greater] "+x"(word_greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
+        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
           [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [right_word] "x"(_mm_set1_epi16(7)), [vex_right] "x"(vex_right),
-          [shuffle_mask] "x"(shuffle_mask),
+        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
           [shift_count] "x"(shift_count), [seed] "m"(seed),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
@@ -81,8 +75,6 @@ __attribute__((noinline)) static int packed_operations(void) {
     );
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
-        && _mm_movemask_epi8(word_equal) == 0xffff
-        && _mm_movemask_epi8(word_greater) == 0xffff
         && _mm_movemask_epi8(minimum) == 0
         && _mm_movemask_epi8(legacy_maximum) == 0
         && _mm_movemask_epi8(shift_left) == 0
@@ -140,4 +132,64 @@ int main(void) {
     expect(
         (original_result.returncode, mutated_result.returncode) == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE),
         f"packed SIMD result changed: original={original_result.returncode}, mutated={mutated_result.returncode}",
+    )
+
+
+def test_virtualized_elf_preserves_legacy_packed_word_comparisons(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native packed word comparison execution requires an x86-64 host")
+    source = tmp_path / "packed_word_compare.c"
+    executable = tmp_path / "packed_word_compare"
+    source.write_text(
+        r"""
+#include <immintrin.h>
+
+__attribute__((noinline)) static int packed_word_comparisons(void) {
+    __m128i equal = _mm_set1_epi16(7);
+    __m128i greater = _mm_set1_epi16(8);
+    __m128i source = _mm_set1_epi16(7);
+    __asm__ volatile(
+        "pcmpeqw %[source], %[equal]\n\t"
+        "pcmpgtw %[source], %[greater]\n\t"
+        : [equal] "+x"(equal), [greater] "+x"(greater)
+        : [source] "x"(source)
+    );
+    return _mm_movemask_epi8(equal) == 0xffff && _mm_movemask_epi8(greater) == 0 ? 42 : 1;
+}
+
+int main(void) {
+    return packed_word_comparisons();
+}
+""",
+    )
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-mavx",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fcf-protection=none",
+            source,
+            "-o",
+            executable,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the packed word comparison fixture")
+
+    original_result = run_command([executable], timeout=30)
+    with Binary(executable, writable=True) as binary:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260908}).apply(binary)
+        binary.save()
+
+    mutated_result = run_command([executable], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"packed word comparison fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        f"packed word comparison result changed: original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}",
     )
