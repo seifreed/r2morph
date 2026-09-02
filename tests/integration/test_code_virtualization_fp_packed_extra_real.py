@@ -37,9 +37,7 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i minimum = _mm_set1_epi8(-1);
     __m128i maximum = _mm_set1_epi8(0);
     __m128i shuffled = _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-    __m128i shuffle_mask = _mm_setzero_si128();
     __m128i right = _mm_set1_epi8(7);
-    __m128i vex_right = _mm_set1_epi8(-1);
     __m128i shift_left = _mm_set1_epi16(0x0011);
     __m128i shift_right = _mm_set1_epi16(0x0044);
     __m128i shift_arithmetic = _mm_set1_epi16(-16);
@@ -51,13 +49,13 @@ __attribute__((noinline)) static int packed_operations(void) {
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
+        "pshufb %[legacy_maximum], %[shuffled]\n\t"
         "pmaxub %[right], %[legacy_maximum]\n\t"
         "psllw %[shift_count], %[shift_left]\n\t"
         "psrlw %[shift_count], %[shift_right]\n\t"
         "psraw %[shift_count], %[shift_arithmetic]\n\t"
         "pslld $5, %[immediate_shift]\n\t"
-        "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
-        "pshufb %[shuffle_mask], %[shuffled]\n\t"
+        "vpmaxub %[right], %[right], %[maximum]\n\t"
         "mov %[seed], %%rax\n\t"
         "movb (%[byte_source]), %%al\n\t"
         "movb %%al, (%[byte_destination])\n\t"
@@ -68,11 +66,11 @@ __attribute__((noinline)) static int packed_operations(void) {
         "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
-        [shift_arithmetic] "+x"(shift_arithmetic),
+          [shift_arithmetic] "+x"(shift_arithmetic),
           [immediate_shift] "+x"(immediate_shift),
           [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
+        : [right] "x"(right),
           [shift_count] "x"(shift_count), [seed] "m"(seed),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
