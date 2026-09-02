@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedImmediateOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedFpScalarVexOp,
@@ -82,6 +83,7 @@ def inject_junk_ops(
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
+        | VirtualizedFpPackedImmediateOp
         | VirtualizedFpPackedMemOp
         | VirtualizedFpScalarVexOp
     ],
@@ -94,6 +96,7 @@ def inject_junk_ops(
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
+    | VirtualizedFpPackedImmediateOp
     | VirtualizedFpPackedMemOp
     | VirtualizedFpScalarVexOp
 ]:
@@ -107,6 +110,7 @@ def inject_junk_ops(
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
+        | VirtualizedFpPackedImmediateOp
         | VirtualizedFpPackedMemOp
         | VirtualizedFpScalarVexOp
     ] = []
@@ -198,6 +202,7 @@ __all__ = [
     "VirtualizedFpArithOp",
     "VirtualizedFpConvertOp",
     "VirtualizedFpMemOp",
+    "VirtualizedFpPackedImmediateOp",
     "VirtualizedFpPackedMemOp",
     "VirtualizedFpPackedOp",
     "VirtualizedFpScalarVexOp",

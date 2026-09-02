@@ -34,6 +34,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedImmediateOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedFpScalarVexOp,
@@ -62,6 +63,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_indexed,
     _decode_fp_mem,
     _decode_fp_packed_arith,
+    _decode_fp_packed_immediate,
     _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
     _decode_fp_packed_riprel,
@@ -118,6 +120,7 @@ VirtualizedRunItem = (
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
+    | VirtualizedFpPackedImmediateOp
     | VirtualizedFpPackedMemOp
 )
 
@@ -220,6 +223,14 @@ def _decode_fp_packed_item(text: str, insn_addr: int, insn_size: int) -> Virtual
             vex=True,
             src1_index=None if destination == first_source else first_source,
         )
+    immediate = _decode_fp_packed_immediate(text)
+    if immediate is not None and immediate[1] != "pshufd":
+        _kind, mnemonic, destination, immediate_value = immediate
+        return VirtualizedFpPackedImmediateOp(mnemonic, destination, immediate_value)
+    return _decode_fp_packed_non_immediate_item(text, insn_addr, insn_size)
+
+
+def _decode_fp_packed_non_immediate_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedRunItem | None:
     decoded = _decode_fp_packed_arith(text) or _decode_fp_packed_arith_extra(text)
     if decoded is not None:
         _kind, mnemonic, destination, source = decoded

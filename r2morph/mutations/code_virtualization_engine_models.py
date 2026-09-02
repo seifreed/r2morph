@@ -184,6 +184,17 @@ class VirtualizedFpPackedOp:
         self.src1_index = src1_index
 
 
+class VirtualizedFpPackedImmediateOp:
+    """A legacy 128-bit packed integer shift with an immediate count."""
+
+    __slots__ = ("dst_index", "immediate", "mnemonic")
+
+    def __init__(self, mnemonic: str, dst_index: int, immediate: int) -> None:
+        self.mnemonic = mnemonic
+        self.dst_index = dst_index
+        self.immediate = immediate
+
+
 class VirtualizedFpPackedMemOp:
     """A packed 128-bit move between an xmm register and indexed memory.
 

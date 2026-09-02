@@ -8,6 +8,8 @@ import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_engine_common import (
     _FP_PACKED_ARITH_KEY,
     _FP_PACKED_ARITH_OPERATIONS,
+    _FP_PACKED_IMMEDIATE_KEY,
+    _FP_PACKED_IMMEDIATE_OPERATIONS,
     _FP_PACKED_VEX_OPERATIONS,
     _FP_PACKED_WIDTH,
     _FP_SCALAR_VEX_OPERATIONS,
@@ -27,6 +29,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedImmediateOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedFpScalarVexOp,
@@ -49,6 +52,7 @@ EngineOp = (
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
+    | VirtualizedFpPackedImmediateOp
     | VirtualizedFpPackedMemOp
     | VirtualizedFpScalarVexOp
 )
@@ -139,6 +143,18 @@ class _BytecodeEncoder:
                 }
                 order = [*triple_permuted_fields("dst", "src1", "src2", self.field_perm), ("op", 1)]
             self._emit_fields(position, order, fields)
+        elif isinstance(op, VirtualizedFpPackedImmediateOp):
+            position = self._opcode(_FP_PACKED_IMMEDIATE_KEY, _FP_PACKED_WIDTH)
+            fields = {
+                "dst": bytes([op.dst_index]),
+                "immediate": bytes([op.immediate]),
+                "op": bytes([_FP_PACKED_IMMEDIATE_OPERATIONS.index(op.mnemonic)]),
+            }
+            self._emit_fields(
+                position,
+                triple_permuted_fields("dst", "immediate", "op", self.field_perm),
+                fields,
+            )
         elif isinstance(op, VirtualizedFpPackedMemOp):
             self._emit_fp_packed_memory(op)
         elif isinstance(op, VirtualizedFpArithMemOp):

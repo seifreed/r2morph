@@ -10,6 +10,8 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_MEM_KINDS,
     _FP_PACKED_ARITH_KEY,
     _FP_PACKED_ARITH_OPERATIONS,
+    _FP_PACKED_IMMEDIATE_KEY,
+    _FP_PACKED_IMMEDIATE_OPERATIONS,
     _FP_PACKED_MEM_KINDS,
     _FP_PACKED_VEX_ARITH_KINDS,
     _FP_PACKED_VEX_OPERATIONS,
@@ -430,6 +432,38 @@ class EngineHandlerGenerator:
             + "  jmp vm_dispatch\n"
         )
 
+    def _fp_packed_immediate_handler_body(self) -> str:
+        off = triple_offsets("dst", "immediate", "op", self.scheme.field_perm)
+        fields = (
+            f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n"
+            f"  xor r8b, {self.key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['immediate']}]\n"
+            f"  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            f"  movzx ecx, byte ptr [rsi+{off['op']}]\n"
+            f"  xor cl, {self.key}\n  xor cl, r13b\n"
+        )
+        selector = "".join(
+            f"  cmp ecx, {index}\n  je fppackedimm_{self.handler_index}_{index}\n"
+            for index, _operation in enumerate(_FP_PACKED_IMMEDIATE_OPERATIONS)
+        )
+        operation_body = "".join(
+            f"fppackedimm_{self.handler_index}_{index}:\n"
+            f"  {_operation} xmm0, xmm1\n"
+            f"  jmp fppackedimm_done_{self.handler_index}\n"
+            for index, _operation in enumerate(_FP_PACKED_IMMEDIATE_OPERATIONS)
+        )
+        return (
+            fields
+            + f"  shl r8, 4\n  lea r10, [rsp + r8 + {self.layout.xmm_offset}]\n"
+            + "  mov rax, r9\n  movq xmm1, rax\n  movups xmm0, xmmword ptr [r10]\n"
+            + selector
+            + operation_body
+            + f"fppackedimm_done_{self.handler_index}:\n"
+            + "  movups xmmword ptr [r10], xmm0\n"
+            + self._advance(4)
+            + "  jmp vm_dispatch\n"
+        )
+
     def _fp_scalar_vex_arith_handler_body(self, handler_index: int) -> str:
         off = triple_offsets("dst", "src1", "src2", self.scheme.field_perm)
         fields = "".join(
@@ -508,6 +542,8 @@ class EngineHandlerGenerator:
             body = self._fp_packed_vex_arith_handler_body(self.handler_index)
         elif mnemonic == _FP_PACKED_ARITH_KEY:
             body = self._fp_packed_arith_handler_body(None)
+        elif mnemonic == _FP_PACKED_IMMEDIATE_KEY:
+            body = self._fp_packed_immediate_handler_body()
         elif mnemonic in _FP_PACKED_ARITH_OPERATIONS:
             body = self._fp_packed_arith_handler_body(mnemonic)
         elif mnemonic in _FP_PACKED_MEM_KINDS:

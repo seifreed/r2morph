@@ -182,6 +182,17 @@ _FP_ARITH_MEM_KINDS: tuple[str, ...] = (
 # single-byte handler key, while xmm slots remain 128-bit and the moves stay movups.
 _FP_PACKED_WIDTH = 128
 _FP_PACKED_ARITH_KEY = "fppacked"
+_FP_PACKED_IMMEDIATE_KEY = "fppackedimm"
+_FP_PACKED_IMMEDIATE_OPERATIONS: tuple[str, ...] = (
+    "psllw",
+    "pslld",
+    "psllq",
+    "psrlw",
+    "psrld",
+    "psrlq",
+    "psraw",
+    "psrad",
+)
 _FP_PACKED_ARITH_OPERATIONS: tuple[str, ...] = (
     "addpd",
     "addps",
@@ -371,7 +382,11 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple(
         (kind, False, _FP_PACKED_WIDTH)
         for kind in (
-            _FP_PACKED_ARITH_KINDS + _FP_PACKED_VEX_ARITH_KINDS + _FP_SCALAR_VEX_ARITH_KINDS + _FP_PACKED_MEM_KINDS
+            *_FP_PACKED_ARITH_KINDS,
+            _FP_PACKED_IMMEDIATE_KEY,
+            *_FP_PACKED_VEX_ARITH_KINDS,
+            *_FP_SCALAR_VEX_ARITH_KINDS,
+            *_FP_PACKED_MEM_KINDS,
         )
     )
 )

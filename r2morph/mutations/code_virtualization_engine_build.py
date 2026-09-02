@@ -26,6 +26,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedImmediateOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedFpScalarVexOp,
@@ -46,6 +47,7 @@ def build_vm_blob(
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
+        | VirtualizedFpPackedImmediateOp
         | VirtualizedFpPackedMemOp
         | VirtualizedFpScalarVexOp
     ],
@@ -69,6 +71,7 @@ def build_vm_blob(
                 VirtualizedFpConvertOp,
                 VirtualizedFpArithMemOp,
                 VirtualizedFpPackedOp,
+                VirtualizedFpPackedImmediateOp,
                 VirtualizedFpPackedMemOp,
                 VirtualizedFpScalarVexOp,
             ),

@@ -6,6 +6,7 @@ from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_engine import build_vm_blob, build_vm_scheme
 from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedAddress,
+    VirtualizedFpPackedImmediateOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
 )
@@ -31,6 +32,7 @@ from tests.utils.assertions import expect
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
 _EXPECTED_BYTE_SHUFFLE_DESTINATION = 2
 _EXPECTED_INDEX_SHIFT = 3
+_EXPECTED_IMMEDIATE_SHIFT_COUNT = 5
 _EXPECTED_RIP_TARGET = 0x401108
 
 
@@ -84,6 +86,12 @@ def test_decode_packed_integer_unsigned_maximum_returns_vector_item() -> None:
 
 def test_decode_packed_integer_immediate_shift_returns_item() -> None:
     expect(_decode_fp_packed_immediate("pslld xmm2, 5") == ("fppackedimm", "pslld", 2, 5))
+
+
+def test_decode_engine_packed_integer_immediate_shift_returns_item() -> None:
+    item = _decode_run_item("pslld xmm2, 5")
+
+    expect(isinstance(item, VirtualizedFpPackedImmediateOp) and item.immediate == _EXPECTED_IMMEDIATE_SHIFT_COUNT)
 
 
 def test_decode_packed_integer_immediate_shuffle_returns_item() -> None:
@@ -255,6 +263,13 @@ def test_decode_engine_packed_rip_relative_move_uses_rip_memory_item() -> None:
 def test_engine_assembles_packed_indexed_memory_moves() -> None:
     scheme = build_vm_scheme(randomness.Random(20260830))
     item = VirtualizedFpPackedMemOp("fpploadidxnb", 0, VirtualizedAddress(-1, 0x402000, 1, 4))
+    expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
+
+
+def test_engine_assembles_packed_immediate_shift() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260830))
+    item = VirtualizedFpPackedImmediateOp("pslld", 0, 5)
+
     expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
 
 
