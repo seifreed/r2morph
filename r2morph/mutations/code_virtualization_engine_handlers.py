@@ -8,7 +8,8 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_ARITH_MEM_KINDS,
     _FP_CONVERT_KINDS,
     _FP_MEM_KINDS,
-    _FP_PACKED_ARITH_KINDS,
+    _FP_PACKED_ARITH_KEY,
+    _FP_PACKED_ARITH_OPERATIONS,
     _FP_PACKED_MEM_KINDS,
     _FP_PACKED_VEX_ARITH_KINDS,
     _FP_PACKED_VEX_OPERATIONS,
@@ -387,14 +388,45 @@ class EngineHandlerGenerator:
             body += f"  cvtt{suffix}2si {target}, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
         return body + self._advance(3) + "  jmp vm_dispatch\n"
 
-    def _fp_packed_arith_handler_body(self, mnemonic: str) -> str:
-        return (
-            self._fp_pair_prologue()
-            + (
-                "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
-                f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
+    def _fp_packed_arith_handler_body(self, mnemonic: str | None) -> str:
+        if mnemonic is not None:
+            return (
+                self._fp_pair_prologue()
+                + (
+                    "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
+                    f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
+                )
+                + self._advance(3)
+                + "  jmp vm_dispatch\n"
             )
-            + self._advance(3)
+        off = pair_offsets("dst", "src", self.scheme.field_perm)
+        fields = "".join(
+            f"  movzx {register}d, byte ptr [rsi+{off[field]}]\n"
+            f"  xor {register}b, {self.key}\n"
+            f"  xor {register}b, r13b\n"
+            for register, field in (("r8", "dst"), ("r9", "src"))
+        )
+        selector = "  movzx ecx, byte ptr [rsi+3]\n" f"  xor cl, {self.key}\n  xor cl, r13b\n" + "".join(
+            f"  cmp ecx, {index}\n  je fppacked_{self.handler_index}_{index}\n"
+            for index, _operation in enumerate(_FP_PACKED_ARITH_OPERATIONS)
+        )
+        operation_body = "".join(
+            f"fppacked_{self.handler_index}_{index}:\n"
+            f"  {_operation} xmm0, xmm1\n"
+            f"  jmp fppacked_done_{self.handler_index}\n"
+            for index, _operation in enumerate(_FP_PACKED_ARITH_OPERATIONS)
+        )
+        return (
+            fields
+            + "  shl r8, 4\n  shl r9, 4\n"
+            + f"  lea r10, [rsp + r8 + {self.layout.xmm_offset}]\n"
+            + f"  lea r11, [rsp + r9 + {self.layout.xmm_offset}]\n"
+            + "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
+            + selector
+            + operation_body
+            + f"fppacked_done_{self.handler_index}:\n"
+            + "  movups xmmword ptr [r10], xmm0\n"
+            + self._advance(4)
             + "  jmp vm_dispatch\n"
         )
 
@@ -474,7 +506,9 @@ class EngineHandlerGenerator:
             body = self._fp_scalar_vex_arith_handler_body(self.handler_index)
         elif mnemonic in _FP_PACKED_VEX_ARITH_KINDS:
             body = self._fp_packed_vex_arith_handler_body(self.handler_index)
-        elif mnemonic in _FP_PACKED_ARITH_KINDS:
+        elif mnemonic == _FP_PACKED_ARITH_KEY:
+            body = self._fp_packed_arith_handler_body(None)
+        elif mnemonic in _FP_PACKED_ARITH_OPERATIONS:
             body = self._fp_packed_arith_handler_body(mnemonic)
         elif mnemonic in _FP_PACKED_MEM_KINDS:
             body = self._fp_packed_mem_handler_body(mnemonic)

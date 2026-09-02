@@ -6,6 +6,8 @@ import struct
 
 import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_engine_common import (
+    _FP_PACKED_ARITH_KEY,
+    _FP_PACKED_ARITH_OPERATIONS,
     _FP_PACKED_VEX_OPERATIONS,
     _FP_PACKED_WIDTH,
     _FP_SCALAR_VEX_OPERATIONS,
@@ -120,9 +122,13 @@ class _BytecodeEncoder:
             self._emit_fields(position, order, fields)
         elif isinstance(op, VirtualizedFpPackedOp):
             if op.src1_index is None:
-                position = self._opcode(op.mnemonic, _FP_PACKED_WIDTH)
-                fields = {"dst": bytes([op.dst_index]), "src": bytes([op.src_index])}
-                order = pair_permuted_fields("dst", "src", self.field_perm)
+                position = self._opcode(_FP_PACKED_ARITH_KEY, _FP_PACKED_WIDTH)
+                fields = {
+                    "dst": bytes([op.dst_index]),
+                    "src": bytes([op.src_index]),
+                    "op": bytes([_FP_PACKED_ARITH_OPERATIONS.index(op.mnemonic)]),
+                }
+                order = [*pair_permuted_fields("dst", "src", self.field_perm), ("op", 1)]
             else:
                 position = self._opcode("fppackedvex", _FP_PACKED_WIDTH)
                 fields = {

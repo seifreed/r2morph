@@ -40,10 +40,19 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i shuffle_mask = _mm_setzero_si128();
     __m128i right = _mm_set1_epi8(7);
     __m128i vex_right = _mm_set1_epi8(-1);
+    __m128i shift_left = _mm_set1_epi16(0x0011);
+    __m128i shift_right = _mm_set1_epi16(0x0044);
+    __m128i shift_arithmetic = _mm_set1_epi16(-16);
+    __m128i shift_count = _mm_cvtsi64_si128(1);
+    __m128i legacy_maximum = _mm_setzero_si128();
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
+        "pmaxub %[right], %[legacy_maximum]\n\t"
+        "psllw %[shift_count], %[shift_left]\n\t"
+        "psrlw %[shift_count], %[shift_right]\n\t"
+        "psraw %[shift_count], %[shift_arithmetic]\n\t"
         "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
         "pshufb %[shuffle_mask], %[shuffled]\n\t"
         "mov %[seed], %%rax\n\t"
@@ -55,9 +64,12 @@ __attribute__((noinline)) static int packed_operations(void) {
         "movw %%ax, (%[word_destination])\n\t"
         "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
+          [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
+          [shift_arithmetic] "+x"(shift_arithmetic),
           [shuffled] "+x"(shuffled),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask), [seed] "m"(seed),
+        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
+          [shift_count] "x"(shift_count), [seed] "m"(seed),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
         : "rax", "memory"
@@ -65,6 +77,10 @@ __attribute__((noinline)) static int packed_operations(void) {
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
         && _mm_movemask_epi8(minimum) == 0
+        && _mm_movemask_epi8(legacy_maximum) == 0
+        && _mm_movemask_epi8(shift_left) == 0
+        && _mm_movemask_epi8(shift_right) == 0
+        && _mm_movemask_epi8(shift_arithmetic) == 0xffff
         && _mm_movemask_epi8(maximum) == 0xffff
         && _mm_movemask_epi8(shuffled) == 0
         && byte_after == 0x11223344556677a5ULL

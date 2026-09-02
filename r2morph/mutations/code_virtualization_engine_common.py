@@ -178,11 +178,11 @@ _FP_ARITH_MEM_KINDS: tuple[str, ...] = (
 )
 # Packed 128-bit SIMD: register-register arithmetic (addpd/addps + sub/mul/div, all
 # lanes) and 128-bit ``[base+disp]`` load/store (movaps/movups/movapd/movupd). The
-# op-key width is a nominal 128 (the ops are lane-agnostic 128-bit); the arith kind
-# is the mnemonic itself, so the handler emits it directly. xmm slots are already
-# 128-bit, so there is no frame change and the moves are always movups.
+# operation selector lets the whole legacy register-register family share one
+# single-byte handler key, while xmm slots remain 128-bit and the moves stay movups.
 _FP_PACKED_WIDTH = 128
-_FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
+_FP_PACKED_ARITH_KEY = "fppacked"
+_FP_PACKED_ARITH_OPERATIONS: tuple[str, ...] = (
     "addpd",
     "addps",
     "subpd",
@@ -217,6 +217,12 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "pslld",
     "psrld",
     "psrad",
+    "psllw",
+    "psllq",
+    "psrlw",
+    "psrlq",
+    "psraw",
+    "pmaxub",
     "paddusb",
     "psubusb",
     "paddusw",
@@ -242,6 +248,7 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "xorps",
     "xorpd",
 )
+_FP_PACKED_ARITH_KINDS: tuple[str, ...] = (_FP_PACKED_ARITH_KEY,)
 _FP_PACKED_VEX_ARITH_KINDS: tuple[str, ...] = ("fppackedvex",)
 _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vaddpd",

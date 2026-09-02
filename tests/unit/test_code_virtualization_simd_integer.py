@@ -78,6 +78,10 @@ def test_decode_packed_integer_shift_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pslld xmm0, xmm1") == ("fppacked", "pslld", 0, 1))
 
 
+def test_decode_packed_integer_unsigned_maximum_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith_extra("pmaxub xmm0, xmm1") == ("fppacked", "pmaxub", 0, 1))
+
+
 def test_decode_packed_integer_immediate_shift_returns_item() -> None:
     expect(_decode_fp_packed_immediate("pslld xmm2, 5") == ("fppackedimm", "pslld", 2, 5))
 
