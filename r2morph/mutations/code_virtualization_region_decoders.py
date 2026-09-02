@@ -425,8 +425,13 @@ def _parse_tls_operand(text: str) -> tuple[str, int | None, int, int | None] | N
     text = text.strip().lower()
     width: int | None = None
     head = text.split(None, 1)
-    if head and head[0] in ("qword", "dword"):
-        width = 64 if head[0] == "qword" else 32
+    if head and head[0] in ("qword", "dword", "word", "byte"):
+        width = {
+            "byte": _BYTE_WIDTH_BITS,
+            "word": _WORD_WIDTH_BITS,
+            "dword": 32,
+            "qword": 64,
+        }[head[0]]
         text = head[1].strip() if len(head) > 1 else ""
     rest = text.split(None, 1)
     if rest and rest[0] == "ptr":

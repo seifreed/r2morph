@@ -70,7 +70,7 @@ def _decode_tls_indexed_memory_mov(left: str, right: str) -> tuple[Any, ...] | N
         kind, memory, register_text = "tlsloadidx", right_indexed, left
     else:
         return None
-    register = _register_operand(register_text.lower())
+    register = _memory_register_operand(register_text.lower())
     if register is None:
         return None
     segment, base_slot, index_slot, shift, displacement, memory_width = memory
@@ -98,7 +98,7 @@ def _decode_tls_memory_mov(text: str) -> tuple[Any, ...] | None:
         kind, memory, register_text = "tlsload", right_tls, left
     else:
         return None
-    register = _register_operand(register_text.lower())
+    register = _memory_register_operand(register_text.lower())
     if register is None:
         return None
     segment, base_slot, displacement, memory_width = memory

@@ -31,6 +31,24 @@ def test_tls_handler_uses_the_current_thread_segment_base() -> None:
     expect("mov rax, qword ptr fs:[r10]" in assembly)
 
 
+def test_tls_byte_load_preserves_upper_register_bits() -> None:
+    item = _decode_tls_memory_mov("mov al, byte ptr fs:[0]")
+    assembly = _tls_memory_handler_asm("tlsload_fs_-1_8", "r13b", "r14d", 0)
+
+    expect(
+        item == ("tlsload", 0, "fs", None, 0, 8)
+        and "movzx eax, byte ptr fs:[r10]" in assembly
+        and "and r11, -256" in assembly
+    )
+
+
+def test_tls_word_store_uses_the_low_word_and_segment_override() -> None:
+    item = _decode_tls_memory_mov("mov word ptr gs:[4], cx")
+    assembly = _tls_memory_handler_asm("tlsstore_gs_-1_16", "r13b", "r14d", 0)
+
+    expect(item == ("tlsstore", 1, "gs", None, 4, 16) and "mov word ptr gs:[r10], ax" in assembly)
+
+
 def test_tls_indexed_load_decoder_preserves_base_and_index() -> None:
     item = _decode_tls_memory_mov("mov rax, qword ptr gs:[rdi+rcx*8+16]")
 

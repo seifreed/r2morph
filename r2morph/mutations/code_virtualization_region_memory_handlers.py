@@ -66,28 +66,28 @@ class MemoryImmediateOperationConfig:
     addr_variant: int = 0
 
 
-def _memory_load_slot_asm(width: int) -> str:
+def _memory_load_slot_asm(width: int, address: str = "[r10]") -> str:
     if width == _QWORD_WIDTH_BITS:
-        return "  mov rax, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+        return f"  mov rax, qword ptr {address}\n  mov qword ptr [rsp+r8*8], rax\n"
     if width == _DWORD_WIDTH_BITS:
-        return "  mov eax, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+        return f"  mov eax, dword ptr {address}\n  mov qword ptr [rsp+r8*8], rax\n"
     load = "byte" if width == _BYTE_WIDTH_BITS else "word"
     mask = -256 if width == _BYTE_WIDTH_BITS else -65536
     return (
-        f"  movzx eax, {load} ptr [r10]\n"
+        f"  movzx eax, {load} ptr {address}\n"
         f"  mov r11, qword ptr [rsp+r8*8]\n  and r11, {mask}\n  or rax, r11\n"
         "  mov qword ptr [rsp+r8*8], rax\n"
     )
 
 
-def _memory_store_slot_asm(width: int) -> str:
+def _memory_store_slot_asm(width: int, address: str = "[r10]") -> str:
     value = {
         _BYTE_WIDTH_BITS: ("byte", "al"),
         _WORD_WIDTH_BITS: ("word", "ax"),
         _DWORD_WIDTH_BITS: ("dword", "eax"),
         _QWORD_WIDTH_BITS: ("qword", "rax"),
     }[width]
-    return f"  mov rax, qword ptr [rsp+r8*8]\n  mov {value[0]} ptr [r10], {value[1]}\n"
+    return f"  mov rax, qword ptr [rsp+r8*8]\n  mov {value[0]} ptr {address}, {value[1]}\n"
 
 
 def _partial_result_store_asm(width: int) -> str:
@@ -386,7 +386,7 @@ def _tls_address_asm(
 def _tls_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
-    """Load or store a GP value through the current thread's FS/GS base."""
+    """Load or store a byte, word, dword, or qword through FS/GS."""
     parts = handler_key.split("_")
     kind, segment, width_text = parts[0], parts[1], parts[-1]
     width = int(width_text)
@@ -399,15 +399,9 @@ def _tls_memory_handler_asm(
         body, advance = _tls_address_asm(base not in ("-1", "None"), key, key_dword, field_perm)
     address = f"{segment}:[r10]"
     if kind.startswith("tlsload"):
-        load = (
-            f"  mov rax, qword ptr {address}\n" if width == _QWORD_WIDTH_BITS else f"  mov eax, dword ptr {address}\n"
-        )
-        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+        body += _memory_load_slot_asm(width, address)
     else:
-        body += "  mov rbx, qword ptr [rsp+r8*8]\n"
-        value = "rbx" if width == _QWORD_WIDTH_BITS else "ebx"
-        size = "qword" if width == _QWORD_WIDTH_BITS else "dword"
-        body += f"  mov {size} ptr {address}, {value}\n"
+        body += _memory_store_slot_asm(width, address)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
