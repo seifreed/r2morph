@@ -214,8 +214,6 @@ def _decode_fp_vex_extra_item(text: str) -> VirtualizedFpPackedOp | None:
     if extra is None or extra[0] != "fppackedvex":
         return None
     _kind, mnemonic, destination, first_source, second_source = extra
-    if destination == first_source:
-        return VirtualizedFpPackedOp(mnemonic, destination, second_source, vex=True)
     return VirtualizedFpPackedOp(
         f"v{mnemonic}",
         destination,
@@ -233,11 +231,11 @@ def _decode_fp_packed_item(text: str, insn_addr: int, insn_size: int) -> Virtual
     if vex is not None:
         _kind, mnemonic, destination, first_source, second_source = vex
         return VirtualizedFpPackedOp(
-            mnemonic if destination == first_source else f"v{mnemonic}",
+            f"v{mnemonic}",
             destination,
             second_source,
             vex=True,
-            src1_index=None if destination == first_source else first_source,
+            src1_index=first_source,
         )
     immediate = _decode_fp_packed_immediate(text)
     if immediate is not None and immediate[1] != "pshufd":

@@ -311,6 +311,12 @@ def test_decode_vex128_integer_xor_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpxor xmm2, xmm0, xmm1") == ("fppackedvex", "pxor", 2, 0, 1))
 
 
+def test_decode_destructive_vex128_integer_xor_preserves_vex_semantics() -> None:
+    item = _decode_run_item("vpxor xmm0, xmm0, xmm1")
+
+    expect(isinstance(item, VirtualizedFpPackedOp) and item.mnemonic == "vpxor" and item.src1_index == 0 and item.vex)
+
+
 def test_decode_vex128_byte_shuffle_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_extra("vpshufb xmm2, xmm0, xmm1") == ("fppackedvex", "pshufb", 2, 0, 1))
 
