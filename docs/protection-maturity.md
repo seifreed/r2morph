@@ -1,24 +1,26 @@
 # Protection Maturity Report
 
-Commit: `442907c`
+Commit: `1e925fe`
 Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `442907c` and covered 145
+The latest full local-fixture campaign ran against `1e925fe` and covered 146
 fixtures with all six selected passes. The differential report completed in
-workflow `33693228805` (artifact SHA-256
-`b54b8cd73e939c5563dd4a6d01ab589324282fc800c9b3ca3aa07fd9dbb04f42`). Its
+workflow `33695791212` (artifact SHA-256
+`7f6b7e20da807c91507f9be161b2dbce68121cfef9276552ad3228ded1ab9f43`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-442907c.json`](protection-maturity-by-pass-2026-09-03-442907c.json):
-CodeVirtualization recorded 141 semantic passes and four known failures; the
-other five passes recorded 144 semantic passes and one known failure each.
-The four CodeVirtualization failures are `elf_vm_fppackedidxnb_x86_64` and the
-three `vex128` fixtures. The matching adversarial campaign completed in
-workflow `33693228648` and covered 145 samples, 4,342 completed tool runs,
-3,480 unavailable-tool rows, and 8 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-03-442907c-summary.json`](protection-adversarial-corpus-2026-09-03-442907c-summary.json):
-CodeVirtualization applied to all 145 samples and virtualized 156 functions,
+[`docs/protection-maturity-by-pass-2026-09-03-1e925fe.json`](protection-maturity-by-pass-2026-09-03-1e925fe.json):
+CodeVirtualization recorded 141 semantic passes and five known failures; the
+other five passes recorded 145 semantic passes and one known failure each.
+The new `elf_vm_vpmuldq_x86_64` fixture returns `42` before and after native
+virtualization; its Unicorn result is an external emulator limitation. The
+five CodeVirtualization differential failures are therefore not treated as a
+clean semantic gate. The matching adversarial campaign completed in workflow
+`33695791436` and covered 146 samples, 4,371 completed tool runs, 3,504
+unavailable-tool rows, and 9 tool errors. Its per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-03-1e925fe-summary.json`](protection-adversarial-corpus-2026-09-03-1e925fe-summary.json):
+CodeVirtualization applied to all 146 samples and virtualized 157 functions,
 with no unsupported functions or transformation errors.
 
 CI run `33693223075` for `442907c` was in progress when this report was generated.
