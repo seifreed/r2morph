@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `8407c1a`
+Commit: `ed36d06`
 Date: `2026-09-02`
 
 ## Current verification status
@@ -46,14 +46,25 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `8407c1a` ran all 140 fixtures with all six
+The latest per-pass differential campaign on commit `ed36d06` ran all 140 fixtures with all six
 passes. Its machine-readable summary is in
 [`docs/protection-maturity-by-pass-2026-09-01.json`](protection-maturity-by-pass-2026-09-01.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33577677023` (SHA-256
-`463255c85eb3bbd84b91f56bdd71bde8dc5cd96b16e2c6b9cb2acacbe3c04514`). Code virtualization recorded 136
+artifact from workflow run `33580812734` (SHA-256
+`9cce59c2eb394f18a4815db8144cc5fd618b0bc75743fe178f5a7371f9eb0438`). Code virtualization recorded 136
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 139 semantic passes each with one baseline discrepancy.
+
+The latest all-pass adversarial campaign on commit `ed36d06` ran the complete
+140-fixture dataset. Its compact per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-02-summary.json`](protection-adversarial-corpus-2026-09-02-summary.json);
+the raw report is retained as the `adversarial-benchmark` artifact from workflow
+run `33580813118` (SHA-256
+`f68084add3edde81d00640e0f7558c3ecc59d02a9b43b2e042b229c8fc41de52`). It
+recorded 4,192 completed tool runs, 3,360 unavailable-tool rows and 8 tool
+errors. Code virtualization applied to 137 samples, omitted 3, and reported
+zero transformation errors; unavailable tools and tool errors are not treated
+as passing evidence.
 
 The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
 campaign runs Ghidra headless over the same 140 original/protected pairs. It
