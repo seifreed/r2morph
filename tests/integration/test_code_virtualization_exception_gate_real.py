@@ -45,14 +45,24 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
     expect(result.returncode == 0, "failed to compile the real unwinding fixture")
 
     with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        protected_address = next(
+            int(function["addr"])
+            for function in binary.get_functions()
+            if "protected_function" in function.get("name", "")
+        )
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20}).apply(binary)
 
     runtime_result = run_command([executable], timeout=30)
+    unsupported_addresses = {record["function_address"] for record in stats["unsupported_functions"]}
+    partial_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
     expect(
         stats["functions_virtualized"] > 0
         and stats["partial_virtualization_total"] > 0
+        and protected_address in unsupported_addresses
+        and protected_address not in partial_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "unwind-safe partial virtualization changed the executable result",
+        "landing-pad unwind metadata was not rejected before relocation",
     )
 
 

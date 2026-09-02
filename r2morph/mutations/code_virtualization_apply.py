@@ -91,8 +91,20 @@ def _transform_function(
 ) -> dict[str, int]:
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
+    if unwind_metadata:
+        pass_instance._record_diagnostic(
+            unsupported,
+            func,
+            None,
+            (
+                "error",
+                "exceptions_and_unwinding",
+                "landing-pad unwind metadata cannot be preserved by the relocated VM",
+            ),
+        )
+        return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
     unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
-    if unwind_metadata or unsupported_instruction is not None:
+    if unsupported_instruction is not None:
         return _transform_unsupported_function(pass_instance, binary, func, unsupported_instruction, records)
 
     region_result = pass_instance._virtualize_function(binary, func)
