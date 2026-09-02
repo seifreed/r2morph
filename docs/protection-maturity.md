@@ -1,15 +1,16 @@
 # Protection Maturity Report
 
-Commit: `ada9c84`
+Commit: `9d3f9ba`
 Date: `2026-09-02`
 
 ## Current verification status
 
 The supported Python environment passed the required static and security gates
-locally on commit `ada9c84`. GitHub Actions run `33597737656` completed
-successfully with all jobs for that commit, including the Linux x86-64 suite and
-cross-platform matrix. The dword sign-extension memory regression and the
-legacy packed-word comparison regression passed in the Linux integration job.
+locally on commit `9d3f9ba`. GitHub Actions run `33599301345` is the CI run for
+that commit; its lint, typecheck, unit, integration, property/fuzz, product
+smoke, wheel, and cross-platform jobs have passed while the remaining core job
+is still running. The `rdtsc` varargs regression passes in the local integration
+suite.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -44,29 +45,30 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `ada9c84` ran all 141 fixtures with all six
+The latest per-pass differential campaign on commit `9d3f9ba` ran all 141 fixtures with all six
 passes. Its machine-readable summary is in
-[`docs/protection-maturity-by-pass-2026-09-02-ada9c84.json`](protection-maturity-by-pass-2026-09-02-ada9c84.json)
+[`docs/protection-maturity-by-pass-2026-09-02-9d3f9ba.json`](protection-maturity-by-pass-2026-09-02-9d3f9ba.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33597773792` (SHA-256
-`fce2f2b862a4b06b734bd941e3106e1761dae90294b531c64fd7acb39ac5ad89`). Code virtualization recorded 137
+artifact from workflow run `33599315675` (SHA-256
+`5d6261b4db57c6be665a009dc8576b7028796661366655ff1f0e38f57898cb68`). Code virtualization recorded 137
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 140 semantic passes each with one baseline discrepancy.
 
-The latest all-pass adversarial campaign on commit `ada9c84` ran the complete
+The latest all-pass adversarial campaign on commit `9d3f9ba` ran the complete
 141-fixture dataset. Its compact per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-ada9c84-summary.json`](protection-adversarial-corpus-2026-09-02-ada9c84-summary.json);
+[`docs/protection-adversarial-corpus-2026-09-02-9d3f9ba-summary.json`](protection-adversarial-corpus-2026-09-02-9d3f9ba-summary.json);
 the raw report is retained as the `adversarial-benchmark` artifact from workflow
-run `33597773481` (SHA-256
-`b87e03b2ba5b55a6428fd58619670c36fa905c2ea295f68f85e3dd878f14616e`). It
+run `33599315521` (SHA-256
+`8b0a7c47030fce2439e6a354e2b57cf079a92092e2913d98f7d19a46c05b2855`). It
 recorded 4,222 completed tool runs, 3,384 unavailable-tool rows and 8 tool
-errors. Code virtualization applied to 138 samples, omitted 3, and reported
-zero transformation errors; unavailable tools and tool errors are not treated
-as passing evidence.
+errors. Code virtualization applied to 138 samples, omitted 3, virtualized
+145 functions, and reported 6 unsupported functions with zero transformation
+errors. The `elf_vm_varargs_scalar_x86_64` sample now reports zero unsupported
+functions; unavailable tools and tool errors are not treated as passing evidence.
 
 The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
 campaign ran Ghidra headless over all 141 original/protected pairs from
-`45b8ef5`; it has not yet been rerun for `ada9c84`. It completed 282 analyses with zero errors or timeouts and records
+`45b8ef5`; it has not yet been rerun for `9d3f9ba`. It completed 282 analyses with zero errors or timeouts and records
 the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
