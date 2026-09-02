@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `c2a7924`
+Commit: `139fb5d`
 Date: `2026-09-02`
 
 ## Current verification status
 
 The supported Python environment passed Black, Ruff, Bandit, and pip-audit
 locally on commit `c2a7924`; mypy is blocked locally only by missing third-party
-stubs for `networkx` and `yaml`. GitHub Actions run `33669807131` is the CI run
-for this commit; its typecheck and unit jobs have passed while Linux integration
-and core jobs are still running. The VEX.128 lane-extraction regression passes
-locally and is covered natively on Linux amd64 in CI.
+stubs for `networkx` and `yaml`. GitHub Actions run `33671185971` passed the
+published tree, including lint, typecheck, unit, core, integration, wheel-smoke,
+property/fuzz, and the supported platform matrix. The VEX.128 lane-extraction
+regression passes locally and is covered natively on Linux amd64 in CI.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
