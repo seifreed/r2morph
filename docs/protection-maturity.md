@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `9d3f9ba`
+Commit: `c2a7924`
 Date: `2026-09-02`
 
 ## Current verification status
 
-The supported Python environment passed the required static and security gates
-locally on commit `9d3f9ba`. GitHub Actions run `33599301345` is the CI run for
-that commit; its lint, typecheck, unit, integration, property/fuzz, product
-smoke, wheel, and cross-platform jobs have passed while the remaining core job
-is still running. The `rdtsc` varargs regression passes in the local integration
-suite.
+The supported Python environment passed Black, Ruff, Bandit, and pip-audit
+locally on commit `c2a7924`; mypy is blocked locally only by missing third-party
+stubs for `networkx` and `yaml`. GitHub Actions run `33669807131` is the CI run
+for this commit; its typecheck and unit jobs have passed while Linux integration
+and core jobs are still running. The VEX.128 lane-extraction regression passes
+locally and is covered natively on Linux amd64 in CI.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -45,30 +45,30 @@ executing an AVX `vextractf128` instruction; the full sample-level evidence is
 in [`docs/protection-adversarial-corpus-2026-09-01.json`](protection-adversarial-corpus-2026-09-01.json).
 This run is not represented as a zero-error release gate.
 
-The latest per-pass differential campaign on commit `9d3f9ba` ran all 141 fixtures with all six
+The latest per-pass differential campaign on commit `c2a7924` ran all 141 fixtures with all six
 passes. Its machine-readable summary is in
-[`docs/protection-maturity-by-pass-2026-09-02-9d3f9ba.json`](protection-maturity-by-pass-2026-09-02-9d3f9ba.json)
+[`docs/protection-maturity-by-pass-2026-09-02-c2a7924.json`](protection-maturity-by-pass-2026-09-02-c2a7924.json)
 and the complete raw report is retained as the `differential-corpus-by-pass`
-artifact from workflow run `33599315675` (SHA-256
-`5d6261b4db57c6be665a009dc8576b7028796661366655ff1f0e38f57898cb68`). Code virtualization recorded 137
+artifact from workflow run `33669837281` (SHA-256
+`37848b14e72a281133954e69247383ffe6c56963c713c2c22eed91415ff35da3`). Code virtualization recorded 137
 semantic passes and four known baseline discrepancies; the other five passes
 recorded 140 semantic passes each with one baseline discrepancy.
 
-The latest all-pass adversarial campaign on commit `9d3f9ba` ran the complete
+The latest all-pass adversarial campaign on commit `c2a7924` ran the complete
 141-fixture dataset. Its compact per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-02-9d3f9ba-summary.json`](protection-adversarial-corpus-2026-09-02-9d3f9ba-summary.json);
+[`docs/protection-adversarial-corpus-2026-09-02-c2a7924-summary.json`](protection-adversarial-corpus-2026-09-02-c2a7924-summary.json);
 the raw report is retained as the `adversarial-benchmark` artifact from workflow
-run `33599315521` (SHA-256
-`8b0a7c47030fce2439e6a354e2b57cf079a92092e2913d98f7d19a46c05b2855`). It
+run `33669844838` (SHA-256
+`8ec76ced005d23923f04932a9b8b875efb218d35ec4b6af16fd841dff115f6a2`). It
 recorded 4,222 completed tool runs, 3,384 unavailable-tool rows and 8 tool
-errors. Code virtualization applied to 138 samples, omitted 3, virtualized
-145 functions, and reported 6 unsupported functions with zero transformation
-errors. The `elf_vm_varargs_scalar_x86_64` sample now reports zero unsupported
-functions; unavailable tools and tool errors are not treated as passing evidence.
+errors. Code virtualization applied to 140 samples, omitted 1, virtualized
+149 functions, and reported 2 unsupported functions with zero transformation
+errors. The `elf_vm_vex128_x86_64` sample now has no partial virtualization;
+unavailable tools and tool errors are not treated as passing evidence.
 
 The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
 campaign ran Ghidra headless over all 141 original/protected pairs from
-`45b8ef5`; it has not yet been rerun for `9d3f9ba`. It completed 282 analyses with zero errors or timeouts and records
+`45b8ef5`; it has not yet been rerun for `c2a7924`. It completed 282 analyses with zero errors or timeouts and records
 the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).
@@ -162,7 +162,7 @@ treated as passing evidence. The automated review is not human sign-off.
 
 ## 5. Virtualization maturity
 
-The current one-seed adversarial run applied the pass to 138 of 141 fixtures and records
+The current one-seed adversarial run applied the pass to 140 of 141 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
