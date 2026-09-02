@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import r2morph.core.randomness as random
 from r2morph.analysis.switch_table import SwitchTableAnalyzer
@@ -108,6 +108,8 @@ def _memory_dispatch_targets(binary: Any, function_address: int, region: Any) ->
         if item[0] not in _MEMORY_DISPATCH_KINDS:
             continue
         table_address = _dispatch_table_address(item)
+        if table_address is None:
+            return False
         targets = targets_by_table.get(table_address)
         if not targets or not targets.issubset(region.target_map):
             return False
@@ -135,4 +137,4 @@ def virtualize_dispatch_function(owner: Any, binary: Any, func: dict[str, Any]) 
         and not _memory_dispatch_targets(binary, func["addr"], region)
     ):
         return None
-    return owner._emit_region(binary, func, region, rng, use_nesting=False)
+    return cast(dict[str, Any] | None, owner._emit_region(binary, func, region, rng, use_nesting=False))
