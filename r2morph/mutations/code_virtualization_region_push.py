@@ -34,8 +34,8 @@ def _decode_push_memory(text: str, insn_addr: int = 0, insn_size: int = 0) -> tu
         if width in _STACK_MEMORY_WIDTHS:
             direct = _parse_mem_operand(operand)
             if direct is not None:
-                base, displacement, width = direct
-                if width in (None, *_STACK_MEMORY_WIDTHS):
+                base, displacement, parsed_width = direct
+                if parsed_width in (None, *_STACK_MEMORY_WIDTHS):
                     result = ("pushmem", base, displacement, _push_memory_width(operand))
             if result is None:
                 rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
