@@ -146,7 +146,7 @@ def test_virtualized_elf_preserves_legacy_packed_word_comparisons(tmp_path: Path
 
 __attribute__((noinline)) static int packed_word_comparisons(void) {
     __m128i equal = _mm_set1_epi16(7);
-    __m128i greater = _mm_set1_epi16(8);
+    __m128i greater = _mm_set1_epi16(6);
     __m128i source = _mm_set1_epi16(7);
     __asm__ volatile(
         "pcmpeqw %[source], %[equal]\n\t"
