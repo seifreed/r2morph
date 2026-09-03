@@ -279,19 +279,17 @@ def _runtime_observables_equal(expected: object, actual: object) -> bool:
 
 
 def _semantic_run_matches(baseline: object, baseline_runtime: object, run: object) -> bool:
-    """Require valid emulator parity and identical bounded runtime observables."""
+    """Require native runtime parity and use emulation when it supports both files."""
     if not isinstance(baseline, Mapping) or not isinstance(baseline_runtime, Mapping):
         return False
     if not isinstance(run, Mapping) or run.get("status") != "passed":
         return False
-    if baseline.get("status") != "completed":
+    if not _runtime_observables_equal(baseline_runtime, run.get("runtime")):
         return False
     unicorn = run.get("unicorn")
-    if not isinstance(unicorn, Mapping) or unicorn.get("status") != "completed":
-        return False
-    if unicorn.get("exit_code") != baseline.get("exit_code"):
-        return False
-    return _runtime_observables_equal(baseline_runtime, run.get("runtime"))
+    if baseline.get("status") == "completed" and isinstance(unicorn, Mapping) and unicorn.get("status") == "completed":
+        return unicorn.get("exit_code") == baseline.get("exit_code")
+    return True
 
 
 def _build_mutation_pass(pass_name: str, seed: int) -> MutationPass:

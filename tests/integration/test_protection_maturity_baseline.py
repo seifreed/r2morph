@@ -189,6 +189,24 @@ def test_semantic_run_rejects_invalid_emulator_status() -> None:
     expect(not (_semantic_run_matches(baseline, runtime, run) is not False))
 
 
+def test_semantic_run_uses_native_runtime_when_emulator_lacks_instruction_support() -> None:
+    baseline = {"status": "error", "error_type": "UcError"}
+    runtime = {
+        "status": "completed",
+        "return_code": 42,
+        "stdout": {"sha256": "empty", "size": 0},
+        "stderr": {"sha256": "empty", "size": 0},
+        "created_files": {},
+    }
+    run = {
+        "status": "passed",
+        "runtime": runtime,
+        "unicorn": {"status": "error", "error_type": "UcError"},
+    }
+
+    expect(_semantic_run_matches(baseline, runtime, run))
+
+
 def test_discover_executables_excludes_relocatable_objects() -> None:
     fixtures = discover_executables(_DATASET)
 
