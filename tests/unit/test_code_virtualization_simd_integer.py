@@ -60,6 +60,14 @@ def test_decode_packed_integer_qword_add_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("paddq xmm0, xmm1") == ("fppacked", "paddq", 0, 1))
 
 
+def test_decode_packed_integer_signed_byte_saturating_subtract_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith("psubsb xmm0, xmm1") == ("fppacked", "psubsb", 0, 1))
+
+
+def test_decode_vex128_signed_word_saturating_subtract_returns_vector_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vpsubsw xmm0, xmm1, xmm2") == ("fppackedvex", "psubsw", 0, 1, 2))
+
+
 def test_decode_packed_integer_multiply_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pmulld xmm0, xmm1") == ("fppacked", "pmulld", 0, 1))
 
