@@ -44,6 +44,8 @@ failure:
     mov eax, 60
     syscall
 
+.fill 0x200, 1, 0x90
+
 .section .rodata
 .p2align 5
 word128:
