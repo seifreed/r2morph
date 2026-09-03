@@ -68,6 +68,23 @@ def test_decode_vex128_signed_word_saturating_subtract_returns_vector_item() -> 
     expect(_decode_fp_vex_packed_arith("vpsubsw xmm0, xmm1, xmm2") == ("fppackedvex", "psubsw", 0, 1, 2))
 
 
+def test_decode_vex128_horizontal_packed_operations_returns_vector_items() -> None:
+    decoded = tuple(
+        _decode_fp_vex_packed_arith(f"{mnemonic} xmm0, xmm1, xmm2")
+        for mnemonic in ("vphaddw", "vphaddsw", "vphsubw", "vphsubsw", "vphsubd")
+    )
+    expect(
+        decoded
+        == (
+            ("fppackedvex", "phaddw", 0, 1, 2),
+            ("fppackedvex", "phaddsw", 0, 1, 2),
+            ("fppackedvex", "phsubw", 0, 1, 2),
+            ("fppackedvex", "phsubsw", 0, 1, 2),
+            ("fppackedvex", "phsubd", 0, 1, 2),
+        )
+    )
+
+
 def test_decode_packed_integer_multiply_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pmulld xmm0, xmm1") == ("fppacked", "pmulld", 0, 1))
 
