@@ -114,6 +114,20 @@ def test_decode_vex256_unpack_operations_returns_vector_items() -> None:
     expect(decoded == expected)
 
 
+def test_decode_vex_word_shuffle_immediates_returns_vector_items() -> None:
+    decoded = (
+        _decode_fp_vex_packed_immediate("vpshuflw xmm0, xmm1, 0x1b"),
+        _decode_fp_vex_packed_immediate("vpshufhw ymm2, ymm3, 0x1b"),
+    )
+    expect(
+        decoded
+        == (
+            ("fppackedveximm", "pshuflw", 0, 1, 0x1B),
+            ("fppackedvex256imm", "pshufhw", 2, 3, 0x1B),
+        )
+    )
+
+
 def test_decode_packed_integer_multiply_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pmulld xmm0, xmm1") == ("fppacked", "pmulld", 0, 1))
 

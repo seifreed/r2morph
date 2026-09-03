@@ -602,6 +602,7 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
 _FP_PACKED_IMMEDIATE: frozenset[str] = frozenset(
     {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "pshufd"}
 )
+_FP_VEX_PACKED_IMMEDIATE: frozenset[str] = _FP_PACKED_IMMEDIATE | frozenset({"pshuflw", "pshufhw"})
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vaddps": "addps",
@@ -656,6 +657,8 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpsrlvd": "psrlvd",
     "vpsravd": "psravd",
     "vpshufd": "pshufd",
+    "vpshuflw": "pshuflw",
+    "vpshufhw": "pshufhw",
     "vpmulld": "pmulld",
     "vpmuldq": "pmuldq",
     "vpmuludq": "pmuludq",
@@ -858,7 +861,7 @@ def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int]
         return None
     mnemonic = parts[0].lower()
     operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
-    if len(parts) != _INSTRUCTION_PART_COUNT or operation not in _FP_PACKED_IMMEDIATE:
+    if len(parts) != _INSTRUCTION_PART_COUNT or operation not in _FP_VEX_PACKED_IMMEDIATE:
         return None
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:
