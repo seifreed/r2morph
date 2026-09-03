@@ -155,7 +155,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = route(handler_key, index, (flag, arithmetic, compare, shift, address))
             if body is not None:
                 return body
-        return ""
+        raise ValueError(f"No VM handler is registered for {handler_key!r}")
 
     def _fp_immediate(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
         if key.startswith("fppackedimm_"):

@@ -10,6 +10,8 @@ sits. These pin that contract on the real decoders (no mocks, no binary).
 
 from __future__ import annotations
 
+import pytest
+
 from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
@@ -64,6 +66,13 @@ def test_region_router_routes_vex_rip_load_to_a_real_handler() -> None:
     body = HandlerBodyRouter(context).body("fploadvexrip_64", 0, (0, 0, 0, 0, 0))
 
     expect(body != "")
+
+
+def test_region_router_rejects_unknown_handler_key() -> None:
+    context = HandlerContext("key", "key_qword", "key_dword", 0, "", "", "", 0, ())
+
+    with pytest.raises(ValueError, match="No VM handler is registered"):
+        HandlerBodyRouter(context).body("unsupported_opcode", 0, (0, 0, 0, 0, 0))
 
 
 def test_vex_256_packed_add_reports_a_dedicated_item_shape() -> None:
