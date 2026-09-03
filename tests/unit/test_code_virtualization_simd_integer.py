@@ -20,6 +20,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_immediate,
     _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
+    _decode_fp_vex_256_packed_arith,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_immediate,
     _decode_fp_vex_packed_move,
@@ -96,6 +97,20 @@ def test_decode_vex128_unpack_operations_returns_vector_items() -> None:
     )
     decoded = tuple(_decode_fp_vex_packed_arith(f"{mnemonic} xmm0, xmm1, xmm2") for mnemonic in mnemonics)
     expected = tuple(("fppackedvex", mnemonic[1:], 0, 1, 2) for mnemonic in mnemonics)
+    expect(decoded == expected)
+
+
+def test_decode_vex256_unpack_operations_returns_vector_items() -> None:
+    mnemonics = (
+        "vpunpckldq",
+        "vpunpcklqdq",
+        "vpunpckhbw",
+        "vpunpckhwd",
+        "vpunpckhdq",
+        "vpunpckhqdq",
+    )
+    decoded = tuple(_decode_fp_vex_256_packed_arith(f"{mnemonic} ymm0, ymm1, ymm2") for mnemonic in mnemonics)
+    expected = tuple(("fppackedvex256", mnemonic[1:], 0, 1, 2) for mnemonic in mnemonics)
     expect(decoded == expected)
 
 
