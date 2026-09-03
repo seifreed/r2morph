@@ -1,0 +1,72 @@
+{
+  "artifact_sha256": "48d83130fb10d22c01de0ce45421b0b9e91b32c5389dc90f5f96a66102fcb0e0",
+  "commit": "1c2a01e",
+  "pass_summary": {
+    "BlockReordering": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "no_op": 146,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 147,
+      "errors": 0,
+      "functions_virtualized": 158,
+      "no_op": 0,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 2,
+      "no_op": 145,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 30,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 35,
+      "no_op": 117,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 147,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 8,
+      "no_op": 145,
+      "omitted": 0,
+      "samples": 147,
+      "unsupported_functions": 0
+    }
+  },
+  "sample_count": 147,
+  "summary": {
+    "completed_tool_runs": 4400,
+    "error_tool_runs": 10,
+    "unavailable_tool_runs": 3528
+  },
+  "workflow": 33699419297
+}
