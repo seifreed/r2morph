@@ -3,7 +3,7 @@
 .text
 
 _start:
-    vmovdqa xmm1, xmmword ptr [rip + word128]
+    movdqa xmm1, xmmword ptr [rip + word128]
 
     vpshuflw xmm0, xmm1, 0x1b
     movd eax, xmm0
