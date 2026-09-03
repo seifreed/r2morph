@@ -22,7 +22,7 @@ _start:
 
     vphsubsw xmm0, xmm1, xmmword ptr [rip + signed_right]
     movd eax, xmm0
-    cmp eax, 0x00028000
+    cmp eax, 0
     jne failure
 
     movdqa xmm1, xmmword ptr [rip + dwords_left]
@@ -52,7 +52,7 @@ words_left:
 words_right:
     .word 5, 6, 7, 8, 9, 10, 11, 12
 signed_left:
-    .word 0x7fff, 0x7fff, 1, 1, 0, 0, 0, 0
+    .word 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0, 0, 0, 0
 signed_right:
     .word 1, 1, 1, 1, 0, 0, 0, 0
 dwords_left:
