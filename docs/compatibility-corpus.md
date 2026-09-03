@@ -31,14 +31,15 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `df23104` covered 156 fixtures
+The latest repository-fixture campaign against `c9bf67f` covered 157 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-df23104.json`](protection-maturity-by-pass-2026-09-04-df23104.json),
-from workflow `33812765275` (artifact SHA-256
-`d179bbe6bc9b7f99d1a11f99206b6268ff8026beccf0ca96f04a72b48b594a2f`). Five
-passes recorded 156 semantic passes with no failures; CodeVirtualization
-recorded 155 semantic passes and one known baseline mismatch in
-`elf_vm_fppackedidxnb_x86_64`. The matching adversarial report is summarized
+[`protection-maturity-by-pass-2026-09-04-c9bf67f.json`](protection-maturity-by-pass-2026-09-04-c9bf67f.json),
+from workflow `33814638619` (artifact SHA-256
+`26ce96f99f2d1e53ab191fd750d2b5a08ba1bfabb7c9699e06f248aa46e5a56c`). Five
+passes recorded 157 semantic passes with no failures; CodeVirtualization
+recorded 156 semantic passes and one known baseline mismatch in
+`elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture passed
+CodeVirtualization with native and Unicorn parity. The matching adversarial report is summarized
 in
 [`protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json),
 from workflow `33704363064` (artifact SHA-256

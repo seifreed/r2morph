@@ -1,22 +1,23 @@
 # Protection Maturity Report
 
-Commit: `df23104`
+Commit: `c9bf67f`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `df23104` and covered
-156 fixtures with all six selected passes. The differential report completed in
-workflow `33812765275` (artifact SHA-256
-`d179bbe6bc9b7f99d1a11f99206b6268ff8026beccf0ca96f04a72b48b594a2f`). Its
+The latest full Linux amd64 fixture campaign ran against `c9bf67f` and covered
+157 fixtures with all six selected passes. The differential report completed in
+workflow `33814638619` (artifact SHA-256
+`26ce96f99f2d1e53ab191fd750d2b5a08ba1bfabb7c9699e06f248aa46e5a56c`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-df23104.json`](protection-maturity-by-pass-2026-09-04-df23104.json):
-BlockReordering, InstructionExpansion, InstructionSubstitution, and
-NopInsertion recorded 156 semantic passes with no failures. CodeVirtualization
-recorded 155 semantic passes and one known baseline mismatch in
-`elf_vm_fppackedidxnb_x86_64`; RegisterSubstitution recorded 156 semantic
-passes with no failures. The baseline discrepancy is not evidence of a
-transformation bug, but CodeVirtualization is not yet a clean semantic gate.
+[`docs/protection-maturity-by-pass-2026-09-04-c9bf67f.json`](protection-maturity-by-pass-2026-09-04-c9bf67f.json):
+BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
+and RegisterSubstitution recorded 157 semantic passes with no failures.
+CodeVirtualization recorded 156 semantic passes and one known baseline
+mismatch in `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture
+passed CodeVirtualization with native and Unicorn parity. The baseline
+discrepancy is not evidence of a transformation bug, but CodeVirtualization
+is not yet a clean semantic gate.
 The matching adversarial campaign completed in workflow
 `33704363064` and covered 148 samples, with 4,424 completed tool runs, 3,552
 unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
