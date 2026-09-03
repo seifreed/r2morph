@@ -19,3 +19,4 @@ table:
     .long 1, 2, 3, 4
 output:
     .long 0, 0, 0, 0
+.zero 8
