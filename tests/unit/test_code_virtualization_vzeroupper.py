@@ -9,6 +9,7 @@ from r2morph.mutations.code_virtualization_region_codegen import _interpreter_as
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_handlers import vzeroall_handler_asm, vzeroupper_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
+from r2morph.mutations.code_virtualization_region_nesting import _nested_xmm_state_asm
 from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
@@ -76,3 +77,11 @@ def test_vzeroall_region_uses_ymm_state_and_builds_blob() -> None:
 
     expect("pxor xmm0, xmm0" in assembly and "vextractf128 xmm0, ymm0, 1" in assembly)
     expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
+
+
+def test_nested_zeroing_region_preserves_ymm_frame_state() -> None:
+    region = _vzeroupper_region()
+
+    spill, reload = _nested_xmm_state_asm(region, [region])
+
+    expect("vextractf128 xmm0, ymm0, 1" in spill and "vinsertf128 ymm0" in reload)

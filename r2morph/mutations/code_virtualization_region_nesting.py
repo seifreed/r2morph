@@ -315,7 +315,8 @@ def _set_layer_slots(layer: int, count: int) -> str:
 def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, str]:
     """Preserve vector state for nested regions and native-call bridges."""
     has_fp = any(
-        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", *_XMM_CALL_KINDS) for item in region.instructions
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", "vzeroupper", "vzeroall", *_XMM_CALL_KINDS)
+        for item in region.instructions
     )
     if not has_fp:
         return "", ""
@@ -364,6 +365,8 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
             "fppackedvexmemidx",
             "fppackedvexmemidxnb",
             "fpmovvex256",
+            "vzeroupper",
+            "vzeroall",
         )
         for layer in layers
         for item in layer.instructions
