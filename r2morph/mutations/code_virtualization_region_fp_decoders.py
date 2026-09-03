@@ -684,6 +684,12 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpackssdw": "packssdw",
     "vpunpcklbw": "punpcklbw",
     "vpunpcklwd": "punpcklwd",
+    "vpunpckldq": "punpckldq",
+    "vpunpcklqdq": "punpcklqdq",
+    "vpunpckhbw": "punpckhbw",
+    "vpunpckhwd": "punpckhwd",
+    "vpunpckhdq": "punpckhdq",
+    "vpunpckhqdq": "punpckhqdq",
 }
 _FP_VEX_PACKED_UNARY_ARITH: dict[str, str] = {"vsqrtps": "sqrtps", "vsqrtpd": "sqrtpd"}
 _FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {

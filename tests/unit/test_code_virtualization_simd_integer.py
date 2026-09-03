@@ -85,6 +85,20 @@ def test_decode_vex128_horizontal_packed_operations_returns_vector_items() -> No
     )
 
 
+def test_decode_vex128_unpack_operations_returns_vector_items() -> None:
+    mnemonics = (
+        "vpunpckldq",
+        "vpunpcklqdq",
+        "vpunpckhbw",
+        "vpunpckhwd",
+        "vpunpckhdq",
+        "vpunpckhqdq",
+    )
+    decoded = tuple(_decode_fp_vex_packed_arith(f"{mnemonic} xmm0, xmm1, xmm2") for mnemonic in mnemonics)
+    expected = tuple(("fppackedvex", mnemonic[1:], 0, 1, 2) for mnemonic in mnemonics)
+    expect(decoded == expected)
+
+
 def test_decode_packed_integer_multiply_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pmulld xmm0, xmm1") == ("fppacked", "pmulld", 0, 1))
 
