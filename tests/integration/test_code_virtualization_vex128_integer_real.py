@@ -15,12 +15,14 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_integer_x86_64"
+_PHADDD_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_phaddd_x86_64"
 _EXPECTED_EXIT_CODE = 10
+_PHADDD_EXPECTED_EXIT_CODE = 42
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 10
 
 
-def _mutate_fixture(destination: Path) -> dict[str, int]:
-    shutil.copy(_FIXTURE, destination)
+def _mutate_fixture(fixture: Path, destination: Path) -> dict[str, int]:
+    shutil.copy(fixture, destination)
     binary = Binary(destination, writable=True)
     binary.open()
     try:
@@ -36,7 +38,7 @@ def test_vex128_integer_fixture_original_returns_expected_code() -> None:
 
 
 def test_vex128_integer_fixture_virtualization_applies(tmp_path: Path) -> None:
-    stats = _mutate_fixture(tmp_path / "mutated_vex128_integer")
+    stats = _mutate_fixture(_FIXTURE, tmp_path / "mutated_vex128_integer")
 
     expect(stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS)
 
@@ -45,10 +47,27 @@ def test_vex128_integer_fixture_virtualization_preserves_result(tmp_path: Path) 
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native VEX execution requires an x86-64 host")
     mutated = tmp_path / "mutated_vex128_integer"
-    _mutate_fixture(mutated)
+    _mutate_fixture(_FIXTURE, mutated)
 
     result = run_command([mutated])
     expect(
         result.returncode == _EXPECTED_EXIT_CODE,
         f"virtualized VEX.128 integer fixture returned {result.returncode}, expected {_EXPECTED_EXIT_CODE}",
+    )
+
+
+def test_vphaddd_fixture_original_returns_expected_code() -> None:
+    expect(emulate_exit_code(_PHADDD_FIXTURE) == _PHADDD_EXPECTED_EXIT_CODE)
+
+
+def test_vphaddd_fixture_virtualization_preserves_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native VEX execution requires an x86-64 host")
+    mutated = tmp_path / "mutated_vex128_phaddd"
+    _mutate_fixture(_PHADDD_FIXTURE, mutated)
+
+    result = run_command([mutated])
+    expect(
+        result.returncode == _PHADDD_EXPECTED_EXIT_CODE,
+        f"virtualized VPHADDD fixture returned {result.returncode}, expected {_PHADDD_EXPECTED_EXIT_CODE}",
     )

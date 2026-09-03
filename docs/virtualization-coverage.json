@@ -56,7 +56,7 @@
       ]
     },
     "floating_point_and_simd": {
-      "fixture_count": 47,
+      "fixture_count": 48,
       "fixtures": [
         "elf_vm_fparith_x86_64",
         "elf_vm_fparithidx_x86_64",
@@ -100,6 +100,7 @@
         "elf_vm_simdmove_x86_64",
         "elf_vm_simdwide_x86_64",
         "elf_vm_vex128_integer_x86_64",
+        "elf_vm_vex128_phaddd_x86_64",
         "elf_vm_vex128_scalar_x86_64",
         "elf_vm_vex128_shift_x86_64",
         "elf_vm_vex128_x86_64",
@@ -231,7 +232,7 @@
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 139,
+  "fixture_count": 140,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

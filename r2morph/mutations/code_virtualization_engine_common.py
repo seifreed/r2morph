@@ -297,6 +297,7 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpsubd",
     "vpaddq",
     "vpsubq",
+    "vphaddd",
     "vpsllw",
     "vpsllq",
     "vpslld",

@@ -190,6 +190,18 @@ def test_decode_vex128_packed_float_add_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vaddps xmm0, xmm1, xmm2") == ("fppackedvex", "addps", 0, 1, 2))
 
 
+def test_decode_vex128_horizontal_dword_add_returns_three_operand_item() -> None:
+    item = _decode_run_item("vphaddd xmm0, xmm1, xmm2")
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and item.vex
+        and item.mnemonic == "vphaddd"
+        and item.dst_index == 0
+        and item.src1_index == 1
+        and item.src_index == _EXPECTED_NON_DESTRUCTIVE_SOURCE
+    )
+
+
 def test_decode_vex256_packed_float_add_is_rejected() -> None:
     expect(_decode_fp_vex_packed_arith("vaddps ymm0, ymm1, ymm2") is None)
 
