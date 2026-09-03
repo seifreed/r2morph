@@ -20,7 +20,7 @@ _start:
     movdqa xmm2, xmmword ptr [rip + byte_right]
     vpunpckhbw xmm0, xmm1, xmm2
     movd eax, xmm0
-    cmp eax, 0x22121111
+    cmp eax, 0x22122111
     jne failure
 
     movdqa xmm1, xmmword ptr [rip + word_left]
