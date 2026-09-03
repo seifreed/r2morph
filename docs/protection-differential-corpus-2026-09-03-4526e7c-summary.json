@@ -1,0 +1,37 @@
+{
+  "artifact_sha256": "1ca066f69d7be4a4436141039629c626a07cdacc6baf2620b5352a9dd6c71036",
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64"
+  ],
+  "commit": "4526e7c",
+  "fixture_count": 154,
+  "new_fixture": "elf_vm_vex128_unpack_x86_64",
+  "new_capability": "vpunpckldq/vpunpcklqdq/vpunpckhbw/vpunpckhwd/vpunpckhdq/vpunpckhqdq register-register forms",
+  "summary": {
+    "BlockReordering": {
+      "semantic_failures": 0,
+      "semantic_passes": 154
+    },
+    "CodeVirtualization": {
+      "semantic_failures": 1,
+      "semantic_passes": 153
+    },
+    "InstructionExpansion": {
+      "semantic_failures": 0,
+      "semantic_passes": 154
+    },
+    "InstructionSubstitution": {
+      "semantic_failures": 0,
+      "semantic_passes": 154
+    },
+    "NopInsertion": {
+      "semantic_failures": 0,
+      "semantic_passes": 154
+    },
+    "RegisterSubstitution": {
+      "semantic_failures": 1,
+      "semantic_passes": 153
+    }
+  },
+  "workflow": 33779832203
+}
