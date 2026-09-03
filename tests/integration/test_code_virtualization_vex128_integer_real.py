@@ -69,9 +69,18 @@ def test_vphaddd_fixture_virtualization_preserves_result(tmp_path: Path) -> None
     result = run_command([mutated])
     crash_diagnostic = ""
     debugger = shutil.which("gdb")
+    debugger_name = "gdb"
+    if debugger is None:
+        debugger = shutil.which("lldb")
+        debugger_name = "lldb"
     if result.returncode < 0 and debugger is not None:
+        debug_command = (
+            [debugger, "-q", "-batch", "-ex", "run", "-ex", "bt", "-ex", "x/8i $pc", "--args", mutated]
+            if debugger_name == "gdb"
+            else [debugger, "-b", "-o", "run", "-o", "bt", "-o", "disassemble --pc", "--", mutated]
+        )
         debug_result = run_command(
-            [debugger, "-q", "-batch", "-ex", "run", "-ex", "bt", "-ex", "x/8i $pc", "--args", mutated],
+            debug_command,
             timeout=30,
             text=True,
         )
