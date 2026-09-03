@@ -75,7 +75,23 @@ def test_vphaddd_fixture_virtualization_preserves_result(tmp_path: Path) -> None
         debugger_name = "lldb"
     if result.returncode < 0 and debugger is not None:
         debug_command = (
-            [debugger, "-q", "-batch", "-ex", "run", "-ex", "bt", "-ex", "x/8i $pc", "--args", mutated]
+            [
+                debugger,
+                "-q",
+                "-batch",
+                "-ex",
+                "starti",
+                "-ex",
+                "continue",
+                "-ex",
+                "info registers rip rsp",
+                "-ex",
+                "x/8i $pc",
+                "-ex",
+                "bt",
+                "--args",
+                mutated,
+            ]
             if debugger_name == "gdb"
             else [debugger, "-b", "-o", "run", "-o", "bt", "-o", "disassemble --pc", "--", mutated]
         )
