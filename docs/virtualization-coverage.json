@@ -56,7 +56,7 @@
       ]
     },
     "floating_point_and_simd": {
-      "fixture_count": 49,
+      "fixture_count": 50,
       "fixtures": [
         "elf_vm_fparith_x86_64",
         "elf_vm_fparithidx_x86_64",
@@ -104,6 +104,7 @@
         "elf_vm_vex128_scalar_x86_64",
         "elf_vm_vex128_shift_x86_64",
         "elf_vm_vex128_x86_64",
+        "elf_vm_vex256_packusdw_mem_x86_64",
         "elf_vm_vex256_packusdw_x86_64",
         "elf_vm_vpmuldq_x86_64",
         "elf_vm_vpmuludq_x86_64"
@@ -142,7 +143,7 @@
       ]
     },
     "memory_addressing": {
-      "fixture_count": 34,
+      "fixture_count": 35,
       "fixtures": [
         "elf_vm_cmpmem_x86_64",
         "elf_vm_fparithmem_x86_64",
@@ -177,7 +178,8 @@
         "elf_vm_run_movxfallback_x86_64",
         "elf_vm_run_movxidxfallback_x86_64",
         "elf_vm_run_riprelarithfallback_x86_64",
-        "elf_vm_run_riprelfallback_x86_64"
+        "elf_vm_run_riprelfallback_x86_64",
+        "elf_vm_vex256_packusdw_mem_x86_64"
       ]
     },
     "signals_and_system_calls": {
@@ -233,7 +235,7 @@
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 141,
+  "fixture_count": 142,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []
