@@ -10,7 +10,21 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 
 _PACKED_OPERAND_COUNT = 2
-_EXTRA_PACKED_ARITHMETIC = frozenset({"pcmpeqb", "pcmpgtb", "pmaxub", "pminub", "pshufb"})
+_EXTRA_PACKED_ARITHMETIC = frozenset(
+    {
+        "pcmpeqb",
+        "pcmpgtb",
+        "pmaxub",
+        "pminub",
+        "pshufb",
+        "phaddw",
+        "phaddd",
+        "phaddsw",
+        "phsubw",
+        "phsubd",
+        "phsubsw",
+    }
+)
 
 
 def _decode_fp_packed_arith_extra(text: str) -> tuple[str, str, int, int] | None:

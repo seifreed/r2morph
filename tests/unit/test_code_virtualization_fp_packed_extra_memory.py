@@ -2,6 +2,7 @@
 
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_fp_packed_extra import (
+    _decode_fp_packed_arith_extra,
     _decode_fp_packed_arith_extra_idx,
     _decode_fp_packed_arith_extra_mem,
     _decode_fp_packed_arith_extra_riprel,
@@ -29,3 +30,14 @@ def test_classify_extra_packed_memory_operation_uses_indexed_shape() -> None:
 
 def test_decode_extra_packed_memory_operation_rejects_register_source() -> None:
     expect(_decode_fp_packed_arith_extra_idx("pcmpgtb xmm0, xmm1") is None)
+
+
+def test_decode_extra_packed_horizontal_register_operation() -> None:
+    expect(_decode_fp_packed_arith_extra("phaddw xmm0, xmm1") == ("fppacked", "phaddw", 0, 1))
+
+
+def test_classify_extra_packed_horizontal_memory_operation() -> None:
+    expect(
+        _classify({"type": "vec", "opcode": "phsubd xmm0, [rax + 16]", "addr": 0x1000, "size": 7})
+        == ["fppackedmem", "phsubd", 0, 0, 16]
+    )
