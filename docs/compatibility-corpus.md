@@ -40,6 +40,13 @@ matching adversarial report is summarized in
 [`protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json`](protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json),
 from workflow `33699419297` (artifact SHA-256
 `48d83130fb10d22c01de0ce45421b0b9e91b32c5389dc90f5f96a66102fcb0e0`).
+The local Ghidra headless campaign for the same 147-fixture corpus completed
+294 analyses with zero errors or timeouts. Its raw report is
+[`protection-ghidra-corpus.json`](protection-ghidra-corpus.json), with the
+per-run contract in
+[`protection-ghidra-corpus-2026-09-03-892e9ac-summary.json`](protection-ghidra-corpus-2026-09-03-892e9ac-summary.json)
+and SHA-256
+`601a50c20edabf36b6a505b98ea28af5eb965c976b899ed8cb306344c5bd7337`.
 
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording

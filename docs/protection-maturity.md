@@ -22,8 +22,14 @@ unavailable-tool rows, and 10 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json`](protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json):
 CodeVirtualization applied to all 147 samples and virtualized 158 functions,
 with no unsupported functions or transformation errors.
+The local Ghidra headless campaign also completed all 294 analyses for the 147
+original/protected pairs with zero errors or timeouts. Its compact result is in
+[`docs/protection-ghidra-corpus-2026-09-03-892e9ac-summary.json`](protection-ghidra-corpus-2026-09-03-892e9ac-summary.json)
+and the raw report is in [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
+(`SHA-256 601a50c20edabf36b6a505b98ea28af5eb965c976b899ed8cb306344c5bd7337`).
 
-CI run `33693223075` for `442907c` was in progress when this report was generated.
+CI run `33699368204` for `1c2a01e` passed all configured jobs. CI run
+`33702913772` for `892e9ac` was in progress when this report was generated.
 The local full command produced 5,337 passed, 15 failed, and 108 skipped tests;
 the focused 16-bit memory-stack regression passed, while the full suite remains
 blocked by existing environment/dependency and execution-contract failures.
@@ -108,9 +114,9 @@ rows, and 8 tool errors. CodeVirtualization applied to all 141 samples and
 virtualized 150 functions, with one unsupported function and no transformation
 errors. These unavailable tools and errors remain explicit non-passing evidence.
 
-The latest [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
-campaign ran Ghidra headless over all 141 original/protected pairs from
-`45b8ef5`; it has not yet been rerun for `c2a7924`. It completed 282 analyses with zero errors or timeouts and records
+The preceding [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5.json`](protection-ghidra-corpus-2026-09-02-45b8ef5.json)
+campaign ran Ghidra headless over 141 original/protected pairs from
+`45b8ef5`. It completed 282 analyses with zero errors or timeouts and records
 the `CodeVirtualization` pass summary per sample. Its compact contract is in
 [`docs/protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json`](protection-ghidra-corpus-2026-09-02-45b8ef5-summary.json)
 (`SHA-256 8fb6dd957c56c2960bd2679a63512bfee429a2028b2fc5a826e177086032a59d`).

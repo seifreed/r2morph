@@ -21,7 +21,7 @@
       "status": "passed"
     },
     {
-      "detail": "140 samples, 280 completed analyses",
+      "detail": "147 samples, 294 completed analyses",
       "name": "ghidra_corpus_evidence",
       "status": "passed"
     },
