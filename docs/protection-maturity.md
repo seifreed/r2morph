@@ -1,21 +1,22 @@
 # Protection Maturity Report
 
-Commit: `c9bf67f`
+Commit: `def87fd`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `c9bf67f` and covered
-157 fixtures with all six selected passes. The differential report completed in
-workflow `33814638619` (artifact SHA-256
-`26ce96f99f2d1e53ab191fd750d2b5a08ba1bfabb7c9699e06f248aa46e5a56c`). Its
+The latest full Linux amd64 fixture campaign ran against `def87fd` and covered
+158 fixtures with all six selected passes. The differential report completed in
+workflow `33817868833` (artifact SHA-256
+`7141cd95a8f4a8b0a29539c88f9f2153ad541e2be0307013263d10bb89159aa1`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-c9bf67f.json`](protection-maturity-by-pass-2026-09-04-c9bf67f.json):
+[`docs/protection-maturity-by-pass-2026-09-04-def87fd.json`](protection-maturity-by-pass-2026-09-04-def87fd.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
-and RegisterSubstitution recorded 157 semantic passes with no failures.
-CodeVirtualization recorded 156 semantic passes and one known baseline
+and RegisterSubstitution recorded 158 semantic passes with no failures.
+CodeVirtualization recorded 157 semantic passes and one known baseline
 mismatch in `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture
-passed CodeVirtualization with native and Unicorn parity. The baseline
+and the new horizontal packed-memory fixture passed CodeVirtualization with
+native and Unicorn parity. The baseline
 discrepancy is not evidence of a transformation bug, but CodeVirtualization
 is not yet a clean semantic gate.
 The matching adversarial campaign completed in workflow
