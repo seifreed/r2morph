@@ -311,3 +311,77 @@ int main(void) {
         f"unsigned VEX packed multiply result changed: original={original_result.returncode}, "
         f"mutated={mutated_result.returncode}",
     )
+
+
+def test_virtualized_vex128_variable_shift_and_addsub_preserve_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native VEX.128 SIMD execution requires an x86-64 host")
+    source = tmp_path / "vex128_shift_addsub.c"
+    executable = tmp_path / "vex128_shift_addsub"
+    source.write_text(
+        r"""
+#include <immintrin.h>
+#include <stdint.h>
+
+__attribute__((noinline)) static int vex128_operations(void) {
+    __m128i values = _mm_set_epi32(4, 3, 2, 1);
+    __m128i counts = _mm_set1_epi32(1);
+    __m128i shifted;
+    float left_values[4] = {10.0f, 20.0f, 30.0f, 40.0f};
+    float right_values[4] = {1.0f, 2.0f, 3.0f, 4.0f};
+    uint32_t shifted_values[4];
+    float result_values[4];
+    __m128 left = _mm_loadu_ps(left_values);
+    __m128 right = _mm_loadu_ps(right_values);
+    __m128 result;
+    __asm__ volatile(
+        "vpsllvd %[counts], %[values], %[shifted]\n\t"
+        "vaddsubps %[right], %[left], %[result]\n\t"
+        : [shifted] "=&x"(shifted), [result] "=&x"(result)
+        : [values] "x"(values), [counts] "x"(counts), [left] "x"(left), [right] "x"(right));
+    _mm_storeu_si128((__m128i *)shifted_values, shifted);
+    _mm_storeu_ps(result_values, result);
+    return shifted_values[0] == 2
+        && shifted_values[3] == 8
+        && result_values[0] == 9.0f
+        && result_values[1] == 22.0f
+        && result_values[2] == 27.0f
+        && result_values[3] == 44.0f
+        ? 42
+        : 1;
+}
+
+int main(void) {
+    return vex128_operations();
+}
+""",
+    )
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-mavx2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fcf-protection=none",
+            source,
+            "-o",
+            executable,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 shift/addsub fixture")
+    original_result = run_command([executable], timeout=30)
+    with Binary(executable, writable=True) as binary:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260912}).apply(binary)
+        binary.save()
+    mutated_result = run_command([executable], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.128 shift/addsub fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        f"VEX.128 shift/addsub result changed: original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}",
+    )

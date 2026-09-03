@@ -367,6 +367,24 @@ def test_decode_vex128_variable_shift_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpslld xmm2, xmm0, xmm1") == ("fppackedvex", "pslld", 2, 0, 1))
 
 
+def test_engine_assembles_vex128_variable_shift() -> None:
+    item = _decode_run_item("vpsllvd xmm2, xmm0, xmm1")
+
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and build_vm_blob([item], 0x500000, 0x401000, build_vm_scheme(randomness.Random(20260912))) is not None
+    )
+
+
+def test_engine_assembles_vex128_addsub() -> None:
+    item = _decode_run_item("vaddsubps xmm2, xmm0, xmm1")
+
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and build_vm_blob([item], 0x500000, 0x401000, build_vm_scheme(randomness.Random(20260913))) is not None
+    )
+
+
 def test_decode_vex_immediate_shift_selects_128_bit_item() -> None:
     expect(_decode_fp_vex_packed_immediate("vpsrad xmm2, xmm0, 7") == ("fppackedveximm", "psrad", 2, 0, 7))
 
