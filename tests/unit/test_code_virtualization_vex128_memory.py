@@ -28,6 +28,8 @@ from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
 _VEX128_MEMORY_ITEM_SIZE = 8
+_VEX128_IMMEDIATE_MEMORY_ITEM_SIZE = 8
+_VEX128_IMMEDIATE_MEMORY_RIP_ITEM_SIZE = 7
 _VEX128_REGISTER_ITEM_SIZE = 3
 
 
@@ -250,6 +252,33 @@ def test_vex128_packed_memory_item_has_address_shape_and_clears_ymm_upper_state(
         and _item_size(item) == _VEX128_MEMORY_ITEM_SIZE
         and "pxor xmm2, xmm2" in assembly
     )
+
+
+def test_vex128_packed_memory_immediate_item_has_encoded_size_and_handler_key() -> None:
+    item = ("fppackedveximmmem", "pshuflw", 0, 2, 32, 0x1B)
+
+    expect(_op_key(item) == "fppackedveximmmem_pshuflw_27" and _item_size(item) == _VEX128_IMMEDIATE_MEMORY_ITEM_SIZE)
+
+
+def test_vex128_packed_memory_immediate_rip_item_has_encoded_size() -> None:
+    item = ("fppackedveximmmemrip", "pshuflw", 0, 0x1018, 0x1B)
+
+    expect(_item_size(item) == _VEX128_IMMEDIATE_MEMORY_RIP_ITEM_SIZE)
+
+
+def test_vex128_packed_memory_immediate_routes_to_native_handler() -> None:
+    item = ("fppackedveximmmem", "pshuflw", 0, 2, 32, 0x1B)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 8)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect("vpshuflw xmm0, xmm0, 27" in assembly and "add rsi, 8" in assembly)
 
 
 def test_vex128_region_spills_ymm_upper_state_for_existing_vex_arithmetic() -> None:

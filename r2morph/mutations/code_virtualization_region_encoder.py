@@ -355,6 +355,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
     def _emit_fp_memory(self, item: RegionItem) -> bool:
         if item[0].startswith(("fppackedvexcmpmem", "fppackedvex256cmpmem")):
             return self._emit_vex_packed_compare_memory(item)
+        if item[0].startswith(("fppackedveximmmem", "fppackedvex256immmem")):
+            return self._emit_vex_packed_immediate_memory(item)
         if item[0] in (
             "fploadvex",
             "fploadvexrip",
@@ -373,6 +375,24 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         if self._emit_fp_memory_move(item):
             return True
         return self._emit_fp_memory_arithmetic(item)
+
+    def _emit_vex_packed_immediate_memory(self, item: RegionItem) -> bool:
+        kind = item[0]
+        position = self._opcode(item)
+        if kind.endswith("idxnb"):
+            _, _operation, destination, index, shift, displacement, immediate = item
+            self._idx(position, (destination, None, self.slot_of[index], shift, displacement))
+        elif kind.endswith("idx"):
+            _, _operation, destination, base, index, shift, displacement, immediate = item
+            self._idx(position, (destination, self.slot_of[base], self.slot_of[index], shift, displacement))
+        elif kind.endswith("rip"):
+            _, _operation, destination, target, immediate = item
+            self._mem(position, (destination, None, target - self.bytecode_base))
+        else:
+            _, _operation, destination, base, displacement, immediate = item
+            self._mem(position, (destination, self.slot_of[base], displacement))
+        self.plain.append(immediate ^ position)
+        return True
 
     def _emit_fp_memory_move(self, item: RegionItem) -> bool:
         kind = item[0]

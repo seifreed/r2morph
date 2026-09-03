@@ -110,6 +110,8 @@ _DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
     "fpstorevex256": (2, 3, None),
     "fppackedvexmem": (4, 5, None),
     "fppackedvex256mem": (4, 5, None),
+    "fppackedveximmmem": (3, 4, None),
+    "fppackedvex256immmem": (3, 4, None),
     "fppackedvexcmpmem": (4, 5, None),
     "fppackedvex256cmpmem": (4, 5, None),
 }

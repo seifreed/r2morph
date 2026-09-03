@@ -879,6 +879,49 @@ def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int]
     return (kind, operation, destination, source, immediate) if 0 <= immediate <= _PACKED_IMMEDIATE_MAX else None
 
 
+def _decode_fp_vex_packed_immediate_mem(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode a VEX packed immediate operation whose source is memory."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
+    operands = [token.strip() for token in parts[1].split(",")]
+    if operation not in _FP_VEX_PACKED_IMMEDIATE or len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:
+        return None
+    is_ymm = operands[0].lower().startswith("ymm")
+    destination = (_parse_ymm_operand if is_ymm else _parse_xmm_operand)(operands[0])
+    if destination is None or "[" not in operands[1]:
+        return None
+    try:
+        immediate = int(operands[2], 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
+        return None
+    memory = operands[1].lower().replace("ymmword", "").replace("xmmword", "")
+    prefix = "fppackedvex256immmem" if is_ymm else "fppackedveximmmem"
+    result: tuple[Any, ...] | None = None
+    indexed = _parse_indexed_operand(memory, base_optional=True)
+    if indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        kind = prefix + ("idxnb" if base_slot < 0 else "idx")
+        result = (
+            (kind, operation, destination, index_slot, shift, displacement, immediate)
+            if base_slot < 0
+            else (kind, operation, destination, base_slot, index_slot, shift, displacement, immediate)
+        )
+    else:
+        rip_relative = _parse_riprel_operand(memory, insn_addr, insn_size)
+        if rip_relative is not None:
+            result = (prefix + "rip", operation, destination, rip_relative[0], immediate)
+        else:
+            parsed_memory = _parse_mem_operand(memory)
+            if parsed_memory is not None:
+                result = (prefix, operation, destination, parsed_memory[0], parsed_memory[1], immediate)
+    return result
+
+
 def _decode_fp_vex_256_permute_immediate(text: str) -> tuple[str, str, int, int, int, int] | None:
     """Decode a VEX.256 lane permutation controlled by an immediate byte."""
     parts = text.split(None, 1)

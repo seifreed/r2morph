@@ -42,6 +42,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_packed_arith_mem_handler_asm,
     _fp_vex_packed_compare_handler_asm,
     _fp_vex_packed_compare_memory_handler_asm,
+    _fp_vex_packed_immediate_memory_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
@@ -221,7 +222,24 @@ class FPHandlerRouterMixin:
             return None
         return _fp_vex_packed_compare_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
 
-    def _fp_vex_256_packed(self, key: str) -> str | None:
+    def _fp_vex_packed_memory(self, key: str, variants: tuple[int, ...]) -> str:
+        config = VexMemoryHandlerConfig(self.context.field_perm, variants[4], self.context.has_ymm)
+        if key.startswith("fppackedveximmmem_"):
+            return _fp_vex_packed_immediate_memory_handler_asm(key, self.context.key, self.context.key_dword, config)
+        return (
+            _fp_vex_fma_memory_handler_asm(key, self.context.key, self.context.key_dword, config)
+            if is_fp_vex_fma_handler_key(key)
+            else _fp_vex_packed_arith_mem_handler_asm(key, self.context.key, self.context.key_dword, config)
+        )
+
+    def _fp_vex_256_packed(self, key: str, variants: tuple[int, ...]) -> str | None:
+        if key.startswith("fppackedvex256immmem_"):
+            return _fp_vex_packed_immediate_memory_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                VexMemoryHandlerConfig(self.context.field_perm, variants[4]),
+            )
         if key.startswith("fppackedvex256_"):
             handler = (
                 _fp_vex_fma_handler_asm if is_fp_vex_fma_handler_key(key) else _fp_packed_vex_256_arith_handler_asm
@@ -241,7 +259,7 @@ class FPHandlerRouterMixin:
         compare = self._fp_vex_packed_compare(key, _variants)
         if compare is not None:
             return compare
-        packed_256 = self._fp_vex_256_packed(key)
+        packed_256 = self._fp_vex_256_packed(key, _variants)
         if packed_256 is not None:
             return packed_256
         body = None
@@ -252,13 +270,8 @@ class FPHandlerRouterMixin:
                 if is_fp_vex_scalar_fma_handler_key(key)
                 else _fp_vex_scalar_arith_mem_handler_asm(key, self.context.key, self.context.key_dword, config)
             )
-        elif key.startswith("fppackedvexmem"):
-            config = VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm)
-            body = (
-                _fp_vex_fma_memory_handler_asm(key, self.context.key, self.context.key_dword, config)
-                if is_fp_vex_fma_handler_key(key)
-                else _fp_vex_packed_arith_mem_handler_asm(key, self.context.key, self.context.key_dword, config)
-            )
+        elif key.startswith(("fppackedvexmem", "fppackedveximmmem")):
+            body = self._fp_vex_packed_memory(key, _variants)
         elif key.startswith("fppackedvex256mem"):
             config = VexMemoryHandlerConfig(self.context.field_perm, _variants[4], self.context.has_ymm)
             body = (

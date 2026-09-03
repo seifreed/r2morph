@@ -23,6 +23,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_packed_arith,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_immediate,
+    _decode_fp_vex_packed_immediate_mem,
     _decode_fp_vex_packed_move,
     _decode_fp_vex_scalar_arith,
 )
@@ -126,6 +127,18 @@ def test_decode_vex_word_shuffle_immediates_returns_vector_items() -> None:
             ("fppackedvex256imm", "pshufhw", 2, 3, 0x1B),
         )
     )
+
+
+def test_decode_vex_word_shuffle_memory_immediate_returns_vector_item() -> None:
+    item = _decode_fp_vex_packed_immediate_mem("vpshuflw xmm0, xmmword ptr [rax + 32], 0x1b", 0x1000, 8)
+
+    expect(item == ("fppackedveximmmem", "pshuflw", 0, 0, 32, 0x1B))
+
+
+def test_decode_vex256_word_shuffle_memory_immediate_returns_vector_item() -> None:
+    item = _decode_fp_vex_packed_immediate_mem("vpshufhw ymm2, ymmword ptr [rcx*4 + 64], 0x1b", 0x1000, 8)
+
+    expect(item == ("fppackedvex256immmemidxnb", "pshufhw", 2, 1, 2, 64, 0x1B))
 
 
 def test_decode_packed_integer_multiply_returns_vector_item() -> None:

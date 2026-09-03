@@ -429,6 +429,36 @@ def _fp_vex_256_packed_shift_immediate_handler_asm(handler_key: str, key: str, f
     )
 
 
+def _fp_vex_packed_immediate_memory_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Apply a VEX packed immediate operation to a memory source."""
+    config = config or VexMemoryHandlerConfig()
+    kind, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    is_ymm = kind.startswith("fppackedvex256")
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
+    body += "  shl r8, 4\n"
+    if is_ymm:
+        body += "  vmovups ymm0, [r10]\n"
+        body += f"  v{instruction} ymm0, ymm0, {immediate}\n"
+        body += _store_ymm_to_frame("r8")
+    else:
+        body += f"  movups xmm0, [r10]\n  v{instruction} xmm0, xmm0, {immediate}\n"
+        body += f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        if config.preserve_ymm:
+            body += _clear_ymm_upper_slot_asm("r8")
+    return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_256_permute_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Permute two YMM sources across 128-bit lanes using an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")
