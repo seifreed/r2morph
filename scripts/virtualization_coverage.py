@@ -23,6 +23,7 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
         "movd",
         "fpcmp",
         "fppacked",
+        "pmul",
         "vex",
     ),
     "stack_and_abi": ("prologue", "push", "pop", "leave", "redzone", "varargs"),
