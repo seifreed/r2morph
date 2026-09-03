@@ -64,6 +64,10 @@ def test_decode_packed_integer_multiply_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pmulld xmm0, xmm1") == ("fppacked", "pmulld", 0, 1))
 
 
+def test_decode_packed_integer_unsigned_even_multiply_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith("pmuludq xmm0, xmm1") == ("fppacked", "pmuludq", 0, 1))
+
+
 def test_decode_packed_integer_minimum_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pminsd xmm0, xmm1") == ("fppacked", "pminsd", 0, 1))
 
@@ -291,6 +295,16 @@ def test_engine_assembles_vex128_even_dword_multiply() -> None:
     scheme = build_vm_scheme(randomness.Random(20260910))
     item = VirtualizedFpPackedOp("vpmuldq", 0, 2, vex=True, src1_index=1)
     expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
+
+
+def test_engine_assembles_vex128_unsigned_even_dword_multiply() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260911))
+    item = VirtualizedFpPackedOp("vpmuludq", 0, 2, vex=True, src1_index=1)
+    expect(build_vm_blob([item], 0x500000, 0x401000, scheme) is not None)
+
+
+def test_decode_vex128_unsigned_even_dword_multiply_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vpmuludq xmm2, xmm0, xmm1") == ("fppackedvex", "pmuludq", 2, 0, 1))
 
 
 def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:

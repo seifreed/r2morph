@@ -252,3 +252,62 @@ int main(void) {
         f"VEX packed multiply result changed: original={original_result.returncode}, "
         f"mutated={mutated_result.returncode}",
     )
+
+
+def test_virtualized_vex_packed_unsigned_even_dword_multiply_preserves_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native VEX packed multiplication requires an x86-64 host")
+    source = tmp_path / "vex_pmuludq.c"
+    executable = tmp_path / "vex_pmuludq"
+    source.write_text(
+        r"""
+#include <immintrin.h>
+
+__attribute__((noinline)) static int packed_unsigned_multiply(void) {
+    __m128i left = _mm_set_epi32(0, 0x80000000, 0, 0xffffffff);
+    __m128i right = _mm_set_epi32(0, 2, 0, 2);
+    __m128i result;
+    unsigned long long products[2];
+    __asm__ volatile("vpmuludq %[left], %[right], %[result]\n\t"
+                     : [result] "=&x"(result)
+                     : [left] "x"(left), [right] "x"(right));
+    _mm_storeu_si128((__m128i *)products, result);
+    return products[0] == 0x1fffffffeULL && products[1] == 0x100000000ULL ? 42 : 1;
+}
+
+int main(void) {
+    return packed_unsigned_multiply();
+}
+""",
+    )
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-mavx2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            "-fcf-protection=none",
+            source,
+            "-o",
+            executable,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the unsigned VEX packed multiply fixture")
+
+    original_result = run_command([executable], timeout=30)
+    with Binary(executable, writable=True) as binary:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260911}).apply(binary)
+        binary.save()
+
+    mutated_result = run_command([executable], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"unsigned VEX packed multiply fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        f"unsigned VEX packed multiply result changed: original={original_result.returncode}, "
+        f"mutated={mutated_result.returncode}",
+    )
