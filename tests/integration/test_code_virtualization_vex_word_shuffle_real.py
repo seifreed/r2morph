@@ -23,7 +23,9 @@ def test_vex_word_shuffle_fixture_virtualization_preserves_xmm_and_ymm(tmp_path:
     mutated = tmp_path / "mutated_vex_word_shuffle"
     shutil.copy(_FIXTURE, mutated)
     with Binary(mutated, writable=True) as binary:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260915}).apply(binary)
+        stats = CodeVirtualizationPass(
+            config={"probability": 1.0, "max_functions": 1, "seed": 20260915, "vm_nesting_depth": 1}
+        ).apply(binary)
         binary.save()
     expect(stats["functions_virtualized"] == 1, "VEX word shuffle fixture function was not virtualized")
     if platform.machine().lower() in {"x86_64", "amd64"}:
