@@ -1,0 +1,52 @@
+{
+  "artifact_sha256": "3461b8360e7dc1cf0e0805144b7c8be413adc1d4ba459fd96982032b23f6184f",
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64"
+  ],
+  "commit": "aa6395d",
+  "fixture_count": 155,
+  "new_fixture": "elf_vm_vex256_unpack_x86_64",
+  "new_capability": "vpunpckldq/vpunpcklqdq/vpunpckhbw/vpunpckhwd/vpunpckhdq/vpunpckhqdq VEX.256 register-register forms across both lanes",
+  "register_substitution_failed_samples": [
+    "elf_vm_vex128_x86_64"
+  ],
+  "summary": {
+    "BlockReordering": {
+      "failed_seed_runs": 0,
+      "semantic_failures": 0,
+      "semantic_passes": 155,
+      "successful_seed_runs": 155
+    },
+    "CodeVirtualization": {
+      "failed_seed_runs": 1,
+      "semantic_failures": 1,
+      "semantic_passes": 154,
+      "successful_seed_runs": 154
+    },
+    "InstructionExpansion": {
+      "failed_seed_runs": 0,
+      "semantic_failures": 0,
+      "semantic_passes": 155,
+      "successful_seed_runs": 155
+    },
+    "InstructionSubstitution": {
+      "failed_seed_runs": 0,
+      "semantic_failures": 0,
+      "semantic_passes": 155,
+      "successful_seed_runs": 155
+    },
+    "NopInsertion": {
+      "failed_seed_runs": 0,
+      "semantic_failures": 0,
+      "semantic_passes": 155,
+      "successful_seed_runs": 155
+    },
+    "RegisterSubstitution": {
+      "failed_seed_runs": 1,
+      "semantic_failures": 1,
+      "semantic_passes": 154,
+      "successful_seed_runs": 154
+    }
+  },
+  "workflow": 33786921650
+}
