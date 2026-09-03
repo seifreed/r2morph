@@ -1,24 +1,23 @@
 # Protection Maturity Report
 
-Commit: `1f47e496`
-Date: `2026-09-03`
+Commit: `df23104`
+Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `1f47e496` and covered
+The latest full Linux amd64 fixture campaign ran against `df23104` and covered
 156 fixtures with all six selected passes. The differential report completed in
-workflow `33807762572` (artifact SHA-256
-`f6ff6071ea3fad301db9fddb1b3c519da6af99ee16de432e5d5ea269015afe5c`). Its
+workflow `33812765275` (artifact SHA-256
+`d179bbe6bc9b7f99d1a11f99206b6268ff8026beccf0ca96f04a72b48b594a2f`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-1f47e496.json`](protection-maturity-by-pass-2026-09-03-1f47e496.json):
+[`docs/protection-maturity-by-pass-2026-09-04-df23104.json`](protection-maturity-by-pass-2026-09-04-df23104.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, and
 NopInsertion recorded 156 semantic passes with no failures. CodeVirtualization
-and RegisterSubstitution each recorded 155 semantic passes and one failure.
-The CodeVirtualization failure is the known baseline mismatch in
-`elf_vm_fppackedidxnb_x86_64`; the RegisterSubstitution failure is
-`elf_vm_vex128_x86_64`. The former is not evidence of a transformation bug,
-while the latter still requires investigation before this is a clean semantic
-gate. The matching adversarial campaign completed in workflow
+recorded 155 semantic passes and one known baseline mismatch in
+`elf_vm_fppackedidxnb_x86_64`; RegisterSubstitution recorded 156 semantic
+passes with no failures. The baseline discrepancy is not evidence of a
+transformation bug, but CodeVirtualization is not yet a clean semantic gate.
+The matching adversarial campaign completed in workflow
 `33704363064` and covered 148 samples, with 4,424 completed tool runs, 3,552
 unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
