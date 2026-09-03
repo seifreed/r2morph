@@ -1,0 +1,37 @@
+{
+  "artifact_sha256": "bb0924887c77c4bf4e5875da1aa4bbbcd76584a1d7623245f3f0a332443111b7",
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64"
+  ],
+  "commit": "5cf04f7",
+  "fixture_count": 153,
+  "new_fixture": "elf_vm_vex128_horizontal_x86_64",
+  "new_capability": "vphaddw/vphaddsw/vphsubw/vphsubsw/vphsubd RIP-relative memory forms",
+  "summary": {
+    "BlockReordering": {
+      "semantic_failures": 0,
+      "semantic_passes": 153
+    },
+    "CodeVirtualization": {
+      "semantic_failures": 1,
+      "semantic_passes": 152
+    },
+    "InstructionExpansion": {
+      "semantic_failures": 0,
+      "semantic_passes": 153
+    },
+    "InstructionSubstitution": {
+      "semantic_failures": 0,
+      "semantic_passes": 153
+    },
+    "NopInsertion": {
+      "semantic_failures": 0,
+      "semantic_passes": 153
+    },
+    "RegisterSubstitution": {
+      "semantic_failures": 1,
+      "semantic_passes": 152
+    }
+  },
+  "workflow": 33775299252
+}
