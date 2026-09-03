@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import platform
+import shutil
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,7 @@ def test_vex128_signed_saturating_subtract_fixture_original_returns_expected_cod
 
 def test_vex128_signed_saturating_subtract_virtualization_preserves_result(tmp_path: Path) -> None:
     mutated = tmp_path / "mutated_vex128_sat_sub"
-    mutated.write_bytes(_FIXTURE.read_bytes())
+    shutil.copy(_FIXTURE, mutated)
     with Binary(mutated, writable=True) as binary:
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260911}).apply(binary)
         binary.save()
