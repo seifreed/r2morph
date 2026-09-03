@@ -353,6 +353,10 @@ def test_decode_vex128_byte_shuffle_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_extra("vpshufb xmm2, xmm0, xmm1") == ("fppackedvex", "pshufb", 2, 0, 1))
 
 
+def test_decode_vex128_unsigned_word_pack_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_extra("vpackusdw xmm2, xmm0, xmm1") == ("fppackedvex", "packusdw", 2, 0, 1))
+
+
 def test_decode_vex256_byte_shuffle_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_extra("vpshufb ymm2, ymm0, ymm1") == ("fppackedvex256", "pshufb", 2, 0, 1))
 

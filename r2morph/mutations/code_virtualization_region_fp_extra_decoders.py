@@ -12,7 +12,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 
 _PART_COUNT = 2
 _OPERAND_COUNT = 3
-_EXTRA_VEX_OPERATIONS = {"vpshufb": "pshufb", "vpmaxub": "pmaxub"}
+_EXTRA_VEX_OPERATIONS = {"vpackusdw": "packusdw", "vpshufb": "pshufb", "vpmaxub": "pmaxub"}
 _VEX_LANE_EXTRACT = frozenset({"vextractf128", "vextracti128"})
 _VEX_FP_TO_INT = {"vcvttsd2si": 64, "vcvttss2si": 32}
 
