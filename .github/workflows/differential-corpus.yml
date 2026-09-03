@@ -43,7 +43,7 @@ jobs:
             --output differential-corpus.json
 
       - name: Upload per-pass differential report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: differential-corpus-by-pass
           path: differential-corpus.json
