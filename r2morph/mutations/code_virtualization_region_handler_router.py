@@ -170,7 +170,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             else 0
         )
         body = None
-        if key.startswith("call_"):
+        if key in ("call", "call_0") or key.startswith("call_"):
             body = _call_handler_asm(
                 index,
                 self.context.key_dword,
