@@ -1,0 +1,35 @@
+{
+  "artifact_sha256": "4f81861a3d13fde34ebe6263ce32e5572f9ab3be52e5e14fb9c3bb6a726904cb",
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64"
+  ],
+  "commit": "9130aee",
+  "fixture_count": 151,
+  "summary": {
+    "BlockReordering": {
+      "semantic_failures": 0,
+      "semantic_passes": 151
+    },
+    "CodeVirtualization": {
+      "semantic_failures": 1,
+      "semantic_passes": 150
+    },
+    "InstructionExpansion": {
+      "semantic_failures": 0,
+      "semantic_passes": 151
+    },
+    "InstructionSubstitution": {
+      "semantic_failures": 0,
+      "semantic_passes": 151
+    },
+    "NopInsertion": {
+      "semantic_failures": 0,
+      "semantic_passes": 151
+    },
+    "RegisterSubstitution": {
+      "semantic_failures": 1,
+      "semantic_passes": 150
+    }
+  },
+  "workflow": 33745098538
+}
