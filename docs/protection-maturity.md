@@ -1,22 +1,24 @@
 # Protection Maturity Report
 
-Commit: `7c3d9e5`
+Commit: `1f47e496`
 Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `7c3d9e5` and covered 148
-fixtures with all six selected passes. The differential report completed in
-workflow `33704362906` (artifact SHA-256
-`bd9e8b57a80c5099462c72b67c692c35f67d65ca78a05e33ca91eaf0b4b8ac7a`). Its
+The latest full Linux amd64 fixture campaign ran against `1f47e496` and covered
+156 fixtures with all six selected passes. The differential report completed in
+workflow `33807762572` (artifact SHA-256
+`f6ff6071ea3fad301db9fddb1b3c519da6af99ee16de432e5d5ea269015afe5c`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-7c3d9e5.json`](protection-maturity-by-pass-2026-09-03-7c3d9e5.json):
-CodeVirtualization recorded 141 semantic passes and seven known failures; the
-other five passes recorded 146 semantic passes and two known failures each.
-The `elf_vm_vex128_shift_x86_64` fixture was transformed successfully by the
-native engine and the new VEX operations are covered in the corpus. The seven
-CodeVirtualization differential failures are therefore not treated as a clean
-semantic gate. The matching adversarial campaign completed in workflow
+[`docs/protection-maturity-by-pass-2026-09-03-1f47e496.json`](protection-maturity-by-pass-2026-09-03-1f47e496.json):
+BlockReordering, InstructionExpansion, InstructionSubstitution, and
+NopInsertion recorded 156 semantic passes with no failures. CodeVirtualization
+and RegisterSubstitution each recorded 155 semantic passes and one failure.
+The CodeVirtualization failure is the known baseline mismatch in
+`elf_vm_fppackedidxnb_x86_64`; the RegisterSubstitution failure is
+`elf_vm_vex128_x86_64`. The former is not evidence of a transformation bug,
+while the latter still requires investigation before this is a clean semantic
+gate. The matching adversarial campaign completed in workflow
 `33704363064` and covered 148 samples, with 4,424 completed tool runs, 3,552
 unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):

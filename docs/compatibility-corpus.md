@@ -31,12 +31,16 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `7c3d9e5` covered 148 fixtures
+The latest repository-fixture campaign against `1f47e496` covered 156 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-03-7c3d9e5.json`](protection-maturity-by-pass-2026-09-03-7c3d9e5.json),
-from workflow `33704362906` (artifact SHA-256
-`bd9e8b57a80c5099462c72b67c692c35f67d65ca78a05e33ca91eaf0b4b8ac7a`). The
-matching adversarial report is summarized in
+[`protection-maturity-by-pass-2026-09-03-1f47e496.json`](protection-maturity-by-pass-2026-09-03-1f47e496.json),
+from workflow `33807762572` (artifact SHA-256
+`f6ff6071ea3fad301db9fddb1b3c519da6af99ee16de432e5d5ea269015afe5c`). Five
+passes recorded 156 semantic passes with no failures; CodeVirtualization and
+RegisterSubstitution each recorded 155 semantic passes and one discrepancy.
+The CodeVirtualization discrepancy is the known baseline mismatch in
+`elf_vm_fppackedidxnb_x86_64`; the RegisterSubstitution discrepancy is
+`elf_vm_vex128_x86_64`. The matching adversarial report is summarized in
 [`protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json),
 from workflow `33704363064` (artifact SHA-256
 `f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
