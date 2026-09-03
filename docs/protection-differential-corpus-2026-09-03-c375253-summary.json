@@ -1,0 +1,44 @@
+{
+  "artifact_sha256": "5e2436f2083fb0f77a70b674c8ada7977bc696c4085b58dc5cebdb2d13a9f2aa",
+  "code_virtualization_failed_samples": [
+    "elf_vm_fppackedidxnb_x86_64",
+    "elf_vm_vex128_integer_x86_64",
+    "elf_vm_vex128_phaddd_x86_64",
+    "elf_vm_vex128_scalar_x86_64",
+    "elf_vm_vex128_shift_x86_64",
+    "elf_vm_vex128_x86_64",
+    "elf_vm_vex256_packusdw_mem_x86_64",
+    "elf_vm_vex256_packusdw_x86_64",
+    "elf_vm_vpmuldq_x86_64",
+    "elf_vm_vpmuludq_x86_64"
+  ],
+  "commit": "c375253",
+  "fixture_count": 151,
+  "summary": {
+    "BlockReordering": {
+      "semantic_failures": 4,
+      "semantic_passes": 147
+    },
+    "CodeVirtualization": {
+      "semantic_failures": 10,
+      "semantic_passes": 141
+    },
+    "InstructionExpansion": {
+      "semantic_failures": 4,
+      "semantic_passes": 147
+    },
+    "InstructionSubstitution": {
+      "semantic_failures": 4,
+      "semantic_passes": 147
+    },
+    "NopInsertion": {
+      "semantic_failures": 4,
+      "semantic_passes": 147
+    },
+    "RegisterSubstitution": {
+      "semantic_failures": 4,
+      "semantic_passes": 147
+    }
+  },
+  "workflow": 33734991963
+}
