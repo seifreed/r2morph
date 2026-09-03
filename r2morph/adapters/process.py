@@ -6,6 +6,7 @@ import asyncio
 import os
 import shlex
 import shutil
+import signal
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,11 +94,15 @@ async def _run_process(
         stderr=asyncio.subprocess.PIPE,
         env=context.env,
         cwd=context.cwd,
+        start_new_session=os.name == "posix",
     )
     try:
         stdout, stderr = await asyncio.wait_for(process.communicate(context.input_bytes), timeout)
     except TimeoutError:
-        process.kill()
+        if os.name == "posix":
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
         await process.communicate()
         raise ProcessTimeoutError(f"Process exceeded {timeout} seconds") from None
     return ProcessResult(stdout=stdout, stderr=stderr, returncode=process.returncode or 0)

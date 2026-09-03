@@ -1,9 +1,13 @@
 """Real-process contract for the external process adapter."""
 
+import os
 import sys
+import time
 from pathlib import Path
 
-from r2morph.adapters.process import _resolve_executable, run_process
+import pytest
+
+from r2morph.adapters.process import ProcessTimeoutError, _resolve_executable, run_process
 from tests.utils.assertions import expect
 
 
@@ -28,3 +32,17 @@ def test_run_process_executes_shebang_script_without_shell(tmp_path: Path) -> No
     result = run_process([script], check=True)
 
     expect(result.stdout_text == "ok")
+
+
+def test_run_process_timeout_terminates_child_process_group(tmp_path: Path) -> None:
+    marker = tmp_path / "child-survived"
+    child_code = "import pathlib, time; " f"time.sleep(0.5); pathlib.Path({str(marker)!r}).write_text('survived')"
+    parent_code = (
+        "import subprocess, sys, time; " f"subprocess.Popen([sys.executable, '-c', {child_code!r}]); time.sleep(10)"
+    )
+
+    with pytest.raises(ProcessTimeoutError):
+        run_process([Path(sys.executable), "-c", parent_code], timeout=0.1)
+
+    time.sleep(0.7)
+    expect(marker.exists() is (os.name != "posix"))
