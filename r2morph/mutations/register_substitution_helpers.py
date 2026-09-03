@@ -241,6 +241,7 @@ _SVC_OUTPUT_REGISTERS = frozenset({"x0"})
 _CALL_INPUT_REGISTERS_X86 = frozenset({"rdi", "rsi", "rdx", "rcx", "r8", "r9"})
 _CALL_INPUT_REGISTERS_ARM = frozenset({f"x{n}" for n in range(8)})
 _CALL_OUTPUT_REGISTERS = frozenset({"rax", "x0"})
+_RETURN_REGISTERS = frozenset({"rax", "x0"})
 
 _SYSCALL_INT_VECTORS = frozenset({"0x80", "80h", "0x2e", "2eh"})
 _PURE_WRITE_MNEMONICS = frozenset(
@@ -456,6 +457,16 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
     return unsafe
 
 
+def return_value_pins(instructions: list[dict[str, Any]]) -> set[str]:
+    """Pin ABI return-register families in functions that contain a return."""
+    if not any(insn.get("disasm", "").lower().split()[:1] in (["ret"], ["retn"]) for insn in instructions):
+        return set()
+    pinned: set[str] = set()
+    for base in _RETURN_REGISTERS:
+        pinned |= _REGISTER_FAMILY.get(base, {base})
+    return pinned
+
+
 # Instructions whose register operands are implicit (not written in the disassembly),
 # so a whole-token rename cannot follow them. Renaming any spelling of these fixed
 # registers corrupts the instruction. These mnemonics are uncommon, so the whole
@@ -540,7 +551,10 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     # implicitly by operandless instructions (mul/div/cpuid/rep ...), are live with
     # no renameable operand; never rename them and never overwrite them.
     abi_regs = (
-        abi_live_registers(instructions) | implicit_operand_pins(instructions) | memory_operand_pins(instructions)
+        abi_live_registers(instructions)
+        | return_value_pins(instructions)
+        | implicit_operand_pins(instructions)
+        | memory_operand_pins(instructions)
     )
     abi_bases = {_CANONICAL_REGISTER.get(register, register) for register in abi_regs}
     caller_saved = set(register_classes.get("caller_saved", []))
@@ -679,5 +693,6 @@ __all__ = [
     "implicit_operand_pins",
     "is_safe_lea_substitution",
     "is_safe_size_extension_substitution",
+    "return_value_pins",
     "select_candidates",
 ]

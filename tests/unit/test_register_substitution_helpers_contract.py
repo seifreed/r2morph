@@ -5,6 +5,7 @@ from r2morph.mutations.register_substitution_helpers import (
     implicit_operand_pins,
     is_safe_lea_substitution,
     is_safe_size_extension_substitution,
+    return_value_pins,
     select_candidates,
 )
 from tests.utils.assertions import expect
@@ -53,9 +54,16 @@ def test_find_substitution_candidates_with_syscall_excludes_abi_number_register(
 def test_find_substitution_candidates_without_syscall_still_renames_eax() -> None:
     """The syscall guard must be targeted: with no system call, eax is a normal
     caller-saved register and stays substitutable."""
-    no_syscall = [{"disasm": "mov eax, 0x3c"}, {"disasm": "ret"}]
+    no_syscall = [{"disasm": "mov eax, 0x3c"}, {"disasm": "add ecx, eax"}]
     sources = {orig for orig, _ in find_substitution_candidates(no_syscall, "x86")}
     expect(not ("eax" not in sources))
+
+
+def test_find_substitution_candidates_with_return_pins_abi_result_register() -> None:
+    instructions = [{"disasm": "mov eax, 42"}, {"disasm": "ret"}]
+    sources = {orig for orig, _ in find_substitution_candidates(instructions, "x86")}
+    expect("eax" not in sources)
+    expect(return_value_pins(instructions) >= {"eax", "rax"})
 
 
 def test_abi_live_registers_empty_when_no_transfer_present() -> None:
@@ -88,7 +96,7 @@ def test_find_substitution_candidates_with_x64_call_excludes_argument_register()
 
 def test_find_substitution_candidates_without_call_still_renames_arg_register() -> None:
     """The call guard must be targeted: with no call, x0 is a normal register."""
-    no_call = [{"disasm": "add x0, x0, x1"}, {"disasm": "mov x2, x0"}, {"disasm": "ret"}]
+    no_call = [{"disasm": "add x0, x0, x1"}, {"disasm": "mov x2, x0"}]
     sources = {orig for orig, _ in find_substitution_candidates(no_call, "arm64")}
     expect(not ("x0" not in sources))
 
