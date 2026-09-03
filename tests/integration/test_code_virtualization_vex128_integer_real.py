@@ -67,7 +67,17 @@ def test_vphaddd_fixture_virtualization_preserves_result(tmp_path: Path) -> None
     _mutate_fixture(_PHADDD_FIXTURE, mutated)
 
     result = run_command([mutated])
+    crash_diagnostic = ""
+    debugger = shutil.which("gdb")
+    if result.returncode < 0 and debugger is not None:
+        debug_result = run_command(
+            [debugger, "-q", "-batch", "-ex", "run", "-ex", "bt", "-ex", "x/8i $pc", "--args", mutated],
+            timeout=30,
+            text=True,
+        )
+        crash_diagnostic = f" gdb_stdout={debug_result.stdout!r} gdb_stderr={debug_result.stderr!r}"
     expect(
         result.returncode == _PHADDD_EXPECTED_EXIT_CODE,
-        f"virtualized VPHADDD fixture returned {result.returncode}, expected {_PHADDD_EXPECTED_EXIT_CODE}",
+        f"virtualized VPHADDD fixture returned {result.returncode}, expected {_PHADDD_EXPECTED_EXIT_CODE};"
+        f" stdout={result.stdout!r}, stderr={result.stderr!r},{crash_diagnostic}",
     )
