@@ -3,16 +3,16 @@
   "measurement": "ghidra-headless-corpus",
   "pass_summary": {
     "CodeVirtualization": {
-      "applied": 147,
+      "applied": 148,
       "errors": 0,
-      "functions_virtualized": 158,
+      "functions_virtualized": 159,
       "no_op": 0,
       "omitted": 0,
-      "samples": 147,
+      "samples": 148,
       "unsupported_functions": 5
     }
   },
-  "sample_count": 147,
+  "sample_count": 148,
   "samples": [
     {
       "original": "elf_blockswap_x86_64",
@@ -3707,6 +3707,32 @@
       ]
     },
     {
+      "original": "elf_vm_vex128_shift_x86_64",
+      "passes": [
+        {
+          "functions_virtualized": 1,
+          "pass_name": "CodeVirtualization",
+          "status": "applied",
+          "unsupported_functions": 0
+        }
+      ],
+      "tools": [
+        {
+          "changed": true,
+          "original": {
+            "functions": 1,
+            "status": "completed"
+          },
+          "protected": {
+            "functions": 2,
+            "status": "completed"
+          },
+          "status": "completed",
+          "tool": "ghidra"
+        }
+      ]
+    },
+    {
       "original": "elf_vm_vex128_x86_64",
       "passes": [
         {
@@ -3839,7 +3865,7 @@
   ],
   "schema_version": 1,
   "summary": {
-    "completed_analysis_runs": 294,
+    "completed_analysis_runs": 296,
     "error_analysis_runs": 0,
     "timeout_analysis_runs": 0
   }

@@ -31,22 +31,22 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `1c2a01e` covered 147 fixtures
+The latest repository-fixture campaign against `7c3d9e5` covered 148 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-03-1c2a01e.json`](protection-maturity-by-pass-2026-09-03-1c2a01e.json),
-from workflow `33699419036` (artifact SHA-256
-`bc2cd29d977771021713362b47997bacb809adcf7e1ae8aa4a6bfe8152032e3c`). The
+[`protection-maturity-by-pass-2026-09-03-7c3d9e5.json`](protection-maturity-by-pass-2026-09-03-7c3d9e5.json),
+from workflow `33704362906` (artifact SHA-256
+`bd9e8b57a80c5099462c72b67c692c35f67d65ca78a05e33ca91eaf0b4b8ac7a`). The
 matching adversarial report is summarized in
-[`protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json`](protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json),
-from workflow `33699419297` (artifact SHA-256
-`48d83130fb10d22c01de0ce45421b0b9e91b32c5389dc90f5f96a66102fcb0e0`).
-The local Ghidra headless campaign for the same 147-fixture corpus completed
-294 analyses with zero errors or timeouts. Its raw report is
+[`protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json),
+from workflow `33704363064` (artifact SHA-256
+`f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
+The local Ghidra headless campaign for the same 148-fixture corpus completed
+296 analyses with zero errors or timeouts. Its raw report is
 [`protection-ghidra-corpus.json`](protection-ghidra-corpus.json), with the
 per-run contract in
-[`protection-ghidra-corpus-2026-09-03-892e9ac-summary.json`](protection-ghidra-corpus-2026-09-03-892e9ac-summary.json)
+[`protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json`](protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json)
 and SHA-256
-`601a50c20edabf36b6a505b98ea28af5eb965c976b899ed8cb306344c5bd7337`.
+`59b4f1360dc36cfbb618b6ddcaf9447d34acd0247f2ec5117091af9d8280e17f`.
 
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording

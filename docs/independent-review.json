@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "138 fixtures, no unclassified entries",
+      "detail": "139 fixtures, no unclassified entries",
       "name": "virtualization_fixture_coverage",
       "status": "passed"
     },
@@ -16,17 +16,17 @@
       "status": "passed"
     },
     {
-      "detail": "147 samples, 4400 completed tool runs, 10 errors",
+      "detail": "148 samples, 4424 completed tool runs, 16 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "147 samples, 294 completed analyses",
+      "detail": "148 samples, 296 completed analyses",
       "name": "ghidra_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "138/138 valid ELF64 headers",
+      "detail": "139/139 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"
     },

@@ -1,35 +1,35 @@
 # Protection Maturity Report
 
-Commit: `1c2a01e`
+Commit: `7c3d9e5`
 Date: `2026-09-03`
 
 ## Current verification status
 
-The latest full local-fixture campaign ran against `1c2a01e` and covered 147
+The latest full local-fixture campaign ran against `7c3d9e5` and covered 148
 fixtures with all six selected passes. The differential report completed in
-workflow `33699419036` (artifact SHA-256
-`bc2cd29d977771021713362b47997bacb809adcf7e1ae8aa4a6bfe8152032e3c`). Its
+workflow `33704362906` (artifact SHA-256
+`bd9e8b57a80c5099462c72b67c692c35f67d65ca78a05e33ca91eaf0b4b8ac7a`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-03-1c2a01e.json`](protection-maturity-by-pass-2026-09-03-1c2a01e.json):
-CodeVirtualization recorded 141 semantic passes and six known failures; the
-other five passes recorded 146 semantic passes and one known failure each.
-The `elf_vm_vpmuludq_x86_64` fixture returns `42` before and after native
-virtualization; its Unicorn result is an external emulator limitation. The
-six CodeVirtualization differential failures are therefore not treated as a
-clean semantic gate. The matching adversarial campaign completed in workflow
-`33699419297` and covered 147 samples, 4,400 completed tool runs, 3,528
-unavailable-tool rows, and 10 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json`](protection-adversarial-corpus-2026-09-03-1c2a01e-summary.json):
-CodeVirtualization applied to all 147 samples and virtualized 158 functions,
+[`docs/protection-maturity-by-pass-2026-09-03-7c3d9e5.json`](protection-maturity-by-pass-2026-09-03-7c3d9e5.json):
+CodeVirtualization recorded 141 semantic passes and seven known failures; the
+other five passes recorded 146 semantic passes and two known failures each.
+The `elf_vm_vex128_shift_x86_64` fixture was transformed successfully by the
+native engine and the new VEX operations are covered in the corpus. The seven
+CodeVirtualization differential failures are therefore not treated as a clean
+semantic gate. The matching adversarial campaign completed in workflow
+`33704363064` and covered 148 samples, with 4,424 completed tool runs, 3,552
+unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
+CodeVirtualization applied to all 148 samples and virtualized 159 functions,
 with no unsupported functions or transformation errors.
-The local Ghidra headless campaign also completed all 294 analyses for the 147
+The local Ghidra headless campaign completed all 296 analyses for the 148
 original/protected pairs with zero errors or timeouts. Its compact result is in
-[`docs/protection-ghidra-corpus-2026-09-03-892e9ac-summary.json`](protection-ghidra-corpus-2026-09-03-892e9ac-summary.json)
+[`docs/protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json`](protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json)
 and the raw report is in [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
-(`SHA-256 601a50c20edabf36b6a505b98ea28af5eb965c976b899ed8cb306344c5bd7337`).
+(`SHA-256 59b4f1360dc36cfbb618b6ddcaf9447d34acd0247f2ec5117091af9d8280e17f`).
 
-CI run `33699368204` for `1c2a01e` passed all configured jobs. CI run
-`33702913772` for `892e9ac` was in progress when this report was generated.
+CI run status for `7c3d9e5` is tracked separately from the completed corpus
+campaigns above.
 The local full command produced 5,337 passed, 15 failed, and 108 skipped tests;
 the focused 16-bit memory-stack regression passed, while the full suite remains
 blocked by existing environment/dependency and execution-contract failures.
@@ -206,11 +206,11 @@ treated as passing evidence. The automated review is not human sign-off.
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 141-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 148-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
-The current one-seed adversarial run applied the pass to 140 of 141 fixtures and records
+The current one-seed adversarial run applied the pass to all 148 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
