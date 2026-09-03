@@ -32,7 +32,7 @@ _start:
     jne failure
     vextracti128 xmm3, ymm0, 1
     movd eax, xmm3
-    cmp eax, 0x42324131
+    cmp eax, 0x52325131
     jne failure
 
     vmovdqa ymm1, ymmword ptr [rip + word_left]
@@ -43,7 +43,7 @@ _start:
     jne failure
     vextracti128 xmm3, ymm0, 1
     movd eax, xmm3
-    cmp eax, 0x0096000f
+    cmp eax, 0x00be0013
     jne failure
 
     vmovdqa ymm1, ymmword ptr [rip + dword_left]
