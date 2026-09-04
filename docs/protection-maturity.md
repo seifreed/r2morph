@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `def87fd`
+Commit: `5fb6590`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `def87fd` and covered
+The latest full Linux amd64 fixture campaign ran against `5fb6590` and covered
 158 fixtures with all six selected passes. The differential report completed in
-workflow `33817868833` (artifact SHA-256
-`7141cd95a8f4a8b0a29539c88f9f2153ad541e2be0307013263d10bb89159aa1`). Its
+workflow `33821568520` (artifact SHA-256
+`23af4dbbe3b7c4aaacee856e2389690299d8968022b647e7c4d86d71e4f2885a`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-def87fd.json`](protection-maturity-by-pass-2026-09-04-def87fd.json):
+[`docs/protection-maturity-by-pass-2026-09-04-5fb6590.json`](protection-maturity-by-pass-2026-09-04-5fb6590.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
 and RegisterSubstitution recorded 158 semantic passes with no failures.
 CodeVirtualization recorded 157 semantic passes and one known baseline
@@ -25,11 +25,11 @@ unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
 CodeVirtualization applied to all 148 samples and virtualized 159 functions,
 with no unsupported functions or transformation errors.
-The latest local Ghidra headless campaign completed all 316 analyses for the
+The latest local Ghidra headless campaign for `5fb6590` completed all 316 analyses for the
 158 original/protected pairs with zero errors or timeouts. Its compact result is in
-[`docs/protection-ghidra-corpus-2026-09-04-def87fd-summary.json`](protection-ghidra-corpus-2026-09-04-def87fd-summary.json)
+[`docs/protection-ghidra-corpus-2026-09-04-5fb6590-summary.json`](protection-ghidra-corpus-2026-09-04-5fb6590-summary.json)
 and the raw report is in
-[`docs/protection-ghidra-corpus-2026-09-04-def87fd.json`](protection-ghidra-corpus-2026-09-04-def87fd.json)
+[`docs/protection-ghidra-corpus-2026-09-04-5fb6590.json`](protection-ghidra-corpus-2026-09-04-5fb6590.json)
 (`SHA-256 cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`).
 
 CI run status for `7c3d9e5` is tracked separately from the completed corpus
