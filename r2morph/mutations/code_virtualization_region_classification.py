@@ -9,6 +9,9 @@ from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     decode_instruction,
 )
+from r2morph.mutations.code_virtualization_region_atomic_immediate import (
+    _decode_locked_memory_immediate,
+)
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmov,
     _decode_imul,
@@ -410,6 +413,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             lambda: _decode_fp_movmskb(text),
             lambda: _decode_fp_compare(text),
             lambda: _decode_cmpxchg_memory(text),
+            lambda: _decode_locked_memory_immediate(text, address, size),
             lambda: _decode_locked_memory_rmw(text, address, size),
             lambda: _decode_xchg_memory(text),
             lambda: _decode_bswap(text),

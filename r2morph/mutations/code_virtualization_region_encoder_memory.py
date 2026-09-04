@@ -68,6 +68,10 @@ class RegionEncoderMemoryMixin:
             "atomicmemrip",
             "atomicmemidx",
             "atomicmemidxnb",
+            "atomicmemimm",
+            "atomicmemimmrip",
+            "atomicmemimmidx",
+            "atomicmemimmidxnb",
         ):
             self._emit_atomic_memory(item)
         elif kind in ("opriprel", "learip"):
@@ -168,6 +172,9 @@ class RegionEncoderMemoryMixin:
         self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
 
     def _emit_atomic_memory(self: Any, item: RegionItem) -> None:
+        if item[0].startswith("atomicmemimm"):
+            self._emit_atomic_memory_immediate(item)
+            return
         if item[0] in ("xchgmem", "cmpxchgmem"):
             self._gp_mem(item, item[1], item[2], item[3])
             return
@@ -190,6 +197,24 @@ class RegionEncoderMemoryMixin:
             return
         _, register, base, index, shift, disp, _width = item
         self._gp_idx(item, (register, base, index, shift, disp))
+
+    def _emit_atomic_memory_immediate(self: Any, item: RegionItem) -> None:
+        kind = item[0]
+        if kind == "atomicmemimm":
+            _, _mnemonic, value, base, disp, width = item
+            self._mem_immediate(self._opcode(item), self.slot_of[base], disp, value, width)
+        elif kind == "atomicmemimmrip":
+            _, _mnemonic, value, target, width = item
+            self._mem_immediate(self._opcode(item), None, target - self.bytecode_base, value, width)
+        elif kind == "atomicmemimmidx":
+            _, _mnemonic, value, base, index, shift, disp, width = item
+            self._idx_immediate(
+                self._opcode(item),
+                (self.slot_of[base], self.slot_of[index], shift, disp, value, width),
+            )
+        else:
+            _, _mnemonic, value, index, shift, disp, width = item
+            self._idx_immediate(self._opcode(item), (None, self.slot_of[index], shift, disp, value, width))
 
     def _emit_bt_memory(self: Any, item: RegionItem) -> bool:
         kind = item[0]

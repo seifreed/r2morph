@@ -57,6 +57,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     DivisionMemoryOperationConfig,
     MemoryImmediateOperationConfig,
     MemoryOperationConfig,
+    _atomic_memory_immediate_handler_asm,
     _atomic_memory_rmw_handler_asm,
     _bt_memory_handler_asm,
     _cmp_memory_handler_asm,
@@ -546,14 +547,30 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
         )
 
     def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
-        if key.startswith(("atomicmem_", "atomicmemrip_", "atomicmemidx_", "atomicmemidxnb_")):
-            return _atomic_memory_rmw_handler_asm(
-                key,
-                self.context.key,
-                self.context.key_dword,
-                self.context.field_perm,
-                variants[4],
+        immediate_prefixes = ("atomicmemimm_", "atomicmemimmrip_", "atomicmemimmidx_", "atomicmemimmidxnb_")
+        register_prefixes = ("atomicmem_", "atomicmemrip_", "atomicmemidx_", "atomicmemidxnb_")
+        if key.startswith((*immediate_prefixes, *register_prefixes)):
+            handler = (
+                _atomic_memory_immediate_handler_asm(
+                    MemoryImmediateOperationConfig(
+                        key,
+                        self.context.key,
+                        self.context.key_qword,
+                        self.context.key_dword,
+                        self.context.field_perm,
+                        variants[4],
+                    )
+                )
+                if key.startswith(immediate_prefixes)
+                else _atomic_memory_rmw_handler_asm(
+                    key,
+                    self.context.key,
+                    self.context.key_dword,
+                    self.context.field_perm,
+                    variants[4],
+                )
             )
+            return handler
         if key.startswith("cmpxchgmemidx_"):
             return _cmpxchg_memory_handler_asm(
                 AtomicMemoryOperationConfig(

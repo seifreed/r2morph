@@ -96,6 +96,7 @@ _DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
     "xchgmem": (2, 3, 4),
     "cmpxchgmem": (2, 3, 4),
     "atomicmem": (2, 3, 4),
+    "atomicmemimm": (3, 4, 5),
     "lea": (2, 3, 4),
     "callmem": (1, 2, None),
     "fpload": (2, 3, 4),
@@ -186,6 +187,10 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "atomicmemrip",
         "atomicmemidx",
         "atomicmemidxnb",
+        "atomicmemimm",
+        "atomicmemimmrip",
+        "atomicmemimmidx",
+        "atomicmemimmidxnb",
     ):
         if kind.startswith("atomic"):
             return frozenset({int(item[2])}) if item[1] == "xadd" else frozenset()
@@ -360,6 +365,10 @@ _FLAG_KILLER_KINDS = frozenset(
         "atomicmemrip",
         "atomicmemidx",
         "atomicmemidxnb",
+        "atomicmemimm",
+        "atomicmemimmrip",
+        "atomicmemimmidx",
+        "atomicmemimmidxnb",
         "syscall",
     }
 )

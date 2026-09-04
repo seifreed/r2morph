@@ -259,12 +259,20 @@ _IMMEDIATE_MEMORY_BASE_SIZES = {
     "storeirip": 6,
     "storeiidx": 9,
     "storeiidxnb": 8,
+    "atomicmemimm": 7,
+    "atomicmemimmrip": 6,
+    "atomicmemimmidx": 9,
+    "atomicmemimmidxnb": 8,
 }
 _IMMEDIATE_MEMORY_WIDTH_INDEXES = {
     "storei": 4,
     "storeirip": 3,
     "storeiidx": 6,
     "storeiidxnb": 5,
+    "atomicmemimm": 5,
+    "atomicmemimmrip": 4,
+    "atomicmemimmidx": 7,
+    "atomicmemimmidxnb": 6,
 }
 _VEX_PACKED_COMPARE_MEMORY_SIZES = {
     "fppackedvexcmpmem": 9,

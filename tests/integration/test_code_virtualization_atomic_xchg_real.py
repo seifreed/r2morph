@@ -17,6 +17,9 @@ from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_thread_xchg_x86_64"
 _CMPXCHG_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_thread_cmpxchg_x86_64"
+_ATOMIC_IMMEDIATE_FIXTURE = (
+    Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_thread_mematomicimm_x86_64"
+)
 _EXPECTED_EXIT_CODE = 42
 
 pytestmark = pytest.mark.integration
@@ -69,6 +72,26 @@ def test_atomic_cmpxchg_fixture_virtualization_preserves_compare_exchange(tmp_pa
 )
 def test_atomic_cmpxchg_fixture_virtualization_preserves_native_compare_exchange(tmp_path: Path) -> None:
     original, mutated, stats = _virtualize_fixture(tmp_path, _CMPXCHG_FIXTURE)
+
+    original_result = run_command([str(original)], capture_output=True, timeout=5)
+    mutated_result = run_command([str(mutated)], capture_output=True, timeout=5)
+    expect(stats["functions_virtualized"] >= 1)
+    expect((original_result.returncode, mutated_result.returncode) == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE))
+
+
+def test_atomic_immediate_fixture_virtualization_preserves_emulated_updates(tmp_path: Path) -> None:
+    _original, mutated, stats = _virtualize_fixture(tmp_path, _ATOMIC_IMMEDIATE_FIXTURE)
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+@pytest.mark.skipif(
+    not supports_native_elf_x86_64(),
+    reason="native ELF x86-64 execution requires Linux amd64",
+)
+def test_atomic_immediate_fixture_virtualization_preserves_native_updates(tmp_path: Path) -> None:
+    original, mutated, stats = _virtualize_fixture(tmp_path, _ATOMIC_IMMEDIATE_FIXTURE)
 
     original_result = run_command([str(original)], capture_output=True, timeout=5)
     mutated_result = run_command([str(mutated)], capture_output=True, timeout=5)

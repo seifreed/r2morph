@@ -375,6 +375,39 @@ def _atomic_memory_rmw_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _atomic_memory_immediate_handler_asm(config: MemoryImmediateOperationConfig) -> str:
+    """Run a locked memory-immediate RMW and capture its flags."""
+    kind, mnemonic, width_text = config.handler_key.split("_")
+    width = int(width_text)
+    immediate_size = 8 if width == _QWORD_WIDTH_BITS else 4
+    if kind.endswith("idxnb"):
+        offsets = idx_immediate_offsets(True, width, config.field_perm)
+        body, advance = _indexed_address_body(config.key, config.key_dword, offsets, config.addr_variant, False)
+    elif kind.endswith("idx"):
+        offsets = idx_immediate_offsets(False, width, config.field_perm)
+        body, advance = _indexed_address_body(config.key, config.key_dword, offsets, config.addr_variant, True)
+    else:
+        offsets = mem_immediate_offsets(kind.endswith("rip"), width, config.field_perm)
+        body, advance = _mem_address_body(
+            kind.endswith("rip"), config.key, config.key_dword, offsets, config.addr_variant
+        )
+    if width == _QWORD_WIDTH_BITS:
+        body += (
+            f"  mov rax, qword ptr [rsi+{offsets['imm']}]\n  mov r11, {config.key_qword}\n"
+            "  xor rax, r11\n" + _unmask_qword("r11", "rcx")
+        )
+        memory, register = "qword", "rax"
+    else:
+        body += (
+            f"  mov eax, dword ptr [rsi+{offsets['imm']}]\n  mov r11d, {config.key_dword}\n"
+            "  xor eax, r11d\n" + _unmask_dword("r11")
+        )
+        memory = "dword" if width == _DWORD_WIDTH_BITS else "word" if width == _WORD_WIDTH_BITS else "byte"
+        register = "eax" if width == _DWORD_WIDTH_BITS else "ax" if width == _WORD_WIDTH_BITS else "al"
+    body += f"  lock {mnemonic} {memory} ptr [r10], {register}\n" f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    return body + f"  add rsi, {advance + immediate_size}\n  jmp vm_dispatch\n"
+
+
 def _tls_address_asm(
     has_base: bool,
     key: str,
