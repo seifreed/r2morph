@@ -45,13 +45,13 @@ in
 [`protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json),
 from workflow `33704363064` (artifact SHA-256
 `f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
-The local Ghidra headless campaign for the same 148-fixture corpus completed
-296 analyses with zero errors or timeouts. Its raw report is
-[`protection-ghidra-corpus.json`](protection-ghidra-corpus.json), with the
-per-run contract in
-[`protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json`](protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json)
+The latest local Ghidra headless campaign for the 158-fixture corpus completed
+316 analyses with zero errors or timeouts. Its raw report is
+[`protection-ghidra-corpus-2026-09-04-def87fd.json`](protection-ghidra-corpus-2026-09-04-def87fd.json),
+with the per-run contract in
+[`protection-ghidra-corpus-2026-09-04-def87fd-summary.json`](protection-ghidra-corpus-2026-09-04-def87fd-summary.json)
 and SHA-256
-`59b4f1360dc36cfbb618b6ddcaf9447d34acd0247f2ec5117091af9d8280e17f`.
+`cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`.
 
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording

@@ -25,11 +25,12 @@ unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
 CodeVirtualization applied to all 148 samples and virtualized 159 functions,
 with no unsupported functions or transformation errors.
-The local Ghidra headless campaign completed all 296 analyses for the 148
-original/protected pairs with zero errors or timeouts. Its compact result is in
-[`docs/protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json`](protection-ghidra-corpus-2026-09-03-7c3d9e5-summary.json)
-and the raw report is in [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
-(`SHA-256 59b4f1360dc36cfbb618b6ddcaf9447d34acd0247f2ec5117091af9d8280e17f`).
+The latest local Ghidra headless campaign completed all 316 analyses for the
+158 original/protected pairs with zero errors or timeouts. Its compact result is in
+[`docs/protection-ghidra-corpus-2026-09-04-def87fd-summary.json`](protection-ghidra-corpus-2026-09-04-def87fd-summary.json)
+and the raw report is in
+[`docs/protection-ghidra-corpus-2026-09-04-def87fd.json`](protection-ghidra-corpus-2026-09-04-def87fd.json)
+(`SHA-256 cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`).
 
 CI run status for `7c3d9e5` is tracked separately from the completed corpus
 campaigns above.
