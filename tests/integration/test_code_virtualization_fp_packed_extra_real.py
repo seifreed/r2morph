@@ -45,11 +45,28 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i shift_arithmetic = _mm_set1_epi16(-16);
     __m128i shift_count = _mm_cvtsi64_si128(1);
     __m128i legacy_maximum = _mm_setzero_si128();
+    __m128i signed_min = _mm_set1_epi16(300);
+    __m128i signed_max = _mm_set1_epi16(300);
+    __m128i signed_other = _mm_set1_epi16(-400);
+    __m128i unsigned_min = _mm_set1_epi16(300);
+    __m128i unsigned_max = _mm_set1_epi16(300);
+    __m128i unsigned_other = _mm_set1_epi16(50000);
+    __m128i madd = _mm_set1_epi8(2);
+    __m128i madd_other = _mm_set1_epi8(3);
+    short signed_min_result[8];
+    short signed_max_result[8];
+    unsigned short unsigned_min_result[8];
+    unsigned short madd_result[8];
     __asm__ volatile(
         "pcmpeqb %[right], %[equal]\n\t"
         "pcmpgtb %[right], %[greater]\n\t"
         "pminub %[right], %[minimum]\n\t"
         "pmaxub %[right], %[legacy_maximum]\n\t"
+        "pminsw %[signed_other], %[signed_min]\n\t"
+        "pmaxsw %[signed_other], %[signed_max]\n\t"
+        "pminuw %[unsigned_other], %[unsigned_min]\n\t"
+        "pmaxuw %[unsigned_other], %[unsigned_max]\n\t"
+        "pmaddubsw %[madd_other], %[madd]\n\t"
         "psllw %[shift_count], %[shift_left]\n\t"
         "psrlw %[shift_count], %[shift_right]\n\t"
         "psraw %[shift_count], %[shift_arithmetic]\n\t"
@@ -65,14 +82,21 @@ __attribute__((noinline)) static int packed_operations(void) {
         "mov %%rax, %[word_after]\n\t"
         : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
           [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
-          [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled),
+          [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled), [signed_min] "+x"(signed_min),
+          [signed_max] "+x"(signed_max), [unsigned_min] "+x"(unsigned_min), [unsigned_max] "+x"(unsigned_max),
+          [madd] "+x"(madd),
           [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
         : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
-          [shift_count] "x"(shift_count), [seed] "m"(seed),
+          [shift_count] "x"(shift_count), [seed] "m"(seed), [signed_other] "x"(signed_other),
+          [unsigned_other] "x"(unsigned_other), [madd_other] "x"(madd_other),
           [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
           [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
         : "rax", "memory"
     );
+    _mm_storeu_si128((__m128i *)signed_min_result, signed_min);
+    _mm_storeu_si128((__m128i *)signed_max_result, signed_max);
+    _mm_storeu_si128((__m128i *)unsigned_min_result, unsigned_min);
+    _mm_storeu_si128((__m128i *)madd_result, madd);
     return _mm_movemask_epi8(equal) == 0xffff
         && _mm_movemask_epi8(greater) == 0
         && _mm_movemask_epi8(minimum) == 0
@@ -82,6 +106,11 @@ __attribute__((noinline)) static int packed_operations(void) {
         && _mm_movemask_epi8(shift_arithmetic) == 0xffff
         && _mm_movemask_epi8(maximum) == 0xffff
         && _mm_movemask_epi8(shuffled) == 0
+        && signed_min_result[0] == -400
+        && signed_max_result[0] == 300
+        && unsigned_min_result[0] == 300
+        && unsigned_max_result[0] == 50000
+        && madd_result[0] == 12
         && byte_after == 0x11223344556677a5ULL
         && word_after == 0x1122334455661234ULL
         && byte_roundtrip == byte_value
@@ -108,6 +137,7 @@ int main(void) {
             "-O0",
             "-mavx",
             "-mssse3",
+            "-msse4.1",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",
