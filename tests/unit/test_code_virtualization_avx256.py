@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core import randomness
 from r2morph.mutations import code_virtualization_region_classification as classification
+from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask
 from r2morph.mutations.code_virtualization_engine_common import _FP_PACKED_VEX_OPERATIONS
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
@@ -44,6 +45,11 @@ _VEX_256_LANE_PERMUTE_ITEM_SIZE = 4
 _VEX_256_LANE_PERMUTE_IMMEDIATE = 0x1B
 _VEX_256_VARIABLE_BLEND_ITEM_SIZE = 5
 _VEX_256_VARIABLE_PERMUTE_ITEM_SIZE = 4
+
+
+def _decode_record(record: bytes, offset: int) -> bytes:
+    mask = bytecode_position_mask(offset)
+    return bytes(byte ^ mask for byte in record)
 
 
 def _vex_256_region() -> Region:
@@ -425,7 +431,8 @@ def test_vex_256_immediate_shuffle_encoding_keeps_branch_offsets_aligned() -> No
 
     encoded = encode_region(region, scheme, 0x2000)
 
-    expect(encoded == bytes((7, 0, 1, 0x1B, 0x0C, 13, 4, 4, 4, 0)))
+    plaintext = _decode_record(encoded[:4], 0) + _decode_record(encoded[4:9], 4) + _decode_record(encoded[9:], 9)
+    expect(plaintext == bytes((7, 0, 1, 0x1B, 8, 9, 0, 0, 0, 9)))
 
 
 def test_vex128_packed_handler_commits_zeroed_ymm_upper_slot() -> None:
@@ -546,7 +553,7 @@ def test_vex_256_memory_arithmetic_encoding_keeps_ymm_indices_logical() -> None:
 
     encoded = encode_region(region, scheme, 0x1000)
 
-    expect(encoded == bytes((7, 0, 14, 32, 0, 0, 0, 1)))
+    expect(_decode_record(encoded, 0) == bytes((7, 0, 14, 32, 0, 0, 0, 1)))
 
 
 def test_vex_256_memory_unary_handler_uses_unary_instruction() -> None:

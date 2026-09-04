@@ -5,6 +5,7 @@ from __future__ import annotations
 import struct
 
 import r2morph.core.randomness as random
+from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask
 from r2morph.mutations.code_virtualization_engine_common import (
     _FP_PACKED_ARITH_KEY,
     _FP_PACKED_ARITH_OPERATIONS,
@@ -97,7 +98,7 @@ class _BytecodeEncoder:
 
     def _emit_opcode(self, opcode: int) -> int:
         self._flush_pending_padding()
-        position = len(self.plain) & 0xFF
+        position = bytecode_position_mask(len(self.plain))
         self.plain.append(opcode ^ position)
         self._pending_position = position
         self._pending_padding = self.scheme.record_padding[opcode] if opcode < len(self.scheme.record_padding) else 0

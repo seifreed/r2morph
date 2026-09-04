@@ -26,7 +26,7 @@ import re
 from typing import Any
 
 from r2morph.core import randomness
-from r2morph.mutations.code_virtualization_dispatch import decode_block
+from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask, decode_block
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     build_vm_scheme,
@@ -44,6 +44,7 @@ _EXPECTED_ASM_COUNT_F_XOR_RSI_QWORD_PTR_RSP_STATE_OFFSE_2 = 2
 _EXPECTED_ASM_COUNT_XOR_R13_QWORD_PTR_RSP_2 = 2
 _EXPECTED_ASM_COUNT_XOR_R15_QWORD_PTR_RSP_2 = 2
 _EXPECTED_ASM_COUNT_XOR_RSI_QWORD_PTR_RSP_2 = 2
+_BYTE_VALUE_COUNT = 256
 
 
 # The decode block's first instruction; one copy per handler tail plus the entry,
@@ -101,6 +102,11 @@ def _frame_size(asm: str) -> str:
     match = re.search(r"vm_entry:\n  sub rsp, (\d+)", asm)
     expect(match is not None)
     return match.group(1)
+
+
+def test_bytecode_position_mask_has_one_progressive_cycle() -> None:
+    masks = tuple(bytecode_position_mask(position) for position in range(_BYTE_VALUE_COUNT))
+    expect(len(set(masks)) == _BYTE_VALUE_COUNT and masks != tuple(range(_BYTE_VALUE_COUNT)))
 
 
 def test_region_interpreter_has_no_central_dispatch_label() -> None:

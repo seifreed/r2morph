@@ -15,7 +15,7 @@ from typing import Any
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 
 # Multiplying a byte by these broadcasts it into every lane of a dword/qword, so
-# the per-item position byte (held in r13b) can un-mask a multi-byte immediate or
+# the per-item stream byte (held in r13b) can un-mask a multi-byte immediate or
 # displacement the encoder masked byte-wise. Shared by the code generator's
 # dispatch/retarget and the handler bodies.
 _QWORD_BROADCAST = 0x0101010101010101

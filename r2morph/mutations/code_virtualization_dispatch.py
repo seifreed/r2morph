@@ -9,7 +9,7 @@ To keep the inlined copies from being one repeated byte-signature, every copy
 shuffles its two order-independent instruction groups:
 
 * the opcode-decrypt XORs (each folds into ``al``; the encoder pre-mixes the
-  combined key/position/checksum mask, so their order does not affect the result),
+  combined key/stream/checksum mask, so their order does not affect the result),
 * the table-entry decrypt blocks (each folds into ``eax`` independently).
 
 Shuffling reorders existing instruction groups, while the transfer tail may use
@@ -39,9 +39,22 @@ import r2morph.core.randomness as random
 # threading pass splices a fresh decode copy in for each occurrence.
 DISPATCH_BACK_JUMP = "  jmp vm_dispatch\n"
 
-_DECODE_HEAD = "  mov r13, rsi\n  sub r13, r15\n  movzx eax, byte ptr [rsi]\n"
+_STREAM_MULTIPLIER = 181
+_STREAM_INCREMENT = 109
+_DECODE_HEAD = (
+    "  mov r13, rsi\n"
+    "  sub r13, r15\n"
+    f"  imul r13d, r13d, {_STREAM_MULTIPLIER}\n"
+    f"  add r13b, {_STREAM_INCREMENT}\n"
+    "  movzx eax, byte ptr [rsi]\n"
+)
 _DECODE_TAIL = "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
 _STACK_TRANSFER_TAIL = "  movsxd rax, eax\n  add rax, r14\n  push rax\n  ret\n"
+
+
+def bytecode_position_mask(position: int) -> int:
+    """Map a bytecode offset to the progressive mask used by the dispatcher."""
+    return (position * _STREAM_MULTIPLIER + _STREAM_INCREMENT) & 0xFF
 
 
 def _indirect_transfer_tail(rng: random.Random) -> str:

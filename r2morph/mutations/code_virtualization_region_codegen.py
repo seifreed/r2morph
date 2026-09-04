@@ -212,9 +212,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     key_dword = f"dword ptr [rsp+{_KEY_DWORD_SLOT}]"
     retarget_target = (
         f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
-        # Un-mask the position the encoder folded into the target (r13b holds it
-        # from the dispatch), broadcast to 32 bits - the branch offset is keyed by
-        # key XOR position like every other operand.
+        # Un-mask the progressive stream byte the encoder folded into the target
+        # (r13b holds it from dispatch), broadcast to 32 bits.
         f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
         "  lea r9, [rip+bytecode]\n  add r9, rax\n"
     )
@@ -265,7 +264,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     poly_rng = random.Random(scheme.table_key)
     table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     handler_count = sum(len(indices) for indices in scheme.dup.values())
-    # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
+    # Undo the opcode byte's progressive mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
     # misdecodes every opcode. There is no separate constant key term -- the byte key
     # IS the checksum -- so the opcode decrypt exposes no operand-cipher literal.

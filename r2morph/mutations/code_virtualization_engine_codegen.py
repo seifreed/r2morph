@@ -108,7 +108,7 @@ def _interpreter_asm(
     )
     poly_rng = random.Random(scheme.table_key)
     table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
-    # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
+    # Undo the opcode byte's progressive mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
     # misdecodes. No separate constant key term -- the byte key IS the checksum -- so
     # the opcode decrypt exposes no operand-cipher literal.

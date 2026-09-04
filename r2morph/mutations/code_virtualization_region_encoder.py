@@ -7,6 +7,7 @@ from typing import Any
 
 import r2morph.core.randomness as random
 from r2morph.core.constants import ARCH_BITS_64
+from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp, pack_immediate
 from r2morph.mutations.code_virtualization_layout import (
     idx_immediate_permuted_fields,
@@ -28,7 +29,7 @@ RegionItem = tuple[Any, ...]
 
 
 class RegionEncoder(RegionEncoderMemoryMixin):
-    """Emit one region with deterministic opcode selection and field masking."""
+    """Emit one region with deterministic opcode selection and progressive masking."""
 
     def __init__(
         self,
@@ -71,7 +72,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         return bytes(byte ^ (self.checksum & 0xFF) for byte in self.plain)
 
     def _opcode(self, item: RegionItem, key: str | None = None) -> int:
-        position = len(self.plain) & 0xFF
+        position = bytecode_position_mask(len(self.plain))
         opcode = self.pick(self.scheme.dup[key or _required_key(item)])
         self.plain.append(opcode ^ position)
         return position

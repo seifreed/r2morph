@@ -47,6 +47,7 @@ from r2morph.mutations.code_mobility import (
     estimate_size_with_jumps,
 )
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask
 from r2morph.mutations.code_virtualization_engine import (
     _interpreter_asm,
     build_vm_scheme,
@@ -299,10 +300,9 @@ class TestCodeVirtualization:
         scheme = build_vm_scheme(randomness.Random(1))
         checksum = 0xA7
         bytecode = encode_bytecode(ops, scheme, checksum=checksum)
-        # The exit opcode is the last byte: position-masked with its own stream
-        # offset, then XOR-encrypted with the runtime self-checksum (not a build-
-        # constant key). Undo both to recover the exit marker.
-        position = (len(bytecode) - 1) & 0xFF
+        # The exit opcode is masked with the progressive stream value for its
+        # offset, then XOR-encrypted with the runtime self-checksum.
+        position = bytecode_position_mask(len(bytecode) - 1)
         expect(bytecode[-1] ^ checksum ^ position == scheme.exit_opcode)
 
     def test_build_vm_scheme_is_polymorphic(self):
