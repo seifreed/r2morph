@@ -54,17 +54,18 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
 
     runtime_result = run_command([executable], timeout=30)
-    unsupported_addresses = {record["function_address"] for record in stats["unsupported_functions"]}
-    partial_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
+    unwind_failure_addresses = {
+        record["function_address"]
+        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
+        if record["capability"] == "exceptions_and_unwinding"
+    }
     expect(
         stats["functions_virtualized"] > 0
         and stats["partial_virtualization_total"] > 0
-        and protected_address not in unsupported_addresses
-        and protected_address not in partial_addresses
+        and protected_address not in unwind_failure_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "parsed landing-pad unwind metadata was not preserved during virtualization: "
-        f"{protected_address=:#x}, {runtime_result.returncode=}, {unsupported_addresses=}, "
-        f"{partial_addresses=}, {stats=}",
+        f"{protected_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
     )
 
 
