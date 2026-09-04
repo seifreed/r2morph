@@ -300,8 +300,9 @@ jobs:
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew update
-          brew install pkg-config
+          if ! command -v pkg-config >/dev/null; then
+            brew install pkg-config
+          fi
 
       - name: Install radare2 (Linux/macOS)
         if: runner.os != 'Windows'
