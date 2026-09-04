@@ -175,6 +175,7 @@ _FIXED_SIZE_GROUPS = {
     ),
     8: (
         "vleaidxnb",
+        "vmovxidxnb",
         "fploadidxnb",
         "fpstoreidxnb",
         "fpploadidxnb",
@@ -198,6 +199,7 @@ _FIXED_SIZE_GROUPS = {
         "vstoreidxnb",
         "opmemidxnb",
         "opmemdstidxnb",
+        "movxidxnb",
         "btmemidxnb",
         "divmemidxnb",
         "ijmpmemnb",

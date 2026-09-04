@@ -357,7 +357,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _vleaidx_handler_asm(*arguments)
         elif key.startswith(("vlea_", "vlearip_")):
             body = _vlea_handler_asm(*arguments)
-        elif key.startswith("vmovxidx_"):
+        elif key.startswith(("vmovxidx_", "vmovxidxnb_")):
             body = _vmovxidx_handler_asm(*arguments)
         elif key.startswith("vmovx_"):
             body = _vmovx_handler_asm(*arguments)
@@ -469,7 +469,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _op_mem_indexed_handler_asm(config)
         elif key.startswith("movxreg_"):
             body = _movx_reg_handler_asm(key, self.context.key)
-        elif key.startswith("movxidx_"):
+        elif key.startswith(("movxidx_", "movxidxnb_")):
             body = _movx_indexed_handler_asm(
                 key,
                 self.context.key,

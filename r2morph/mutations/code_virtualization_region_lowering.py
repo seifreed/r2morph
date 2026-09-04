@@ -140,24 +140,32 @@ def _lower_movx_address(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
     if kind == "movx":
         _, extension, source_size, width, register, base, displacement = item
-        return [["vmovx", extension, source_size, width, base, displacement], ["vpop", register]]
-    if kind == "movxidx":
+        lowered = [["vmovx", extension, source_size, width, base, displacement], ["vpop", register]]
+    elif kind == "movxidx":
         _, extension, source_size, width, register, base, index, shift, displacement = item
-        return [
+        lowered = [
             ["vmovxidx", extension, source_size, width, base, index, shift, displacement],
             ["vpop", register],
         ]
-    if kind == "lea":
+    elif kind == "movxidxnb":
+        _, extension, source_size, width, register, index, shift, displacement = item
+        lowered = [
+            ["vmovxidxnb", extension, source_size, width, index, shift, displacement],
+            ["vpop", register],
+        ]
+    elif kind == "lea":
         _, register, base, displacement, width = item
-        return [["vlea", base, displacement, width], ["vpop", register]]
-    if kind == "learip":
+        lowered = [["vlea", base, displacement, width], ["vpop", register]]
+    elif kind == "learip":
         _, register, target, width = item
-        return [["vlearip", target, width], ["vpop", register]]
-    if kind == "leaidx":
+        lowered = [["vlearip", target, width], ["vpop", register]]
+    elif kind == "leaidx":
         _, register, base, index, shift, displacement, width = item
-        return [["vleaidx", base, index, shift, displacement, width], ["vpop", register]]
-    _, register, index, shift, displacement, width = item
-    return [["vleaidxnb", index, shift, displacement, width], ["vpop", register]]
+        lowered = [["vleaidx", base, index, shift, displacement, width], ["vpop", register]]
+    else:
+        _, register, index, shift, displacement, width = item
+        lowered = [["vleaidxnb", index, shift, displacement, width], ["vpop", register]]
+    return lowered
 
 
 _Lowerer = Callable[[list[Any]], list[list[Any]]]
@@ -180,7 +188,7 @@ _LOWERERS: dict[str, _Lowerer] = {
         )
     },
     **{kind: _lower_shift_compare for kind in ("shift", "shiftreg", "cmp", "test", "cmpmem", "cmpriprel")},
-    **{kind: _lower_movx_address for kind in ("movx", "movxidx", "lea", "learip", "leaidx", "leaidxnb")},
+    **{kind: _lower_movx_address for kind in ("movx", "movxidx", "movxidxnb", "lea", "learip", "leaidx", "leaidxnb")},
 }
 
 

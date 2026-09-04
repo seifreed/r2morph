@@ -17,6 +17,7 @@ from tests.utils.process import run_command
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_memwidth_x86_64"
 _EXPECTED_EXIT_CODE = 80
 _EXPECTED_ARITHMETIC_EXIT_CODE = 42
+_EXPECTED_MOVX_EXIT_CODE = 43
 _EXPECTED_IMMEDIATE_STORE_EXIT_CODE = 77
 _EXPECTED_MEMORY_NOT_EXIT_CODE = 42
 _EXPECTED_MEMORY_BT_EXIT_CODE = 42
@@ -65,6 +66,25 @@ __attribute__((noinline)) static int mutate_indexed_memory(void) {
 }
 
 int main(void) { return mutate_indexed_memory(); }
+"""
+
+_NO_BASE_INDEXED_MOVX_SOURCE = r"""
+#include <stdint.h>
+
+int32_t indexed_values[1] = {-7};
+
+__attribute__((noinline)) static int load_indexed_value(void) {
+    uint64_t index = 0;
+    int64_t value = 0;
+    __asm__ volatile(
+        "movslq indexed_values(,%%rcx,4), %[value]\n"
+        : [value] "=r"(value)
+        : "c"(index)
+        : "cc", "memory");
+    return value == -7 ? 43 : 1;
+}
+
+int main(void) { return load_indexed_value(); }
 """
 
 pytestmark = pytest.mark.integration
@@ -176,6 +196,47 @@ def test_virtualized_no_base_indexed_memory_arithmetic_preserves_result(tmp_path
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_ARITHMETIC_EXIT_CODE,
         f"no-base indexed memory arithmetic changed the result: {stats=}",
+    )
+
+
+def test_virtualized_no_base_indexed_movx_preserves_sign_extension(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86 indexed movx requires an x86-64 host")
+
+    source = tmp_path / "no_base_indexed_movx.c"
+    original = tmp_path / "original_no_base_indexed_movx"
+    mutated = tmp_path / "mutated_no_base_indexed_movx"
+    source.write_text(_NO_BASE_INDEXED_MOVX_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile no-base indexed movx fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260906}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_MOVX_EXIT_CODE,
+        f"no-base indexed movx changed the result: {stats=}",
     )
 
 

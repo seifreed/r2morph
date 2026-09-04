@@ -39,6 +39,11 @@ def test_classify_movsxd_indexed_memory_lowers_to_movxidx_sign_extend_dword() ->
     expect(item == ["movxidx", "s", 32, 64, 0, 3, 1, 2, 0])
 
 
+def test_classify_movsxd_no_base_indexed_memory_lowers_to_movxidxnb() -> None:
+    item = _classify(_insn(0x1000, 4, "movsxd rax, dword [rcx*4+0x404020]"))
+    expect(item == ["movxidxnb", "s", 32, 64, 0, 1, 2, 0x404020])
+
+
 def test_classify_movsxd_register_source_lowers_to_movxreg_sign_extend_dword() -> None:
     # dst rax(0), src ecx(1); movsxd's register form sign-extends the low dword.
     expect(_classify(_insn(4096, 3, "movsxd rax, ecx")) == ["movxreg", "s", 32, 64, 0, 1])
@@ -56,6 +61,16 @@ def test_extract_region_accepts_movsxd_plain_dword_load() -> None:
     region = extract_region(_movsxd_region_instructions(), randomness.Random(1))
     expect(region is not None)
     expect(not (("vmovx", "s", 32, 64, 3, 0) not in [tuple(item) for item in region.instructions]))
+
+
+def test_extract_region_accepts_movsxd_no_base_indexed_dword_load() -> None:
+    instructions = [
+        _insn(0x1000, 4, "movsxd rax, dword [rcx*4+0x404020]"),
+        {"addr": 0x1004, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions, randomness.Random(1))
+    expect(region is not None)
+    expect(not (("vmovxidxnb", "s", 32, 64, 1, 2, 0x404020) not in [tuple(item) for item in region.instructions]))
 
 
 def test_movsxd_memory_load_emits_native_sign_extend_dword() -> None:

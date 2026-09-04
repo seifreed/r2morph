@@ -478,13 +478,14 @@ def _vmovx_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: i
 def _vmovxidx_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
-    """Load ``byte|word [base+index*scale+disp]`` with zero/sign extension and push it.
+    """Load an indexed byte/word/dword source with zero/sign extension and push it.
 
-    Like :func:`_vmovx_handler_asm` but with the shared scaled-index address
-    prologue; no flags. A following ``vpop`` writes the extended value to the slot.
+    The shared scaled-index address prologue handles both base and no-base forms;
+    no flags are changed. A following ``vpop`` writes the extended value to the slot.
     """
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    address_builder = _indexed_address_nobase_asm if handler_key.startswith("vmovxidxnb_") else _indexed_address_asm
+    body, advance = address_builder(key, key_dword, field_perm, addr_variant)
     body += _movx_load_asm(ext, int(src_size_text), int(dst_width_text))
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 

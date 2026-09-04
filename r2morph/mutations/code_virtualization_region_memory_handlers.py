@@ -607,9 +607,10 @@ def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> s
 def _movx_indexed_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
-    """Assembly body for ``movzx/movsx reg, byte|word [base+index*scale+disp]``."""
+    """Assembly body for indexed ``movzx/movsx`` memory sources."""
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    address_builder = _indexed_address_nobase_asm if handler_key.startswith("movxidxnb_") else _indexed_address_asm
+    body, advance = address_builder(key, key_dword, field_perm, addr_variant)
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 

@@ -215,6 +215,9 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         elif kind == "vmovxidx":
             _, _ext, _src_size, _width, base, index, shift, disp = item
             self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind == "vmovxidxnb":
+            _, _ext, _src_size, _width, index, shift, disp = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
             position = self._opcode(item)
@@ -612,6 +615,9 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         elif kind == "movxidx":
             _, _ext, _src, _dst, reg, base, index, shift, disp = item
             self._gp_idx(item, (reg, base, index, shift, disp))
+        elif kind == "movxidxnb":
+            _, _ext, _src, _dst, reg, index, shift, disp = item
+            self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
         elif kind == "movxreg":
             position = self._opcode(item)
             self.plain.extend((self.slot_of[item[4]] ^ position, self.slot_of[item[5]] ^ position))

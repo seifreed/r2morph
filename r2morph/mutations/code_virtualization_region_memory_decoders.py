@@ -544,10 +544,21 @@ def _decode_movx_memory(
     if memory is not None:
         base_slot, displacement, _memory_width = memory
         return ("movx", extension, source_size, destination[1], destination[0], base_slot, displacement)
-    indexed = _parse_indexed_operand(operand)
+    indexed = _parse_indexed_operand(operand, base_optional=True)
     if indexed is None:
         return None
     base_slot, index_slot, shift, displacement = indexed
+    if base_slot < 0:
+        return (
+            "movxidxnb",
+            extension,
+            source_size,
+            destination[1],
+            destination[0],
+            index_slot,
+            shift,
+            displacement,
+        )
     return (
         "movxidx",
         extension,
@@ -576,8 +587,9 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
     """Decode ``movzx/movsx/movsxd reg, <source>`` (zero-/sign-extending move).
 
     r2 reports these under the mov type. The destination is a 32- or 64-bit
-    register. A ``byte|word|dword [mem]`` source returns ``("movx", ...)`` (base+disp)
-    or ``("movxidx", ...)`` (scaled index); an 8-, 16-, or 32-bit *register* source
+    register. A ``byte|word|dword [mem]`` source returns ``("movx", ...)`` (base+disp),
+    ``("movxidx", ...)`` (scaled index), or ``("movxidxnb", ...)`` (index without
+    base); an 8-, 16-, or 32-bit *register* source
     returns ``("movxreg", ext, src_size, dst_width, dst_slot, src_slot)``. ``ext`` is
     ``"z"`` or ``"s"``; ``movsxd`` is the sign-extending dword->qword form (``ext``
     ``"s"``, src_size 32). None when unsupported.
