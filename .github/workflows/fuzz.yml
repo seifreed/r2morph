@@ -33,7 +33,7 @@ jobs:
           pip install -r requirements.txt
           python -m pip install --editable .
 
-      - name: Run deterministic fuzz campaign
+      - name: Fuzz parsers, VM dispatch, relocations, and rewriting
         run: |
           cases="${{ inputs.cases || '5000' }}"
           seed="${{ inputs.seed || '20260827' }}"

@@ -20,5 +20,8 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
     report = run_campaign(cases=1, seed=_SEED, max_payload=_SMALL_PAYLOAD)
 
     expect(
-        report["cases"] == 1 and report["max_payload"] == _SMALL_PAYLOAD and report["failure_limit"] == _MAX_FAILURES
+        report["cases"] == 1
+        and report["max_payload"] == _SMALL_PAYLOAD
+        and report["failure_limit"] == _MAX_FAILURES
+        and report["target_runs"] == {"binary_parsers": 1, "vm_dispatcher": 1, "relocations": 1, "binary_rewriter": 1}
     )
