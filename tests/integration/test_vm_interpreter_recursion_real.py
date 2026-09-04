@@ -123,7 +123,7 @@ def test_dispatch_function_is_inferred_without_override(tmp_path: Path) -> None:
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated)
 
-    expect(stats["functions_virtualized"] >= 1)
+    expect(stats["functions_virtualized"] >= 1 and stats["unsupported_functions_total"] == 0)
     expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 

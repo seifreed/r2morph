@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from typing import Any
 
 import r2morph.core.randomness as random
@@ -21,6 +22,27 @@ _UNWIND_SECTION_NAMES = frozenset(
         "__unwind_info",
     }
 )
+
+
+def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
+    """Return trustworthy virtual ranges for executable sections."""
+    try:
+        sections = binary.get_sections()
+        ranges = []
+        for section in sections:
+            if "x" not in str(section.get("perm", "")):
+                continue
+            start = int(section.get("vaddr", 0))
+            size = int(section.get("vsize", section.get("size", 0)))
+            if start >= 0 and size > 0:
+                ranges.append((start, size))
+        return tuple(ranges)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return ()
+
+
+def _address_in_ranges(address: object, ranges: Iterable[tuple[int, int]]) -> bool:
+    return isinstance(address, int) and any(start <= address < start + size for start, size in ranges)
 
 
 def _unwind_metadata_name(binary: Any) -> str | None:
@@ -58,7 +80,7 @@ def _transform_unsupported_function(
     func: dict[str, Any],
     unsupported_instruction: dict[str, Any] | None,
     records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
-) -> dict[str, int]:
+) -> dict[str, Any]:
     """Handle a function rejected by the whole-function classifier."""
     unsupported, partial = records
     if pass_instance.reject_partial_virtualization:
@@ -78,6 +100,7 @@ def _transform_unsupported_function(
             "instructions": result["instructions"],
             "bytecode": result["bytecode"],
             "partial": partial_count,
+            "body_ranges": result.get("body_ranges", ()),
         }
     pass_instance._record_unsupported_function(unsupported, func, unsupported_instruction)
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
@@ -85,7 +108,7 @@ def _transform_unsupported_function(
 
 def _transform_dispatch_function(
     pass_instance: Any, binary: Any, func: dict[str, Any], unsupported: list[dict[str, Any]]
-) -> dict[str, int]:
+) -> dict[str, Any]:
     """Transform a computed-dispatch function without falling back to a partial run."""
     region_result = pass_instance._virtualize_dispatch_function(binary, func)
     if region_result is not None:
@@ -96,6 +119,7 @@ def _transform_dispatch_function(
             "instructions": region_result["instructions"],
             "bytecode": region_result["bytecode"],
             "partial": 0,
+            "body_ranges": region_result.get("body_ranges", ()),
         }
     pass_instance._record_unsupported_function(
         unsupported,
@@ -112,7 +136,7 @@ def _transform_function(
     func: dict[str, Any],
     records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
     unwind_metadata: bool,
-) -> dict[str, int]:
+) -> dict[str, Any]:
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
     if unwind_metadata:
@@ -154,6 +178,7 @@ def _transform_function(
             "instructions": result["instructions"],
             "bytecode": result["bytecode"],
             "partial": partial_count,
+            "body_ranges": result.get("body_ranges", ()),
         }
     pass_instance._record_unsupported_function(unsupported, func, None)
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
@@ -198,7 +223,9 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     virtualized, skipped, total_insns, total_bytecode = 0, 0, 0, 0
     unsupported: list[dict[str, Any]] = []
     partial: list[dict[str, Any]] = []
+    covered_ranges: list[tuple[int, int]] = []
     unsupported_total = partial_total = 0
+    executable_ranges = _executable_ranges(binary)
     unwind_section = _unwind_metadata_name(binary)
     exception_frames: dict[int, Any] | None = None
     if unwind_section is not None and unwind_section != "unavailable":
@@ -209,6 +236,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     for func in binary.get_functions():
         if virtualized >= pass_instance.max_functions:
             break
+        function_address = func.get("addr")
+        if executable_ranges and not _address_in_ranges(function_address, executable_ranges):
+            continue
+        if _address_in_ranges(function_address, covered_ranges):
+            continue
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
             continue
         if unwind_section == "unavailable":
@@ -257,6 +289,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         total_insns += outcome["instructions"]
         total_bytecode += outcome["bytecode"]
         partial_total += outcome["partial"]
+        covered_ranges.extend(outcome.get("body_ranges", ()))
 
     return {
         "functions_virtualized": virtualized,

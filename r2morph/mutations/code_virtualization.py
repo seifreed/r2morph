@@ -543,7 +543,11 @@ class CodeVirtualizationPass(MutationPass):
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None
-        return {"instructions": len(run.ops), "bytecode": len(build.blob)}
+        return {
+            "instructions": len(run.ops),
+            "bytecode": len(build.blob),
+            "body_ranges": ((run.start, build.span),),
+        }
 
     def _virtualize_run(self, binary: Any, run: _Run) -> dict[str, Any] | None:
         """Inject the VM for ``run`` and install the trampoline."""
@@ -853,7 +857,11 @@ class CodeVirtualizationPass(MutationPass):
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None
-        return {"instructions": instruction_count, "bytecode": len(blob)}
+        return {
+            "instructions": instruction_count,
+            "bytecode": len(blob),
+            "body_ranges": tuple(region.body_ranges),
+        }
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """Apply code virtualization to provable register runs."""

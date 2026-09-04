@@ -142,6 +142,7 @@ _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INCALL_45 = 45
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INDEXCALL_NB = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_MULTIRET_17 = 17
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_SWITCH_ABS_30 = 30
+_EXPECTED_SWITCH_FUNCTIONS_VIRTUALIZED = 2
 _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45 = 45
 _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_2 = 45
 _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_3 = 45
@@ -255,6 +256,23 @@ def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None
         _emulate_exit_code(FIXTURE_SWITCH_ABS)
         == _emulate_exit_code(mutated)
         == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_SWITCH_ABS_30
+    )
+
+
+def test_apply_ignores_non_executable_switch_symbols(tmp_path: Path) -> None:
+    mutated = tmp_path / "switch_symbols"
+    shutil.copy(FIXTURE_SWITCH_ABS, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260802}).apply(binary)
+    finally:
+        binary.close()
+
+    expect(
+        stats["functions_virtualized"] == _EXPECTED_SWITCH_FUNCTIONS_VIRTUALIZED
+        and stats["unsupported_functions_total"] == 0
     )
 
 
