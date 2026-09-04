@@ -1,30 +1,31 @@
 # Protection Maturity Report
 
-Commit: `4eecb48d`
+Commit: `47992a5`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `c73c5065` and covered
+The latest full Linux amd64 fixture campaign ran against `47992a5` and covered
 158 fixtures with all six selected passes. The differential report completed in
-workflow `33834618121` (artifact SHA-256
-`8cef54fdf27f4a89a589a45426c3ea13e70ea1fc182ab3da3faa88b14f94d4a6`). Its
+workflow `33841892183` (artifact SHA-256
+`fffa73d4ab32f7d6f721e0937578b50a50f8af3a787c30525ed5a39a8e35f263`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-c73c506.json`](protection-maturity-by-pass-2026-09-04-c73c506.json):
+[`docs/protection-maturity-by-pass-2026-09-04-47992a5.json`](protection-maturity-by-pass-2026-09-04-47992a5.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
 and RegisterSubstitution recorded 158 semantic passes with no failures.
 CodeVirtualization recorded 157 semantic passes and one known baseline
 mismatch in `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture
 and the new horizontal packed-memory fixture passed CodeVirtualization with
-native and Unicorn parity. The baseline
-discrepancy is not evidence of a transformation bug, but CodeVirtualization
-is not yet a clean semantic gate.
+native and Unicorn parity. The remaining sample had `mutations_applied: 0`
+and a baseline runtime contract mismatch; it is not evidence of a
+transformation bug, but CodeVirtualization is not yet a clean semantic gate.
 The matching adversarial campaign completed in workflow
-`33704363064` and covered 148 samples, with 4,424 completed tool runs, 3,552
-unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
-CodeVirtualization applied to all 148 samples and virtualized 159 functions,
-with no unsupported functions or transformation errors.
+`33841894143` and covered 158 samples, with 4,697 completed tool runs, 3,792
+unavailable-tool rows, and 43 tool errors. Its per-pass summary is in
+[`docs/protection-adversarial-corpus-2026-09-04-47992a5-summary.json`](protection-adversarial-corpus-2026-09-04-47992a5-summary.json):
+CodeVirtualization applied to all 158 samples and virtualized 169 functions,
+with no unsupported functions or transformation errors. Tool errors and
+unavailable tools remain explicit non-passing evidence.
 The latest local Ghidra headless campaign for `4eecb48d` completed all 316 analyses for the
 158 original/protected pairs with zero errors or timeouts. Its compact result is in
 [`docs/protection-ghidra-corpus-2026-09-04-4eecb48-summary.json`](protection-ghidra-corpus-2026-09-04-4eecb48-summary.json)

@@ -1,0 +1,42 @@
+{
+  "artifact_sha256": "bb400440363c58678518e14c01c6f1dcb3a82fda57eb00957c4e66c788abbddb",
+  "commit": "47992a5",
+  "pass_summary": {
+    "BlockReordering": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "no_op": 157,
+      "omitted": 0,
+      "samples": 158,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 158,
+      "errors": 0,
+      "functions_virtualized": 169,
+      "no_op": 0,
+      "omitted": 0,
+      "samples": 158,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 2,
+      "no_op": 156,
+      "omitted": 0,
+      "samples": 158,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 30,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 35,
+      "no_op": 128,
+      "omitted": 0,
+... (31 lines truncated)
+[see remaining: tail -n +41 "$HOME/Library/Application Support/rtk/tee/1788501540_jq_--arg_57175c.log"]

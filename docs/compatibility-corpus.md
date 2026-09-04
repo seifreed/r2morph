@@ -31,20 +31,24 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `c73c5065` covered 158 fixtures
+The latest repository-fixture campaign against `47992a5` covered 158 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-c73c506.json`](protection-maturity-by-pass-2026-09-04-c73c506.json),
-from workflow `33834618121` (artifact SHA-256
-`8cef54fdf27f4a89a589a45426c3ea13e70ea1fc182ab3da3faa88b14f94d4a6`). Five
+[`protection-maturity-by-pass-2026-09-04-47992a5.json`](protection-maturity-by-pass-2026-09-04-47992a5.json),
+from workflow `33841892183` (artifact SHA-256
+`fffa73d4ab32f7d6f721e0937578b50a50f8af3a787c30525ed5a39a8e35f263`). Five
 passes recorded 158 semantic passes with no failures; CodeVirtualization
 recorded 157 semantic passes and one known baseline mismatch in
-`elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture passed
-CodeVirtualization with native and Unicorn parity, and the new horizontal
-packed-memory fixture passed the same contract. The matching adversarial report is summarized
+`elf_vm_fppackedidxnb_x86_64`. The mismatch remains a baseline runtime
+contract issue with zero mutations applied, not a new transformation failure.
+The matching adversarial report is summarized
 in
-[`protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json),
-from workflow `33704363064` (artifact SHA-256
-`f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
+[`protection-adversarial-corpus-2026-09-04-47992a5-summary.json`](protection-adversarial-corpus-2026-09-04-47992a5-summary.json),
+from workflow `33841894143` (artifact SHA-256
+`bb400440363c58678518e14c01c6f1dcb3a82fda57eb00957c4e66c788abbddb`). It
+covered 158 samples and 4,697 completed tool runs, with 3,792 unavailable
+tool rows and 43 tool errors; CodeVirtualization applied to all samples and
+virtualized 169 functions with no unsupported functions or transformation
+errors.
 The latest local Ghidra headless campaign for the 158-fixture corpus at
 `4eecb48d` completed
 316 analyses with zero errors or timeouts. Its raw report is
