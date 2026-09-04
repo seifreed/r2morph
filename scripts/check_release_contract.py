@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import sys
 import tomllib
 from pathlib import Path
-
-from r2morph import __version__
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_CI_JOBS = (
@@ -32,7 +31,12 @@ def _load_matrix() -> dict[str, object]:
 def _check_version() -> str:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     package_version = project["project"]["version"]
-    if __version__ != package_version:
+    init_path = ROOT / "r2morph" / "__init__.py"
+    if init_path.exists():
+        public_version_matches = f'__version__ = "{package_version}"' in init_path.read_text(encoding="utf-8")
+    else:
+        public_version_matches = importlib.import_module("r2morph").__version__ == package_version
+    if not public_version_matches:
         raise ValueError("package and public version must match")
     return package_version
 
