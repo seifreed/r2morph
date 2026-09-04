@@ -22,6 +22,35 @@ from r2morph.analysis.liveness_models import (
 )
 
 _INSTRUCTION_PART_COUNT = 2
+_READ_MODIFY_WRITE_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bt",
+        "cmp",
+        "cmpxchg",
+        "dec",
+        "imul",
+        "inc",
+        "neg",
+        "not",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "test",
+        "xadd",
+        "xchg",
+        "xor",
+    }
+)
 
 logger = logging.getLogger(__name__)
 
@@ -274,15 +303,16 @@ class LivenessAnalysis:
 
     def _registers_used_by_operands(self, operands: str, disasm: str) -> set[Register]:
         used: set[Register] = set()
+        opcode = disasm.split(None, 1)[0].lower() if disasm else ""
         if "," in operands:
             parts = operands.split(",")
             if len(parts) >= _INSTRUCTION_PART_COUNT:
-                src = parts[1].strip()
-                used.update(self._parse_registers_from_string(src))
+                for source in parts[1:]:
+                    used.update(self._parse_registers_from_string(source.strip()))
             dest = parts[0].strip()
-            if "[" in dest:
+            if "[" in dest or opcode in _READ_MODIFY_WRITE_MNEMONICS or opcode.startswith("cmov"):
                 used.update(self._parse_registers_from_string(dest))
-        else:
+        elif opcode != "pop" and not opcode.startswith("set"):
             used.update(self._parse_registers_from_string(operands))
 
         if "(" in disasm and ")" in disasm:

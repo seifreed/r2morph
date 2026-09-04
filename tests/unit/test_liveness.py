@@ -463,6 +463,22 @@ class TestLivenessAnalysis:
         expect(not ("rax" not in reg_names))
         expect(not ("r8" not in reg_names))
 
+    def test_read_modify_write_destination_is_live_before_instruction(self):
+        """Read-modify-write arithmetic keeps its destination in the use set."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "add", "disasm": "add eax, ebx"})
+
+        expect({register.name for register in used} == {"eax", "ebx"})
+
+    def test_write_only_move_destination_is_not_live_before_instruction(self):
+        """A move destination is overwritten without reading its previous value."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "mov", "disasm": "mov eax, ebx"})
+
+        expect({register.name for register in used} == {"ebx"})
+
     def test_to_dict(self):
         """Test to_dict method."""
         cfg = create_sequential_cfg()
