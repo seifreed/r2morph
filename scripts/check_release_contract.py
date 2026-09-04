@@ -7,6 +7,8 @@ import sys
 import tomllib
 from pathlib import Path
 
+from r2morph import __version__
+
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_CI_JOBS = (
     "lint",
@@ -30,8 +32,7 @@ def _load_matrix() -> dict[str, object]:
 def _check_version() -> str:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     package_version = project["project"]["version"]
-    init_text = (ROOT / "r2morph" / "__init__.py").read_text(encoding="utf-8")
-    if f'__version__ = "{package_version}"' not in init_text:
+    if __version__ != package_version:
         raise ValueError("package and public version must match")
     return package_version
 

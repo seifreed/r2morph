@@ -153,7 +153,7 @@ jobs:
           test_root=/tmp/r2morph-release-tests
           rm -rf "$test_root"
           mkdir -p "$test_root"
-          cp -R tests fixtures docs scripts pyproject.toml requirements.txt CHANGELOG.md README.md "$test_root"/
+          cp -R .github tests fixtures docs scripts pyproject.toml requirements.txt CHANGELOG.md README.md "$test_root"/
           cd "$test_root"
           python -W error -m pytest --no-cov \
             --tb=short
