@@ -412,6 +412,23 @@ def _source_registers(disasm: str) -> set[str]:
     return tokens
 
 
+def _function_live_in_registers(instructions: list[dict[str, Any]]) -> set[str]:
+    """Registers read before a local definition supplies their value."""
+    defined: set[str] = set()
+    live_in: set[str] = set()
+    for instruction in instructions:
+        disasm = instruction.get("disasm", "").lower()
+        for register in _source_registers(disasm):
+            canonical = _CANONICAL_REGISTER.get(register)
+            if canonical is not None and canonical not in defined:
+                live_in.add(register)
+        destination = _destination_register(disasm)
+        canonical_destination = _CANONICAL_REGISTER.get(destination) if destination is not None else None
+        if canonical_destination is not None:
+            defined.add(canonical_destination)
+    return live_in
+
+
 def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
     """Register tokens whose value a call/syscall consumes (argument, by the last
     write that reaches the transfer) or produces and is then read (return value).
@@ -483,6 +500,7 @@ _IMPLICIT_FIXED_REGISTERS = {
     "rdtsc": ("rax", "rdx"),
     "rdtscp": ("rax", "rdx", "rcx"),
     "cpuid": ("rax", "rbx", "rcx", "rdx"),
+    "ret": ("x30",),
 }
 _STRING_OP_FRAGMENTS = ("movs", "stos", "scas", "cmps", "lods")
 _STRING_OP_REGISTERS = frozenset({"rsi", "rdi", "rcx", "rax"})
@@ -557,6 +575,8 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
         | implicit_operand_pins(instructions)
         | memory_operand_pins(instructions)
     )
+    if arch == "x64":
+        abi_regs |= _function_live_in_registers(instructions)
     abi_bases = {_CANONICAL_REGISTER.get(register, register) for register in abi_regs}
     caller_saved = set(register_classes.get("caller_saved", []))
     if arch == "x64":

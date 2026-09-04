@@ -71,7 +71,7 @@ def _rewrite_case(seed: int, index: int) -> None:
     validation = validate_patches(
         patches,
         lambda address: address >= _MIN_PATCH_ADDRESS,
-        lambda instructions: bool(instructions),
+        bool,
     )
 
     addresses = [patch.address for patch in patches]

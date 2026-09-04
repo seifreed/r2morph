@@ -22,6 +22,8 @@ from r2morph.mutations.register_substitution_helpers import (
 
 logger = logging.getLogger(__name__)
 
+_PreparedSubstitution = tuple[dict[str, Any], str, bytes, str, str]
+
 _UNSAFE_MNEMONICS = {
     "xlat",
     "movabs",
@@ -160,23 +162,16 @@ class RegisterSubstitutionPass(MutationPass):
         self,
         binary: Any,
         function: dict[str, Any],
-        instruction: dict[str, Any],
-        original_register: str,
-        substitute_register: str,
+        prepared: _PreparedSubstitution,
     ) -> bool:
-        replacement = self._substituted_disasm(instruction, original_register, substitute_register)
+        instruction, replacement, new_bytes, original_register, substitute_register = prepared
         address = instruction.get("addr", 0)
         original_size = instruction.get("size", 0)
-        if replacement is None or address == 0 or original_size == 0:
-            return False
         checkpoint = self._create_mutation_checkpoint("reg")
         baseline = {}
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, function["addr"])
         original_bytes = binary.read_bytes(address, original_size)
-        new_bytes = binary.assemble(replacement, function["addr"])
-        if not new_bytes or len(new_bytes) > original_size:
-            return False
         if not binary.write_bytes(address, new_bytes):
             return False
         if len(new_bytes) < original_size and not binary.nop_fill(
@@ -208,6 +203,43 @@ class RegisterSubstitutionPass(MutationPass):
             },
         )
         return not self._validate_mutation_or_rollback(binary, record, checkpoint)
+
+    def _prepare_substitution(
+        self,
+        binary: Any,
+        function: dict[str, Any],
+        instructions: list[dict[str, Any]],
+        original_register: str,
+        substitute_register: str,
+    ) -> list[_PreparedSubstitution] | None:
+        prepared: list[_PreparedSubstitution] = []
+        for instruction in instructions:
+            disasm = str(instruction.get("disasm", "")).lower()
+            if original_register not in disasm:
+                continue
+            replacement = self._substituted_disasm(instruction, original_register, substitute_register)
+            address = instruction.get("addr", 0)
+            original_size = instruction.get("size", 0)
+            if replacement is None or address == 0 or original_size == 0:
+                return None
+            new_bytes = binary.assemble(replacement, function["addr"])
+            if not new_bytes or len(new_bytes) > original_size:
+                return None
+            prepared.append((instruction, replacement, new_bytes, original_register, substitute_register))
+        return prepared or None
+
+    def _restore_substitution(
+        self,
+        binary: Any,
+        originals: list[tuple[int, bytes]],
+        record_count: int,
+    ) -> None:
+        restored = True
+        for address, original in originals:
+            restored = binary.write_bytes(address, original) and restored
+        if not restored:
+            raise RuntimeError("Failed to restore partial register substitution")
+        del self._records[record_count:]
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -251,18 +283,32 @@ class RegisterSubstitutionPass(MutationPass):
         for func, instructions, selected in self._select_candidates(binary, functions, arch_key):
             func_mutations = 0
             for orig_reg, subst_reg in selected:
-                substituted_count = 0
-                for insn in instructions:
+                prepared = self._prepare_substitution(binary, func, instructions, orig_reg, subst_reg)
+                if prepared is None:
+                    continue
+                originals = [
+                    (insn["addr"], binary.read_bytes(insn["addr"], insn["size"])) for insn, _, _, _, _ in prepared
+                ]
+                record_count = len(self._records)
+                for prepared_instruction in prepared:
+                    insn = prepared_instruction[0]
                     address = insn.get("addr", 0)
                     try:
-                        if not self._apply_instruction_substitution(binary, func, insn, orig_reg, subst_reg):
-                            continue
-                        substituted_count += 1
-                        func_mutations += 1
+                        applied = self._apply_instruction_substitution(
+                            binary,
+                            func,
+                            prepared_instruction,
+                        )
                     except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
                         logger.debug(f"Failed to substitute at 0x{address:x}: {error}")
+                        applied = False
+                    if not applied:
+                        self._restore_substitution(binary, originals, record_count)
+                        break
+                else:
+                    substituted_count = len(prepared)
+                    func_mutations += substituted_count
 
-                if substituted_count > 0:
                     logger.info(
                         f"Substituted {orig_reg} -> {subst_reg} in {func.get('name')}: {substituted_count} instructions"
                     )

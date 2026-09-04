@@ -96,9 +96,24 @@ def test_find_substitution_candidates_with_x64_call_excludes_argument_register()
 
 def test_find_substitution_candidates_without_call_still_renames_arg_register() -> None:
     """The call guard must be targeted: with no call, x0 is a normal register."""
-    no_call = [{"disasm": "add x0, x0, x1"}, {"disasm": "mov x2, x0"}]
+    no_call = [
+        {"disasm": "mov x0, 1"},
+        {"disasm": "add x0, x0, x1"},
+        {"disasm": "mov x2, x0"},
+    ]
     sources = {orig for orig, _ in find_substitution_candidates(no_call, "arm64")}
     expect(not ("x0" not in sources))
+
+
+def test_find_substitution_candidates_with_arm64_return_excludes_link_register() -> None:
+    instructions = [
+        {"disasm": "stp x29, x30, [sp, -0x10]!"},
+        {"disasm": "ldp x29, x30, [sp], 0x10"},
+        {"disasm": "ret"},
+    ]
+    sources = {original for original, _ in find_substitution_candidates(instructions, "arm64")}
+
+    expect("x30" not in sources)
 
 
 def test_find_substitution_candidates_excludes_register_mixed_with_memory_use() -> None:
@@ -139,6 +154,25 @@ def test_find_substitution_candidates_x64_preserves_32_bit_width() -> None:
     instructions = [{"disasm": "mov ecx, 5"}, {"disasm": "add ecx, 2"}, {"disasm": "ret"}]
     candidates = find_substitution_candidates(instructions, "x64")
     expect(len(candidates) == 1 and candidates[0][0] == "ecx" and candidates[0][1] == "edx")
+
+
+def test_find_substitution_candidates_excludes_function_live_in_arguments() -> None:
+    instructions = [
+        {"disasm": "mov rax, rdi"},
+        {"disasm": "add rax, rsi"},
+        {"disasm": "sub rax, rdx"},
+        {"disasm": "ret"},
+    ]
+    sources = {original for original, _ in find_substitution_candidates(instructions, "x64")}
+
+    expect(not sources.intersection({"rdi", "rsi", "rdx"}))
+
+
+def test_find_substitution_candidates_excludes_live_in_indirect_call_target() -> None:
+    instructions = [{"disasm": "call r11"}, {"disasm": "ret"}]
+    sources = {original for original, _ in find_substitution_candidates(instructions, "x64")}
+
+    expect("r11" not in sources)
 
 
 def test_call_live_registers_empty_when_no_call_present() -> None:
