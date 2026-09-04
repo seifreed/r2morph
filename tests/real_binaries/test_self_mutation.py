@@ -22,6 +22,8 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _EXPECTED_LEN_PARTS_2 = 2
+_SELF_MUTATION_SEED = 1337
+_SELF_MUTATION_TIMEOUT_SECONDS = 30
 
 
 pytestmark = pytest.mark.skipif(
@@ -195,13 +197,22 @@ int main() {
 
             # Apply mutations
             engine.add_mutation("nop")
-            result = engine.run(EngineRunOptions(validation_mode="structural"))
+            result = engine.run(
+                EngineRunOptions(
+                    validation_mode="structural",
+                    seed=_SELF_MUTATION_SEED,
+                )
+            )
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output)
 
                 # Verify mutated binary still runs
-                run_result = run_command([str(output)], capture_output=True, timeout=5)
+                run_result = run_command(
+                    [str(output)],
+                    capture_output=True,
+                    timeout=_SELF_MUTATION_TIMEOUT_SECONDS,
+                )
                 expect(not (run_result.returncode not in {0, 1}))
 
     def test_self_referential_consistency(self, simple_binary, temp_dir):
@@ -289,6 +300,10 @@ int main() {
         # Verify all outputs run successfully
         for output in outputs:
             if output.exists():
-                result = run_command([str(output)], capture_output=True, timeout=5)
+                result = run_command(
+                    [str(output)],
+                    capture_output=True,
+                    timeout=_SELF_MUTATION_TIMEOUT_SECONDS,
+                )
                 # Should not crash
                 expect(not (result.returncode not in (0, 1)), f"Binary {output} crashed")

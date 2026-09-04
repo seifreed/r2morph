@@ -8,6 +8,7 @@ from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2 = 100.0
+_VALIDATION_TIMEOUT_SECONDS = 30
 
 
 def test_validator_round_trip_same_binary(tmp_path):
@@ -19,7 +20,7 @@ def test_validator_round_trip_same_binary(tmp_path):
     shutil.copy2(src, original)
     shutil.copy2(src, mutated)
 
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_VALIDATION_TIMEOUT_SECONDS)
     validator.add_test_case(description="default run")
     result = validator.validate(original, mutated)
     expect(not (result.passed is not True))

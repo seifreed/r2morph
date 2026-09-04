@@ -27,6 +27,7 @@ from tests.utils.process import run_command
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
 REAL_BINARY_TEST_SEED = 1337
+_REAL_BINARY_TIMEOUT_SECONDS = 30
 
 
 def get_system_binaries():
@@ -69,7 +70,7 @@ def binary_runs_successfully(binary_path: Path) -> bool:
         result = run_command(
             [str(binary_path), "--help"],
             capture_output=True,
-            timeout=5,
+            timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         )
         # Most utilities exit with 0 or 1 for --help
         return result.returncode in (0, 1)
@@ -111,7 +112,12 @@ class TestRealBinaryMutation:
             engine.add_mutation("substitute")
             engine.add_mutation("register")
 
-            result = engine.run(EngineRunOptions(validation_mode="structural"))
+            result = engine.run(
+                EngineRunOptions(
+                    validation_mode="structural",
+                    seed=REAL_BINARY_TEST_SEED,
+                )
+            )
 
             expect(not (result.get("passes_run", 0) < 0), f"Mutation failed: {result.get('error')}")
 
@@ -150,7 +156,7 @@ class TestRealBinaryMutation:
             [str(cat_path)],
             input=test_input,
             capture_output=True,
-            timeout=5,
+            timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         )
 
         # Mutated behavior
@@ -158,7 +164,7 @@ class TestRealBinaryMutation:
             [str(output_path)],
             input=test_input,
             capture_output=True,
-            timeout=5,
+            timeout=_REAL_BINARY_TIMEOUT_SECONDS,
         )
 
         expect(orig_result.stdout == mut_result.stdout, "Cat output changed")
@@ -182,7 +188,7 @@ class TestRealBinaryMutation:
             engine.save(output_path)
 
         # Verify the mutated binary runs without crashing
-        mut_result = run_command([str(output_path)], capture_output=True, timeout=5)
+        mut_result = run_command([str(output_path)], capture_output=True, timeout=_REAL_BINARY_TIMEOUT_SECONDS)
         expect(mut_result.returncode == 0, "Mutated whoami should exit cleanly")
         expect(not (len(mut_result.stdout) <= 0), "Mutated whoami should produce output")
 

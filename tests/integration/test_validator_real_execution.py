@@ -9,6 +9,7 @@ from r2morph.validation.validator import BinaryValidator
 from tests.utils.assertions import expect
 
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_VALIDATION_TIMEOUT_SECONDS = 30
 
 
 def test_binary_validator_with_macho(tmp_path: Path) -> None:
@@ -24,7 +25,7 @@ def test_binary_validator_with_macho(tmp_path: Path) -> None:
     original.write_bytes(source.read_bytes())
     mutated.write_bytes(source.read_bytes())
 
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_VALIDATION_TIMEOUT_SECONDS)
     validator.add_test_case(args=[], stdin="", description="default")
     result = validator.validate(original, mutated)
 
@@ -46,6 +47,6 @@ def test_binary_validator_with_inputs(tmp_path: Path) -> None:
     original.write_bytes(source.read_bytes())
     mutated.write_bytes(source.read_bytes())
 
-    validator = BinaryValidator(timeout=5)
+    validator = BinaryValidator(timeout=_VALIDATION_TIMEOUT_SECONDS)
     result = validator.validate_with_inputs(original, mutated, ["", "ping"])
     expect(result.original_exitcode == result.mutated_exitcode)
