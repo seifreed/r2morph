@@ -15,8 +15,8 @@ from tests.utils.process import run_command
 EXPECTED_EXIT_CODE = 42
 
 
-def test_code_virtualization_limits_real_unwind_metadata_to_call_free_functions(tmp_path: Path) -> None:
-    """Call-free code transforms while exception-propagating code stays native."""
+def test_code_virtualization_preserves_real_unwind_metadata_for_synchronous_exceptions(tmp_path: Path) -> None:
+    """A parsed landing-pad frame remains valid when the VM run has no call."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
     source = tmp_path / "unwind.cpp"
@@ -59,10 +59,10 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
     expect(
         stats["functions_virtualized"] > 0
         and stats["partial_virtualization_total"] > 0
-        and protected_address in unsupported_addresses
+        and protected_address not in unsupported_addresses
         and protected_address not in partial_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "landing-pad unwind metadata was not rejected before relocation",
+        "parsed landing-pad unwind metadata was not preserved during virtualization",
     )
 
 

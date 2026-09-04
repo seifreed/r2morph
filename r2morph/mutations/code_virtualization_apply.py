@@ -28,8 +28,9 @@ def _unwind_metadata_name(binary: Any) -> str | None:
 
     ELF ``.eh_frame`` and ``.eh_frame_hdr`` are also emitted for ordinary C
     functions and startup code, so their presence alone does not prove a
-    language-level exception path. The explicit landing-pad tables remain a
-    conservative gate until their relocation-aware preservation is implemented.
+    language-level exception path. Parsed ELF frames are safe for the
+    call-free, synchronous exception paths handled by the VM; incomplete
+    exception metadata remains a conservative gate.
     """
     try:
         sections = binary.get_sections()
@@ -122,7 +123,7 @@ def _transform_function(
             (
                 "error",
                 "exceptions_and_unwinding",
-                "landing-pad unwind metadata cannot be preserved by the relocated VM",
+                "unwind metadata could not be mapped to a complete function frame",
             ),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
@@ -158,22 +159,25 @@ def _transform_function(
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
 
 
-def _function_has_unwind_metadata(
+def _function_has_unproven_unwind_metadata(
     unwind_section: str | None,
     function_address: int,
     exception_frames: dict[int, Any] | None,
 ) -> bool:
-    """Gate only ELF functions whose parsed frame carries landing pads.
+    """Return whether unwind safety for a function remains unproven.
 
-    Other formats and unparsed ELF frames remain conservative until their unwind
-    records can be relocated alongside the injected interpreter.
+    The VM trampoline returns to the original function before any subsequent
+    call can throw, and the run decoder excludes calls and control flow. A
+    parsed ELF frame therefore remains valid for synchronous exception paths,
+    including frames with landing pads. An unavailable parser result still
+    fails closed because the function's unwind contract is unknown.
     """
     if unwind_section is None:
         return False
     if exception_frames is None:
         return True
     frame = exception_frames.get(function_address)
-    return frame is None or bool(frame.landing_pads)
+    return frame is None
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
@@ -232,7 +236,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             binary,
             func,
             (unsupported, partial),
-            unwind_metadata=_function_has_unwind_metadata(unwind_section, int(func["addr"]), exception_frames),
+            unwind_metadata=_function_has_unproven_unwind_metadata(
+                unwind_section,
+                int(func["addr"]),
+                exception_frames,
+            ),
         )
         skipped += outcome["skipped"]
         unsupported_total += outcome["unsupported"]

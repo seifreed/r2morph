@@ -1,7 +1,11 @@
 """Unit contracts for capability-specific virtualization diagnostics."""
 
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from r2morph.mutations.code_virtualization_apply import _unwind_metadata_name
+from r2morph.mutations.code_virtualization_apply import (
+    _function_has_unproven_unwind_metadata,
+    _unwind_metadata_name,
+)
 from tests.utils.assertions import expect
 
 
@@ -83,6 +87,20 @@ def test_populated_eh_frame_alone_is_not_exception_metadata() -> None:
 
 def test_exception_table_is_rejected_before_virtualization() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".gcc_except_table"])) == ".gcc_except_table")
+
+
+def test_parsed_landing_pad_frame_is_safe_for_synchronous_virtualization() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401050,
+        landing_pads=[LandingPad(0x401030, 8, ExceptionAction.CATCH)],
+    )
+
+    expect(not _function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}))
+
+
+def test_unavailable_unwind_frames_fail_closed() -> None:
+    expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
 
 
 def test_tls_instruction_reports_thread_local_storage_capability() -> None:
