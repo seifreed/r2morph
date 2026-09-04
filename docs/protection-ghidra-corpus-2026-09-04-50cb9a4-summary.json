@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "measurement": "ghidra-headless-corpus",
+  "commit": "50cb9a48f65b54528084a35f95c782b0f540ec4b",
+  "dataset": "fixtures/dataset",
+  "sample_count": 158,
+  "completed_analysis_runs": 316,
+  "error_analysis_runs": 0,
+  "timeout_analysis_runs": 0,
+  "pass_summary": {
+    "CodeVirtualization": {
+      "applied": 158,
+      "errors": 0,
+      "functions_virtualized": 169,
+      "no_op": 0,
+      "omitted": 0,
+      "samples": 158,
+      "unsupported_functions": 5
+    }
+  },
+  "source_artifact": "docs/protection-ghidra-corpus-2026-09-04-50cb9a4.json",
+  "source_artifact_sha256": "cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f"
+}

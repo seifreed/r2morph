@@ -31,11 +31,11 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `5fb6590` covered 158 fixtures
+The latest repository-fixture campaign against `b7ddb41` covered 158 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-5fb6590.json`](protection-maturity-by-pass-2026-09-04-5fb6590.json),
-from workflow `33821568520` (artifact SHA-256
-`23af4dbbe3b7c4aaacee856e2389690299d8968022b647e7c4d86d71e4f2885a`). Five
+[`protection-maturity-by-pass-2026-09-04-b7ddb41.json`](protection-maturity-by-pass-2026-09-04-b7ddb41.json),
+from workflow `33827077107` (artifact SHA-256
+`375f5d08bb0a62403be8c3aed9556b00dbc8ed599fc975770e7b19b0217b7b48`). Five
 passes recorded 158 semantic passes with no failures; CodeVirtualization
 recorded 157 semantic passes and one known baseline mismatch in
 `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture passed
@@ -46,11 +46,11 @@ in
 from workflow `33704363064` (artifact SHA-256
 `f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
 The latest local Ghidra headless campaign for the 158-fixture corpus at
-`5fb6590` completed
+`50cb9a4` completed
 316 analyses with zero errors or timeouts. Its raw report is
-[`protection-ghidra-corpus-2026-09-04-5fb6590.json`](protection-ghidra-corpus-2026-09-04-5fb6590.json),
+[`protection-ghidra-corpus-2026-09-04-50cb9a4.json`](protection-ghidra-corpus-2026-09-04-50cb9a4.json),
 with the per-run contract in
-[`protection-ghidra-corpus-2026-09-04-5fb6590-summary.json`](protection-ghidra-corpus-2026-09-04-5fb6590-summary.json)
+[`protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json`](protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json)
 and SHA-256
 `cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`.
 
