@@ -139,7 +139,9 @@ def _check_release_workflow() -> None:
     for fragment in (
         "sbom.cdx.json",
         "rm dist/sbom.cdx.json",
-        "actions/attest-build-provenance@v2",
+        "actions/attest-build-provenance@v4",
+        "attestations: write",
+        'gh run download "$GITHUB_RUN_ID" --name dist --dir dist',
         "dist/*.whl",
         "python -m pip install --force-reinstall dist/*.whl",
         "Run tests against installed wheel",
@@ -156,6 +158,22 @@ def _check_release_workflow() -> None:
             raise ValueError(f"release workflow is missing: {fragment}")
 
 
+def _check_release_recovery_workflow() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "release-recovery.yml").read_text(encoding="utf-8")
+    for fragment in (
+        "workflow_dispatch:",
+        "validate-release",
+        "publish-pypi",
+        'git rev-parse "${RELEASE_TAG}^{commit}"',
+        'gh run download "$SOURCE_RUN_ID" --name dist --dir dist',
+        "attestations: write",
+        "actions/attest-build-provenance@v4",
+        "softprops/action-gh-release@v2",
+    ):
+        if fragment not in workflow:
+            raise ValueError(f"release recovery workflow is missing: {fragment}")
+
+
 def main() -> int:
     try:
         package_version = _check_version()
@@ -165,6 +183,7 @@ def main() -> int:
         _check_inventory()
         _check_ci_contract()
         _check_release_workflow()
+        _check_release_recovery_workflow()
     except (KeyError, TypeError, ValueError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
         print(f"release contract failed: {exc}", file=sys.stderr)
         return 1

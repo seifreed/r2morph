@@ -139,6 +139,17 @@ def test_release_workflow_excludes_sbom_from_pypi_upload() -> None:
     expect("rm dist/sbom.cdx.json" in publish_job)
 
 
+def test_release_recovery_validates_source_run_and_tag() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release-recovery.yml").read_text(encoding="utf-8")
+
+    expect(
+        'git rev-parse "${RELEASE_TAG}^{commit}"' in workflow
+        and "validate-release" in workflow
+        and "publish-pypi" in workflow
+        and 'gh run download "$SOURCE_RUN_ID" --name dist --dir dist' in workflow
+    )
+
+
 def test_corpus_workflows_run_the_full_pass_selection() -> None:
     adversarial = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")

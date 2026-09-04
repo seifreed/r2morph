@@ -131,10 +131,9 @@ jobs:
           sys/install.sh
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: dist
-          path: dist/
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --name dist --dir dist
 
       - name: Install package
         run: python -m pip install --force-reinstall dist/*.whl
@@ -166,13 +165,13 @@ jobs:
       name: pypi
       url: https://pypi.org/project/r2morph/
     permissions:
+      actions: read
       id-token: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: dist
-          path: dist/
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --name dist --dir dist
 
       - name: Exclude SBOM from Python package upload
         run: rm dist/sbom.cdx.json
@@ -187,6 +186,8 @@ jobs:
     needs: [validate-release, build, test, publish-pypi]
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
+      actions: read
+      attestations: write
       contents: write
       id-token: write
     steps:
@@ -196,10 +197,9 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: dist
-          path: dist/
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --name dist --dir dist
 
       - name: Generate release checksums
         run: |
@@ -207,7 +207,7 @@ jobs:
           sha256sum -- *.tar.gz *.whl sbom.cdx.json > SHA256SUMS
 
       - name: Attest release artifacts
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/*.whl
