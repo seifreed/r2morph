@@ -125,7 +125,7 @@ __attribute__((noinline)) static int wait_for_alarm(void) {
 }
 
 int main(void) {
-    struct itimerval timer = {{0, 1000}, {0, 1000}};
+    struct itimerval timer = { {0, 1000}, {0, 1000} };
     signal(SIGALRM, on_alarm);
     setitimer(ITIMER_REAL, &timer, NULL);
     return wait_for_alarm();

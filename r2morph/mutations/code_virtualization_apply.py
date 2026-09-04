@@ -177,6 +177,15 @@ def _function_has_unproven_unwind_metadata(
     if exception_frames is None:
         return True
     frame = exception_frames.get(function_address)
+    if frame is None:
+        frame = next(
+            (
+                candidate
+                for candidate in exception_frames.values()
+                if candidate.function_start <= function_address < candidate.function_end
+            ),
+            None,
+        )
     return frame is None
 
 
