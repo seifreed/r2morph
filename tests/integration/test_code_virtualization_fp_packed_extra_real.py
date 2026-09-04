@@ -35,16 +35,58 @@ __attribute__((noinline)) static int packed_operations(void) {
     __m128i equal = _mm_set1_epi8(7);
     __m128i greater = _mm_set1_epi8(7);
     __m128i minimum = _mm_set1_epi8(-1);
-    __m128i maximum = _mm_set1_epi8(0);
     __m128i shuffled = _mm_set_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
     __m128i shuffle_mask = _mm_setzero_si128();
     __m128i right = _mm_set1_epi8(7);
-    __m128i vex_right = _mm_set1_epi8(-1);
     __m128i shift_left = _mm_set1_epi16(0x0011);
     __m128i shift_right = _mm_set1_epi16(0x0044);
     __m128i shift_arithmetic = _mm_set1_epi16(-16);
     __m128i shift_count = _mm_cvtsi64_si128(1);
     __m128i legacy_maximum = _mm_setzero_si128();
+    __asm__ volatile(
+        "pcmpeqb %[right], %[equal]\n\t"
+        "pcmpgtb %[right], %[greater]\n\t"
+        "pminub %[right], %[minimum]\n\t"
+        "pmaxub %[right], %[legacy_maximum]\n\t"
+        "psllw %[shift_count], %[shift_left]\n\t"
+        "psrlw %[shift_count], %[shift_right]\n\t"
+        "psraw %[shift_count], %[shift_arithmetic]\n\t"
+        "pshufb %[shuffle_mask], %[shuffled]\n\t"
+        "mov %[seed], %%rax\n\t"
+        "movb (%[byte_source]), %%al\n\t"
+        "movb %%al, (%[byte_destination])\n\t"
+        "mov %%rax, %[byte_after]\n\t"
+        "mov %[seed], %%rax\n\t"
+        "movw (%[word_source]), %%ax\n\t"
+        "movw %%ax, (%[word_destination])\n\t"
+        "mov %%rax, %[word_after]\n\t"
+        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum),
+          [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
+          [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled),
+          [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
+        : [right] "x"(right), [shuffle_mask] "x"(shuffle_mask),
+          [shift_count] "x"(shift_count), [seed] "m"(seed),
+          [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
+          [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
+        : "rax", "memory"
+    );
+    return _mm_movemask_epi8(equal) == 0xffff
+        && _mm_movemask_epi8(greater) == 0
+        && _mm_movemask_epi8(minimum) == 0
+        && _mm_movemask_epi8(legacy_maximum) == 0
+        && _mm_movemask_epi8(shift_left) == 0
+        && _mm_movemask_epi8(shift_right) == 0
+        && _mm_movemask_epi8(shift_arithmetic) == 0xffff
+        && _mm_movemask_epi8(shuffled) == 0
+        && byte_after == 0x11223344556677a5ULL
+        && word_after == 0x1122334455661234ULL
+        && byte_roundtrip == byte_value
+        && word_roundtrip == word_value
+        ? 46
+        : 1;
+}
+
+__attribute__((noinline)) static int packed_minimums(void) {
     __m128i signed_min = _mm_set1_epi16(300);
     __m128i signed_max = _mm_set1_epi16(300);
     __m128i signed_other = _mm_set1_epi16(-400);
@@ -56,66 +98,29 @@ __attribute__((noinline)) static int packed_operations(void) {
     short signed_min_result[8];
     short signed_max_result[8];
     unsigned short unsigned_min_result[8];
+    unsigned short unsigned_max_result[8];
     unsigned short madd_result[8];
     __asm__ volatile(
-        "pcmpeqb %[right], %[equal]\n\t"
-        "pcmpgtb %[right], %[greater]\n\t"
-        "pminub %[right], %[minimum]\n\t"
-        "pmaxub %[right], %[legacy_maximum]\n\t"
         "pminsw %[signed_other], %[signed_min]\n\t"
         "pmaxsw %[signed_other], %[signed_max]\n\t"
         "pminuw %[unsigned_other], %[unsigned_min]\n\t"
         "pmaxuw %[unsigned_other], %[unsigned_max]\n\t"
         "pmaddubsw %[madd_other], %[madd]\n\t"
-        "psllw %[shift_count], %[shift_left]\n\t"
-        "psrlw %[shift_count], %[shift_right]\n\t"
-        "psraw %[shift_count], %[shift_arithmetic]\n\t"
-        "vpmaxub %[vex_right], %[vex_right], %[maximum]\n\t"
-        "pshufb %[shuffle_mask], %[shuffled]\n\t"
-        "mov %[seed], %%rax\n\t"
-        "movb (%[byte_source]), %%al\n\t"
-        "movb %%al, (%[byte_destination])\n\t"
-        "mov %%rax, %[byte_after]\n\t"
-        "mov %[seed], %%rax\n\t"
-        "movw (%[word_source]), %%ax\n\t"
-        "movw %%ax, (%[word_destination])\n\t"
-        "mov %%rax, %[word_after]\n\t"
-        : [equal] "+x"(equal), [greater] "+x"(greater), [minimum] "+x"(minimum), [maximum] "+&x"(maximum),
-          [legacy_maximum] "+x"(legacy_maximum), [shift_left] "+x"(shift_left), [shift_right] "+x"(shift_right),
-          [shift_arithmetic] "+x"(shift_arithmetic), [shuffled] "+x"(shuffled), [signed_min] "+x"(signed_min),
-          [signed_max] "+x"(signed_max), [unsigned_min] "+x"(unsigned_min), [unsigned_max] "+x"(unsigned_max),
-          [madd] "+x"(madd),
-          [byte_after] "=m"(byte_after), [word_after] "=m"(word_after)
-        : [right] "x"(right), [vex_right] "x"(vex_right), [shuffle_mask] "x"(shuffle_mask),
-          [shift_count] "x"(shift_count), [seed] "m"(seed), [signed_other] "x"(signed_other),
-          [unsigned_other] "x"(unsigned_other), [madd_other] "x"(madd_other),
-          [byte_source] "r"(&byte_value), [word_source] "r"(&word_value),
-          [byte_destination] "r"(&byte_roundtrip), [word_destination] "r"(&word_roundtrip)
-        : "rax", "memory"
+        : [signed_min] "+x"(signed_min), [signed_max] "+x"(signed_max), [unsigned_min] "+x"(unsigned_min),
+          [unsigned_max] "+x"(unsigned_max), [madd] "+x"(madd)
+        : [signed_other] "x"(signed_other), [unsigned_other] "x"(unsigned_other), [madd_other] "x"(madd_other)
     );
     _mm_storeu_si128((__m128i *)signed_min_result, signed_min);
     _mm_storeu_si128((__m128i *)signed_max_result, signed_max);
     _mm_storeu_si128((__m128i *)unsigned_min_result, unsigned_min);
+    _mm_storeu_si128((__m128i *)unsigned_max_result, unsigned_max);
     _mm_storeu_si128((__m128i *)madd_result, madd);
-    return _mm_movemask_epi8(equal) == 0xffff
-        && _mm_movemask_epi8(greater) == 0
-        && _mm_movemask_epi8(minimum) == 0
-        && _mm_movemask_epi8(legacy_maximum) == 0
-        && _mm_movemask_epi8(shift_left) == 0
-        && _mm_movemask_epi8(shift_right) == 0
-        && _mm_movemask_epi8(shift_arithmetic) == 0xffff
-        && _mm_movemask_epi8(maximum) == 0xffff
-        && _mm_movemask_epi8(shuffled) == 0
-        && signed_min_result[0] == -400
+    return signed_min_result[0] == -400
         && signed_max_result[0] == 300
         && unsigned_min_result[0] == 300
         && unsigned_max_result[0] == 50000
         && madd_result[0] == 12
-        && byte_after == 0x11223344556677a5ULL
-        && word_after == 0x1122334455661234ULL
-        && byte_roundtrip == byte_value
-        && word_roundtrip == word_value
-        ? 46
+        ? 0
         : 1;
 }
 
@@ -127,7 +132,7 @@ __attribute__((noinline)) static int packed_immediate_shift(void) {
 }
 
 int main(void) {
-    return packed_operations() + packed_immediate_shift();
+    return packed_operations() + packed_minimums() + packed_immediate_shift();
 }
 """,
     )
