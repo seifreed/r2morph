@@ -24,6 +24,8 @@ from tests.utils.assertions import expect
 _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 _VARARGS_FIXTURE = _DATASET / "elf_vm_varargs_x86_64"
+_PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
+_EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
@@ -36,6 +38,13 @@ def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
 
 def test_varargs_fixture_preserves_vector_abi_exit_code() -> None:
     expect(emulate_exit_code(_VARARGS_FIXTURE) == _EXPECTED_VARARGS_EXIT_CODE)
+
+
+def test_packed_indexed_fixture_native_baseline_matches_unicorn() -> None:
+    native = _runtime_artifacts(_PACKED_INDEXED_FIXTURE)
+    native_matches = sys.platform != "linux" or native.get("return_code") == _EXPECTED_PACKED_INDEXED_EXIT_CODE
+
+    expect(native_matches and emulate_exit_code(_PACKED_INDEXED_FIXTURE) == _EXPECTED_PACKED_INDEXED_EXIT_CODE)
 
 
 def test_measure_fixture_emits_transformation_evidence(tmp_path: Path) -> None:
