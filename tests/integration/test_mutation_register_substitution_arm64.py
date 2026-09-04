@@ -8,7 +8,7 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from tests.utils.assertions import expect
 
 
-def test_register_substitution_arm64_skip(tmp_path: Path):
+def test_register_substitution_arm64_real_binary_applies_mutation(tmp_path: Path):
     binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
@@ -18,8 +18,7 @@ def test_register_substitution_arm64_skip(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = RegisterSubstitutionPass(config={"probability": 1.0})
+        pass_obj = RegisterSubstitutionPass(config={"probability": 1.0, "seed": 1337})
         result = pass_obj.apply(bin_obj)
 
-    # arm64 register substitution may produce zero mutations or report an error
-    expect(result.get("mutations_applied", 0) == 0)
+    expect(result.get("mutations_applied", 0) > 0)

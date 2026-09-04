@@ -228,7 +228,9 @@ class RegisterSubstitutionPass(MutationPass):
         bits = arch_info.get("bits", 0)
 
         arch_key = arch
-        if arch == "arm" and bits == ARCH_BITS_64:
+        if arch == "x86" and bits == ARCH_BITS_64:
+            arch_key = "x64"
+        elif arch == "arm" and bits == ARCH_BITS_64:
             arch_key = "arm64"
 
         register_classes = self._get_register_class(arch_key)
@@ -246,7 +248,7 @@ class RegisterSubstitutionPass(MutationPass):
 
         logger.info(f"Register substitution: processing {len(functions)} functions")
 
-        for func, instructions, selected in self._select_candidates(binary, functions, arch):
+        for func, instructions, selected in self._select_candidates(binary, functions, arch_key):
             func_mutations = 0
             for orig_reg, subst_reg in selected:
                 substituted_count = 0

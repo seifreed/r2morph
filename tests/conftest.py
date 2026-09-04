@@ -374,10 +374,10 @@ def deterministic_register_elf(tmp_path: Path) -> Path:
 .global work
 .text
 work:
-    mov $5, %eax
-    add $2, %eax
-    sub $1, %eax
-    cmp $6, %eax
+    mov $5, %rcx
+    add $2, %rcx
+    sub $1, %rcx
+    cmp $6, %rcx
     jne work_done
     mov $6, %eax
 work_done:
