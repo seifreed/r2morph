@@ -107,6 +107,7 @@ def test_virtualized_async_signal_inside_vm_preserves_exit_code(tmp_path: Path) 
     mutated = tmp_path / "mutated"
     source.write_text(r"""
 #include <signal.h>
+#include <stddef.h>
 #include <sys/time.h>
 
 static volatile sig_atomic_t signal_seen;
