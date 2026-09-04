@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -64,8 +65,48 @@ def _apply_runtime_validation(
     if not runtime_result.passed and engine._session is not None:
         engine._session.rollback_to("initial")
         binary.reload()
+        _reconcile_runtime_rollback(result)
         if rollback_policy == "fail-fast":
             raise RuntimeError("Runtime validation failed after pipeline execution")
+
+
+def _reconcile_runtime_rollback(result: dict[str, Any]) -> None:
+    """Make the returned report match a rollback to the initial checkpoint."""
+    applied_passes = 0
+    discarded_count = 0
+    discarded_records: list[dict[str, Any]] = []
+    for pass_result in result.get("pass_results", {}).values():
+        if pass_result.get("rolled_back", False):
+            continue
+        mutations = pass_result.get("mutations", [])
+        if not mutations and not pass_result.get("mutations_applied", 0):
+            continue
+        applied_passes += 1
+        pass_discarded = pass_result.get("mutations_applied", len(mutations))
+        discarded_count += int(pass_discarded)
+        pass_records = []
+        for mutation in mutations:
+            discarded = deepcopy(mutation)
+            discarded["status"] = "discarded"
+            discarded.setdefault("metadata", {})
+            discarded["metadata"]["discard_reason"] = "runtime_validation_failed"
+            discarded["metadata"]["discarded_by_pass"] = pass_result.get("pass_name", "unknown")
+            pass_records.append(discarded)
+        pass_result["rolled_back"] = True
+        pass_result["rollback_reason"] = "runtime_validation_failed"
+        pass_result["status"] = "rolled_back"
+        pass_result["discarded_mutations"] = pass_discarded
+        pass_result["discarded_mutations_detail"] = pass_records
+        pass_result["mutations_applied"] = 0
+        pass_result["mutations"] = []
+        discarded_records.extend(pass_records)
+
+    result["passes_run"] = max(0, result.get("passes_run", 0) - applied_passes)
+    result["total_mutations"] = 0
+    result["mutations"] = []
+    result["rolled_back_passes"] += applied_passes
+    result["discarded_mutations"] += discarded_count
+    result["discarded_mutations_detail"].extend(discarded_records)
 
 
 def _enrich_run_result(engine: Any, result: dict[str, Any], validation_mode: str, start_time: float) -> None:
