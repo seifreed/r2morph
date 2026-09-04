@@ -62,7 +62,9 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         and protected_address not in unsupported_addresses
         and protected_address not in partial_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "parsed landing-pad unwind metadata was not preserved during virtualization",
+        "parsed landing-pad unwind metadata was not preserved during virtualization: "
+        f"{protected_address=:#x}, {runtime_result.returncode=}, {unsupported_addresses=}, "
+        f"{partial_addresses=}, {stats=}",
     )
 
 
