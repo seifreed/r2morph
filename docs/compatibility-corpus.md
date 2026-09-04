@@ -55,9 +55,18 @@ with the per-run contract in
 and SHA-256
 `cd86ada75b515f84676bb110807cf8d964276cb5bda54831750aec70d28c5f25`.
 
-The Linux Triton rerun at `d0e63026` used `triton-library 1.0.0rc4` in the
+The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
-records across all 159 fixtures and six passes. The raw report is
+records for Triton and 954 for angr across all 159 fixtures and six passes.
+Both tools reported zero error or unavailable records. The raw report is
+[`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
+(`SHA-256 d8979e3285959f7b3683a6be03b8358a6aaeb45e3b7e2ddbb2fd1c3d0685a2a0`).
+The full report still records 5,679 completed tool runs, 45 Unicorn errors,
+and 1,908 unavailable-tool rows; the latter are explicit environment/tool
+availability results, not Triton or angr failures.
+
+The preceding Linux Triton rerun at `d0e63026` used the same package and
+completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
 (`SHA-256 cbfd6a78857622a5704d25938c16c32ac50d7adc269d0d3f02b3ff60e20107c4`).
 

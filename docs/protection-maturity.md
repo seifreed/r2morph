@@ -34,10 +34,18 @@ GitHub Actions CI workflow `33847250344` passed the same commit across lint,
 typecheck, tests, package smoke, property/fuzz validation, and supported
 platform jobs.
 
-A fresh Linux Triton rerun at commit `d0e63026` used `triton-library 1.0.0rc4`
-inside the reproducible Python 3.13 virtualenv. It covered all 159 fixtures and
-all six passes, producing 954 completed Triton original/protected pair records
-with no unavailable or error results. The raw report is in
+A fresh Linux rerun at commit `83e6eee6` used `triton-library 1.0.0rc4` inside
+the reproducible Python 3.13 virtualenv. It covered all 159 fixtures and all
+six passes, producing 954 completed Triton and 954 completed angr
+original/protected pair records with no unavailable or error results for
+either tool. The raw report is in
+[`docs/protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
+(`SHA-256 d8979e3285959f7b3683a6be03b8358a6aaeb45e3b7e2ddbb2fd1c3d0685a2a0`).
+The complete report records 5,679 completed tool runs, 45 Unicorn errors, and
+1,908 unavailable-tool rows; those rows remain explicit and are not attributed
+to Triton or angr.
+
+The preceding Linux Triton rerun at commit `d0e63026` remains available in
 [`docs/protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
 (`SHA-256 cbfd6a78857622a5704d25938c16c32ac50d7adc269d0d3f02b3ff60e20107c4`).
 
