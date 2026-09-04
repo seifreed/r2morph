@@ -30,8 +30,8 @@ from scripts.protection_maturity_baseline import (
 )
 from tests.integration.elf_emulator import emulate_exit_code
 
-_COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra"}
-_COMMAND_ENVIRONMENT = {"ghidra": "GHIDRA_HEADLESS"}
+_COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "idat", "ghidra": "ghidra"}
+_COMMAND_ENVIRONMENT = {"ida-pro": "IDA_HEADLESS", "ghidra": "GHIDRA_HEADLESS"}
 _PYTHON_MODULES = {"angr": "angr", "triton": "triton", "unicorn": "unicorn"}
 _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
@@ -40,6 +40,8 @@ _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
+_IDA_SCRIPT = Path(__file__).with_name("ida") / "count_functions.py"
+_IDA_RESULT_SUFFIX = ".function-count"
 _PF_EXECUTE = 1
 _MAX_X86_INSTRUCTION_BYTES = 15
 _TRITON_INSTRUCTION_BUDGET = 50_000
@@ -176,6 +178,27 @@ def _parse_ghidra_function_count(output: str) -> int:
     return int(match.group("count"))
 
 
+def _ida_metric(path: Path) -> dict[str, object]:
+    executable = _configured_executable("ida-pro")
+    if executable is None:
+        raise FileNotFoundError("IDA headless executable is unavailable")
+    started = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="r2morph-ida-") as directory:
+        analysis_path = Path(directory) / path.name
+        result_path = Path(f"{analysis_path}{_IDA_RESULT_SUFFIX}")
+        shutil.copyfile(path, analysis_path)
+        result = run_process(
+            [executable, "-A", f"-S{_IDA_SCRIPT}", str(analysis_path)],
+            timeout=_GHIDRA_ANALYSIS_TIMEOUT_SECONDS,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"IDA headless exited with status {result.returncode}")
+        if not result_path.is_file():
+            raise RuntimeError("IDA function count result is missing")
+        count = int(result_path.read_text(encoding="ascii"))
+    return {"status": "completed", "functions": count, "duration_seconds": time.perf_counter() - started}
+
+
 def _parse_ghidra_function_counts(output: str) -> dict[str, int]:
     counts = {
         match.group("program"): int(match.group("count"))
@@ -229,6 +252,7 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
     "angr": _angr_metric,
     "unicorn": _unicorn_metric,
     "triton": _triton_metric,
+    "ida-pro": _ida_metric,
     "ghidra": _ghidra_metric,
     "custom": _binary_metric,
 }
