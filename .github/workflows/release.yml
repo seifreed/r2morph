@@ -131,7 +131,7 @@ jobs:
           sys/install.sh
 
       - name: Download artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
@@ -146,7 +146,7 @@ jobs:
           r2morph --version
 
       - name: Install test dependencies
-        run: pip install pytest pytest-cov hypothesis networkx z3-solver claripy
+        run: pip install -r requirements.txt
 
       - name: Run tests against installed wheel
         run: |
@@ -169,7 +169,7 @@ jobs:
       id-token: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
@@ -193,7 +193,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
