@@ -20,6 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
+from r2morph.platform.elf_handler import ELFHandler
+from r2morph.platform.elf_structs import PT_LOAD
 from scripts.protection_maturity_baseline import (
     DEFAULT_MUTATION_NAME,
     _build_mutation_pass,
@@ -28,16 +30,19 @@ from scripts.protection_maturity_baseline import (
 )
 from tests.integration.elf_emulator import emulate_exit_code
 
-_COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra", "binary-ninja": "bndb"}
+_COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra"}
 _COMMAND_ENVIRONMENT = {"ghidra": "GHIDRA_HEADLESS"}
 _PYTHON_MODULES = {"angr": "angr", "triton": "triton", "unicorn": "unicorn"}
-_EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra", "binary-ninja")
+_EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
+_PF_EXECUTE = 1
+_MAX_X86_INSTRUCTION_BYTES = 15
+_TRITON_INSTRUCTION_BUDGET = 50_000
 
 
 def _configured_executable(tool: str) -> str | None:
@@ -103,6 +108,67 @@ def _unicorn_metric(path: Path) -> dict[str, object]:
     return {"status": "completed", "exit_code": exit_code, "duration_seconds": time.perf_counter() - started}
 
 
+def _executable_segment_bytes(path: Path) -> tuple[tuple[int, bytes], ...]:
+    raw = path.read_bytes()
+    segments: list[tuple[int, bytes]] = []
+    for segment in ELFHandler(path).get_segments():
+        if segment["type"] != PT_LOAD or not int(segment["flags"]) & _PF_EXECUTE:
+            continue
+        offset = int(segment["offset"])
+        size = int(segment["filesz"])
+        end = offset + size
+        if offset < 0 or size < 0 or end > len(raw):
+            raise ValueError("executable ELF segment exceeds file bounds")
+        segments.append((int(segment["vaddr"]), raw[offset:end]))
+    if not segments:
+        raise ValueError("ELF contains no executable load segment")
+    return tuple(segments)
+
+
+def _triton_metric(path: Path) -> dict[str, object]:
+    triton = import_module("triton")
+    context = triton.TritonContext(triton.ARCH.X86_64)
+    started = time.perf_counter()
+    decoded = 0
+    supported = 0
+    symbolic_expressions = 0
+    invalid_bytes = 0
+    budget_exhausted = False
+    for address, code in _executable_segment_bytes(path):
+        offset = 0
+        while offset < len(code):
+            if decoded + invalid_bytes >= _TRITON_INSTRUCTION_BUDGET:
+                budget_exhausted = True
+                break
+            instruction = triton.Instruction(address + offset, code[offset : offset + _MAX_X86_INSTRUCTION_BYTES])
+            try:
+                result = context.processing(instruction)
+            except (RuntimeError, TypeError, ValueError):
+                invalid_bytes += 1
+                offset += 1
+                continue
+            size = instruction.getSize()
+            if size < 1:
+                invalid_bytes += 1
+                offset += 1
+                continue
+            decoded += 1
+            supported += result == triton.EXCEPTION.NO_FAULT
+            symbolic_expressions += len(instruction.getSymbolicExpressions())
+            offset += size
+        if budget_exhausted:
+            break
+    return {
+        "status": "completed",
+        "decoded_instructions": decoded,
+        "semantically_supported_instructions": supported,
+        "symbolic_expressions": symbolic_expressions,
+        "invalid_bytes": invalid_bytes,
+        "instruction_budget_exhausted": budget_exhausted,
+        "duration_seconds": time.perf_counter() - started,
+    }
+
+
 def _parse_ghidra_function_count(output: str) -> int:
     match = _GHIDRA_COUNT_PATTERN.search(output)
     if match is None:
@@ -162,6 +228,7 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
     "objdump": _objdump_metric,
     "angr": _angr_metric,
     "unicorn": _unicorn_metric,
+    "triton": _triton_metric,
     "ghidra": _ghidra_metric,
     "custom": _binary_metric,
 }

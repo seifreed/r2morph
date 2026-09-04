@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from scripts.adversarial_benchmark import (
+    _measure_tool,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     benchmark_corpus,
@@ -11,7 +12,7 @@ from scripts.adversarial_benchmark import (
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
-_EXPECTED_TOOL_COUNT = 9
+_EXPECTED_TOOL_COUNT = 8
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 
 
@@ -19,7 +20,11 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
     report = benchmark_pair(_FIXTURE, _FIXTURE)
 
     tools = report["tools"]
-    expect(len(tools) == _EXPECTED_TOOL_COUNT and {item["tool"] for item in tools} >= {"radare2", "angr", "unicorn"})
+    expect(
+        len(tools) == _EXPECTED_TOOL_COUNT
+        and {item["tool"] for item in tools} >= {"radare2", "angr", "unicorn", "triton"}
+        and all(item["tool"] != "binary-ninja" for item in tools)
+    )
 
 
 def test_adversarial_benchmark_marks_missing_tools_explicitly() -> None:
@@ -27,6 +32,19 @@ def test_adversarial_benchmark_marks_missing_tools_explicitly() -> None:
 
     statuses = {item["tool"]: item["status"] for item in report["tools"]}
     expect(statuses["ida-pro"] == "unavailable" or statuses["ida-pro"] == "completed")
+
+
+def test_adversarial_benchmark_runs_triton_when_available() -> None:
+    result = _measure_tool("triton", _FIXTURE, _FIXTURE)
+
+    expect(
+        result["status"] == "unavailable"
+        or (
+            result["status"] == "completed"
+            and result["original"]["decoded_instructions"] > 0
+            and result["protected"]["semantically_supported_instructions"] > 0
+        )
+    )
 
 
 def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Path) -> None:

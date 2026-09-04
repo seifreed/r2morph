@@ -24,7 +24,6 @@ _EXPECTED_BENCHMARK_TOOLS = {
     "triton",
     "ida-pro",
     "ghidra",
-    "binary-ninja",
     "custom",
 }
 
