@@ -375,15 +375,20 @@ class MutationPass(ABC):
             derived_seed = int(self.config["_pass_seed"])
             random.seed(derived_seed)
             self._active_seed = derived_seed
+            logger.info("Mutation pass %s seed: %d", self.name, derived_seed)
             return derived_seed
 
         seed = self.config.get("seed")
         if seed is None:
             random.seed()
-            self._active_seed = None
-            return None
+            generated_seed = random.getrandbits(64)
+            random.seed(generated_seed)
+            self._active_seed = generated_seed
+            logger.info("Mutation pass %s seed: %d", self.name, generated_seed)
+            return generated_seed
         random.seed(seed)
         self._active_seed = int(seed)
+        logger.info("Mutation pass %s seed: %d", self.name, self._active_seed)
         return int(seed)
 
     def get_records(self) -> list[MutationRecord]:

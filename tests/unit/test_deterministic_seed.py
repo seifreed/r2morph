@@ -68,8 +68,8 @@ class MockBinary:
 class TestSeedControl:
     """Tests for seed control in mutation passes."""
 
-    def test_reset_random_no_seed(self):
-        """Test _reset_random without seed."""
+    def test_reset_random_no_seed_returns_generated_seed(self):
+        """An unseeded pass exposes the generated seed for replay."""
 
         class TestPass(MutationPass):
             def apply(self, binary):
@@ -78,19 +78,20 @@ class TestSeedControl:
         p = TestPass("test", config={})
         result = p._reset_random()
 
-        expect(not (result is not None))
+        expect(isinstance(result, int))
 
-    def test_reset_random_without_seed_uses_system_entropy(self):
-        """An unseeded pass must not inherit a prior deterministic stream."""
+    def test_reset_random_without_seed_creates_replayable_stream(self):
+        """System entropy selects a seed whose stream can be replayed."""
 
         class TestPass(MutationPass):
             def apply(self, binary):
                 return {"mutations_applied": 0}
 
-        random.seed(12345)
-        TestPass("test", config={})._reset_random()
+        generated_seed = TestPass("test", config={})._reset_random()
+        first_value = random.getrandbits(64)
+        random.seed(generated_seed)
 
-        expect(random.getstate() is None)
+        expect(random.getrandbits(64) == first_value)
 
     def test_setstate_restores_seeded_stream_after_system_entropy(self):
         """A captured seeded state remains restorable after an unseeded pass."""
