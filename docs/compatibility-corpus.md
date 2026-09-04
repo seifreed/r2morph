@@ -31,24 +31,22 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `88258a05` covered 159 fixtures
+The latest repository-fixture campaign against `3bfa94ed` covered 159 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-88258a05.json`](protection-maturity-by-pass-2026-09-04-88258a05.json),
-from workflow `33847250585` (artifact SHA-256
-`0e28c5fc5e208b9f76406a01b29bf538e72c7650c761adfce6633526c887d627`). Five
-passes recorded 159 semantic passes with no failures; CodeVirtualization
-recorded 158 semantic passes and one known baseline mismatch in
-`elf_vm_fppackedidxnb_x86_64`. The mismatch remains a baseline runtime
-contract issue with zero mutations applied, not a new transformation failure.
-The matching adversarial report is summarized
-in
-[`protection-adversarial-corpus-2026-09-04-88258a05-summary.json`](protection-adversarial-corpus-2026-09-04-88258a05-summary.json),
-from workflow `33847250397` (artifact SHA-256
-`bd35f73f9b9e89d64e78eab44ddf3495ac2dd338c2bdf2b71c4c1c0a85b7544e`). It
-covered 159 samples and 4,727 completed tool runs, with 3,816 unavailable
-tool rows and 43 tool errors; CodeVirtualization applied to all samples and
-virtualized 171 functions with no unsupported functions or transformation
-errors.
+[`protection-maturity-by-pass-2026-09-04-3bfa94ed.json`](protection-maturity-by-pass-2026-09-04-3bfa94ed.json),
+from workflow `33853083470` (artifact SHA-256
+`616fa9ff55e0c89b498cb1abbddae8b4d51b15973a51c6a23090925ac53e3c0a`). All six
+passes recorded 159 semantic passes with no failures. The corrected
+`elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
+native and Unicorn execution.
+The matching local adversarial report is summarized in
+[`protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json`](protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json)
+(raw report SHA-256
+`4aff53dffa249d2ee793ee02c203a415c537f1cb157cfb9ff97685633e763a63`). IDA Pro,
+Triton, and angr each completed all 159 original/protected pairs with zero
+analyzer errors. CodeVirtualization applied to all samples, virtualized 171
+functions, reported five explicitly unsupported functions, and had zero
+transformation errors.
 The latest local Ghidra headless campaign for the 159-fixture corpus at
 `88258a05` completed 318 analyses with zero errors or timeouts. Its raw report is
 [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json),
@@ -65,6 +63,5 @@ static-recovery, and malformed-input run is tracked in
 [`33259963329`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259963329).
 The corresponding full Ghidra headless run is tracked in
 [`33259983358`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259983358).
-IDA Pro, Binary Ninja, angr, and Triton remain explicit omissions until public
-runners are configured. Final per-pass metrics are published as workflow
-artifacts only after both runs complete.
+IDA Pro, angr, and Triton now have complete local repository-fixture runs.
+Licensed local measurements remain separate from public-runner evidence.

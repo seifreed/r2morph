@@ -1,30 +1,28 @@
 # Protection Maturity Report
 
-Commit: `88258a05`
+Commit: `3bfa94ed`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `88258a05` and covered
+The latest full Linux amd64 fixture campaign ran against `3bfa94ed` and covered
 159 fixtures with all six selected passes. The differential report completed in
-workflow `33847250585` (artifact SHA-256
-`0e28c5fc5e208b9f76406a01b29bf538e72c7650c761adfce6633526c887d627`). Its
+workflow `33853083470` (artifact SHA-256
+`616fa9ff55e0c89b498cb1abbddae8b4d51b15973a51c6a23090925ac53e3c0a`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-88258a05.json`](protection-maturity-by-pass-2026-09-04-88258a05.json):
-BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
-and RegisterSubstitution recorded 159 semantic passes with no failures.
-CodeVirtualization recorded 158 semantic passes and one known baseline
-mismatch in `elf_vm_fppackedidxnb_x86_64`. The new locked memory-immediate
-fixture passed CodeVirtualization with native parity, virtualizing two functions
-and twelve instructions. The remaining sample is a baseline runtime contract
-mismatch, so CodeVirtualization is not yet a clean semantic gate.
-The matching adversarial campaign completed in workflow
-`33847250397` and covered 159 samples, with 4,727 completed tool runs, 3,816
-unavailable-tool rows, and 43 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-04-88258a05-summary.json`](protection-adversarial-corpus-2026-09-04-88258a05-summary.json):
-CodeVirtualization applied to all 159 samples and virtualized 171 functions,
-with no unsupported functions or transformation errors. Tool errors and
-unavailable tools remain explicit non-passing evidence.
+[`docs/protection-maturity-by-pass-2026-09-04-3bfa94ed.json`](protection-maturity-by-pass-2026-09-04-3bfa94ed.json).
+All six passes recorded 159 semantic passes with zero failures. The corrected
+`elf_vm_fppackedidxnb_x86_64` fixture exits with code 6 in native and Unicorn
+execution before and after CodeVirtualization.
+The matching local adversarial campaign covered all 159 samples. Its compact
+result is in
+[`docs/protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json`](protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json):
+IDA Pro, Triton, and angr each completed all 159 original/protected pairs with
+zero analyzer errors. CodeVirtualization applied to every sample, virtualized
+171 functions, reported five explicitly unsupported functions, and had zero
+transformation errors. The 15 Unicorn errors and 159 unavailable Ghidra rows
+remain explicit non-passing evidence; Ghidra is covered by the separate run
+below.
 The latest local Ghidra headless campaign for `88258a05` completed all 318
 analyses for the 159 original/protected pairs with zero errors or timeouts. Its
 compact result is in
@@ -55,8 +53,8 @@ An earlier all-fixture adversarial campaign covered 140 executable samples and
 the `CodeVirtualization` pass. It records 697 completed tool runs, 560 explicit
 unavailable-tool rows, and 3 Unicorn errors. Its per-pass summary records 137
 applied samples, 3 omitted samples, and no transformation errors. The report
-includes radare2, objdump, angr, Unicorn, and the custom binary analyzer; Triton,
-IDA Pro, and Binary Ninja remain unavailable in this environment. The automated
+includes radare2, objdump, angr, Unicorn, and the custom binary analyzer; Triton
+and IDA Pro remain unavailable in this environment. The automated
 second-pass review passes all checks and is not human sign-off.
 
 The preceding local run on commit `4a042d6` covered all 140 executable fixtures
