@@ -513,6 +513,27 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
     )
 
 
+def _decode_op_memdst_indexed(text: str, mnemonic: str) -> tuple[Any, ...] | None:
+    """Decode indexed read-modify-write arithmetic with or without a base."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != mnemonic or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" not in left or "[" in right:
+        return None
+    register = _memory_register_operand(right.lower())
+    indexed = _parse_indexed_operand(left, base_optional=True)
+    if register is None or indexed is None:
+        return None
+    base, index, shift, displacement = indexed
+    width = _explicit_memory_width(left)
+    if width is not None and width != register[1]:
+        return None
+    if base < 0:
+        return ("opmemdstidxnb", mnemonic, register[0], index, shift, displacement, register[1])
+    return ("opmemdstidx", mnemonic, register[0], base, index, shift, displacement, register[1])
+
+
 def _decode_movx_memory(
     extension: str,
     source_size: int,
@@ -932,23 +953,24 @@ def _decode_op_mem_indexed(text: str, mnemonic: str) -> tuple[Any, ...] | None:
     """Decode ``<op> reg, [base + index*scale + disp]`` (scaled-index memory
     source, register source/destination).
 
-    Returns ``("opmemidx", mnemonic, reg_slot, base_slot, index_slot, shift,
-    disp, width)`` or ``None``.
+    Returns ``("opmemidx"|"opmemidxnb", mnemonic, reg_slot, ... , width)`` or
+    ``None``. The ``idxnb`` form omits the base register.
     """
+    result: tuple[Any, ...] | None = None
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != mnemonic or "," not in parts[1]:
-        return None
-    left, right = (token.strip() for token in parts[1].split(",", 1))
-    if "[" in left or "[" not in right:
-        return None
-    reg = _memory_register_operand(left.lower())
-    if reg is None:
-        return None
-    parsed = _parse_indexed_operand(right)
-    if parsed is None:
-        return None
-    base_slot, index_slot, shift, disp = parsed
-    return ("opmemidx", mnemonic, reg[0], base_slot, index_slot, shift, disp, reg[1])
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == mnemonic and "," in parts[1]:
+        left, right = (token.strip() for token in parts[1].split(",", 1))
+        if "[" not in left and "[" in right:
+            register = _memory_register_operand(left.lower())
+            parsed = _parse_indexed_operand(right, base_optional=True)
+            if register is not None and parsed is not None:
+                base_slot, index_slot, shift, disp = parsed
+                width = _explicit_memory_width(right)
+                if width is None or width == register[1]:
+                    kind = "opmemidxnb" if base_slot < 0 else "opmemidx"
+                    operands = (index_slot, shift, disp) if base_slot < 0 else (base_slot, index_slot, shift, disp)
+                    result = (kind, mnemonic, register[0], *operands, register[1])
+    return result
 
 
 def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:

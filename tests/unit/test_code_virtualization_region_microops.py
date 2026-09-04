@@ -224,12 +224,22 @@ def test_indexed_mem_source_arith_lowers_to_vpush_vloadidx_vbinopsynth_vpop() ->
     expect(kinds[:4] == ["vpush", "vloadidx", "vbinopsynth", "vpop"])
 
 
+def test_no_base_indexed_mem_source_arith_lowers_to_vloadidxnb() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 5, "add", "add rax, qword [rcx*8+8]"))]
+    expect(kinds[:4] == ["vpush", "vloadidxnb", "vbinopsynth", "vpop"])
+
+
 def test_read_modify_write_lowers_to_vload_vpush_vbinopsynth_vstore() -> None:
     kinds = [item[0] for item in _memory_region(_insn(0x1000, 4, "add", "add qword [rax - 8], rcx"))]
     # <op> [base+disp],reg loads the memory value, pushes the register, folds them,
     # and stores the result back to the same address (recomputed, base+disp is fixed).
     expect("opmemdst" not in kinds)
     expect(kinds[:4] == ["vload", "vpush", "vbinopsynth", "vstore"])
+
+
+def test_no_base_indexed_read_modify_write_lowers_to_indexed_microops() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 5, "add", "add qword [rcx*8+8], rax"))]
+    expect(kinds[:4] == ["vloadidxnb", "vpush", "vbinopsynth", "vstoreidxnb"])
 
 
 def _compare_region(compare: dict[str, object]) -> list[str]:

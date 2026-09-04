@@ -615,13 +615,26 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         elif kind == "movxreg":
             position = self._opcode(item)
             self.plain.extend((self.slot_of[item[4]] ^ position, self.slot_of[item[5]] ^ position))
-        elif kind == "opmemdst":
-            self._gp_mem(item, item[2], item[3], item[4])
-        elif kind == "opmemdstrip":
-            self._gp_rip(item, item[2], item[3])
+        elif kind in ("opmemdst", "opmemdstrip", "opmemdstidx", "opmemdstidxnb"):
+            self._emit_memory_destination(item)
         else:
             return False
         return True
+
+    def _emit_memory_destination(self, item: RegionItem) -> None:
+        kind = item[0]
+        if kind == "opmemdst":
+            self._gp_mem(item, item[2], item[3], item[4])
+            return
+        if kind == "opmemdstrip":
+            self._gp_rip(item, item[2], item[3])
+            return
+        if kind == "opmemdstidx":
+            operands: tuple[int, int | None, int, int, int]
+            operands = (self.slot_of[item[2]], self.slot_of[item[3]], self.slot_of[item[4]], item[5], item[6])
+        else:
+            operands = (self.slot_of[item[2]], None, self.slot_of[item[3]], item[4], item[5])
+        self._idx(self._opcode(item), operands)
 
     def _emit_calls(self, item: RegionItem) -> bool:
         kind = item[0]

@@ -21,7 +21,9 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_mxcsr_memory,
     _decode_not,
     _decode_op_mem,
+    _decode_op_mem_indexed,
     _decode_op_memdst,
+    _decode_op_memdst_indexed,
     _decode_riprel_mov,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import _mxcsr_memory_handler_asm
@@ -157,6 +159,14 @@ def test_memory_arithmetic_decodes_byte_register_source_with_low_byte_width() ->
 
 def test_memory_arithmetic_decodes_word_memory_destination_with_low_word_width() -> None:
     expect(_decode_op_memdst("add word ptr [rbp-2], ax", "add", 0x1000, 3) == ("opmemdst", "add", 0, 5, -2, 16))
+
+
+def test_memory_arithmetic_decodes_indexed_source_without_base() -> None:
+    expect(_decode_op_mem_indexed("add rax, qword ptr [rcx*4+8]", "add") == ("opmemidxnb", "add", 0, 1, 2, 8, 64))
+
+
+def test_memory_arithmetic_decodes_indexed_destination_without_base() -> None:
+    expect(_decode_op_memdst_indexed("add qword ptr [rcx*4+8], rax", "add") == ("opmemdstidxnb", "add", 0, 1, 2, 8, 64))
 
 
 def test_memory_compare_decodes_byte_register_with_low_byte_width() -> None:

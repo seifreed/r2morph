@@ -443,7 +443,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
         body = None
         if key.startswith(("cmpmem_", "cmpriprel_")):
             body = _cmp_memory_handler_asm(config)
-        elif key.startswith(("opmemdst_", "opmemdstrip_")):
+        elif key.startswith(("opmemdst_", "opmemdstrip_", "opmemdstidx_", "opmemdstidxnb_")):
             body = _op_memdst_handler_asm(config)
         elif key.startswith(("opmem_", "opriprel_")):
             body = _op_memory_handler_asm(config)
@@ -465,7 +465,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             )
         elif key.startswith(("lea_", "learip_")):
             body = _lea_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
-        elif key.startswith("opmemidx_"):
+        elif key.startswith(("opmemidx_", "opmemidxnb_")):
             body = _op_mem_indexed_handler_asm(config)
         elif key.startswith("movxreg_"):
             body = _movx_reg_handler_asm(key, self.context.key)

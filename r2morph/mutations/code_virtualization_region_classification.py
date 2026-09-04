@@ -111,6 +111,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_mem,
     _decode_op_mem_indexed,
     _decode_op_memdst,
+    _decode_op_memdst_indexed,
     _decode_riprel_mov,
     _decode_tls_memory_mov,
     _decode_xchg_memory,
@@ -272,6 +273,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
             lambda: _decode_incdec(text),
             lambda: _decode_op_mem(text, kind, address, size),
             lambda: _decode_op_memdst(text, kind, address, size),
+            lambda: _decode_op_memdst_indexed(text, kind),
             lambda: _decode_op_mem_indexed(text, kind),
         )
     )

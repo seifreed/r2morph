@@ -523,13 +523,22 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
     parts = config.handler_key.split("_")
     riprel = parts[0] == "opmemdstrip"
     mnemonic, width = parts[1], int(parts[2])
-    body, advance = _mem_address_asm(
-        riprel,
-        config.key,
-        config.key_dword,
-        config.field_perm,
-        config.addr_variant,
-    )
+    if parts[0] in ("opmemdstidx", "opmemdstidxnb"):
+        address_builder = _indexed_address_nobase_asm if parts[0].endswith("nb") else _indexed_address_asm
+        body, advance = address_builder(
+            config.key,
+            config.key_dword,
+            config.field_perm,
+            config.addr_variant,
+        )
+    else:
+        body, advance = _mem_address_asm(
+            riprel,
+            config.key,
+            config.key_dword,
+            config.field_perm,
+            config.addr_variant,
+        )
     body += "  mov r12, r10\n"
     if width == _QWORD_WIDTH_BITS:
         body += "  mov rbx, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
@@ -730,7 +739,10 @@ def _op_mem_indexed_handler_asm(config: MemoryOperationConfig) -> str:
     register combined with memory via the MBA fold and the flags are synthesized.
     """
     _, mnemonic, width_text = config.handler_key.split("_")
-    body, advance = _indexed_address_asm(
+    address_builder = (
+        _indexed_address_nobase_asm if config.handler_key.startswith("opmemidxnb_") else _indexed_address_asm
+    )
+    body, advance = address_builder(
         config.key,
         config.key_dword,
         config.field_perm,

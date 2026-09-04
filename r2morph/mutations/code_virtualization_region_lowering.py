@@ -68,21 +68,37 @@ def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
             ["vbinopsynth", mnemonic, width],
             ["vpop", register],
         ]
-    if kind == "opmemidx":
-        _, mnemonic, register, base, index, shift, displacement, width = item
+    if kind in ("opmemidx", "opmemidxnb"):
+        if kind == "opmemidxnb":
+            _, mnemonic, register, index, shift, displacement, width = item
+            load = ["vloadidxnb", index, shift, displacement, width]
+        else:
+            _, mnemonic, register, base, index, shift, displacement, width = item
+            load = ["vloadidx", base, index, shift, displacement, width]
         return [
             ["vpush", register],
-            ["vloadidx", base, index, shift, displacement, width],
+            load,
             ["vbinopsynth", mnemonic, width],
             ["vpop", register],
         ]
-    if kind == "opmemdst":
-        _, mnemonic, register, base, displacement, width = item
+    if kind in ("opmemdst", "opmemdstidx", "opmemdstidxnb"):
+        if kind == "opmemdst":
+            _, mnemonic, register, base, displacement, width = item
+            load = ["vload", base, displacement, width]
+            store = ["vstore", base, displacement, width]
+        elif kind == "opmemdstidxnb":
+            _, mnemonic, register, index, shift, displacement, width = item
+            load = ["vloadidxnb", index, shift, displacement, width]
+            store = ["vstoreidxnb", index, shift, displacement, width]
+        else:
+            _, mnemonic, register, base, index, shift, displacement, width = item
+            load = ["vloadidx", base, index, shift, displacement, width]
+            store = ["vstoreidx", base, index, shift, displacement, width]
         return [
-            ["vload", base, displacement, width],
+            load,
             ["vpush", register],
             ["vbinopsynth", mnemonic, width],
-            ["vstore", base, displacement, width],
+            store,
         ]
     if kind == "opriprel":
         _, mnemonic, register, target, width = item
@@ -150,7 +166,19 @@ _LOWERERS: dict[str, _Lowerer] = {
         kind: _lower_memory
         for kind in ("load", "store", "loadidx", "storeidx", "loadidxnb", "storeidxnb", "riprel_load", "riprel_store")
     },
-    **{kind: _lower_memory_arithmetic for kind in ("opmem", "opmemidx", "opmemdst", "opriprel", "opmemdstrip")},
+    **{
+        kind: _lower_memory_arithmetic
+        for kind in (
+            "opmem",
+            "opmemidx",
+            "opmemidxnb",
+            "opmemdst",
+            "opmemdstidx",
+            "opmemdstidxnb",
+            "opriprel",
+            "opmemdstrip",
+        )
+    },
     **{kind: _lower_shift_compare for kind in ("shift", "shiftreg", "cmp", "test", "cmpmem", "cmpriprel")},
     **{kind: _lower_movx_address for kind in ("movx", "movxidx", "lea", "learip", "leaidx", "leaidxnb")},
 }

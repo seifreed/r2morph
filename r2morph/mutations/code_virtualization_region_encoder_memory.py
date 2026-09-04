@@ -83,12 +83,28 @@ class RegionEncoderMemoryMixin:
         elif kind == "leaidxnb":
             _, reg, index, shift, disp, _width = item
             self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
-        elif kind == "opmemidx":
-            _, _mnemonic, reg, base, index, shift, disp, _width = item
-            self._gp_idx(item, (reg, base, index, shift, disp))
+        elif kind in ("opmemidx", "opmemidxnb", "opmemdstidx", "opmemdstidxnb"):
+            self._emit_indexed_arithmetic(item)
         else:
             return False
         return True
+
+    def _emit_indexed_arithmetic(self: Any, item: RegionItem) -> None:
+        kind = item[0]
+        if kind == "opmemidx":
+            _, _mnemonic, reg, base, index, shift, disp, _width = item
+            self._gp_idx(item, (reg, base, index, shift, disp))
+            return
+        if kind == "opmemidxnb":
+            _, _mnemonic, reg, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
+            return
+        if kind == "opmemdstidx":
+            _, _mnemonic, reg, base, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[reg], self.slot_of[base], self.slot_of[index], shift, disp))
+            return
+        _, _mnemonic, reg, index, shift, disp, _width = item
+        self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
 
     def _emit_mxcsr_memory(self: Any, item: RegionItem) -> bool:
         kind = item[0]

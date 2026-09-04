@@ -47,6 +47,26 @@ int main(void) {
 }
 """
 
+_NO_BASE_INDEXED_ARITHMETIC_SOURCE = r"""
+#include <stdint.h>
+
+uint64_t indexed_values[2] = {32, 10};
+
+__attribute__((noinline)) static int mutate_indexed_memory(void) {
+    uint64_t index = 0;
+    uint64_t accumulator = 10;
+    __asm__ volatile(
+        "addq indexed_values(,%%rcx,8), %[accumulator]\n"
+        "addq %[accumulator], indexed_values(,%%rcx,8)\n"
+        : [accumulator] "+r"(accumulator)
+        : "c"(index)
+        : "cc", "memory");
+    return accumulator == 42 && indexed_values[0] == 74 ? 42 : 1;
+}
+
+int main(void) { return mutate_indexed_memory(); }
+"""
+
 pytestmark = pytest.mark.integration
 
 
@@ -115,6 +135,47 @@ def test_virtualized_byte_word_memory_arithmetic_preserves_result(tmp_path: Path
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_ARITHMETIC_EXIT_CODE,
         f"byte/word memory arithmetic changed the result: {stats=}",
+    )
+
+
+def test_virtualized_no_base_indexed_memory_arithmetic_preserves_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86 indexed memory arithmetic requires an x86-64 host")
+
+    source = tmp_path / "no_base_indexed_memory.c"
+    original = tmp_path / "original_no_base_indexed"
+    mutated = tmp_path / "mutated_no_base_indexed"
+    source.write_text(_NO_BASE_INDEXED_ARITHMETIC_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile no-base indexed memory arithmetic fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260905}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_ARITHMETIC_EXIT_CODE,
+        f"no-base indexed memory arithmetic changed the result: {stats=}",
     )
 
 

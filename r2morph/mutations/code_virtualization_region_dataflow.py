@@ -32,7 +32,9 @@ _DIRECT_WRITE_KINDS = frozenset(
         "bswap",
     }
 )
-_THIRD_FIELD_WRITE_KINDS = frozenset({"shift", "shiftreg", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"})
+_THIRD_FIELD_WRITE_KINDS = frozenset(
+    {"shift", "shiftreg", "opmem", "opriprel", "opmemidx", "opmemidxnb", "incdec", "setcc", "cmov"}
+)
 _FIFTH_FIELD_WRITE_KINDS = frozenset({"movx", "movxidx", "movxreg"})
 _SPECIAL_WRITES = {
     "cmpxchgmem": frozenset({_RAX_SLOT}),
