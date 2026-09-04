@@ -21,14 +21,14 @@ def _bootstrap(seed: int = 7) -> tuple[str, str]:
     return build_bootstrap_asm(_CHECKSUM_OFFSET, seed, "  hlt\n")
 
 
-def test_bootstrap_entry_jumps_indirectly_before_antidebug_probes() -> None:
+def test_bootstrap_entry_jumps_indirectly_before_antidebug_probe() -> None:
     code, _table = _bootstrap()
     first_jump = min(position for marker in ("jmp rax", "push rax") if (position := code.find(marker)) >= 0)
 
-    expect(not (first_jump >= min(code.index("rdtsc"), code.index("syscall"))))
+    expect(not (first_jump >= code.index("syscall")))
 
 
-def test_bootstrap_table_maps_exactly_three_states() -> None:
+def test_bootstrap_table_maps_every_state() -> None:
     _code, table = _bootstrap()
 
     expect(table.count(".long bootstrap_") == BOOTSTRAP_STAGE_COUNT)

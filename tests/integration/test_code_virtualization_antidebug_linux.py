@@ -1,15 +1,9 @@
 """
-Regression: the VM's anti-debug folds detect a real tracer on real Linux.
+Regression: the VM's anti-debug fold detects a real tracer on real Linux.
 
-The interpreter folds two independent signals into its runtime self-checksum slot,
-each ``xor 0`` on a benign run (inert, exit code preserved) and ``0xFF`` under a
-debugger (every opcode then misdecodes into the exit path):
-
-* the *timing* fold catches a single-stepping tracer - each step is a kernel
-  round-trip that inflates the inter-read TSC delta past the variant's threshold;
-* the *tracer* fold reads ``/proc/self/status`` and catches an *attached* debugger
-  by its non-zero ``TracerPid`` even when it is not single-stepping (a
-  ``PTRACE_CONT`` run the timing fold alone would miss).
+The interpreter reads ``/proc/self/status`` and folds its ``TracerPid`` signal into
+the runtime self-checksum slot: ``xor 0`` on a benign run and ``0xFF`` under a
+debugger, making every opcode misdecode into the exit path.
 
 Both are exercised with a real child process under ``ptrace`` (no mocks, no
 monkeypatch): a native run yields the reference exit code, and the traced run must
@@ -54,10 +48,9 @@ _PTRACE_SINGLESTEP = 9
 # Fatal signals a misdecoded interpreter raises when it runs corrupt bytecode.
 _FATAL_SIGNALS = (signal.SIGSEGV, signal.SIGILL, signal.SIGBUS, signal.SIGABRT)
 
-# Upper bound on single steps before abandoning a runaway child: a faithful run of
-# this fixture single-steps well under this, and detection trips in the prologue
-# (before the main dispatch loop), so a divergent run terminates far sooner.
-_STEP_CAP = 3_000_000
+# Upper bound on single steps before abandoning a runaway child. The tracer probe
+# completes in the prologue, well before this budget; checksum corruption may loop.
+_STEP_CAP = 100_000
 
 
 def _ptrace(request: int, pid: int, addr: int, data: int) -> int:
@@ -119,8 +112,8 @@ def _run_attached(path: Path) -> int | None:
     """Exit status of ``path`` run under an *attached but free-running* tracer.
 
     The child requests tracing then ``execv``s the target; the parent lets it run
-    at full speed with ``PTRACE_CONT`` (no single stepping, so the timing fold stays
-    inert) and only the ``/proc/self/status`` ``TracerPid`` fold can trip. Returns
+    at full speed with ``PTRACE_CONT``. The ``/proc/self/status`` ``TracerPid`` fold
+    trips without relying on instruction timing. Returns
     the exit code on a clean exit, ``-signal`` on a fault, or ``None`` if it neither
     exits nor faults within a small budget of continuations.
     """
@@ -177,7 +170,7 @@ def test_single_stepping_tracer_diverges_from_untraced_exit(tmp_path: Path) -> N
     expect(untraced == _EXPECTED_UNTRACED_45, "benign native run must preserve the fixture's exit code")
 
     traced = _run_single_stepped(mutated)
-    expect(traced != untraced, "single-stepping did not trip the timing fold")
+    expect(traced != untraced, "single-stepping did not trip the TracerPid fold")
 
 
 @pytest.mark.slow
@@ -195,6 +188,6 @@ def test_attached_tracer_diverges_from_untraced_exit(tmp_path: Path) -> None:
     untraced = run_command([str(mutated)], check=False).returncode
     expect(untraced == _EXPECTED_UNTRACED_45_2, "benign native run must preserve the fixture's exit code")
 
-    # Free-running (not single-stepped), so only the /proc TracerPid fold can trip.
+    # Free-running tracing still appears in /proc through TracerPid.
     traced = _run_attached(mutated)
     expect(traced != untraced, "an attached tracer did not trip the /proc TracerPid fold")

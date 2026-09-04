@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import r2morph.core.randomness as random
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
+from r2morph.mutations.code_virtualization_antidebug import tracer_detect_asm
 from r2morph.mutations.code_virtualization_dispatch import offset_jump_block
 
-BOOTSTRAP_STAGE_COUNT = 3
+BOOTSTRAP_STAGE_COUNT = 2
 BOOTSTRAP_TABLE_SIZE = BOOTSTRAP_STAGE_COUNT * 4
 TABLE_KEY_MASK = (1 << 32) - 1
 _TABLE_MIX_MASK = 0x7FFFFFFF
@@ -27,9 +27,7 @@ def table_entry_key(checksum: int, index: int, mix: int) -> int:
 def build_bootstrap_asm(checksum_offset: int, seed: int, ready_asm: str) -> tuple[str, str]:
     """Return indirect bootstrap code and its trailing plaintext offset table."""
     rng = random.Random(seed ^ 0xB00757A9)
-    probe_order = ["timing", "tracer"]
-    rng.shuffle(probe_order)
-    execution_order = [*probe_order, "ready"]
+    execution_order = ["tracer", "ready"]
     opcodes = list(range(BOOTSTRAP_STAGE_COUNT))
     rng.shuffle(opcodes)
     opcode_by_stage = dict(zip(execution_order, opcodes, strict=True))
@@ -48,7 +46,6 @@ def build_bootstrap_asm(checksum_offset: int, seed: int, ready_asm: str) -> tupl
         )
 
     stages = {
-        "timing": timing_fold_asm(seed, slot=checksum_offset),
         "tracer": tracer_detect_asm(slot=checksum_offset),
         "ready": ready_asm,
     }

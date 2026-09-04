@@ -154,11 +154,10 @@ They are ordered roughly by dependency.
   fetch/decode/dispatch means a single lowering bug corrupts *both* the payload
   execution and the mechanism that executes it, with no independent oracle
   inside the same build. The self-checksum
-  (`code_virtualization_region_integrity`) and the timing fold both live in the
-  interpreter code; recursing over that code changes what is checksummed and
-  when the fold runs, so their invariants (benign build bit-identical, fold
-  contributes `0x00` untraced) must be re-derived for the recursive layer, not
-  assumed. A miscompiled dispatch jump is far harder to localize than a
+  (`code_virtualization_region_integrity`) and tracer fold both live in the
+  interpreter code; recursing over that code changes what is checksummed, so
+  their invariants must be re-derived for the recursive layer, not assumed. A
+  miscompiled dispatch jump is far harder to localize than a
   miscompiled arithmetic micro-op, because the failure manifests as the whole
   VM losing its place.
 

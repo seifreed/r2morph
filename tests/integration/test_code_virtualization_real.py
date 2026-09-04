@@ -331,24 +331,12 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
     expect(tampered_code != _EXPECTED_TAMPERED_CODE_45)
 
 
-# The timing anti-debug fold's final instruction: xor byte ptr [rsp+SLOT], al
-# (opcode 30 = XOR r/m8, r8), folding the timing byte into the checksum slot. The
-# The timing probe folds its result into the checksum slot with a store-form
-# `xor [rsp+disp32], al` (ModRM 84 = [rsp+disp32], opcode 30). The checksum slot is
-# now relocated per build, so the displacement varies; match the store opcode
-# prefix, which is unique to the probe: the dispatch's own checksum fold *loads* the
-# slot (`xor al, [rsp+SLOT]`, opcode 32) and the prologue *stores* it with mov
-# (opcode 88), so `30 84 24` is emitted only by the timing fold.
 _TIMING_FOLD_STORE = bytes.fromhex("308424")
 _RDTSC_BYTES = bytes.fromhex("0f31")
 _RDTSCP_BYTES = bytes.fromhex("0f01f9")
 
 
-def test_timing_probe_keeps_emulated_exit_code_inert(tmp_path: Path) -> None:
-    # The timing fold is always emitted, so a benign (Unicorn) run must keep the
-    # exit code: the inter-read TSC delta stays below 2**N, the fold contributes
-    # xor 0 to the checksum slot, and the decode is bit-identical to a build
-    # without the probe. This is the one real risk the always-on probe carries.
+def test_tracer_probe_keeps_emulated_exit_code_inert(tmp_path: Path) -> None:
     if not FIXTURE.exists():
         pytest.skip(f"fixture missing: {FIXTURE}")
 
@@ -367,11 +355,7 @@ def test_timing_probe_keeps_emulated_exit_code_inert(tmp_path: Path) -> None:
     expect(_emulate_exit_code(mutated) == reference == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_2)
 
 
-def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
-    # Presence guard so the parity test cannot pass vacuously: the injected blob
-    # must actually carry the timing read (rdtsc or the rdtscp variant) and the
-    # checksum-slot fold tail. Without this, a skipped or dropped probe would still
-    # leave the exit-code parity green.
+def test_virtualizer_does_not_emit_timing_dependent_checks(tmp_path: Path) -> None:
     if not FIXTURE.exists():
         pytest.skip(f"fixture missing: {FIXTURE}")
 
@@ -389,8 +373,8 @@ def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
     vm_entry = _find_vm_entry(data)
     expect(vm_entry != -1, "interpreter not found in mutated binary")
     blob = data[vm_entry:]
-    expect(_RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted")
-    expect(not (_TIMING_FOLD_STORE not in blob), "checksum-slot fold tail not emitted")
+    has_timing_fold = _RDTSC_BYTES in blob or _RDTSCP_BYTES in blob or _TIMING_FOLD_STORE in blob
+    expect(not has_timing_fold, "virtualizer emitted a timing-dependent checksum fold")
 
 
 # Fixtures with at least one register-op run to peel into a nested inner VM. The

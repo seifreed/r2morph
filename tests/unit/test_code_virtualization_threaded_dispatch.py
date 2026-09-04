@@ -142,7 +142,7 @@ def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _region_asm(0)
 
     first_transfer = min(position for marker in ("jmp rax", "push rax") if (position := asm.find(marker)) >= 0)
-    expect(not (first_transfer >= min(asm.index("rdtsc"), asm.index("syscall"))))
+    expect(not (first_transfer >= asm.index("syscall")))
 
 
 def test_engine_interpreter_has_no_central_dispatch_label() -> None:
@@ -176,7 +176,7 @@ def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _engine_asm(0)
 
     first_transfer = min(position for marker in ("jmp rax", "push rax") if (position := asm.find(marker)) >= 0)
-    expect(not (first_transfer >= min(asm.index("rdtsc"), asm.index("syscall"))))
+    expect(not (first_transfer >= asm.index("syscall")))
 
 
 def test_engine_interpreter_save_order_varies_across_builds() -> None:
