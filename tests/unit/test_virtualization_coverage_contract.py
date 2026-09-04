@@ -24,3 +24,13 @@ def test_virtualization_coverage_inventory_classifies_every_vm_fixture() -> None
 
 def test_virtualization_coverage_classifies_syscall_outside_call_capability() -> None:
     expect(_capabilities_for_fixture("elf_vm_syscall_x86_64") == ("signals_and_system_calls",))
+
+
+def test_virtualization_coverage_classifies_fallback_as_fallback_path() -> None:
+    expect("fallback_paths" in _capabilities_for_fixture("elf_vm_run_memfallback_x86_64"))
+
+
+def test_virtualization_coverage_classifies_movtorsp_as_stack_abi() -> None:
+    capabilities = _capabilities_for_fixture("elf_vm_movtorsp_x86_64")
+
+    expect("stack_and_abi" in capabilities)

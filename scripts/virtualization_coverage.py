@@ -26,11 +26,11 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
         "pmul",
         "vex",
     ),
-    "stack_and_abi": ("prologue", "push", "pop", "leave", "redzone", "varargs"),
+    "stack_and_abi": ("prologue", "push", "pop", "leave", "redzone", "varargs", "movtorsp"),
     "control_flow_and_dispatch": ("interp", "switch", "pie", "multiexit"),
     "thread_runtime_boundaries": ("dynamic", "tls", "thread", "signal"),
     "signals_and_system_calls": ("syscall",),
-    "unsupported_boundaries": ("fallback", "flaglive", "movtorsp"),
+    "fallback_paths": ("fallback",),
 }
 
 

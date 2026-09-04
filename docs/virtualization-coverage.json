@@ -25,6 +25,20 @@
         "elf_vm_pie_x86_64"
       ]
     },
+    "fallback_paths": {
+      "fixture_count": 9,
+      "fixtures": [
+        "elf_vm_run_callfallback_x86_64",
+        "elf_vm_run_idxfallback_x86_64",
+        "elf_vm_run_leafallback_x86_64",
+        "elf_vm_run_memarithfallback_x86_64",
+        "elf_vm_run_memfallback_x86_64",
+        "elf_vm_run_movxfallback_x86_64",
+        "elf_vm_run_movxidxfallback_x86_64",
+        "elf_vm_run_riprelarithfallback_x86_64",
+        "elf_vm_run_riprelfallback_x86_64"
+      ]
+    },
     "flags_and_conditions": {
       "fixture_count": 25,
       "fixtures": [
@@ -56,7 +70,7 @@
       ]
     },
     "floating_point_and_simd": {
-      "fixture_count": 52,
+      "fixture_count": 55,
       "fixtures": [
         "elf_vm_fparith_x86_64",
         "elf_vm_fparithidx_x86_64",
@@ -90,8 +104,6 @@
         "elf_vm_fppackedidx_x86_64",
         "elf_vm_fppackedidxnb_x86_64",
         "elf_vm_fppackedmem_x86_64",
-        "elf_vm_packedmemextra_x86_64",
-        "elf_vm_phaddmem_x86_64",
         "elf_vm_fppackedrip_x86_64",
         "elf_vm_fpriprel_x86_64",
         "elf_vm_movd_x86_64",
@@ -101,13 +113,18 @@
         "elf_vm_simdintarith_x86_64",
         "elf_vm_simdmove_x86_64",
         "elf_vm_simdwide_x86_64",
+        "elf_vm_vex128_horizontal_x86_64",
         "elf_vm_vex128_integer_x86_64",
         "elf_vm_vex128_phaddd_x86_64",
+        "elf_vm_vex128_sat_sub_x86_64",
         "elf_vm_vex128_scalar_x86_64",
         "elf_vm_vex128_shift_x86_64",
+        "elf_vm_vex128_unpack_x86_64",
         "elf_vm_vex128_x86_64",
         "elf_vm_vex256_packusdw_mem_x86_64",
         "elf_vm_vex256_packusdw_x86_64",
+        "elf_vm_vex256_unpack_x86_64",
+        "elf_vm_vex_word_shuffle_x86_64",
         "elf_vm_vpmuldq_x86_64",
         "elf_vm_vpmuludq_x86_64"
       ]
@@ -153,8 +170,6 @@
         "elf_vm_fpcmpmem_x86_64",
         "elf_vm_fpenginearithmem_x86_64",
         "elf_vm_fppackedmem_x86_64",
-        "elf_vm_packedmemextra_x86_64",
-        "elf_vm_phaddmem_x86_64",
         "elf_vm_fpriprel_x86_64",
         "elf_vm_global_x86_64",
         "elf_vm_lea32_x86_64",
@@ -173,6 +188,8 @@
         "elf_vm_movxreg_x86_64",
         "elf_vm_opmem_x86_64",
         "elf_vm_opmemidx_x86_64",
+        "elf_vm_packedmemextra_x86_64",
+        "elf_vm_phaddmem_x86_64",
         "elf_vm_popmem_x86_64",
         "elf_vm_pushmem_x86_64",
         "elf_vm_riprelmicroop_x86_64",
@@ -193,9 +210,10 @@
       ]
     },
     "stack_and_abi": {
-      "fixture_count": 10,
+      "fixture_count": 11,
       "fixtures": [
         "elf_vm_leave_x86_64",
+        "elf_vm_movtorsp_x86_64",
         "elf_vm_popmem_x86_64",
         "elf_vm_prologue_x86_64",
         "elf_vm_pushimm_x86_64",
@@ -218,28 +236,11 @@
         "elf_vm_tls_widths_x86_64",
         "elf_vm_tls_x86_64"
       ]
-    },
-    "unsupported_boundaries": {
-      "fixture_count": 12,
-      "fixtures": [
-        "elf_vm_addflaglive_x86_64",
-        "elf_vm_boolflaglive_x86_64",
-        "elf_vm_movtorsp_x86_64",
-        "elf_vm_run_callfallback_x86_64",
-        "elf_vm_run_idxfallback_x86_64",
-        "elf_vm_run_leafallback_x86_64",
-        "elf_vm_run_memarithfallback_x86_64",
-        "elf_vm_run_memfallback_x86_64",
-        "elf_vm_run_movxfallback_x86_64",
-        "elf_vm_run_movxidxfallback_x86_64",
-        "elf_vm_run_riprelarithfallback_x86_64",
-        "elf_vm_run_riprelfallback_x86_64"
-      ]
     }
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 144,
+  "fixture_count": 149,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []
