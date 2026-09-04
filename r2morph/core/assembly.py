@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _EXTENDED_REGISTER_ENCODING_START = 8
+_XMM_REGISTER_COUNT = 16
 
 
 # Register encoding tables for manual instruction encoding
@@ -78,6 +79,7 @@ class AssemblyService:
 
     Handles assembly quirks with manual encoding for:
     - movzx/movsx register-to-register operations
+    - movd register-to-XMM operations
     - Segment prefix instructions (fs:, gs:, etc.)
     - Symbolic variable resolution
     """
@@ -127,7 +129,13 @@ class AssemblyService:
                     logger.debug(f"  Successfully encoded: {manual_bytes.hex()}")
                     return manual_bytes
 
-            # Fallback 2: segment prefix instructions (fs:, gs:, etc.)
+            # Fallback 2: movd between 32-bit GP and XMM registers
+            if re.match(r"movd\s", normalized_instruction.strip(), re.IGNORECASE):
+                manual_bytes = self._assemble_movd_fallback(normalized_instruction)
+                if manual_bytes:
+                    return manual_bytes
+
+            # Fallback 3: segment prefix instructions (fs:, gs:, etc.)
             if any(seg in normalized_instruction.lower() for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]):
                 logger.debug("Radare2 assembler failed, trying segment prefix fallback")
                 segment_bytes = self._assemble_segment_prefix_fallback(binary, normalized_instruction)
@@ -229,6 +237,32 @@ class AssemblyService:
         if rex:
             return bytes([rex]) + opcode + bytes([modrm])
         return opcode + bytes([modrm])
+
+    @staticmethod
+    def _assemble_movd_fallback(instruction: str) -> bytes | None:
+        """Encode register-only movd forms unsupported by the r2 assembler."""
+        match = re.fullmatch(r"movd\s+(\w+),\s*(\w+)", instruction.strip(), re.IGNORECASE)
+        if match is None:
+            return None
+        destination, source = (operand.lower() for operand in match.groups())
+        gp_register = destination if destination in REGISTER_ENCODING["reg32"] else source
+        xmm_register = source if source.startswith("xmm") else destination
+        gp_code = REGISTER_ENCODING["reg32"].get(gp_register)
+        try:
+            xmm_code = int(xmm_register.removeprefix("xmm"))
+        except ValueError:
+            return None
+        if gp_code is None or not 0 <= xmm_code < _XMM_REGISTER_COUNT:
+            return None
+        if destination == gp_register and source == xmm_register:
+            opcode = 0x7E
+        elif destination == xmm_register and source == gp_register:
+            opcode = 0x6E
+        else:
+            return None
+        rex = bytes([0x44]) if xmm_code >= _EXTENDED_REGISTER_ENCODING_START else b""
+        modrm = 0xC0 | ((xmm_code & 0x07) << 3) | gp_code
+        return b"\x66" + rex + bytes([0x0F, opcode, modrm])
 
     def _assemble_segment_prefix_fallback(self, binary: Binary, instruction: str) -> bytes | None:
         """

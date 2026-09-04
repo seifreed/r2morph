@@ -15,6 +15,10 @@ def test_assembly_service_fallbacks():
     expect(not (asm_service._assemble_movzx_movsx_fallback("movzx foo, bar") is not None))
 
 
+def test_movd_fallback_encodes_xmm_to_gp_register() -> None:
+    expect(AssemblyService._assemble_movd_fallback("movd edx, xmm6") == b"\x66\x0f\x7e\xf2")
+
+
 def test_assembly_service_resolve_symbolic_vars():
     binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
