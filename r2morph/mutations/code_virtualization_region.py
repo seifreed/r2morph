@@ -33,6 +33,12 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
 )
 from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
+from r2morph.mutations.code_virtualization_region_dataflow import (
+    has_static_internal_indirect_call,
+)
+from r2morph.mutations.code_virtualization_region_dataflow import (
+    writes_register as _writes_register,
+)
 from r2morph.mutations.code_virtualization_region_lowering import (
     _remap_index_map,
     lower_arith_to_microops,
@@ -45,8 +51,6 @@ from r2morph.mutations.code_virtualization_region_models import (
 
 logger = logging.getLogger(__name__)
 
-_RAX_SLOT = GP_REGISTERS.index("rax")
-_RDX_SLOT = GP_REGISTERS.index("rdx")
 _CANONICAL_FLAGS_OFFSET = 0x80
 _STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
 _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
@@ -150,67 +154,6 @@ def _stack_argument_copy_bytes(
             required_end = max(required_end, original_offset + width)
     required_bytes = required_end - _STACK_ARGUMENT_START
     return (required_bytes + _STACK_WORD_BYTES - 1) // _STACK_WORD_BYTES * _STACK_WORD_BYTES
-
-
-def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
-    """The logical register slots an item writes (empty if it writes no GP register:
-    a comparison, a memory store, a stack adjustment, or a branch).
-
-    Used by the stack-balance guard to invalidate a frame-pointer snapshot when the
-    snapshot register is overwritten before a ``mov rsp, reg`` consumes it. Most ops
-    write one slot; ``div``/``idiv`` write two (quotient to rax, remainder to rdx).
-    """
-    kind = item[0]
-    if kind in ("op", "opmba", "opsynth"):
-        op: VirtualizedOp = item[1]
-        return frozenset({op.dst_index})
-    if kind in (
-        "imul",
-        "imul3",
-        "pop",
-        "movfromrsp",
-        "leave",
-        "load",
-        "tlsload",
-        "xchgmem",
-        "xchgmemidx",
-        "riprel_load",
-        "lea",
-        "learip",
-        "leaidx",
-        "leaidxnb",
-        "loadidx",
-        "loadidxnb",
-        "not",
-        "bswap",
-        "atomicmem",
-        "atomicmemrip",
-        "atomicmemidx",
-        "atomicmemidxnb",
-        "atomicmemimm",
-        "atomicmemimmrip",
-        "atomicmemimmidx",
-        "atomicmemimmidxnb",
-    ):
-        if kind.startswith("atomic"):
-            return frozenset({int(item[2])}) if item[1] == "xadd" else frozenset()
-        return frozenset({int(item[1])})
-    if kind in ("shift", "shiftreg", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
-        return frozenset({int(item[2])})
-    if kind in ("movx", "movxidx", "movxreg"):
-        return frozenset({int(item[4])})
-    special_writes = {
-        "cmpxchgmem": frozenset({_RAX_SLOT}),
-        "cmpxchgmemidx": frozenset({_RAX_SLOT}),
-        "div": frozenset({_RAX_SLOT, _RDX_SLOT}),
-        "divmem": frozenset({_RAX_SLOT, _RDX_SLOT}),
-        "divmemrip": frozenset({_RAX_SLOT, _RDX_SLOT}),
-        "divmemidx": frozenset({_RAX_SLOT, _RDX_SLOT}),
-        "divmemidxnb": frozenset({_RAX_SLOT, _RDX_SLOT}),
-        "cqo": frozenset({_RDX_SLOT}),
-        "syscall": frozenset({GP_REGISTERS.index("rax"), GP_REGISTERS.index("rcx"), GP_REGISTERS.index("r11")}),
-    }
-    return special_writes.get(kind, frozenset())
 
 
 def _merge_stack_state(
@@ -559,80 +502,6 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
     return True
 
 
-def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
-    """Recognize an indirect call whose target is proven by local dataflow.
-
-    Register-indirect calls use the last value producer directly. A memory-
-    indirect call can use the same proof when the pointer was just stored to
-    the exact memory slot from a known local address.
-    """
-    boundary_kinds = frozenset(
-        {
-            "call",
-            "icall",
-            "callmem",
-            "callmemrip",
-            "callmemidx",
-            "callmemidxnb",
-            "jmp",
-            "jcc",
-            "exit",
-            "vret",
-            "syscall",
-        }
-    )
-
-    def register_target(index: int, register: int) -> int | None:
-        for producer in reversed(build.items[:index]):
-            if producer[0] in boundary_kinds:
-                break
-            if register not in _writes_register(tuple(producer)):
-                continue
-            if producer[0] == "learip" and producer[1] == register:
-                target_value: object = producer[2]
-                return target_value if isinstance(target_value, int) else None
-            if producer[0] == "op":
-                operation: VirtualizedOp = producer[1]
-                if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == register:
-                    immediate_value: object = operation.value
-                    return immediate_value if isinstance(immediate_value, int) else None
-            break
-        return None
-
-    def matches_memory_store(store: list[Any], call: list[Any]) -> bool:
-        pairs = {
-            "callmem": ("store", (2, 3), (1, 2)),
-            "callmemrip": ("riprel_store", (2,), (1,)),
-            "callmemidx": ("storeidx", (2, 3, 4, 5), (1, 2, 3, 4)),
-            "callmemidxnb": ("storeidxnb", (2, 3, 4), (1, 2, 3)),
-        }
-        spec = pairs.get(call[0])
-        if spec is None or store[0] != spec[0]:
-            return False
-        store_fields, call_fields = spec[1], spec[2]
-        return tuple(store[index] for index in store_fields) == tuple(call[index] for index in call_fields)
-
-    for index, item in enumerate(build.items):
-        if item[0] == "icall" and index:
-            target = register_target(index, int(item[1]))
-        elif item[0] in ("callmem", "callmemrip", "callmemidx", "callmemidxnb") and index:
-            target = None
-            for store_index in range(index - 1, -1, -1):
-                producer = build.items[store_index]
-                if producer[0] in boundary_kinds:
-                    break
-                if matches_memory_store(producer, item):
-                    target = register_target(store_index, int(producer[1]))
-                    break
-            if target is None:
-                continue
-        else:
-            continue
-        if target is not None and target in build.item_index_of:
-            return True
-    return False
-
-
 def extract_region(
     instructions: list[dict[str, Any]], rng: random.Random | None = None, allow_computed_jump: bool = False
 ) -> Region | None:
@@ -650,7 +519,7 @@ def extract_region(
     build = _build_region_items(instructions, allow_computed_jump)
     if build is None or not _resolve_region_targets(build, instructions):
         return None
-    has_internal_indirect_call = _has_static_internal_indirect_call(build)
+    has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)
     if has_internal_indirect_call:
         for item in build.items:
             if item[0] == "exit" and item[1] in build.ret_addrs:

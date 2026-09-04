@@ -83,6 +83,36 @@ def _in_function_indirect_call_with_clobbered_target() -> list[dict[str, object]
     ]
 
 
+def _in_function_indirect_call_after_preserving_branch() -> list[dict[str, object]]:
+    """Both paths preserve a local target defined before they diverge."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0xb]"),
+        _insn(0x1007, 2, "cmp", "cmp ecx, edx"),
+        _insn(0x1009, 2, "cjmp", "je 0x100d", jump=0x100D, fail=0x100B),
+        _insn(0x100B, 2, "add", "add ecx, edx"),
+        _insn(0x100D, 2, "rcall", "call rax"),
+        _insn(0x100F, 2, "add", "add eax, ebx"),
+        _insn(0x1011, 1, "ret", "ret"),
+        _insn(0x1012, 2, "add", "add eax, ebx"),
+        _insn(0x1014, 1, "ret", "ret"),
+    ]
+
+
+def _in_function_indirect_call_after_clobbering_branch() -> list[dict[str, object]]:
+    """Only one predecessor preserves the local target at the merge."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0xc]"),
+        _insn(0x1007, 2, "cmp", "cmp ecx, edx"),
+        _insn(0x1009, 2, "cjmp", "je 0x100e", jump=0x100E, fail=0x100B),
+        _insn(0x100B, 3, "mov", "mov rax, rbx"),
+        _insn(0x100E, 2, "rcall", "call rax"),
+        _insn(0x1010, 2, "add", "add eax, ebx"),
+        _insn(0x1012, 1, "ret", "ret"),
+        _insn(0x1013, 2, "add", "add eax, ebx"),
+        _insn(0x1015, 1, "ret", "ret"),
+    ]
+
+
 def _in_function_memory_indirect_call_instructions() -> list[dict[str, object]]:
     """A local call target is stored in a stack slot before ``call [mem]``."""
     return [
@@ -217,6 +247,18 @@ def test_extract_region_rejects_local_indirect_call_after_target_clobber() -> No
     region = extract_region(_in_function_indirect_call_with_clobbered_target(), randomness.Random(1))
     expect(region is not None)
     expect(not region.has_internal_indirect_call)
+
+
+def test_extract_region_proves_dominating_local_indirect_target_across_branch() -> None:
+    region = extract_region(_in_function_indirect_call_after_preserving_branch(), randomness.Random(1))
+
+    expect(region is not None and region.has_internal_indirect_call)
+
+
+def test_extract_region_rejects_local_indirect_target_clobbered_on_one_branch() -> None:
+    region = extract_region(_in_function_indirect_call_after_clobbering_branch(), randomness.Random(1))
+
+    expect(region is not None and not region.has_internal_indirect_call)
 
 
 def test_extract_region_static_local_indirect_call_assembles() -> None:
