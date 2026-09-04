@@ -132,6 +132,13 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
     )
 
 
+def test_release_workflow_excludes_sbom_from_pypi_upload() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    publish_job = workflow.split("  publish-pypi:", 1)[1].split("  create-release:", 1)[0]
+
+    expect("rm dist/sbom.cdx.json" in publish_job)
+
+
 def test_corpus_workflows_run_the_full_pass_selection() -> None:
     adversarial = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")

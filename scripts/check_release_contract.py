@@ -138,6 +138,7 @@ def _check_release_workflow() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     for fragment in (
         "sbom.cdx.json",
+        "rm dist/sbom.cdx.json",
         "actions/attest-build-provenance@v2",
         "dist/*.whl",
         "python -m pip install --force-reinstall dist/*.whl",
