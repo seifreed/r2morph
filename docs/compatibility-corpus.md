@@ -46,11 +46,11 @@ in
 from workflow `33704363064` (artifact SHA-256
 `f96221084edddcc01a83110bc19a5ce22a20785750213a9502b3b2c0bc0220cb`).
 The latest local Ghidra headless campaign for the 158-fixture corpus at
-`50cb9a4` completed
+`4eecb48d` completed
 316 analyses with zero errors or timeouts. Its raw report is
-[`protection-ghidra-corpus-2026-09-04-50cb9a4.json`](protection-ghidra-corpus-2026-09-04-50cb9a4.json),
+[`protection-ghidra-corpus-2026-09-04-4eecb48.json`](protection-ghidra-corpus-2026-09-04-4eecb48.json),
 with the per-run contract in
-[`protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json`](protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json)
+[`protection-ghidra-corpus-2026-09-04-4eecb48-summary.json`](protection-ghidra-corpus-2026-09-04-4eecb48-summary.json)
 and SHA-256
 `cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`.
 

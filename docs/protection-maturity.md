@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `c73c5065`
+Commit: `4eecb48d`
 Date: `2026-09-04`
 
 ## Current verification status
@@ -25,11 +25,11 @@ unavailable-tool rows, and 16 tool errors. Its per-pass summary is in
 [`docs/protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json`](protection-adversarial-corpus-2026-09-03-7c3d9e5-summary.json):
 CodeVirtualization applied to all 148 samples and virtualized 159 functions,
 with no unsupported functions or transformation errors.
-The latest local Ghidra headless campaign for `50cb9a4` completed all 316 analyses for the
+The latest local Ghidra headless campaign for `4eecb48d` completed all 316 analyses for the
 158 original/protected pairs with zero errors or timeouts. Its compact result is in
-[`docs/protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json`](protection-ghidra-corpus-2026-09-04-50cb9a4-summary.json)
+[`docs/protection-ghidra-corpus-2026-09-04-4eecb48-summary.json`](protection-ghidra-corpus-2026-09-04-4eecb48-summary.json)
 and the raw report is in
-[`docs/protection-ghidra-corpus-2026-09-04-50cb9a4.json`](protection-ghidra-corpus-2026-09-04-50cb9a4.json)
+[`docs/protection-ghidra-corpus-2026-09-04-4eecb48.json`](protection-ghidra-corpus-2026-09-04-4eecb48.json)
 (`SHA-256 cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`).
 
 CI run status for `7c3d9e5` is tracked separately from the completed corpus
