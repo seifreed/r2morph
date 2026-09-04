@@ -169,7 +169,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
 
     def _emit_virtual(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind in ("op", "opmba", "opsynth"):
+        if kind in ("op", "opmba", "opsynth", "vsuper"):
             op: VirtualizedOp = item[1]
             key = _required_key(item)
             position = self._opcode(item)

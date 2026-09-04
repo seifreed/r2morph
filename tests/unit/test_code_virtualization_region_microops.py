@@ -13,6 +13,7 @@ from __future__ import annotations
 import struct
 
 from r2morph.core import randomness
+from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_handlers import _VSP_OFFSET
@@ -40,6 +41,9 @@ _EXPECTED_KINDS_COUNT_VBINOP_2_2 = 2
 _EXPECTED_KINDS_COUNT_VPOP_2 = 2
 _EXPECTED_KINDS_COUNT_VPOP_2_2 = 2
 _EXPECTED_KINDS_COUNT_VPUSH_2 = 2
+_EXPECTED_VSUPER_ITEM_SIZE = 3
+_VSUPER_DESTINATION_SLOT = 3
+_VSUPER_SOURCE_SLOT = 2
 
 
 def _insn(addr: int, size: int, itype: str, opcode: str, **extra: object) -> dict[str, object]:
@@ -87,6 +91,21 @@ def test_flag_dead_immediate_arith_lowers_with_vpushi() -> None:
         kinds.count("vbinop") == _EXPECTED_KINDS_COUNT_VBINOP_2_2
         and kinds.count("vpop") == _EXPECTED_KINDS_COUNT_VPOP_2_2
     )
+
+
+def test_flag_dead_arith_can_lower_to_fused_superinstruction() -> None:
+    insns = [
+        _insn(0x1000, 3, "add", "add eax, ebx"),
+        _insn(0x1003, 3, "cmp", "cmp eax, edx"),
+        _insn(0x1006, 2, "cjmp", "jne 0x1000", jump=0x1000, fail=0x1008),
+        _insn(0x1008, 1, "ret", "ret"),
+    ]
+    fused = [extract_region(insns, randomness.Random(seed)) for seed in range(1, 64)]
+    fused_regions = [
+        region for region in fused if region is not None and any(item[0] == "vsuper" for item in region.instructions)
+    ]
+    expect(len(fused_regions) > 0)
+    expect(all(not any(item[0] == "vbinop" for item in region.instructions) for region in fused_regions))
 
 
 def test_flag_live_arith_lowers_to_flag_synthesizing_microop() -> None:
@@ -157,6 +176,10 @@ def test_micro_op_item_sizes_match_the_handler_advances() -> None:
     expect(_item_size(("vpushi", 5, 64)) == _EXPECTED_ITEM_SIZE_VPUSHI_5_64_9)
     expect(_item_size(("vbinop", "add", 64)) == 1)
     expect(_item_size(("vbinopsynth", "add", 64)) == 1)
+    expect(
+        _item_size(("vsuper", VirtualizedOp("add", _VSUPER_DESTINATION_SLOT, _VSUPER_SOURCE_SLOT, False, 64)))
+        == _EXPECTED_VSUPER_ITEM_SIZE
+    )
     expect(_item_size(("vload", 5, -8, 64)) == _EXPECTED_ITEM_SIZE_VLOAD_5_8_64_7)
     expect(_item_size(("vstore", 5, -8, 64)) == _EXPECTED_ITEM_SIZE_VSTORE_5_8_64_7)
     expect(_item_size(("vloadidx", 5, 6, 3, -8, 64)) == _EXPECTED_ITEM_SIZE_VLOADIDX_5_6_3_8_64_9)

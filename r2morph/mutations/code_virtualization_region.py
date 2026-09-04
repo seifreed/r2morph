@@ -386,8 +386,12 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 _JUNK_OP_PROBABILITY = 0.35
 
 
-def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] | None = None) -> list[list[Any]]:
-    return lower_arith_to_microops(items, index_map)
+def _lower_arith_to_microops(
+    items: list[list[Any]],
+    index_map: dict[int, int] | None = None,
+    use_superinstructions: bool = False,
+) -> list[list[Any]]:
+    return lower_arith_to_microops(items, index_map, use_superinstructions)
 
 
 def _inject_junk_movs(
@@ -562,7 +566,8 @@ def extract_region(
         dict(build.item_index_of) if has_computed_jump or has_internal_indirect_call else None
     )
 
-    items = _lower_arith_to_microops(items, target_map)
+    use_superinstructions = rng is not None and bool(rng.randrange(2))
+    items = _lower_arith_to_microops(items, target_map, use_superinstructions)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.

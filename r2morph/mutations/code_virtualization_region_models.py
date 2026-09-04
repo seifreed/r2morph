@@ -331,7 +331,7 @@ def _call_key(item: tuple[Any, ...]) -> str:
 
 def _simple_op_key(item: tuple[Any, ...]) -> str | None:
     kind: str = item[0]
-    if kind in ("op", "opmba", "opsynth"):
+    if kind in ("op", "opmba", "opsynth", "vsuper"):
         operation: VirtualizedOp = item[1]
         operand_kind = "i" if operation.is_immediate else "r"
         return f"{kind}_{operation.mnemonic}_{operand_kind}_{operation.width}"

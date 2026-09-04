@@ -62,6 +62,7 @@ _OPERAND_FIELDS = {
     "op": _op_operand_fields,
     "opmba": _op_operand_fields,
     "opsynth": _op_operand_fields,
+    "vsuper": _op_operand_fields,
 }
 
 

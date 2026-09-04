@@ -291,7 +291,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
     size: int | None = None
     if kind == "vpushi":
         size = 1 + (8 if item[2] == ARCH_BITS_64 else 4)
-    elif kind in ("op", "opmba", "opsynth"):
+    elif kind in ("op", "opmba", "opsynth", "vsuper"):
         op: VirtualizedOp = item[1]
         size = 2 + (8 if op.width == ARCH_BITS_64 else 4) if op.is_immediate else 3
     elif kind in ("cmp", "test"):

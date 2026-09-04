@@ -318,6 +318,17 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _vbinopsynth_handler_asm(key, self.context.key, flag, arithmetic)
         elif key.startswith("vbinop_"):
             body = _vbinop_handler_asm(key, self.context.key, arithmetic)
+        elif key.startswith("vsuper_"):
+            body = _op_mba_handler_asm(
+                IntegerHandlerConfig(
+                    key,
+                    self.context.key,
+                    self.context.key_qword,
+                    self.context.key_dword,
+                    self.context.field_perm,
+                    arith_variant=arithmetic,
+                )
+            )
         elif key.startswith("vshift_"):
             body = _vshift_handler_asm(key, self.context.key, shift)
         elif key.startswith("vshiftreg_"):

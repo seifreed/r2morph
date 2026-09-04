@@ -16,8 +16,10 @@ def _memory_pop_kind(width: int) -> str:
     return "vpop"
 
 
-def _lower_fold(item: list[Any], fold: str) -> list[list[Any]]:
+def _lower_fold(item: list[Any], fold: str, use_superinstructions: bool) -> list[list[Any]]:
     operation = item[1]
+    if use_superinstructions and fold == "vbinop":
+        return [["vsuper", operation]]
     source = ["vpushi", operation.value, operation.width] if operation.is_immediate else ["vpush", operation.value]
     return [
         ["vpush", operation.dst_index],
@@ -161,7 +163,11 @@ def _remap_index_map(index_map: dict[int, int] | None, old_to_new: dict[int, int
         index_map[address] = old_to_new[old_index]
 
 
-def lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] | None = None) -> list[list[Any]]:
+def lower_arith_to_microops(
+    items: list[list[Any]],
+    index_map: dict[int, int] | None = None,
+    use_superinstructions: bool = False,
+) -> list[list[Any]]:
     """Lower arithmetic and memory items and remap branch target indices."""
     fold_of = {"opmba": "vbinop", "opsynth": "vbinopsynth"}
     lowered: list[list[Any]] = []
@@ -170,7 +176,7 @@ def lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] | 
         old_to_new[old_index] = len(lowered)
         fold = fold_of.get(item[0])
         if fold is not None:
-            lowered.extend(_lower_fold(item, fold))
+            lowered.extend(_lower_fold(item, fold, use_superinstructions))
             continue
         lowerer = _LOWERERS.get(item[0])
         lowered.extend([item] if lowerer is None else lowerer(item))

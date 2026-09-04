@@ -156,6 +156,7 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vpushi",
         "vbinop",
         "vbinopsynth",
+        "vsuper",
         "vload",
         "vstore",
         "vloadidx",
