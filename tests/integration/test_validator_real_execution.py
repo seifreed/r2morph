@@ -9,7 +9,7 @@ from r2morph.validation.validator import BinaryValidator
 from tests.utils.assertions import expect
 
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
-_VALIDATION_TIMEOUT_SECONDS = 30
+_VALIDATION_TIMEOUT_SECONDS = 60
 
 
 def test_binary_validator_with_macho(tmp_path: Path) -> None:

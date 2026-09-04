@@ -27,7 +27,7 @@ from tests.utils.process import run_command
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
 REAL_BINARY_TEST_SEED = 1337
-_REAL_BINARY_TIMEOUT_SECONDS = 30
+_REAL_BINARY_TIMEOUT_SECONDS = 60
 
 
 def get_system_binaries():

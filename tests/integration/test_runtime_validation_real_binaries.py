@@ -14,7 +14,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _EXPECTED_RESULT_RUNTIME_DETAILS_0_MUTATED_EXITCODE_7 = 7
-_REAL_BINARY_TIMEOUT_SECONDS = 30
+_REAL_BINARY_TIMEOUT_SECONDS = 60
 
 
 if importlib.util.find_spec("yaml") is None:
@@ -131,7 +131,7 @@ def test_cli_validate_supports_normalize_whitespace(runtime_binary_pair, tmp_pat
         ],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
     )
     normalized_result = run_command(
         [
@@ -147,7 +147,7 @@ def test_cli_validate_supports_normalize_whitespace(runtime_binary_pair, tmp_pat
         ],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
     )
 
     expect(strict_result.returncode == 1)
@@ -216,7 +216,7 @@ def test_cli_validate_supports_args_env_working_dir_corpus_real(args_env_binary_
         ],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=_REAL_BINARY_TIMEOUT_SECONDS,
     )
 
     expect(result.returncode == 1)

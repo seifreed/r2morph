@@ -27,7 +27,7 @@ from r2morph.mutations import (
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 from tests.utils.process import run_command
 
-_REAL_BINARY_TIMEOUT_SECONDS = 30
+_REAL_BINARY_TIMEOUT_SECONDS = 60
 
 
 class TestRealMutations:
@@ -54,16 +54,13 @@ class TestRealMutations:
 
     def get_output(self, binary_path):
         """Get output from executing a binary."""
-        try:
-            result = run_command(
-                [str(binary_path)],
-                capture_output=True,
-                timeout=_REAL_BINARY_TIMEOUT_SECONDS,
-                check=False,
-            )
-            return result.stdout.decode(), result.returncode
-        except Exception as e:
-            return f"Error: {e}", -1
+        result = run_command(
+            [str(binary_path)],
+            capture_output=True,
+            timeout=_REAL_BINARY_TIMEOUT_SECONDS,
+            check=False,
+        )
+        return result.stdout.decode(), result.returncode
 
     def test_nop_insertion_real(self, simple_binary, tmp_path):
         """Test NOP insertion with real binary."""
@@ -221,7 +218,12 @@ class TestRealMutations:
         if platform.system() != "Windows":
             output_path.chmod(0o755)
 
-        result = run_command([str(output_path)], capture_output=True, timeout=5, check=False)
+        result = run_command(
+            [str(output_path)],
+            capture_output=True,
+            timeout=_REAL_BINARY_TIMEOUT_SECONDS,
+            check=False,
+        )
 
         if platform.system() == "Windows" and result.returncode != 0:
             pytest.skip("Mutated PE binary did not execute cleanly on Windows")

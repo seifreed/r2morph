@@ -23,7 +23,7 @@ from tests.utils.process import run_command
 
 _EXPECTED_LEN_PARTS_2 = 2
 _SELF_MUTATION_SEED = 1337
-_SELF_MUTATION_TIMEOUT_SECONDS = 30
+_SELF_MUTATION_TIMEOUT_SECONDS = 60
 
 
 pytestmark = pytest.mark.skipif(

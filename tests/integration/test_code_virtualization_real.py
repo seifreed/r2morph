@@ -382,7 +382,7 @@ def test_virtualizer_does_not_emit_timing_dependent_checks(tmp_path: Path) -> No
     binary = Binary(str(mutated), writable=True)
     binary.open()
     try:
-        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260904}).apply(binary)
         binary.save()
     finally:
         binary.close()

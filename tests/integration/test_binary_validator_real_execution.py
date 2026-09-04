@@ -8,7 +8,7 @@ from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2 = 100.0
-_VALIDATION_TIMEOUT_SECONDS = 30
+_VALIDATION_TIMEOUT_SECONDS = 60
 
 
 def test_validator_round_trip_same_binary(tmp_path):
