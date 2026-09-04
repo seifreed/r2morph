@@ -31,32 +31,31 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `47992a5` covered 158 fixtures
+The latest repository-fixture campaign against `88258a05` covered 159 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-47992a5.json`](protection-maturity-by-pass-2026-09-04-47992a5.json),
-from workflow `33841892183` (artifact SHA-256
-`fffa73d4ab32f7d6f721e0937578b50a50f8af3a787c30525ed5a39a8e35f263`). Five
-passes recorded 158 semantic passes with no failures; CodeVirtualization
-recorded 157 semantic passes and one known baseline mismatch in
+[`protection-maturity-by-pass-2026-09-04-88258a05.json`](protection-maturity-by-pass-2026-09-04-88258a05.json),
+from workflow `33847250585` (artifact SHA-256
+`0e28c5fc5e208b9f76406a01b29bf538e72c7650c761adfce6633526c887d627`). Five
+passes recorded 159 semantic passes with no failures; CodeVirtualization
+recorded 158 semantic passes and one known baseline mismatch in
 `elf_vm_fppackedidxnb_x86_64`. The mismatch remains a baseline runtime
 contract issue with zero mutations applied, not a new transformation failure.
 The matching adversarial report is summarized
 in
-[`protection-adversarial-corpus-2026-09-04-47992a5-summary.json`](protection-adversarial-corpus-2026-09-04-47992a5-summary.json),
-from workflow `33841894143` (artifact SHA-256
-`bb400440363c58678518e14c01c6f1dcb3a82fda57eb00957c4e66c788abbddb`). It
-covered 158 samples and 4,697 completed tool runs, with 3,792 unavailable
+[`protection-adversarial-corpus-2026-09-04-88258a05-summary.json`](protection-adversarial-corpus-2026-09-04-88258a05-summary.json),
+from workflow `33847250397` (artifact SHA-256
+`bd35f73f9b9e89d64e78eab44ddf3495ac2dd338c2bdf2b71c4c1c0a85b7544e`). It
+covered 159 samples and 4,727 completed tool runs, with 3,816 unavailable
 tool rows and 43 tool errors; CodeVirtualization applied to all samples and
-virtualized 169 functions with no unsupported functions or transformation
+virtualized 171 functions with no unsupported functions or transformation
 errors.
-The latest local Ghidra headless campaign for the 158-fixture corpus at
-`4eecb48d` completed
-316 analyses with zero errors or timeouts. Its raw report is
-[`protection-ghidra-corpus-2026-09-04-4eecb48.json`](protection-ghidra-corpus-2026-09-04-4eecb48.json),
+The latest local Ghidra headless campaign for the 159-fixture corpus at
+`88258a05` completed 318 analyses with zero errors or timeouts. Its raw report is
+[`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json),
 with the per-run contract in
-[`protection-ghidra-corpus-2026-09-04-4eecb48-summary.json`](protection-ghidra-corpus-2026-09-04-4eecb48-summary.json)
+[`protection-ghidra-corpus-2026-09-04-88258a05-summary.json`](protection-ghidra-corpus-2026-09-04-88258a05-summary.json)
 and SHA-256
-`cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`.
+`cd86ada75b515f84676bb110807cf8d964276cb5bda54831750aec70d28c5f25`.
 
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording

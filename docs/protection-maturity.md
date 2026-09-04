@@ -1,51 +1,40 @@
 # Protection Maturity Report
 
-Commit: `47992a5`
+Commit: `88258a05`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `47992a5` and covered
-158 fixtures with all six selected passes. The differential report completed in
-workflow `33841892183` (artifact SHA-256
-`fffa73d4ab32f7d6f721e0937578b50a50f8af3a787c30525ed5a39a8e35f263`). Its
+The latest full Linux amd64 fixture campaign ran against `88258a05` and covered
+159 fixtures with all six selected passes. The differential report completed in
+workflow `33847250585` (artifact SHA-256
+`0e28c5fc5e208b9f76406a01b29bf538e72c7650c761adfce6633526c887d627`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-47992a5.json`](protection-maturity-by-pass-2026-09-04-47992a5.json):
+[`docs/protection-maturity-by-pass-2026-09-04-88258a05.json`](protection-maturity-by-pass-2026-09-04-88258a05.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
-and RegisterSubstitution recorded 158 semantic passes with no failures.
-CodeVirtualization recorded 157 semantic passes and one known baseline
-mismatch in `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture
-and the new horizontal packed-memory fixture passed CodeVirtualization with
-native and Unicorn parity. The remaining sample had `mutations_applied: 0`
-and a baseline runtime contract mismatch; it is not evidence of a
-transformation bug, but CodeVirtualization is not yet a clean semantic gate.
+and RegisterSubstitution recorded 159 semantic passes with no failures.
+CodeVirtualization recorded 158 semantic passes and one known baseline
+mismatch in `elf_vm_fppackedidxnb_x86_64`. The new locked memory-immediate
+fixture passed CodeVirtualization with native parity, virtualizing two functions
+and twelve instructions. The remaining sample is a baseline runtime contract
+mismatch, so CodeVirtualization is not yet a clean semantic gate.
 The matching adversarial campaign completed in workflow
-`33841894143` and covered 158 samples, with 4,697 completed tool runs, 3,792
+`33847250397` and covered 159 samples, with 4,727 completed tool runs, 3,816
 unavailable-tool rows, and 43 tool errors. Its per-pass summary is in
-[`docs/protection-adversarial-corpus-2026-09-04-47992a5-summary.json`](protection-adversarial-corpus-2026-09-04-47992a5-summary.json):
-CodeVirtualization applied to all 158 samples and virtualized 169 functions,
+[`docs/protection-adversarial-corpus-2026-09-04-88258a05-summary.json`](protection-adversarial-corpus-2026-09-04-88258a05-summary.json):
+CodeVirtualization applied to all 159 samples and virtualized 171 functions,
 with no unsupported functions or transformation errors. Tool errors and
 unavailable tools remain explicit non-passing evidence.
-The latest local Ghidra headless campaign for `4eecb48d` completed all 316 analyses for the
-158 original/protected pairs with zero errors or timeouts. Its compact result is in
-[`docs/protection-ghidra-corpus-2026-09-04-4eecb48-summary.json`](protection-ghidra-corpus-2026-09-04-4eecb48-summary.json)
+The latest local Ghidra headless campaign for `88258a05` completed all 318
+analyses for the 159 original/protected pairs with zero errors or timeouts. Its
+compact result is in
+[`docs/protection-ghidra-corpus-2026-09-04-88258a05-summary.json`](protection-ghidra-corpus-2026-09-04-88258a05-summary.json)
 and the raw report is in
-[`docs/protection-ghidra-corpus-2026-09-04-4eecb48.json`](protection-ghidra-corpus-2026-09-04-4eecb48.json)
-(`SHA-256 cf084dc070bc29158bf3c6baf30b57b08b1707ca1156e420401b8f470030600f`).
-
-CI run status for `7c3d9e5` is tracked separately from the completed corpus
-campaigns above.
-The local full command produced 5,337 passed, 15 failed, and 108 skipped tests;
-the focused 16-bit memory-stack regression passed, while the full suite remains
-blocked by existing environment/dependency and execution-contract failures.
-
-The supported Python environment passes Black, Ruff, Bandit, and pip-audit
-locally. The targeted dispatch regression passes locally with `-W error`.
-GitHub Actions CI run `33678518222` passed `f503a20` through lint, typecheck,
-unit, core, integration, wheel-smoke, property/fuzz, and the supported platform
-matrix. The VEX.128 lane-extraction regression is covered natively on Linux
-amd64 in CI. GitHub currently reports deprecation annotations for the workflow's
-Node.js 20 action runtimes; they did not affect the successful gate.
+[`docs/protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
+(`SHA-256 cd86ada75b515f84676bb110807cf8d964276cb5bda54831750aec70d28c5f25`).
+GitHub Actions CI workflow `33847250344` passed the same commit across lint,
+typecheck, tests, package smoke, property/fuzz validation, and supported
+platform jobs.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
