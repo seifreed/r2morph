@@ -31,11 +31,11 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `3bfa94ed` covered 159 fixtures
+The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-3bfa94ed.json`](protection-maturity-by-pass-2026-09-04-3bfa94ed.json),
-from workflow `33853083470` (artifact SHA-256
-`616fa9ff55e0c89b498cb1abbddae8b4d51b15973a51c6a23090925ac53e3c0a`). All six
+[`protection-maturity-by-pass-2026-09-04-8b6cfb40.json`](protection-maturity-by-pass-2026-09-04-8b6cfb40.json),
+from workflow `33907747531` (artifact SHA-256
+`606d4be7f8f91a89bd37ef77cce149ee8c2e3e332f21eec296d38314443713a6`). All six
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.

@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `3bfa94ed`
+Commit: `8b6cfb40`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `3bfa94ed` and covered
+The latest full Linux amd64 fixture campaign ran against `8b6cfb40` and covered
 159 fixtures with all six selected passes. The differential report completed in
-workflow `33853083470` (artifact SHA-256
-`616fa9ff55e0c89b498cb1abbddae8b4d51b15973a51c6a23090925ac53e3c0a`). Its
+workflow `33907747531` (artifact SHA-256
+`606d4be7f8f91a89bd37ef77cce149ee8c2e3e332f21eec296d38314443713a6`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-3bfa94ed.json`](protection-maturity-by-pass-2026-09-04-3bfa94ed.json).
+[`docs/protection-maturity-by-pass-2026-09-04-8b6cfb40.json`](protection-maturity-by-pass-2026-09-04-8b6cfb40.json).
 All six passes recorded 159 semantic passes with zero failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` fixture exits with code 6 in native and Unicorn
 execution before and after CodeVirtualization.
