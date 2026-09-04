@@ -167,6 +167,21 @@ def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _mxcsr_memory_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Load or store the native 32-bit MXCSR value through a VM memory address."""
+    kind = handler_key.split("_", 1)[0]
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
+    instruction = "ldmxcsr" if kind.startswith("mxcsrload") else "stmxcsr"
+    return body + f"  {instruction} dword ptr [r10]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _not_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

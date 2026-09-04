@@ -10,6 +10,19 @@ RegionItem = tuple[Any, ...]
 class RegionEncoderMemoryMixin:
     """Emit memory-shaped region items using the encoder's shared primitives."""
 
+    _MXCSR_MEMORY_KINDS = frozenset(
+        {
+            "mxcsrload",
+            "mxcsrstore",
+            "mxcsrloadrip",
+            "mxcsrstorerip",
+            "mxcsrloadidx",
+            "mxcsrstoreidx",
+            "mxcsrloadidxnb",
+            "mxcsrstoreidxnb",
+        }
+    )
+
     def _emit_stack_memory(self: Any, item: RegionItem) -> bool:
         kind = item[0]
         if kind in ("pushmem", "popmem"):
@@ -71,6 +84,25 @@ class RegionEncoderMemoryMixin:
             self._gp_idx(item, (reg, base, index, shift, disp))
         else:
             return False
+        return True
+
+    def _emit_mxcsr_memory(self: Any, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind not in self._MXCSR_MEMORY_KINDS:
+            return False
+        if kind.endswith("idxnb"):
+            _, index, shift, displacement = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, displacement))
+        elif kind.endswith("idx"):
+            _, base, index, shift, displacement = item
+            self._idx(
+                self._opcode(item),
+                (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, displacement),
+            )
+        elif kind.endswith("rip"):
+            self._gp_rip(item, 0, item[1])
+        else:
+            self._gp_mem(item, 0, item[1], item[2])
         return True
 
     def _emit_not_memory(self: Any, item: RegionItem) -> None:

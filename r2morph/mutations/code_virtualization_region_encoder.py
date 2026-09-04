@@ -56,6 +56,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_fp_memory,
             self._emit_memory_immediate,
             self._emit_stack_memory,
+            self._emit_mxcsr_memory,
             self._emit_gp_memory,
             self._emit_bt_memory,
             self._emit_div_memory,

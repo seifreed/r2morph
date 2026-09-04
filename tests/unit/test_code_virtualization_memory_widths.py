@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddre
 from r2morph.mutations.code_virtualization_region import _writes_register, extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bt,
     _decode_cmp_mem,
@@ -17,19 +18,22 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_memory_immediate,
     _decode_memory_mov,
     _decode_memory_mov_indexed,
+    _decode_mxcsr_memory,
     _decode_not,
     _decode_op_mem,
     _decode_op_memdst,
     _decode_riprel_mov,
 )
+from r2morph.mutations.code_virtualization_region_memory_handlers import _mxcsr_memory_handler_asm
 from r2morph.mutations.code_virtualization_region_microops import _vpop_partial_handler_asm
-from r2morph.mutations.code_virtualization_region_models import _op_key
+from r2morph.mutations.code_virtualization_region_models import RegionScheme, _op_key
 from tests.utils.assertions import expect
 
 _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
 _TRANSFER_WIDTH_COUNT = 4
 _EXPECTED_STOREI_BYTE_SIZE = 11
+_EXPECTED_MXCSR_DIRECT_SIZE = 7
 
 
 def test_memory_mov_decodes_byte_load_with_low_byte_width() -> None:
@@ -86,6 +90,65 @@ def test_memory_classifier_decodes_absolute_load_as_fixed_address() -> None:
 
 def test_memory_mov_indexed_decodes_byte_load_with_low_byte_width() -> None:
     expect(_decode_memory_mov_indexed("mov dl, byte ptr [rbx+rcx*2+4]") == ("loadidx", 2, 3, 1, 1, 4, 8))
+
+
+def test_mxcsr_memory_decoder_decodes_direct_load() -> None:
+    expect(_decode_mxcsr_memory("ldmxcsr dword ptr [rbx+8]", 0x1000, 6) == ("mxcsrload", 3, 8))
+
+
+def test_mxcsr_memory_decoder_decodes_rip_relative_store() -> None:
+    expect(_decode_mxcsr_memory("stmxcsr dword ptr [rip+0x20]", 0x1000, 6) == ("mxcsrstorerip", 0x1026))
+
+
+def test_mxcsr_memory_decoder_decodes_indexed_load_without_base() -> None:
+    expect(_decode_mxcsr_memory("ldmxcsr dword ptr [rcx*4+8]", 0x1000, 6) == ("mxcsrloadidxnb", 1, 2, 8))
+
+
+def test_mxcsr_memory_decoder_decodes_indexed_store() -> None:
+    expect(_decode_mxcsr_memory("stmxcsr dword ptr [rbx+rcx*4+8]", 0x1000, 6) == ("mxcsrstoreidx", 3, 1, 2, 8))
+
+
+def test_mxcsr_memory_classifier_accepts_non_binary_instruction_type() -> None:
+    expect(
+        _classify({"type": "store", "opcode": "stmxcsr dword ptr [rax+4]", "addr": 0x1000, "size": 6})
+        == ["mxcsrstore", 0, 4]
+    )
+
+
+def test_mxcsr_memory_items_have_address_shape_sizes() -> None:
+    expect(
+        tuple(
+            _item_size(item)
+            for item in (
+                ("mxcsrload", 0, 8),
+                ("mxcsrloadrip", 0x1026),
+                ("mxcsrloadidxnb", 1, 2, 8),
+                ("mxcsrloadidx", 3, 1, 2, 8),
+            )
+        )
+        == (7, 6, 8, 9)
+    )
+
+
+def test_mxcsr_memory_encoder_emits_direct_item() -> None:
+    scheme = RegionScheme(
+        dup={"mxcsrload_3_8": (0,)},
+        xor_key=0,
+        junk_seed=0,
+        slot_perm=tuple(range(16)),
+        table_key=0,
+    )
+    encoded = RegionEncoder(scheme, [0], 0, 0).encode([("mxcsrload", 3, 8)])
+    expect(len(encoded) == _EXPECTED_MXCSR_DIRECT_SIZE)
+
+
+def test_mxcsr_memory_handler_emits_native_load() -> None:
+    expect("ldmxcsr dword ptr [r10]" in _mxcsr_memory_handler_asm("mxcsrload_3_8", "0x12", "0x12121212"))
+
+
+def test_mxcsr_memory_handler_emits_native_store_for_indexed_address() -> None:
+    assembly = _mxcsr_memory_handler_asm("mxcsrstoreidx_3_1_2_8", "0x12", "0x12121212")
+    expect("stmxcsr dword ptr [r10]" in assembly and "add rsi, 9" in assembly)
 
 
 def test_memory_arithmetic_decodes_byte_register_source_with_low_byte_width() -> None:

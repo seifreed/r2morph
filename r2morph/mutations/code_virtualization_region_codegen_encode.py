@@ -125,6 +125,8 @@ _FIXED_SIZE_GROUPS = {
         "opmemdstrip",
         "callmemrip",
         "atomicmemrip",
+        "mxcsrloadrip",
+        "mxcsrstorerip",
     ),
     7: (
         "vload",
@@ -168,6 +170,8 @@ _FIXED_SIZE_GROUPS = {
         "atomicmem",
         "pushmem",
         "popmem",
+        "mxcsrload",
+        "mxcsrstore",
     ),
     8: (
         "vleaidxnb",
@@ -199,6 +203,8 @@ _FIXED_SIZE_GROUPS = {
         "atomicmemidxnb",
         "pushmemidxnb",
         "popmemidxnb",
+        "mxcsrloadidxnb",
+        "mxcsrstoreidxnb",
     ),
     9: (
         "vloadidx",
@@ -234,6 +240,8 @@ _FIXED_SIZE_GROUPS = {
         "atomicmemidx",
         "pushmemidx",
         "popmemidx",
+        "mxcsrloadidx",
+        "mxcsrstoreidx",
         "pushi",
     ),
     10: (

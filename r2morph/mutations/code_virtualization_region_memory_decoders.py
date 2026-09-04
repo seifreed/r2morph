@@ -136,6 +136,33 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
+def _decode_mxcsr_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode direct, RIP-relative, or indexed ``ldmxcsr``/``stmxcsr`` memory."""
+    parts = text.split(None, 1)
+    result: tuple[Any, ...] | None = None
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() in ("ldmxcsr", "stmxcsr"):
+        operand = parts[1].strip()
+        prefix = "mxcsrload" if parts[0].lower() == "ldmxcsr" else "mxcsrstore"
+        direct = _parse_mem_operand(operand)
+        if direct is not None:
+            base_slot, displacement, width = direct
+            if base_slot is not None and width in (None, 32):
+                result = prefix, base_slot, displacement
+        else:
+            rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
+            if rip_relative is not None and rip_relative[1] in (None, 32):
+                result = f"{prefix}rip", rip_relative[0]
+            elif _explicit_memory_width(operand) in (None, 32):
+                indexed = _parse_indexed_operand(operand, base_optional=True)
+                if indexed is not None:
+                    base_slot, index_slot, shift, displacement = indexed
+                    if base_slot < 0:
+                        result = f"{prefix}idxnb", index_slot, shift, displacement
+                    else:
+                        result = f"{prefix}idx", base_slot, index_slot, shift, displacement
+    return result
+
+
 def _decode_memory_immediate(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode ``mov [address], immediate`` for direct, RIP-relative, and indexed addresses."""
     parts = text.split(None, 1)
