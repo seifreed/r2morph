@@ -92,6 +92,16 @@ class TestSeedControl:
 
         expect(random.getstate() is None)
 
+    def test_setstate_restores_seeded_stream_after_system_entropy(self):
+        """A captured seeded state remains restorable after an unseeded pass."""
+
+        random.seed(12345)
+        state = random.getstate()
+        random.seed()
+        random.setstate(state)
+
+        expect(random.getstate() == state)
+
     def test_reset_random_with_seed(self):
         """Test _reset_random with explicit seed."""
 

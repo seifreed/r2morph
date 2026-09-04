@@ -37,6 +37,8 @@ def setstate(state: _RandomState | None) -> None:
     if state is None:
         _source[0] = _stdlib_random.SystemRandom()
         return
+    if isinstance(_source[0], _stdlib_random.SystemRandom):
+        _source[0] = Random()
     _source[0].setstate(state)
 
 
