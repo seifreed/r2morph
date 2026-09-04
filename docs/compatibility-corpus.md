@@ -31,11 +31,11 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
-The latest repository-fixture campaign against `b7ddb41` covered 158 fixtures
+The latest repository-fixture campaign against `c73c5065` covered 158 fixtures
 and all six selected passes. Its per-pass summary is committed in
-[`protection-maturity-by-pass-2026-09-04-b7ddb41.json`](protection-maturity-by-pass-2026-09-04-b7ddb41.json),
-from workflow `33827077107` (artifact SHA-256
-`375f5d08bb0a62403be8c3aed9556b00dbc8ed599fc975770e7b19b0217b7b48`). Five
+[`protection-maturity-by-pass-2026-09-04-c73c506.json`](protection-maturity-by-pass-2026-09-04-c73c506.json),
+from workflow `33834618121` (artifact SHA-256
+`8cef54fdf27f4a89a589a45426c3ea13e70ea1fc182ab3da3faa88b14f94d4a6`). Five
 passes recorded 158 semantic passes with no failures; CodeVirtualization
 recorded 157 semantic passes and one known baseline mismatch in
 `elf_vm_fppackedidxnb_x86_64`. The new packed-SIMD memory fixture passed

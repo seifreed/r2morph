@@ -1,16 +1,16 @@
 # Protection Maturity Report
 
-Commit: `b7ddb41`
+Commit: `c73c5065`
 Date: `2026-09-04`
 
 ## Current verification status
 
-The latest full Linux amd64 fixture campaign ran against `b7ddb41` and covered
+The latest full Linux amd64 fixture campaign ran against `c73c5065` and covered
 158 fixtures with all six selected passes. The differential report completed in
-workflow `33827077107` (artifact SHA-256
-`375f5d08bb0a62403be8c3aed9556b00dbc8ed599fc975770e7b19b0217b7b48`). Its
+workflow `33834618121` (artifact SHA-256
+`8cef54fdf27f4a89a589a45426c3ea13e70ea1fc182ab3da3faa88b14f94d4a6`). Its
 per-pass summary is in
-[`docs/protection-maturity-by-pass-2026-09-04-b7ddb41.json`](protection-maturity-by-pass-2026-09-04-b7ddb41.json):
+[`docs/protection-maturity-by-pass-2026-09-04-c73c506.json`](protection-maturity-by-pass-2026-09-04-c73c506.json):
 BlockReordering, InstructionExpansion, InstructionSubstitution, NopInsertion,
 and RegisterSubstitution recorded 158 semantic passes with no failures.
 CodeVirtualization recorded 157 semantic passes and one known baseline
