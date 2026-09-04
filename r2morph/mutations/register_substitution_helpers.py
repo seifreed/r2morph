@@ -7,11 +7,12 @@ import re
 from typing import Any
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.core.constants import ARCH_BITS_32, ARCH_BITS_64, MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
 _MIN_INSTRUCTION_PART_COUNT = 2
+_X64_IN_PLACE_32_BIT_BASES = frozenset({"rax", "rcx", "rdx"})
 
 REGISTER_CLASSES: dict[str, dict[str, list[str]]] = {
     "x86": {
@@ -558,6 +559,40 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     )
     abi_bases = {_CANONICAL_REGISTER.get(register, register) for register in abi_regs}
     caller_saved = set(register_classes.get("caller_saved", []))
+    if arch == "x64":
+        unused_bases = sorted(register for register in caller_saved if register not in used_bases | abi_bases)
+        random.shuffle(unused_bases)
+        x64_used_registers = sorted(
+            register
+            for register in used_spellings
+            if REGISTER_SIZES.get(register) in {ARCH_BITS_32, ARCH_BITS_64}
+            and _CANONICAL_REGISTER.get(register) in caller_saved
+            and (
+                REGISTER_SIZES[register] == ARCH_BITS_64 or _CANONICAL_REGISTER[register] in _X64_IN_PLACE_32_BIT_BASES
+            )
+            and _CANONICAL_REGISTER.get(register) not in abi_bases
+            and not any(
+                spelling in used_spellings
+                for spelling in _REGISTER_FAMILY.get(_CANONICAL_REGISTER.get(register, register), set())
+                if spelling != register
+            )
+        )
+        candidates = []
+        for used_register in x64_used_registers:
+            register_size = REGISTER_SIZES[used_register]
+            eligible_bases = [
+                base for base in unused_bases if register_size == ARCH_BITS_64 or base in _X64_IN_PLACE_32_BIT_BASES
+            ]
+            if not eligible_bases:
+                continue
+            unused_base = eligible_bases[0]
+            unused_bases.remove(unused_base)
+            substitute = next(
+                spelling for spelling in _REGISTER_FAMILY[unused_base] if REGISTER_SIZES.get(spelling) == register_size
+            )
+            candidates.append((used_register, substitute))
+        return candidates
+
     unused = sorted(
         register
         for register in caller_saved

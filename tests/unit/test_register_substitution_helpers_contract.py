@@ -135,6 +135,12 @@ def test_find_substitution_candidates_excludes_alias_used_by_substitute() -> Non
     expect("r10" not in {substitute for _, substitute in candidates})
 
 
+def test_find_substitution_candidates_x64_preserves_32_bit_width() -> None:
+    instructions = [{"disasm": "mov ecx, 5"}, {"disasm": "add ecx, 2"}, {"disasm": "ret"}]
+    candidates = find_substitution_candidates(instructions, "x64")
+    expect(len(candidates) == 1 and candidates[0][0] == "ecx" and candidates[0][1] == "edx")
+
+
 def test_call_live_registers_empty_when_no_call_present() -> None:
     expect(abi_live_registers([{"disasm": "mov x0, x1"}, {"disasm": "ret"}]) == set())
 
