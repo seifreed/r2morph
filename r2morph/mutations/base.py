@@ -379,6 +379,7 @@ class MutationPass(ABC):
 
         seed = self.config.get("seed")
         if seed is None:
+            random.seed()
             self._active_seed = None
             return None
         random.seed(seed)

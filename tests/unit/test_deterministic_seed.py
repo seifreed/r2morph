@@ -80,6 +80,18 @@ class TestSeedControl:
 
         expect(not (result is not None))
 
+    def test_reset_random_without_seed_uses_system_entropy(self):
+        """An unseeded pass must not inherit a prior deterministic stream."""
+
+        class TestPass(MutationPass):
+            def apply(self, binary):
+                return {"mutations_applied": 0}
+
+        random.seed(12345)
+        TestPass("test", config={})._reset_random()
+
+        expect(random.getstate() is None)
+
     def test_reset_random_with_seed(self):
         """Test _reset_random with explicit seed."""
 
