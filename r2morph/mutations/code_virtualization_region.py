@@ -198,6 +198,10 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "cmpxchgmem": frozenset({_RAX_SLOT}),
         "cmpxchgmemidx": frozenset({_RAX_SLOT}),
         "div": frozenset({_RAX_SLOT, _RDX_SLOT}),
+        "divmem": frozenset({_RAX_SLOT, _RDX_SLOT}),
+        "divmemrip": frozenset({_RAX_SLOT, _RDX_SLOT}),
+        "divmemidx": frozenset({_RAX_SLOT, _RDX_SLOT}),
+        "divmemidxnb": frozenset({_RAX_SLOT, _RDX_SLOT}),
         "cqo": frozenset({_RDX_SLOT}),
         "syscall": frozenset({GP_REGISTERS.index("rax"), GP_REGISTERS.index("rcx"), GP_REGISTERS.index("r11")}),
     }

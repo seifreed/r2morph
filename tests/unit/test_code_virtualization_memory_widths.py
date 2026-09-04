@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization import _decode_run_item
-from r2morph.mutations.code_virtualization_engine import encode_bytecode
+from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, encode_bytecode
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress, VirtualizedMemOp
-from r2morph.mutations.code_virtualization_region import extract_region
+from r2morph.mutations.code_virtualization_region import _writes_register, extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
@@ -166,6 +166,13 @@ def test_memory_div_decodes_rip_relative_unsigned_qword() -> None:
 
 def test_memory_div_handler_key_includes_signedness_and_width() -> None:
     expect(_op_key(("divmem", "s", 3, 8, 32)) == "divmem_s_32")
+
+
+def test_memory_division_writes_implicit_registers_in_stack_model() -> None:
+    expected = frozenset({GP_REGISTERS.index("rax"), GP_REGISTERS.index("rdx")})
+    kinds = ("divmem", "divmemrip", "divmemidx", "divmemidxnb")
+
+    expect(all(_writes_register((kind,)) == expected for kind in kinds))
 
 
 def test_memory_not_decodes_direct_width() -> None:
