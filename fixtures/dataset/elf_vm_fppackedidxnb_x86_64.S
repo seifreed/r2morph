@@ -16,7 +16,7 @@ _start:
 .data
 .align 16
 table:
-    .long 1, 2, 3, 4
+    .long 1, 2, 3, 4, 5, 6
 output:
-    .long 0, 0, 0, 0
-.zero 8
+    .long 0, 0, 0, 0, 0, 0
+.zero 16
