@@ -34,6 +34,13 @@ GitHub Actions CI workflow `33847250344` passed the same commit across lint,
 typecheck, tests, package smoke, property/fuzz validation, and supported
 platform jobs.
 
+A fresh Linux Triton rerun at commit `d0e63026` used `triton-library 1.0.0rc4`
+inside the reproducible Python 3.13 virtualenv. It covered all 159 fixtures and
+all six passes, producing 954 completed Triton original/protected pair records
+with no unavailable or error results. The raw report is in
+[`docs/protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
+(`SHA-256 cbfd6a78857622a5704d25938c16c32ac50d7adc269d0d3f02b3ff60e20107c4`).
+
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
 at `2692223051130087bdae9f7b148d380856de91cf` passed `160/160` built samples
