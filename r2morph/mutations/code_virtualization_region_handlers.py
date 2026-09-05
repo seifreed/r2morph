@@ -164,6 +164,19 @@ def _sahf_handler_asm(rax_slot: int) -> str:
     )
 
 
+def _carry_control_handler_asm(mnemonic: str) -> str:
+    """Update only virtual CF for ``clc``, ``stc``, or ``cmc``."""
+    operation = {"clc": "and r10, -2", "stc": "or r10, 1", "cmc": "xor r10, 1"}.get(mnemonic)
+    if operation is None:
+        raise ValueError(f"unsupported carry-control mnemonic: {mnemonic}")
+    return (
+        f"  mov r10, qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        f"  {operation}\n"
+        f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r10\n"
+        "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _op_handler_asm(handler_key: str, key: str, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
     _, mnemonic, mode, width_text = handler_key.split("_")

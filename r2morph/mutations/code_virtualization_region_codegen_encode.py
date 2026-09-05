@@ -30,6 +30,9 @@ _FIXED_SIZE_GROUPS = {
         "rdtsc",
         "lahf",
         "sahf",
+        "clc",
+        "stc",
+        "cmc",
     ),
     2: (
         "vpush",

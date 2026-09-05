@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     IntegerHandlerConfig,
     _bswap_handler_asm,
     _bt_handler_asm,
+    _carry_control_handler_asm,
     _compare_handler_asm,
     _cqo_handler_asm,
     _div_handler_asm,
@@ -145,6 +146,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             self._microop_memory,
             self._integer_arithmetic,
             self._integer_misc,
+            self._flag_control,
             self._tls_memory,
             self._atomic_memory,
             self._memory_immediate,
@@ -247,6 +249,13 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _rdtsc_handler_asm(self.context.slot)
         return body
 
+    def _flag_control(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
+        if key in ("lahf", "sahf"):
+            return (_lahf_handler_asm if key == "lahf" else _sahf_handler_asm)(self.context.slot[0])
+        if key in ("clc", "stc", "cmc"):
+            return _carry_control_handler_asm(key)
+        return None
+
     def _branches(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
         body = None
@@ -279,10 +288,6 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _cmov_handler_asm(condition, int(width), self.context.key)
         elif key == "nop":
             body = "  add rsi, 1\n  jmp vm_dispatch\n"
-        elif key == "lahf":
-            body = _lahf_handler_asm(self.context.slot[0])
-        elif key == "sahf":
-            body = _sahf_handler_asm(self.context.slot[0])
         elif key.startswith("vret_"):
             parts = key.split("_")
             ret_addr = int(parts[1])

@@ -697,6 +697,9 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             "rdtsc",
             "lahf",
             "sahf",
+            "clc",
+            "stc",
+            "cmc",
         ):
             self._opcode(item)
         else:
