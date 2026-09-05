@@ -12,4 +12,4 @@ def test_dataflow_block_sets_track_use_and_def() -> None:
     ]
 
     expect(compute_block_def(instructions) == {("eax", 32), ("ecx", 32)})
-    expect(compute_block_use(instructions) == {("ebx", 32)})
+    expect(compute_block_use(instructions) == {("ebx", 32), ("memory", 0)})

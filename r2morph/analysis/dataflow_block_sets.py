@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
+from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
 
@@ -44,6 +45,9 @@ def _extract_used_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     if not disasm:
         return used
 
+    if memory_accesses(disasm)[0]:
+        used.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+
     operand_parts = disasm.split(None, 1)
     if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
         return used
@@ -71,7 +75,13 @@ def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     if not disasm:
         return defined
 
-    if mnemonic in ("jmp", "ret", "call", "nop"):
+    if mnemonic in ("jmp", "ret", "nop"):
+        return defined
+
+    if memory_accesses(disasm)[1]:
+        defined.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+
+    if mnemonic == "call":
         return defined
 
     operand_parts = disasm.split(None, 1)
@@ -82,9 +92,7 @@ def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     if "," in operands:
         dest = operands.split(",")[0].strip()
 
-        if "[" in dest:
-            return defined
-
-        defined.update(extract_registers_from_operand(dest))
+        if "[" not in dest:
+            defined.update(extract_registers_from_operand(dest))
 
     return defined

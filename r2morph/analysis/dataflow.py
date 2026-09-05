@@ -28,6 +28,7 @@ from r2morph.analysis.dataflow_models import (
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
 from r2morph.analysis.dataflow_queries import is_safe_to_mutate as _is_safe_to_mutate
+from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
 
@@ -117,6 +118,9 @@ class DataFlowAnalyzer:
         if not disasm:
             return used
 
+        if memory_accesses(disasm)[0]:
+            used.add(Register(MEMORY_RESOURCE_NAME))
+
         operand_parts = disasm.split(None, 1)
         if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
             return used
@@ -144,7 +148,13 @@ class DataFlowAnalyzer:
         if not disasm:
             return defined
 
-        if mnemonic in ("jmp", "ret", "call", "nop"):
+        if mnemonic in ("jmp", "ret", "nop"):
+            return defined
+
+        if memory_accesses(disasm)[1]:
+            defined.add(Register(MEMORY_RESOURCE_NAME))
+
+        if mnemonic == "call":
             return defined
 
         operand_parts = disasm.split(None, 1)
@@ -155,11 +165,9 @@ class DataFlowAnalyzer:
         if "," in operands:
             dest = operands.split(",")[0].strip()
 
-            if "[" in dest:
-                return defined
-
-            for reg in self._extract_registers_from_operand(dest):
-                defined.add(reg)
+            if "[" not in dest:
+                for reg in self._extract_registers_from_operand(dest):
+                    defined.add(reg)
 
         return defined
 

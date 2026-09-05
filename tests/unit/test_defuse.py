@@ -453,6 +453,20 @@ class TestBuildSSAForm:
 
         expect("ymm15" in defined)
 
+    def test_dataflow_memory_load_reads_memory_resource(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        used = analyzer._dataflow._extract_used_registers({"disasm": "mov eax, [rbp+8]"})
+
+        expect(any(register.name == "memory" for register in used))
+
+    def test_dataflow_memory_store_defines_memory_resource(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        defined = analyzer._dataflow._extract_defined_registers({"type": "mov", "disasm": "mov [rbp+8], eax"})
+
+        expect(any(register.name == "memory" for register in defined))
+
     def test_defuse_extracts_vector_register_sizes(self):
         analyzer = DefUseAnalyzer(create_simple_cfg())
 
