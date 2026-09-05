@@ -39,16 +39,21 @@ from workflow `33907747531` (artifact SHA-256
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
-The current local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
+The preceding local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
 and all 159 transformations, with 171 functions virtualized, zero unsupported
 functions, and zero transformation errors. Its raw report is
 [`protection-adversarial-corpus-2026-09-05-bb3eb3bf.json`](protection-adversarial-corpus-2026-09-05-bb3eb3bf.json)
 (`SHA-256 6a6c4b447d0a1abf6fb56b2f24c4be724288bc86d28144793ef8a645a188b94f`),
 with the compact summary in
 [`protection-adversarial-corpus-2026-09-05-bb3eb3bf-summary.json`](protection-adversarial-corpus-2026-09-05-bb3eb3bf-summary.json).
-The current shell run recorded 939 completed tool runs, 15 tool errors, and
-318 explicit IDA/Ghidra-unavailable rows; the licensed IDA MCP and local Ghidra
-campaigns are recorded separately below.
+The current rerun at `7c3d4f32` repeats the complete CodeVirtualization corpus
+after the terminal-syscall and floating-point tail fixes: 159/159 samples
+applied, 171 functions virtualized, zero unsupported functions, and zero
+transformation errors. It recorded 939 completed analyzer runs, 15 Unicorn
+errors, and 318 explicit IDA/Ghidra-unavailable rows. The raw report is
+[`protection-adversarial-corpus-2026-09-05-7c3d4f32.json`](protection-adversarial-corpus-2026-09-05-7c3d4f32.json)
+(`SHA-256 38143a56c34683d95fed3cbd0fbea0553d710228dac80b6ab857638466908180`).
+The licensed IDA MCP and local Ghidra campaigns are recorded separately below.
 The latest local Ghidra headless campaign for the 159-fixture corpus at
 `88258a05` completed 318 analyses with zero errors or timeouts. Its raw report is
 [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json),
