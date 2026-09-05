@@ -360,6 +360,20 @@ def _incdec_handler_asm(handler_key: str, key: str, flag_variant: int = 0, arith
     return body + "  add rsi, 2\n  jmp vm_dispatch\n"
 
 
+def _neg_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``neg reg`` with native result flags."""
+    width = int(handler_key.split("_")[2])
+    sub = {8: "r10b", 16: "r10w", 32: "r10d", 64: "r10"}[width]
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov r10, qword ptr [rsp+r8*8]\n"
+        f"  neg {sub}\n"
+        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        "  mov qword ptr [rsp+r8*8], r10\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _compare_handler_asm(config: IntegerHandlerConfig) -> str:
     """Assembly body for a cmp/test handler (synthesizes flags, stores no result).
 

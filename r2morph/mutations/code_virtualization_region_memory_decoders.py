@@ -891,6 +891,22 @@ def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_neg(text: str) -> tuple[Any, ...] | None:
+    """Decode ``neg reg`` for a GP register of any supported width."""
+    parts = text.split()
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "neg" or "[" in parts[1]:
+        return None
+    operand = parts[1].lower()
+    register = _register_operand(operand)
+    if register is not None:
+        return ("neg", register[0], register[1])
+    if operand in REGISTER8_INDEX:
+        return ("neg", REGISTER8_INDEX[operand], _BYTE_WIDTH_BITS)
+    if operand in REGISTER16_INDEX:
+        return ("neg", REGISTER16_INDEX[operand], _WORD_WIDTH_BITS)
+    return None
+
+
 def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode ``<op> [base+disp], reg`` / ``<op> [rip+disp], reg`` (memory is the
     read-modify-write destination, the register is the source).

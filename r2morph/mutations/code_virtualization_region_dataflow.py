@@ -30,6 +30,7 @@ _DIRECT_WRITE_KINDS = frozenset(
         "loadidxnb",
         "not",
         "bswap",
+        "neg",
     }
 )
 _THIRD_FIELD_WRITE_KINDS = frozenset(

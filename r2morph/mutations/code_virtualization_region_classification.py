@@ -109,6 +109,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_memory_mov_indexed,
     _decode_movx,
     _decode_mxcsr_memory,
+    _decode_neg,
     _decode_not,
     _decode_op_mem,
     _decode_op_mem_indexed,
@@ -435,6 +436,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             lambda: _decode_xchg_memory(text),
             lambda: _decode_bswap(text),
             lambda: _decode_cqo(text),
+            lambda: _decode_neg(text),
         )
     )
     opcode_lower = text.lower()

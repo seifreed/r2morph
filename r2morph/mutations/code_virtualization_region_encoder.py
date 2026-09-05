@@ -595,7 +595,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         kind = item[0]
         if kind in ("cmp", "test"):
             self._compare(item)
-        elif kind in ("incdec", "not", "bswap"):
+        elif kind in ("incdec", "neg", "not", "bswap"):
             reg = item[2] if kind == "incdec" else item[1]
             self._slot(item, reg)
         elif kind == "div":

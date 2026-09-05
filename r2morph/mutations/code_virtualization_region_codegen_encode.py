@@ -49,6 +49,7 @@ _FIXED_SIZE_GROUPS = {
         "movtorsp",
         "leave",
         "incdec",
+        "neg",
         "setcc",
         "icall",
         "ijmp",

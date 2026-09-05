@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _leave_handler_asm,
     _mov_from_rsp_handler_asm,
     _mov_to_rsp_handler_asm,
+    _neg_handler_asm,
     _not_handler_asm,
     _op_handler_asm,
     _op_mba_handler_asm,
@@ -409,6 +410,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _imul_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("incdec_"):
             body = _incdec_handler_asm(key, self.context.key, flag, arithmetic)
+        elif key.startswith("neg_"):
+            body = _neg_handler_asm(key, self.context.key)
         return body
 
     def _integer_misc(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
