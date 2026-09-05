@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 
@@ -85,46 +86,6 @@ _SYSV_VECTOR_DEFINED_REGISTERS = frozenset(
     register for index in range(16) for register in (f"xmm{index}", f"ymm{index}")
 )
 _SSA_VECTOR_REGISTER_NAMES = frozenset(register for index in range(16) for register in (f"xmm{index}", f"ymm{index}"))
-_SSA_FLAGS_REGISTER_NAME = "rflags"
-_SSA_FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "lahf", "pushf", "pushfq"})
-_SSA_FLAG_WRITING_MNEMONICS = frozenset(
-    {
-        "adc",
-        "add",
-        "and",
-        "bt",
-        "bts",
-        "btr",
-        "btc",
-        "cmp",
-        "cmpxchg",
-        "dec",
-        "idiv",
-        "imul",
-        "inc",
-        "mul",
-        "neg",
-        "or",
-        "popf",
-        "popfq",
-        "rcl",
-        "rcr",
-        "rol",
-        "ror",
-        "sahf",
-        "sbb",
-        "sar",
-        "shl",
-        "shr",
-        "stc",
-        "clc",
-        "cmc",
-        "sub",
-        "test",
-        "xadd",
-        "xor",
-    }
-)
 _SSA_READ_BOTH_OPERANDS_MNEMONICS = _RMW_MNEMONICS | {"cmp", "test"}
 
 
@@ -472,7 +433,7 @@ class SSAConverter:
         mnemonic = opcode.lower()
         if mnemonic == "call":
             return set(_SYSV_CALL_DEFINED_REGISTERS | _SYSV_VECTOR_DEFINED_REGISTERS) | {
-                _SSA_FLAGS_REGISTER_NAME,
+                FLAGS_RESOURCE_NAME,
                 MEMORY_RESOURCE_NAME,
             }
         destination = operands.split(",", 1)[0].strip().lower()
@@ -486,8 +447,8 @@ class SSAConverter:
             defined.add(destination)
         if mnemonic in {"cmp", "test"}:
             defined.discard(destination)
-        if mnemonic in _SSA_FLAG_WRITING_MNEMONICS:
-            defined.add(_SSA_FLAGS_REGISTER_NAME)
+        if flag_accesses(disasm)[1]:
+            defined.add(FLAGS_RESOURCE_NAME)
         if memory_accesses(disasm)[1]:
             defined.add(MEMORY_RESOURCE_NAME)
         return defined
@@ -510,10 +471,8 @@ class SSAConverter:
         if memory_accesses(disasm)[0]:
             used.add(MEMORY_RESOURCE_NAME)
         if not operands:
-            if mnemonic in _SSA_FLAG_READING_MNEMONICS or (
-                mnemonic.startswith(("j", "cmov", "set")) and mnemonic not in {"jmp", "jrcxz", "jecxz", "jcxz"}
-            ):
-                used.add(_SSA_FLAGS_REGISTER_NAME)
+            if flag_accesses(disasm)[0]:
+                used.add(FLAGS_RESOURCE_NAME)
             return used
 
         source_operands = operands[1:] if len(operands) >= _MIN_OPERAND_COUNT else []
@@ -525,10 +484,8 @@ class SSAConverter:
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operand.lower())
                 if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
-        if mnemonic in _SSA_FLAG_READING_MNEMONICS or (
-            mnemonic.startswith(("j", "cmov", "set")) and mnemonic not in {"jmp", "jrcxz", "jecxz", "jcxz"}
-        ):
-            used.add(_SSA_FLAGS_REGISTER_NAME)
+        if flag_accesses(disasm)[0]:
+            used.add(FLAGS_RESOURCE_NAME)
         return used
 
     def _get_new_version(self, reg_name: str) -> int:

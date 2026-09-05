@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
+from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
@@ -47,6 +48,8 @@ def _extract_used_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
 
     if memory_accesses(disasm)[0]:
         used.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+    if flag_accesses(disasm)[0]:
+        used.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
     operand_parts = disasm.split(None, 1)
     if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
@@ -80,6 +83,8 @@ def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
 
     if memory_accesses(disasm)[1]:
         defined.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+    if flag_accesses(disasm)[1]:
+        defined.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
     if mnemonic == "call":
         return defined

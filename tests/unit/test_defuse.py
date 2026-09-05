@@ -467,6 +467,20 @@ class TestBuildSSAForm:
 
         expect(any(register.name == "memory" for register in defined))
 
+    def test_dataflow_conditional_branch_reads_status_flags(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        used = analyzer._dataflow._extract_used_registers({"type": "cjmp", "disasm": "jne 0x2000"})
+
+        expect(any(register.name == "rflags" for register in used))
+
+    def test_dataflow_arithmetic_defines_status_flags(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        defined = analyzer._dataflow._extract_defined_registers({"type": "add", "disasm": "add eax, ebx"})
+
+        expect(any(register.name == "rflags" for register in defined))
+
     def test_defuse_extracts_vector_register_sizes(self):
         analyzer = DefUseAnalyzer(create_simple_cfg())
 

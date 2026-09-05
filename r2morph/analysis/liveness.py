@@ -14,6 +14,7 @@ from typing import Any, ClassVar
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dataflow_models import Register
+from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
 from r2morph.analysis.liveness_models import (
     _X86_REGISTER_BIT_SIZES,
     InstructionLiveness,
@@ -53,46 +54,6 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
     }
 )
 _READ_BOTH_OPERANDS_MNEMONICS = _READ_MODIFY_WRITE_MNEMONICS | {"cmp", "test"}
-_FLAGS_REGISTER_NAME = "rflags"
-_FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "lahf", "pushf", "pushfq"})
-_FLAG_WRITING_MNEMONICS = frozenset(
-    {
-        "adc",
-        "add",
-        "and",
-        "bt",
-        "bts",
-        "btr",
-        "btc",
-        "cmp",
-        "cmpxchg",
-        "dec",
-        "idiv",
-        "imul",
-        "inc",
-        "mul",
-        "neg",
-        "or",
-        "popf",
-        "popfq",
-        "rcl",
-        "rcr",
-        "rol",
-        "ror",
-        "sahf",
-        "sbb",
-        "sar",
-        "shl",
-        "shr",
-        "stc",
-        "clc",
-        "cmc",
-        "sub",
-        "test",
-        "xadd",
-        "xor",
-    }
-)
 logger = logging.getLogger(__name__)
 
 
@@ -349,7 +310,6 @@ class LivenessAnalysis:
             return used
 
         mnemonic = insn.get("type", "").lower()
-        opcode = disasm.split(None, 1)[0]
         if mnemonic in ("jmp", "nop"):
             return used
 
@@ -372,8 +332,8 @@ class LivenessAnalysis:
             if memory_accesses(disasm)[0]:
                 used.add(Register(MEMORY_RESOURCE_NAME))
             return used
-        if self._reads_flags(opcode):
-            used.add(Register(_FLAGS_REGISTER_NAME, 64))
+        if flag_accesses(disasm)[0]:
+            used.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
         if memory_accesses(disasm)[0]:
             used.add(Register(MEMORY_RESOURCE_NAME))
         return used
@@ -395,8 +355,8 @@ class LivenessAnalysis:
         if "(" in disasm and ")" in disasm:
             used.update(self._parse_registers_from_string(disasm))
 
-        if self._reads_flags(opcode):
-            used.add(Register(_FLAGS_REGISTER_NAME, 64))
+        if flag_accesses(disasm)[0]:
+            used.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
         return used
 
@@ -417,7 +377,7 @@ class LivenessAnalysis:
         if mnemonic == "call":
             for reg_name, reg_size in self._CALL_DEFINED_REGS.get(self._abi, self._CALL_DEFINED_REGS["sysv_amd64"]):
                 defined.add(Register(reg_name, reg_size))
-            defined.add(Register(_FLAGS_REGISTER_NAME, 64))
+            defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
             defined.add(Register(MEMORY_RESOURCE_NAME))
             return defined
 
@@ -430,24 +390,12 @@ class LivenessAnalysis:
                 for reg in self._parse_registers_from_string(dest):
                     defined.add(reg)
 
-        if self._writes_flags(opcode):
-            defined.add(Register(_FLAGS_REGISTER_NAME, 64))
+        if flag_accesses(disasm)[1]:
+            defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
         if memory_accesses(disasm)[1]:
             defined.add(Register(MEMORY_RESOURCE_NAME))
 
         return defined
-
-    @staticmethod
-    def _reads_flags(opcode: str) -> bool:
-        """Return whether an opcode consumes status flags."""
-        return opcode in _FLAG_READING_MNEMONICS or (
-            opcode.startswith(("j", "cmov", "set")) and opcode not in {"jmp", "jrcxz", "jecxz", "jcxz"}
-        )
-
-    @staticmethod
-    def _writes_flags(opcode: str) -> bool:
-        """Return whether an opcode produces or clobbers status flags."""
-        return opcode in _FLAG_WRITING_MNEMONICS
 
     def _parse_registers_from_string(self, s: str) -> set[Register]:
         """Parse register names from a string."""

@@ -28,6 +28,7 @@ from r2morph.analysis.dataflow_models import (
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
 from r2morph.analysis.dataflow_queries import is_safe_to_mutate as _is_safe_to_mutate
+from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
@@ -120,6 +121,8 @@ class DataFlowAnalyzer:
 
         if memory_accesses(disasm)[0]:
             used.add(Register(MEMORY_RESOURCE_NAME))
+        if flag_accesses(disasm)[0]:
+            used.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
         operand_parts = disasm.split(None, 1)
         if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
@@ -153,6 +156,8 @@ class DataFlowAnalyzer:
 
         if memory_accesses(disasm)[1]:
             defined.add(Register(MEMORY_RESOURCE_NAME))
+        if flag_accesses(disasm)[1]:
+            defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
         if mnemonic == "call":
             return defined
