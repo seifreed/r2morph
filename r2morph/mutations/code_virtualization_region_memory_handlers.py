@@ -19,6 +19,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _QWORD_WIDTH_BITS,
     _WORD_WIDTH_BITS,
+    _restore_virtual_flags_asm,
     _unmask_dword,
     _unmask_qword,
 )
@@ -94,7 +95,7 @@ def _partial_result_store_asm(width: int) -> str:
     if width == _QWORD_WIDTH_BITS:
         return "  mov qword ptr [rsp+r8*8], r10\n"
     if width == _DWORD_WIDTH_BITS:
-        return "  mov qword ptr [rsp+r8*8], r10d\n"
+        return "  mov qword ptr [rsp+r8*8], r10\n"
     mask = 0xFF if width == _BYTE_WIDTH_BITS else 0xFFFF
     return (
         f"  and r10d, {mask}\n  mov rax, qword ptr [rsp+r8*8]\n"
@@ -540,6 +541,8 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
             config.addr_variant,
         )
     body += "  mov r12, r10\n"
+    if mnemonic in ("adc", "sbb"):
+        return body + _op_memdst_carry_tail(mnemonic, width, advance)
     if width == _QWORD_WIDTH_BITS:
         body += "  mov rbx, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
     elif width == _DWORD_WIDTH_BITS:
@@ -705,6 +708,8 @@ def _op_mem_synth_tail(
     The register operand is a, the loaded memory operand is b; nothing here spells
     out a literal native op or a pushfq.
     """
+    if mnemonic in ("adc", "sbb"):
+        return _op_mem_carry_tail(mnemonic, width, advance)
     if width == _QWORD_WIDTH_BITS:
         body = "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
     elif width == _DWORD_WIDTH_BITS:
@@ -730,6 +735,46 @@ def _op_mem_synth_tail(
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += _partial_result_store_asm(width)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_mem_carry_tail(mnemonic: str, width: int, advance: int) -> str:
+    """Run memory-source ``adc``/``sbb`` against the virtual incoming CF."""
+    if width == _QWORD_WIDTH_BITS:
+        body = "  mov r11, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
+        operation = f"  {mnemonic} r11, rax\n"
+    elif width == _DWORD_WIDTH_BITS:
+        body = "  mov r11d, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+        operation = f"  {mnemonic} r11d, eax\n"
+    else:
+        load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+        register = "r11b" if width == _BYTE_WIDTH_BITS else "r11w"
+        source = "al" if width == _BYTE_WIDTH_BITS else "ax"
+        body = f"  movzx r11d, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
+        operation = f"  {mnemonic} {register}, {source}\n"
+    body += _restore_virtual_flags_asm() + operation
+    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    body += "  mov r10, r11\n" if width == _QWORD_WIDTH_BITS else "  mov r10d, r11d\n"
+    return body + _partial_result_store_asm(width) + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_memdst_carry_tail(mnemonic: str, width: int, advance: int) -> str:
+    """Run memory-destination ``adc``/``sbb`` against the virtual incoming CF."""
+    if width == _QWORD_WIDTH_BITS:
+        body = "  mov r11, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
+        operation = f"  {mnemonic} r11, rax\n"
+    elif width == _DWORD_WIDTH_BITS:
+        body = "  mov r11d, dword ptr [r12]\n  mov eax, dword ptr [rsp+r8*8]\n"
+        operation = f"  {mnemonic} r11d, eax\n"
+    else:
+        load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+        register = "r11b" if width == _BYTE_WIDTH_BITS else "r11w"
+        source = "al" if width == _BYTE_WIDTH_BITS else "ax"
+        body = f"  movzx r11d, {load} ptr [r12]\n  movzx eax, {load} ptr [rsp+r8*8]\n"
+        operation = f"  {mnemonic} {register}, {source}\n"
+    body += _restore_virtual_flags_asm() + operation
+    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    body += "  mov r10, r11\n" if width == _QWORD_WIDTH_BITS else "  mov r10d, r11d\n"
+    return body + _memory_result_store_asm(width, "[r12]") + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _op_mem_indexed_handler_asm(config: MemoryOperationConfig) -> str:

@@ -58,11 +58,60 @@ done:
     syscall
 """
 
+_MEMORY_SOURCE = r"""
+.intel_syntax noprefix
+.global _start
+.section .data
+.align 4
+direct_value:
+    .long 1
+indexed_value:
+    .long 1
+.text
+_start:
+    xor eax, eax
+    clc
+    adc eax, dword ptr [rip + direct_value]
+    jc bad
+    cmp eax, 1
+    jne bad
+    xor ecx, ecx
+    mov eax, 2
+    stc
+    sbb eax, dword ptr [rcx*4 + indexed_value]
+    jc bad
+    test eax, eax
+    jne bad
+    mov edi, 42
+    jmp done
+bad:
+    mov edi, 97
+done:
+    mov eax, 60
+    syscall
+"""
+
 
 def test_virtualized_adc_sbb_preserve_incoming_and_result_carry(tmp_path: Path) -> None:
     original = _compile_elf_x86_64_binary(tmp_path, "adc_sbb", _SOURCE)
 
     mutated = tmp_path / "adc_sbb_mutated"
+    mutated.write_bytes(original.read_bytes())
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260905}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(original) == emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_virtualized_memory_adc_sbb_preserve_virtual_carry(tmp_path: Path) -> None:
+    original = _compile_elf_x86_64_binary(tmp_path, "adc_sbb_memory", _MEMORY_SOURCE)
+    mutated = tmp_path / "adc_sbb_memory_mutated"
     mutated.write_bytes(original.read_bytes())
     binary = Binary(mutated, writable=True)
     binary.open()

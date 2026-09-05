@@ -60,6 +60,8 @@ def _lower_memory(item: list[Any]) -> list[list[Any]]:
 
 def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
+    if item[1] in ("adc", "sbb"):
+        return [item]
     if kind == "opmem":
         _, mnemonic, register, base, displacement, width = item
         return [

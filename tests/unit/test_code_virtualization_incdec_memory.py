@@ -39,3 +39,11 @@ def test_indexed_memory_item_sizes_match_address_handlers() -> None:
         _item_size(("incdecmemidx", "inc", 0, 1, 2, 8, 32)) == _INDEXED_MEMORY_ITEM_SIZE
         and _item_size(("incdecmemidxnb", "dec", 1, 3, 16, 64)) == _INDEXED_NO_BASE_MEMORY_ITEM_SIZE
     )
+
+
+def test_adc_memory_classification_preserves_direct_shape() -> None:
+    expect(_classify_binary("adc", "adc eax, dword ptr [rbx]", 0x1000, 3) == ["opmem", "adc", 0, 3, 0, 32])
+
+
+def test_sbb_memory_classification_preserves_indexed_shape() -> None:
+    expect(_classify_binary("sbb", "sbb eax, dword ptr [rcx*4+8]", 0x1000, 6) == ["opmemidxnb", "sbb", 0, 1, 2, 8, 32])
