@@ -47,3 +47,7 @@ def test_adc_memory_classification_preserves_direct_shape() -> None:
 
 def test_sbb_memory_classification_preserves_indexed_shape() -> None:
     expect(_classify_binary("sbb", "sbb eax, dword ptr [rcx*4+8]", 0x1000, 6) == ["opmemidxnb", "sbb", 0, 1, 2, 8, 32])
+
+
+def test_adc_memory_destination_classification_preserves_rip_shape() -> None:
+    expect(_classify_binary("adc", "adc dword ptr [rip+0x20], eax", 0x1000, 6) == ["opmemdstrip", "adc", 0, 0x1026, 32])
