@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "139 fixtures, no unclassified entries",
+      "detail": "150 fixtures, no unclassified entries",
       "name": "virtualization_fixture_coverage",
       "status": "passed"
     },
@@ -11,28 +11,38 @@
       "status": "passed"
     },
     {
-      "detail": "5 completed, 4 unavailable",
+      "detail": "7 completed, 1 unavailable",
       "name": "adversarial_benchmark_evidence",
       "status": "passed"
     },
     {
-      "detail": "148 samples, 4424 completed tool runs, 16 errors",
+      "detail": "159 samples, 1098 completed tool runs, 15 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "148 samples, 296 completed analyses",
+      "detail": "159 samples, 318 completed analyses",
       "name": "ghidra_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "139/139 valid ELF64 headers",
+      "detail": "159 samples, 318 completed analyses",
+      "name": "ida_corpus_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "150/150 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"
     },
     {
-      "detail": "64 cases, 0 failures expected",
+      "detail": "80000 target runs, 0 failures",
       "name": "parser_rewriter_fuzz_campaign",
+      "status": "passed"
+    },
+    {
+      "detail": "64 cases, 0 failures expected",
+      "name": "independent_fuzz_recheck",
       "status": "passed"
     }
   ],

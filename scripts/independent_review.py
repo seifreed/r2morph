@@ -26,6 +26,9 @@ _EXPECTED_BENCHMARK_TOOLS = {
     "ghidra",
     "custom",
 }
+_CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
+_CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json"
+_CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-05-e04c1a9c.json"
 
 
 def _check(name: str, passed: bool, detail: str) -> dict[str, object]:
@@ -132,7 +135,7 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
 
 
 def _review_ghidra_corpus(root: Path) -> dict[str, object]:
-    path = root / "docs" / "protection-ghidra-corpus.json"
+    path = root / "docs" / _CURRENT_GHIDRA_REPORT
     document = json.loads(path.read_text(encoding="utf-8"))
     samples = document.get("samples", [])
     expected_count = document.get("sample_count")
@@ -160,6 +163,41 @@ def _review_ghidra_corpus(root: Path) -> dict[str, object]:
     return _check("ghidra_corpus_evidence", passed, f"{expected_count} samples, {completed} completed analyses")
 
 
+def _review_ida_corpus(root: Path) -> dict[str, object]:
+    """Validate the current full-corpus IDA MCP measurement."""
+    path = root / "docs" / _CURRENT_IDA_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    sample_count = document.get("sample_count")
+    runs = document.get("analysis_runs", {})
+    passed = (
+        document.get("status") == "completed"
+        and document.get("tool") == "ida-pro-mcp"
+        and isinstance(sample_count, int)
+        and runs == {"original": sample_count, "protected": sample_count, "total": sample_count * 2}
+        and document.get("error_analysis_runs") == 0
+    )
+    return _check("ida_corpus_evidence", passed, f"{sample_count} samples, {runs.get('total', 0)} completed analyses")
+
+
+def _review_fuzz_artifact(root: Path) -> dict[str, object]:
+    """Validate the bounded campaign recorded for all four fuzz targets."""
+    path = root / "docs" / _CURRENT_FUZZ_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    cases = document.get("cases")
+    target_runs = document.get("target_runs")
+    expected_targets = {"binary_parsers", "vm_dispatcher", "relocations", "binary_rewriter"}
+    passed = (
+        isinstance(cases, int)
+        and cases > 0
+        and document.get("failure_count") == 0
+        and isinstance(target_runs, dict)
+        and set(target_runs) == expected_targets
+        and all(target_runs[target] == cases for target in expected_targets)
+    )
+    total_runs = sum(target_runs.values()) if isinstance(target_runs, dict) else 0
+    return _check("parser_rewriter_fuzz_campaign", passed, f"{total_runs} target runs, 0 failures")
+
+
 def _review_fixtures(root: Path) -> dict[str, object]:
     dataset = root / "fixtures" / "dataset"
     candidates = sorted(dataset.glob("elf_vm_*_x86_64"))
@@ -183,10 +221,10 @@ def review(root: Path) -> dict[str, Any]:
         _review_benchmark(root),
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
+        _review_ida_corpus(root),
         _review_fixtures(root),
-        _check(
-            "parser_rewriter_fuzz_campaign", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"
-        ),
+        _review_fuzz_artifact(root),
+        _check("independent_fuzz_recheck", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"),
     ]
     return {
         "schema_version": 1,
