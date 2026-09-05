@@ -1,0 +1,1936 @@
+{
+  "schema_version": 1,
+  "measurement": "ida-mcp-corpus",
+  "commit": "7c3d4f32",
+  "dataset": "fixtures/dataset",
+  "pass_name": "CodeVirtualization",
+  "tool": "ida-pro-mcp",
+  "sample_count": 159,
+  "analysis_runs": {
+    "original": 159,
+    "protected": 159,
+    "total": 318
+  },
+  "function_counts": {
+    "original_total": 210,
+    "protected_total": 380,
+    "original_zero_function_rows": 1,
+    "protected_zero_function_rows": 0
+  },
+  "error_analysis_runs": 0,
+  "status": "completed",
+  "samples": [
+    {
+      "sample": "elf_blockswap_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "618a267134029c141bd916248100350c9e2402b655c1448451c16fbc7e64c52e"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "75f35f4675ca53dad9ab11f250d83b64cdd6263fbfd9a78530b72cf1fede1a57"
+      }
+    },
+    {
+      "sample": "elf_cff_flagdead_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "25c25a65e9ae2581c3ebc9091c969cf7e1d4232ce325c0d3b343303e22fb13e0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "6cb4b35c4cd3fa9bf3cf18549e67f189ba7923903e6b3eaa84504f08ac8acffd"
+      }
+    },
+    {
+      "sample": "elf_cff_flaglive_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "bf087f7df00fbe6b25b5e66d8fe5803a77d14f7117f6b9e9151b691692f102b2"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "68eedb516e29e5f6422628db92c8aed65a9aee91351d808e7faf14bbf295c25b"
+      }
+    },
+    {
+      "sample": "elf_flag_live_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "c687592c788ca5e1a2875fdfaf0e705579bff1a20dc54d3e6df88b4fcc3159e1"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "575d2b7cb75221f671866c3917c8a29984b5261f8fcb586a5a42c8c4e34a9738"
+      }
+    },
+    {
+      "sample": "elf_jumpchain_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "dfa20b39d8b66ff3fa4e45417429b0158b827512b19525641278be6a4b895390"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "11b941f393e98489399474776831d0f9a5985bf6948af0a62460784be1db5bd4"
+      }
+    },
+    {
+      "sample": "elf_multiret_jccdiamond_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "01f9d0abab05f0d01ab8f8fc267a884d3fc4b53f17046ecfd9644aa9b4542134"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "dd64f229cbecdbd915428136698bc56cd4fd2c6bfe6a7db2ed17a0aa19099981"
+      }
+    },
+    {
+      "sample": "elf_switch_abs_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "239196a8c3dc3cf1f83c709a15d30a4d4bc9beef2f47decad058add945a9fc39"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "d1e0757f29529d23a4d80afadb1c2f0c9a5c34aa3a628fa5c601b33ee7e5cdda"
+      }
+    },
+    {
+      "sample": "elf_switch_pie_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "85d264441a2cd67ba9ecbb6a6a11280e74116f9b98e26dee4e7b410dd0de08a7"
+      }
+    },
+    {
+      "sample": "elf_vm_addflagdead_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b958fc657c208fdd4598cf203819f8dd210599e71e51ab0f71b1703995cd764f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "30480decce86be27f4f9677e82e447a09ae92de756686ba73b0c9b875c12bea1"
+      }
+    },
+    {
+      "sample": "elf_vm_addflaglive_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7527936c4f7860e3e7b94182ae7da7779260e527b556ecbccd158f7c7d8dc552"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "4c73af20adba8ddf0655b9b48a9ea440c167238e089ce1c0e741d4bf1dc0be59"
+      }
+    },
+    {
+      "sample": "elf_vm_arith32_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "972bb76ff2aa31043b43c00ca9ad1128f2fb6d41dce458ce8f1a84466320c9e1"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "2ade1da44d0ee8ee67c2ce923df7a8447f1a45f1d6b8c7b4571d13848bce53bb"
+      }
+    },
+    {
+      "sample": "elf_vm_arith_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "306ce721836eed868e6de33a070c09dd57a00f6e42244eb8418dd2aa7fdbaaab"
+      }
+    },
+    {
+      "sample": "elf_vm_bigimm_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "8101514a1dbc5089ffd93e420a57294087b1f8142bdf87b83d73394a27f1abda"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "c8115311c8e8c27315ed5bb767d575e3513baf8e2604553b3b32e52331c2f44a"
+      }
+    },
+    {
+      "sample": "elf_vm_boolflagdead_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b64eff55c3fca4687be04486231196a78744964f6e141b0f31c00d4dc2e88c81"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ebaf24774822372bbaa32fb898098895175fd1e6a399eee8ade18fa2e509d094"
+      }
+    },
+    {
+      "sample": "elf_vm_boolflaglive_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b13e664e5bb764f325ec883b8c058df803d4c55b4d8f234a5816c4682c0e0b8d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "08425b052c39963a46ed1998e912a3ecf4d0bbebbf633e11aa89a1e0aa1ff950"
+      }
+    },
+    {
+      "sample": "elf_vm_bswap_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "9ee80ad725e8b006b4f39f45d474c87da97c76964577287f4cf48bc2c2e35574"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ce22d65944619d134052e8e0547675808d204717c32eabaeb51ef8d7eeff5e09"
+      }
+    },
+    {
+      "sample": "elf_vm_bt_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "66f2fced4593dde02b92c8dd8a09d798deed2656fa7e559978f1ebb9fbb26bd0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "4428e9bf823e4add4250142149c8226ee37a5826ec57b971b0aa989a5b10e363"
+      }
+    },
+    {
+      "sample": "elf_vm_call_callee_saved_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "ed5c01f1e70dbfe34ccb29a83888f4c21d05f9d079588fa819dbf2595db191c2"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "034455ca27acead59601cb57d4f24d3fd8287a2b257c115de5dcce0b71449d57"
+      }
+    },
+    {
+      "sample": "elf_vm_call_stack_args_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "9e49a6ad780ae54bec4ca3cfe0d629f0f4cd5b2b921d731aad7280191657f903"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "982daea090faac82ca6ffd4bf60ded65d6717e9a676018d8e7622ddd58767092"
+      }
+    },
+    {
+      "sample": "elf_vm_call_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "a74b830c273088e2b58458e5227b839d0a1e07b422e34dfa6c42db5e10e08754"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "a696640bcee12c44aee06b05f9d67bbb343cf5e672e4534557526b1df7cf8c7e"
+      }
+    },
+    {
+      "sample": "elf_vm_callflags_stack_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "a872de7c4ddf6781eff33650a1d073d07b8fc71f0e501e61c9332eca82176ac3"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "4748a2e1e8234b8a36d0ce59f8665f0014b9471144b4e78035b9c16aeb8d1b53"
+      }
+    },
+    {
+      "sample": "elf_vm_carry_rotate_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "79eab631d217e7d6b3d84915e4b867cc3e69749530028afd290660231f2b91f8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "2dfc515d2bed6fb6a55e5e36d3a11472c84e2f8bc475111a651a719491e67e03"
+      }
+    },
+    {
+      "sample": "elf_vm_cmov_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7ef73314016dfa8f7d38946bf08c024199dda4a00eddb664ce38623b28e940b3"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "33ea601009fc15683dd38707872a4d186abf175043f4bd2e7525cc97d04abb66"
+      }
+    },
+    {
+      "sample": "elf_vm_cmp8_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "4ab709613e5ecdbbae9597ce2bd15db2e2140b90ec8d71fef25d1da2feff45a8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "b1a2ddbad7b088cbe7d700792a3d2740e67d79cf3db9b6057cf1f2bc946aa454"
+      }
+    },
+    {
+      "sample": "elf_vm_cmp8imm_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "74e72a7ce4aaa683d6d76189ed29af7ac992a876672df49e4341a96171ddffdf"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "7ae3f51edc4664308512245b131b9ebe948c95eeeb23f40bfd40c06bc6c2c968"
+      }
+    },
+    {
+      "sample": "elf_vm_cmpmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "034a570ed064262d610a092035ebe12d6f9a56c814765002f229f05ea465dbb0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "309e5e631c275d460d1146f4e7e995b33bd3ab62f1cbbcaaf7ea64f04c9db926"
+      }
+    },
+    {
+      "sample": "elf_vm_cmpsynth_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "4c129493709d79c91c2717c193f57014b1fb8f10f52fd202703e23190cc4c95d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d079830529269776625600b104a4f0068e70cdb98f9a5e66a6df1294e970573e"
+      }
+    },
+    {
+      "sample": "elf_vm_div_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a0f62efd205ff7b23f9b662e54e70cce79f84275db103f580eef62d5285281f7"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "db4a25d31c100f1915ae5e8ba07a6e9e76b3bf0f3cc4ebc13786e80f47160cda"
+      }
+    },
+    {
+      "sample": "elf_vm_dynamic_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "514169fe0ee9b271e8abf48538fbf779b7046a699e26fdf4908e841a77e67c0e"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "c7406e010266af65d65db288ca5288e10714e784dbcd3ef8512aa8359c44cbd3"
+      }
+    },
+    {
+      "sample": "elf_vm_engarith_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "1c5acb7c59ecefcf31c73010d6384211356e1f5b220006e6c0d66701b3df1d6d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d7e549614bf2812d34994d919cc829946e2394868490a89b0e4f26912d9e792e"
+      }
+    },
+    {
+      "sample": "elf_vm_engarithimm_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "66913c6141fd7999f2f504d9de222aa0bc108a35a88074073b0d3b2227b1209a"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "da288e65cc30e6a5bb6ea680788d82662f1ef9930afdb0badabdbb64373021c5"
+      }
+    },
+    {
+      "sample": "elf_vm_flagsynth_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "2acc5497c7262a204bf2209b273859c7a1be22b5ae2bc3e4f609e1152617000f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "6f080bcadf2a28d78d5fb86d3a6fcd8cc93d4660c5d909477619fc87742e1e3a"
+      }
+    },
+    {
+      "sample": "elf_vm_fparith_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "8edcfe42d2d73fb92cd39912335e62799e11f53fd1dcfb62f39f69f2655ba105"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "5c45060ddbb5343f53e342f5433ddcfc65c9c0785fbf337b176fe497a9556f72"
+      }
+    },
+    {
+      "sample": "elf_vm_fparithidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "bf76d268c07050217809874b8c2ffcc24108dd9b7592de26d01342526c583bdd"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d39850defdacb92923525deaf905ae8375ad8c7745407a5a7494a0fca337388f"
+      }
+    },
+    {
+      "sample": "elf_vm_fparithidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "cfc4bfbae001954a37de8ad434c2f37122b592c104b90c015785836b17cc5b43"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "53e5ab7554b58bb1f4e1684dad3bc5296ba1885a6e8a45a6ede126e53f3a59e5"
+      }
+    },
+    {
+      "sample": "elf_vm_fparithmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "53f59e8087a1a13d5744bcd41378a157d2c5d407672bc4ee55292badbf8c9f01"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "3abe11605cc6113e7f4ec04ff8d27ca338751c49fcabefbfacf6fc7b7f9cc4e5"
+      }
+    },
+    {
+      "sample": "elf_vm_fparithriprel_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "21933e97626743bc489e0dbebc0065abe683baee373f9cfa77ae9f7e54d40a36"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "294e29d0ae81cc2e263ced38e75547d9d7a1e949525f651f5fe2807e20aadf64"
+      }
+    },
+    {
+      "sample": "elf_vm_fpcmp_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "666139351a4d825bf216a7c940f2d89a7a9bc7b97c8760944f8724541768fa7e"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "b3683cba562cdbc26b377f2451beb7b07ff07cf05c02ad8761a011615b3216e0"
+      }
+    },
+    {
+      "sample": "elf_vm_fpcmpidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a7c39f63c519e85c4770f02d0170a6f7a27a7b4c61d50cbaa73477e211b5be17"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "8d0b015d3fe4d07c0122f9af8865e20db35a901742288fbc7a8a69737200f0e2"
+      }
+    },
+    {
+      "sample": "elf_vm_fpcmpmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "25d3a133aeaa2edaf43a2c1f1510ab98092100c1d30e18d42e082c9843658c9a"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "18a84abd91b93d5105ebd2713b72a8f9c6753238d86337157e93ffd599a74720"
+      }
+    },
+    {
+      "sample": "elf_vm_fpconvert32_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "9c9742bf6dce74514a917506657ae66c3d22536c474aa2f1b954890aebea7147"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "92c286e6885475c4700082066bace7f34781c38668f6185a8d79df82457998e8"
+      }
+    },
+    {
+      "sample": "elf_vm_fpconvert_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "01a905ae5564d2274a36e1f9e8ea8b08b5ca24872badc23e7d428a97d2a4f5ea"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "071d6e0aacc8899f79965094e5ae12860c350bad6213c2c841675631045e37cc"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginearith_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "f2d91f477ad18696e258cade68a278ab64de9daeccc9c69d4659a2952a5f5e16"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "d72404066aaa15c10a755a3e8a1783ff30f20646f67bbb89a2a66c3a970001ec"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginearithidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "4002114c85b3e0bcedb4cfe694624f07c509379b5b2c4e04f0fc613b07b734ea"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "dabada9f011745818467d6ab6a0ddc913339efb60a4b49ce4bddc1040f7a8df1"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginearithmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "ba1e00cb16574ea59bc5c2795057496de15c29ae786e62d81e9eea86c94b9ec8"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "678716ba20e5c236dd3b18400a50d693311f2eb4ac5e561d136f7951204a18ff"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginearithrip_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "ba7b568f657961dbd363cf617fa3bde1a86d71a61390999115a0b40da0a5bd13"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "454d6eb92e04a4611111fcc2786ad5bce0ae4d23321d439c5c31467746f58598"
+      }
+    },
+    {
+      "sample": "elf_vm_fpengineconvert32_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "d1ac086fe82ae042263956874f560da7a03abf35a4667363b69f16868a7d180c"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "638e84e3d78e328ed6282cf55bb2b8a15e0df9a819acdbba4e0b67f8991ef8d3"
+      }
+    },
+    {
+      "sample": "elf_vm_fpengineconvert_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "096ada257689b6ab6bdedeff2542bdebe16eb4dd4c42eb928ca68b38c00cb799"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "2125ff966c45c65984c5a85adc8ef8b862258588be7fb213627d4b760de54d71"
+      }
+    },
+    {
+      "sample": "elf_vm_fpengineidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "3bfea37a52e73b989603523b0c46aa4aa69bf2e9773cf29e3dee7580edd5d8c2"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "4c2c81b649df053e657b7020ba24c747e5343f615764bbd8f1cc76699712a6df"
+      }
+    },
+    {
+      "sample": "elf_vm_fpengineidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 0,
+        "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "14bba3d01c334874c8cce4ee2eb63b52e3e2ed1bc8d476f4ae6a3758f1ecced4"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginemove_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "53a649d30ca8d277594feca688abf3c18f89f1cee785d3b502e0ede1dd869b0a"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "afeb020425a4a78a72bb603bb7f1f79f981a82a1ca9d25a97a5b266d6619f9dd"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginepacked_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "3ed2f2e219c9ccab9e4e1d29a1662ded924f2c5cc4fbce17e461360ffd4b9329"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "56238fcc29e75e78d1ce2e04740aa2f6f231a9d79d3fc6bf3eadf4d099344f8b"
+      }
+    },
+    {
+      "sample": "elf_vm_fpenginerip_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "21c7f0f0f20f9d52b8d7ba756c319159fb1c831c60af80b7f25196eac1341415"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "869f0655670233297920a6479cddac3a86bc493634d06fb2bc27e2d5282fd415"
+      }
+    },
+    {
+      "sample": "elf_vm_fpidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "ba1a9c5d8f186c044e2867c1b646fd133ac9abd5945ad3cc5c2f6420cccf754d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "e45b309fe5c05a135bf7bb9e658ab6ba917277918307531466afa46c72d4c42c"
+      }
+    },
+    {
+      "sample": "elf_vm_fpindexed_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a09cb000af65264d89eca6a08ba5e17d44dd329dc9758cf47aab4d81fa057f74"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "c807c84468e2949e8f5ac154884adda225eaeb46a09b930c3bec46ecac5e7d4b"
+      }
+    },
+    {
+      "sample": "elf_vm_fpmov_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "6064fddce28a06f91a85cc847d4f0002609b9bf1bb612c4d5161972988e0a908"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "65cc7b41cb7acd7093d3c927c2556aa209b2f069652e62a815c356604cd8eee3"
+      }
+    },
+    {
+      "sample": "elf_vm_fpmove_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "dea14b3681a7f249f30579356cad4e69d949c0dccca7b61984e8cfd20edabbcf"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ccc6c6a264b4462af9880decba42827e152d419362b3fcd2c26ae05545bcdac0"
+      }
+    },
+    {
+      "sample": "elf_vm_fppacked_compare16_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "953ff75185995d54b4bf98c4979becd4054ba85d68059c972a9109123a4f49c5"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "a0739313e85c5868845aba944de6750a7f191fff234f11bda6e35d326c502719"
+      }
+    },
+    {
+      "sample": "elf_vm_fppacked_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "f7b281b0ad36d586918065230a98cf290a14acbe4f4b62c63a2445e6e19bde02"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "35c679c20fe6951dfef4c3207a904d67e52197dc7d7e32804efde03924bffc32"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedaridx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7a4c9c47370fbe1ecb30087bdfb337db99ccd46da01cd73c3d4e3b27b93579d2"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "bcc34d350fc6556fc1fa2b26b269aaaf8869069b80219ada9a3f58b9278215f7"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedariprip_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "4752f121e301372e3677e47e9bdab97cf970f5c8b61a4c7974ef861f0545c599"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "95cd121a791af33358a8302a9a90893932f66c60646a743750ca73be28ff7540"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "1ca66ce6cee31e61db10e9a13b8451b44fc6938c9b1ffa6cc58d5b3b173019f4"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "bf74dc80d7bce5f21151e18f317934aabe191a67f14745ec609d7aa70599297d"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a5b98d15463806174fdf87a6ac74ada040ac46690d2dfd0bbbbce4be6a7d63c7"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "672dbec10f945531d6edecd222e022421513dba3c8be42cdc80e378cd69632fa"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "6abe22f72dae4fe7fc64786a9877cca36ae6e6475a8629b0094fe7662dca1bdc"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "72d88eedb94dc2d6ec18fe6ba43cec6654ff8c2e1b78d90fcc0da9bd800482c7"
+      }
+    },
+    {
+      "sample": "elf_vm_fppackedrip_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "1ba8771a33350117f53afb2a96a83e50cdf6c8956de30f00b53e48bc6e931f70"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "60ebac43439ea03f7860acbfc4e752d8b9cc8e89af677b5a2a8312b1587aeebd"
+      }
+    },
+    {
+      "sample": "elf_vm_fpriprel_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b193f4699bfa000c7a7747396d4d4644c83a6dee1448b940e8250f8c0fc02468"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "3bbe5b304720d46fbce535f429e4c4bd445d972400afa69b810ef878776cf7fc"
+      }
+    },
+    {
+      "sample": "elf_vm_global_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "59e2a926c569127ea0e58d5b8dcf85562bfa05b45d10f0260be147e253799072"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "7e79b63489c9598ff7618ce81d5679b36005bdf4ba7b67e66c8f89c4a79999f1"
+      }
+    },
+    {
+      "sample": "elf_vm_gs_tls_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "d940a9eac2236026e34c973542bb1a5a07096d7fca09d2ae7d0ff641f4c67136"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "9f5c5a179b0fcfabeb9a0adf49c2888cb06066a03282e2fdcdad7252eb68b990"
+      }
+    },
+    {
+      "sample": "elf_vm_gs_tlsidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "882b6ba50d1c9897119771aa1c9ac953471d7ed21389058d616ee75765001e64"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "3cf999089c69c2da9783d0b18163454f3890242aa21f0085cc55699411061185"
+      }
+    },
+    {
+      "sample": "elf_vm_icall_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "1043efbdbbf3904826da651e847feabeed42e1c3b2162dd159f299a3a2053e69"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "c2a8310b9c9c15326e966b35f6cf31f0807e16ade0f5ae9cb6b0d763a46b4c36"
+      }
+    },
+    {
+      "sample": "elf_vm_idxcall_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "ff13e30faa03f2eb1766ee6a4e1790b04c85f825d0077f2074cb1de329f1535c"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "6c6749a8523a19a261028e78abc6b567147284d4c96f2250b09c44c7214f62cc"
+      }
+    },
+    {
+      "sample": "elf_vm_idxcallnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "534ddb24f85bb2e20ec5418ccbce38c5e38788e09136a5187b380e922820f9ea"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "23dd38c69a0a8579da550db8131885a01ab9260748b9b597da6c040378201b1f"
+      }
+    },
+    {
+      "sample": "elf_vm_imul3_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "6d57fc63179e244f72425233b3ab9682fdc086ff3552a0341f179ddf242d27a0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "7968ac8096c0073d18ed596182d1cf7acff14ca3485c3af0d80d83536af5ddd0"
+      }
+    },
+    {
+      "sample": "elf_vm_incall_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "74f10c5779c8fac0153d9e32e470b0699c844a60bb70a939aef52a2d2cd57f82"
+      },
+      "protected": {
+        "functions": 8,
+        "sha256": "70d1d5682afd89378e3e517122c2d8448882f2f16c7f7a9777266b102eb4c78a"
+      }
+    },
+    {
+      "sample": "elf_vm_incdec8_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "4955fc5ab1862b3a12d393db691f905abe2b1e338fe92c0d55a6d4698398debf"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d038eab9bed44b21b73a58773426900f7757c46511c80d20f88793192c7c76d5"
+      }
+    },
+    {
+      "sample": "elf_vm_incdec_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a61002e5905f2a038bc9086ffd43af52544aa37c268e7161bb4561dfe4e65bc5"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "0f2aef91702d68aceb9db15dc6ecb6cf0a52dfbbd45614250766b1c01ccef9c4"
+      }
+    },
+    {
+      "sample": "elf_vm_incdecsynth_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "5e3e8a70e1dcce51869f7d649e19e0ab8ec0bd93547aa0577553bb79f798b940"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "157179a66c0d36e22a2be17f9cc201fa174c7415c7a115921003dc718bb779c2"
+      }
+    },
+    {
+      "sample": "elf_vm_interp_reg_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 5,
+        "sha256": "7ff96a6d400ee29d6cbfc5d0a6722f5938139ca50a37b78ff329c3691e80aefe"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "495e780f752caccdc81656c16406c739feeccebb632375d70755d3514eee421f"
+      }
+    },
+    {
+      "sample": "elf_vm_interp_stack_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 6,
+        "sha256": "a4927742f50b44fca9699fdd80bd66384bd164bc2452f2060324b634f479265b"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "8b5ecff7d333778139fac04dd79227e70b7ff958059844352cf3d7f022a3de5e"
+      }
+    },
+    {
+      "sample": "elf_vm_interp_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "985c375fccc7dbda15c0ef65f1158820039f76b798c724cf99058dce5e66c20b"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "76208138868b9311ea3d5ca83c19b07079139f41b37bdc72375902191c521fd9"
+      }
+    },
+    {
+      "sample": "elf_vm_isa_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "ad9939f03a4a674a25294d2c8f0e7ebb6889b5665691d2a48038dbf94dba3035"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "54c336ad0c840682c5871f3b16be112d62d52214d61f02494aa992a439ef30f9"
+      }
+    },
+    {
+      "sample": "elf_vm_lea32_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "d47f12615bc30b1c123e92c6d18afefbcc14470b967349db234dd1ef62653487"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "fddbbf5a3779adf17958f84ba5b3d7336e114e7f1db00ec3318b271a6778a7b9"
+      }
+    },
+    {
+      "sample": "elf_vm_lea_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7e4bb5cd0c896347d7415bae14d0a3685d6c9df182fffdd0ca142d7d1525a5d5"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "f43170ee1389a70ad0a0bf06f80ec35c48ded65910d6158bcf2bf499bbea3b00"
+      }
+    },
+    {
+      "sample": "elf_vm_leaidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "d7b414685432996db3ae49b5ac10bc951d79effce167eec3c8667b70f12ebd78"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "fac19d2cf541a47e070cdf079bf0e54457ec841cf04b0ccc252eeac2e3417204"
+      }
+    },
+    {
+      "sample": "elf_vm_leaidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "f15c47e5bf80f4e179c1d097e364e01fab1de94786b25de765662919f9a5c9db"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "85a18f25a02e30cbbe7bf5b47cc25230fae1027ffe52d3ed613f55d2ce6940c5"
+      }
+    },
+    {
+      "sample": "elf_vm_leave_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "8bdfc363baf9b9c6f0d7be8f4708d9aeafe4014435a721ff8e0a3ba610e28594"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "c3b16067781accdda27ba8507f00e685ca1577293cbae4b686a7f4e37d5db6fe"
+      }
+    },
+    {
+      "sample": "elf_vm_mcall_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "5ec25323a3c8896b61d0d1248ec1966f2bdbc09fbeef1df59ca753d4112e1aa0"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "a8db707ba595947abdea602734eeeb9e270e0ff894e427602f9bb688dd437604"
+      }
+    },
+    {
+      "sample": "elf_vm_memarithsynth_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "330aeed8241a8ea62de83d55f279405e8d9bf9001bb6cff459e2781747b5e163"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "9cfdc1e19badb750d1f29d40152bd20b635c5e642cbceb307a83b10ba388dc6d"
+      }
+    },
+    {
+      "sample": "elf_vm_memdst_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "ad6390f13574eaa12793ee296723a98537fcb48658d7733102161fccbf732821"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ee0c38f26656c5d1aa3c5a8064e866942ca0c3e3dfd2e0ffdf783fdaf11ed6b2"
+      }
+    },
+    {
+      "sample": "elf_vm_memops_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b16acb4e44d82d17a38290949f1ac479726814fa6ec8ca2ff981767763f857de"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "49ba3769a48b5dffb6befa9906a3a36924e4971a08234b7b56bfe901cee040fe"
+      }
+    },
+    {
+      "sample": "elf_vm_memwidth_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "c9822958e3998bfd84695a71694cac10eb353f4d4c425bd814ecbcf16b67e7b3"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "3bbe57803e361ac9767554ea0bfda07c009f39ff5df128fc2869444d9192ef0c"
+      }
+    },
+    {
+      "sample": "elf_vm_movabs_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "579439866664d8cee52b05f160a8883861cd3b83d975aa9a3651293dc663be0f"
+      }
+    },
+    {
+      "sample": "elf_vm_movd_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "ce64ca6334c03c10484291f9d9bfd04fa4a6ec8b4056eb948f2e8ccffddc24f8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "4e8970d283bd71dc1a0f87fb75b7a7d4f8eb4d9dcc4c77940ebc3cb3e5cb62ff"
+      }
+    },
+    {
+      "sample": "elf_vm_movidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "27100872acbb76f45a1b4b5819d3bf3ac75ad288b7c1ec3806b1f71ba7acc9fd"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d748b86a11b3d98978ff26fdffd010c0d70a5b06f9f916a0a28136b4a14dde86"
+      }
+    },
+    {
+      "sample": "elf_vm_movidxnb_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7bcecfbd2888d7198ed6822f68e14693bc70911bfebfc1ee8a687fe374335047"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "f451828bf5f52f3a8fc347dd4de4b8efddd5be7ca023239642b3786883e54795"
+      }
+    },
+    {
+      "sample": "elf_vm_movq_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0afab0583612312c1b669fae39b8ac0bf5c08e3e729d8e83c5442e67e551ab88"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "c2f2630880fcda0661225cee8bcda270be5409015c5b9f895b3f582830997842"
+      }
+    },
+    {
+      "sample": "elf_vm_movtorsp_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0c53c8502dcdb6b36289eeca7452259fba022c11a01cb2312bb563d947c47d67"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "136c14697d18624ee74e233d69465b7c3702ef30770cf506b2705c3c0dba7b54"
+      }
+    },
+    {
+      "sample": "elf_vm_movx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "959ab68618e6f5efcdac58f34c2b65f713707c892c368b05dd8939c5aeb08038"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "8f96484d27ecdb929c74320b8df5ebe243046a0edc4ea4717214148416fc5f3c"
+      }
+    },
+    {
+      "sample": "elf_vm_movxidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "06ff91feff24cdb11723827fd8eb92ed90781af836b7d43355d59603831ff696"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "17fe24b12f78d40578fa8fd6356ca78dc25962eb767a868077c1d5daa0666602"
+      }
+    },
+    {
+      "sample": "elf_vm_movxreg_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "46f0e338deeaa244ae8a2fa95c3014af5b25f4b82854a1e1f12c0a312df7da7d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "fb282083ad215d44435a2b6050f749b4df5fa03502c1ed3cfee2e75cb34eb999"
+      }
+    },
+    {
+      "sample": "elf_vm_multiexit_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "da69f24e60ccd15355e16cae20df3e3d0358d6f068c37ca3f06a36fb2dc4515c"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d60b0d43ad7c59e699b8e849e68a79b024d5e1d74d611ac90371760eba2bee3b"
+      }
+    },
+    {
+      "sample": "elf_vm_not_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "899b5afb3be437d0ec2e173f5de8f5120cb60e34c5f819ecc604b865f5e63c01"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "9206742877a640e227fdf4cbef533564a548bc270ffa8f011df4c10e427ed88a"
+      }
+    },
+    {
+      "sample": "elf_vm_opmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "3a2ca2c54b03f9f597de5ef2de3a997d8876fc4edf463f0a551aee6cc27a783f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "72420d69625dd93511d0c1c3d21793accc2f670af239ddd65999308af1112316"
+      }
+    },
+    {
+      "sample": "elf_vm_opmemidx_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "3621b548583969aab744c3481bf217a2f103bc91d4f50a9be7726a3a96d351d7"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "b586379d3574d21aa7dfe5962e3d039127239c075a9b2f6fddce3b2132d69296"
+      }
+    },
+    {
+      "sample": "elf_vm_packedmemextra_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "10672e4fbcf68aa74ef9f149ebe65914b1be53a57a7949cc982bfd763bdcacb0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "a05793715186e4df5228ead3d906542cb67358d6bb04e0af5f1e02fb5e3eadaa"
+      }
+    },
+    {
+      "sample": "elf_vm_phaddmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "148096b975c2bca7814bf2f022392c932e8b9062a47cf71525041498452fd865"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "4be4e15deb3b5a5433072aa47fe6ad90aa83760597ee573a576e30fa95a575dd"
+      }
+    },
+    {
+      "sample": "elf_vm_pie_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "19515c65476a8197da172be230e0e1ccc670828973908f1c2b2a192c1e13862f"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "27b622f021f363b27a8e62b8813929f96111d68fec78d5fda99a08f769cadc8d"
+      }
+    },
+    {
+      "sample": "elf_vm_popmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "be1f09efb4a8ed504d36303063b1eff229608665e81dae5e0ef217845bca63f5"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "fbe19f11eb5e4887c703d9f235debf6b388e10c0bd669791dbe3979af92e62ff"
+      }
+    },
+    {
+      "sample": "elf_vm_prologue_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "098ce19848d036aed38b6ffb32f6c4b9ac3ce717ceda955322975f8c1bf4ca9b"
+      },
+      "protected": {
+        "functions": 5,
+        "sha256": "89daed1e0d91f215962646e40231e929a9e767b067be95c9d77a02290b6ec2e6"
+      }
+    },
+    {
+      "sample": "elf_vm_pushimm_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a860b5ea5bb89e12b9f1823115c2dd6a6a63d45104cc6c0c6d9dfc456ce1c05e"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "bf527e8fa3ed8373117f6a9df9cc633aeb698b323ac03cd56a038c3471bcd9bb"
+      }
+    },
+    {
+      "sample": "elf_vm_pushmem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "cd2800371fcece296df6e68761f199d99d6b3ac7ffb5bffd63f93102132a0e24"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "f65ddef676eeb43159f531a1f4a1618f57c7a0e076fdd1fde588449bc4bc68a6"
+      }
+    },
+    {
+      "sample": "elf_vm_pushpop16_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "abae2207d8e66c9964d7f1b33df353dc8fc3263641920e80ab0a84bde6bfe84f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "bd59bf1657b9de26e0ebd9eeefc205d0af6c4dc9ef1963eb487d6b96bee6ab31"
+      }
+    },
+    {
+      "sample": "elf_vm_pushpop_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "07572032bf2966cd5ece148c08ddaed957ea9998d71d387444c7b338a3e0d5ef"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "7bc2599b08e86e7c23f81ef25166a79d06046cdc5c27628fcd5053855548beaf"
+      }
+    },
+    {
+      "sample": "elf_vm_redzone_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "d8c46db3ab698d08ecaabd3ebce91e8d09657e2fc2eae20fe5ec1c66e45d7518"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "8141dea52695cb27f506e753c0a6d3ff00d631b48af7f56d6824a88eca977d1f"
+      }
+    },
+    {
+      "sample": "elf_vm_riprelmicroop_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "2fd6fd7ae3e9b5b62b65ff857d2ef649a4d3ae50cf0bfcd4973aef8aeb19e8d3"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "cfa9755615ddd511b6b700ae4ffd198773b7d2ae247ddcdfd0154627b125f591"
+      }
+    },
+    {
+      "sample": "elf_vm_rotate_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a2623184f4d33e0ad38935c0b5895999c7f6236b9006500597601fd056360583"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ddd4794999dae0ab6ff66f29c17a479f6370c390d9b03bc98a5a0d00c12fb32c"
+      }
+    },
+    {
+      "sample": "elf_vm_run_callfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "bf31c8c83c402571be06ee826bd0fe6aa07ecfce5642b9e36dbbe0a961158d8d"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "731aa0229b0d3e9172d1e8e6c8a7bca3237c87ee4daa9e84fa804fb1d451d371"
+      }
+    },
+    {
+      "sample": "elf_vm_run_idxfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "2e844546cd4ffe15663632062adc61f2e251dbb4ebfc6ed349dff8fde739a26b"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "217ecdc10457e0d06f8095b37c1fa4189d5e6cac5da26eaa6bcea659d5c0e2ce"
+      }
+    },
+    {
+      "sample": "elf_vm_run_leafallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "51f634a344d59f801c3cbd5f62af428957c720559776c4a44888ecb88914e51b"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "29c82ce1fc6ba727adef6ef5b5241962f034d91fc37ba07473f7a3229a1af910"
+      }
+    },
+    {
+      "sample": "elf_vm_run_memarithfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "2b03e96aa7a82952a98f161889f4a4f5f0898d1f89c4d078c28e26d954465bac"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "30d95e01254d78a1c0befd5e165bed8801042fc78812530da446a363ffea782c"
+      }
+    },
+    {
+      "sample": "elf_vm_run_memfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "eaaf1c8a52b9f485e59af2e8e3e2fb84a491f596d4ee948caf857e34dce7542c"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "dcf20f1c42b82bac7345ca91ebdea308837258f212040653677bda45883d5588"
+      }
+    },
+    {
+      "sample": "elf_vm_run_movxfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "e988ca4cccc0b33764ecc331fe84b5a5758101186db0028323f20a28a50c2e97"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "f53de74696b8cc41db3b52dc93f265d8c7c3f72f4940cd47e24ee093cd09408f"
+      }
+    },
+    {
+      "sample": "elf_vm_run_movxidxfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "f846d209def217a104a2764fe2e380ac1c444c0df5ed3918b94f6e428256f74b"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "b9eee9b8d39c5b859e90dbb82f403752bd26d912b563498631e1b7d00d11b6ee"
+      }
+    },
+    {
+      "sample": "elf_vm_run_riprelarithfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "47e4307790a729f3f3cb4e80338d58598865e0535c7fa8a0bf0d9dad9ee02dc8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "dbc424d1a226fdf274db146908702870cc4a2036eb89ac4172bd7fe12f165f9f"
+      }
+    },
+    {
+      "sample": "elf_vm_run_riprelfallback_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "1f421df070308128f59644d666b90ce50bf787362ce5f8d00bf6e3e632419c5b"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "1d540e22e869e304606c09dbfa45bc4866566831c971bc6a6816376a25652c13"
+      }
+    },
+    {
+      "sample": "elf_vm_setcc_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "d195f73702df0205c50718bfc7ec6e5096d8fc83cd0418f21525b611347a1cd0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "9b49d15b730756e5d7153b66afbd07e6aca287009e6fa0e99400bc26dbca5f6e"
+      }
+    },
+    {
+      "sample": "elf_vm_shift_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "2f005dc502665e43a9b86dc5568143359835b8f0b2524351b3f530234d83c752"
+      }
+    },
+    {
+      "sample": "elf_vm_shiftmicroop_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "1a7b31b591a2fd82a6c53b792e409a1ebf7af959ca2e5bd62218c6e6a8cfe0a8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "4d7447b9a11f0903a99da2bfcc00b6281699e73498bb546e4dba7fc9688bfb91"
+      }
+    },
+    {
+      "sample": "elf_vm_shiftreg_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "71fc7fe9cacf0f78f1497b9e5eb4a6293e1916bcd55a7c0a053e1467a42bf9d6"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "0db34e60b22d4e6389e0e8e1cccba54fd99ed07c8c9c83f913d5f32e65b96391"
+      }
+    },
+    {
+      "sample": "elf_vm_simdextra_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "e759c52bab03cc43b7239365631a918aab32815ae1d3f6b66c1984cb6391cc0d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "1cf5638b78a5a55e0d2b041a6c77951ceda74b2bb3cd24e90b12ee02fcb97759"
+      }
+    },
+    {
+      "sample": "elf_vm_simdint_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0ea456c94f2fa6b58758a156aab2628c9ba91f5ad02e9f837fb4c60c6e67952f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "9181493fe249ce4cabf67fb16da51e0b43447d6bf12e8036dff51cf535ed6b70"
+      }
+    },
+    {
+      "sample": "elf_vm_simdintarith_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "f06a02de35f80a5ec275ebd4c5a91e9c6da1c1d4e25781d2717acca460020d4a"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "1f2ad14c592b5c0e9e3236d7331a39ca5bd7f943b0b7cc510a78506000d071e2"
+      }
+    },
+    {
+      "sample": "elf_vm_simdmove_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "c6be2dd5a63c6a5f68fd63132d1e06c54084542ba53b1d958aef4fd98bf57455"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "dffb9ac13ebe2177765ef29ac4b34894f01144d77454f8872514bf6da03232c1"
+      }
+    },
+    {
+      "sample": "elf_vm_simdwide_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "e07ad0461a41a76a7748c4a2ec53a122cf5db3b04252c380057961aad76db5b0"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "27cbccea3a349d25ca5aa24192ad5fce684791a4d486b53a4e71cb5caba3aa16"
+      }
+    },
+    {
+      "sample": "elf_vm_subflagdead_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0fd0d37f29aa12ce0733502c56a687e7ff7baef8e7f4b523895922d35fc5fa94"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "81cbd4bb3ab47e93a085a2a6dc46f6f9d09c8bebcf99b4391ebbd4e0adaf957e"
+      }
+    },
+    {
+      "sample": "elf_vm_syscall_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "bc37c75a0005250f802aa4d401e8df0e65823fe003771f489ff79d5755d972f9"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "aeb7caa62c8b3dbc5eed543fa9129cf1d23cd5fdc02b3028a3378e406550c36e"
+      }
+    },
+    {
+      "sample": "elf_vm_thread_cmpxchg_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "12d2883102589fe9ae84bfa45806a412dafe034c4b07add37acc1b5e7817a796"
+      },
+      "protected": {
+        "functions": 5,
+        "sha256": "054ea582859a63538475c655017db648e21f8529e4f8a985ac707b7630dbcf1f"
+      }
+    },
+    {
+      "sample": "elf_vm_thread_mematomicimm_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "cf6acf7dd68848fdf888cb4df548675a4224cd65ed054875bebf2e2c1f4aa1a9"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "81e47f2f195ba5e9cc7ded57fed15a619e5c8f17c1a9a29d5b0a6f575ba440bc"
+      }
+    },
+    {
+      "sample": "elf_vm_thread_xchg_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "40e4cb2c5971846efc94f7e75e54d30255e78a8b6adb5f6df2a92942472de91f"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "8579f1923016c69c5c11b308980a859de5d076af5d25e82cb0599ac8fa860394"
+      }
+    },
+    {
+      "sample": "elf_vm_tls_widths_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "6f0c265f8f4d7782cf9b80aa5d16b8be08624fb54001638aa29f76ef71ceb7a1"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "86b49a66a848aed513cb67b4007b248a19c4fc15be13f55ec7b37f809e8798af"
+      }
+    },
+    {
+      "sample": "elf_vm_tls_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0d95ddab92cbd1603e3562a122698e49db211e990a4923b3f2abc643bff11fb7"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "5d01321d32089ff8e1a626d48c8b408c274cd72e8ad987d4bdbb645252d49cb3"
+      }
+    },
+    {
+      "sample": "elf_vm_varargs_scalar_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 2,
+        "sha256": "36faee1f065a264f9aaed2a14b90dbe2d9ec9e74c062fac9e7b7d48508b67cb8"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "2b5afdf81f5d46fdb3cc4562d807602c5e940691daf7c4b41199afb46bba6b78"
+      }
+    },
+    {
+      "sample": "elf_vm_varargs_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 3,
+        "sha256": "ac58d651a1110013d10f545fba83d7ec653da37e902d25a69904d4e067b436c0"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "ed4d01e413303f190311b8a39a788a78f8d51a3332ddf3d3a4247e689835d731"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_horizontal_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "ff1e891d9f708d206790d912ef5e24d8dbba38a6ffbb2497952ae0e04fbd25be"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "6a4157d3c78469c6f4c312daea1a9ad9dd2b8f321aa656b25ea176a8b2c275f6"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_integer_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "645e775b82a0eceae1fc3112854e6e3b1063401c21a0f20cec6616ba7943231c"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "f2fdd92678e17de6367fc397ac68d63ceb22106c53529ed1ff3f8d290d5496f4"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_phaddd_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "a4bdec2351f81f5b52c246ce58aa2daea1263ae2107f2c2b147d08f40e735532"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "df38ebb7e2192f0b6584225f96f467dd46a6272615ae78c42deb6febeafd7153"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_sat_sub_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "0966afcad3c0781d38ba31306c90d0bf9f36a7a1e1f73f07350a38dcc288aee1"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "a9a59f208cba96996414dc48dcb7482877ad8730fd61ab72d29a77b2b12677d6"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_scalar_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "058b59768101bb37216fac593163dc7718465c5b3c31a93c28d2b6918b746e05"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "6c5423b893d1fafa4cea696a740401e3ea8a41246b3d6c7124686b20765634c9"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_shift_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "f1101e4f6b7c1aa1fa52b08735097cae22cbbcac64e4044be287eda830a802d8"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "69861031772cc1f2b0dfb0ba42405a6cea7072bf1c656a19b1e701e278b8792f"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_unpack_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "073f7b857fe0adc77edcc3a66fa358f56fc523b8cf7454a083edec2e0dcce079"
+      },
+      "protected": {
+        "functions": 4,
+        "sha256": "2c4ea98bc698aad934d07fdfa12c96611646ef370bdb73823ebb18eeadac3caf"
+      }
+    },
+    {
+      "sample": "elf_vm_vex128_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 3,
+        "sha256": "2af4f8dcf317801d827acf5f8e2b5f554ec388ea9f24faf2d66dc163f2a59a7d"
+      },
+      "protected": {
+        "functions": 6,
+        "sha256": "c52452c9acaf47e65fe197bd9582dd012bf18030359656ac5664c2afe018ed72"
+      }
+    },
+    {
+      "sample": "elf_vm_vex256_packusdw_mem_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "b4212fa01e4907b85d43d4f9fedaf26d3fecbfbacd8fb3b069ff7fe5999be31c"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "b4ff367711315ba9580a9a94d76511f5ce790e3715dfb840f6f373ffcb6764b1"
+      }
+    },
+    {
+      "sample": "elf_vm_vex256_packusdw_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "29a53acefd4f9f649c0d93a4e88e6dd952b8a9316a41e30df34999be94edea8d"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "da6c2ea5f375b9b88210f018d2f0fd3f579449cfa719b2bc1277929f83a678c8"
+      }
+    },
+    {
+      "sample": "elf_vm_vex256_unpack_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "6f57550090c95edc0a5a12109fe21ef045f981dc047d7359fcd0237a6c988e53"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "81487609b44137b49126409bde312dedfca261a0c2aeecd1b7dbad51fbbc8f67"
+      }
+    },
+    {
+      "sample": "elf_vm_vex_word_shuffle_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "98de211a7d227b30f4400a0d7cbc131b0e6d40df2e07337c1e5a03278ad308c0"
+      },
+      "protected": {
+        "functions": 3,
+        "sha256": "100f1db7746910ef21ba1c3ea3af0cd12d7903f4537f44c894201cd53f2a7df7"
+      }
+    },
+    {
+      "sample": "elf_vm_vpmuldq_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "2b9cf435fb1e77a74834ce3b9924126d121dda94207ccbd89628fa32ea8fb999"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "ac03ac9c003376f421ca6dbb156ce4a601e5d1f8f0b195cf9d74baed72269e28"
+      }
+    },
+    {
+      "sample": "elf_vm_vpmuludq_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "cfc91501ecc1fbb2b4087abb97e3b3e04f29f4a18998d18266de5faf584f4f70"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "0c264041bc1b5fe1aafeba2d7a497e1541588eb028df2249c761460b327aa1eb"
+      }
+    },
+    {
+      "sample": "elf_vm_word16_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "35b7b1e2eafc74fa66de8b8317a9a6c1c906ba40a43148353d6bb6d334fd95cc"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "e308f626c9f99bc40520ddce1fd7f665c074379530e0301f4764e30071b73d78"
+      }
+    },
+    {
+      "sample": "elf_x86_64",
+      "status": "completed",
+      "original": {
+        "functions": 1,
+        "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a"
+      },
+      "protected": {
+        "functions": 2,
+        "sha256": "d6bdea9326cdf7488156c4024602d0a23fa98183928b819829a2fdb9627d9e1a"
+      }
+    }
+  ],
+  "notes": [
+    "Protected artifacts were generated with the CodeVirtualization pass and discarded after analysis.",
+    "Each original/protected pair was opened in a separate IDA MCP worker and the worker was closed after the survey."
+  ]
+}

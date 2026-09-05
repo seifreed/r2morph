@@ -65,11 +65,13 @@ The corresponding public workflow `33259983358` was cancelled before its
 Ghidra benchmark completed; the local raw report above is therefore the
 authoritative Ghidra evidence.
 
-The current IDA MCP rerun at `bb3eb3bf` completed all 159 original and all 159
-CodeVirtualization-protected fixtures, for 318 analyses with zero errors. It
-recovered 210 functions across originals and 363 across protected outputs. The
+The preceding IDA MCP rerun at `bb3eb3bf` completed all 159 original and all
+159 CodeVirtualization-protected fixtures, for 318 analyses with zero errors.
+The current rerun at `7c3d4f32` repeats those 318 analyses with zero errors and
+recovers 210 functions across originals and 380 across protected outputs. The
 aggregate evidence is in
-[`protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json`](protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json).
+[`protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json`](protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json)
+(`SHA-256 b2dd4fc1328569708f49d32a58982f90e623b1c2c63111c5006cf4e84b29448d`).
 
 The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
