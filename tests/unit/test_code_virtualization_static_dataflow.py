@@ -1,6 +1,7 @@
 """Regression tests for virtualization preflight dataflow coverage."""
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
+from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.mutations.code_virtualization_apply import _static_dataflow_is_complete
 from tests.utils.assertions import expect
 
@@ -44,3 +45,10 @@ def _branching_cfg() -> ControlFlowGraph:
 
 def test_static_dataflow_branching_cfg_proves_ssa_and_liveness_coverage() -> None:
     expect(_static_dataflow_is_complete(_branching_cfg()))
+
+
+def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions() -> None:
+    analyzer = DefUseAnalyzer(_branching_cfg())
+    analyzer.analyze()
+
+    expect(analyzer.has_complete_liveness_coverage())

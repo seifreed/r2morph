@@ -276,6 +276,15 @@ class DefUseAnalyzer:
         }
         return SSAConverter().convert_to_ssa(blocks)
 
+    def has_complete_liveness_coverage(self) -> bool:
+        """Return whether liveness exists for every materialized instruction."""
+        instruction_addresses = (
+            int(instruction.get("offset", 0))
+            for block in self.cfg.blocks.values()
+            for instruction in block.instructions
+        )
+        return all(self._liveness.get_instruction_liveness(address) is not None for address in instruction_addresses)
+
     def to_dict(self) -> dict[str, Any]:
         """Convert analysis results to dictionary."""
         return {

@@ -230,7 +230,7 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
         logger.debug("Static dataflow failed: %s", exc)
         return False
-    return set(ssa_blocks) == set(cfg.blocks)
+    return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
