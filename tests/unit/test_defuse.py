@@ -13,6 +13,7 @@ from r2morph.analysis.defuse import (
     Use,
     UseWeb,
 )
+from r2morph.analysis.ssa import SSAConverter
 from tests.utils.assertions import expect
 
 _EXPECTED_DEFN_ADDRESS_4096 = 0x1000
@@ -413,3 +414,27 @@ class TestBuildSSAForm:
         s_s_a_converter = importlib.import_module("r2morph.analysis.ssa").SSAConverter
 
         expect(not (exported_s_s_a_converter is not s_s_a_converter))
+
+    def test_ssa_models_sysv_call_clobber_before_return_value_use(self):
+        blocks = {
+            0x1000: {
+                "instructions": [
+                    {"offset": 0x1000, "disasm": "mov rax, 1"},
+                    {"offset": 0x1005, "disasm": "call 0x2000"},
+                    {"offset": 0x100A, "disasm": "mov rcx, rax"},
+                ],
+                "predecessors": [],
+                "successors": [],
+            }
+        }
+
+        ssa = SSAConverter().convert_to_ssa(blocks)
+
+        expect(ssa[0x1000].definitions["rax"].version == 1)
+
+    def test_ssa_models_sysv_indirect_call_target_as_use(self):
+        converter = SSAConverter()
+
+        used = converter._extract_used_registers("call r12")
+
+        expect("r12" in used)

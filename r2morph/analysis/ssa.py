@@ -75,6 +75,8 @@ _RMW_MNEMONICS = frozenset(
         "xor",
     }
 )
+_SYSV_CALL_USED_REGISTERS = frozenset({"rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9"})
+_SYSV_CALL_DEFINED_REGISTERS = frozenset({"rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"})
 
 
 @dataclass
@@ -419,6 +421,8 @@ class SSAConverter:
         """Extract registers that are defined (written to) in an instruction."""
         opcode, _, operands = disasm.partition(" ")
         mnemonic = opcode.lower()
+        if mnemonic == "call":
+            return set(_SYSV_CALL_DEFINED_REGISTERS)
         destination = operands.split(",", 1)[0].strip().lower()
         if destination in _SSA_REGISTER_NAMES and (
             mnemonic in {"lea", "mov", "pop"}
@@ -433,6 +437,14 @@ class SSAConverter:
         """Extract registers that are used (read from) in an instruction."""
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
+        if mnemonic == "call":
+            used = set(_SYSV_CALL_USED_REGISTERS)
+            used.update(
+                match.group(1)
+                for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operands_text.lower())
+                if match.group(1) in _SSA_REGISTER_NAMES
+            )
+            return used
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
         if not operands:
             return set()
