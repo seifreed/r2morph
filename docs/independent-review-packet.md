@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `86e9568e`
+- Commit: `f3a41b0`
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -18,7 +18,7 @@ checks are evidence, not a human approval.
 - [`protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json`](protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json)
 - [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
 - [`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
-- [`protection-fuzz-2026-09-05-e04c1a9c.json`](protection-fuzz-2026-09-05-e04c1a9c.json)
+- [`protection-fuzz-2026-09-05-2e4ad8e.json`](protection-fuzz-2026-09-05-2e4ad8e.json)
 - [`independent-review.json`](independent-review.json)
 
 The current evidence records 159/159 virtualized samples, 318/318 IDA
@@ -64,7 +64,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 86e9568e
+Reviewed commit: f3a41b0
 ```
 
 No approval is implied until a human reviewer fills this section outside the

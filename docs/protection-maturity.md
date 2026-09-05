@@ -207,10 +207,10 @@ and the reproducible second-pass review is in
 [`docs/independent-review.json`](independent-review.json). An analyzer is marked
 `unavailable` when its executable or license is absent; those rows are not
 treated as passing evidence. The automated review is not human sign-off.
-The current local campaign at `e04c1a9c` ran 20,000 cases per target across
+The current local campaign at `2e4ad8e` ran 20,000 cases per target across
 `binary_parsers`, `vm_dispatcher`, `relocations`, and `binary_rewriter`, for
 80,000 target runs with zero failures; its bounded report is
-[`docs/protection-fuzz-2026-09-05-e04c1a9c.json`](protection-fuzz-2026-09-05-e04c1a9c.json).
+[`docs/protection-fuzz-2026-09-05-2e4ad8e.json`](protection-fuzz-2026-09-05-2e4ad8e.json).
 
 ## 4. Obfuscation maturity technique-by-technique
 
