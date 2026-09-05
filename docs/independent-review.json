@@ -16,7 +16,7 @@
       "status": "passed"
     },
     {
-      "detail": "159 samples, 5677 completed tool runs, 47 errors",
+      "detail": "159 samples, 939 completed tool runs, 15 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
     },
