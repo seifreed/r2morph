@@ -479,6 +479,14 @@ class TestLivenessAnalysis:
 
         expect({register.name for register in used} == {"ebx"})
 
+    def test_sysv_call_uses_rax_for_variadic_vector_count(self):
+        """SysV calls consume al/rax for the variadic vector-argument count."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "call", "disasm": "call 0x2000"})
+
+        expect("rax" in {register.name for register in used})
+
     def test_to_dict(self):
         """Test to_dict method."""
         cfg = create_sequential_cfg()

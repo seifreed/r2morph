@@ -70,7 +70,7 @@ class LivenessAnalysis:
 
     # ABI-specific register sets for call instruction analysis
     _CALL_USED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
-        "sysv_amd64": [("rdi", 64), ("rsi", 64), ("rdx", 64), ("rcx", 64), ("r8", 64), ("r9", 64)],
+        "sysv_amd64": [("rax", 64), ("rdi", 64), ("rsi", 64), ("rdx", 64), ("rcx", 64), ("r8", 64), ("r9", 64)],
         "win64": [("rcx", 64), ("rdx", 64), ("r8", 64), ("r9", 64)],
         "cdecl_32": [],  # Arguments passed on stack
     }
