@@ -27,11 +27,12 @@ _EXPECTED_WIDTH_64_2 = 64
 
 
 _MASK = {8: 0xFF, 16: 0xFFFF, 32: 0xFFFFFFFF, 64: 0xFFFFFFFFFFFFFFFF}
-# The flag bits synth_flags_asm builds (AF is deliberately omitted).
-_ZF, _SF, _CF, _OF, _PF = 1 << 6, 1 << 7, 1 << 0, 1 << 11, 1 << 2
+# The flag bits synth_flags_asm builds for arithmetic and logic. AF is defined for
+# add/sub and intentionally left undefined for logical operations.
+_CF, _PF, _AF, _ZF, _SF, _OF = 1 << 0, 1 << 2, 1 << 4, 1 << 6, 1 << 7, 1 << 11
 _COVERED = {
-    "add": _ZF | _SF | _PF | _CF | _OF,
-    "sub": _ZF | _SF | _PF | _CF | _OF,
+    "add": _ZF | _SF | _PF | _AF | _CF | _OF,
+    "sub": _ZF | _SF | _PF | _AF | _CF | _OF,
     "logic": _ZF | _SF | _PF | _CF | _OF,  # logic must also drive CF=OF=0
 }
 # mode -> (native mnemonic, python reference) for the ground-truth op.
@@ -140,7 +141,7 @@ def test_synthesized_flags_match_the_cpu_for_every_variant(mnemonic: str, width:
 @pytest.mark.parametrize("width", (32, 64))
 @pytest.mark.parametrize("mode", ("add", "sub", "logic"))
 def test_flag_variant_zero_is_the_canonical_spelling(width: int, mode: str) -> None:
-    # The canonical spelling is exactly what the pre-feature single builder emitted.
+    # The canonical spelling is stable for the current flag contract.
     a, b, r = ("rbx", "rbp", "r10") if width == _EXPECTED_WIDTH_64 else ("ebx", "ebp", "r10d")
     c, t, u = ("rcx", "rax", "r9") if width == _EXPECTED_WIDTH_64_2 else ("ecx", "eax", "r9d")
     sh = width - 1
@@ -150,6 +151,8 @@ def test_flag_variant_zero_is_the_canonical_spelling(width: int, mode: str) -> N
         f"  and {c}, 1\n  xor {c}, 1\n  shl {c}, 6\n  or r11, rcx\n"
     )
     lines.append(f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n")
+    if mode in ("add", "sub"):
+        lines.append(f"  mov {c}, {a}\n  xor {c}, {b}\n  xor {c}, {r}\n  and {c}, 0x10\n  or r11, rcx\n")
     if mode == "add":
         lines.append(
             f"  mov {c}, {a}\n  and {c}, {b}\n  mov {u}, {a}\n  or {u}, {b}\n"

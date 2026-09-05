@@ -5,15 +5,16 @@ Every flag-setting region handler synthesizes the readable RFLAGS of its
 operation by hand - no literal flag-setting native op, no ``pushfq`` - so a
 devirtualizer never sees the operation named. Until now that synthesis had a
 single fixed spelling shared by every build: two samples computed CF/OF/SF/ZF/PF
-with byte-identical assembly, a stable cross-sample signature.
+with byte-identical assembly, a stable cross-sample signature. Arithmetic AF is
+also materialized because ``lahf`` and ``pushfq`` expose it.
 
 This module forks that synthesis into equivalent per-build spellings. Each of the
-five synthesized flags (ZF, SF, CF, OF, PF) has a canonical spelling and one
-algebraically-equivalent alternate; a build's ``flag_variant`` is a small bit
+five polymorphic flags (ZF, SF, CF, OF, PF) has a canonical spelling and one
+algebraically-equivalent alternate; arithmetic AF uses one fixed relation because
+it is exposed through byte-oriented flag reads. A build's ``flag_variant`` is a small bit
 vector (bit i selects flag i's spelling), so 32 distinct-but-equivalent
 flag-synthesis machines exist and :mod:`code_virtualization_region_isa` picks one
-per build from the isa_seed. ``flag_variant`` 0 is the canonical spelling
-(byte-identical to the pre-feature output), so existing seeds are unchanged.
+per build from the isa_seed. ``flag_variant`` 0 is the canonical spelling.
 
 The register contract is fixed for every spelling: ``a`` is read from rbx/ebx,
 ``b`` from rbp/ebp, the result from r10/r10d; the RFLAGS image is built in r11;
@@ -73,6 +74,12 @@ def _sf(width: int, spelling: int) -> str:
         # The 16-bit sign bit (bit 15) shifts down to the SF position (bit 7).
         return f"  mov {c}, {r}\n  and {c}, 0x8000\n  shr {c}, 8\n  or r11, rcx\n"
     return f"  mov {c}, {r}\n  and {c}, 0x80000000\n  shr {c}, 24\n  or r11, rcx\n"
+
+
+def _af(width: int) -> str:
+    """Synthesize arithmetic auxiliary carry from the low-nibble result."""
+    a, b, r, c, _t, _u = _regs(width)
+    return f"  mov {c}, {a}\n  xor {c}, {b}\n  xor {c}, {r}\n  and {c}, 0x10\n  or r11, rcx\n"
 
 
 def _cf_add(width: int, spelling: int) -> str:
@@ -166,19 +173,22 @@ def synth_flags_asm(width: int, mode: str, variant: int = 0) -> str:
     result to the low byte(s) first so the upper bytes of the context slots do not
     perturb the sign, carry or overflow. ``mode`` is ``"add"``, ``"sub"`` or
     ``"logic"`` (and/or/xor/test).
-    SF, ZF and PF are always set; add/sub additionally set CF and OF (logic clears
-    both, so nothing is emitted for them). AF is read by no conditional jump and is
-    omitted. ``variant`` selects, per flag, one of two algebraically-equivalent
+    SF, ZF and PF are always set; add/sub additionally set CF, OF, and AF (logic
+    clears CF/OF and leaves AF architecturally undefined). AF uses the native
+    low-nibble arithmetic relation and is intentionally not synthesized for logic.
+    ``variant`` selects, per flag, one of two algebraically-equivalent
     spellings (bit 0 ZF, 1 SF, 2 CF, 3 OF, 4 PF); ``variant`` 0 is the canonical
-    spelling, byte-identical to the pre-feature output.
+    spelling for the current flag contract.
     """
     lines = ["  xor r11d, r11d\n"]
     lines.append(_zf(width, variant & 1))
     lines.append(_sf(width, (variant >> 1) & 1))
     if mode == "add":
+        lines.append(_af(width))
         lines.append(_cf_add(width, (variant >> 2) & 1))
         lines.append(_of_add(width, (variant >> 3) & 1))
     elif mode == "sub":
+        lines.append(_af(width))
         lines.append(_cf_sub(width, (variant >> 2) & 1))
         lines.append(_of_sub(width, (variant >> 3) & 1))
     lines.append(_pf(width, (variant >> 4) & 1))
