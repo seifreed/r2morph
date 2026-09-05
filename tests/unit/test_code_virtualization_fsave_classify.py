@@ -1,13 +1,11 @@
 """
 Unit tests for the ``fsave``/``frestore`` items: the region VM's flag transfer.
 
-A stack-based interpreter brackets its dispatch with ``pushfq``/``popfq`` to preserve
-the CPU flags across the computed jump. The region synthesizes an operation's readable
+A stack-based interpreter or ordinary region can bracket work with ``pushfq``/``popfq``
+to preserve the CPU flags. The region synthesizes an operation's readable
 flags into its own flags slot rather than native RFLAGS, so a native flag save/restore
 is lowered to ``fsave``/``frestore`` items that copy that slot to and from the virtual
-operand stack - keeping the saved flags across the ``vm_dispatch`` re-entry. Lowering is
-gated to the dispatch-region contract (the only shape where flag state crosses the jump),
-like the ``ijmp`` computed jump it accompanies.
+operand stack. The same items work in dispatch and ordinary regions.
 
 These exercise the pure classification and layout functions directly with hand-built
 instruction dicts - no r2, no mocks.
@@ -31,14 +29,14 @@ def test_classify_popfq_yields_frestore_when_opted_in() -> None:
     expect(_classify({"type": "upop", "opcode": "popfq"}, allow_computed_jump=True) == ["frestore"])
 
 
-def test_classify_pushfq_rejected_by_default() -> None:
-    """Without opt-in, a native flag save stays unsupported - the straight-line contract."""
-    expect(not (_classify({"type": "upush", "opcode": "pushfq"}) is not None))
+def test_classify_pushfq_is_supported_in_ordinary_regions() -> None:
+    """An ordinary region lowers a native flag save to fsave."""
+    expect(_classify({"type": "upush", "opcode": "pushfq"}) == ["fsave"])
 
 
-def test_classify_popfq_rejected_by_default() -> None:
-    """Without opt-in, a native flag restore stays unsupported."""
-    expect(not (_classify({"type": "upop", "opcode": "popfq"}) is not None))
+def test_classify_popfq_is_supported_in_ordinary_regions() -> None:
+    """An ordinary region lowers a native flag restore to frestore."""
+    expect(_classify({"type": "upop", "opcode": "popfq"}) == ["frestore"])
 
 
 def test_classify_register_push_is_not_flag_transfer() -> None:

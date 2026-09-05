@@ -332,9 +332,9 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
 
 def _classify_stack(kind: str, text: str, address: int, size: int, allow_computed_jump: bool) -> list[Any] | None:
     mnemonic = text.partition(" ")[0].lower()
-    if allow_computed_jump and mnemonic in ("pushfq", "pushfd", "pushf"):
+    if mnemonic in ("pushfq", "pushfd", "pushf"):
         return ["fsave"]
-    if allow_computed_jump and mnemonic in ("popfq", "popfd", "popf"):
+    if mnemonic in ("popfq", "popfd", "popf"):
         return ["frestore"]
     if kind in ("push", "upush", "rpush"):
         return _first_item((lambda: _decode_push_memory(text, address, size), lambda: _decode_push(text)))
