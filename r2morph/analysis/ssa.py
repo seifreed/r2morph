@@ -20,6 +20,61 @@ from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 logger = logging.getLogger(__name__)
 
 _MIN_PHI_PREDECESSORS = 2
+_MIN_OPERAND_COUNT = 2
+_SSA_REGISTER_NAMES = frozenset(
+    {
+        "eax",
+        "ebx",
+        "ecx",
+        "edx",
+        "esi",
+        "edi",
+        "ebp",
+        "esp",
+        "rax",
+        "rbx",
+        "rcx",
+        "rdx",
+        "rsi",
+        "rdi",
+        "rbp",
+        "rsp",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+        "r12",
+        "r13",
+        "r14",
+        "r15",
+    }
+)
+_RMW_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "cmpxchg",
+        "dec",
+        "imul",
+        "inc",
+        "neg",
+        "not",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "xadd",
+        "xchg",
+        "xor",
+    }
+)
 
 
 @dataclass
@@ -362,54 +417,36 @@ class SSAConverter:
 
     def _extract_defined_registers(self, disasm: str) -> set[str]:
         """Extract registers that are defined (written to) in an instruction."""
-        defined = set()
-
-        if "mov" in disasm or "lea" in disasm or "pop" in disasm:
-            match = re.match(r"\w+\s+(\w+)", disasm)
-            if match:
-                defined.add(match.group(1).lower())
-
-        return defined
+        opcode, _, operands = disasm.partition(" ")
+        mnemonic = opcode.lower()
+        destination = operands.split(",", 1)[0].strip().lower()
+        if destination in _SSA_REGISTER_NAMES and (
+            mnemonic in {"lea", "mov", "pop"}
+            or mnemonic in _RMW_MNEMONICS
+            or mnemonic.startswith("cmov")
+            or mnemonic.startswith("set")
+        ):
+            return {destination}
+        return set()
 
     def _extract_used_registers(self, disasm: str) -> set[str]:
         """Extract registers that are used (read from) in an instruction."""
-        used = set()
+        opcode, _, operands_text = disasm.partition(" ")
+        mnemonic = opcode.lower()
+        operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
+        if not operands:
+            return set()
 
-        reg_pattern = r"\b([a-z][a-z0-9]*)\b"
-        operands = disasm.split(",") if "," in disasm else [disasm]
-
-        if len(operands) > 1:
-            for op in operands[1:]:
-                for match in re.finditer(reg_pattern, op.lower()):
-                    reg = match.group(1)
-                    if reg in {
-                        "eax",
-                        "ebx",
-                        "ecx",
-                        "edx",
-                        "esi",
-                        "edi",
-                        "ebp",
-                        "esp",
-                        "rax",
-                        "rbx",
-                        "rcx",
-                        "rdx",
-                        "rsi",
-                        "rdi",
-                        "rbp",
-                        "rsp",
-                        "r8",
-                        "r9",
-                        "r10",
-                        "r11",
-                        "r12",
-                        "r13",
-                        "r14",
-                        "r15",
-                    }:
-                        used.add(reg)
-
+        used: set[str] = set()
+        source_operands = operands[1:] if len(operands) >= _MIN_OPERAND_COUNT else []
+        if operands[0].startswith("[") or mnemonic in _RMW_MNEMONICS or mnemonic.startswith("cmov"):
+            source_operands = operands
+        for operand in source_operands:
+            used.update(
+                match.group(1)
+                for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operand.lower())
+                if match.group(1) in _SSA_REGISTER_NAMES
+            )
         return used
 
     def _get_new_version(self, reg_name: str) -> int:

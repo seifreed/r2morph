@@ -248,6 +248,10 @@ class TestSSAConverter:
         defined = converter._extract_defined_registers("pop eax")
         expect(not ("eax" not in defined))
 
+    def test_extract_defined_registers_read_modify_write(self, converter):
+        defined = converter._extract_defined_registers("add eax, ebx")
+        expect(defined == {"eax"})
+
     def test_extract_used_registers(self, converter):
         used = converter._extract_used_registers("mov eax, ebx")
         expect(not ("ebx" not in used))
@@ -260,6 +264,10 @@ class TestSSAConverter:
     def test_extract_used_registers_64bit(self, converter):
         used = converter._extract_used_registers("mov rax, rbx")
         expect(not ("rbx" not in used))
+
+    def test_extract_used_registers_read_modify_write_destination(self, converter):
+        used = converter._extract_used_registers("add eax, ebx")
+        expect(used == {"eax", "ebx"})
 
     def test_get_ssa_variable_at(self, converter):
         blocks = {
