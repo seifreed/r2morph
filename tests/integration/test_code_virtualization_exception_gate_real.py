@@ -114,14 +114,20 @@ def test_code_virtualization_preserves_exception_from_call_inside_virtualized_fu
     """A C++ exception must retain its caller's landing-pad semantics."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    thrower_source = tmp_path / "unwind_thrower.cpp"
     source = tmp_path / "unwind_call.cpp"
     executable = tmp_path / "unwind_call"
+    thrower_source.write_text("""
+#include <stdexcept>
+
+void thrower() {
+    throw std::runtime_error("call escaped");
+}
+""")
     source.write_text("""
 #include <stdexcept>
 
-__attribute__((noinline)) void thrower() {
-    throw std::runtime_error("call escaped");
-}
+extern void thrower();
 
 __attribute__((noinline)) int boundary(int value) {
     try {
@@ -134,7 +140,7 @@ __attribute__((noinline)) int boundary(int value) {
 
 int main() { return boundary(35) == 42 ? 42 : 1; }
 """)
-    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    result = run_command(["g++", "-O2", "-fno-pie", "-no-pie", "-o", executable, thrower_source, source], timeout=30)
     expect(result.returncode == 0, "failed to compile the call/unwinding fixture")
 
     with Binary(executable, writable=True) as binary:
