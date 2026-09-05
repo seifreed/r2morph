@@ -6,7 +6,9 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `c820685f`
+- Commit: `6cd5a8b`
+- Production evidence baseline: `c820685f`; `6cd5a8b` only makes the async-signal
+  regression fixture deterministic.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -27,16 +29,20 @@ checks are evidence, not a human approval.
 The current evidence records 159/159 virtualized samples, 318/318 IDA
 analyses, 954 Triton pairs, 954 angr pairs, and 80,000 fuzz target runs.
 The automated review still reports `human_signoff: not-attested`.
-The current corpus rerun records 47 explicit Unicorn errors and 1,908 local
-IDA/Ghidra-unavailable rows; these are not attributed to Triton or angr.
+The current CodeVirtualization corpus rerun records 15 explicit Unicorn
+errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
+Triton or angr. The full six-pass rerun remains documented separately with
+its explicit unavailable-tool rows.
 Binary Ninja remains excluded by project decision.
+The pushed CI workflow `33968507637` is green across the required test,
+type-check, lint, fuzz, and platform jobs.
 
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
 
 ```bash
-source /tmp/r2morph-venv313/bin/activate
+source /private/tmp/r2morph-venv313/bin/activate
 python scripts/independent_review.py --output /tmp/independent-review.json
 python -m pytest -q --no-cov tests/unit/test_independent_review_contract.py tests/unit/test_adversarial_benchmark_contract.py
 ```
@@ -70,7 +76,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: c820685f
+Reviewed commit: 6cd5a8b
 ```
 
 No approval is implied until a human reviewer fills this section outside the
