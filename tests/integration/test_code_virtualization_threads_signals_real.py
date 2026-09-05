@@ -118,7 +118,7 @@ static void on_alarm(int signal_number) {
 }
 
 __attribute__((noinline)) static int wait_for_alarm(void) {
-    volatile unsigned long iterations = 0;
+    volatile unsigned long iterations = 1;
     while (!signal_seen) {
         ++iterations;
     }
