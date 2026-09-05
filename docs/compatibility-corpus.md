@@ -74,6 +74,11 @@ The full report still records 5,679 completed tool runs, 45 Unicorn errors,
 and 1,908 unavailable-tool rows; the latter are explicit environment/tool
 availability results, not Triton or angr failures.
 
+The current deterministic parser/dispatcher/relocation/rewriter fuzz campaign
+at `e04c1a9c` ran 20,000 cases per target, 80,000 target runs in total, with
+zero failures. Its bounded report is
+[`protection-fuzz-2026-09-05-e04c1a9c.json`](protection-fuzz-2026-09-05-e04c1a9c.json).
+
 The preceding Linux Triton rerun at `d0e63026` used the same package and
 completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
