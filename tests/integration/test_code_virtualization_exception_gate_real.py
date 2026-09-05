@@ -142,7 +142,9 @@ int main() { return boundary(35) == 42 ? 42 : 1; }
         boundary_address = next(
             int(function["addr"]) for function in binary.get_functions() if "boundary" in function.get("name", "")
         )
+        original_boundary_bytes = binary.read_bytes(boundary_address, 8)
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
+        boundary_was_transformed = binary.read_bytes(boundary_address, 8) != original_boundary_bytes
 
     runtime_result = run_command([executable], timeout=30)
     unwind_failure_addresses = {
@@ -151,7 +153,10 @@ int main() { return boundary(35) == 42 ? 42 : 1; }
         if record["capability"] == "exceptions_and_unwinding"
     }
     expect(
-        boundary_address not in unwind_failure_addresses and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        boundary_was_transformed
+        and boundary_address not in unwind_failure_addresses
+        and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "an exception crossing a virtualized call lost the caller unwind contract: "
-        f"{boundary_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
+        f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
+        f"{unwind_failure_addresses=}, {stats=}",
     )
