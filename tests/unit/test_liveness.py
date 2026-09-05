@@ -479,6 +479,22 @@ class TestLivenessAnalysis:
 
         expect("rflags" in {register.name for register in used})
 
+    def test_memory_load_reads_global_memory_resource(self):
+        """A load must depend on the conservative global memory resource."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "mov", "disasm": "mov eax, [rbp+8]"})
+
+        expect("memory" in {register.name for register in used})
+
+    def test_memory_store_defines_global_memory_resource(self):
+        """A store must invalidate the conservative global memory resource."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = analyzer._extract_registers_defined({"type": "mov", "disasm": "mov [rbp+8], eax"})
+
+        expect("memory" in {register.name for register in defined})
+
     def test_compare_defines_flags_without_overwriting_compared_register(self):
         """Compare writes flags but does not define its first operand."""
         analyzer = LivenessAnalysis(create_simple_cfg())

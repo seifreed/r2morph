@@ -279,6 +279,16 @@ class TestSSAConverter:
 
         expect(used == {"rflags"})
 
+    def test_extract_used_registers_memory_load_reads_memory_resource(self, converter):
+        used = converter._extract_used_registers("mov eax, [rbp+8]")
+
+        expect("memory" in used)
+
+    def test_extract_defined_registers_memory_store_defines_memory_resource(self, converter):
+        defined = converter._extract_defined_registers("mov [rbp+8], eax")
+
+        expect("memory" in defined)
+
     def test_get_ssa_variable_at(self, converter):
         blocks = {
             0x1000: SSABlock(

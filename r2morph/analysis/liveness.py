@@ -53,6 +53,7 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
 )
 _READ_BOTH_OPERANDS_MNEMONICS = _READ_MODIFY_WRITE_MNEMONICS | {"cmp", "test"}
 _FLAGS_REGISTER_NAME = "rflags"
+_MEMORY_RESOURCE_NAME = "memory"
 _FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "lahf", "pushf", "pushfq"})
 _FLAG_WRITING_MNEMONICS = frozenset(
     {
@@ -89,6 +90,34 @@ _FLAG_WRITING_MNEMONICS = frozenset(
         "sub",
         "test",
         "xadd",
+        "xor",
+    }
+)
+_MEMORY_READ_MODIFY_WRITE_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bts",
+        "btr",
+        "btc",
+        "cmpxchg",
+        "dec",
+        "inc",
+        "neg",
+        "not",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "xadd",
+        "xchg",
         "xor",
     }
 )
@@ -350,7 +379,7 @@ class LivenessAnalysis:
 
         mnemonic = insn.get("type", "").lower()
         opcode = disasm.split(None, 1)[0]
-        if mnemonic in ("jmp", "ret", "nop"):
+        if mnemonic in ("jmp", "nop"):
             return used
 
         # call instructions implicitly use argument registers per ABI
@@ -359,6 +388,7 @@ class LivenessAnalysis:
                 Register(reg_name, reg_size)
                 for reg_name, reg_size in self._CALL_USED_REGS.get(self._abi, self._CALL_USED_REGS["sysv_amd64"])
             }
+            used.add(Register(_MEMORY_RESOURCE_NAME))
             # Also extract explicit operand registers (e.g., call rax)
             operand_parts = disasm.split(None, 1)
             if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
@@ -367,9 +397,14 @@ class LivenessAnalysis:
 
         operand_parts = disasm.split(None, 1)
         if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
-            return self._registers_used_by_operands(operand_parts[1], disasm)
+            used = self._registers_used_by_operands(operand_parts[1], disasm)
+            if self._memory_accesses(disasm)[0]:
+                used.add(Register(_MEMORY_RESOURCE_NAME))
+            return used
         if self._reads_flags(opcode):
             used.add(Register(_FLAGS_REGISTER_NAME, 64))
+        if self._memory_accesses(disasm)[0]:
+            used.add(Register(_MEMORY_RESOURCE_NAME))
         return used
 
     def _registers_used_by_operands(self, operands: str, disasm: str) -> set[Register]:
@@ -412,6 +447,7 @@ class LivenessAnalysis:
             for reg_name, reg_size in self._CALL_DEFINED_REGS.get(self._abi, self._CALL_DEFINED_REGS["sysv_amd64"]):
                 defined.add(Register(reg_name, reg_size))
             defined.add(Register(_FLAGS_REGISTER_NAME, 64))
+            defined.add(Register(_MEMORY_RESOURCE_NAME))
             return defined
 
         operand_parts = disasm.split(None, 1)
@@ -425,8 +461,39 @@ class LivenessAnalysis:
 
         if self._writes_flags(opcode):
             defined.add(Register(_FLAGS_REGISTER_NAME, 64))
+        if self._memory_accesses(disasm)[1]:
+            defined.add(Register(_MEMORY_RESOURCE_NAME))
 
         return defined
+
+    @staticmethod
+    def _memory_accesses(disasm: str) -> tuple[bool, bool]:
+        """Return conservative ``(reads, writes)`` effects for memory."""
+        tokens = disasm.split(None, 1)
+        if not tokens:
+            return False, False
+        opcode = tokens[0].lower()
+        if opcode == "lock" and len(tokens) == _INSTRUCTION_PART_COUNT:
+            opcode = tokens[1].split(None, 1)[0].lower()
+        if opcode in {"call", "syscall", "sysenter", "int"}:
+            return True, True
+        if opcode in {"push", "pushf", "pushfq"}:
+            return False, True
+        if opcode in {"pop", "popf", "popfq", "ret"}:
+            return True, False
+        if opcode == "lea" or "[" not in disasm:
+            return False, False
+
+        operands = [operand.strip() for operand in tokens[1].split(",")]
+        first_is_memory = bool(operands and "[" in operands[0])
+        reads = any("[" in operand for operand in operands[1:])
+        writes = first_is_memory
+        if first_is_memory and opcode in _MEMORY_READ_MODIFY_WRITE_MNEMONICS:
+            reads = True
+        if opcode in {"cmp", "test", "bt"} and first_is_memory:
+            reads = True
+            writes = False
+        return reads, writes
 
     @staticmethod
     def _reads_flags(opcode: str) -> bool:

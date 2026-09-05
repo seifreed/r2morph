@@ -85,6 +85,7 @@ _SYSV_VECTOR_DEFINED_REGISTERS = frozenset(
 )
 _SSA_VECTOR_REGISTER_NAMES = frozenset(register for index in range(16) for register in (f"xmm{index}", f"ymm{index}"))
 _SSA_FLAGS_REGISTER_NAME = "rflags"
+_SSA_MEMORY_RESOURCE_NAME = "memory"
 _SSA_FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "lahf", "pushf", "pushfq"})
 _SSA_FLAG_WRITING_MNEMONICS = frozenset(
     {
@@ -125,6 +126,34 @@ _SSA_FLAG_WRITING_MNEMONICS = frozenset(
     }
 )
 _SSA_READ_BOTH_OPERANDS_MNEMONICS = _RMW_MNEMONICS | {"cmp", "test"}
+_SSA_MEMORY_READ_MODIFY_WRITE_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bts",
+        "btr",
+        "btc",
+        "cmpxchg",
+        "dec",
+        "inc",
+        "neg",
+        "not",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "xadd",
+        "xchg",
+        "xor",
+    }
+)
 
 
 @dataclass
@@ -470,7 +499,10 @@ class SSAConverter:
         opcode, _, operands = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            return set(_SYSV_CALL_DEFINED_REGISTERS | _SYSV_VECTOR_DEFINED_REGISTERS) | {_SSA_FLAGS_REGISTER_NAME}
+            return set(_SYSV_CALL_DEFINED_REGISTERS | _SYSV_VECTOR_DEFINED_REGISTERS) | {
+                _SSA_FLAGS_REGISTER_NAME,
+                _SSA_MEMORY_RESOURCE_NAME,
+            }
         destination = operands.split(",", 1)[0].strip().lower()
         defined: set[str] = set()
         if destination in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES and (
@@ -484,6 +516,8 @@ class SSAConverter:
             defined.discard(destination)
         if mnemonic in _SSA_FLAG_WRITING_MNEMONICS:
             defined.add(_SSA_FLAGS_REGISTER_NAME)
+        if self._memory_accesses(disasm)[1]:
+            defined.add(_SSA_MEMORY_RESOURCE_NAME)
         return defined
 
     def _extract_used_registers(self, disasm: str) -> set[str]:
@@ -497,12 +531,19 @@ class SSAConverter:
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operands_text.lower())
                 if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
+            call_used.add(_SSA_MEMORY_RESOURCE_NAME)
             return call_used
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
-        if not operands:
-            return set()
-
         used: set[str] = set()
+        if self._memory_accesses(disasm)[0]:
+            used.add(_SSA_MEMORY_RESOURCE_NAME)
+        if not operands:
+            if mnemonic in _SSA_FLAG_READING_MNEMONICS or (
+                mnemonic.startswith(("j", "cmov", "set")) and mnemonic not in {"jmp", "jrcxz", "jecxz", "jcxz"}
+            ):
+                used.add(_SSA_FLAGS_REGISTER_NAME)
+            return used
+
         source_operands = operands[1:] if len(operands) >= _MIN_OPERAND_COUNT else []
         if operands[0].startswith("[") or mnemonic in _SSA_READ_BOTH_OPERANDS_MNEMONICS or mnemonic.startswith("cmov"):
             source_operands = operands
@@ -517,6 +558,35 @@ class SSAConverter:
         ):
             used.add(_SSA_FLAGS_REGISTER_NAME)
         return used
+
+    @staticmethod
+    def _memory_accesses(disasm: str) -> tuple[bool, bool]:
+        """Return conservative ``(reads, writes)`` effects for memory."""
+        tokens = disasm.split(None, 1)
+        if not tokens:
+            return False, False
+        opcode = tokens[0].lower()
+        if opcode == "lock" and len(tokens) == _MIN_OPERAND_COUNT:
+            opcode = tokens[1].split(None, 1)[0].lower()
+        if opcode in {"call", "syscall", "sysenter", "int"}:
+            return True, True
+        if opcode in {"push", "pushf", "pushfq"}:
+            return False, True
+        if opcode in {"pop", "popf", "popfq", "ret"}:
+            return True, False
+        if opcode == "lea" or "[" not in disasm:
+            return False, False
+
+        operands = [operand.strip() for operand in tokens[1].split(",")]
+        first_is_memory = bool(operands and "[" in operands[0])
+        reads = any("[" in operand for operand in operands[1:])
+        writes = first_is_memory
+        if first_is_memory and opcode in _SSA_MEMORY_READ_MODIFY_WRITE_MNEMONICS:
+            reads = True
+        if opcode in {"cmp", "test", "bt"} and first_is_memory:
+            reads = True
+            writes = False
+        return reads, writes
 
     def _get_new_version(self, reg_name: str) -> int:
         """Get a new SSA version for a register."""
