@@ -14,6 +14,7 @@ from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bt,
     _decode_cmp_mem,
+    _decode_cmp_memory_immediate,
     _decode_div,
     _decode_memory_immediate,
     _decode_memory_mov,
@@ -171,6 +172,20 @@ def test_memory_arithmetic_decodes_indexed_destination_without_base() -> None:
 
 def test_memory_compare_decodes_byte_register_with_low_byte_width() -> None:
     expect(_decode_cmp_mem("cmp al, byte ptr [rsp+8]", 0x1000, 3) == ("cmpmem", 0, 4, 8, 8))
+
+
+def test_memory_compare_decodes_direct_immediate() -> None:
+    expect(_decode_cmp_memory_immediate("cmp dword ptr [rbx], 0xf", 0x1000, 4) == ("cmpmemimm", 0xF, 3, 0, 32))
+
+
+def test_memory_compare_decodes_rip_relative_immediate() -> None:
+    expect(
+        _decode_cmp_memory_immediate("cmp qword ptr [rip+0x20], 0x62", 0x1000, 8) == ("cmpriprelimm", 0x62, 0x1028, 64)
+    )
+
+
+def test_memory_compare_decodes_indexed_immediate_without_base() -> None:
+    expect(_decode_cmp_memory_immediate("cmp dword ptr [rcx*4+8], 7", 0x1000, 6) == ("cmpmemimmidxnb", 7, 1, 2, 8, 32))
 
 
 def test_memory_immediate_decodes_direct_store_with_width() -> None:

@@ -95,6 +95,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
     _decode_bt,
     _decode_cmp_mem,
+    _decode_cmp_memory_immediate,
     _decode_cmpxchg_memory,
     _decode_cqo,
     _decode_div,
@@ -283,7 +284,13 @@ def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
     compare = _decode_two_operand(text, "cmp")
     if compare is not None:
         return ["cmp", *compare]
-    return _first_item((lambda: _decode_bt(text, address, size), lambda: _decode_cmp_mem(text, address, size)))
+    return _first_item(
+        (
+            lambda: _decode_bt(text, address, size),
+            lambda: _decode_cmp_mem(text, address, size),
+            lambda: _decode_cmp_memory_immediate(text, address, size),
+        )
+    )
 
 
 def _classify_shift(text: str) -> list[Any] | None:

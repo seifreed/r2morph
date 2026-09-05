@@ -117,6 +117,29 @@ def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
     ]
 
 
+def _lower_compare_memory_immediate(item: list[Any]) -> list[list[Any]]:
+    kind = item[0]
+    if kind == "cmpmemimm":
+        _, value, base, displacement, width = item
+        return [["vload", base, displacement, width], ["vpushi", value, width], ["vcmpsynth", "cmp", width]]
+    if kind == "cmpmemimmidx":
+        _, value, base, index, shift, displacement, width = item
+        return [
+            ["vloadidx", base, index, shift, displacement, width],
+            ["vpushi", value, width],
+            ["vcmpsynth", "cmp", width],
+        ]
+    if kind == "cmpmemimmidxnb":
+        _, value, index, shift, displacement, width = item
+        return [
+            ["vloadidxnb", index, shift, displacement, width],
+            ["vpushi", value, width],
+            ["vcmpsynth", "cmp", width],
+        ]
+    _, value, target, width = item
+    return [["vloadrip", target, width], ["vpushi", value, width], ["vcmpsynth", "cmp", width]]
+
+
 def _lower_shift_compare(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
     if kind == "shift":
@@ -132,6 +155,8 @@ def _lower_shift_compare(item: list[Any]) -> list[list[Any]]:
     if kind == "cmpmem":
         _, register, base, displacement, width = item
         return [["vpush", register], ["vload", base, displacement, width], ["vcmpsynth", "cmp", width]]
+    if kind in ("cmpmemimm", "cmpmemimmidx", "cmpmemimmidxnb", "cmpriprelimm"):
+        return _lower_compare_memory_immediate(item)
     _, register, target, width = item
     return [["vpush", register], ["vloadrip", target, width], ["vcmpsynth", "cmp", width]]
 
@@ -187,7 +212,21 @@ _LOWERERS: dict[str, _Lowerer] = {
             "opmemdstrip",
         )
     },
-    **{kind: _lower_shift_compare for kind in ("shift", "shiftreg", "cmp", "test", "cmpmem", "cmpriprel")},
+    **{
+        kind: _lower_shift_compare
+        for kind in (
+            "shift",
+            "shiftreg",
+            "cmp",
+            "test",
+            "cmpmem",
+            "cmpriprel",
+            "cmpmemimm",
+            "cmpmemimmidx",
+            "cmpmemimmidxnb",
+            "cmpriprelimm",
+        )
+    },
     **{kind: _lower_movx_address for kind in ("movx", "movxidx", "movxidxnb", "lea", "learip", "leaidx", "leaidxnb")},
 }
 

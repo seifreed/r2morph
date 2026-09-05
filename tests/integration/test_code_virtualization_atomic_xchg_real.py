@@ -87,6 +87,12 @@ def test_atomic_immediate_fixture_virtualization_preserves_emulated_updates(tmp_
     expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 
+def test_atomic_immediate_fixture_virtualizes_memory_comparisons(tmp_path: Path) -> None:
+    _original, _mutated, stats = _virtualize_fixture(tmp_path, _ATOMIC_IMMEDIATE_FIXTURE)
+
+    expect(not any(record["capability"] == "memory_operands" for record in stats["partial_virtualization"]))
+
+
 @pytest.mark.skipif(
     not supports_native_elf_x86_64(),
     reason="native ELF x86-64 execution requires Linux amd64",
