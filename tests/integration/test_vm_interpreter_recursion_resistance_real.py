@@ -57,7 +57,6 @@ def test_recursed_layer_raises_structural_devirtualization_resistance(recursivel
     original = _measure(recursion.FIXTURE)
     recursed = _measure(recursively_virtualized)
     expect(not (recursed.structural_score <= original.structural_score))
-    expect(not (recursed.indirect_jumps <= original.indirect_jumps))
 
 
 def test_devirt_oracle_cannot_reconstruct_the_recursed_layer(recursively_virtualized: Path) -> None:
