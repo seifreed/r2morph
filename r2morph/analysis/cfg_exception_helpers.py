@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from r2morph.analysis.cfg_models import BlockType, ControlFlowGraph, ExceptionEdge
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -32,29 +33,45 @@ def detect_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_addre
 
 def detect_elf_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
     """Detect exception edges from ELF .eh_frame metadata."""
-    exception_edges: list[ExceptionEdge] = []
-
     try:
-        if binary.r2 is None:
-            return exception_edges
-        functions = binary.r2.cmdj("aflj")
-        if not functions:
-            return exception_edges
+        frames = ExceptionInfoReader(binary).read_exception_frames()
+        frame = frames.get(function_address)
+        if frame is None:
+            frame = next(
+                (
+                    candidate
+                    for candidate in frames.values()
+                    if candidate.function_start <= function_address < candidate.function_end
+                ),
+                None,
+            )
+        if frame is None:
+            return []
 
-        landing_pads = set()
-        for func in functions if isinstance(functions, list) else []:
-            func_addr = func.get("addr", func.get("offset", 0))
-            if func_addr == function_address:
-                landing_pads.update(func.get("landing_pads", []))
-
-        for block in cfg.blocks.values():
-            if block.address in landing_pads:
-                block.block_type = BlockType.LANDING_PAD
-                block.metadata["is_landing_pad"] = True
-    except (ValueError, OSError, BrokenPipeError, RuntimeError) as exc:
-        logger.debug(f"Failed to detect ELF exception edges: {exc}")
-
-    return exception_edges
+        exception_edges: list[ExceptionEdge] = []
+        for pad in frame.landing_pads:
+            for block in cfg.blocks.values():
+                if block.address == pad.address:
+                    block.block_type = BlockType.LANDING_PAD
+                    block.metadata["is_landing_pad"] = True
+                    break
+            source_address = pad.metadata.get("call_site_start", function_address)
+            if not isinstance(source_address, int) or not frame.function_start <= source_address < frame.function_end:
+                source_address = function_address
+            exception_edges.append(
+                ExceptionEdge(
+                    from_address=source_address,
+                    to_address=pad.address,
+                    exception_type=pad.action.value,
+                    landing_pad=pad.address,
+                    action=pad.action.value,
+                    metadata=dict(pad.metadata),
+                )
+            )
+        return exception_edges
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to detect ELF exception edges: %s", exc)
+        return []
 
 
 def detect_pe_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
