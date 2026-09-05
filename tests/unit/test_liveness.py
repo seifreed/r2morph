@@ -28,6 +28,9 @@ _EXPECTED_R_SIZE_16 = 16
 _EXPECTED_R_SIZE_32 = 32
 _EXPECTED_R_SIZE_64 = 64
 _EXPECTED_R_SIZE_8 = 8
+_DEEP_CFG_BLOCK_COUNT = 102
+_DEEP_CFG_START_ADDRESS = 0x5000
+_DEEP_CFG_BLOCK_STRIDE = 0x10
 
 
 def create_simple_cfg() -> ControlFlowGraph:
@@ -145,6 +148,26 @@ def create_conditional_cfg() -> ControlFlowGraph:
     cfg.add_edge(0x3010, 0x3030)
     cfg.add_edge(0x3020, 0x3030)
 
+    return cfg
+
+
+def create_deep_backward_cfg() -> ControlFlowGraph:
+    """Create a backward chain that needs more than 100 propagation rounds."""
+    cfg = ControlFlowGraph(function_address=_DEEP_CFG_START_ADDRESS, function_name="deep_backward")
+    for index in reversed(range(_DEEP_CFG_BLOCK_COUNT)):
+        address = _DEEP_CFG_START_ADDRESS + index * _DEEP_CFG_BLOCK_STRIDE
+        predecessor_target = address - _DEEP_CFG_BLOCK_STRIDE
+        successors = [predecessor_target] if index else []
+        disasm = "mov ebx, [rax]" if index == 0 else "mov ebx, 1"
+        block = BasicBlock(
+            address=address,
+            size=4,
+            instructions=[{"offset": address, "type": "mov", "disasm": disasm}],
+            successors=successors,
+            predecessors=[],
+            block_type=BlockType.NORMAL,
+        )
+        cfg.add_block(block)
     return cfg
 
 
@@ -447,6 +470,15 @@ class TestLivenessAnalysis:
 
         expect(len(analyzer._block_live_in) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_IN_4)
         expect(len(analyzer._block_live_out) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_OUT_4)
+
+    def test_liveness_propagates_past_100_backward_cfg_rounds(self):
+        """Liveness reaches the head of a deep backward chain."""
+        analyzer = LivenessAnalysis(create_deep_backward_cfg())
+        analyzer._compute_block_liveness()
+
+        head_address = _DEEP_CFG_START_ADDRESS + (_DEEP_CFG_BLOCK_COUNT - 1) * _DEEP_CFG_BLOCK_STRIDE
+        live_names = {register.name for register in analyzer._block_live_in[head_address]}
+        expect("rax" in live_names)
 
     def test_register_extraction(self):
         """Test register extraction from instruction."""

@@ -10,6 +10,7 @@ Provides detailed liveness computation including:
 
 import logging
 import re
+from collections import deque
 from typing import Any
 
 from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
@@ -89,34 +90,38 @@ class LivenessAnalysis:
 
     def _compute_block_liveness(self) -> None:
         """Compute liveness at block level (backward direction)."""
-        for addr in self.cfg.blocks:
-            self._block_live_in[addr] = set()
-            self._block_live_out[addr] = set()
+        block_addresses = set(self.cfg.blocks)
+        self._block_live_in = {addr: set() for addr in block_addresses}
+        self._block_live_out = {addr: set() for addr in block_addresses}
+        block_use = {addr: self._get_block_use(block) for addr, block in self.cfg.blocks.items()}
+        block_def = {addr: self._get_block_def(block) for addr, block in self.cfg.blocks.items()}
+        predecessors: dict[int, set[int]] = {addr: set() for addr in block_addresses}
 
-        changed = True
-        iterations = 0
-        max_iterations = 100
+        for addr, block in self.cfg.blocks.items():
+            for successor in block.successors:
+                if successor in predecessors:
+                    predecessors[successor].add(addr)
 
-        while changed and iterations < max_iterations:
-            changed = False
-            iterations += 1
+        pending = deque(sorted(block_addresses, reverse=True))
+        queued = set(pending)
+        while pending:
+            addr = pending.popleft()
+            queued.remove(addr)
+            block = self.cfg.blocks[addr]
+            new_out: set[Register] = set()
+            for successor in block.successors:
+                new_out.update(self._block_live_in.get(successor, set()))
+            new_in = block_use[addr] | (new_out - block_def[addr])
 
-            for addr in sorted(self.cfg.blocks.keys(), reverse=True):
-                block = self.cfg.blocks[addr]
+            if new_out == self._block_live_out[addr] and new_in == self._block_live_in[addr]:
+                continue
 
-                old_out = self._block_live_out[addr].copy()
-
-                for succ_addr in block.successors:
-                    if succ_addr in self._block_live_in:
-                        self._block_live_out[addr].update(self._block_live_in[succ_addr])
-
-                use = self._get_block_use(block)
-                defn = self._get_block_def(block)
-
-                self._block_live_in[addr] = use | (self._block_live_out[addr] - defn)
-
-                if self._block_live_out[addr] != old_out:
-                    changed = True
+            self._block_live_out[addr] = new_out
+            self._block_live_in[addr] = new_in
+            for predecessor in sorted(predecessors[addr], reverse=True):
+                if predecessor not in queued:
+                    pending.append(predecessor)
+                    queued.add(predecessor)
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before defined in a block."""
