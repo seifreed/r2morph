@@ -250,7 +250,12 @@ class TestSSAConverter:
 
     def test_extract_defined_registers_read_modify_write(self, converter):
         defined = converter._extract_defined_registers("add eax, ebx")
-        expect(defined == {"eax"})
+        expect(defined == {"eax", "rflags"})
+
+    def test_extract_defined_registers_compare_only_defines_flags(self, converter):
+        defined = converter._extract_defined_registers("cmp eax, ebx")
+
+        expect(defined == {"rflags"})
 
     def test_extract_used_registers(self, converter):
         used = converter._extract_used_registers("mov eax, ebx")
@@ -268,6 +273,11 @@ class TestSSAConverter:
     def test_extract_used_registers_read_modify_write_destination(self, converter):
         used = converter._extract_used_registers("add eax, ebx")
         expect(used == {"eax", "ebx"})
+
+    def test_extract_used_registers_conditional_branch_reads_flags(self, converter):
+        used = converter._extract_used_registers("jne 0x2000")
+
+        expect(used == {"rflags"})
 
     def test_get_ssa_variable_at(self, converter):
         blocks = {

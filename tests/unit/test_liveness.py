@@ -471,6 +471,47 @@ class TestLivenessAnalysis:
 
         expect({register.name for register in used} == {"eax", "ebx"})
 
+    def test_conditional_branch_reads_status_flags(self):
+        """A conditional branch consumes the flags produced by its predecessor."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "cjmp", "disasm": "jne 0x2000"})
+
+        expect("rflags" in {register.name for register in used})
+
+    def test_compare_defines_flags_without_overwriting_compared_register(self):
+        """Compare writes flags but does not define its first operand."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = analyzer._extract_registers_defined({"type": "cmp", "disasm": "cmp eax, ebx"})
+        names = {register.name for register in defined}
+
+        expect(names == {"rflags"})
+
+    def test_call_clobbers_status_flags(self):
+        """A native call invalidates the caller's status flags."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = analyzer._extract_registers_defined({"type": "call", "disasm": "call 0x2000"})
+
+        expect("rflags" in {register.name for register in defined})
+
+    def test_single_operand_flag_producer_defines_status_flags(self):
+        """A flag-only producer remains visible to liveness."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = analyzer._extract_registers_defined({"type": "stc", "disasm": "stc"})
+
+        expect("rflags" in {register.name for register in defined})
+
+    def test_single_operand_flag_consumer_uses_status_flags(self):
+        """A flag-only consumer remains visible to liveness."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "lahf", "disasm": "lahf"})
+
+        expect("rflags" in {register.name for register in used})
+
     def test_write_only_move_destination_is_not_live_before_instruction(self):
         """A move destination is overwritten without reading its previous value."""
         analyzer = LivenessAnalysis(create_simple_cfg())

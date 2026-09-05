@@ -51,6 +51,47 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
         "xor",
     }
 )
+_READ_BOTH_OPERANDS_MNEMONICS = _READ_MODIFY_WRITE_MNEMONICS | {"cmp", "test"}
+_FLAGS_REGISTER_NAME = "rflags"
+_FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "lahf", "pushf", "pushfq"})
+_FLAG_WRITING_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bt",
+        "bts",
+        "btr",
+        "btc",
+        "cmp",
+        "cmpxchg",
+        "dec",
+        "idiv",
+        "imul",
+        "inc",
+        "mul",
+        "neg",
+        "or",
+        "popf",
+        "popfq",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sahf",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "stc",
+        "clc",
+        "cmc",
+        "sub",
+        "test",
+        "xadd",
+        "xor",
+    }
+)
 
 logger = logging.getLogger(__name__)
 
@@ -308,7 +349,7 @@ class LivenessAnalysis:
             return used
 
         mnemonic = insn.get("type", "").lower()
-
+        opcode = disasm.split(None, 1)[0]
         if mnemonic in ("jmp", "ret", "nop"):
             return used
 
@@ -325,10 +366,11 @@ class LivenessAnalysis:
             return used
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < _INSTRUCTION_PART_COUNT:
-            return used
-
-        return self._registers_used_by_operands(operand_parts[1], disasm)
+        if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
+            return self._registers_used_by_operands(operand_parts[1], disasm)
+        if self._reads_flags(opcode):
+            used.add(Register(_FLAGS_REGISTER_NAME, 64))
+        return used
 
     def _registers_used_by_operands(self, operands: str, disasm: str) -> set[Register]:
         used: set[Register] = set()
@@ -339,13 +381,16 @@ class LivenessAnalysis:
                 for source in parts[1:]:
                     used.update(self._parse_registers_from_string(source.strip()))
             dest = parts[0].strip()
-            if "[" in dest or opcode in _READ_MODIFY_WRITE_MNEMONICS or opcode.startswith("cmov"):
+            if "[" in dest or opcode in _READ_BOTH_OPERANDS_MNEMONICS or opcode.startswith("cmov"):
                 used.update(self._parse_registers_from_string(dest))
         elif opcode != "pop" and not opcode.startswith("set"):
             used.update(self._parse_registers_from_string(operands))
 
         if "(" in disasm and ")" in disasm:
             used.update(self._parse_registers_from_string(disasm))
+
+        if self._reads_flags(opcode):
+            used.add(Register(_FLAGS_REGISTER_NAME, 64))
 
         return used
 
@@ -354,6 +399,7 @@ class LivenessAnalysis:
         defined: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
         mnemonic = insn.get("type", "").lower()
+        opcode = disasm.split(None, 1)[0]
 
         if not disasm:
             return defined
@@ -365,23 +411,34 @@ class LivenessAnalysis:
         if mnemonic == "call":
             for reg_name, reg_size in self._CALL_DEFINED_REGS.get(self._abi, self._CALL_DEFINED_REGS["sysv_amd64"]):
                 defined.add(Register(reg_name, reg_size))
+            defined.add(Register(_FLAGS_REGISTER_NAME, 64))
             return defined
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < _INSTRUCTION_PART_COUNT:
-            return defined
+        if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
+            operands = operand_parts[1]
+            dest = operands.split(",")[0].strip() if "," in operands else operands.strip()
 
-        operands = operand_parts[1]
-        if "," in operands:
-            dest = operands.split(",")[0].strip()
+            if "[" not in dest and opcode not in {"cmp", "test", "pushf", "pushfq"}:
+                for reg in self._parse_registers_from_string(dest):
+                    defined.add(reg)
 
-            if "[" in dest:
-                return defined
-
-            for reg in self._parse_registers_from_string(dest):
-                defined.add(reg)
+        if self._writes_flags(opcode):
+            defined.add(Register(_FLAGS_REGISTER_NAME, 64))
 
         return defined
+
+    @staticmethod
+    def _reads_flags(opcode: str) -> bool:
+        """Return whether an opcode consumes status flags."""
+        return opcode in _FLAG_READING_MNEMONICS or (
+            opcode.startswith(("j", "cmov", "set")) and opcode not in {"jmp", "jrcxz", "jecxz", "jcxz"}
+        )
+
+    @staticmethod
+    def _writes_flags(opcode: str) -> bool:
+        """Return whether an opcode produces or clobbers status flags."""
+        return opcode in _FLAG_WRITING_MNEMONICS
 
     def _parse_registers_from_string(self, s: str) -> set[Register]:
         """Parse register names from a string."""
