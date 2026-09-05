@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "measurement": "ida-mcp-corpus",
+  "commit": "bb3eb3bf",
+  "dataset": "fixtures/dataset",
+  "pass_name": "CodeVirtualization",
+  "tool": "ida-pro-mcp",
+  "sample_count": 159,
+  "analysis_runs": {
+    "original": 159,
+    "protected": 159,
+    "total": 318
+  },
+  "function_counts": {
+    "original_total": 210,
+    "protected_total": 363,
+    "original_zero_function_rows": 1,
+    "protected_zero_function_rows": 0
+  },
+  "error_analysis_runs": 0,
+  "status": "completed",
+  "notes": [
+    "Protected artifacts were generated with the CodeVirtualization pass and discarded after analysis.",
+    "Nine transient worker-open failures were retried successfully; no IDA analysis error remained."
+  ]
+}

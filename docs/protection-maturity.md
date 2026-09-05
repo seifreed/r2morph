@@ -30,6 +30,14 @@ compact result is in
 and the raw report is in
 [`docs/protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
 (`SHA-256 cd86ada75b515f84676bb110807cf8d964276cb5bda54831750aec70d28c5f25`).
+The public Ghidra workflow cited in older reports (`33259983358`) was
+cancelled; the local artifact above is the completed 318-analysis evidence.
+
+The current IDA MCP rerun at `bb3eb3bf` completed all 159 original and all 159
+CodeVirtualization-protected fixtures, for 318 analyses with zero errors. It
+recovered 210 functions across originals and 363 across protected outputs. The
+aggregate evidence is recorded in
+[`docs/protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json`](protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json).
 GitHub Actions CI workflow `33847250344` passed the same commit across lint,
 typecheck, tests, package smoke, property/fuzz validation, and supported
 platform jobs.

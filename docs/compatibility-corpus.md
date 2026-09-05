@@ -54,6 +54,15 @@ with the per-run contract in
 [`protection-ghidra-corpus-2026-09-04-88258a05-summary.json`](protection-ghidra-corpus-2026-09-04-88258a05-summary.json)
 and SHA-256
 `cd86ada75b515f84676bb110807cf8d964276cb5bda54831750aec70d28c5f25`.
+The corresponding public workflow `33259983358` was cancelled before its
+Ghidra benchmark completed; the local raw report above is therefore the
+authoritative Ghidra evidence.
+
+The current IDA MCP rerun at `bb3eb3bf` completed all 159 original and all 159
+CodeVirtualization-protected fixtures, for 318 analyses with zero errors. It
+recovered 210 functions across originals and 363 across protected outputs. The
+aggregate evidence is in
+[`protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json`](protection-ida-mcp-corpus-2026-09-05-bb3eb3bf.json).
 
 The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
@@ -73,10 +82,11 @@ completed the same 954 Triton pair records; its raw report remains
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording
 function, basic-block, edge, instruction, and duration deltas without retaining
-analyzer output. The current six-pass transformation, differential-execution,
-static-recovery, and malformed-input run is tracked in
-[`33259963329`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259963329).
-The corresponding full Ghidra headless run is tracked in
-[`33259983358`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259983358).
-IDA Pro, angr, and Triton now have complete local repository-fixture runs.
+analyzer output. The latest successful public corpus run for the pinned corpus
+is tracked in
+[`33045740069`](https://github.com/seifreed/r2morph-corpus/actions/runs/33045740069).
+The later replacement runs `33259963329` (corpus) and `33259983358` (Ghidra)
+were cancelled before their validation steps completed. The local Ghidra
+artifact and the current IDA MCP artifact above are the repository-fixture
+evidence; angr and Triton have complete local repository-fixture runs.
 Licensed local measurements remain separate from public-runner evidence.
