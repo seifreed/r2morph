@@ -15,9 +15,10 @@ operand decoding depends on a build-constant mask.
 One shared, slot-driven dispatcher serves both layers: the transfer handlers
 write the active layer's handler count and dispatch-table base into frame slots,
 so every existing handler builder is reused verbatim (each decrypts its operands
-against the shared checksum and jumps to the one ``vm_dispatch``). Only
-flag-independent register-op runs are peeled, so no branch target ever crosses
-the layer boundary.
+against the shared checksum and jumps to the selected ``vm_dispatch``). The
+nested builder supports the same inline-threaded and central decoder personalities
+as a single-layer region. Only flag-independent register-op runs are peeled, so
+no branch target ever crosses the layer boundary.
 
 The runtime self-checksum (:mod:`code_virtualization_region_integrity`) spans
 both layers' code, so tampering with either layer diverges both.
@@ -436,8 +437,8 @@ def _inner_exit_asm(parent: int, parent_count: int, return_slot: int) -> str:
     )
 
 
-def _decode_block(rng: random.Random, state_offset: int = 0x218) -> str:
-    # Direct-threaded, polymorphic decode block (no label): the opcode is decoded
+def _decode_block(rng: random.Random, state_offset: int = 0x218, central: bool = False) -> str:
+    # Direct-threaded, polymorphic decode block: the opcode is decoded
     # with the active layer's key (frame slot) plus the position mask and self-
     # checksum, bounds-checked against the active handler count, then dispatched
     # through the active table. This body is inlined at the entry and at the tail
@@ -447,7 +448,7 @@ def _decode_block(rng: random.Random, state_offset: int = 0x218) -> str:
     # so no two share a byte layout. It runs once per opcode either way and
     # shuffling only reorders instructions, so executed count and size are
     # unchanged; only interpreter code size grows (scanned once).
-    return decode_block(
+    body = decode_block(
         opcode_xors=[
             "  xor al, r13b\n",
             f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
@@ -469,6 +470,7 @@ def _decode_block(rng: random.Random, state_offset: int = 0x218) -> str:
         ],
         rng=rng,
     )
+    return f"vm_dispatch:\n{body}" if central else body
 
 
 def _build_layers(region: Region, depth: int, rng: random.Random) -> list[Region] | None:
@@ -567,12 +569,13 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # resume discriminator are keyed to. The threaded bytecode_len (per layer) and the
     # floor cell below carry the in-function-call return discipline into the nested
     # build, so a call-bearing region nests instead of falling back to single-layer.
+    dispatch_variant = rng.randrange(2)
     layers = _build_layers(region, max(2, min(depth, _MAX_LAYERS)), rng)
     if layers is None:
         return None
     # Build a scheme per layer; all share the outermost slot permutation so every
     # layer reads and writes the same frame slots for a given logical register.
-    schemes = [build_region_scheme(layer, rng) for layer in layers]
+    schemes = [build_region_scheme(layer, rng, dispatch_variant=dispatch_variant) for layer in layers]
     slot = schemes[0].slot_perm
     schemes = _relayer_sharing_frame(schemes, slot)
     counts = [_scheme_count(s) for s in schemes]
@@ -598,7 +601,6 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # cell below the relocated program stack so a ret unwinding to the outermost frame
     # reads a non-bytecode value and returns natively - see the single-layer builder.
     has_in_function_call = any(item[0] == "vcall" for item in region.instructions)
-    floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
 
     ready = (
         checksum_prologue_asm(
@@ -633,7 +635,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             _region_stack_guard(region, schemes[0].junk_seed),
         )
         + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n"
-        f"  sub rax, {_region_stack_guard(region, schemes[0].junk_seed)}\n{floor_cell}"
+        f"  sub rax, {_region_stack_guard(region, schemes[0].junk_seed)}\n"
+        + ("  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else "")
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
@@ -731,8 +734,14 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(len(layers) - 1))
         + f"bc_{len(layers) - 1}:\n"
     )
+    poly_rng = random.Random(schemes[0].table_key)
     body = (
         entry
+        + (
+            f"vm_dispatch:\n{_decode_block(poly_rng, schemes[0].state_offset)}"
+            if schemes[0].dispatch_variant == 1
+            else ""
+        )
         + "".join(layer_bodies)
         + (
             f"vm_exit:\n{cipher_register_slots(reload_seq, frozenset(index * 8 for index in slot))}"
@@ -740,22 +749,21 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             f"  jmp {hex(layers[0].exit_vaddr)}\n"
         )
     )
-    poly_rng = random.Random(schemes[0].table_key)
     tables = "".join(
         f"vm_table_{layer}:\n"
         + "".join(f"  .long H_{offsets[layer] + j} - vm_table_{layer}\n" for j in range(counts[layer]))
         for layer in range(len(layers))
     )
-    # Thread the dispatch: splice a freshly shuffled decode copy in for every back
-    # jump to the (now removed) shared dispatcher - handler tails, the entry, the
-    # retarget and the enter_inner/inner_exit transfer stubs all end with
-    # `jmp vm_dispatch`, so control flows directly handler -> decode -> next
-    # handler with no hub block and no two copies sharing a byte layout. One rng
-    # seeded from the outer layer's table key keeps the variant sequence
-    # deterministic per build.
-    asm = thread_back_jumps(
-        body + tables + bootstrap_table + island + reservations,
-        lambda: _decode_block(poly_rng, schemes[0].state_offset),
+    # Variant 0 splices a freshly shuffled decode copy into every back edge;
+    # variant 1 keeps the single central decoder inserted above. Both use the
+    # active layer's encrypted relative-offset table.
+    asm = (
+        thread_back_jumps(
+            body + tables + bootstrap_table + island + reservations,
+            lambda: _decode_block(poly_rng, schemes[0].state_offset),
+        )
+        if schemes[0].dispatch_variant == 0
+        else body + tables + bootstrap_table + island + reservations
     )
 
     try:

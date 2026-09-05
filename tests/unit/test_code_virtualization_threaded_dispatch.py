@@ -141,6 +141,11 @@ def test_nested_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     expect(asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") == 1)
 
 
+def test_nested_dispatch_supports_central_dispatch_personality() -> None:
+    asm = _nested_decode_block(randomness.Random(0), 0x240, central=True)
+    expect(asm.startswith("vm_dispatch:\n") and asm.count("vm_dispatch:") == 1)
+
+
 def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _region_asm(0)
 

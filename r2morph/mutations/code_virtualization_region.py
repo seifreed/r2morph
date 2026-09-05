@@ -670,7 +670,7 @@ def extract_region(
     )
 
 
-def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
+def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: int | None = None) -> RegionScheme:
     """Assign each handler a dense opcode index plus a bytecode key.
 
     Opcodes are a per-instance permutation of ``0..N-1`` (N = handler count):
@@ -724,7 +724,8 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     checksum_bytewise = bool((isa_seed ^ xor_key) & 1)
     checksum_reverse = bool((isa_seed ^ table_key) & 2)
     state_offset = rng.choice(_STATE_SLOT_CANDIDATES)
-    dispatch_variant = rng.randrange(2)
+    if dispatch_variant is None:
+        dispatch_variant = rng.randrange(2)
     return RegionScheme(
         dup,
         xor_key,
