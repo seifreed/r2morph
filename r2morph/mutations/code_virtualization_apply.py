@@ -7,6 +7,8 @@ from collections.abc import Iterable
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.cfg import CFGBuilder
+from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
@@ -139,16 +141,19 @@ def _transform_function(
 ) -> dict[str, Any]:
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
-    if unwind_metadata:
+    cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
+    if unwind_metadata or not _static_dataflow_is_complete(cfg):
+        capability = "exceptions_and_unwinding" if unwind_metadata else "static_dataflow"
+        reason = (
+            "unwind metadata could not be mapped to a complete function frame"
+            if unwind_metadata
+            else "CFG, liveness, and SSA coverage was not proven for the function"
+        )
         pass_instance._record_diagnostic(
             unsupported,
             func,
             None,
-            (
-                "error",
-                "exceptions_and_unwinding",
-                "unwind metadata could not be mapped to a complete function frame",
-            ),
+            ("error", capability, reason),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
     if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
@@ -212,6 +217,20 @@ def _function_has_unproven_unwind_metadata(
             None,
         )
     return frame is None
+
+
+def _static_dataflow_is_complete(cfg: Any) -> bool:
+    """Require CFG, liveness, and SSA coverage before lowering a function."""
+    try:
+        if not cfg.blocks:
+            return False
+        analyzer = DefUseAnalyzer(cfg)
+        analyzer.analyze()
+        ssa_blocks = analyzer.build_ssa_form()
+    except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Static dataflow failed: %s", exc)
+        return False
+    return set(ssa_blocks) == set(cfg.blocks)
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
