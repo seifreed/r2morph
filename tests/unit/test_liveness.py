@@ -487,6 +487,24 @@ class TestLivenessAnalysis:
 
         expect("rax" in {register.name for register in used})
 
+    def test_sysv_call_uses_vector_argument_registers(self):
+        """SysV calls consume the eight vector argument register pairs."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "call", "disasm": "call 0x2000"})
+        names = {register.name for register in used}
+
+        expect({"xmm0", "xmm7", "ymm0", "ymm7"} <= names)
+
+    def test_sysv_call_defines_all_caller_saved_vector_registers(self):
+        """SysV calls clobber all XMM/YMM registers, including return vectors."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = analyzer._extract_registers_defined({"type": "call", "disasm": "call 0x2000"})
+        names = {register.name for register in defined}
+
+        expect({"xmm0", "xmm15", "ymm0", "ymm15"} <= names)
+
     def test_to_dict(self):
         """Test to_dict method."""
         cfg = create_sequential_cfg()

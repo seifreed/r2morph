@@ -72,6 +72,8 @@ _X86_REGISTER_BIT_SIZES = {
     "r13b": 8,
     "r14b": 8,
     "r15b": 8,
+    **{f"xmm{index}": 128 for index in range(16)},
+    **{f"ymm{index}": 256 for index in range(16)},
 }
 
 

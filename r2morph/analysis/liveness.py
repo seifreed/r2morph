@@ -70,8 +70,25 @@ class LivenessAnalysis:
 
     # ABI-specific register sets for call instruction analysis
     _CALL_USED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
-        "sysv_amd64": [("rax", 64), ("rdi", 64), ("rsi", 64), ("rdx", 64), ("rcx", 64), ("r8", 64), ("r9", 64)],
-        "win64": [("rcx", 64), ("rdx", 64), ("r8", 64), ("r9", 64)],
+        "sysv_amd64": [
+            ("rax", 64),
+            ("rdi", 64),
+            ("rsi", 64),
+            ("rdx", 64),
+            ("rcx", 64),
+            ("r8", 64),
+            ("r9", 64),
+            *[(f"xmm{index}", 128) for index in range(8)],
+            *[(f"ymm{index}", 256) for index in range(8)],
+        ],
+        "win64": [
+            ("rcx", 64),
+            ("rdx", 64),
+            ("r8", 64),
+            ("r9", 64),
+            *[(f"xmm{index}", 128) for index in range(4)],
+            *[(f"ymm{index}", 256) for index in range(4)],
+        ],
         "cdecl_32": [],  # Arguments passed on stack
     }
     _CALL_DEFINED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
@@ -85,8 +102,20 @@ class LivenessAnalysis:
             ("r9", 64),
             ("r10", 64),
             ("r11", 64),
+            *[(f"xmm{index}", 128) for index in range(16)],
+            *[(f"ymm{index}", 256) for index in range(16)],
         ],
-        "win64": [("rax", 64), ("rcx", 64), ("rdx", 64), ("r8", 64), ("r9", 64), ("r10", 64), ("r11", 64)],
+        "win64": [
+            ("rax", 64),
+            ("rcx", 64),
+            ("rdx", 64),
+            ("r8", 64),
+            ("r9", 64),
+            ("r10", 64),
+            ("r11", 64),
+            *[(f"xmm{index}", 128) for index in range(6)],
+            *[(f"ymm{index}", 256) for index in range(6)],
+        ],
         "cdecl_32": [("eax", 32), ("ecx", 32), ("edx", 32)],
     }
 

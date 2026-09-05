@@ -77,6 +77,13 @@ _RMW_MNEMONICS = frozenset(
 )
 _SYSV_CALL_USED_REGISTERS = frozenset({"rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9"})
 _SYSV_CALL_DEFINED_REGISTERS = frozenset({"rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"})
+_SYSV_VECTOR_ARGUMENT_REGISTERS = frozenset(
+    register for index in range(8) for register in (f"xmm{index}", f"ymm{index}")
+)
+_SYSV_VECTOR_DEFINED_REGISTERS = frozenset(
+    register for index in range(16) for register in (f"xmm{index}", f"ymm{index}")
+)
+_SSA_VECTOR_REGISTER_NAMES = frozenset(register for index in range(16) for register in (f"xmm{index}", f"ymm{index}"))
 
 
 @dataclass
@@ -422,9 +429,9 @@ class SSAConverter:
         opcode, _, operands = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            return set(_SYSV_CALL_DEFINED_REGISTERS)
+            return set(_SYSV_CALL_DEFINED_REGISTERS | _SYSV_VECTOR_DEFINED_REGISTERS)
         destination = operands.split(",", 1)[0].strip().lower()
-        if destination in _SSA_REGISTER_NAMES and (
+        if destination in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES and (
             mnemonic in {"lea", "mov", "pop"}
             or mnemonic in _RMW_MNEMONICS
             or mnemonic.startswith("cmov")
@@ -438,11 +445,11 @@ class SSAConverter:
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            call_used = set(_SYSV_CALL_USED_REGISTERS)
+            call_used = set(_SYSV_CALL_USED_REGISTERS | _SYSV_VECTOR_ARGUMENT_REGISTERS)
             call_used.update(
                 match.group(1)
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operands_text.lower())
-                if match.group(1) in _SSA_REGISTER_NAMES
+                if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
             return call_used
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
@@ -457,7 +464,7 @@ class SSAConverter:
             used.update(
                 match.group(1)
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operand.lower())
-                if match.group(1) in _SSA_REGISTER_NAMES
+                if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
         return used
 

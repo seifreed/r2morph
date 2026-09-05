@@ -438,3 +438,17 @@ class TestBuildSSAForm:
         used = converter._extract_used_registers("call r12")
 
         expect("r12" in used)
+
+    def test_ssa_models_sysv_vector_call_arguments_as_uses(self):
+        converter = SSAConverter()
+
+        used = converter._extract_used_registers("call 0x2000")
+
+        expect("xmm0" in used)
+
+    def test_ssa_models_sysv_vector_call_clobbers(self):
+        converter = SSAConverter()
+
+        defined = converter._extract_defined_registers("call 0x2000")
+
+        expect("ymm15" in defined)
