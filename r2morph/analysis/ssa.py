@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from r2morph.analysis.call_effects import call_register_effects
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
@@ -77,14 +78,6 @@ _RMW_MNEMONICS = frozenset(
         "xor",
     }
 )
-_SYSV_CALL_USED_REGISTERS = frozenset({"rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9"})
-_SYSV_CALL_DEFINED_REGISTERS = frozenset({"rax", "rdx", "rcx", "rsi", "rdi", "r8", "r9", "r10", "r11"})
-_SYSV_VECTOR_ARGUMENT_REGISTERS = frozenset(
-    register for index in range(8) for register in (f"xmm{index}", f"ymm{index}")
-)
-_SYSV_VECTOR_DEFINED_REGISTERS = frozenset(
-    register for index in range(16) for register in (f"xmm{index}", f"ymm{index}")
-)
 _SSA_VECTOR_REGISTER_NAMES = frozenset(register for index in range(16) for register in (f"xmm{index}", f"ymm{index}"))
 _SSA_READ_BOTH_OPERANDS_MNEMONICS = _RMW_MNEMONICS | {"cmp", "test"}
 
@@ -108,7 +101,8 @@ class SSAConverter:
     3. Propagate definitions through dominance frontier
     """
 
-    def __init__(self) -> None:
+    def __init__(self, abi: str = "sysv_amd64") -> None:
+        self._abi = abi
         self._version_counter: dict[str, int] = {}
         self._current_def: dict[str, list[SSAVariable]] = {}
         self._sealed_blocks: set[int] = set()
@@ -432,7 +426,8 @@ class SSAConverter:
         opcode, _, operands = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            return set(_SYSV_CALL_DEFINED_REGISTERS | _SYSV_VECTOR_DEFINED_REGISTERS) | {
+            _, call_defined = call_register_effects(self._abi)
+            return {register for register, _ in call_defined} | {
                 FLAGS_RESOURCE_NAME,
                 MEMORY_RESOURCE_NAME,
             }
@@ -458,14 +453,15 @@ class SSAConverter:
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            call_used = set(_SYSV_CALL_USED_REGISTERS | _SYSV_VECTOR_ARGUMENT_REGISTERS)
-            call_used.update(
+            call_used, _ = call_register_effects(self._abi)
+            call_used_names = {register for register, _ in call_used}
+            call_used_names.update(
                 match.group(1)
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operands_text.lower())
                 if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
-            call_used.add(MEMORY_RESOURCE_NAME)
-            return call_used
+            call_used_names.add(MEMORY_RESOURCE_NAME)
+            return call_used_names
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
         used: set[str] = set()
         if memory_accesses(disasm)[0]:

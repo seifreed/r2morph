@@ -508,6 +508,24 @@ class TestDataFlowAnalyzer:
         expect(not ("rax" not in reg_names))
         expect(not ("r8" not in reg_names))
 
+    def test_indirect_call_uses_abi_registers(self):
+        """Test indirect calls include implicit SysV argument registers."""
+        analyzer = DataFlowAnalyzer(create_test_cfg())
+
+        used = analyzer._extract_used_registers({"type": "icall", "disasm": "call rax"})
+        reg_names = {register.name for register in used}
+
+        expect({"rax", "rdi", "xmm0"}.issubset(reg_names))
+
+    def test_indirect_call_defines_caller_saved_registers(self):
+        """Test indirect calls include implicit caller-saved definitions."""
+        analyzer = DataFlowAnalyzer(create_test_cfg())
+
+        defined = analyzer._extract_defined_registers({"type": "icall", "disasm": "call rax"})
+        reg_names = {register.name for register in defined}
+
+        expect({"rax", "r11", "xmm15"}.issubset(reg_names))
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         cfg = create_test_cfg()

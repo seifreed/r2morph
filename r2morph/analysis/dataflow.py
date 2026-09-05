@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dataflow_block_sets import compute_block_def, compute_block_use
 from r2morph.analysis.dataflow_models import (
@@ -50,8 +51,9 @@ class DataFlowAnalyzer:
         live_regs = result.get_live_registers(address)
     """
 
-    def __init__(self, cfg: ControlFlowGraph):
+    def __init__(self, cfg: ControlFlowGraph, abi: str = "sysv_amd64"):
         self.cfg = cfg
+        self._abi = abi
         self._result = DataFlowResult()
 
     def analyze(self) -> DataFlowResult:
@@ -105,11 +107,11 @@ class DataFlowAnalyzer:
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before being defined in a block."""
-        return {Register(reg, size) for reg, size in compute_block_use(block.instructions)}
+        return {Register(reg, size) for reg, size in compute_block_use(block.instructions, self._abi)}
 
     def _get_block_def(self, block: BasicBlock) -> set[Register]:
         """Get registers defined in a block."""
-        return {Register(reg, size) for reg, size in compute_block_def(block.instructions)}
+        return {Register(reg, size) for reg, size in compute_block_def(block.instructions, self._abi)}
 
     def _extract_used_registers(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers used by an instruction."""
@@ -118,6 +120,10 @@ class DataFlowAnalyzer:
 
         if not disasm:
             return used
+
+        if is_call_instruction(insn):
+            call_used, _ = call_register_effects(self._abi)
+            used.update(Register(reg, size) for reg, size in call_used)
 
         if memory_accesses(disasm)[0]:
             used.add(Register(MEMORY_RESOURCE_NAME))
@@ -159,7 +165,9 @@ class DataFlowAnalyzer:
         if flag_accesses(disasm)[1]:
             defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
-        if mnemonic == "call":
+        if is_call_instruction(insn):
+            _, call_defined = call_register_effects(self._abi)
+            defined.update(Register(reg, size) for reg, size in call_defined)
             return defined
 
         operand_parts = disasm.split(None, 1)

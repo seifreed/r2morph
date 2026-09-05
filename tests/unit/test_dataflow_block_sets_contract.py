@@ -25,3 +25,19 @@ def test_dataflow_block_sets_arithmetic_defines_status_flags() -> None:
     instructions = [{"disasm": "add eax, ebx", "type": "add"}]
 
     expect(compute_block_def(instructions) == {("eax", 32), ("rflags", 64)})
+
+
+def test_dataflow_block_sets_varargs_call_reads_sysv_argument_state() -> None:
+    instructions = [{"disasm": "call rax", "type": "icall"}]
+
+    used = compute_block_use(instructions)
+
+    expect({("rax", 64), ("rdi", 64), ("xmm0", 128)}.issubset(used))
+
+
+def test_dataflow_block_sets_call_defines_caller_saved_state() -> None:
+    instructions = [{"disasm": "call rax", "type": "icall"}]
+
+    defined = compute_block_def(instructions)
+
+    expect({("rax", 64), ("r11", 64), ("xmm15", 128)}.issubset(defined))

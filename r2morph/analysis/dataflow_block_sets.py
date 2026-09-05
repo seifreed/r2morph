@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
@@ -11,40 +12,44 @@ from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURC
 _MIN_INSTRUCTION_PART_COUNT = 2
 
 
-def compute_block_use(instructions: list[dict[str, Any]]) -> set[tuple[str, int]]:
+def compute_block_use(instructions: list[dict[str, Any]], abi: str = "sysv_amd64") -> set[tuple[str, int]]:
     """Compute registers used before being defined in a block."""
     used: set[tuple[str, int]] = set()
     defined: set[tuple[str, int]] = set()
 
     for insn in instructions:
-        regs_used = _extract_used_registers(insn)
+        regs_used = _extract_used_registers(insn, abi)
         for reg in regs_used:
             if reg not in defined:
                 used.add(reg)
 
-        regs_defined = _extract_defined_registers(insn)
+        regs_defined = _extract_defined_registers(insn, abi)
         defined.update(regs_defined)
 
     return used
 
 
-def compute_block_def(instructions: list[dict[str, Any]]) -> set[tuple[str, int]]:
+def compute_block_def(instructions: list[dict[str, Any]], abi: str = "sysv_amd64") -> set[tuple[str, int]]:
     """Compute registers defined in a block."""
     defined: set[tuple[str, int]] = set()
 
     for insn in instructions:
-        defined.update(_extract_defined_registers(insn))
+        defined.update(_extract_defined_registers(insn, abi))
 
     return defined
 
 
-def _extract_used_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
+def _extract_used_registers(insn: dict[str, Any], abi: str) -> set[tuple[str, int]]:
     """Extract registers used by an instruction."""
     used: set[tuple[str, int]] = set()
     disasm = insn.get("disasm", "").lower()
 
     if not disasm:
         return used
+
+    if is_call_instruction(insn):
+        call_used, _ = call_register_effects(abi)
+        used.update(call_used)
 
     if memory_accesses(disasm)[0]:
         used.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
@@ -69,7 +74,7 @@ def _extract_used_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     return used
 
 
-def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
+def _extract_defined_registers(insn: dict[str, Any], abi: str) -> set[tuple[str, int]]:
     """Extract registers defined by an instruction."""
     defined: set[tuple[str, int]] = set()
     disasm = insn.get("disasm", "").lower()
@@ -86,7 +91,9 @@ def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     if flag_accesses(disasm)[1]:
         defined.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
-    if mnemonic == "call":
+    if is_call_instruction(insn):
+        _, call_defined = call_register_effects(abi)
+        defined.update(call_defined)
         return defined
 
     operand_parts = disasm.split(None, 1)

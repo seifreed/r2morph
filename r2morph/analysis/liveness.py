@@ -10,8 +10,9 @@ Provides detailed liveness computation including:
 
 import logging
 import re
-from typing import Any, ClassVar
+from typing import Any
 
+from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dataflow_models import Register
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
@@ -69,57 +70,6 @@ class LivenessAnalysis:
         analyzer.compute()
         is_live = analyzer.is_live_at(register, address)
     """
-
-    # ABI-specific register sets for call instruction analysis
-    _CALL_USED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
-        "sysv_amd64": [
-            ("rax", 64),
-            ("rdi", 64),
-            ("rsi", 64),
-            ("rdx", 64),
-            ("rcx", 64),
-            ("r8", 64),
-            ("r9", 64),
-            *[(f"xmm{index}", 128) for index in range(8)],
-            *[(f"ymm{index}", 256) for index in range(8)],
-        ],
-        "win64": [
-            ("rcx", 64),
-            ("rdx", 64),
-            ("r8", 64),
-            ("r9", 64),
-            *[(f"xmm{index}", 128) for index in range(4)],
-            *[(f"ymm{index}", 256) for index in range(4)],
-        ],
-        "cdecl_32": [],  # Arguments passed on stack
-    }
-    _CALL_DEFINED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
-        "sysv_amd64": [
-            ("rax", 64),
-            ("rdx", 64),
-            ("rcx", 64),
-            ("rsi", 64),
-            ("rdi", 64),
-            ("r8", 64),
-            ("r9", 64),
-            ("r10", 64),
-            ("r11", 64),
-            *[(f"xmm{index}", 128) for index in range(16)],
-            *[(f"ymm{index}", 256) for index in range(16)],
-        ],
-        "win64": [
-            ("rax", 64),
-            ("rcx", 64),
-            ("rdx", 64),
-            ("r8", 64),
-            ("r9", 64),
-            ("r10", 64),
-            ("r11", 64),
-            *[(f"xmm{index}", 128) for index in range(6)],
-            *[(f"ymm{index}", 256) for index in range(6)],
-        ],
-        "cdecl_32": [("eax", 32), ("ecx", 32), ("edx", 32)],
-    }
 
     def __init__(self, cfg: ControlFlowGraph, abi: str = "sysv_amd64"):
         self.cfg = cfg
@@ -314,11 +264,9 @@ class LivenessAnalysis:
             return used
 
         # call instructions implicitly use argument registers per ABI
-        if mnemonic == "call":
-            used = {
-                Register(reg_name, reg_size)
-                for reg_name, reg_size in self._CALL_USED_REGS.get(self._abi, self._CALL_USED_REGS["sysv_amd64"])
-            }
+        if is_call_instruction(insn):
+            call_used, _ = call_register_effects(self._abi)
+            used = {Register(reg_name, reg_size) for reg_name, reg_size in call_used}
             used.add(Register(MEMORY_RESOURCE_NAME))
             # Also extract explicit operand registers (e.g., call rax)
             operand_parts = disasm.split(None, 1)
@@ -374,8 +322,9 @@ class LivenessAnalysis:
             return defined
 
         # call instructions implicitly define return value and caller-saved registers per ABI
-        if mnemonic == "call":
-            for reg_name, reg_size in self._CALL_DEFINED_REGS.get(self._abi, self._CALL_DEFINED_REGS["sysv_amd64"]):
+        if is_call_instruction(insn):
+            _, call_defined = call_register_effects(self._abi)
+            for reg_name, reg_size in call_defined:
                 defined.add(Register(reg_name, reg_size))
             defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
             defined.add(Register(MEMORY_RESOURCE_NAME))
