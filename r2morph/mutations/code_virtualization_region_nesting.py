@@ -287,6 +287,7 @@ def _relayer_sharing_frame(schemes: list[RegionScheme], slot: tuple[int, ...]) -
             checksum_bytewise=s.checksum_bytewise,
             state_offset=schemes[0].state_offset,
             checksum_reverse=s.checksum_reverse,
+            dispatch_variant=s.dispatch_variant,
         )
         for s in schemes
     ]

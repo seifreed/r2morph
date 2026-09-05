@@ -564,6 +564,7 @@ class VMScheme:
     immediate_split: bool = False
     checksum_bytewise: bool = False
     checksum_reverse: bool = False
+    dispatch_variant: int = 0
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -656,6 +657,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     # handler/junk draws must remain stable when this field is added.
     checksum_bytewise = bool((field_perm ^ xor_key) & 1)
     checksum_reverse = bool((field_perm ^ table_key) & 2)
+    dispatch_variant = rng.randrange(2)
     return VMScheme(
         dup,
         exit_opcode,
@@ -672,6 +674,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         immediate_split,
         checksum_bytewise,
         checksum_reverse,
+        dispatch_variant,
     )
 
 

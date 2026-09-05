@@ -724,6 +724,7 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     checksum_bytewise = bool((isa_seed ^ xor_key) & 1)
     checksum_reverse = bool((isa_seed ^ table_key) & 2)
     state_offset = rng.choice(_STATE_SLOT_CANDIDATES)
+    dispatch_variant = rng.randrange(2)
     return RegionScheme(
         dup,
         xor_key,
@@ -738,4 +739,5 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         checksum_bytewise,
         state_offset,
         checksum_reverse,
+        dispatch_variant,
     )

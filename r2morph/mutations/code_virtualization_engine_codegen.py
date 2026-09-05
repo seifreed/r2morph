@@ -182,10 +182,11 @@ def _interpreter_asm(
         f"  mov qword ptr [rsp + {slot[index] * 8}], rcx\n"
         for index in save_order
     )
+    dispatch_entry = make_decode() if scheme.dispatch_variant == 0 else f"vm_dispatch:\n{make_decode()}"
     bootstrap, bootstrap_table = build_bootstrap_asm(
         layout.checksum_offset,
         scheme.junk_seed,
-        key_setup + encrypt_slots + entry_setup + make_decode(),
+        key_setup + encrypt_slots + entry_setup + dispatch_entry,
     )
     lines.append(f"vm_bootstrap:\n{bootstrap}")
     handler_start = len(lines)
@@ -240,13 +241,13 @@ def _interpreter_asm(
     # The bootstrap table and tracer-constant island trail the main table, outside
     # the checksummed span and before the appended bytecode.
     lines.append(f"vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n")
-    # Thread the dispatch: every handler tail ends with a back jump to the (now
-    # removed) central dispatcher; splice a freshly shuffled decode copy in for each
-    # so control flows handler -> decode -> next handler with no shared hub block
-    # and no two copies sharing a byte layout.
+    # Select between two equivalent dispatch shapes. Variant 0 inlines a fresh
+    # decoder at every handler tail; variant 1 keeps one encrypted central decoder.
     interpreter = "".join(lines[:handler_start]) + cipher_register_slots(
         "".join(lines[handler_start:]),
         frozenset(index * 8 for index in slot),
         layout.key_qword_offset,
     )
-    return thread_back_jumps(interpreter, make_decode)
+    if scheme.dispatch_variant == 0:
+        return thread_back_jumps(interpreter, make_decode)
+    return interpreter

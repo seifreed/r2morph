@@ -22,11 +22,11 @@ spacing). The indirect transfer uses either ``jmp rax`` or ``push rax; ret`` per
 generated copy; the latter consumes its own pushed return address and preserves the
 handler's stack contract while removing one fixed tail signature.
 
-This is the only dispatch mechanism either VM emits. A central dispatcher ending
-in a compare/branch ladder over the opcode indices was tried and removed: a
-decompiler rebuilds such a ladder into a plain ``switch`` and hands over the whole
-opcode-to-handler mapping, whereas the offset table here is XOR-encrypted at
-runtime and cannot be resolved statically.
+The VMs emit two dispatch personalities: the inline threaded form described above
+and a central decoder using the same encrypted relative-offset table. The central
+form is deliberately not a compare/branch ladder: a decompiler can rebuild such
+a ladder into a plain ``switch`` and recover the opcode mapping, while both forms
+here retain the runtime-encrypted table.
 """
 
 from __future__ import annotations

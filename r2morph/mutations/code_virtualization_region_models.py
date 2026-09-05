@@ -49,6 +49,7 @@ class RegionScheme:
     checksum_bytewise: bool = False
     state_offset: int = 0x218
     checksum_reverse: bool = False
+    dispatch_variant: int = 0
 
 
 @dataclass(eq=False, repr=False, slots=True)

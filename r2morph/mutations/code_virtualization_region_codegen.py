@@ -350,10 +350,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  mov qword ptr [rsp+{slot[index] * 8}], rax\n"
         for index in save_order
     )
+    dispatch_entry = make_decode() if scheme.dispatch_variant == 0 else f"vm_dispatch:\n{make_decode()}"
     bootstrap, bootstrap_table = build_bootstrap_asm(
         scheme.checksum_offset,
         scheme.junk_seed,
-        key_setup + encrypt_slots + entry_setup + make_decode(),
+        key_setup + encrypt_slots + entry_setup + dispatch_entry,
     )
     lines.append(f"vm_bootstrap:\n{bootstrap}")
 
@@ -432,11 +433,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  add rsp, {frame_size}\n  jmp {hex(region.exit_vaddr)}\n"
         f"{ijmp_map}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
     )
-    # Thread the dispatch: every handler tail (and the retarget) ends with a back
-    # jump to the (now removed) central dispatcher; splice a freshly shuffled
-    # decode copy in for each so control flows handler -> decode -> next handler
-    # with no shared hub block and no two copies sharing a byte layout.
-    interpreter = thread_back_jumps("".join(lines), make_decode)
+    # Select between the inline threaded decoder and the central encrypted decoder.
+    # Both use the same position mask, checksum and relative-offset table.
+    interpreter = "".join(lines)
+    if scheme.dispatch_variant == 0:
+        interpreter = thread_back_jumps(interpreter, make_decode)
     return _relocate_flags_slot(interpreter, scheme.flags_offset)
 
 

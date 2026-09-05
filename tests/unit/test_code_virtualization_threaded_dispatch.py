@@ -12,12 +12,10 @@ no binary); the exit-code integration suite proves the threading stays correct,
 but those pass with or without threading, so the structural property needs its
 own assertion.
 
-Threaded dispatch is the only shape either VM emits. A central dispatcher ending
-in a compare/branch ladder over the opcode indices was removed: a decompiler
-rebuilds such a ladder into a plain ``switch`` and recovers the whole
-opcode-to-handler mapping, while the offset table here is XOR-encrypted at
-runtime. The ladder-absence tests below pin that floor over a seed sweep, so no
-build can regress to the reconstructible shape.
+The build may select a central decoder as a second personality, but it never
+emits a compare/branch ladder: a decompiler rebuilds such a ladder into a plain
+``switch`` and recovers the opcode mapping, while the offset table here remains
+XOR-encrypted at runtime. The ladder-absence tests below pin that floor.
 """
 
 from __future__ import annotations
@@ -121,6 +119,11 @@ def test_region_interpreter_inlines_the_decode_per_handler() -> None:
     expect(not (_region_asm(0).count(_DECODE_HEAD) <= 1))
 
 
+def test_region_interpreter_supports_central_dispatch_personality() -> None:
+    asm = _region_asm(1)
+    expect(asm.count("vm_dispatch:") == 1 and "jmp vm_dispatch" in asm)
+
+
 def test_region_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     asm = _region_asm(0)
     state_offset = build_region_scheme(_tiny_region(), randomness.Random(0)).state_offset
@@ -154,6 +157,11 @@ def test_engine_interpreter_has_no_central_dispatch_label() -> None:
 
 def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
     expect(not (_engine_asm(0).count(_DECODE_HEAD) <= 1))
+
+
+def test_engine_interpreter_supports_central_dispatch_personality() -> None:
+    asm = _engine_asm(3)
+    expect(asm.count("vm_dispatch:") == 1 and "jmp vm_dispatch" in asm)
 
 
 def test_engine_integrity_defers_full_checksum_until_bootstrap_ready() -> None:
