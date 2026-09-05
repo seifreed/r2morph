@@ -53,6 +53,15 @@ transformation errors. It recorded 939 completed analyzer runs, 15 Unicorn
 errors, and 318 explicit IDA/Ghidra-unavailable rows. The raw report is
 [`protection-adversarial-corpus-2026-09-05-7c3d4f32.json`](protection-adversarial-corpus-2026-09-05-7c3d4f32.json)
 (`SHA-256 38143a56c34683d95fed3cbd0fbea0553d710228dac80b6ab857638466908180`).
+The reproducible local rerun at `66ba4745` repeats the same 159/159
+CodeVirtualization campaign with 171 functions virtualized, zero unsupported
+functions, and zero transformation errors. It completed 939 tool runs; the
+15 recorded tool errors are `UcError` results from the Unicorn emulator on
+AVX/VEX fixtures, while the corresponding native regression tests remain the
+authoritative execution check. IDA and Ghidra are explicitly unavailable in
+this local environment (318 rows), not silently treated as passes. The raw
+report is
+[`protection-adversarial-corpus-2026-09-05-66ba4745.json`](protection-adversarial-corpus-2026-09-05-66ba4745.json).
 The licensed IDA MCP and local Ghidra campaigns are recorded separately below.
 The latest local Ghidra headless campaign for the 159-fixture corpus at
 `88258a05` completed 318 analyses with zero errors or timeouts. Its raw report is

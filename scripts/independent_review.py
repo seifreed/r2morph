@@ -26,7 +26,7 @@ _EXPECTED_BENCHMARK_TOOLS = {
     "ghidra",
     "custom",
 }
-_CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-05-7c3d4f32.json"
+_CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-05-66ba4745.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-05-e04c1a9c.json"
