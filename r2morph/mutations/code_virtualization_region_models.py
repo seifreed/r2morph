@@ -83,6 +83,8 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "leaidxnb": (5,),
     "opmemidx": (1, 7),
     "opmemidxnb": (1, 6),
+    "incdecmem": (1, 4),
+    "incdecmemrip": (1, 3),
     "incdec": (1, 3),
     "neg": (1, 2),
     "movx": (1, 2, 3),

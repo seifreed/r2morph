@@ -133,6 +133,7 @@ _FIXED_SIZE_GROUPS = {
         "atomicmemrip",
         "mxcsrloadrip",
         "mxcsrstorerip",
+        "incdecmemrip",
     ),
     7: (
         "vload",
@@ -178,6 +179,7 @@ _FIXED_SIZE_GROUPS = {
         "popmem",
         "mxcsrload",
         "mxcsrstore",
+        "incdecmem",
     ),
     8: (
         "vleaidxnb",

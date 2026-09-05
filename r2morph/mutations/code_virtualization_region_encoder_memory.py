@@ -46,19 +46,42 @@ class RegionEncoderMemoryMixin:
         if kind in ("load", "store"):
             _, reg, base, disp, _width = item
             self._gp_mem(item, reg, base, disp)
-        elif kind.startswith("notmem"):
+        elif kind == "incdecmem":
+            _, _mnemonic, base, displacement, _width = item
+            self._gp_mem(item, 0, base, displacement)
+        elif kind == "incdecmemrip":
+            _, _mnemonic, target, _width = item
+            self._gp_rip(item, 0, target)
+        elif kind in ("cmpmem", "cmpriprel"):
+            self._emit_compare_memory(item)
+        elif kind in ("opmem", "lea"):
+            offset = 1 if kind == "lea" else 2
+            reg, base, disp = item[offset], item[offset + 1], item[offset + 2]
+            self._gp_mem(item, reg, base, disp)
+        elif kind in ("opriprel", "learip"):
+            reg, target = item[2], item[3]
+            self._gp_rip(item, reg, target)
+        elif kind == "leaidx":
+            _, reg, base, index, shift, disp, _width = item
+            self._gp_idx(item, (reg, base, index, shift, disp))
+        elif kind == "leaidxnb":
+            _, reg, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
+        elif kind in ("opmemidx", "opmemidxnb", "opmemdstidx", "opmemdstidxnb"):
+            self._emit_indexed_arithmetic(item)
+        else:
+            return bool(self._emit_gp_memory_misc(item))
+        return True
+
+    def _emit_gp_memory_misc(self: Any, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind.startswith("notmem"):
             self._emit_not_memory(item)
         elif kind in ("tlsload", "tlsstore", "tlsloadidx", "tlsloadidxnb", "tlsstoreidx", "tlsstoreidxnb"):
             self._emit_tls_memory(item)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg, target, _width = item
             self._gp_rip(item, reg, target)
-        elif kind in ("cmpmem", "cmpriprel"):
-            self._emit_compare_memory(item)
-        elif kind in ("load", "store", "opmem", "lea"):
-            offset = 1 if kind in ("load", "store") else 2
-            reg, base, disp = item[offset], item[offset + 1], item[offset + 2]
-            self._gp_mem(item, reg, base, disp)
         elif kind in (
             "xchgmem",
             "xchgmemidx",
@@ -74,17 +97,6 @@ class RegionEncoderMemoryMixin:
             "atomicmemimmidxnb",
         ):
             self._emit_atomic_memory(item)
-        elif kind in ("opriprel", "learip"):
-            reg, target = item[2], item[3]
-            self._gp_rip(item, reg, target)
-        elif kind == "leaidx":
-            _, reg, base, index, shift, disp, _width = item
-            self._gp_idx(item, (reg, base, index, shift, disp))
-        elif kind == "leaidxnb":
-            _, reg, index, shift, disp, _width = item
-            self._idx(self._opcode(item), (self.slot_of[reg], None, self.slot_of[index], shift, disp))
-        elif kind in ("opmemidx", "opmemidxnb", "opmemdstidx", "opmemdstidxnb"):
-            self._emit_indexed_arithmetic(item)
         else:
             return False
         return True

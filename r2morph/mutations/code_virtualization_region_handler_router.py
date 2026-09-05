@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _sahf_handler_asm,
     _shift_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_incdec_memory import _incdec_memory_handler_asm
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
     AtomicMemoryOperationConfig,
     DivisionMemoryOperationConfig,
@@ -455,12 +456,21 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             address,
         )
         body = None
-        if key.startswith(("cmpmem_", "cmpriprel_")):
-            body = _cmp_memory_handler_asm(config)
-        elif key.startswith(("opmemdst_", "opmemdstrip_", "opmemdstidx_", "opmemdstidxnb_")):
-            body = _op_memdst_handler_asm(config)
-        elif key.startswith(("opmem_", "opriprel_")):
-            body = _op_memory_handler_asm(config)
+        handler = next(
+            (
+                handler
+                for prefixes, handler in (
+                    (("incdecmem_", "incdecmemrip_"), _incdec_memory_handler_asm),
+                    (("cmpmem_", "cmpriprel_"), _cmp_memory_handler_asm),
+                    (("opmemdst_", "opmemdstrip_", "opmemdstidx_", "opmemdstidxnb_"), _op_memdst_handler_asm),
+                    (("opmem_", "opriprel_"), _op_memory_handler_asm),
+                )
+                if key.startswith(prefixes)
+            ),
+            None,
+        )
+        if handler is not None:
+            body = handler(config)
         elif key.startswith("leaidxnb_"):
             body = _lea_indexed_nobase_handler_asm(
                 key,
@@ -508,7 +518,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                 "mxcsrstore",
             )
         ):
-            handler = next(
+            memory_handler = next(
                 (
                     handler
                     for prefix, handler in (
@@ -521,7 +531,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                 ),
                 _memory_handler_asm,
             )
-            body = handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
+            body = memory_handler(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
 
     def _stack_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:

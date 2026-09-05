@@ -123,6 +123,8 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
 
+_INSTRUCTION_PART_COUNT = 2
+
 _DIRECT_REGISTER_CALL_PART_COUNT = 2
 _MAX_RET_CLEANUP = 0xFFFF
 
@@ -256,6 +258,10 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
         if carry_op is not None:
             slot, value, is_immediate, width = carry_op
             return ["op", VirtualizedOp(kind, slot, value, is_immediate, width)]
+    if kind in ("add", "sub"):
+        incdec_memory = _decode_incdec_memory(text, address, size)
+        if incdec_memory is not None:
+            return [*incdec_memory]
     op = decode_instruction(text)
     if op is not None:
         return ["op", op]
@@ -285,6 +291,25 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
             lambda: _decode_op_mem_indexed(text, kind),
         )
     )
+
+
+def _decode_incdec_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode width-explicit ``inc/dec`` read-modify-write memory operands."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in ("inc", "dec"):
+        return None
+    mnemonic = parts[0].lower()
+    operand = parts[1].strip().lower()
+    direct = _parse_mem_operand(operand)
+    if direct is not None:
+        base, displacement, width = direct
+        if width in (8, 16, 32, 64):
+            return ("incdecmem", mnemonic, base, displacement, width)
+        return None
+    rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
+    if rip_relative is None or rip_relative[1] not in (8, 16, 32, 64):
+        return None
+    return ("incdecmemrip", mnemonic, rip_relative[0], rip_relative[1])
 
 
 def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
