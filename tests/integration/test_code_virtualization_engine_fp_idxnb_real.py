@@ -33,7 +33,7 @@ def test_engine_decodes_no_base_fp_indexed_arithmetic() -> None:
     expect(isinstance(item, VirtualizedFpArithMemOp) and item.base_index < 0)
 
 
-def test_engine_no_base_fp_indexed_fixture_uses_fallback_vm(tmp_path: Path) -> None:
+def test_region_no_base_fp_indexed_fixture_virtualizes_complete_function(tmp_path: Path) -> None:
     mutated = tmp_path / "mutated_fpidxnb"
     shutil.copyfile(_FIXTURE, mutated)
     binary = Binary(mutated, writable=True)
@@ -44,7 +44,7 @@ def test_engine_no_base_fp_indexed_fixture_uses_fallback_vm(tmp_path: Path) -> N
     finally:
         binary.close()
 
-    expect(stats["partial_virtualization_total"] >= 1)
+    expect(stats["partial_virtualization_total"] == 0 and stats["unsupported_functions_total"] == 0)
     expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 

@@ -132,6 +132,25 @@ def _is_terminal_syscall(instructions: list[dict[str, Any]], index: int) -> bool
     return _syscall_number(instructions, index) in _NONRETURNING_SYSCALLS
 
 
+def _trim_after_unreferenced_terminal_syscall(instructions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop disassembler tail bytes after a non-returning syscall when unreachable."""
+    for index in range(len(instructions)):
+        if not _is_terminal_syscall(instructions, index):
+            continue
+        later_addresses = {int(item["addr"]) for item in instructions[index + 1 :] if "addr" in item}
+        if not later_addresses:
+            continue
+        prior_targets = {
+            int(target)
+            for item in instructions[:index]
+            for target in (item.get("jump"), item.get("fail"))
+            if isinstance(target, int)
+        }
+        if not later_addresses.intersection(prior_targets):
+            return instructions[: index + 1]
+    return instructions
+
+
 def _normalize_syscall_instruction(instruction: dict[str, Any]) -> dict[str, Any]:
     """Map radare2's ``swi`` spelling to the region classifier's syscall kind."""
     if instruction.get("type") != "swi" or not _is_syscall_instruction(instruction):
@@ -488,6 +507,7 @@ def _inject_junk_movs(
 def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
     instructions = _trim_trailing_padding(instructions)
     instructions = [_normalize_syscall_instruction(instruction) for instruction in instructions]
+    instructions = _trim_after_unreferenced_terminal_syscall(instructions)
     if not instructions:
         return None
     ret_cleanup: dict[int, int] = {}
