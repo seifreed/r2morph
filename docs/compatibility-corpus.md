@@ -101,6 +101,14 @@ are the local IDA/Ghidra executables. Binary Ninja is intentionally omitted.
 The raw report is
 [`protection-adversarial-corpus-2026-09-05-44bca563-triton.json`](protection-adversarial-corpus-2026-09-05-44bca563-triton.json).
 
+The latest rerun at `a92e8b9` repeats all 159 fixtures and six passes after the
+carry-control flag semantics update. It records 159/159 CodeVirtualization
+applications, 171 virtualized functions, and zero unsupported functions.
+Triton and angr complete every configured pair; the 47 errors remain isolated
+to Unicorn, and the 1,908 unavailable rows remain the local IDA/Ghidra
+executables. Binary Ninja is intentionally omitted. The raw report is
+[`protection-adversarial-corpus-2026-09-05-a92e8b9-triton.json`](protection-adversarial-corpus-2026-09-05-a92e8b9-triton.json).
+
 The current deterministic parser/dispatcher/relocation/rewriter fuzz campaign
 at `2e4ad8e` ran 20,000 cases per target, 80,000 target runs in total, with
 zero failures. Its bounded report is

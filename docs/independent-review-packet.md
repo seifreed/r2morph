@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `44bca563`
+- Commit: `a92e8b9`
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -15,6 +15,7 @@ checks are evidence, not a human approval.
 
 - [`compatibility-corpus.md`](compatibility-corpus.md)
 - [`protection-adversarial-corpus-2026-09-05-44bca563-triton.json`](protection-adversarial-corpus-2026-09-05-44bca563-triton.json)
+- [`protection-adversarial-corpus-2026-09-05-a92e8b9-triton.json`](protection-adversarial-corpus-2026-09-05-a92e8b9-triton.json)
 - [`protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json`](protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json)
 - [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
 - [`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
@@ -67,7 +68,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 44bca563
+Reviewed commit: a92e8b9
 ```
 
 No approval is implied until a human reviewer fills this section outside the
