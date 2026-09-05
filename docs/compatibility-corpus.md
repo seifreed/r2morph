@@ -39,14 +39,16 @@ from workflow `33907747531` (artifact SHA-256
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
-The matching local adversarial report is summarized in
-[`protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json`](protection-adversarial-corpus-2026-09-04-3bfa94ed-summary.json)
-(raw report SHA-256
-`4aff53dffa249d2ee793ee02c203a415c537f1cb157cfb9ff97685633e763a63`). IDA Pro,
-Triton, and angr each completed all 159 original/protected pairs with zero
-analyzer errors. CodeVirtualization applied to all samples, virtualized 171
-functions, reported five explicitly unsupported functions, and had zero
-transformation errors.
+The current local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
+and all 159 transformations, with 171 functions virtualized, zero unsupported
+functions, and zero transformation errors. Its raw report is
+[`protection-adversarial-corpus-2026-09-05-bb3eb3bf.json`](protection-adversarial-corpus-2026-09-05-bb3eb3bf.json)
+(`SHA-256 6a6c4b447d0a1abf6fb56b2f24c4be724288bc86d28144793ef8a645a188b94f`),
+with the compact summary in
+[`protection-adversarial-corpus-2026-09-05-bb3eb3bf-summary.json`](protection-adversarial-corpus-2026-09-05-bb3eb3bf-summary.json).
+The current shell run recorded 939 completed tool runs, 15 tool errors, and
+318 explicit IDA/Ghidra-unavailable rows; the licensed IDA MCP and local Ghidra
+campaigns are recorded separately below.
 The latest local Ghidra headless campaign for the 159-fixture corpus at
 `88258a05` completed 318 analyses with zero errors or timeouts. Its raw report is
 [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json),
