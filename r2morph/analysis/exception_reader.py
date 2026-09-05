@@ -17,6 +17,10 @@ _BITS_64 = 64
 _POINTER_SIZE_64_BYTES = 8
 _PE_32_EXCEPTION_ENTRY_SIZE_BYTES = 8
 _PE_64_EXCEPTION_ENTRY_SIZE_BYTES = 12
+_PE_UNWIND_HEADER_SIZE_BYTES = 4
+_PE_UNWIND_CODE_SIZE_BYTES = 2
+_PE_UNW_FLAG_EHANDLER = 0x01
+_PE_UNW_FLAG_UHANDLER = 0x02
 _MACHO_UNWIND_HEADER_SIZE_BYTES = 12
 _DW_EH_PE_ABSPTR = 0x00
 _DW_EH_PE_PCREL = 0x10
@@ -718,9 +722,64 @@ class ExceptionInfoReader:
         function_length = ((second >> 2) & 0x7FF) * 2 if second & 0x3 else 0
         return ExceptionFrame(function_start=begin, function_end=begin + function_length)
 
-    @staticmethod
-    def _parse_pe64_entry(entry: bytes) -> ExceptionFrame | None:
+    def _parse_pe64_entry(self, entry: bytes) -> ExceptionFrame | None:
         begin_rva, end_rva, _unwind_rva = struct.unpack("<III", entry)
         if begin_rva == 0:
             return None
-        return ExceptionFrame(function_start=begin_rva, function_end=end_rva)
+        function_start = self._pe_address(begin_rva)
+        function_end = self._pe_address(end_rva)
+        frame = ExceptionFrame(function_start=function_start, function_end=function_end)
+        handler = self._read_pe_unwind_handler(_unwind_rva)
+        if handler is not None:
+            frame.landing_pads.append(handler)
+        return frame
+
+    def _read_pe_unwind_handler(self, unwind_rva: int) -> LandingPad | None:
+        image_base = self._pe_image_base()
+        candidate_addresses = [unwind_rva]
+        if image_base:
+            candidate_addresses.append(unwind_rva + image_base)
+
+        section: tuple[bytes, int] | None = None
+        for address in candidate_addresses:
+            section = self._read_section_for_address(address)
+            if section is not None:
+                unwind_address = address
+                break
+        if section is None:
+            return None
+
+        data, section_address = section
+        offset = unwind_address - section_address
+        if offset < 0 or offset + _PE_UNWIND_HEADER_SIZE_BYTES > len(data):
+            return None
+
+        flags = data[offset] >> 3
+        if not flags & (_PE_UNW_FLAG_EHANDLER | _PE_UNW_FLAG_UHANDLER):
+            return None
+        code_count = data[offset + 2]
+        handler_offset = _PE_UNWIND_HEADER_SIZE_BYTES + ((code_count + 1) & ~1) * _PE_UNWIND_CODE_SIZE_BYTES
+        if offset + handler_offset + 4 > len(data):
+            return None
+
+        handler_rva = struct.unpack_from("<I", data, offset + handler_offset)[0]
+        if handler_rva == 0:
+            return None
+        action = ExceptionAction.CATCH if flags & _PE_UNW_FLAG_EHANDLER else ExceptionAction.FINALLY
+        return LandingPad(
+            address=self._pe_address(handler_rva),
+            size=1,
+            action=action,
+            metadata={
+                "unwind_rva": unwind_rva,
+                "handler_rva": handler_rva,
+                "unwind_flags": flags,
+            },
+        )
+
+    def _pe_image_base(self) -> int:
+        value = self.binary.get_arch_info().get("image_base", 0)
+        return value if isinstance(value, int) and value > 0 else 0
+
+    def _pe_address(self, rva: int) -> int:
+        return rva + self._pe_image_base()

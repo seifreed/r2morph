@@ -76,7 +76,41 @@ def detect_elf_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_a
 
 def detect_pe_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
     """Detect exception edges from PE .pdata metadata."""
-    return []
+    try:
+        frames = ExceptionInfoReader(binary).read_exception_frames()
+        frame = frames.get(function_address)
+        if frame is None:
+            frame = next(
+                (
+                    candidate
+                    for candidate in frames.values()
+                    if candidate.function_start <= function_address < candidate.function_end
+                ),
+                None,
+            )
+        if frame is None:
+            return []
+
+        exception_edges: list[ExceptionEdge] = []
+        for pad in frame.landing_pads:
+            block = cfg.blocks.get(pad.address)
+            if block is not None:
+                block.block_type = BlockType.LANDING_PAD
+                block.metadata["is_landing_pad"] = True
+            exception_edges.append(
+                ExceptionEdge(
+                    from_address=function_address,
+                    to_address=pad.address,
+                    exception_type=pad.action.value,
+                    landing_pad=pad.address,
+                    action=pad.action.value,
+                    metadata=dict(pad.metadata),
+                )
+            )
+        return exception_edges
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to detect PE exception edges: %s", exc)
+        return []
 
 
 def detect_macho_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:

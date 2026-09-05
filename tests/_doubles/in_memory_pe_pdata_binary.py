@@ -43,3 +43,29 @@ class InMemoryPEPdataBinary:
         if addr != self._pdata_addr:
             return b""
         return self._pdata_bytes[:size]
+
+
+class InMemoryPEUnwindBinary(InMemoryPEPdataBinary):
+    """Concrete PE double exposing one fixed-address ``.xdata`` section."""
+
+    _XDATA_ADDRESS = 0x5000
+
+    def __init__(self, *, pdata_bytes: bytes, xdata_bytes: bytes) -> None:
+        super().__init__(
+            bits=64,
+            pdata_addr=0x4000,
+            pdata_declared_size=len(pdata_bytes),
+            pdata_bytes=pdata_bytes,
+        )
+        self._xdata_bytes = xdata_bytes
+
+    def get_sections(self) -> list[dict[str, Any]]:
+        return [
+            *super().get_sections(),
+            {"name": ".xdata", "addr": self._XDATA_ADDRESS, "size": len(self._xdata_bytes)},
+        ]
+
+    def read_bytes(self, addr: int, size: int) -> bytes:
+        if addr == self._XDATA_ADDRESS:
+            return self._xdata_bytes[:size]
+        return super().read_bytes(addr, size)
