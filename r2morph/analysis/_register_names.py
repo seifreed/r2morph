@@ -1,4 +1,4 @@
-"""Shared x86/x86-64 general-purpose register names.
+"""Shared x86/x86-64 register names.
 
 Several analysis passes scan disassembly text for register mentions. This is
 the single source of truth for that register-name list, ordered widest-first
@@ -70,4 +70,6 @@ X86_REGISTER_NAMES = (
     "r13b",
     "r14b",
     "r15b",
+    *(f"xmm{index}" for index in range(16)),
+    *(f"ymm{index}" for index in range(16)),
 )

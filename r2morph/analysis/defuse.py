@@ -86,7 +86,11 @@ class DefUseAnalyzer:
 
         for reg in X86_REGISTER_NAMES:
             if reg in disasm:
-                if reg.endswith("d"):
+                if reg.startswith("ymm"):
+                    size = 256
+                elif reg.startswith("xmm"):
+                    size = 128
+                elif reg.endswith("d"):
                     size = 32
                 elif reg.endswith("w"):
                     size = 16

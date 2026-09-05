@@ -452,3 +452,17 @@ class TestBuildSSAForm:
         defined = converter._extract_defined_registers("call 0x2000")
 
         expect("ymm15" in defined)
+
+    def test_defuse_extracts_vector_register_sizes(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        registers = analyzer._extract_registers({"disasm": "vaddps ymm1, ymm2, ymm3"})
+
+        expect(
+            {(register.name, register.size) for register in registers}
+            == {
+                ("ymm1", 256),
+                ("ymm2", 256),
+                ("ymm3", 256),
+            }
+        )
