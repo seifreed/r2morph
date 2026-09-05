@@ -138,6 +138,11 @@ def _unmask_qword(scratch: str, scratch2: str) -> str:
     )
 
 
+def _restore_virtual_flags_asm() -> str:
+    """Restore the VM flags image before an instruction consumes carry."""
+    return f"  mov r10, qword ptr [rsp+{_FLAGS_OFFSET}]\n  push r10\n  popfq\n"
+
+
 def _op_handler_asm(handler_key: str, key: str, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
     _, mnemonic, mode, width_text = handler_key.split("_")
@@ -167,13 +172,17 @@ def _op_handler_asm(handler_key: str, key: str, key_qword: str, key_dword: str, 
         body += "  mov qword ptr [rsp+r8*8], rax\n"
     elif width == _QWORD_WIDTH_BITS:
         body += (
-            f"  mov r11, qword ptr [rsp+r8*8]\n  {mnemonic} r11, rax\n"
+            "  mov r11, qword ptr [rsp+r8*8]\n"
+            + (_restore_virtual_flags_asm() if mnemonic in ("adc", "sbb") else "")
+            + f"  {mnemonic} r11, rax\n"
             f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
             "  mov qword ptr [rsp+r8*8], r11\n"
         )
     else:
         body += (
-            f"  mov r11d, dword ptr [rsp+r8*8]\n  {mnemonic} r11d, eax\n"
+            "  mov r11d, dword ptr [rsp+r8*8]\n"
+            + (_restore_virtual_flags_asm() if mnemonic in ("adc", "sbb") else "")
+            + f"  {mnemonic} r11d, eax\n"
             f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
             "  mov qword ptr [rsp+r8*8], r11\n"
         )

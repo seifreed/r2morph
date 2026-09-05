@@ -7,6 +7,7 @@ from typing import Any
 
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
+    VirtualizedOp,
     decode_instruction,
 )
 from r2morph.mutations.code_virtualization_region_atomic_immediate import (
@@ -249,6 +250,11 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
 
 
 def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any] | None:
+    if kind in ("adc", "sbb"):
+        carry_op = _decode_two_operand(text, kind)
+        if carry_op is not None:
+            slot, value, is_immediate, width = carry_op
+            return ["op", VirtualizedOp(kind, slot, value, is_immediate, width)]
     op = decode_instruction(text)
     if op is not None:
         return ["op", op]
@@ -435,8 +441,12 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         result = _classify_vector(text, address, size)
     elif result is None and kind == "nop":
         result = ["nop"]
-    elif result is None and kind in ("mov", "add", "sub", "xor", "and", "or"):
-        result = _classify_binary(kind, text, address, size)
+    elif result is None and (
+        kind in ("mov", "add", "sub", "xor", "and", "or", "adc", "sbb")
+        or text.partition(" ")[0].lower() in ("adc", "sbb")
+    ):
+        binary_kind = text.partition(" ")[0].lower()
+        result = _classify_binary(binary_kind if binary_kind in ("adc", "sbb") else kind, text, address, size)
     elif result is None:
         result = _classify_simple(kind, text, address, size)
     if result is None:
