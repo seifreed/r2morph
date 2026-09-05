@@ -143,6 +143,27 @@ def _restore_virtual_flags_asm() -> str:
     return f"  mov r10, qword ptr [rsp+{_FLAGS_OFFSET}]\n  push r10\n  popfq\n"
 
 
+def _lahf_handler_asm(rax_slot: int) -> str:
+    """Copy virtual status flags into AH and preserve the resulting RAX value."""
+    return (
+        _restore_virtual_flags_asm()
+        + "  lahf\n"
+        + f"  mov qword ptr [rsp+{rax_slot * 8}], rax\n"
+        + "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
+def _sahf_handler_asm(rax_slot: int) -> str:
+    """Apply AH to virtual status flags while preserving the other RFLAGS bits."""
+    return (
+        f"  mov rax, qword ptr [rsp+{rax_slot * 8}]\n"
+        + _restore_virtual_flags_asm()
+        + "  sahf\n"
+        + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        + "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _op_handler_asm(handler_key: str, key: str, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
     _, mnemonic, mode, width_text = handler_key.split("_")

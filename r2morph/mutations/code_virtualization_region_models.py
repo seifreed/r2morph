@@ -310,6 +310,8 @@ _IDENTITY_KEYS = {
     "vzeroupper",
     "vzeroall",
     "rdtsc",
+    "lahf",
+    "sahf",
     "nop",
     "enter_inner",
     "inner_exit",

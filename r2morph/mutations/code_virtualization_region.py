@@ -429,8 +429,8 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     def fixed_needed_in(i: int) -> bool | None:
         kind = items[i][0]
-        if kind in ("jcc", "exit", "vret", "fsave", "setcc", "cmov"):
-            return True  # jcc/fsave/setcc/cmov read flags; exit/vret conservatively keep them live
+        if kind in ("jcc", "exit", "vret", "fsave", "lahf", "sahf", "setcc", "cmov"):
+            return True  # lahf reads flags; sahf leaves OF live while replacing the other status flags
         if kind in _FLAG_KILLER_KINDS:
             return False
         if kind == "op" and items[i][1].mnemonic != "mov":

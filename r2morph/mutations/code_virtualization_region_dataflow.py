@@ -37,6 +37,7 @@ _THIRD_FIELD_WRITE_KINDS = frozenset(
 )
 _FIFTH_FIELD_WRITE_KINDS = frozenset({"movx", "movxidx", "movxidxnb", "movxreg"})
 _SPECIAL_WRITES = {
+    "lahf": frozenset({_RAX_SLOT}),
     "cmpxchgmem": frozenset({_RAX_SLOT}),
     "cmpxchgmemidx": frozenset({_RAX_SLOT}),
     "div": frozenset({_RAX_SLOT, _RDX_SLOT}),

@@ -28,6 +28,8 @@ _FIXED_SIZE_GROUPS = {
         "vzeroall",
         "syscall",
         "rdtsc",
+        "lahf",
+        "sahf",
     ),
     2: (
         "vpush",

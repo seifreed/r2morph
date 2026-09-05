@@ -419,6 +419,8 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         return ["vzeroupper"]
     if text.strip().lower() == "vzeroall":
         return ["vzeroall"]
+    if text.strip().lower() in ("lahf", "sahf"):
+        return [text.strip().lower()]
     address = insn.get("addr", 0)
     size = insn.get("size", 0)
     result = _first_item(

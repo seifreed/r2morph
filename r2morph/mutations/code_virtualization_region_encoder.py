@@ -695,6 +695,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             "vzeroupper",
             "vzeroall",
             "rdtsc",
+            "lahf",
+            "sahf",
         ):
             self._opcode(item)
         else:

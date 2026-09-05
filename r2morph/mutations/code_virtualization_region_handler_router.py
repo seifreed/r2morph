@@ -39,6 +39,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
+    _lahf_handler_asm,
     _leave_handler_asm,
     _mov_from_rsp_handler_asm,
     _mov_to_rsp_handler_asm,
@@ -50,6 +51,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _push_handler_asm,
     _pushi_handler_asm,
     _rspadj_handler_asm,
+    _sahf_handler_asm,
     _shift_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
@@ -277,6 +279,10 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _cmov_handler_asm(condition, int(width), self.context.key)
         elif key == "nop":
             body = "  add rsi, 1\n  jmp vm_dispatch\n"
+        elif key == "lahf":
+            body = _lahf_handler_asm(self.context.slot[0])
+        elif key == "sahf":
+            body = _sahf_handler_asm(self.context.slot[0])
         elif key.startswith("vret_"):
             parts = key.split("_")
             ret_addr = int(parts[1])

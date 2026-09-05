@@ -36,6 +36,27 @@ done:
     syscall
 """
 
+_LAHF_SAHF_SOURCE = r"""
+.intel_syntax noprefix
+.global _start
+.text
+_start:
+    mov eax, 7
+    xor r8d, r8d
+    cmp eax, 7
+    lahf
+    add r8d, 1
+    sahf
+    jne bad
+    mov edi, 42
+    jmp done
+bad:
+    mov edi, 97
+done:
+    mov eax, 60
+    syscall
+"""
+
 
 def test_virtualized_flag_stack_preserves_saved_flags_in_ordinary_region(tmp_path: Path) -> None:
     original = _compile_elf_x86_64_binary(tmp_path, "flag_stack", _SOURCE)
@@ -46,6 +67,23 @@ def test_virtualized_flag_stack_preserves_saved_flags_in_ordinary_region(tmp_pat
     binary.open()
     try:
         stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260905}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(original) == emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_virtualized_lahf_sahf_round_trip_preserves_flags_and_rax(tmp_path: Path) -> None:
+    original = _compile_elf_x86_64_binary(tmp_path, "lahf_sahf", _LAHF_SAHF_SOURCE)
+
+    mutated = tmp_path / "lahf_sahf_mutated"
+    mutated.write_bytes(original.read_bytes())
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260906}).apply(binary)
         binary.save()
     finally:
         binary.close()
