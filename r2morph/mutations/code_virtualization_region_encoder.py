@@ -691,6 +691,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             "inner_exit",
             "fsave",
             "frestore",
+            "syscall",
             "vzeroupper",
             "vzeroall",
             "rdtsc",

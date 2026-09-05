@@ -55,6 +55,7 @@ _CANONICAL_FLAGS_OFFSET = 0x80
 _STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
 _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
 _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
+_NONRETURNING_SYSCALLS = frozenset({60, 231})
 
 
 @dataclass
@@ -80,6 +81,64 @@ def _trim_trailing_padding(instructions: list[dict[str, Any]]) -> list[dict[str,
     while end and _is_trailing_padding(instructions[end - 1]):
         end -= 1
     return instructions[:end]
+
+
+def _is_syscall_instruction(instruction: dict[str, Any]) -> bool:
+    """Recognize Linux ``syscall`` regardless of radare2's type spelling."""
+    if instruction.get("type") == "syscall":
+        return True
+    opcode = str(instruction.get("opcode", "")).strip().lower()
+    return instruction.get("type") == "swi" and opcode.split(" ", 1)[0] == "syscall"
+
+
+def _immediate_rax_write(instruction: dict[str, Any]) -> int | None:
+    """Return a direct immediate write to ``rax``/``eax`` when one is visible."""
+    opcode = str(instruction.get("opcode", "")).strip().lower()
+    mnemonic, separator, operands = opcode.partition(" ")
+    if mnemonic not in {"mov", "movabs"} or not separator:
+        return None
+    destination, separator, source = operands.partition(",")
+    if not separator or destination.strip() not in {"rax", "eax"}:
+        return None
+    try:
+        value = int(source.strip(), 0)
+    except ValueError:
+        return None
+    return value & 0xFFFFFFFF if destination.strip() == "eax" else value & 0xFFFFFFFFFFFFFFFF
+
+
+def _syscall_number(instructions: list[dict[str, Any]], index: int) -> int | None:
+    """Find a nearby constant syscall number without guessing across control flow."""
+    for instruction in reversed(instructions[:index]):
+        if instruction.get("type") in {"call", "rcall", "ucall", "jmp", "cjmp", "ret"}:
+            return None
+        immediate = _immediate_rax_write(instruction)
+        if immediate is not None:
+            return immediate
+        opcode = str(instruction.get("opcode", "")).strip().lower()
+        destination = opcode.partition(" ")[2].partition(",")[0].strip()
+        if destination in {"rax", "eax", "ax", "al"}:
+            return None
+    return None
+
+
+def _is_terminal_syscall(instructions: list[dict[str, Any]], index: int) -> bool:
+    """Return whether a syscall cannot return to the following instruction."""
+    if not _is_syscall_instruction(instructions[index]):
+        return False
+    next_index = index + 1
+    if next_index == len(instructions) or instructions[next_index].get("type") == "ret":
+        return True
+    return _syscall_number(instructions, index) in _NONRETURNING_SYSCALLS
+
+
+def _normalize_syscall_instruction(instruction: dict[str, Any]) -> dict[str, Any]:
+    """Map radare2's ``swi`` spelling to the region classifier's syscall kind."""
+    if instruction.get("type") != "swi" or not _is_syscall_instruction(instruction):
+        return instruction
+    normalized = dict(instruction)
+    normalized["type"] = "syscall"
+    return normalized
 
 
 _STACK_ARGUMENT_START = 8
@@ -424,6 +483,7 @@ def _inject_junk_movs(
 
 def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
     instructions = _trim_trailing_padding(instructions)
+    instructions = [_normalize_syscall_instruction(instruction) for instruction in instructions]
     if not instructions:
         return None
     ret_cleanup: dict[int, int] = {}
@@ -438,11 +498,9 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
         {
             instruction["addr"]
             for index, instruction in enumerate(instructions)
-            if instruction.get("type") in ("ret", "swi")
-            or (
-                instruction.get("type") == "syscall"
-                and (index + 1 == len(instructions) or instructions[index + 1].get("type") == "ret")
-            )
+            if instruction.get("type") == "ret"
+            or (instruction.get("type") == "swi" and not _is_syscall_instruction(instruction))
+            or _is_terminal_syscall(instructions, index)
         }
     )
     if not exit_addrs:

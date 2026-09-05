@@ -18,7 +18,8 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
-from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST
+from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
+from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, RegionScheme
 from tests.utils.assertions import expect
 
 _EXPECTED_0X80_256 = 0x100
@@ -43,6 +44,12 @@ def _tiny_region() -> Any:
 def test_scheme_generates_nonzero_table_key() -> None:
     scheme = build_region_scheme(_tiny_region(), randomness.Random(0))
     expect(1 <= scheme.table_key < (1 << 32))
+
+
+def test_region_encoder_serializes_syscall_item() -> None:
+    scheme = RegionScheme({"syscall": (0,)}, 0, 0, tuple(range(16)), 0)
+    encoded = RegionEncoder(scheme, [0], 0, 0).encode([("syscall",)])
+    expect(len(encoded) == 1)
 
 
 def test_scheme_gp_slots_leave_a_hole_in_the_contiguous_context_array() -> None:
