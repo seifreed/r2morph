@@ -108,3 +108,54 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
 
     degraded_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
     expect(safe_address not in degraded_addresses, "unwind metadata from another function degraded safe_arithmetic")
+
+
+def test_code_virtualization_preserves_exception_from_call_inside_virtualized_function(tmp_path: Path) -> None:
+    """A C++ exception must retain its caller's landing-pad semantics."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "unwind_call.cpp"
+    executable = tmp_path / "unwind_call"
+    source.write_text(
+        """
+#include <stdexcept>
+
+__attribute__((noinline)) void thrower() {
+    throw std::runtime_error("call escaped");
+}
+
+__attribute__((noinline)) int boundary(int value) {
+    try {
+        thrower();
+        return value;
+    } catch (const std::runtime_error&) {
+        return value + 7;
+    }
+}
+
+int main() { return boundary(35) == 42 ? 42 : 1; }
+"""
+    )
+    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    expect(result.returncode == 0, "failed to compile the call/unwinding fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        boundary_address = next(
+            int(function["addr"])
+            for function in binary.get_functions()
+            if "boundary" in function.get("name", "")
+        )
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
+
+    runtime_result = run_command([executable], timeout=30)
+    unwind_failure_addresses = {
+        record["function_address"]
+        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
+        if record["capability"] == "exceptions_and_unwinding"
+    }
+    expect(
+        boundary_address not in unwind_failure_addresses and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        "an exception crossing a virtualized call lost the caller unwind contract: "
+        f"{boundary_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
+    )
