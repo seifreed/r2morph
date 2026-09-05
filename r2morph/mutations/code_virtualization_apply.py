@@ -47,6 +47,20 @@ def _address_in_ranges(address: object, ranges: Iterable[tuple[int, int]]) -> bo
     return isinstance(address, int) and any(start <= address < start + size for start, size in ranges)
 
 
+def _function_contains_call(binary: Any, func: dict[str, Any]) -> bool:
+    """Return whether a function body can transfer control to a callee."""
+    try:
+        instructions = binary.get_function_disasm(int(func["addr"]))
+    except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError):
+        return True
+    return any(
+        instruction.get("type") in {"call", "rcall", "ucall", "icall", "ircall"}
+        or str(instruction.get("opcode", "")).strip().lower().startswith("call")
+        for instruction in instructions
+        if isinstance(instruction, dict)
+    )
+
+
 def _unwind_metadata_name(binary: Any) -> str | None:
     """Return explicit exception-table metadata, failing closed on read errors.
 
@@ -193,14 +207,15 @@ def _function_has_unproven_unwind_metadata(
     unwind_section: str | None,
     function_address: int,
     exception_frames: dict[int, Any] | None,
+    function_contains_call: bool = False,
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
-    The VM trampoline returns to the original function before any subsequent
-    call can throw, and the run decoder excludes calls and control flow. A
-    parsed ELF frame therefore remains valid for synchronous exception paths,
-    including frames with landing pads. An unavailable parser result still
-    fails closed because the function's unwind contract is unknown.
+    A parsed frame with a local landing pad remains on the native exception
+    path. A call in a function without a local landing pad can unwind through
+    the virtualized body, which the VM metadata writer does not yet preserve;
+    that shape therefore fails closed. An unavailable parser result also fails
+    closed because the function's unwind contract is unknown.
     """
     if unwind_section is None:
         return False
@@ -216,7 +231,9 @@ def _function_has_unproven_unwind_metadata(
             ),
             None,
         )
-    return frame is None
+    if frame is None:
+        return True
+    return function_contains_call and not frame.landing_pads
 
 
 def _static_dataflow_is_complete(cfg: Any) -> bool:
@@ -300,6 +317,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                 unwind_section,
                 int(func["addr"]),
                 exception_frames,
+                _function_contains_call(binary, func),
             ),
         )
         skipped += outcome["skipped"]

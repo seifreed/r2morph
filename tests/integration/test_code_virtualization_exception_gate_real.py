@@ -111,7 +111,7 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
 
 
 def test_code_virtualization_preserves_exception_from_call_inside_virtualized_function(tmp_path: Path) -> None:
-    """A C++ exception must retain its caller's landing-pad semantics."""
+    """A call that can unwind through a VM body is rejected without mutation."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
     thrower_source = tmp_path / "unwind_thrower.cpp"
@@ -164,10 +164,10 @@ int main() { return caller(); }
         if record["capability"] == "exceptions_and_unwinding"
     }
     expect(
-        boundary_was_transformed
-        and boundary_address not in unwind_failure_addresses
+        not boundary_was_transformed
+        and boundary_address in unwind_failure_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "an exception crossing a virtualized call lost the caller unwind contract: "
+        "a call with an exception edge crossing the VM was not rejected safely: "
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
         f"{unwind_failure_addresses=}, {stats=}",
     )
