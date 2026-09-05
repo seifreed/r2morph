@@ -133,6 +133,7 @@ def test_exception_reader_classifies_elf_landing_pad_action_as_catch() -> None:
 
     expect(frames[_FUNCTION_ADDRESS].landing_pads[0].address == _FUNCTION_ADDRESS + 8)
     expect(frames[_FUNCTION_ADDRESS].landing_pads[0].action == ExceptionAction.CATCH)
+    expect(frames[_FUNCTION_ADDRESS].landing_pads[0].metadata["call_site_start"] == _FUNCTION_ADDRESS)
 
 
 def test_exception_reader_parses_dwarf64_eh_frame_fde_and_landing_pad() -> None:

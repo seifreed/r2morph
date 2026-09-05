@@ -644,8 +644,8 @@ class ExceptionInfoReader:
                 size=max(1, length),
                 action=self._lsda_action(data, action_table_start, action_index),
                 metadata={
-                    "call_site_start": frame.function_start + start,
-                    "call_site_end": frame.function_start + start + length,
+                    "call_site_start": start,
+                    "call_site_end": start + length,
                     "action_index": action_index,
                 },
             )
