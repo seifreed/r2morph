@@ -1,0 +1,15 @@
+{
+  "cases": 20000,
+  "failure_count": 0,
+  "failure_limit": 128,
+  "failures": [],
+  "max_payload": 4096,
+  "schema_version": 1,
+  "seed": 20260905,
+  "target_runs": {
+    "binary_parsers": 20000,
+    "binary_rewriter": 20000,
+    "relocations": 20000,
+    "vm_dispatcher": 20000
+  }
+}
