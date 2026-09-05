@@ -118,6 +118,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_riprel_mov,
     _decode_tls_memory_mov,
     _decode_xchg_memory,
+    _explicit_memory_width,
     _parse_indexed_operand,
     _parse_riprel_operand,
 )
@@ -305,11 +306,17 @@ def _decode_incdec_memory(text: str, insn_addr: int, insn_size: int) -> tuple[An
         base, displacement, width = direct
         if width in (8, 16, 32, 64):
             return ("incdecmem", mnemonic, base, displacement, width)
-        return None
     rip_relative = _parse_riprel_operand(operand, insn_addr, insn_size)
-    if rip_relative is None or rip_relative[1] not in (8, 16, 32, 64):
+    if rip_relative is not None and rip_relative[1] in (8, 16, 32, 64):
+        return ("incdecmemrip", mnemonic, rip_relative[0], rip_relative[1])
+    width = _explicit_memory_width(operand)
+    indexed = _parse_indexed_operand(operand, base_optional=True)
+    if width not in (8, 16, 32, 64) or indexed is None:
         return None
-    return ("incdecmemrip", mnemonic, rip_relative[0], rip_relative[1])
+    base, index, shift, displacement = indexed
+    if base < 0:
+        return ("incdecmemidxnb", mnemonic, index, shift, displacement, width)
+    return ("incdecmemidx", mnemonic, base, index, shift, displacement, width)
 
 
 def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:

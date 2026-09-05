@@ -42,10 +42,63 @@ done:
     syscall
 """
 
+_INDEXED_SOURCE = r"""
+.intel_syntax noprefix
+.global _start
+.section .data
+.align 4
+base_counter:
+    .long 0xffffffff
+no_base_counter:
+    .long 1
+.text
+_start:
+    xor ecx, ecx
+    lea rbx, [rip + base_counter]
+    stc
+    inc dword ptr [rbx + rcx*4]
+    jc base_carry_preserved
+    jmp bad
+base_carry_preserved:
+    cmp dword ptr [rbx], 0
+    jne bad
+    clc
+    dec dword ptr [rcx*4 + no_base_counter]
+    jnc no_base_carry_preserved
+    jmp bad
+no_base_carry_preserved:
+    cmp dword ptr [rcx*4 + no_base_counter], 0
+    jne bad
+    mov edi, 42
+    jmp done
+bad:
+    mov edi, 97
+done:
+    mov eax, 60
+    syscall
+"""
+
 
 def test_virtualized_memory_inc_preserves_value_and_carry(tmp_path: Path) -> None:
     original = _compile_elf_x86_64_binary(tmp_path, "inc_memory", _SOURCE)
     mutated = tmp_path / "inc_memory_mutated"
+    mutated.write_bytes(original.read_bytes())
+
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260905}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(original) == emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_virtualized_indexed_memory_inc_dec_preserves_value_and_carry(tmp_path: Path) -> None:
+    original = _compile_elf_x86_64_binary(tmp_path, "incdec_indexed_memory", _INDEXED_SOURCE)
+    mutated = tmp_path / "incdec_indexed_memory_mutated"
     mutated.write_bytes(original.read_bytes())
 
     binary = Binary(mutated, writable=True)

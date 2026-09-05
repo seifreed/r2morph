@@ -217,6 +217,7 @@ _FIXED_SIZE_GROUPS = {
         "popmemidxnb",
         "mxcsrloadidxnb",
         "mxcsrstoreidxnb",
+        "incdecmemidxnb",
     ),
     9: (
         "vloadidx",
@@ -255,6 +256,7 @@ _FIXED_SIZE_GROUPS = {
         "popmemidx",
         "mxcsrloadidx",
         "mxcsrstoreidx",
+        "incdecmemidx",
         "pushi",
     ),
     10: (

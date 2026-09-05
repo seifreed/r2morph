@@ -10,6 +10,8 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
     MemoryOperationConfig,
+    _indexed_address_asm,
+    _indexed_address_nobase_asm,
     _mem_address_asm,
 )
 
@@ -18,13 +20,20 @@ def _incdec_memory_handler_asm(config: MemoryOperationConfig) -> str:
     """Return a flag-accurate ``inc/dec [memory]`` handler body."""
     kind, mnemonic, width_text = config.handler_key.split("_")
     width = int(width_text)
-    body, advance = _mem_address_asm(
-        kind.endswith("rip"),
-        config.key,
-        config.key_dword,
-        config.field_perm,
-        config.addr_variant,
-    )
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(
+            config.key, config.key_dword, config.field_perm, config.addr_variant
+        )
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(config.key, config.key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(
+            kind.endswith("rip"),
+            config.key,
+            config.key_dword,
+            config.field_perm,
+            config.addr_variant,
+        )
     size_name = {8: "byte", 16: "word", 32: "dword", 64: "qword"}[width]
     if width == _QWORD_WIDTH_BITS:
         body += "  mov rbx, qword ptr [r10]\n"

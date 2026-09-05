@@ -52,6 +52,12 @@ class RegionEncoderMemoryMixin:
         elif kind == "incdecmemrip":
             _, _mnemonic, target, _width = item
             self._gp_rip(item, 0, target)
+        elif kind == "incdecmemidx":
+            _, _mnemonic, base, index, shift, displacement, _width = item
+            self._gp_idx(item, (0, base, index, shift, displacement))
+        elif kind == "incdecmemidxnb":
+            _, _mnemonic, index, shift, displacement, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, displacement))
         elif kind in ("cmpmem", "cmpriprel"):
             self._emit_compare_memory(item)
         elif kind in ("opmem", "lea"):
