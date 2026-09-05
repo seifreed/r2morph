@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `f3a41b0`
+- Commit: `44bca563`
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -14,7 +14,7 @@ checks are evidence, not a human approval.
 ## Evidence
 
 - [`compatibility-corpus.md`](compatibility-corpus.md)
-- [`protection-adversarial-corpus-2026-09-05-7c3d4f32.json`](protection-adversarial-corpus-2026-09-05-7c3d4f32.json)
+- [`protection-adversarial-corpus-2026-09-05-44bca563-triton.json`](protection-adversarial-corpus-2026-09-05-44bca563-triton.json)
 - [`protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json`](protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json)
 - [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
 - [`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
@@ -24,6 +24,9 @@ checks are evidence, not a human approval.
 The current evidence records 159/159 virtualized samples, 318/318 IDA
 analyses, 954 Triton pairs, 954 angr pairs, and 80,000 fuzz target runs.
 The automated review still reports `human_signoff: not-attested`.
+The current corpus rerun records 47 explicit Unicorn errors and 1,908 local
+IDA/Ghidra-unavailable rows; these are not attributed to Triton or angr.
+Binary Ninja remains excluded by project decision.
 
 ## Reproduction
 
@@ -64,7 +67,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: f3a41b0
+Reviewed commit: 44bca563
 ```
 
 No approval is implied until a human reviewer fills this section outside the

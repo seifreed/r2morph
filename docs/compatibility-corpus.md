@@ -92,6 +92,15 @@ The full report still records 5,679 completed tool runs, 45 Unicorn errors,
 and 1,908 unavailable-tool rows; the latter are explicit environment/tool
 availability results, not Triton or angr failures.
 
+The current rerun at `44bca563` repeats all 159 fixtures and six passes with
+the Python 3.13 virtualenv containing `triton-library 1.0.0rc4`. It records
+159/159 CodeVirtualization applications, 171 virtualized functions, and zero
+unsupported functions. Triton and angr complete every configured pair; the
+47 errors are isolated to Unicorn (`UcError`), and the 1,908 unavailable rows
+are the local IDA/Ghidra executables. Binary Ninja is intentionally omitted.
+The raw report is
+[`protection-adversarial-corpus-2026-09-05-44bca563-triton.json`](protection-adversarial-corpus-2026-09-05-44bca563-triton.json).
+
 The current deterministic parser/dispatcher/relocation/rewriter fuzz campaign
 at `2e4ad8e` ran 20,000 cases per target, 80,000 target runs in total, with
 zero failures. Its bounded report is
