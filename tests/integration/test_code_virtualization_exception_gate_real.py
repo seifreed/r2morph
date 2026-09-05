@@ -130,15 +130,20 @@ void thrower() {
 extern void thrower();
 
 __attribute__((noinline)) int boundary(int value) {
+    thrower();
+    return value;
+}
+
+__attribute__((noinline)) int caller() {
     try {
-        thrower();
-        return value;
+        boundary(35);
+        return 1;
     } catch (const std::runtime_error&) {
-        return value + 7;
+        return 42;
     }
 }
 
-int main() { return boundary(35) == 42 ? 42 : 1; }
+int main() { return caller(); }
 """)
     result = run_command(["g++", "-O2", "-fno-pie", "-no-pie", "-o", executable, thrower_source, source], timeout=30)
     expect(result.returncode == 0, "failed to compile the call/unwinding fixture")
