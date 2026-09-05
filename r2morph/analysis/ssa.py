@@ -438,13 +438,13 @@ class SSAConverter:
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "call":
-            used = set(_SYSV_CALL_USED_REGISTERS)
-            used.update(
+            call_used = set(_SYSV_CALL_USED_REGISTERS)
+            call_used.update(
                 match.group(1)
                 for match in re.finditer(r"\b([a-z][a-z0-9]*)\b", operands_text.lower())
                 if match.group(1) in _SSA_REGISTER_NAMES
             )
-            return used
+            return call_used
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
         if not operands:
             return set()
