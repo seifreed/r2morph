@@ -116,8 +116,7 @@ def test_code_virtualization_preserves_exception_from_call_inside_virtualized_fu
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
     source = tmp_path / "unwind_call.cpp"
     executable = tmp_path / "unwind_call"
-    source.write_text(
-        """
+    source.write_text("""
 #include <stdexcept>
 
 __attribute__((noinline)) void thrower() {
@@ -134,17 +133,14 @@ __attribute__((noinline)) int boundary(int value) {
 }
 
 int main() { return boundary(35) == 42 ? 42 : 1; }
-"""
-    )
+""")
     result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
     expect(result.returncode == 0, "failed to compile the call/unwinding fixture")
 
     with Binary(executable, writable=True) as binary:
         binary.analyze()
         boundary_address = next(
-            int(function["addr"])
-            for function in binary.get_functions()
-            if "boundary" in function.get("name", "")
+            int(function["addr"]) for function in binary.get_functions() if "boundary" in function.get("name", "")
         )
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
 
