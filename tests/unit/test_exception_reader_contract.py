@@ -92,6 +92,17 @@ class _InMemoryDwarf64ExceptionBinary(_InMemoryElfExceptionBinary):
         self._eh_frame = self._build_dwarf64_eh_frame()
 
 
+class _InMemoryMachoExceptionBinary(_InMemoryElfExceptionBinary):
+    def get_arch_info(self) -> dict[str, int | str]:
+        return {"format": "Mach-O-64", "bits": 64}
+
+    def get_sections(self) -> list[dict[str, int | str]]:
+        return [
+            {"name": "__eh_frame", "addr": _EH_FRAME_ADDRESS, "size": len(self._eh_frame)},
+            {"name": "__gcc_except_tab", "addr": _LSDA_ADDRESS, "size": len(self._lsda)},
+        ]
+
+
 def _packed_entry(begin: int, function_length_units: int) -> bytes:
     second = 0x1 | ((function_length_units & 0x7FF) << 2)
     return struct.pack("<II", begin, second)

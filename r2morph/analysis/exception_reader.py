@@ -478,6 +478,21 @@ class ExceptionInfoReader:
         """Read exception frames from Mach-O __unwind_info section."""
         try:
             sections = self._get_sections()
+            eh_frame_section = next(
+                (section for section in sections if "__eh_frame" in section.get("name", "")),
+                None,
+            )
+            if eh_frame_section is not None:
+                eh_frame_addr = _section_int(eh_frame_section, "addr", "virtual_address")
+                eh_frame_size = _section_int(eh_frame_section, "size", "virtual_size")
+                if eh_frame_addr and eh_frame_size:
+                    eh_frame_data = self.binary.read_bytes(
+                        eh_frame_addr,
+                        min(eh_frame_size, _MAX_EXCEPTION_SECTION_BYTES),
+                    )
+                    if eh_frame_data:
+                        self._parse_eh_frame(eh_frame_data, eh_frame_addr)
+
             unwind_section = None
             for section in sections:
                 name = section.get("name", "")
@@ -486,7 +501,7 @@ class ExceptionInfoReader:
                     break
 
             if not unwind_section:
-                logger.debug("No __unwind_info section found")
+                logger.debug("No Mach-O __unwind_info section found")
                 return
 
             unwind_addr = _section_int(unwind_section, "addr", "virtual_address")

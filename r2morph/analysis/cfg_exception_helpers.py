@@ -33,6 +33,16 @@ def detect_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_addre
 
 def detect_elf_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
     """Detect exception edges from ELF .eh_frame metadata."""
+    return _detect_dwarf_exception_edges(binary, cfg, function_address, "ELF")
+
+
+def _detect_dwarf_exception_edges(
+    binary: Binary,
+    cfg: ControlFlowGraph,
+    function_address: int,
+    platform_name: str,
+) -> list[ExceptionEdge]:
+    """Build CFG exception edges from DWARF landing-pad metadata."""
     try:
         frames = ExceptionInfoReader(binary).read_exception_frames()
         frame = frames.get(function_address)
@@ -70,7 +80,7 @@ def detect_elf_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_a
             )
         return exception_edges
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
-        logger.debug("Failed to detect ELF exception edges: %s", exc)
+        logger.debug("Failed to detect %s exception edges: %s", platform_name, exc)
         return []
 
 
@@ -114,8 +124,8 @@ def detect_pe_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_ad
 
 
 def detect_macho_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
-    """Detect exception edges from Mach-O __unwind_info metadata."""
-    return []
+    """Detect exception edges from Mach-O DWARF unwind metadata."""
+    return _detect_dwarf_exception_edges(binary, cfg, function_address, "Mach-O")
 
 
 __all__ = [
