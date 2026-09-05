@@ -117,6 +117,16 @@ unavailable rows remain the local IDA/Ghidra executables. Binary Ninja remains
 intentionally omitted. The raw report is
 [`protection-adversarial-corpus-2026-09-05-fa85d18-triton.json`](protection-adversarial-corpus-2026-09-05-fa85d18-triton.json).
 
+The current `c820685f` rerun repeats the CodeVirtualization corpus after the
+memory-destination carry semantics update. It records 159/159 applications,
+171 virtualized functions, and zero unsupported functions. Triton and angr
+complete all 159 original/protected pairs; 15 `UcError` rows are isolated to
+Unicorn AVX/VEX emulation. IDA and Ghidra are explicitly unavailable in this
+macOS run (318 rows), and Binary Ninja remains omitted by project decision.
+The raw report is
+[`protection-adversarial-corpus-2026-09-05-c820685f-triton.json`](protection-adversarial-corpus-2026-09-05-c820685f-triton.json)
+(`SHA-256 f6244bf6aecfe115104857b53930b3478ec758ad3c65b65bfe43ba93fc77aaa4`).
+
 The current deterministic parser/dispatcher/relocation/rewriter fuzz campaign
 at `2e4ad8e` ran 20,000 cases per target, 80,000 target runs in total, with
 zero failures. Its bounded report is
