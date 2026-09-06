@@ -7,7 +7,7 @@ import struct
 from dataclasses import dataclass, replace
 from typing import Any
 
-from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.analysis.exception_reader_macho import macho_image_base, parse_macho_compact_unwind
 from r2morph.core.binary import Binary
 
@@ -42,6 +42,7 @@ _EH_FRAME_LENGTH_FIELD_BYTES = 4
 _DWARF64_LENGTH_FIELD_BYTES = 12
 _DWARF64_CIE_ID_BYTES = 8
 _ELF_PAGE_SIZE = 0x1000
+_MAX_LSDA_COPY_BYTES = 1 << 20
 
 
 @dataclass(frozen=True)
@@ -75,6 +76,17 @@ class _LsdaContext:
 
     def with_base(self, base_address: int) -> _LsdaContext:
         return replace(self, base_address=base_address)
+
+
+@dataclass(frozen=True)
+class _LsdaHeader:
+    call_site_start: int
+    call_site_end: int
+    lp_start: int
+    context: _LsdaContext
+    type_encoding: int
+    type_table_offset: int | None
+    action_table_start: int
 
 
 def _section_int(section: dict[str, Any], primary: str, fallback: str) -> int:
@@ -172,6 +184,7 @@ class ExceptionInfoReader:
         self.binary = binary
         self._frames: dict[int, ExceptionFrame] | None = None
         self._cies: dict[int, _CieInfo] = {}
+        self._lsda_templates: dict[int, LsdaTemplate | None] = {}
 
     def read_exception_frames(self) -> dict[int, ExceptionFrame]:
         if self._frames is not None:
@@ -588,6 +601,9 @@ class ExceptionInfoReader:
             header = self._read_lsda_header(data, cursor, section_address, frame)
             if header is None:
                 return
+            if lsda_address not in self._lsda_templates:
+                self._lsda_templates[lsda_address] = self._build_lsda_template(data, cursor, header)
+            frame.lsda_template = self._lsda_templates[lsda_address]
             pads = self._read_lsda_call_sites(data, header, frame)
             frame.landing_pads.extend(pads)
         except (IndexError, ValueError, struct.error):
@@ -599,19 +615,24 @@ class ExceptionInfoReader:
         offset: int,
         section_address: int,
         frame: ExceptionFrame,
-    ) -> tuple[int, int, int, _LsdaContext] | None:
-        if offset >= len(data):
-            return None
+    ) -> _LsdaHeader | None:
         lp_encoding = data[offset]
         cursor = offset + 1
         lp_start_result = self._read_lsda_lp_start(data, cursor, lp_encoding, section_address, frame)
         if lp_start_result is None:
             return None
         lp_start, cursor = lp_start_result
-        type_cursor = self._skip_lsda_types(data, cursor)
-        if type_cursor is None or type_cursor >= len(data):
+        type_encoding = data[cursor]
+        type_table_offset: int | None = None
+        if type_encoding == _DW_EH_PE_OMIT:
+            cursor += 1
+        else:
+            type_offset = _read_uleb128(data, cursor + 1, len(data))
+            if type_offset is None:
+                return None
+            type_table_offset, cursor = type_offset
+        if cursor >= len(data):
             return None
-        cursor = type_cursor
         call_site_encoding = data[cursor]
         call_site_length = _read_uleb128(data, cursor + 1, len(data))
         if call_site_length is None:
@@ -627,7 +648,15 @@ class ExceptionInfoReader:
             section_address,
             frame.function_start,
         )
-        return call_site_start, call_site_end, lp_start, context
+        return _LsdaHeader(
+            call_site_start,
+            call_site_end,
+            lp_start,
+            context,
+            type_encoding,
+            type_table_offset,
+            call_site_end,
+        )
 
     def _read_lsda_lp_start(
         self,
@@ -648,14 +677,19 @@ class ExceptionInfoReader:
         return result
 
     @staticmethod
-    def _skip_lsda_types(data: bytes, offset: int) -> int | None:
-        if offset >= len(data):
+    def _build_lsda_template(data: bytes, lsda_offset: int, header: _LsdaHeader) -> LsdaTemplate | None:
+        action_offset = header.action_table_start - lsda_offset
+        suffix = data[header.action_table_start :]
+        if action_offset < 0 or action_offset > _MAX_EXCEPTION_SECTION_BYTES:
             return None
-        type_encoding = data[offset]
-        if type_encoding == _DW_EH_PE_OMIT:
-            return offset + 1
-        type_offset = _read_uleb128(data, offset + 1, len(data))
-        return None if type_offset is None else type_offset[1]
+        if len(suffix) > _MAX_LSDA_COPY_BYTES:
+            return None
+        return LsdaTemplate(
+            header.type_encoding,
+            header.type_table_offset,
+            action_offset,
+            bytes(suffix),
+        )
 
     @staticmethod
     def _read_lsda_offset(data: bytes, offset: int, context: _LsdaContext) -> tuple[int, int] | None:
@@ -675,11 +709,14 @@ class ExceptionInfoReader:
     def _read_lsda_call_sites(
         self,
         data: bytes,
-        header: tuple[int, int, int, _LsdaContext],
+        header: _LsdaHeader,
         frame: ExceptionFrame,
     ) -> list[LandingPad]:
-        cursor, call_site_end, lp_start, context = header
-        action_table_start = call_site_end
+        cursor = header.call_site_start
+        call_site_end = header.call_site_end
+        lp_start = header.lp_start
+        context = header.context
+        action_table_start = header.action_table_start
         pads: list[LandingPad] = []
         while cursor < call_site_end:
             site = self._read_lsda_call_site(data, cursor, context, frame, lp_start)

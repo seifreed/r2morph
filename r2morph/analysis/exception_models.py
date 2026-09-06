@@ -17,6 +17,16 @@ class ExceptionAction(Enum):
     UNKNOWN = "unknown"
 
 
+@dataclass(frozen=True)
+class LsdaTemplate:
+    """Action/type-table bytes reusable by a remapped LSDA call-site table."""
+
+    type_encoding: int
+    type_table_offset: int | None
+    action_table_offset: int
+    action_and_type_bytes: bytes
+
+
 @dataclass
 class LandingPad:
     """Represents a landing pad for exception handling."""
@@ -50,4 +60,5 @@ class ExceptionFrame:
     function_end: int
     personality: int | None = None
     lsda_address: int | None = None
+    lsda_template: LsdaTemplate | None = None
     landing_pads: list[LandingPad] = field(default_factory=list)

@@ -14,6 +14,7 @@ _MACHO_REGULAR_PAGE_KIND = 2
 _MACHO_COMPRESSED_PAGE_KIND = 3
 _FUNCTION_ADDRESS = 0x401000
 _REBASED_LSDA_ADDRESS = 0x4000
+_LSDA_ACTION_TABLE_OFFSET = 8
 
 
 class _InMemoryElfExceptionBinary:
@@ -183,6 +184,17 @@ def test_exception_reader_decodes_elf_fde_lsda_and_landing_pad() -> None:
     expect(frame.function_end == _FUNCTION_ADDRESS + 0x40)
     expect(frame.lsda_address == _LSDA_ADDRESS)
     expect(len(frame.landing_pads) == 1)
+
+
+def test_exception_reader_retains_bounded_lsda_action_template() -> None:
+    frames = ExceptionInfoReader(_InMemoryElfExceptionBinary()).read_exception_frames()
+
+    template = frames[_FUNCTION_ADDRESS].lsda_template
+    expect(
+        template is not None
+        and template.action_table_offset == _LSDA_ACTION_TABLE_OFFSET
+        and template.action_and_type_bytes == bytes((0x01, 0x00))
+    )
 
 
 def test_exception_reader_accepts_radare2_vaddr_sections() -> None:
