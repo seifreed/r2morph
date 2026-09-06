@@ -6,6 +6,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _function_has_unproven_unwind_metadata,
     _unwind_metadata_name,
 )
+from r2morph.mutations.code_virtualization_region import extract_region
 from tests.utils.assertions import expect
 
 
@@ -75,6 +76,19 @@ def test_terminal_syscall_with_disassembler_padding_is_preserved_as_region_exit(
     expect(
         pass_instance._find_first_unvirtualizable_instruction(_PaddedTerminalSyscallBinary(), {"addr": 0x1000}) is None
     )
+
+
+def test_rt_sigreturn_does_not_virtualize_unreachable_tail() -> None:
+    instructions = [
+        {"type": "mov", "opcode": "mov eax, 15", "addr": 0x1000, "size": 5},
+        {"type": "syscall", "opcode": "syscall", "addr": 0x1005, "size": 2},
+        {"type": "mov", "opcode": "mov edi, 42", "addr": 0x1007, "size": 5},
+        {"type": "ret", "opcode": "ret", "addr": 0x100C, "size": 1},
+    ]
+
+    region = extract_region(instructions)
+
+    expect(region is not None and region.body_ranges == [(0x1000, 5)])
 
 
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:
