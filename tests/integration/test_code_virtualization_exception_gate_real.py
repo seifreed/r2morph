@@ -231,3 +231,59 @@ int main() { return caller(); }
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
         f"{unwind_failure_addresses=}, {stats=}",
     )
+
+
+def test_code_virtualization_propagates_exception_through_virtualized_native_call(tmp_path: Path) -> None:
+    """A native call that throws can unwind through a VM bridge to an outer catch."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "unwind_propagation.cpp"
+    executable = tmp_path / "unwind_propagation"
+    source.write_text("""
+#include <stdexcept>
+
+__attribute__((noinline)) int thrower_value(int value) {
+    if (value == 35) {
+        throw std::runtime_error("call escaped");
+    }
+    return value;
+}
+
+__attribute__((noinline)) int boundary(int value) {
+    int result = thrower_value(value);
+    return result + 7;
+}
+
+__attribute__((noinline)) int caller() {
+    try {
+        return boundary(35);
+    } catch (const std::runtime_error&) {
+        return 42;
+    }
+}
+
+int main() { return caller(); }
+""")
+    result = run_command(
+        ["g++", "-O2", "-fno-pie", "-no-pie", "-funwind-tables", "-o", executable, source],
+        timeout=30,
+    )
+    expect(result.returncode == 0, "failed to compile the exception propagation fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        boundary_address = next(
+            int(function["addr"]) for function in binary.get_functions() if "boundary" in function.get("name", "")
+        )
+        original_bytes = binary.read_bytes(boundary_address, 8)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000, "seed": FIXTURE_SEED}).apply(
+            binary
+        )
+        boundary_was_transformed = binary.read_bytes(boundary_address, 8) != original_bytes
+
+    runtime_result = run_command([executable], timeout=30)
+    expect(
+        boundary_was_transformed and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        "an exception did not propagate through the virtualized native-call bridge: "
+        f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, {stats=}",
+    )

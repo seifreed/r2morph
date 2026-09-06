@@ -63,7 +63,9 @@ def _cie() -> bytes:
             1,
         )
     )
-    body = b"\x00\x01zR\x00" + _uleb128(1) + _sleb128(-8) + _uleb128(_X86_64_RIP) + b"\x01\x1b" + instructions
+    body = (
+        b"\x00\x00\x00\x00\x01zR\x00" + _uleb128(1) + _sleb128(-8) + _uleb128(_X86_64_RIP) + b"\x01\x1b" + instructions
+    )
     return struct.pack("<I", len(body)) + body
 
 

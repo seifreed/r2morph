@@ -126,6 +126,7 @@ class _UnwindPayload:
 _MIN_RUN_LENGTH = 2
 # A relative trampoline jump needs 5 bytes in the run's byte span.
 _TRAMPOLINE_SIZE = 5
+_EH_FRAME_ALIGNMENT = 4
 # Upper bound on instructions read when gathering a dispatch-shaped function
 # linearly (its analysis stops at the computed jump, so there is no function size).
 _MAX_DISPATCH_INSNS = 256
@@ -848,7 +849,7 @@ class CodeVirtualizationPass(MutationPass):
                 blob_vaddr,
                 len(blob),
                 unwind.frame_size,
-                blob_vaddr + len(blob),
+                (blob_vaddr + len(blob) + _EH_FRAME_ALIGNMENT - 1) & ~(_EH_FRAME_ALIGNMENT - 1),
                 unwind.call_ranges,
             )
             if unwind.frame_size is not None

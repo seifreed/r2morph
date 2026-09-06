@@ -77,6 +77,11 @@ _PHDR_RESERVE_SIZE = ((_MAX_PHDR_ENTRIES * _PHDR_ENTRY_SIZE + _SEGMENT_ALIGN - 1
 _MIN_FRAGMENT_PAGES = 2
 _FRAGMENT_PAGE_VARIANTS = 4
 _MAX_INLINE_TAIL_GAP = 1 << 20
+_EH_FRAME_BASE_BYTES = 12
+_EH_FRAME_HEADER_BYTES = 20
+_EH_FRAME_FDE_INITIAL_OFFSET = 8
+_EH_FRAME_INITIAL_POINTER_BYTES = 4
+_EH_FRAME_ALIGNMENT = 4
 
 # r2 truncates a single command past its line buffer (~4 KiB), so each `wx`/`p8`
 # carries at most this many bytes (2x hex chars); larger blobs are chunked. A VM
@@ -388,6 +393,7 @@ def _eh_frame_entry(offset: int, vaddr: int, size: int) -> bytes:
     """Describe an appended searchable ``.eh_frame_hdr`` range."""
     entry = bytearray(_PHDR_ENTRY_SIZE)
     struct.pack_into("<I", entry, _P_TYPE, _PT_GNU_EH_FRAME)
+    struct.pack_into("<I", entry, _P_FLAGS, _PF_R)
     struct.pack_into("<Q", entry, _P_OFFSET, offset)
     struct.pack_into("<Q", entry, _P_VADDR, vaddr)
     struct.pack_into("<Q", entry, _P_PADDR, vaddr)
@@ -397,18 +403,89 @@ def _eh_frame_entry(offset: int, vaddr: int, size: int) -> bytes:
     return bytes(entry)
 
 
+def _eh_frame_index(table: bytes, e_phnum: int) -> int | None:
+    """Return the existing PT_GNU_EH_FRAME index, if the image has one."""
+    for index in range(e_phnum):
+        base = index * _PHDR_ENTRY_SIZE
+        if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_GNU_EH_FRAME:
+            return index
+    return None
+
+
+def _read_eh_frame_entries(binary: Any, table: bytes, index: int) -> list[tuple[int, int]] | None:
+    """Decode the searchable entries from the current PT_GNU_EH_FRAME header."""
+    base = index * _PHDR_ENTRY_SIZE
+    offset = struct.unpack_from("<Q", table, base + _P_OFFSET)[0]
+    vaddr = struct.unpack_from("<Q", table, base + _P_VADDR)[0]
+    size = struct.unpack_from("<Q", table, base + _P_FILESZ)[0]
+    header = _read_physical(binary, offset, size)
+    if len(header) < _EH_FRAME_BASE_BYTES or header[:4] != bytes((1, 0x1B, 0x03, 0x3B)):
+        return None
+    count = struct.unpack_from("<I", header, 8)[0]
+    table_end = _EH_FRAME_BASE_BYTES + count * 8
+    if table_end > len(header):
+        return None
+    entries = []
+    for entry_index in range(count):
+        entry_offset = _EH_FRAME_BASE_BYTES + entry_index * 8
+        initial = vaddr + struct.unpack_from("<i", header, entry_offset)[0]
+        fde = vaddr + struct.unpack_from("<i", header, entry_offset + 4)[0]
+        entries.append((initial, fde))
+    return entries
+
+
+def _merge_eh_frame_metadata(
+    binary: Any,
+    placement: _Placement,
+    metadata_offset: int,
+    metadata: bytes,
+) -> bytes | None:
+    """Add one VM FDE to the image's single searchable EH-frame index."""
+    index = _eh_frame_index(placement.table, placement.e_phnum)
+    if index is None:
+        return metadata
+    old_entries = _read_eh_frame_entries(binary, placement.table, index)
+    if old_entries is None or len(metadata) < _EH_FRAME_HEADER_BYTES:
+        return None
+
+    new_metadata_vaddr = placement.blob_vaddr + metadata_offset
+    new_fde_offset = struct.unpack_from("<i", metadata, 16)[0]
+    if (
+        new_fde_offset < _EH_FRAME_HEADER_BYTES
+        or new_fde_offset + _EH_FRAME_FDE_INITIAL_OFFSET + _EH_FRAME_INITIAL_POINTER_BYTES > len(metadata)
+    ):
+        return None
+    moved_bytes = 8 * len(old_entries)
+    suffix = bytearray(metadata[_EH_FRAME_HEADER_BYTES:])
+    initial_field = new_fde_offset + _EH_FRAME_FDE_INITIAL_OFFSET - _EH_FRAME_HEADER_BYTES
+    initial = struct.unpack_from("<i", suffix, initial_field)[0]
+    struct.pack_into("<i", suffix, initial_field, initial - moved_bytes)
+    new_fde_offset += moved_bytes
+    entries = [*old_entries, (placement.blob_vaddr, new_metadata_vaddr + new_fde_offset)]
+    entries.sort()
+
+    header = bytearray(bytes((1, 0x1B, 0x03, 0x3B)))
+    header.extend(struct.pack("<i", _EH_FRAME_HEADER_BYTES + moved_bytes - 4))
+    header.extend(struct.pack("<I", len(entries)))
+    for initial_address, fde_address in entries:
+        header.extend(struct.pack("<i", initial_address - new_metadata_vaddr))
+        header.extend(struct.pack("<i", fde_address - new_metadata_vaddr))
+    return bytes(header) + bytes(suffix)
+
+
 def _relocated_phdr_table(
     placement: _Placement,
     fragment_sizes: tuple[int, ...],
     unwind_size: int = 0,
-    blob_size: int = 0,
+    metadata_offset: int = 0,
 ) -> bytes:
     """Original entries and adjacent RX fragments with the table in the first.
 
     The final fragment goes last and has the highest virtual address: the kernel
     sizes an ET_DYN total mapping from the last ``PT_LOAD`` in table order.
     """
-    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if unwind_size else 0)
+    existing_eh_frame = _eh_frame_index(placement.table, placement.e_phnum) is not None
+    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if unwind_size and not existing_eh_frame else 0)
     table_size = new_phnum * _PHDR_ENTRY_SIZE
     table = bytearray(placement.table)
     for index in range(placement.e_phnum):
@@ -436,7 +513,17 @@ def _relocated_phdr_table(
         )
         consumed += size
     if unwind_size:
-        table.extend(_eh_frame_entry(placement.blob_offset + blob_size, placement.blob_vaddr + blob_size, unwind_size))
+        eh_frame_entry = _eh_frame_entry(
+            placement.blob_offset + metadata_offset,
+            placement.blob_vaddr + metadata_offset,
+            unwind_size,
+        )
+        eh_frame_index = _eh_frame_index(bytes(table), placement.e_phnum + len(fragment_sizes))
+        if eh_frame_index is None:
+            table.extend(eh_frame_entry)
+        else:
+            base = eh_frame_index * _PHDR_ENTRY_SIZE
+            table[base : base + _PHDR_ENTRY_SIZE] = eh_frame_entry
     return bytes(table)
 
 
@@ -481,13 +568,20 @@ def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes) -> int 
 
 
 def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, metadata: bytes) -> int | None:
-    payload = blob + metadata
+    metadata_offset = _align_up(len(blob), _EH_FRAME_ALIGNMENT) if metadata else len(blob)
+    payload_metadata = metadata
+    if metadata:
+        merged_metadata = _merge_eh_frame_metadata(binary, placement, metadata_offset, metadata)
+        if merged_metadata is None:
+            return None
+        payload_metadata = merged_metadata
+    payload = blob + bytes(metadata_offset - len(blob)) + payload_metadata
     fragment_sizes = _fragment_sizes(payload)
-    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if metadata else 0)
+    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if payload_metadata else 0)
     if not fragment_sizes or new_phnum > _MAX_PHDR_ENTRIES:
         return None
     padding = bytes(placement.append_offset - placement.file_size)
-    table = _relocated_phdr_table(placement, fragment_sizes, len(metadata), len(blob))
+    table = _relocated_phdr_table(placement, fragment_sizes, len(payload_metadata), metadata_offset)
     table_padding = bytes(placement.blob_offset - placement.append_offset - len(table))
     _write_physical(binary, placement.file_size, padding + table + table_padding + payload)
     _write_physical(binary, _E_PHOFF, struct.pack("<Q", placement.append_offset))
