@@ -90,6 +90,17 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     return None
 
 
+def _read_exception_frames(binary: Any, unwind_section: str | None) -> dict[int, Any] | None:
+    """Parse unwind frames for every format recognized by the reader."""
+    if unwind_section is None or unwind_section == "unavailable":
+        return None
+    try:
+        return ExceptionInfoReader(binary).read_exception_frames()
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to read exception frames: %s", exc)
+        return None
+
+
 def _transform_unsupported_function(
     pass_instance: Any,
     binary: Any,
@@ -263,11 +274,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     unsupported_total = partial_total = 0
     executable_ranges = _executable_ranges(binary)
     unwind_section = _unwind_metadata_name(binary)
-    exception_frames: dict[int, Any] | None = None
-    if unwind_section is not None and unwind_section != "unavailable":
-        arch_info = binary.get_arch_info()
-        if str(arch_info.get("format", "")).startswith("ELF"):
-            exception_frames = ExceptionInfoReader(binary).read_exception_frames()
+    exception_frames = _read_exception_frames(binary, unwind_section)
 
     for func in binary.get_functions():
         if virtualized >= pass_instance.max_functions:

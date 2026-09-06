@@ -2,6 +2,7 @@ import struct
 
 from r2morph.analysis.exception_models import ExceptionAction
 from r2morph.analysis.exception_reader import ExceptionInfoReader
+from r2morph.mutations.code_virtualization_apply import _read_exception_frames
 from tests._doubles.in_memory_pe_pdata_binary import InMemoryPEPdataBinary
 from tests.utils.assertions import expect
 
@@ -204,3 +205,12 @@ def test_exception_reader_parses_macho_compressed_compact_unwind_function() -> N
     frames = ExceptionInfoReader(_InMemoryMachoCompactUnwindBinary(_MACHO_COMPRESSED_PAGE_KIND)).read_exception_frames()
 
     expect(frames[_FUNCTION_ADDRESS].function_end == _MACHO_TEXT_ADDRESS + 0x2000)
+
+
+def test_virtualization_unwind_gate_reads_macho_compact_unwind_frames() -> None:
+    frames = _read_exception_frames(
+        _InMemoryMachoCompactUnwindBinary(_MACHO_REGULAR_PAGE_KIND),
+        "__unwind_info",
+    )
+
+    expect(frames is not None and _FUNCTION_ADDRESS in frames)
