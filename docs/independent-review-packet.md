@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `080173b6`
-- Production evidence baseline: `080173b6`.
+- Commit: `7f66ad8b`
+- Production evidence baseline: `7f66ad8b`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -44,8 +44,10 @@ errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
 Triton or angr. The full six-pass rerun remains documented separately with
 its explicit unavailable-tool rows.
 Binary Ninja remains excluded by project decision.
-The pushed CI workflow for the current commit is still running; the previous
-green workflow remains `34015157282`. CI state is not used as human approval.
+The pushed CI workflow for the current commit is `34017528056` and completed
+successfully across all 16 jobs. The local Python 3.13 run completed 5529
+tests with 123 expected skips and 81.14% coverage. CI state is not used as
+human approval.
 
 ## Reproduction
 
@@ -86,7 +88,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 080173b6
+Reviewed commit: 7f66ad8b
 ```
 
 No approval is implied until a human reviewer fills this section outside the
