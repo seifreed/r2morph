@@ -31,6 +31,16 @@
       "status": "passed"
     },
     {
+      "detail": "159 samples, 0 IDA errors",
+      "name": "ida_current_summary_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "1 function virtualized, 0 unsupported or partial",
+      "name": "fppackedidxnb_regression_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "150/150 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"
