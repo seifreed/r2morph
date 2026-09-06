@@ -189,3 +189,15 @@ were cancelled before their validation steps completed. The local Ghidra
 artifact and the current IDA MCP artifact above are the repository-fixture
 evidence; angr and Triton have complete local repository-fixture runs.
 Licensed local measurements remain separate from public-runner evidence.
+
+The `bc2bff2` rerun repeats the CodeVirtualization corpus after changing the
+default policy to reject unproven partial virtualization. It records 159/159
+applications, 171 virtualized functions, zero unsupported functions, and zero
+partial virtualizations. Angr and Triton complete every configured pair; the
+15 errors remain isolated to Unicorn AVX/VEX emulation and the 318 unavailable
+rows are explicit local IDA/Ghidra availability records. Binary Ninja remains
+intentionally omitted. The raw report is
+[`protection-adversarial-corpus-2026-09-06-bc2bff2.json`](protection-adversarial-corpus-2026-09-06-bc2bff2.json)
+(`SHA-256 7c673f5cf52d7b6ee564b6a3d6aab59d7436af0e6f4590b27705db439ad031fc`),
+with the bounded summary in
+[`protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json`](protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json).

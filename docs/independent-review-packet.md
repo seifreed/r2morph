@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `7f66ad8b`
-- Production evidence baseline: `7f66ad8b`.
+- Commit: `bc2bff28`
+- Production evidence baseline: `bc2bff28`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -30,6 +30,8 @@ checks are evidence, not a human approval.
 - [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json)
 - [`protection-adversarial-corpus-2026-09-06-38bee7f.json`](protection-adversarial-corpus-2026-09-06-38bee7f.json)
 - [`protection-adversarial-corpus-2026-09-06-38bee7f-summary.json`](protection-adversarial-corpus-2026-09-06-38bee7f-summary.json)
+- [`protection-adversarial-corpus-2026-09-06-bc2bff2.json`](protection-adversarial-corpus-2026-09-06-bc2bff2.json)
+- [`protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json`](protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json)
 - [`independent-review.json`](independent-review.json)
 
 The current evidence records 159/159 virtualized samples, 171 virtualized
@@ -44,10 +46,14 @@ errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
 Triton or angr. The full six-pass rerun remains documented separately with
 its explicit unavailable-tool rows.
 Binary Ninja remains excluded by project decision.
-The pushed CI workflow for the current commit is `34017528056` and completed
-successfully across all 16 jobs. The local Python 3.13 run completed 5529
-tests with 123 expected skips and 81.14% coverage. CI state is not used as
-human approval.
+The `bc2bff2` rerun was performed after making partial virtualization fail
+closed by default; the explicit `reject_partial_virtualization=False` override
+is retained only for regression reproduction. The pushed CI workflow for the
+previous code baseline `34017528056` completed successfully across all 16
+jobs; the current documentation/code push has a new workflow pending. The
+local Python 3.13 run completed 5529 tests with 123 expected skips and 81.14%
+coverage before this default-policy change. CI state is not used as human
+approval.
 
 ## Reproduction
 
@@ -88,7 +94,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 7f66ad8b
+Reviewed commit: bc2bff28
 ```
 
 No approval is implied until a human reviewer fills this section outside the
