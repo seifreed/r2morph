@@ -150,6 +150,13 @@ with zero errors. Angr and Triton also complete both binaries. The bounded
 record is [`protection-fppackedidxnb-ida-2026-09-06-702450d7.json`](protection-fppackedidxnb-ida-2026-09-06-702450d7.json).
 Binary Ninja remains intentionally omitted.
 
+The full IDA MCP corpus rerun from the same code commit covers all 159 original
+and CodeVirtualization-protected fixtures with zero analysis errors. IDA
+recovers 288 functions across originals and 466 across protected outputs. This
+is a bounded function-count benchmark; it does not claim decompiler or CFG
+equivalence. Its aggregate record is
+[`protection-ida-mcp-corpus-2026-09-06-702450d7.json`](protection-ida-mcp-corpus-2026-09-06-702450d7.json).
+
 The preceding Linux Triton rerun at `d0e63026` used the same package and
 completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
