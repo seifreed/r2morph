@@ -196,6 +196,16 @@ execution. The raw report is
 [`protection-adversarial-corpus-2026-09-06-76e144bb-triton.json`](protection-adversarial-corpus-2026-09-06-76e144bb-triton.json)
 (`SHA-256 5263384de9ba18f437b6e70a51cdbea9bc5f06ceaf8a4d4599627dcb808a3d1d`).
 
+The current rerun at `51b949a` repeats the same 159-fixture CodeVirtualization
+campaign after the precise unwind diagnostic update. It records 159/159
+applications, 171 virtualized functions, zero unsupported functions, zero
+partial virtualizations, and zero transformation errors. Angr and Triton
+complete every configured original/protected pair; the 15 tool errors remain
+isolated to Unicorn, and the 318 unavailable rows are the local IDA/Ghidra
+executables. Binary Ninja is intentionally omitted. The raw report is
+[`protection-adversarial-corpus-2026-09-06-51b949a-triton.json`](protection-adversarial-corpus-2026-09-06-51b949a-triton.json)
+(`SHA-256 f2cab32b9608a5490233b8b1f83c85f6f23f6ff45d66f907150a8ab8d6d29f11`).
+
 The focused IDA validation at `702450d7` covers the corrected
 `elf_vm_fppackedidxnb_x86_64` regression. Original and protected execution
 both return 6; IDA completes with 1 and 2 recovered functions respectively,
