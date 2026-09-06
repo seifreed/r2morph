@@ -12,11 +12,8 @@ from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-from r2morph.mutations.code_virtualization_region import extract_region
 
 logger = logging.getLogger(__name__)
-
-_CALL_ITEM_KINDS = frozenset({"call", "vcall", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"})
 
 _UNWIND_SECTION_NAMES = frozenset(
     {
@@ -58,47 +55,6 @@ def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
 
 def _address_in_ranges(address: object, ranges: Iterable[tuple[int, int]]) -> bool:
     return isinstance(address, int) and any(start <= address < start + size for start, size in ranges)
-
-
-def _function_contains_call(binary: Any, func: dict[str, Any]) -> bool:
-    """Return whether a function body can transfer control to a callee."""
-    try:
-        instructions = binary.get_function_disasm(int(func["addr"]))
-    except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError):
-        return True
-    return any(
-        instruction.get("type") in {"call", "rcall", "ucall", "icall", "ircall"}
-        or str(instruction.get("opcode", "")).strip().lower().startswith("call")
-        for instruction in instructions
-        if isinstance(instruction, dict)
-    )
-
-
-def _candidate_region(pass_instance: Any, binary: Any, func: dict[str, Any]) -> Any | None:
-    """Lower the same uncommitted region shape that the transform will use."""
-    try:
-        if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
-            ops = pass_instance._gather_cfg_ops(binary, func) or pass_instance._gather_dispatch_ops(binary, func)
-            return None if ops is None else extract_region(ops, random.Random(0), allow_computed_jump=True)
-        disasm = binary.r2.cmdj(f"pdfj @ {func['addr']}")
-        ops = disasm.get("ops") if isinstance(disasm, dict) else None
-        return extract_region(ops, random.Random(0)) if isinstance(ops, list) else None
-    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
-        return None
-
-
-def _function_contains_virtualized_call(pass_instance: Any, binary: Any, func: dict[str, Any]) -> bool:
-    """Return whether a native call will execute from inside the VM blob."""
-    region = _candidate_region(pass_instance, binary, func)
-    if region is not None:
-        return any(item[0] in _CALL_ITEM_KINDS for item in region.instructions)
-    try:
-        blocks = binary.get_basic_blocks(int(func["addr"]))
-    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
-        return _function_contains_call(binary, func)
-    if any(pass_instance._find_run(binary, block) is not None for block in blocks):
-        return False
-    return _function_contains_call(binary, func)
 
 
 def _unwind_metadata_name(binary: Any) -> str | None:
@@ -260,14 +216,12 @@ def _function_has_unproven_unwind_metadata(
     unwind_section: str | None,
     function_address: int,
     exception_frames: dict[int, Any] | None,
-    function_contains_call: bool = False,
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
-    A call can transfer an exception through the VM body even when the function
-    has a local landing pad. The VM metadata writer covers stack unwinding for
-    complete call-free regions only; every call-bearing exception shape fails
-    closed until its LSDA call-site mapping is emitted as well.
+    The VM metadata writer covers ordinary FDEs only. An LSDA or landing pad
+    also requires remapping protected ranges and preserving handler bodies;
+    reject it even when the candidate-region call detector did not find a call.
     """
     if unwind_section is None:
         return False
@@ -287,8 +241,6 @@ def _function_has_unproven_unwind_metadata(
         # A linked ELF may carry .eh_frame entries for startup/runtime code
         # while a target function intentionally has no unwind contract.
         return unwind_section != ".eh_frame"
-    if not function_contains_call:
-        return False
     return frame.lsda_address is not None or bool(frame.landing_pads)
 
 
@@ -387,7 +339,6 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     unwind_section,
                     int(func["addr"]),
                     exception_frames,
-                    _function_contains_virtualized_call(pass_instance, binary, func),
                 ),
                 _exception_frame_for_function(int(func["addr"]), exception_frames),
             ),

@@ -1,12 +1,10 @@
 """Unit contracts for capability-specific virtualization diagnostics."""
 
-from types import SimpleNamespace
 from typing import Any
 
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
-    _function_contains_virtualized_call,
     _function_has_unproven_unwind_metadata,
     _unwind_metadata_name,
 )
@@ -60,54 +58,6 @@ class _PaddedTerminalSyscallBinary:
     r2 = _Disassembler()
 
 
-class _CandidateRegionPass:
-    virtualize_dispatch = False
-
-    @staticmethod
-    def _has_computed_jump(_binary: object, _func: dict[str, int]) -> bool:
-        return False
-
-    @staticmethod
-    def _find_run(_binary: object, _block: dict[str, int]) -> SimpleNamespace:
-        return SimpleNamespace(ops=[])
-
-
-class _CallOutsideCandidateBinary:
-    class _Disassembler:
-        @staticmethod
-        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
-            return {
-                "ops": [
-                    {"type": "call", "opcode": "call 0x2000", "jump": 0x2000, "addr": 0x1000, "size": 5},
-                    {"type": "invalid", "opcode": "invalid", "addr": 0x1005, "size": 1},
-                ]
-            }
-
-    r2 = _Disassembler()
-
-    @staticmethod
-    def get_basic_blocks(_address: int) -> list[dict[str, int]]:
-        return [{"addr": 0x1000}]
-
-
-class _CallInsideCandidateBinary:
-    class _Disassembler:
-        @staticmethod
-        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
-            return {
-                "ops": [
-                    {"type": "call", "opcode": "call 0x2000", "jump": 0x2000, "addr": 0x1000, "size": 5},
-                    {"type": "ret", "opcode": "ret", "addr": 0x1005, "size": 1},
-                ]
-            }
-
-    r2 = _Disassembler()
-
-    @staticmethod
-    def get_basic_blocks(_address: int) -> list[dict[str, int]]:
-        return []
-
-
 def test_partial_virtualization_is_rejected_by_default() -> None:
     expect(CodeVirtualizationPass(config={}).reject_partial_virtualization)
 
@@ -151,20 +101,6 @@ def test_rt_sigreturn_does_not_virtualize_unreachable_tail() -> None:
     expect(region is not None and region.body_ranges == [(0x1000, 5)])
 
 
-def test_unwind_gate_ignores_call_outside_candidate_run() -> None:
-    result = _function_contains_virtualized_call(
-        _CandidateRegionPass(), _CallOutsideCandidateBinary(), {"addr": 0x1000}
-    )
-
-    expect(not result)
-
-
-def test_unwind_gate_rejects_call_inside_candidate_region() -> None:
-    result = _function_contains_virtualized_call(_CandidateRegionPass(), _CallInsideCandidateBinary(), {"addr": 0x1000})
-
-    expect(result)
-
-
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=0)) is None)
 
@@ -177,14 +113,14 @@ def test_exception_table_is_rejected_before_virtualization() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".gcc_except_table"])) == ".gcc_except_table")
 
 
-def test_parsed_landing_pad_frame_is_safe_for_synchronous_virtualization() -> None:
+def test_parsed_landing_pad_frame_fails_closed_without_lsda_remap() -> None:
     frame = ExceptionFrame(
         function_start=0x401000,
         function_end=0x401050,
         landing_pads=[LandingPad(0x401030, 8, ExceptionAction.CATCH)],
     )
 
-    expect(not _function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}))
+    expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}))
 
 
 def test_call_bearing_landing_pad_frame_fails_closed_without_lsda_remap() -> None:
@@ -194,13 +130,13 @@ def test_call_bearing_landing_pad_frame_fails_closed_without_lsda_remap() -> Non
         landing_pads=[LandingPad(0x401030, 8, ExceptionAction.CATCH)],
     )
 
-    expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}, True))
+    expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}))
 
 
 def test_call_bearing_frame_without_lsda_is_safe_for_vm_unwinding() -> None:
     frame = ExceptionFrame(function_start=0x401000, function_end=0x401050)
 
-    expect(not _function_has_unproven_unwind_metadata(".eh_frame", 0x401000, {0x401000: frame}, True))
+    expect(not _function_has_unproven_unwind_metadata(".eh_frame", 0x401000, {0x401000: frame}))
 
 
 def test_unwind_frame_lookup_accepts_function_address_inside_frame_range() -> None:
