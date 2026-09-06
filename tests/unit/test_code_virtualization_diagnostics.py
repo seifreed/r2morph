@@ -10,7 +10,11 @@ from r2morph.mutations.code_virtualization_apply import (
     _unwind_blocking_instruction,
     _unwind_metadata_name,
 )
-from r2morph.mutations.code_virtualization_region import extract_region
+from r2morph.mutations.code_virtualization_region import (
+    extract_region,
+    region_preserves_unwind_contract,
+)
+from r2morph.mutations.code_virtualization_region_models import Region
 from tests.utils.assertions import expect
 
 
@@ -202,6 +206,44 @@ def test_partial_virtualization_with_unwind_frame_is_rejected() -> None:
         and pass_instance.diagnostics[0]["reason"]
         == "partial virtualization has no unwind metadata for the injected VM run"
     )
+
+
+def test_unwind_region_is_safe_when_landing_pad_and_call_site_are_disjoint() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401080,
+        lsda_address=0x402000,
+        landing_pads=[
+            LandingPad(
+                0x401060,
+                8,
+                ExceptionAction.CATCH,
+                metadata={"call_site_start": 0x401050, "call_site_end": 0x401058},
+            )
+        ],
+    )
+    region = Region([], 0, 0, set(), [(0x401000, 0x30)])
+
+    expect(region_preserves_unwind_contract(region, frame))
+
+
+def test_unwind_region_is_rejected_when_protected_call_site_overlaps() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401080,
+        lsda_address=0x402000,
+        landing_pads=[
+            LandingPad(
+                0x401060,
+                8,
+                ExceptionAction.CATCH,
+                metadata={"call_site_start": 0x401020, "call_site_end": 0x401028},
+            )
+        ],
+    )
+    region = Region([], 0, 0, set(), [(0x401000, 0x30)])
+
+    expect(not region_preserves_unwind_contract(region, frame))
 
 
 def test_unwind_diagnostic_points_to_call_site() -> None:

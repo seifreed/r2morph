@@ -61,6 +61,7 @@ from r2morph.mutations.code_virtualization_region import (
     _trim_trailing_padding,
     build_region_scheme,
     extract_region,
+    region_preserves_unwind_contract,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob, call_unwind_ranges
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
@@ -807,6 +808,8 @@ class CodeVirtualizationPass(MutationPass):
         unwind_frame: Any | None = None,
     ) -> tuple[int, bytes, bytes, _UnwindPayload] | None:
         complete_unwind = unwind_frame is not None
+        if complete_unwind and not region_preserves_unwind_contract(region, unwind_frame):
+            return None
         blob_vaddr = predict_blob_vaddr(binary, allow_inline=not complete_unwind)
         if blob_vaddr is None:
             return None

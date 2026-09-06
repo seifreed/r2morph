@@ -178,7 +178,7 @@ def _transform_function(
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
     cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
-    if unwind.unproven or not _static_dataflow_is_complete(cfg):
+    if (unwind.unproven and unwind.frame is None) or not _static_dataflow_is_complete(cfg):
         capability = "exceptions_and_unwinding" if unwind.unproven else "static_dataflow"
         reason = (
             "unwind metadata could not be mapped to a complete function frame"
@@ -206,17 +206,35 @@ def _transform_function(
 
     region_result = pass_instance._virtualize_function(binary, func, unwind.frame)
     if region_result is None:
-        if pass_instance.reject_partial_virtualization:
+        if unwind.unproven:
+            pass_instance._record_diagnostic(
+                unsupported,
+                func,
+                _unwind_blocking_instruction(unwind.frame, int(func["addr"])),
+                (
+                    "error",
+                    "exceptions_and_unwinding",
+                    "LSDA or landing-pad ranges overlap the candidate VM region",
+                ),
+            )
+            skipped_count = 1
+            partial_count = 0
+            result = None
+        elif pass_instance.reject_partial_virtualization:
             pass_instance._record_unsupported_function(
                 unsupported,
                 func,
                 None,
                 "whole-function virtualization was not proven; partial virtualization is disabled: ",
             )
-            return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
-        result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
+            skipped_count = 1
+            partial_count = 0
+            result = None
+        else:
+            result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
+            skipped_count = 0
     else:
-        result, partial_count = region_result, 0
+        result, partial_count, skipped_count = region_result, 0, 0
     if result is not None:
         return {
             "skipped": 0,
@@ -228,7 +246,14 @@ def _transform_function(
             "body_ranges": result.get("body_ranges", ()),
         }
     pass_instance._record_unsupported_function(unsupported, func, None)
-    return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+    return {
+        "skipped": skipped_count,
+        "unsupported": 1,
+        "virtualized": 0,
+        "instructions": 0,
+        "bytecode": 0,
+        "partial": 0,
+    }
 
 
 def _function_has_unproven_unwind_metadata(

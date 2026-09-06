@@ -670,6 +670,41 @@ def extract_region(
     )
 
 
+def region_preserves_unwind_contract(region: Region, frame: Any) -> bool:
+    """Return whether replacing ``region`` leaves language-level unwind edges native.
+
+    A VM region has an ordinary FDE, but it cannot yet encode dynamic LSDA
+    selection for handlers shared by multiple native-call bridges. It is safe
+    to use that FDE only when every parsed protected call-site and landing pad
+    remains outside the replaced native ranges.
+    """
+    lsda_address = getattr(frame, "lsda_address", None)
+    landing_pads = getattr(frame, "landing_pads", ())
+    if lsda_address is None and not landing_pads:
+        return True
+    if not landing_pads:
+        return False
+
+    def overlaps(address: int, size: int) -> bool:
+        return any(start < address + size and address < start + length for start, length in region.body_ranges)
+
+    for landing_pad in landing_pads:
+        if not isinstance(landing_pad.address, int) or overlaps(landing_pad.address, max(1, landing_pad.size)):
+            return False
+        metadata = landing_pad.metadata
+        call_sites = [metadata, *metadata.get("call_sites", [])]
+        if any(
+            not isinstance(site, dict)
+            or not isinstance(site.get("call_site_start"), int)
+            or not isinstance(site.get("call_site_end"), int)
+            or site["call_site_end"] <= site["call_site_start"]
+            or overlaps(site["call_site_start"], site["call_site_end"] - site["call_site_start"])
+            for site in call_sites
+        ):
+            return False
+    return True
+
+
 def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: int | None = None) -> RegionScheme:
     """Assign each handler a dense opcode index plus a bytecode key.
 
