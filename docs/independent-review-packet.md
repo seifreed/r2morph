@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `6de7999e`
-- Production evidence baseline: `6de7999e`.
+- Commit: `5ab430fd`
+- Production evidence baseline: `5ab430fd`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -37,11 +37,12 @@ checks are evidence, not a human approval.
 - [`protection-adversarial-corpus-2026-09-06-43ba227c.json`](protection-adversarial-corpus-2026-09-06-43ba227c.json)
 - [`protection-adversarial-corpus-2026-09-06-43ba227c-summary.json`](protection-adversarial-corpus-2026-09-06-43ba227c-summary.json)
 - [`protection-adversarial-corpus-2026-09-06-6de7999e-triton.json`](protection-adversarial-corpus-2026-09-06-6de7999e-triton.json)
+- [`protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json`](protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json)
 - [`independent-review.json`](independent-review.json)
 
-The current evidence records 159/159 virtualized samples, 171 virtualized
+The current `c0ceaaa6` evidence records 159/159 virtualized samples, 171 virtualized
 functions, zero unsupported functions, zero partial virtualizations, 939
 completed analyzer runs, 15 Unicorn baseline errors, and 80,000 fuzz target
   runs. Triton and angr complete all 159 pairs. The latest detailed IDA MCP
@@ -108,7 +109,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 6de7999e
+Reviewed commit: 5ab430fd
 ```
 
 No approval is implied until a human reviewer fills this section outside the
