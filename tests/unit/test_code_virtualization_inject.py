@@ -39,6 +39,7 @@ from r2morph.mutations.code_virtualization_inject import (
     inject_blob,
     predict_blob_vaddr,
 )
+from r2morph.platform.elf_unwind import _PT_GNU_EH_FRAME, build_vm_eh_frame
 from tests.utils.assertions import expect
 from tests.utils.elf_load_invariants import (
     ELF64_HEADER_SIZE,
@@ -280,6 +281,28 @@ def test_inject_blob_adds_rx_fragments_and_relocated_table(tmp_path: Path) -> No
     _inject_into(target, _BLOB)
 
     expect(struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + len(_fragment_sizes(_BLOB)))
+
+
+def test_inject_blob_publishes_vm_unwind_range(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    binary = Binary(str(target), writable=True)
+    binary.open()
+    try:
+        blob_vaddr = predict_blob_vaddr(binary, allow_inline=False)
+        if blob_vaddr is None:
+            raise AssertionError("unwind-enabled injection did not produce a placement")
+        metadata = build_vm_eh_frame(blob_vaddr, len(_BLOB), 0x400, blob_vaddr + len(_BLOB))
+        injected = inject_blob(binary, _BLOB, unwind_metadata=metadata)
+    finally:
+        binary.close()
+
+    headers = program_headers(target)
+    eh_frame = next(header for header in headers if header.p_type == _PT_GNU_EH_FRAME)
+    expect(
+        injected == blob_vaddr
+        and eh_frame.p_filesz == len(metadata)
+        and target.read_bytes()[eh_frame.p_offset : eh_frame.p_offset + eh_frame.p_filesz] == metadata
+    )
 
 
 def test_second_blob_extends_the_existing_tail_without_new_headers(tmp_path: Path) -> None:

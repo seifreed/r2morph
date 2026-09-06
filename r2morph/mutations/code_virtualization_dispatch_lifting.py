@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, cast
 
 import r2morph.core.randomness as random
@@ -10,6 +11,15 @@ from r2morph.mutations.code_virtualization_region import extract_region
 
 _MAX_DISPATCH_INSNS = 256
 _MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
+
+
+@dataclass(frozen=True, slots=True)
+class RegionOptions:
+    """Build switches shared by ordinary and unwind-aware region lowering."""
+
+    rng: random.Random
+    use_nesting: bool
+    unwind_frame: Any | None = None
 
 
 def gather_dispatch_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
@@ -116,7 +126,9 @@ def _memory_dispatch_targets(binary: Any, function_address: int, region: Any) ->
     return True
 
 
-def virtualize_dispatch_function(owner: Any, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
+def virtualize_dispatch_function(
+    owner: Any, binary: Any, func: dict[str, Any], unwind_frame: Any | None = None
+) -> dict[str, Any] | None:
     """Virtualize a dispatch-shaped function through the region VM."""
     cfg_ops = gather_cfg_ops(binary, func)
     ops = cfg_ops if cfg_ops is not None else gather_dispatch_ops(binary, func)
@@ -137,4 +149,7 @@ def virtualize_dispatch_function(owner: Any, binary: Any, func: dict[str, Any]) 
         and not _memory_dispatch_targets(binary, func["addr"], region)
     ):
         return None
-    return cast(dict[str, Any] | None, owner._emit_region(binary, func, region, rng, use_nesting=False))
+    return cast(
+        dict[str, Any] | None,
+        owner._emit_region(binary, func, region, RegionOptions(rng, False, unwind_frame)),
+    )

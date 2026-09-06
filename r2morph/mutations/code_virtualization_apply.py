@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 import r2morph.core.randomness as random
@@ -21,12 +22,21 @@ _UNWIND_SECTION_NAMES = frozenset(
     {
         ".ARM.exidx",
         ".ARM.extab",
+        ".eh_frame",
         ".gcc_except_table",
         ".pdata",
         ".xdata",
         "__unwind_info",
     }
 )
+
+
+@dataclass(frozen=True, slots=True)
+class _UnwindContext:
+    """Preflight result passed to one complete-region transformation."""
+
+    unproven: bool
+    frame: Any | None
 
 
 def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
@@ -94,11 +104,9 @@ def _function_contains_virtualized_call(pass_instance: Any, binary: Any, func: d
 def _unwind_metadata_name(binary: Any) -> str | None:
     """Return explicit exception-table metadata, failing closed on read errors.
 
-    ELF ``.eh_frame`` and ``.eh_frame_hdr`` are also emitted for ordinary C
-    functions and startup code, so their presence alone does not prove a
-    language-level exception path. Parsed ELF frames are safe for the
-    call-free, synchronous exception paths handled by the VM; incomplete
-    exception metadata remains a conservative gate.
+    ELF ``.eh_frame`` is the unwind contract for ordinary functions; a parsed
+    frame is required before a VM blob can be published for that function.
+    Language-level LSDA call sites remain subject to the same call-free gate.
     """
     try:
         sections = binary.get_sections()
@@ -164,10 +172,14 @@ def _transform_unsupported_function(
 
 
 def _transform_dispatch_function(
-    pass_instance: Any, binary: Any, func: dict[str, Any], unsupported: list[dict[str, Any]]
+    pass_instance: Any,
+    binary: Any,
+    func: dict[str, Any],
+    unsupported: list[dict[str, Any]],
+    unwind_frame: Any | None,
 ) -> dict[str, Any]:
     """Transform a computed-dispatch function without falling back to a partial run."""
-    region_result = pass_instance._virtualize_dispatch_function(binary, func)
+    region_result = pass_instance._virtualize_dispatch_function(binary, func, unwind_frame)
     if region_result is not None:
         return {
             "skipped": 0,
@@ -192,16 +204,16 @@ def _transform_function(
     binary: Any,
     func: dict[str, Any],
     records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
-    unwind_metadata: bool,
+    unwind: _UnwindContext,
 ) -> dict[str, Any]:
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
     cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
-    if unwind_metadata or not _static_dataflow_is_complete(cfg):
-        capability = "exceptions_and_unwinding" if unwind_metadata else "static_dataflow"
+    if unwind.unproven or not _static_dataflow_is_complete(cfg):
+        capability = "exceptions_and_unwinding" if unwind.unproven else "static_dataflow"
         reason = (
             "unwind metadata could not be mapped to a complete function frame"
-            if unwind_metadata
+            if unwind.unproven
             else "CFG, liveness, and SSA coverage was not proven for the function"
         )
         pass_instance._record_diagnostic(
@@ -212,12 +224,12 @@ def _transform_function(
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
     if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
-        return _transform_dispatch_function(pass_instance, binary, func, unsupported)
+        return _transform_dispatch_function(pass_instance, binary, func, unsupported, unwind.frame)
     unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
     if unsupported_instruction is not None:
         return _transform_unsupported_function(pass_instance, binary, func, unsupported_instruction, records)
 
-    region_result = pass_instance._virtualize_function(binary, func)
+    region_result = pass_instance._virtualize_function(binary, func, unwind.frame)
     if region_result is None:
         if pass_instance.reject_partial_virtualization:
             pass_instance._record_unsupported_function(
@@ -252,11 +264,10 @@ def _function_has_unproven_unwind_metadata(
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
-    A parsed frame with a local landing pad remains on the native exception
-    path. A call in a function without a local landing pad can unwind through
-    the virtualized body, which the VM metadata writer does not yet preserve;
-    that shape therefore fails closed. An unavailable parser result also fails
-    closed because the function's unwind contract is unknown.
+    A call can transfer an exception through the VM body even when the function
+    has a local landing pad. The VM metadata writer covers stack unwinding for
+    complete call-free regions only; every call-bearing exception shape fails
+    closed until its LSDA call-site mapping is emitted as well.
     """
     if unwind_section is None:
         return False
@@ -274,7 +285,24 @@ def _function_has_unproven_unwind_metadata(
         )
     if frame is None:
         return True
-    return function_contains_call and not frame.landing_pads
+    return function_contains_call
+
+
+def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:
+    """Return the parsed frame containing a function address, if available."""
+    if exception_frames is None:
+        return None
+    frame = exception_frames.get(function_address)
+    if frame is not None:
+        return frame
+    return next(
+        (
+            candidate
+            for candidate in exception_frames.values()
+            if candidate.function_start <= function_address < candidate.function_end
+        ),
+        None,
+    )
 
 
 def _static_dataflow_is_complete(cfg: Any) -> bool:
@@ -350,11 +378,14 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             binary,
             func,
             (unsupported, partial),
-            unwind_metadata=_function_has_unproven_unwind_metadata(
-                unwind_section,
-                int(func["addr"]),
-                exception_frames,
-                _function_contains_virtualized_call(pass_instance, binary, func),
+            unwind=_UnwindContext(
+                _function_has_unproven_unwind_metadata(
+                    unwind_section,
+                    int(func["addr"]),
+                    exception_frames,
+                    _function_contains_virtualized_call(pass_instance, binary, func),
+                ),
+                _exception_frame_for_function(int(func["addr"]), exception_frames),
             ),
         )
         skipped += outcome["skipped"]

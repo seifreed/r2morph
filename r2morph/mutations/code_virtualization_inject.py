@@ -37,6 +37,8 @@ import struct
 from dataclasses import dataclass
 from typing import Any
 
+from r2morph.platform.elf_unwind import _PT_GNU_EH_FRAME
+
 logger = logging.getLogger(__name__)
 
 _ELF64_MAGIC = b"\x7fELF"
@@ -228,7 +230,7 @@ def _image_load_bias(loads: list[_Load]) -> int:
     return min(load.vaddr - load.offset for load in loads)
 
 
-def _plan_placement(binary: Any) -> _Placement | None:
+def _plan_placement(binary: Any, *, allow_inline: bool = True) -> _Placement | None:
     """Compute where a new segment would be appended, without writing."""
     header = _read_physical(binary, 0, _ELF64_HEADER_SIZE)
     geometry = _phdr_table_geometry(header)
@@ -260,6 +262,8 @@ def _plan_placement(binary: Any) -> _Placement | None:
         ),
         None,
     )
+    if not allow_inline:
+        inline_load = None
     if inline_load is not None:
         inline_r2_vaddr = _r2_segment_vaddr(binary, inline_load.offset)
         if inline_r2_vaddr is None:
@@ -380,13 +384,31 @@ def _grow_header_segment(table: bytearray, placement: _Placement, new_phnum: int
     struct.pack_into("<Q", table, base + _P_MEMSZ, max(memsz, required))
 
 
-def _relocated_phdr_table(placement: _Placement, fragment_sizes: tuple[int, ...]) -> bytes:
+def _eh_frame_entry(offset: int, vaddr: int, size: int) -> bytes:
+    """Describe an appended searchable ``.eh_frame_hdr`` range."""
+    entry = bytearray(_PHDR_ENTRY_SIZE)
+    struct.pack_into("<I", entry, _P_TYPE, _PT_GNU_EH_FRAME)
+    struct.pack_into("<Q", entry, _P_OFFSET, offset)
+    struct.pack_into("<Q", entry, _P_VADDR, vaddr)
+    struct.pack_into("<Q", entry, _P_PADDR, vaddr)
+    struct.pack_into("<Q", entry, _P_FILESZ, size)
+    struct.pack_into("<Q", entry, _P_MEMSZ, size)
+    struct.pack_into("<Q", entry, _P_ALIGN, 4)
+    return bytes(entry)
+
+
+def _relocated_phdr_table(
+    placement: _Placement,
+    fragment_sizes: tuple[int, ...],
+    unwind_size: int = 0,
+    blob_size: int = 0,
+) -> bytes:
     """Original entries and adjacent RX fragments with the table in the first.
 
     The final fragment goes last and has the highest virtual address: the kernel
     sizes an ET_DYN total mapping from the last ``PT_LOAD`` in table order.
     """
-    new_phnum = placement.e_phnum + len(fragment_sizes)
+    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if unwind_size else 0)
     table_size = new_phnum * _PHDR_ENTRY_SIZE
     table = bytearray(placement.table)
     for index in range(placement.e_phnum):
@@ -413,10 +435,12 @@ def _relocated_phdr_table(placement: _Placement, fragment_sizes: tuple[int, ...]
             )
         )
         consumed += size
+    if unwind_size:
+        table.extend(_eh_frame_entry(placement.blob_offset + blob_size, placement.blob_vaddr + blob_size, unwind_size))
     return bytes(table)
 
 
-def predict_blob_vaddr(binary: Any) -> int | None:
+def predict_blob_vaddr(binary: Any, *, allow_inline: bool = True) -> int | None:
     """
     Predict the vaddr the next appended blob will map at, without writing.
 
@@ -426,7 +450,7 @@ def predict_blob_vaddr(binary: Any) -> int | None:
     address :func:`inject_blob` returns. Returns ``None`` whenever injection
     would be refused, for the same reasons.
     """
-    placement = _plan_placement(binary)
+    placement = _plan_placement(binary, allow_inline=allow_inline)
     if placement is None:
         return None
     return placement.blob_vaddr
@@ -456,37 +480,21 @@ def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes) -> int 
     return placement.blob_vaddr
 
 
-def inject_blob(binary: Any, blob: bytes) -> int | None:
-    """
-    Place ``blob`` in an existing executable load or adjacent new fragments.
-
-    Returns the virtual address (in r2's address space) the blob is mapped
-    at, or ``None`` when the binary's geometry does not admit a new segment
-    (the binary is left untouched).
-    """
-    placement = _plan_placement(binary)
-    if placement is None:
-        logger.debug("ELF64 geometry admits no fragmented payload; skipping virtualization")
-        return None
-    if placement.inline_load_index is not None:
-        return _inject_inline_blob(binary, placement, blob)
-    fragment_sizes = _fragment_sizes(blob)
-    if not fragment_sizes:
-        return None
-    new_phnum = placement.e_phnum + len(fragment_sizes)
-    if new_phnum > _MAX_PHDR_ENTRIES:
+def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, metadata: bytes) -> int | None:
+    payload = blob + metadata
+    fragment_sizes = _fragment_sizes(payload)
+    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if metadata else 0)
+    if not fragment_sizes or new_phnum > _MAX_PHDR_ENTRIES:
         return None
     padding = bytes(placement.append_offset - placement.file_size)
-    table = _relocated_phdr_table(placement, fragment_sizes)
+    table = _relocated_phdr_table(placement, fragment_sizes, len(metadata), len(blob))
     table_padding = bytes(placement.blob_offset - placement.append_offset - len(table))
-    _write_physical(binary, placement.file_size, padding + table + table_padding + blob)
+    _write_physical(binary, placement.file_size, padding + table + table_padding + payload)
     _write_physical(binary, _E_PHOFF, struct.pack("<Q", placement.append_offset))
     _write_physical(binary, _E_PHNUM, struct.pack("<H", new_phnum))
-
-    if _read_physical(binary, placement.blob_offset, len(blob)) != blob:
+    if _read_physical(binary, placement.blob_offset, len(payload)) != payload:
         logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", placement.blob_offset)
         return None
-
     logger.debug(
         "Injected %d-byte VM blob at vaddr 0x%x (file 0x%x) across %d RX fragments",
         len(blob),
@@ -495,3 +503,22 @@ def inject_blob(binary: Any, blob: bytes) -> int | None:
         len(fragment_sizes),
     )
     return placement.blob_vaddr
+
+
+def inject_blob(binary: Any, blob: bytes, unwind_metadata: bytes | None = None) -> int | None:
+    """
+    Place ``blob`` in an existing executable load or adjacent new fragments.
+
+    Returns the virtual address (in r2's address space) the blob is mapped
+    at, or ``None`` when the binary's geometry does not admit a new segment
+    (the binary is left untouched).
+    """
+    if not blob:
+        return None
+    placement = _plan_placement(binary, allow_inline=unwind_metadata is None)
+    if placement is None:
+        logger.debug("ELF64 geometry admits no fragmented payload; skipping virtualization")
+        return None
+    if placement.inline_load_index is not None:
+        return _inject_inline_blob(binary, placement, blob)
+    return _inject_fragmented_blob(binary, placement, blob, unwind_metadata or b"")

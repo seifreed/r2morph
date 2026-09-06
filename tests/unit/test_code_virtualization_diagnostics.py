@@ -169,8 +169,8 @@ def test_empty_eh_frame_is_not_unwind_metadata() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=0)) is None)
 
 
-def test_populated_eh_frame_alone_is_not_exception_metadata() -> None:
-    expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=16)) is None)
+def test_populated_eh_frame_is_unwind_metadata() -> None:
+    expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=16)) == ".eh_frame")
 
 
 def test_exception_table_is_rejected_before_virtualization() -> None:
@@ -185,6 +185,16 @@ def test_parsed_landing_pad_frame_is_safe_for_synchronous_virtualization() -> No
     )
 
     expect(not _function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}))
+
+
+def test_call_bearing_landing_pad_frame_fails_closed_without_lsda_remap() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401050,
+        landing_pads=[LandingPad(0x401030, 8, ExceptionAction.CATCH)],
+    )
+
+    expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}, True))
 
 
 def test_unwind_frame_lookup_accepts_function_address_inside_frame_range() -> None:
