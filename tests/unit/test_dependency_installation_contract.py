@@ -18,7 +18,7 @@ def test_supported_dependency_manifests_include_required_analyzer_packages() -> 
 
     expect(
         "angr>=9.3.2" in requirements
-        and "triton-library>=1.0.0rc4" in requirements
+        and 'triton-library>=1.0.0rc4; platform_system == "Linux" and platform_machine == "x86_64"' in requirements
         and "angr>=9.3.2" in optional_text
-        and "triton-library>=1.0.0rc4" in optional_text
+        and 'triton-library>=1.0.0rc4; platform_system == "Linux" and platform_machine == "x86_64"' in optional_text
     )
