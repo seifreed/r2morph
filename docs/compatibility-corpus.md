@@ -172,6 +172,18 @@ report is
 [`protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json`](protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json)
 (`SHA-256 22410aa82448504a28964b9fa9e436a6014c8d2545f9adf9653f9c9a39ceecea`).
 
+The current rerun at `76e144bb` repeats the same 159-fixture
+CodeVirtualization campaign with the dedicated Python 3.13 virtualenv. It
+records 159/159 applications, 171 virtualized functions, zero unsupported
+functions, and zero partial virtualizations. Angr and Triton complete every
+original/protected pair; the 15 tool errors are isolated to Unicorn, and the
+318 unavailable rows are the local IDA/Ghidra executables. Binary Ninja is
+intentionally omitted. The named `elf_vm_fppackedidxnb_x86_64` regression
+virtualizes one function and preserves exit code 6 in native and Unicorn
+execution. The raw report is
+[`protection-adversarial-corpus-2026-09-06-76e144bb-triton.json`](protection-adversarial-corpus-2026-09-06-76e144bb-triton.json)
+(`SHA-256 5263384de9ba18f437b6e70a51cdbea9bc5f06ceaf8a4d4599627dcb808a3d1d`).
+
 The focused IDA validation at `702450d7` covers the corrected
 `elf_vm_fppackedidxnb_x86_64` regression. Original and protected execution
 both return 6; IDA completes with 1 and 2 recovered functions respectively,
