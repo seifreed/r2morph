@@ -1,0 +1,11 @@
+{
+  "code_commit": "38bee7f",
+  "error_tool_runs": 15,
+  "functions_virtualized": 171,
+  "ida_ghidra_unavailable_rows": 318,
+  "partial_virtualization": 0,
+  "sample_count": 159,
+  "triton_and_angr_complete": true,
+  "unsupported_functions": 0,
+  "schema_version": 1
+}

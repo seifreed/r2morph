@@ -162,6 +162,17 @@ is a bounded function-count benchmark; it does not claim decompiler or CFG
 equivalence. Its aggregate record is
 [`protection-ida-mcp-corpus-2026-09-06-702450d7.json`](protection-ida-mcp-corpus-2026-09-06-702450d7.json).
 
+The benchmark contract was extended at `38bee7f` to report partial
+virtualization explicitly. The rerun remains 159/159 applied with 171
+virtualized functions, zero unsupported functions, and zero partial
+virtualizations. Angr and Triton complete every configured pair; the 15
+Unicorn errors remain isolated to AVX/VEX emulation and the 318 unavailable
+rows are explicit local IDA/Ghidra availability records. The raw report is
+[`protection-adversarial-corpus-2026-09-06-38bee7f.json`](protection-adversarial-corpus-2026-09-06-38bee7f.json)
+(`SHA-256 d3fa995b1b58a9bee10d6acab4ac610e25d7bf8af083564866aa019d37585249`),
+with the bounded summary in
+[`protection-adversarial-corpus-2026-09-06-38bee7f-summary.json`](protection-adversarial-corpus-2026-09-06-38bee7f-summary.json).
+
 The preceding Linux Triton rerun at `d0e63026` used the same package and
 completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
