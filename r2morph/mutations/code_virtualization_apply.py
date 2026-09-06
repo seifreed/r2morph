@@ -175,7 +175,7 @@ def _transform_function(
         pass_instance._record_diagnostic(
             unsupported,
             func,
-            None,
+            _unwind_blocking_instruction(unwind.frame, int(func["addr"])),
             ("error", capability, reason),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
@@ -259,6 +259,19 @@ def _exception_frame_for_function(function_address: int, exception_frames: dict[
         ),
         None,
     )
+
+
+def _unwind_blocking_instruction(frame: Any | None, function_address: int) -> dict[str, int]:
+    """Return the most specific native address responsible for an unwind gate."""
+    if frame is None:
+        return {"addr": function_address}
+    for pad in frame.landing_pads:
+        call_site_start = pad.metadata.get("call_site_start")
+        if isinstance(call_site_start, int):
+            return {"addr": call_site_start}
+        if isinstance(pad.address, int):
+            return {"addr": pad.address}
+    return {"addr": function_address}
 
 
 def _static_dataflow_is_complete(cfg: Any) -> bool:

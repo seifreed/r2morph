@@ -6,6 +6,7 @@ from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, L
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _function_has_unproven_unwind_metadata,
+    _unwind_blocking_instruction,
     _unwind_metadata_name,
 )
 from r2morph.mutations.code_virtualization_region import extract_region
@@ -153,6 +154,16 @@ def test_unmapped_ordinary_eh_frame_is_not_an_unwind_failure() -> None:
 
 def test_unavailable_unwind_frames_fail_closed() -> None:
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
+
+
+def test_unwind_diagnostic_points_to_call_site() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401050,
+        landing_pads=[LandingPad(0x401030, 8, ExceptionAction.CATCH, metadata={"call_site_start": 0x401020})],
+    )
+
+    expect(_unwind_blocking_instruction(frame, 0x401000) == {"addr": 0x401020})
 
 
 def test_tls_instruction_reports_thread_local_storage_capability() -> None:
