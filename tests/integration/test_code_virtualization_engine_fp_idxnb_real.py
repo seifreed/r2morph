@@ -105,7 +105,13 @@ output:
     binary = Binary(mutated, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260830}).apply(binary)
+        stats = CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "reject_partial_virtualization": False,
+                "seed": 20260830,
+            }
+        ).apply(binary)
         binary.save()
     finally:
         binary.close()
