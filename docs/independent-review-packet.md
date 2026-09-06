@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `dbf77c59`
-- Production evidence baseline: `dbf77c59`.
+- Commit: `080173b6`
+- Production evidence baseline: `080173b6`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -25,20 +25,27 @@ checks are evidence, not a human approval.
 - [`protection-ghidra-corpus-2026-09-04-88258a05.json`](protection-ghidra-corpus-2026-09-04-88258a05.json)
 - [`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
 - [`protection-fuzz-2026-09-06-1c84fc56.json`](protection-fuzz-2026-09-06-1c84fc56.json)
+- [`protection-fppackedidxnb-ida-2026-09-06-702450d7.json`](protection-fppackedidxnb-ida-2026-09-06-702450d7.json)
+- [`protection-ida-mcp-corpus-2026-09-06-702450d7.json`](protection-ida-mcp-corpus-2026-09-06-702450d7.json)
+- [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json)
+- [`protection-adversarial-corpus-2026-09-06-38bee7f.json`](protection-adversarial-corpus-2026-09-06-38bee7f.json)
+- [`protection-adversarial-corpus-2026-09-06-38bee7f-summary.json`](protection-adversarial-corpus-2026-09-06-38bee7f-summary.json)
 - [`independent-review.json`](independent-review.json)
 
-The current evidence records 159/159 virtualized samples, 939 completed tool
-runs, 15 Unicorn baseline errors, and 80,000 fuzz target runs. Triton and
-angr complete all 159 pairs; the historical IDA and Ghidra reports contain
-318 analyses each.
+The current evidence records 159/159 virtualized samples, 171 virtualized
+functions, zero unsupported functions, zero partial virtualizations, 939
+completed analyzer runs, 15 Unicorn baseline errors, and 80,000 fuzz target
+runs. Triton and angr complete all 159 pairs. The current IDA MCP corpus
+contains 318 completed analyses with zero errors; Ghidra remains represented
+by the completed 318-analysis report listed above.
 The automated review still reports `human_signoff: not-attested`.
 The current CodeVirtualization corpus rerun records 15 explicit Unicorn
 errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
 Triton or angr. The full six-pass rerun remains documented separately with
 its explicit unavailable-tool rows.
 Binary Ninja remains excluded by project decision.
-The pushed CI workflow `34010152281` is green across the required test,
-type-check, lint, fuzz, and platform jobs.
+The pushed CI workflow for the current commit is still running; the previous
+green workflow remains `34015157282`. CI state is not used as human approval.
 
 ## Reproduction
 
@@ -79,7 +86,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: dbf77c59
+Reviewed commit: 080173b6
 ```
 
 No approval is implied until a human reviewer fills this section outside the
