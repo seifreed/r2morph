@@ -15,8 +15,8 @@ from tests.utils.process import run_command
 EXPECTED_EXIT_CODE = 42
 
 
-def test_code_virtualization_preserves_real_unwind_metadata_for_synchronous_exceptions(tmp_path: Path) -> None:
-    """A parsed landing-pad frame remains valid when the VM run has no call."""
+def test_code_virtualization_rejects_lsda_function_without_mutation(tmp_path: Path) -> None:
+    """An LSDA-bearing function is rejected until its call sites can be mapped."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
     source = tmp_path / "unwind.cpp"
@@ -51,9 +51,11 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
             for function in binary.get_functions()
             if "protected_function" in function.get("name", "")
         )
+        original_protected_bytes = binary.read_bytes(protected_address, 8)
         stats = CodeVirtualizationPass(
             config={"probability": 1.0, "max_functions": 1000, "reject_partial_virtualization": False}
         ).apply(binary)
+        protected_was_transformed = binary.read_bytes(protected_address, 8) != original_protected_bytes
 
     runtime_result = run_command([executable], timeout=30)
     unwind_failure_addresses = {
@@ -63,10 +65,10 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
     }
     expect(
         stats["functions_virtualized"] > 0
-        and stats["partial_virtualization_total"] > 0
-        and protected_address not in unwind_failure_addresses
+        and not protected_was_transformed
+        and protected_address in unwind_failure_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "parsed landing-pad unwind metadata was not preserved during virtualization: "
+        "an LSDA-bearing function was not rejected safely: "
         f"{protected_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
     )
 
@@ -112,6 +114,47 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
 
     degraded_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
     expect(safe_address not in degraded_addresses, "unwind metadata from another function degraded safe_arithmetic")
+
+
+def test_code_virtualization_preserves_native_call_with_ordinary_eh_frame(tmp_path: Path) -> None:
+    """An ordinary FDE without LSDA remains safe across a VM call bridge."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "ordinary_call.cpp"
+    executable = tmp_path / "ordinary_call"
+    source.write_text("""
+__attribute__((noinline)) int helper(int value) { return value * 2; }
+__attribute__((noinline)) int caller(int value) { return helper(value) + 1; }
+int main() { return caller(20) == 41 ? 42 : 1; }
+""")
+    result = run_command(
+        ["g++", "-O0", "-fno-pie", "-no-pie", "-funwind-tables", "-o", executable, source],
+        timeout=30,
+    )
+    expect(result.returncode == 0, "failed to compile the ordinary unwind fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        caller_address = next(
+            int(function["addr"]) for function in binary.get_functions() if "caller" in function.get("name", "")
+        )
+        original_bytes = binary.read_bytes(caller_address, 8)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
+        caller_transformed = binary.read_bytes(caller_address, 8) != original_bytes
+
+    runtime_result = run_command([executable], timeout=30)
+    unwind_failures = {
+        record["function_address"]
+        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
+        if record["capability"] == "exceptions_and_unwinding"
+    }
+    expect(
+        caller_transformed
+        and caller_address not in unwind_failures
+        and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        "an ordinary native call was rejected by the ELF unwind gate: "
+        f"{caller_address=:#x}, {caller_transformed=}, {runtime_result.returncode=}, {stats=}",
+    )
 
 
 def test_code_virtualization_preserves_exception_from_call_inside_virtualized_function(tmp_path: Path) -> None:
@@ -168,9 +211,7 @@ int main() { return caller(); }
         if record["capability"] == "exceptions_and_unwinding"
     }
     expect(
-        not boundary_was_transformed
-        and boundary_address in unwind_failure_addresses
-        and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        not boundary_was_transformed and unwind_failure_addresses and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "a call with an exception edge crossing the VM was not rejected safely: "
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
         f"{unwind_failure_addresses=}, {stats=}",
