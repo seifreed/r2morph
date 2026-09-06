@@ -12,8 +12,10 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region import _stack_balanced, extract_region
 from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
+    _SIGNAL_FRAME_RESERVE,
     _STACK_ARGUMENT_COPY_BYTES,
     stack_argument_copy_asm,
+    stack_guard_for_copy,
 )
 from tests.utils.assertions import expect
 
@@ -29,6 +31,11 @@ def test_stack_argument_copy_is_bounded_and_relocated() -> None:
     assembly = stack_argument_copy_asm(0x400)
     expect(f"mov ecx, {_STACK_ARGUMENT_COPY_BYTES // 8}" in assembly)
     expect("rep movsq" in assembly and "lea rdi, [rsp - 1016]" in assembly)
+
+
+def test_stack_guard_reserves_async_signal_frame() -> None:
+    guard = stack_guard_for_copy(0x400, _STACK_ARGUMENT_COPY_BYTES)
+    expect(guard >= 0x400 + _SIGNAL_FRAME_RESERVE)
 
 
 def test_region_stack_argument_window_covers_direct_rsp_access() -> None:

@@ -87,17 +87,21 @@ _VSTACK_BASE = 0x288
 # function's own push/pop traffic never collides with the spilled context. Must
 # be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
 # stays below the frame.
-# The relocated stack leaves room below the largest supported frame for the
-# largest bounded copy of incoming ABI stack arguments before push/pop traffic.
+# Linux x86-64 builds signal frames below the interrupted hardware rsp. Keep a
+# dedicated gap so an asynchronous signal cannot overwrite the relocated
+# program stack or its locals; the argument copy remains independently bounded.
 _GUARD = 0x800
+_SIGNAL_FRAME_RESERVE = 0x2000
 _STACK_ARGUMENT_COPY_BYTES = _GUARD - max(_FRAME_SIZES) - 8
 _STACK_ARGUMENT_COPY_QWORDS = _STACK_ARGUMENT_COPY_BYTES // 8
 _STACK_GUARD_ALIGNMENT = 16
 
 
 def stack_guard_for_copy(frame_size: int, copy_bytes: int) -> int:
-    """Return an aligned relocation distance that contains the VM frame and copy."""
-    required = frame_size + 8 + max(copy_bytes, 0)
+    """Return an aligned relocation distance safe across async signal delivery."""
+    copy_requirement = frame_size + 8 + max(copy_bytes, 0)
+    signal_requirement = frame_size + _SIGNAL_FRAME_RESERVE
+    required = max(copy_requirement, signal_requirement)
     aligned = (required + _STACK_GUARD_ALIGNMENT - 1) // _STACK_GUARD_ALIGNMENT * _STACK_GUARD_ALIGNMENT
     return max(_GUARD, aligned)
 
