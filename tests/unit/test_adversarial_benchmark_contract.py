@@ -75,6 +75,7 @@ def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path)
             "functions_virtualized": 1,
             "no_op": 0,
             "omitted": 0,
+            "partial_virtualization": 0,
             "samples": 1,
             "unsupported_functions": 0,
         }

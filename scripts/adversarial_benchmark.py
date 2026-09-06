@@ -289,6 +289,7 @@ def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Pa
 def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
+    partial = stats.get("partial_virtualization_total", 0)
     applied = virtualized
     if not isinstance(applied, int) or applied == 0:
         applied = stats.get("mutations_applied", 0)
@@ -305,6 +306,7 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
     if pass_name == DEFAULT_MUTATION_NAME:
         result["functions_virtualized"] = virtualized
         result["unsupported_functions"] = unsupported
+        result["partial_virtualization"] = partial
     else:
         result["mutations_applied"] = applied
     return result
@@ -333,13 +335,14 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]
                     "errors": 0,
                     "functions_virtualized": 0,
                     "unsupported_functions": 0,
+                    "partial_virtualization": 0,
                 },
             )
             counters["samples"] += 1
             status_field = _PASS_STATUS_FIELDS.get(status)
             if status_field is not None:
                 counters[status_field] += 1
-            for field in ("functions_virtualized", "unsupported_functions"):
+            for field in ("functions_virtualized", "unsupported_functions", "partial_virtualization"):
                 value = row.get(field)
                 if isinstance(value, int):
                     counters[field] += value
