@@ -41,6 +41,7 @@ _EXTENDED_EH_FRAME_LENGTH = 0xFFFFFFFF
 _EH_FRAME_LENGTH_FIELD_BYTES = 4
 _DWARF64_LENGTH_FIELD_BYTES = 12
 _DWARF64_CIE_ID_BYTES = 8
+_ELF_PAGE_SIZE = 0x1000
 
 
 @dataclass(frozen=True)
@@ -417,7 +418,7 @@ class ExceptionInfoReader:
                     _EncodedPointerContext(augmentation_data_end, pointer_size, base_addr + cursor),
                 )
                 if lsda_result is not None:
-                    lsda_address = lsda_result[0]
+                    lsda_address = self._normalize_section_address(lsda_result[0])
         if pc_begin <= 0 or pc_range <= 0 or self._frames is None:
             return
         frame = ExceptionFrame(
@@ -543,6 +544,37 @@ class ExceptionInfoReader:
                     return None
                 return data, section_address
         return None
+
+    def _normalize_section_address(self, address: int) -> int:
+        """Translate a link-time pointer into r2's rebased section address.
+
+        PC-relative DWARF fields carry the link-time section address in their
+        displacement. r2 can expose the same ELF image with its load bias
+        removed, so the decoded pointer may be outside every section even
+        though its page-relative offset is valid. Keep direct addresses intact
+        and only apply a page-aligned translation when a known section proves it.
+        """
+        sections = self._get_sections()
+        for section in sections:
+            name = str(section.get("name", "")).rstrip("\x00")
+            if "gcc_except" not in name:
+                continue
+            section_address = _section_int(section, "addr", "virtual_address")
+            section_size = _section_int(section, "size", "virtual_size")
+            if section_address <= address < section_address + section_size:
+                return address
+        for section in sections:
+            name = str(section.get("name", "")).rstrip("\x00")
+            if "gcc_except" not in name:
+                continue
+            section_address = _section_int(section, "addr", "virtual_address")
+            section_size = _section_int(section, "size", "virtual_size")
+            delta = address - section_address
+            image_base = delta & ~(_ELF_PAGE_SIZE - 1)
+            normalized = address - image_base
+            if section_address <= normalized < section_address + section_size:
+                return normalized
+        return address
 
     def _parse_lsda(self, frame: ExceptionFrame, lsda_address: int) -> None:
         section = self._read_section_for_address(lsda_address)

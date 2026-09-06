@@ -13,6 +13,7 @@ _MACHO_UNWIND_ADDRESS = 0x9000
 _MACHO_REGULAR_PAGE_KIND = 2
 _MACHO_COMPRESSED_PAGE_KIND = 3
 _FUNCTION_ADDRESS = 0x401000
+_REBASED_LSDA_ADDRESS = 0x4000
 
 
 class _InMemoryElfExceptionBinary:
@@ -89,6 +90,19 @@ class _InMemoryR2VaddrElfExceptionBinary(_InMemoryElfExceptionBinary):
             {"name": ".eh_frame", "vaddr": _EH_FRAME_ADDRESS, "size": len(self._eh_frame)},
             {"name": ".gcc_except_table", "vaddr": _LSDA_ADDRESS, "size": len(self._lsda)},
         ]
+
+
+class _InMemoryRebasedElfExceptionBinary(_InMemoryElfExceptionBinary):
+    def get_sections(self) -> list[dict[str, int | str]]:
+        return [
+            {"name": ".eh_frame", "addr": _EH_FRAME_ADDRESS, "size": len(self._eh_frame)},
+            {"name": ".gcc_except_table", "addr": _REBASED_LSDA_ADDRESS, "size": len(self._lsda)},
+        ]
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _REBASED_LSDA_ADDRESS:
+            return self._lsda[:size]
+        return super().read_bytes(address, size)
 
 
 class _InMemoryDwarf64ExceptionBinary(_InMemoryElfExceptionBinary):
@@ -175,6 +189,12 @@ def test_exception_reader_accepts_radare2_vaddr_sections() -> None:
     frames = ExceptionInfoReader(_InMemoryR2VaddrElfExceptionBinary()).read_exception_frames()
 
     expect(frames[_FUNCTION_ADDRESS].lsda_address == _LSDA_ADDRESS)
+
+
+def test_exception_reader_normalizes_rebased_elf_lsda_pointer() -> None:
+    frames = ExceptionInfoReader(_InMemoryRebasedElfExceptionBinary()).read_exception_frames()
+
+    expect(frames[_FUNCTION_ADDRESS].lsda_address == _REBASED_LSDA_ADDRESS)
 
 
 def test_exception_reader_classifies_elf_landing_pad_action_as_catch() -> None:
