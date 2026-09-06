@@ -1,0 +1,13 @@
+{
+  "code_commit": "6de7999e",
+  "errors": 0,
+  "measurement": "ida-function-recovery-corpus",
+  "protected_functions": 378,
+  "sample_count": 159,
+  "original_functions": 210,
+  "scope": "function-count comparison for original and CodeVirtualization outputs",
+  "tool": "ida-pro-idalib",
+  "binary_ninja": "omitted",
+  "schema_version": 1,
+  "raw_report_sha256": "bc7ad24ee4f65cd06ded5eb8416a3535198579218ea4423794a15b77df3f5c4b"
+}

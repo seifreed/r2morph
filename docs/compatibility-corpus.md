@@ -98,6 +98,14 @@ protected outputs, including 1 original and 9 protected functions for
 with the bounded summary in
 [`protection-ida-mcp-corpus-2026-09-06-a7512ec5-summary.json`](protection-ida-mcp-corpus-2026-09-06-a7512ec5-summary.json).
 
+The post-unwind-metadata rerun at `6de7999e` repeats all 318 IDA MCP analyses
+with zero errors and recovers 210 functions across originals and 378 across
+protected outputs. The raw record is
+[`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
+(`SHA-256 bc7ad24ee4f65cd06ded5eb8416a3535198579218ea4423794a15b77df3f5c4b`),
+with the bounded summary in
+[`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json).
+
 The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
 records for Triton and 954 for angr across all 159 fixtures and six passes.
@@ -229,3 +237,12 @@ Ninja remains intentionally omitted. The raw report is
 (`SHA-256 83b90d71cc4db022ef81634e87d327279da71513984108a42dae3beb3b319d5c`),
 with the bounded summary in
 [`protection-adversarial-corpus-2026-09-06-43ba227c-summary.json`](protection-adversarial-corpus-2026-09-06-43ba227c-summary.json).
+
+The post-unwind-metadata rerun at `6de7999e` repeats the same 159-fixture
+CodeVirtualization corpus with 159/159 applications, 171 virtualized
+functions, zero unsupported functions, and zero partial virtualizations. It
+records 939 completed analyzer runs, 15 isolated Unicorn errors, and 318
+explicit local IDA/Ghidra availability rows; angr and Triton complete every
+configured pair. Binary Ninja remains intentionally omitted. The raw report
+is [`protection-adversarial-corpus-2026-09-06-6de7999e-triton.json`](protection-adversarial-corpus-2026-09-06-6de7999e-triton.json)
+(`SHA-256 d657735f230e396ffac78c5e95be702ba1db11032bb695c8649458ae4fd9288f`).

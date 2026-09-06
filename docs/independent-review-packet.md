@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `a7512ec5`
-- Production evidence baseline: `a7512ec5`.
+- Commit: `6de7999e`
+- Production evidence baseline: `6de7999e`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -36,13 +36,16 @@ checks are evidence, not a human approval.
 - [`protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json`](protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json)
 - [`protection-adversarial-corpus-2026-09-06-43ba227c.json`](protection-adversarial-corpus-2026-09-06-43ba227c.json)
 - [`protection-adversarial-corpus-2026-09-06-43ba227c-summary.json`](protection-adversarial-corpus-2026-09-06-43ba227c-summary.json)
+- [`protection-adversarial-corpus-2026-09-06-6de7999e-triton.json`](protection-adversarial-corpus-2026-09-06-6de7999e-triton.json)
+- [`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
+- [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json)
 - [`independent-review.json`](independent-review.json)
 
 The current evidence records 159/159 virtualized samples, 171 virtualized
 functions, zero unsupported functions, zero partial virtualizations, 939
 completed analyzer runs, 15 Unicorn baseline errors, and 80,000 fuzz target
-runs. Triton and angr complete all 159 pairs. The latest detailed IDA MCP
-corpus rerun, at `a7512ec5`, contains 318 completed analyses with zero errors; Ghidra
+  runs. Triton and angr complete all 159 pairs. The latest detailed IDA MCP
+corpus rerun, at `6de7999e`, contains 318 completed analyses with zero errors; Ghidra
 remains represented by the completed 318-analysis report listed above.
 For the named regression `elf_vm_fppackedidxnb_x86_64`, the bounded evidence
 records one virtualized function, zero unsupported/partial functions, native
@@ -105,7 +108,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: a7512ec5
+Reviewed commit: 6de7999e
 ```
 
 No approval is implied until a human reviewer fills this section outside the
