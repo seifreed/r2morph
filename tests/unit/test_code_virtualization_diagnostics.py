@@ -1,8 +1,12 @@
 """Unit contracts for capability-specific virtualization diagnostics."""
 
+from types import SimpleNamespace
+from typing import Any
+
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
+    _function_contains_virtualized_call,
     _function_has_unproven_unwind_metadata,
     _unwind_metadata_name,
 )
@@ -14,14 +18,14 @@ class _SectionsBinary:
     def __init__(self, names: list[str], size: int | None = None) -> None:
         self._sections = [{"name": name, **({"size": size} if size is not None else {})} for name in names]
 
-    def get_sections(self) -> list[dict[str, str]]:
+    def get_sections(self) -> list[dict[str, Any]]:
         return self._sections
 
 
 class _TerminalSyscallBinary:
     class _Disassembler:
         @staticmethod
-        def cmdj(_command: str) -> dict[str, list[dict[str, str]]]:
+        def cmdj(_command: str) -> dict[str, list[dict[str, Any]]]:
             return {"ops": [{"type": "syscall", "addr": 0x1000}]}
 
     r2 = _Disassembler()
@@ -54,6 +58,54 @@ class _PaddedTerminalSyscallBinary:
             }
 
     r2 = _Disassembler()
+
+
+class _CandidateRegionPass:
+    virtualize_dispatch = False
+
+    @staticmethod
+    def _has_computed_jump(_binary: object, _func: dict[str, int]) -> bool:
+        return False
+
+    @staticmethod
+    def _find_run(_binary: object, _block: dict[str, int]) -> SimpleNamespace:
+        return SimpleNamespace(ops=[])
+
+
+class _CallOutsideCandidateBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
+            return {
+                "ops": [
+                    {"type": "call", "opcode": "call 0x2000", "jump": 0x2000, "addr": 0x1000, "size": 5},
+                    {"type": "invalid", "opcode": "invalid", "addr": 0x1005, "size": 1},
+                ]
+            }
+
+    r2 = _Disassembler()
+
+    @staticmethod
+    def get_basic_blocks(_address: int) -> list[dict[str, int]]:
+        return [{"addr": 0x1000}]
+
+
+class _CallInsideCandidateBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
+            return {
+                "ops": [
+                    {"type": "call", "opcode": "call 0x2000", "jump": 0x2000, "addr": 0x1000, "size": 5},
+                    {"type": "ret", "opcode": "ret", "addr": 0x1005, "size": 1},
+                ]
+            }
+
+    r2 = _Disassembler()
+
+    @staticmethod
+    def get_basic_blocks(_address: int) -> list[dict[str, int]]:
+        return []
 
 
 def test_partial_virtualization_is_rejected_by_default() -> None:
@@ -97,6 +149,20 @@ def test_rt_sigreturn_does_not_virtualize_unreachable_tail() -> None:
     region = extract_region(instructions)
 
     expect(region is not None and region.body_ranges == [(0x1000, 5)])
+
+
+def test_unwind_gate_ignores_call_outside_candidate_run() -> None:
+    result = _function_contains_virtualized_call(
+        _CandidateRegionPass(), _CallOutsideCandidateBinary(), {"addr": 0x1000}
+    )
+
+    expect(not result)
+
+
+def test_unwind_gate_rejects_call_inside_candidate_region() -> None:
+    result = _function_contains_virtualized_call(_CandidateRegionPass(), _CallInsideCandidateBinary(), {"addr": 0x1000})
+
+    expect(result)
 
 
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:
