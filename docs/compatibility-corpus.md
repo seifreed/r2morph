@@ -208,3 +208,15 @@ intentionally omitted. The raw report is
 (`SHA-256 7c673f5cf52d7b6ee564b6a3d6aab59d7436af0e6f4590b27705db439ad031fc`),
 with the bounded summary in
 [`protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json`](protection-adversarial-corpus-2026-09-06-bc2bff2-summary.json).
+
+The current rerun at `43ba227c` repeats the same 159-fixture
+CodeVirtualization corpus after scoping the unwind gate to the candidate VM
+region. It records 159/159 applications, 171 virtualized functions, zero
+unsupported functions, zero partial virtualizations, 939 completed analyzer
+runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra
+availability rows. Angr and Triton complete every configured pair; Binary
+Ninja remains intentionally omitted. The raw report is
+[`protection-adversarial-corpus-2026-09-06-43ba227c.json`](protection-adversarial-corpus-2026-09-06-43ba227c.json)
+(`SHA-256 83b90d71cc4db022ef81634e87d327279da71513984108a42dae3beb3b319d5c`),
+with the bounded summary in
+[`protection-adversarial-corpus-2026-09-06-43ba227c-summary.json`](protection-adversarial-corpus-2026-09-06-43ba227c-summary.json).

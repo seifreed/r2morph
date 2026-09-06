@@ -1,0 +1,22 @@
+{
+  "commit": "43ba227c",
+  "report_sha256": "83b90d71cc4db022ef81634e87d327279da71513984108a42dae3beb3b319d5c",
+  "sample_count": 159,
+  "pass_summary": {
+    "CodeVirtualization": {
+      "applied": 159,
+      "errors": 0,
+      "functions_virtualized": 171,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 159,
+      "unsupported_functions": 0
+    }
+  },
+  "summary": {
+    "completed_tool_runs": 939,
+    "error_tool_runs": 15,
+    "unavailable_tool_runs": 318
+  }
+}
