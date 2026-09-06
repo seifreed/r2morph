@@ -24,7 +24,15 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
     report = review(_ROOT)
     names = {check["name"] for check in report["checks"]}
 
-    expect({"ida_corpus_evidence", "ghidra_corpus_evidence", "parser_rewriter_fuzz_campaign"} <= names)
+    expect(
+        {
+            "ida_corpus_evidence",
+            "ida_current_summary_evidence",
+            "ghidra_corpus_evidence",
+            "parser_rewriter_fuzz_campaign",
+        }
+        <= names
+    )
 
 
 def test_independent_review_validates_fppackedidxnb_regression_artifact() -> None:
