@@ -79,6 +79,9 @@ functions, zero unsupported or partial virtualizations, 939 completed analyzer
 runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
 rows. Angr and Triton complete every original/protected pair. Binary Ninja is
 omitted by project decision. Human signoff remains `not-attested`.
+The pushed CI workflow `34063047247` completed successfully across its Linux,
+macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
+lint, integration, and property/fuzz validation.
 
 ## Reproduction
 
