@@ -223,7 +223,7 @@ def _bt_memory_handler_asm(
     body += (
         f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
         f"  bt {operand_size} ptr [r10], {bit_register}\n"
-        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        f"  pushfq\n  pop r11\n  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     )
     return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 

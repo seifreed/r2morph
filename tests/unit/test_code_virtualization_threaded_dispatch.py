@@ -97,7 +97,7 @@ def _engine_spill_order(seed: int) -> tuple[str, ...]:
 
 
 def _frame_size(asm: str) -> str:
-    match = re.search(r"vm_entry:\n  sub rsp, (\d+)", asm)
+    match = re.search(r"vm_entry:\n(?:  .*\n){0,3}  sub rsp, (\d+)", asm)
     expect(match is not None)
     return match.group(1)
 
@@ -111,6 +111,12 @@ def test_region_interpreter_has_no_central_dispatch_label() -> None:
     asm = _region_asm(0)
     expect("vm_dispatch:" not in asm)
     expect("jmp vm_dispatch" not in asm)
+
+
+def test_region_entry_captures_incoming_flags_before_frame_setup() -> None:
+    assembly = _region_asm(0)
+
+    expect("vm_entry:\n" "  pushfq\n  pop qword ptr [rsp-8]\n" "  sub rsp, " in assembly)
 
 
 def test_region_interpreter_inlines_the_decode_per_handler() -> None:

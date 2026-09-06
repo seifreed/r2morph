@@ -57,6 +57,9 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
+    _FLAGS_OFFSET as _CANONICAL_FLAGS_OFFSET,
+)
+from r2morph.mutations.code_virtualization_region_handlers import (
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _STACK_ARGUMENT_COPY_BYTES,
@@ -235,11 +238,18 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # need the saved vector arguments and must write back caller-clobbered results.
     fp_spill, fp_reload = _fp_state_asm(region)
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
-    lines = [f"vm_entry:\n  sub rsp, {frame_size}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
+    lines = [
+        f"vm_entry:\n"
+        "  pushfq\n  pop qword ptr [rsp-8]\n"
+        f"  sub rsp, {frame_size}\n"
+        f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"
+    ]
     for index in save_order:
         lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n")
-    if fp_spill:
-        lines.append(fp_spill)
+    lines.append(
+        f"  mov r11, qword ptr [rsp+{frame_size - 8}]\n"
+        f"  mov qword ptr [rsp+{_CANONICAL_FLAGS_OFFSET}], r11\n" + fp_spill
+    )
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved. The trailing offset table
@@ -447,6 +457,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
 
 def _relocate_flags_slot(assembly: str, flags_offset: int) -> str:
     """Relocate flag-frame operands without changing native-call frame math."""
+    assembly = re.sub(
+        r"(?m)^(\s*pop\s+qword ptr \[rsp\s*\+\s*)(?:128|136)(\])",
+        rf"\g<1>{flags_offset}\2",
+        assembly,
+    )
     return re.sub(
         r"(?m)^(\s*(?:mov|push|pop)\b[^\n]*?)\[rsp\s*\+\s*128\]",
         rf"\1[rsp + {flags_offset}]",

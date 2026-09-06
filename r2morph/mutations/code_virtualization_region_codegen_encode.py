@@ -279,6 +279,12 @@ _IMMEDIATE_MEMORY_BASE_SIZES = {
     "atomicmemimmidx": 9,
     "atomicmemimmidxnb": 8,
 }
+_BT_MEMORY_SIZES = {
+    "btmem": 8,
+    "btmemrip": 7,
+    "btmemidx": 10,
+    "btmemidxnb": 9,
+}
 _IMMEDIATE_MEMORY_WIDTH_INDEXES = {
     "storei": 4,
     "storeirip": 3,
@@ -319,6 +325,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         size = _IMMEDIATE_MEMORY_BASE_SIZES[kind] + (8 if item[width_index] == ARCH_BITS_64 else 4)
     elif kind in _VEX_PACKED_COMPARE_MEMORY_SIZES:
         size = _VEX_PACKED_COMPARE_MEMORY_SIZES[kind]
+    elif kind in _BT_MEMORY_SIZES:
+        size = _BT_MEMORY_SIZES[kind]
     return size if size is not None else _FIXED_ITEM_SIZES.get(kind, 1)
 
 

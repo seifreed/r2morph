@@ -27,7 +27,10 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_memdst_indexed,
     _decode_riprel_mov,
 )
-from r2morph.mutations.code_virtualization_region_memory_handlers import _mxcsr_memory_handler_asm
+from r2morph.mutations.code_virtualization_region_memory_handlers import (
+    _bt_memory_handler_asm,
+    _mxcsr_memory_handler_asm,
+)
 from r2morph.mutations.code_virtualization_region_microops import _vpop_partial_handler_asm
 from r2morph.mutations.code_virtualization_region_models import RegionScheme, _op_key
 from tests.utils.assertions import expect
@@ -105,6 +108,12 @@ def test_mxcsr_memory_decoder_decodes_rip_relative_store() -> None:
 
 def test_mxcsr_memory_decoder_decodes_indexed_load_without_base() -> None:
     expect(_decode_mxcsr_memory("ldmxcsr dword ptr [rcx*4+8]", 0x1000, 6) == ("mxcsrloadidxnb", 1, 2, 8))
+
+
+def test_memory_bt_stores_flags_without_shifting_the_frame_offset() -> None:
+    assembly = _bt_memory_handler_asm("btmem_i_32", "0x5a", "0x5a5a5a5a")
+
+    expect("pushfq\n  pop r11\n  mov qword ptr [rsp+128], r11\n" in assembly)
 
 
 def test_mxcsr_memory_decoder_decodes_indexed_store() -> None:
@@ -238,6 +247,21 @@ def test_memory_bt_decodes_rip_relative_immediate_bit() -> None:
 
 def test_memory_bt_handler_key_uses_mode_letter() -> None:
     expect(_op_key(("btmem", 3, 8, 1, False, 32)) == "btmem_r_32")
+
+
+def test_memory_bt_item_sizes_match_encoded_operands() -> None:
+    expect(
+        tuple(
+            _item_size(item)
+            for item in (
+                ("btmem", 3, 8, 1, False, 32),
+                ("btmemrip", 0x1026, 3, True, 32),
+                ("btmemidx", 0, 1, 2, 8, 65, True, 64),
+                ("btmemidxnb", 1, 2, 8, 65, True, 64),
+            )
+        )
+        == (8, 7, 10, 9)
+    )
 
 
 def test_memory_div_decodes_direct_signed_dword() -> None:

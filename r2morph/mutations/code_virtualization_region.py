@@ -21,7 +21,6 @@ The interpreter assembly and bytecode generation for a lowered region live in
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -48,8 +47,6 @@ from r2morph.mutations.code_virtualization_region_models import (
     RegionScheme,
     _op_key,
 )
-
-logger = logging.getLogger(__name__)
 
 _CANONICAL_FLAGS_OFFSET = 0x80
 _STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
@@ -660,7 +657,6 @@ def extract_region(
     if rng is not None:
         items = _inject_junk_movs(items, rng, target_map)
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
-
     body_ranges = [(instruction["addr"], instruction.get("size", 0)) for instruction in build.body]
     return Region(
         [tuple(item) for item in items],

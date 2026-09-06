@@ -61,6 +61,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
+    _FLAGS_OFFSET,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _STACK_ARGUMENT_COPY_BYTES,
@@ -644,8 +645,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     entry = (
         # Zero the virtual operand stack pointer before any micro-op runs; peeled
         # flag-dead arith folds through it in the nested layers too.
-        f"vm_entry:\n  sub rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
+        f"vm_entry:\n  pushfq\n  pop qword ptr [rsp-8]\n"
+        f"  sub rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
         f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
+        f"  mov r11, qword ptr [rsp+{frame_size_for_seed(schemes[0].junk_seed) - 8}]\n"
+        f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
         + checksum_prologue_asm(
             ChecksumPrologue(
                 schemes[0].xor_key,

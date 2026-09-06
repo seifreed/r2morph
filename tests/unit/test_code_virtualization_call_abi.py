@@ -74,7 +74,7 @@ def test_flags_slot_relocation_preserves_call_resume_frame_base() -> None:
 
     relocated = _relocate_flags_slot(assembly, 200)
 
-    expect(relocated == "call_resume_0:\n  lea r12, [rsp+128]\n  pushfq\n  pop qword ptr [rsp + 200]\n")
+    expect(relocated == "call_resume_0:\n  lea r12, [rsp+128]\n  pushfq\n  pop qword ptr [rsp+200]\n")
 
 
 def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
