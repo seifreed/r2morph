@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `43ba227c`
+- Commit: `2b0bb66f`
 - Production evidence baseline: `43ba227c`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -40,9 +40,9 @@ checks are evidence, not a human approval.
 The current evidence records 159/159 virtualized samples, 171 virtualized
 functions, zero unsupported functions, zero partial virtualizations, 939
 completed analyzer runs, 15 Unicorn baseline errors, and 80,000 fuzz target
-runs. Triton and angr complete all 159 pairs. The current IDA MCP corpus
-contains 318 completed analyses with zero errors; Ghidra remains represented
-by the completed 318-analysis report listed above.
+runs. Triton and angr complete all 159 pairs. The last detailed IDA MCP corpus
+rerun, at `0a1a4bfd`, contains 318 completed analyses with zero errors; Ghidra
+remains represented by the completed 318-analysis report listed above.
 For the named regression `elf_vm_fppackedidxnb_x86_64`, the bounded evidence
 records one virtualized function, zero unsupported/partial functions, native
 exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
@@ -60,7 +60,7 @@ Binary Ninja remains excluded by project decision.
 The `bc2bff2` rerun was performed after making partial virtualization fail
 closed by default; the explicit `reject_partial_virtualization=False` override
 is retained only for regression reproduction. The pushed CI workflow
-`34022236676` for commit `1155eb9b` completed successfully across the full
+`34028054047` for commit `2b0bb66f` completed successfully across the full
 matrix. The local Python 3.13 run completed 5531 tests with 123 expected skips
 and 81.01% coverage after this default-policy change. CI state is not used as
 human approval.
@@ -104,7 +104,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 1155eb9b
+Reviewed commit: 2b0bb66f
 ```
 
 No approval is implied until a human reviewer fills this section outside the
