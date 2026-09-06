@@ -40,6 +40,11 @@ completed analyzer runs, 15 Unicorn baseline errors, and 80,000 fuzz target
 runs. Triton and angr complete all 159 pairs. The current IDA MCP corpus
 contains 318 completed analyses with zero errors; Ghidra remains represented
 by the completed 318-analysis report listed above.
+For the named regression `elf_vm_fppackedidxnb_x86_64`, the bounded evidence
+records one virtualized function, zero unsupported/partial functions, native
+exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
+original instructions semantically supported. Binary Ninja is explicitly
+recorded as omitted by project decision in the same artifact.
 The automated review still reports `human_signoff: not-attested`.
 The current CodeVirtualization corpus rerun records 15 explicit Unicorn
 errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
