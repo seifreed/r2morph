@@ -3,7 +3,24 @@
 Commit: `8b6cfb40`
 Date: `2026-09-04`
 
-## Current verification status
+## Current-state addendum
+
+The current CodeVirtualization implementation is `a727f304`, with the review
+packet published at `6dd8a4d`. Its complete 159-fixture rerun records 159/159
+applications, 171 virtualized functions, zero unsupported functions, zero
+partial virtualizations, and zero transformation errors. Angr and Triton
+complete every original/protected pair; the 15 Unicorn errors and 318 local
+IDA/Ghidra-unavailable rows remain explicit non-passing tool results. Binary
+Ninja is omitted by project decision. The raw evidence is
+[`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json).
+The named `elf_vm_fppackedidxnb_x86_64` regression virtualizes one function
+with no unsupported or partial result. The code commit's full CI workflow
+`34065194410` completed successfully.
+
+The remainder of this document is historical evidence from earlier commits;
+its counts must not be read as the current release status.
+
+## Historical verification status
 
 The latest full Linux amd64 fixture campaign ran against `8b6cfb40` and covered
 159 fixtures with all six selected passes. The differential report completed in
