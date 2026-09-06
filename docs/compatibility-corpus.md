@@ -82,6 +82,13 @@ aggregate evidence is in
 [`protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json`](protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json)
 (`SHA-256 b2dd4fc1328569708f49d32a58982f90e623b1c2c63111c5006cf4e84b29448d`).
 
+The current-state detailed rerun at `0a1a4bfd` repeats all 159 original and
+CodeVirtualization-protected fixtures, for 318 IDA MCP analyses with zero
+errors. It recovers 210 functions across originals and 378 across protected
+outputs. The raw record is
+[`protection-ida-mcp-corpus-2026-09-06-0a1a4bfd.json`](protection-ida-mcp-corpus-2026-09-06-0a1a4bfd.json)
+(`SHA-256 20db206e0c02165c0ffa9ef100098118cbdedcacad665fb6143d7dc88d3b721d`).
+
 The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
 records for Triton and 954 for angr across all 159 fixtures and six passes.
