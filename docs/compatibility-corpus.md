@@ -132,6 +132,11 @@ at `2e4ad8e` ran 20,000 cases per target, 80,000 target runs in total, with
 zero failures. Its bounded report is
 [`protection-fuzz-2026-09-05-2e4ad8e.json`](protection-fuzz-2026-09-05-2e4ad8e.json).
 
+The current fuzz rerun at `cf44477` repeats 20,000 cases per target with seed
+`20260906`, for 80,000 bounded executions and zero failures. It covers binary
+parsers, the VM dispatcher, relocations, and binary rewriting. Its bounded
+report is [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json).
+
 The authoritative current CodeVirtualization rerun at `dbf77c59` repeats all
 159 repository fixtures with the dedicated Python 3.13 virtualenv containing
 `triton-library 1.0.0rc4`. It records 159/159 applications, 171 virtualized
