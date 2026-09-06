@@ -7,6 +7,10 @@ from tests.utils.assertions import expect
 
 _EH_FRAME_ADDRESS = 0x7000
 _LSDA_ADDRESS = 0x8000
+_MACHO_TEXT_ADDRESS = 0x400000
+_MACHO_UNWIND_ADDRESS = 0x9000
+_MACHO_REGULAR_PAGE_KIND = 2
+_MACHO_COMPRESSED_PAGE_KIND = 3
 _FUNCTION_ADDRESS = 0x401000
 
 
@@ -103,6 +107,39 @@ class _InMemoryMachoExceptionBinary(_InMemoryElfExceptionBinary):
         ]
 
 
+class _InMemoryMachoCompactUnwindBinary:
+    def __init__(self, page_kind: int) -> None:
+        self._unwind = self._build_unwind_info(page_kind)
+
+    def get_arch_info(self) -> dict[str, int | str]:
+        return {"format": "Mach-O-64", "bits": 64}
+
+    def get_sections(self) -> list[dict[str, int | str]]:
+        return [
+            {"name": "__text", "addr": _MACHO_TEXT_ADDRESS, "size": 0x2000},
+            {"name": "__unwind_info", "addr": _MACHO_UNWIND_ADDRESS, "size": len(self._unwind)},
+        ]
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _MACHO_UNWIND_ADDRESS:
+            return self._unwind[:size]
+        return b""
+
+    @staticmethod
+    def _build_unwind_info(page_kind: int) -> bytes:
+        page_offset = 44
+        header = struct.pack("<IIII", 1, 16, 0, 20)
+        common_encodings = struct.pack("<I", 0x01000000)
+        index = struct.pack("<III", 0x1000, page_offset, 0)
+        index += struct.pack("<III", 0xFFFFFFFF, 0, 0)
+        if page_kind == _MACHO_REGULAR_PAGE_KIND:
+            page = struct.pack("<IHH", page_kind, 8, 1) + struct.pack("<II", 0x1000, 0x01000000)
+        else:
+            page = struct.pack("<IHHHH", page_kind, 12, 1, 16, 1)
+            page += struct.pack("<I", 0x01001000) + struct.pack("<I", 0x02000000)
+        return header + common_encodings + index + page
+
+
 def _packed_entry(begin: int, function_length_units: int) -> bytes:
     second = 0x1 | ((function_length_units & 0x7FF) << 2)
     return struct.pack("<II", begin, second)
@@ -155,3 +192,15 @@ def test_exception_reader_parses_dwarf64_eh_frame_fde_and_landing_pad() -> None:
         (frame.function_end, frame.lsda_address, len(frame.landing_pads))
         == (_FUNCTION_ADDRESS + 0x40, _LSDA_ADDRESS, 1)
     )
+
+
+def test_exception_reader_parses_macho_regular_compact_unwind_function() -> None:
+    frames = ExceptionInfoReader(_InMemoryMachoCompactUnwindBinary(_MACHO_REGULAR_PAGE_KIND)).read_exception_frames()
+
+    expect(frames[_FUNCTION_ADDRESS].function_end == _MACHO_TEXT_ADDRESS + 0x2000)
+
+
+def test_exception_reader_parses_macho_compressed_compact_unwind_function() -> None:
+    frames = ExceptionInfoReader(_InMemoryMachoCompactUnwindBinary(_MACHO_COMPRESSED_PAGE_KIND)).read_exception_frames()
+
+    expect(frames[_FUNCTION_ADDRESS].function_end == _MACHO_TEXT_ADDRESS + 0x2000)

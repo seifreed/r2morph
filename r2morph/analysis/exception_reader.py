@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
+from r2morph.analysis.exception_reader_macho import macho_image_base, parse_macho_compact_unwind
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ _PE_UNWIND_HEADER_SIZE_BYTES = 4
 _PE_UNWIND_CODE_SIZE_BYTES = 2
 _PE_UNW_FLAG_EHANDLER = 0x01
 _PE_UNW_FLAG_UHANDLER = 0x02
-_MACHO_UNWIND_HEADER_SIZE_BYTES = 12
+_MACHO_UNWIND_HEADER_SIZE_BYTES = 16
 _DW_EH_PE_ABSPTR = 0x00
 _DW_EH_PE_PCREL = 0x10
 _DW_EH_PE_OMIT = 0xFF
@@ -510,15 +511,12 @@ class ExceptionInfoReader:
             if unwind_addr == 0 or unwind_size == 0:
                 return
 
-            data = self.binary.read_bytes(unwind_addr, min(unwind_size, 4096))
+            data = self.binary.read_bytes(unwind_addr, min(unwind_size, _MAX_EXCEPTION_SECTION_BYTES))
             if not data or len(data) < _MACHO_UNWIND_HEADER_SIZE_BYTES:
                 return
 
-            logger.debug(
-                "Found Mach-O __unwind_info at 0x%x (%d bytes); detailed parsing not implemented",
-                unwind_addr,
-                unwind_size,
-            )
+            if self._frames is not None:
+                parse_macho_compact_unwind(data, sections, self._frames, macho_image_base(self.binary.get_arch_info()))
 
         except (OSError, struct.error) as e:
             logger.debug("Failed to read Mach-O unwind info: %s", e)
