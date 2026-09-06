@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `de3111e4`
-- Production evidence baseline: `de3111e4`.
+- Commit: `a727f304`
+- Production evidence baseline: `a727f304`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -40,6 +40,7 @@ checks are evidence, not a human approval.
 - [`protection-adversarial-corpus-2026-09-06-43ba227c-summary.json`](protection-adversarial-corpus-2026-09-06-43ba227c-summary.json)
 - [`protection-adversarial-corpus-2026-09-06-6de7999e-triton.json`](protection-adversarial-corpus-2026-09-06-6de7999e-triton.json)
 - [`protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json`](protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json)
+- [`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json)
 - [`independent-review.json`](independent-review.json)
@@ -71,6 +72,13 @@ is retained only for regression reproduction. The pushed CI workflow
 matrix. The local Python 3.13 run completed 5531 tests with 123 expected skips
 and 81.01% coverage after this default-policy change. CI state is not used as
 human approval.
+
+The current `a727f304` rerun preserves LSDA call-site mappings in VM unwind
+metadata. It records 159/159 CodeVirtualization applications, 171 virtualized
+functions, zero unsupported or partial virtualizations, 939 completed analyzer
+runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
+rows. Angr and Triton complete every original/protected pair. Binary Ninja is
+omitted by project decision. Human signoff remains `not-attested`.
 
 ## Reproduction
 
@@ -111,7 +119,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: de3111e4
+Reviewed commit: a727f304
 ```
 
 No approval is implied until a human reviewer fills this section outside the

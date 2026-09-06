@@ -324,3 +324,14 @@ IDA/Ghidra availability records. Binary Ninja remains omitted by project
 decision. The raw report is
 [`protection-adversarial-corpus-2026-09-06-de3111e4.json`](protection-adversarial-corpus-2026-09-06-de3111e4.json)
 (`SHA-256 feef3fbd2286fe4b8e15c32b720798f55c6ae2e86988ff423799096bc2294910`).
+
+The current LSDA call-site mapping rerun at `a727f304` repeats the same
+159-fixture CodeVirtualization corpus after preserving per-call-site unwind
+metadata. It records 159/159 applications, 171 virtualized functions, zero
+unsupported functions, zero partial virtualizations, and zero transformation
+errors. Triton and angr complete every original/protected pair; the 15 tool
+errors remain isolated to Unicorn AVX/VEX emulation, and the 318 unavailable
+rows are explicit local IDA/Ghidra availability records. Binary Ninja remains
+omitted by project decision. The raw report is
+[`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json)
+(`SHA-256 484f818c144ba58e418443d8e1dc9bed97de74586825f8cce8fe2e374c40b60a`).
