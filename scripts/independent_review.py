@@ -28,8 +28,8 @@ _EXPECTED_BENCHMARK_TOOLS = {
 }
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-76e144bb-triton.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
-_CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-6de7999e.json"
-_CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json"
+_CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
+_CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-06-cf44477.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159

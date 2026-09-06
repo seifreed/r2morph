@@ -106,6 +106,18 @@ protected outputs. The raw record is
 with the bounded summary in
 [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json).
 
+The current IDA MCP rerun at `646e0942` repeats all 159 original and
+CodeVirtualization-protected fixtures with `318/318` completed analyses and
+zero errors. It recovers 210 functions across originals and 378 across
+protected outputs, including 1 original and 9 protected functions for
+`elf_vm_fppackedidxnb_x86_64`. Binary Ninja is explicitly omitted. The raw
+record is
+[`protection-ida-mcp-corpus-2026-09-06-646e0942.json`](protection-ida-mcp-corpus-2026-09-06-646e0942.json)
+(`SHA-256 62614c89fb6e4db2719a360d2242335defac27d514a6daa7fde5f1ac0974e8e1`),
+with the bounded summary in
+[`protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json`](protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json)
+(`SHA-256 0d8b61a6714bda997d369d2b098a10345f9149463b99814c06f13c9db1202eba`).
+
 The latest Linux rerun at `83e6eee6` used `triton-library 1.0.0rc4` in the
 reproducible Python 3.13 virtualenv and completed 954 original/protected pair
 records for Triton and 954 for angr across all 159 fixtures and six passes.
