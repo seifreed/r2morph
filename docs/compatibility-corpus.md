@@ -302,3 +302,14 @@ unavailable rows are the local IDA/Ghidra executables. Binary Ninja remains
 omitted by project decision. The raw report is
 [`protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json`](protection-adversarial-corpus-2026-09-06-c0ceaaa6-triton.json)
 (`SHA-256 a6064409e3d7c3fe7b70cf04c255f34ccba7c4494b86dac1f12294526fd970dc`).
+
+The current rerun at `aad4aeb9` repeats the same 159-fixture CodeVirtualization
+corpus after closing the unwind-unsafe partial-virtualization path. It records
+159/159 applications, 171 virtualized functions, zero unsupported functions,
+zero partial virtualizations, and zero transformation errors. Triton and angr
+complete every original/protected pair; the 15 tool errors remain isolated to
+Unicorn AVX/VEX emulation, and the 318 unavailable rows are explicit local
+IDA/Ghidra availability records. Binary Ninja remains omitted by project
+decision. The raw report is
+[`protection-adversarial-corpus-2026-09-06-aad4aeb9-triton.json`](protection-adversarial-corpus-2026-09-06-aad4aeb9-triton.json)
+(`SHA-256 73401f5d400d1490b8b013ac86c5c747c2b4e842ef8020bd8b33f0ef837b8698`).
