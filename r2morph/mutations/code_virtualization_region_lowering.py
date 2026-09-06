@@ -244,6 +244,7 @@ def lower_arith_to_microops(
     items: list[list[Any]],
     index_map: dict[int, int] | None = None,
     use_superinstructions: bool = False,
+    source_index_map: dict[int, int] | None = None,
 ) -> list[list[Any]]:
     """Lower arithmetic and memory items and remap branch target indices."""
     fold_of = {"opmba": "vbinop", "opsynth": "vbinopsynth"}
@@ -263,6 +264,7 @@ def lower_arith_to_microops(
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
     _remap_index_map(index_map, old_to_new)
+    _remap_index_map(source_index_map, old_to_new)
     return lowered
 
 

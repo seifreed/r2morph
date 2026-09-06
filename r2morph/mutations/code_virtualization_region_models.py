@@ -74,6 +74,7 @@ class Region:
     target_map: dict[int, int] = field(default_factory=dict)
     has_internal_indirect_call: bool = False
     stack_argument_copy_bytes: int = 0
+    call_site_items: tuple[tuple[int, int, int], ...] = ()
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

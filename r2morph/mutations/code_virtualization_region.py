@@ -53,6 +53,7 @@ _STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
 _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
 _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 _NONRETURNING_SYSCALLS = frozenset({15, 60, 231})
+_CALL_SITE_ITEM_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"})
 
 
 @dataclass
@@ -62,6 +63,12 @@ class _RegionBuild:
     exit_addrs: list[int]
     ret_addrs: set[int]
     body: list[dict[str, Any]]
+    call_site_item_of: dict[int, int]
+
+
+def _record_call_site_item(mapping: dict[int, int], address: int, item_kind: str, item_index: int) -> None:
+    if item_kind in _CALL_SITE_ITEM_KINDS:
+        mapping[address] = item_index
 
 
 def _is_trailing_padding(instruction: dict[str, Any]) -> bool:
@@ -473,12 +480,16 @@ def _lower_arith_to_microops(
     items: list[list[Any]],
     index_map: dict[int, int] | None = None,
     use_superinstructions: bool = False,
+    source_index_map: dict[int, int] | None = None,
 ) -> list[list[Any]]:
-    return lower_arith_to_microops(items, index_map, use_superinstructions)
+    return lower_arith_to_microops(items, index_map, use_superinstructions, source_index_map)
 
 
 def _inject_junk_movs(
-    items: list[list[Any]], rng: random.Random, index_map: dict[int, int] | None = None
+    items: list[list[Any]],
+    rng: random.Random,
+    index_map: dict[int, int] | None = None,
+    source_index_map: dict[int, int] | None = None,
 ) -> list[list[Any]]:
     """Sprinkle identity ``mov reg, reg`` items through the resolved item list and
     remap every branch target index to its new position.
@@ -502,6 +513,7 @@ def _inject_junk_movs(
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
     _remap_index_map(index_map, old_to_new)
+    _remap_index_map(source_index_map, old_to_new)
     return new_items
 
 
@@ -537,11 +549,13 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
         return None
     items: list[list[Any]] = []
     item_index_of: dict[int, int] = {}
+    call_site_item_of: dict[int, int] = {}
     for instruction in body:
         item = classification._classify(instruction, allow_computed_jump=allow_computed_jump)
         if item is None:
             return None
         item_index_of[instruction["addr"]] = len(items)
+        _record_call_site_item(call_site_item_of, instruction["addr"], item[0], len(items))
         items.append(item)
         next_address = instruction["addr"] + instruction.get("size", 0)
         if item[0] not in ("jmp", "ijmp") and next_address in exit_set:
@@ -551,7 +565,7 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
             items.append(["exit", address, ret_cleanup[address]])
         else:
             items.append(["exit", address])
-    return _RegionBuild(items, item_index_of, exit_addrs, ret_addrs, body)
+    return _RegionBuild(items, item_index_of, exit_addrs, ret_addrs, body, call_site_item_of)
 
 
 def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, Any]]) -> bool:
@@ -612,6 +626,7 @@ def extract_region(
             if item[0] == "exit" and item[1] in build.ret_addrs:
                 item[0] = "vret"
     items = build.items
+    call_site_item_of = dict(build.call_site_item_of)
     stack_states = _stack_states(items)
     if stack_states is None:
         return None
@@ -650,14 +665,20 @@ def extract_region(
     )
 
     use_superinstructions = rng is not None and bool(rng.randrange(2))
-    items = _lower_arith_to_microops(items, target_map, use_superinstructions)
+    items = _lower_arith_to_microops(items, target_map, use_superinstructions, call_site_item_of)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.
     if rng is not None:
-        items = _inject_junk_movs(items, rng, target_map)
+        items = _inject_junk_movs(items, rng, target_map, call_site_item_of)
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
     body_ranges = [(instruction["addr"], instruction.get("size", 0)) for instruction in build.body]
+    sizes = {int(instruction["addr"]): int(instruction.get("size", 0)) for instruction in build.body}
+    call_site_items = tuple(
+        (address, address + sizes[address], item_index)
+        for address, item_index in sorted(call_site_item_of.items())
+        if sizes.get(address, 0) > 0
+    )
     return Region(
         [tuple(item) for item in items],
         build.exit_addrs[0],
@@ -667,6 +688,7 @@ def extract_region(
         target_map if target_map is not None else {},
         has_internal_indirect_call,
         stack_argument_copy_bytes,
+        call_site_items,
     )
 
 
@@ -703,6 +725,53 @@ def region_preserves_unwind_contract(region: Region, frame: Any) -> bool:
         ):
             return False
     return True
+
+
+def _landing_pad_call_sites(landing_pad: Any) -> tuple[tuple[int, int], ...] | None:
+    metadata = landing_pad.metadata
+    if not isinstance(metadata, dict):
+        return None
+    sites = (metadata, *metadata.get("call_sites", []))
+    ranges: list[tuple[int, int]] = []
+    for site in sites:
+        if not isinstance(site, dict):
+            return None
+        start = site.get("call_site_start")
+        end = site.get("call_site_end")
+        if not isinstance(start, int) or not isinstance(end, int) or end <= start:
+            return None
+        ranges.append((start, end))
+    return tuple(ranges)
+
+
+def region_supports_unwind_contract(region: Region, frame: Any) -> bool:
+    """Return whether protected call-sites can be remapped into this region."""
+    lsda_address = getattr(frame, "lsda_address", None)
+    landing_pads = getattr(frame, "landing_pads", ())
+    if lsda_address is None and not landing_pads:
+        return True
+    if not landing_pads:
+        return False
+
+    def overlaps(address: int, size: int) -> bool:
+        return any(start < address + size and address < start + length for start, length in region.body_ranges)
+
+    mapped_ranges = tuple((start, end) for start, end, _item_index in region.call_site_items)
+    protected_site_in_region = False
+    for landing_pad in landing_pads:
+        if not isinstance(landing_pad.address, int) or overlaps(landing_pad.address, max(1, landing_pad.size)):
+            return False
+        call_site_ranges = _landing_pad_call_sites(landing_pad)
+        if call_site_ranges is None:
+            return False
+        for start, end in call_site_ranges:
+            if overlaps(start, end - start):
+                protected_site_in_region = True
+                if not any(call_start < end and start < call_end for call_start, call_end in mapped_ranges):
+                    return False
+    return not protected_site_in_region or (
+        getattr(frame, "lsda_template", None) is not None and isinstance(getattr(frame, "personality", None), int)
+    )
 
 
 def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: int | None = None) -> RegionScheme:

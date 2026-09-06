@@ -81,12 +81,12 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
             0x400,
             _VM_METADATA_ADDRESS,
             ((0x20, 0x28, 0x123),),
-            (0xFF, None, 8, bytes((0x01, 0x00))),
+            (0xFF, 0xFF, None, 8, bytes((0x01, 0x00))),
             ((_VM_BLOB_ADDRESS + 0x20, _VM_BLOB_ADDRESS + 0x28, _LANDING_PAD_ADDRESS, 1),),
             _PERSONALITY_ADDRESS,
         )
     )
-    lsda_offset = metadata.rfind(bytes((0xFF, 0xFF, 0x0B)))
+    lsda_offset = metadata.rfind(bytes((0x1B,)))
     frames = ExceptionInfoReader(cast(Binary, _GeneratedUnwindBinary(metadata, lsda_offset))).read_exception_frames()
 
     frame = frames[_VM_BLOB_ADDRESS]

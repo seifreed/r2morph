@@ -80,6 +80,7 @@ class _LsdaContext:
 
 @dataclass(frozen=True)
 class _LsdaHeader:
+    landing_pad_encoding: int
     call_site_start: int
     call_site_end: int
     lp_start: int
@@ -649,6 +650,7 @@ class ExceptionInfoReader:
             frame.function_start,
         )
         return _LsdaHeader(
+            lp_encoding,
             call_site_start,
             call_site_end,
             lp_start,
@@ -685,6 +687,7 @@ class ExceptionInfoReader:
         if len(suffix) > _MAX_LSDA_COPY_BYTES:
             return None
         return LsdaTemplate(
+            header.landing_pad_encoding,
             header.type_encoding,
             header.type_table_offset,
             action_offset,

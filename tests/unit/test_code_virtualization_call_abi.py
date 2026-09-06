@@ -1,11 +1,14 @@
 """Contracts for native-call register bridges in the region VM."""
 
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.core import randomness
+from r2morph.mutations.code_virtualization import _build_unwind_payload
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import (
     _relocate_flags_slot,
     build_region_blob,
     call_unwind_ranges,
+    call_unwind_ranges_with_sites,
 )
 from r2morph.mutations.code_virtualization_region_control_handlers import (
     _GUARD,
@@ -93,3 +96,54 @@ def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
     ranges = call_unwind_ranges(blob, scheme, region) if blob is not None else None
     expect(ranges is not None and len(ranges) == len(scheme.dup["call"]))
     expect(all(start < end and cfa_offset > _GUARD for start, end, cfa_offset in ranges or ()))
+
+
+def test_call_blob_pairs_native_call_site_with_vm_handler_range() -> None:
+    items = [("call", 0x9000), ("exit", 0x2000)]
+    region = Region(
+        items,
+        0x2000,
+        0x1000,
+        {key for item in items if (key := _op_key(item)) is not None},
+        [(0x1000, 5)],
+        call_site_items=((0x1000, 0x1005, 0),),
+    )
+    scheme = build_region_scheme(region, randomness.Random(7))
+    blob = build_region_blob(region, 0x500000, scheme)
+
+    expect(blob is not None)
+    ranges = call_unwind_ranges_with_sites(blob, scheme, region) if blob is not None else None
+    expect(ranges is not None and ranges[0][3:] == (0x1000, 0x1005))
+
+
+def test_unwind_payload_remaps_lsda_call_site_to_vm_range() -> None:
+    items = [("call", 0x9000), ("exit", 0x2000)]
+    region = Region(
+        items,
+        0x2000,
+        0x1000,
+        {key for item in items if (key := _op_key(item)) is not None},
+        [(0x1000, 5)],
+        call_site_items=((0x1000, 0x1005, 0),),
+    )
+    scheme = build_region_scheme(region, randomness.Random(7))
+    blob = build_region_blob(region, 0x500000, scheme)
+    frame = ExceptionFrame(
+        0x1000,
+        0x2000,
+        personality=0x401090,
+        lsda_address=0x3000,
+        lsda_template=LsdaTemplate(0xFF, 0xFF, None, 8, bytes((0x01, 0x00))),
+        landing_pads=[
+            LandingPad(
+                0x1800,
+                8,
+                ExceptionAction.CATCH,
+                metadata={"call_site_start": 0x1000, "call_site_end": 0x1005, "action_index": 1},
+            )
+        ],
+    )
+
+    payload = _build_unwind_payload(blob or b"", scheme, region, frame)
+
+    expect(payload is not None and payload.lsda_call_sites[0][2:] == (0x1800, 1))

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _function_has_unproven_unwind_metadata,
@@ -13,6 +13,7 @@ from r2morph.mutations.code_virtualization_apply import (
 from r2morph.mutations.code_virtualization_region import (
     extract_region,
     region_preserves_unwind_contract,
+    region_supports_unwind_contract,
 )
 from r2morph.mutations.code_virtualization_region_models import Region
 from tests.utils.assertions import expect
@@ -244,6 +245,34 @@ def test_unwind_region_is_rejected_when_protected_call_site_overlaps() -> None:
     region = Region([], 0, 0, set(), [(0x401000, 0x30)])
 
     expect(not region_preserves_unwind_contract(region, frame))
+
+
+def test_unwind_region_supports_remapped_protected_call_site() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401080,
+        personality=0x401090,
+        lsda_address=0x402000,
+        lsda_template=LsdaTemplate(0xFF, 0xFF, None, 8, bytes((0x01, 0x00))),
+        landing_pads=[
+            LandingPad(
+                0x401060,
+                8,
+                ExceptionAction.CATCH,
+                metadata={"call_site_start": 0x401020, "call_site_end": 0x401028, "action_index": 1},
+            )
+        ],
+    )
+    region = Region(
+        [],
+        0,
+        0,
+        set(),
+        [(0x401000, 0x30)],
+        call_site_items=((0x401020, 0x401028, 0),),
+    )
+
+    expect(region_supports_unwind_contract(region, frame))
 
 
 def test_unwind_diagnostic_points_to_call_site() -> None:

@@ -77,6 +77,7 @@ from r2morph.mutations.code_virtualization_region_models import (
     _DWORD_BROADCAST,
     Region,
     RegionScheme,
+    _required_key,
 )
 from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
 
@@ -497,6 +498,51 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
             ):
                 return None
             ranges.append((start - 1, end, stack_guard + stack_depth + 8))
+    return tuple(sorted(ranges))
+
+
+def call_unwind_ranges_with_sites(
+    blob: bytes, scheme: RegionScheme, region: Region
+) -> tuple[tuple[int, int, int, int, int], ...] | None:
+    """Return relocated call ranges paired with their native source ranges."""
+    frame_size = frame_size_for_seed(scheme.junk_seed)
+    stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    call_items = {item_index: (start, end) for start, end, item_index in region.call_site_items}
+    if not call_items:
+        return ()
+
+    picker = random.Random(scheme.junk_seed)
+    opcode_by_item: dict[int, int] = {}
+    for item_index, item in enumerate(region.instructions):
+        key = _required_key(tuple(item))
+        opcode = picker.choice(scheme.dup[key])
+        if item_index in call_items:
+            opcode_by_item[item_index] = opcode
+
+    ranges: list[tuple[int, int, int, int, int]] = []
+    for item_index, (native_start, native_end) in call_items.items():
+        selected_opcode: int | None = opcode_by_item.get(item_index)
+        if selected_opcode is None:
+            return None
+        opcode = selected_opcode
+        handler_key = _required_key(tuple(region.instructions[item_index]))
+        try:
+            stack_depth = int(handler_key.rsplit("_", 1)[1]) if "_" in handler_key else 0
+        except ValueError:
+            return None
+        start_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_START_MAGIC | opcode)
+        end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | opcode)
+        start = blob.find(start_pattern)
+        end = blob.find(end_pattern)
+        if (
+            start < 0
+            or end <= start
+            or blob.find(start_pattern, start + 1) >= 0
+            or blob.find(end_pattern, end + 1) >= 0
+        ):
+            return None
+        ranges.append((start - 1, end, stack_guard + stack_depth + 8, native_start, native_end))
     return tuple(sorted(ranges))
 
 

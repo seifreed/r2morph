@@ -61,9 +61,13 @@ from r2morph.mutations.code_virtualization_region import (
     _trim_trailing_padding,
     build_region_scheme,
     extract_region,
-    region_preserves_unwind_contract,
+    region_supports_unwind_contract,
 )
-from r2morph.mutations.code_virtualization_region_codegen import build_region_blob, call_unwind_ranges
+from r2morph.mutations.code_virtualization_region_codegen import (
+    build_region_blob,
+    call_unwind_ranges,
+    call_unwind_ranges_with_sites,
+)
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     FpIndexedItem,
     FpIndexedNoBaseItem,
@@ -98,7 +102,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
-from r2morph.platform.elf_unwind import build_vm_eh_frame
+from r2morph.platform.elf_unwind import VmEhFrameSpec, build_vm_eh_frame, build_vm_eh_frame_with_lsda
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +125,90 @@ class _UnwindPayload:
 
     frame_size: int | None
     call_ranges: tuple[tuple[int, int, int], ...]
+    lsda_template: tuple[int, int, int | None, int, bytes] | None = None
+    lsda_call_sites: tuple[tuple[int, int, int, int], ...] = ()
+    personality: int | None = None
+
+
+def _remap_lsda_call_sites(
+    frame: Any,
+    site_ranges: tuple[tuple[int, int, int, int, int], ...],
+) -> tuple[tuple[int, int, int | None, int, bytes], tuple[tuple[int, int, int, int], ...], int] | None:
+    """Map protected native call-sites to VM handler ranges and native pads."""
+    template = getattr(frame, "lsda_template", None)
+    personality = getattr(frame, "personality", None)
+    if template is None or not isinstance(personality, int):
+        return None
+    mapped: set[tuple[int, int, int, int]] = set()
+    for landing_pad in getattr(frame, "landing_pads", ()):
+        if not isinstance(landing_pad.address, int):
+            return None
+        metadata = landing_pad.metadata
+        for site in (metadata, *metadata.get("call_sites", [])):
+            if not isinstance(site, dict):
+                return None
+            native_start = site.get("call_site_start")
+            native_end = site.get("call_site_end")
+            action_index = site.get("action_index")
+            if (
+                not isinstance(native_start, int)
+                or not isinstance(native_end, int)
+                or native_end <= native_start
+                or not isinstance(action_index, int)
+                or action_index < 0
+            ):
+                return None
+            for vm_start, vm_end, _cfa, source_start, source_end in site_ranges:
+                if source_start < native_end and native_start < source_end:
+                    mapped.add((vm_start, vm_end, landing_pad.address, action_index))
+    if not mapped:
+        return None
+    return (
+        (
+            template.landing_pad_encoding,
+            template.type_encoding,
+            template.type_table_offset,
+            template.action_table_offset,
+            template.action_and_type_bytes,
+        ),
+        tuple(sorted(mapped)),
+        personality,
+    )
+
+
+def _region_has_protected_call_site(region: Any, frame: Any) -> bool:
+    return any(
+        site["call_site_start"] < call_end and site["call_site_end"] > call_start
+        for landing_pad in getattr(frame, "landing_pads", ())
+        for site in (landing_pad.metadata, *landing_pad.metadata.get("call_sites", []))
+        if isinstance(site, dict)
+        and isinstance(site.get("call_site_start"), int)
+        and isinstance(site.get("call_site_end"), int)
+        for call_start, call_end, _item_index in region.call_site_items
+    )
+
+
+def _build_unwind_payload(
+    blob: bytes,
+    scheme: Any,
+    region: Any,
+    frame: Any,
+) -> _UnwindPayload | None:
+    frame_size = frame_size_for_seed(scheme.junk_seed)
+    if getattr(frame, "lsda_template", None) is None:
+        call_ranges = call_unwind_ranges(blob, scheme, region)
+        return None if call_ranges is None else _UnwindPayload(frame_size, call_ranges)
+    ranges_with_sites = call_unwind_ranges_with_sites(blob, scheme, region)
+    if ranges_with_sites is None:
+        return None
+    call_ranges = tuple(item[:3] for item in ranges_with_sites)
+    lsda_info = _remap_lsda_call_sites(frame, ranges_with_sites)
+    if lsda_info is None:
+        if _region_has_protected_call_site(region, frame):
+            return None
+        return _UnwindPayload(frame_size, call_ranges)
+    template, call_sites, personality = lsda_info
+    return _UnwindPayload(frame_size, call_ranges, template, call_sites, personality)
 
 
 # Minimum instructions in a run worth virtualizing.
@@ -808,35 +896,56 @@ class CodeVirtualizationPass(MutationPass):
         unwind_frame: Any | None = None,
     ) -> tuple[int, bytes, bytes, _UnwindPayload] | None:
         complete_unwind = unwind_frame is not None
-        if complete_unwind and not region_preserves_unwind_contract(region, unwind_frame):
+        if complete_unwind and not region_supports_unwind_contract(region, unwind_frame):
             return None
         blob_vaddr = predict_blob_vaddr(binary, allow_inline=not complete_unwind)
         if blob_vaddr is None:
             return None
         blob = None
         scheme: Any | None = None
-        frame_size: int | None = None
         if use_nesting and self.vm_nesting_depth >= _MIN_NESTING_DEPTH and not complete_unwind:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
         if blob is None:
             scheme = build_region_scheme(region, rng)
             blob = build_region_blob(region, blob_vaddr, scheme)
-            if complete_unwind:
-                frame_size = frame_size_for_seed(scheme.junk_seed)
         if blob is None:
             return None
-        call_ranges: tuple[tuple[int, int, int], ...] = ()
         if complete_unwind:
             if scheme is None:
                 raise RuntimeError("complete unwind payload was built without a region scheme")
-            unwind_ranges = call_unwind_ranges(blob, scheme, region)
-            if unwind_ranges is None:
+            unwind = _build_unwind_payload(blob, scheme, region, unwind_frame)
+            if unwind is None:
                 return None
-            call_ranges = unwind_ranges
+        else:
+            unwind = _UnwindPayload(None, ())
         original_bytes = binary.read_bytes(region.entry_vaddr, _TRAMPOLINE_SIZE)
         if not original_bytes or len(original_bytes) != _TRAMPOLINE_SIZE:
             return None
-        return blob_vaddr, blob, bytes(original_bytes), _UnwindPayload(frame_size, call_ranges)
+        return (
+            blob_vaddr,
+            blob,
+            bytes(original_bytes),
+            unwind,
+        )
+
+    def _build_unwind_metadata(self, blob_vaddr: int, blob: bytes, unwind: _UnwindPayload) -> bytes | None:
+        if unwind.frame_size is None:
+            return None
+        metadata_vaddr = (blob_vaddr + len(blob) + _EH_FRAME_ALIGNMENT - 1) & ~(_EH_FRAME_ALIGNMENT - 1)
+        if unwind.lsda_template is not None:
+            return build_vm_eh_frame_with_lsda(
+                VmEhFrameSpec(
+                    blob_vaddr,
+                    len(blob),
+                    unwind.frame_size,
+                    metadata_vaddr,
+                    unwind.call_ranges,
+                    unwind.lsda_template,
+                    unwind.lsda_call_sites,
+                    unwind.personality,
+                )
+            )
+        return build_vm_eh_frame(blob_vaddr, len(blob), unwind.frame_size, metadata_vaddr, unwind.call_ranges)
 
     def _install_region_payload(
         self,
@@ -847,17 +956,7 @@ class CodeVirtualizationPass(MutationPass):
         unwind: _UnwindPayload,
     ) -> tuple[Any] | None:
         checkpoint = self._create_mutation_checkpoint("virtualize_function")
-        unwind_metadata = (
-            build_vm_eh_frame(
-                blob_vaddr,
-                len(blob),
-                unwind.frame_size,
-                (blob_vaddr + len(blob) + _EH_FRAME_ALIGNMENT - 1) & ~(_EH_FRAME_ALIGNMENT - 1),
-                unwind.call_ranges,
-            )
-            if unwind.frame_size is not None
-            else None
-        )
+        unwind_metadata = self._build_unwind_metadata(blob_vaddr, blob, unwind)
         injected_vaddr = inject_blob(binary, blob, unwind_metadata=unwind_metadata)
         if injected_vaddr is None:
             return None

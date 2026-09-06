@@ -21,6 +21,7 @@ class ExceptionAction(Enum):
 class LsdaTemplate:
     """Action/type-table bytes reusable by a remapped LSDA call-site table."""
 
+    landing_pad_encoding: int
     type_encoding: int
     type_table_offset: int | None
     action_table_offset: int
