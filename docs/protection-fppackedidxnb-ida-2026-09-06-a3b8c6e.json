@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "commit": "a3b8c6ec",
+  "sample": "elf_vm_fppackedidxnb_x86_64",
+  "transformation": {
+    "pass_name": "CodeVirtualization",
+    "functions_virtualized": 1,
+    "unsupported_functions": 0,
+    "partial_virtualization": 0
+  },
+  "runtime": {
+    "status": "not_run_on_macos",
+    "reason": "ELF x86-64 execution requires the Linux target environment"
+  },
+  "tools": {
+    "ida_pro_mcp": {
+      "status": "completed",
+      "original_functions": 1,
+      "protected_functions": 9,
+      "error_analysis_runs": 0
+    },
+    "binary_ninja": {
+      "status": "omitted",
+      "reason": "project decision"
+    }
+  }
+}

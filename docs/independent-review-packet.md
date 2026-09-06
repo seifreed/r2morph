@@ -26,6 +26,7 @@ checks are evidence, not a human approval.
 - [`protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json`](protection-adversarial-corpus-2026-09-05-83e6eee6-triton.json)
 - [`protection-fuzz-2026-09-06-1c84fc56.json`](protection-fuzz-2026-09-06-1c84fc56.json)
 - [`protection-fppackedidxnb-ida-2026-09-06-702450d7.json`](protection-fppackedidxnb-ida-2026-09-06-702450d7.json)
+- [`protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json`](protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json)
 - [`protection-ida-mcp-corpus-2026-09-06-702450d7.json`](protection-ida-mcp-corpus-2026-09-06-702450d7.json)
 - [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json)
 - [`protection-adversarial-corpus-2026-09-06-38bee7f.json`](protection-adversarial-corpus-2026-09-06-38bee7f.json)
@@ -46,6 +47,9 @@ exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
 original instructions semantically supported. Binary Ninja is explicitly
 recorded as omitted by project decision in the same artifact.
 The automated review still reports `human_signoff: not-attested`.
+The current-state IDA MCP rerun for the named regression is recorded in the
+`a3b8c6e` artifact: one original function, nine protected functions, and zero
+analysis errors. Native ELF execution was not attempted on macOS.
 The current CodeVirtualization corpus rerun records 15 explicit Unicorn
 errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
 Triton or angr. The full six-pass rerun remains documented separately with
