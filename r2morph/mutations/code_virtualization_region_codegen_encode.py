@@ -311,8 +311,9 @@ def _item_size(item: tuple[Any, ...]) -> int:
         size = 2 + (8 if op.width == ARCH_BITS_64 else 4) if op.is_immediate else 3
     elif kind in ("cmp", "test"):
         size = (2 + item[4] // 8) if item[3] else 3
-    elif kind in ("tlsload", "tlsstore"):
-        size = 6 if item[3] is None else 7
+    elif kind in ("tlsload", "tlsstore", "tlsopmem", "tlsopmemdst", "tlscmp"):
+        base_index = 3 if kind in ("tlsload", "tlsstore", "tlscmp") else 4
+        size = 6 if item[base_index] is None else 7
     elif kind in _IMMEDIATE_MEMORY_BASE_SIZES:
         width_index = _IMMEDIATE_MEMORY_WIDTH_INDEXES[kind]
         size = _IMMEDIATE_MEMORY_BASE_SIZES[kind] + (8 if item[width_index] == ARCH_BITS_64 else 4)

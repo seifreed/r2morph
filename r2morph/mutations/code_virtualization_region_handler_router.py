@@ -464,9 +464,12 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                         ("incdecmem_", "incdecmemrip_", "incdecmemidx_", "incdecmemidxnb_"),
                         _incdec_memory_handler_asm,
                     ),
-                    (("cmpmem_", "cmpriprel_"), _cmp_memory_handler_asm),
-                    (("opmemdst_", "opmemdstrip_", "opmemdstidx_", "opmemdstidxnb_"), _op_memdst_handler_asm),
-                    (("opmem_", "opriprel_"), _op_memory_handler_asm),
+                    (("cmpmem_", "cmpriprel_", "tlscmp_"), _cmp_memory_handler_asm),
+                    (
+                        ("opmemdst_", "opmemdstrip_", "opmemdstidx_", "opmemdstidxnb_", "tlsopmemdst_"),
+                        _op_memdst_handler_asm,
+                    ),
+                    (("opmem_", "opriprel_", "tlsopmem_"), _op_memory_handler_asm),
                 )
                 if key.startswith(prefixes)
             ),

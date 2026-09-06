@@ -481,23 +481,30 @@ def _cmp_memory_handler_asm(config: MemoryOperationConfig) -> str:
     immediate compare handler; nothing is written back.
     """
     parts = config.handler_key.split("_")
+    tls = parts[0] == "tlscmp"
     riprel = parts[0] == "cmpriprel"
     width = int(parts[-1])
-    body, advance = _mem_address_asm(
-        riprel,
-        config.key,
-        config.key_dword,
-        config.field_perm,
-        config.addr_variant,
-    )
+    if tls:
+        segment, base = parts[1], parts[2]
+        body, advance = _tls_address_asm(base not in ("-1", "None"), config.key, config.key_dword, config.field_perm)
+        memory_address = f"{segment}:[r10]"
+    else:
+        body, advance = _mem_address_asm(
+            riprel,
+            config.key,
+            config.key_dword,
+            config.field_perm,
+            config.addr_variant,
+        )
+        memory_address = "[r10]"
     # a = the register operand, b = the memory operand; compute a - b via MBA.
     if width == _QWORD_WIDTH_BITS:
-        body += "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
+        body += f"  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr {memory_address}\n"
     elif width == _DWORD_WIDTH_BITS:
-        body += "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+        body += f"  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr {memory_address}\n"
     else:
         load = "byte" if width == _BYTE_WIDTH_BITS else "word"
-        body += f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
+        body += f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr {memory_address}\n"
     body += "  mov rbp, rax\n"
     if config.compare_variant == 0:
         body += "  neg rax\n  mov r10, rbx\n" + arith_fold("add", 0, config.arith_variant)
@@ -522,9 +529,14 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
     is a, the register is b, and the flags are synthesized (no literal op, no pushfq).
     """
     parts = config.handler_key.split("_")
+    tls = parts[0] == "tlsopmemdst"
     riprel = parts[0] == "opmemdstrip"
-    mnemonic, width = parts[1], int(parts[2])
-    if parts[0] in ("opmemdstidx", "opmemdstidxnb"):
+    if tls:
+        mnemonic, segment, base, width = parts[1], parts[2], parts[3], int(parts[4])
+        body, advance = _tls_address_asm(base not in ("-1", "None"), config.key, config.key_dword, config.field_perm)
+        memory_address = f"{segment}:[r12]"
+    elif parts[0] in ("opmemdstidx", "opmemdstidxnb"):
+        mnemonic, width = parts[1], int(parts[2])
         address_builder = _indexed_address_nobase_asm if parts[0].endswith("nb") else _indexed_address_asm
         body, advance = address_builder(
             config.key,
@@ -532,7 +544,9 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
             config.field_perm,
             config.addr_variant,
         )
+        memory_address = "[r12]"
     else:
+        mnemonic, width = parts[1], int(parts[2])
         body, advance = _mem_address_asm(
             riprel,
             config.key,
@@ -540,16 +554,17 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
             config.field_perm,
             config.addr_variant,
         )
+        memory_address = "[r12]"
     body += "  mov r12, r10\n"
     if mnemonic in ("adc", "sbb"):
-        return body + _op_memdst_carry_tail(mnemonic, width, advance)
+        return body + _op_memdst_carry_tail(mnemonic, width, advance, memory_address)
     if width == _QWORD_WIDTH_BITS:
-        body += "  mov rbx, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
+        body += f"  mov rbx, qword ptr {memory_address}\n  mov rax, qword ptr [rsp+r8*8]\n"
     elif width == _DWORD_WIDTH_BITS:
-        body += "  mov ebx, dword ptr [r12]\n  mov eax, dword ptr [rsp+r8*8]\n"
+        body += f"  mov ebx, dword ptr {memory_address}\n  mov eax, dword ptr [rsp+r8*8]\n"
     else:
         load = "byte" if width == _BYTE_WIDTH_BITS else "word"
-        body += f"  movzx ebx, {load} ptr [r12]\n  movzx eax, {load} ptr [rsp+r8*8]\n"
+        body += f"  movzx ebx, {load} ptr {memory_address}\n  movzx eax, {load} ptr [rsp+r8*8]\n"
     body += "  mov rbp, rax\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
@@ -566,7 +581,7 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
         config.flag_variant,
     )
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
-    body += _memory_result_store_asm(width, "[r12]")
+    body += _memory_result_store_asm(width, memory_address)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -700,6 +715,7 @@ def _op_mem_synth_tail(
     width: int,
     advance: int,
     config: MemoryOperationConfig,
+    memory_address: str = "[r10]",
 ) -> str:
     """Tail shared by ``<op> reg, [mem]`` handlers: with the effective address in
     r10 and the register slot index in r8, compute ``reg <op> [mem]`` with the MBA
@@ -709,14 +725,14 @@ def _op_mem_synth_tail(
     out a literal native op or a pushfq.
     """
     if mnemonic in ("adc", "sbb"):
-        return _op_mem_carry_tail(mnemonic, width, advance)
+        return _op_mem_carry_tail(mnemonic, width, advance, memory_address)
     if width == _QWORD_WIDTH_BITS:
-        body = "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
+        body = f"  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr {memory_address}\n"
     elif width == _DWORD_WIDTH_BITS:
-        body = "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+        body = f"  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr {memory_address}\n"
     else:
         load = "byte" if width == _BYTE_WIDTH_BITS else "word"
-        body = f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
+        body = f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr {memory_address}\n"
     body += "  mov rbp, rax\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
@@ -737,19 +753,19 @@ def _op_mem_synth_tail(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_mem_carry_tail(mnemonic: str, width: int, advance: int) -> str:
+def _op_mem_carry_tail(mnemonic: str, width: int, advance: int, memory_address: str = "[r10]") -> str:
     """Run memory-source ``adc``/``sbb`` against the virtual incoming CF."""
     if width == _QWORD_WIDTH_BITS:
-        body = "  mov r11, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
+        body = f"  mov r11, qword ptr [rsp+r8*8]\n  mov rax, qword ptr {memory_address}\n"
         operation = f"  {mnemonic} r11, rax\n"
     elif width == _DWORD_WIDTH_BITS:
-        body = "  mov r11d, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+        body = f"  mov r11d, dword ptr [rsp+r8*8]\n  mov eax, dword ptr {memory_address}\n"
         operation = f"  {mnemonic} r11d, eax\n"
     else:
         load = "byte" if width == _BYTE_WIDTH_BITS else "word"
         register = "r11b" if width == _BYTE_WIDTH_BITS else "r11w"
         source = "al" if width == _BYTE_WIDTH_BITS else "ax"
-        body = f"  movzx r11d, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
+        body = f"  movzx r11d, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr {memory_address}\n"
         operation = f"  {mnemonic} {register}, {source}\n"
     body += _restore_virtual_flags_asm() + operation
     body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
@@ -757,19 +773,19 @@ def _op_mem_carry_tail(mnemonic: str, width: int, advance: int) -> str:
     return body + _partial_result_store_asm(width) + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_memdst_carry_tail(mnemonic: str, width: int, advance: int) -> str:
+def _op_memdst_carry_tail(mnemonic: str, width: int, advance: int, memory_address: str = "[r12]") -> str:
     """Run memory-destination ``adc``/``sbb`` against the virtual incoming CF."""
     if width == _QWORD_WIDTH_BITS:
-        body = "  mov r11, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
+        body = f"  mov r11, qword ptr {memory_address}\n  mov rax, qword ptr [rsp+r8*8]\n"
         operation = f"  {mnemonic} r11, rax\n"
     elif width == _DWORD_WIDTH_BITS:
-        body = "  mov r11d, dword ptr [r12]\n  mov eax, dword ptr [rsp+r8*8]\n"
+        body = f"  mov r11d, dword ptr {memory_address}\n  mov eax, dword ptr [rsp+r8*8]\n"
         operation = f"  {mnemonic} r11d, eax\n"
     else:
         load = "byte" if width == _BYTE_WIDTH_BITS else "word"
         register = "r11b" if width == _BYTE_WIDTH_BITS else "r11w"
         source = "al" if width == _BYTE_WIDTH_BITS else "ax"
-        body = f"  movzx r11d, {load} ptr [r12]\n  movzx eax, {load} ptr [rsp+r8*8]\n"
+        body = f"  movzx r11d, {load} ptr {memory_address}\n  movzx eax, {load} ptr [rsp+r8*8]\n"
         operation = f"  {mnemonic} {register}, {source}\n"
     body += _restore_virtual_flags_asm() + operation
     body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
@@ -817,13 +833,20 @@ def _op_memory_handler_asm(config: MemoryOperationConfig) -> str:
     flags are synthesized.
     """
     parts = config.handler_key.split("_")
+    tls = parts[0] == "tlsopmem"
     riprel = parts[0] == "opriprel"
-    mnemonic, width = parts[1], int(parts[2])
-    body, advance = _mem_address_asm(
-        riprel,
-        config.key,
-        config.key_dword,
-        config.field_perm,
-        config.addr_variant,
-    )
-    return body + _op_mem_synth_tail(mnemonic, width, advance, config)
+    if tls:
+        mnemonic, segment, base, width = parts[1], parts[2], parts[3], int(parts[4])
+        body, advance = _tls_address_asm(base not in ("-1", "None"), config.key, config.key_dword, config.field_perm)
+        memory_address = f"{segment}:[r10]"
+    else:
+        mnemonic, width = parts[1], int(parts[2])
+        body, advance = _mem_address_asm(
+            riprel,
+            config.key,
+            config.key_dword,
+            config.field_perm,
+            config.addr_variant,
+        )
+        memory_address = "[r10]"
+    return body + _op_mem_synth_tail(mnemonic, width, advance, config, memory_address)

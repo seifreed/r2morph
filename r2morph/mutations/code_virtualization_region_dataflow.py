@@ -34,7 +34,18 @@ _DIRECT_WRITE_KINDS = frozenset(
     }
 )
 _THIRD_FIELD_WRITE_KINDS = frozenset(
-    {"shift", "shiftreg", "opmem", "opriprel", "opmemidx", "opmemidxnb", "incdec", "setcc", "cmov"}
+    {
+        "shift",
+        "shiftreg",
+        "opmem",
+        "opriprel",
+        "opmemidx",
+        "opmemidxnb",
+        "tlsopmem",
+        "incdec",
+        "setcc",
+        "cmov",
+    }
 )
 _FIFTH_FIELD_WRITE_KINDS = frozenset({"movx", "movxidx", "movxidxnb", "movxreg"})
 _SPECIAL_WRITES = {

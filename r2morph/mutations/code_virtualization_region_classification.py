@@ -116,6 +116,8 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_memdst,
     _decode_op_memdst_indexed,
     _decode_riprel_mov,
+    _decode_tls_binary_memory,
+    _decode_tls_compare_memory,
     _decode_tls_memory_mov,
     _decode_xchg_memory,
     _explicit_memory_width,
@@ -254,24 +256,30 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
 
 
 def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any] | None:
+    result: list[Any] | None = None
     if kind in ("adc", "sbb"):
         carry_op = _decode_two_operand(text, kind)
         if carry_op is not None:
             slot, value, is_immediate, width = carry_op
-            return ["op", VirtualizedOp(kind, slot, value, is_immediate, width)]
-    if kind in ("add", "sub"):
+            result = ["op", VirtualizedOp(kind, slot, value, is_immediate, width)]
+    if result is None and kind in ("add", "sub"):
         incdec_memory = _decode_incdec_memory(text, address, size)
         if incdec_memory is not None:
-            return [*incdec_memory]
-    op = decode_instruction(text)
-    if op is not None:
-        return ["op", op]
-    if kind in ("add", "sub"):
+            result = [*incdec_memory]
+    if result is None:
+        op = decode_instruction(text)
+        if op is not None:
+            result = ["op", op]
+    if result is None and kind in ("add", "sub"):
         rsp_arith = _decode_rsp_arith(text)
         if rsp_arith is not None:
-            return [*rsp_arith]
-    if kind == "mov":
-        return _first_item(
+            result = [*rsp_arith]
+    if result is None and kind in ("add", "sub", "xor", "and", "or"):
+        tls_memory = _decode_tls_binary_memory(text, kind)
+        if tls_memory is not None:
+            result = [*tls_memory]
+    if result is None and kind == "mov":
+        result = _first_item(
             (
                 lambda: _decode_tls_memory_mov(text),
                 lambda: _decode_mov_from_rsp(text),
@@ -283,15 +291,17 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
                 lambda: _decode_movx(text),
             )
         )
-    return _first_item(
-        (
-            lambda: _decode_incdec(text),
-            lambda: _decode_op_mem(text, kind, address, size),
-            lambda: _decode_op_memdst(text, kind, address, size),
-            lambda: _decode_op_memdst_indexed(text, kind),
-            lambda: _decode_op_mem_indexed(text, kind),
+    elif result is None:
+        result = _first_item(
+            (
+                lambda: _decode_incdec(text),
+                lambda: _decode_op_mem(text, kind, address, size),
+                lambda: _decode_op_memdst(text, kind, address, size),
+                lambda: _decode_op_memdst_indexed(text, kind),
+                lambda: _decode_op_mem_indexed(text, kind),
+            )
         )
-    )
+    return result
 
 
 def _decode_incdec_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
@@ -325,6 +335,7 @@ def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
         return ["cmp", *compare]
     return _first_item(
         (
+            lambda: _decode_tls_compare_memory(text),
             lambda: _decode_bt(text, address, size),
             lambda: _decode_cmp_mem(text, address, size),
             lambda: _decode_cmp_memory_immediate(text, address, size),

@@ -85,6 +85,8 @@ class RegionEncoderMemoryMixin:
             self._emit_not_memory(item)
         elif kind in ("tlsload", "tlsstore", "tlsloadidx", "tlsloadidxnb", "tlsstoreidx", "tlsstoreidxnb"):
             self._emit_tls_memory(item)
+        elif kind in ("tlsopmem", "tlsopmemdst", "tlscmp"):
+            self._emit_tls_arithmetic(item)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg, target, _width = item
             self._gp_rip(item, reg, target)
@@ -203,6 +205,14 @@ class RegionEncoderMemoryMixin:
             self._emit_tls_indexed(item)
             return
         _, reg, _segment, base, disp, _width = item
+        self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
+
+    def _emit_tls_arithmetic(self: Any, item: RegionItem) -> None:
+        kind = item[0]
+        if kind == "tlscmp":
+            _, reg, _segment, base, disp, _width = item
+        else:
+            _, _mnemonic, reg, _segment, base, disp, _width = item
         self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
 
     def _emit_atomic_memory(self: Any, item: RegionItem) -> None:

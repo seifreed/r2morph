@@ -108,6 +108,46 @@ def _decode_tls_memory_mov(text: str) -> tuple[Any, ...] | None:
     return kind, register_slot, segment, base_slot, displacement, register_width
 
 
+def _decode_tls_binary_memory(text: str, mnemonic: str) -> tuple[Any, ...] | None:
+    """Decode register/TLS read-modify-write arithmetic with a direct address."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != mnemonic or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_tls, right_tls = _parse_tls_operand(left), _parse_tls_operand(right)
+    if left_tls is not None and right_tls is None:
+        memory, register_text, kind = left_tls, right, "tlsopmemdst"
+    elif right_tls is not None and left_tls is None:
+        memory, register_text, kind = right_tls, left, "tlsopmem"
+    else:
+        return None
+    register = _memory_register_operand(register_text.lower())
+    if register is None:
+        return None
+    segment, base_slot, displacement, memory_width = memory
+    register_slot, register_width = register
+    if memory_width is not None and memory_width != register_width:
+        return None
+    return kind, mnemonic, register_slot, segment, base_slot, displacement, register_width
+
+
+def _decode_tls_compare_memory(text: str) -> tuple[Any, ...] | None:
+    """Decode ``cmp reg, fs/gs:[base+disp]``."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "cmp" or "," not in parts[1]:
+        return None
+    register_text, memory_text = (token.strip() for token in parts[1].split(",", 1))
+    memory = _parse_tls_operand(memory_text)
+    register = _memory_register_operand(register_text.lower())
+    if memory is None or register is None:
+        return None
+    segment, base_slot, displacement, memory_width = memory
+    register_slot, register_width = register
+    if memory_width is not None and memory_width != register_width:
+        return None
+    return "tlscmp", register_slot, segment, base_slot, displacement, register_width
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 
