@@ -287,7 +287,9 @@ def _function_has_unproven_unwind_metadata(
         # A linked ELF may carry .eh_frame entries for startup/runtime code
         # while a target function intentionally has no unwind contract.
         return unwind_section != ".eh_frame"
-    return function_contains_call
+    if not function_contains_call:
+        return False
+    return frame.lsda_address is not None or bool(frame.landing_pads)
 
 
 def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:

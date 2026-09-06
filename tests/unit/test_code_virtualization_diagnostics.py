@@ -197,6 +197,12 @@ def test_call_bearing_landing_pad_frame_fails_closed_without_lsda_remap() -> Non
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, {0x401000: frame}, True))
 
 
+def test_call_bearing_frame_without_lsda_is_safe_for_vm_unwinding() -> None:
+    frame = ExceptionFrame(function_start=0x401000, function_end=0x401050)
+
+    expect(not _function_has_unproven_unwind_metadata(".eh_frame", 0x401000, {0x401000: frame}, True))
+
+
 def test_unwind_frame_lookup_accepts_function_address_inside_frame_range() -> None:
     frame = ExceptionFrame(function_start=0x401000, function_end=0x401050)
 
