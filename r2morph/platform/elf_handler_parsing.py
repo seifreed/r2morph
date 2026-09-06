@@ -26,7 +26,7 @@ def parse_elf_header(binary_path: Path) -> tuple[dict[str, Any] | None, bool | N
         with open(binary_path, "rb") as f:
             e_ident = f.read(_ELF_IDENT_SIZE_BYTES)
             if len(e_ident) < _ELF_IDENT_SIZE_BYTES or e_ident[:4] != ELF_MAGIC:
-                logger.error("Invalid ELF magic number")
+                logger.debug("Input does not contain an ELF header")
                 return None, None, None
 
             is_64bit = e_ident[4] == ELFCLASS64
@@ -38,7 +38,7 @@ def parse_elf_header(binary_path: Path) -> tuple[dict[str, Any] | None, bool | N
 
             data = f.read(struct.calcsize(fmt))
             if len(data) < struct.calcsize(fmt):
-                logger.error("Truncated ELF header")
+                logger.debug("Input contains a truncated ELF header")
                 return None, is_64bit, is_little_endian
 
             header = _build_elf_header_dict(
