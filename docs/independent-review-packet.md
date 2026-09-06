@@ -82,6 +82,10 @@ omitted by project decision. Human signoff remains `not-attested`.
 The pushed CI workflow `34063047247` completed successfully across its Linux,
 macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
 lint, integration, and property/fuzz validation.
+The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
+10 declared capability categories, with no unclassified fixtures; the
+repository contains 65 focused virtualization integration modules. This is
+coverage evidence, not a claim of universal ISA support.
 
 ## Reproduction
 
