@@ -132,6 +132,17 @@ at `2e4ad8e` ran 20,000 cases per target, 80,000 target runs in total, with
 zero failures. Its bounded report is
 [`protection-fuzz-2026-09-05-2e4ad8e.json`](protection-fuzz-2026-09-05-2e4ad8e.json).
 
+The authoritative current CodeVirtualization rerun at `dbf77c59` repeats all
+159 repository fixtures with the dedicated Python 3.13 virtualenv containing
+`triton-library 1.0.0rc4`. It records 159/159 applications, 171 virtualized
+functions, zero unsupported functions, and zero transformation errors. Triton
+and angr complete every original/protected pair. The 15 tool errors are
+isolated to Unicorn AVX/VEX emulation, and the 318 unavailable rows are the
+local IDA/Ghidra executables. Binary Ninja is intentionally omitted. The raw
+report is
+[`protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json`](protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json)
+(`SHA-256 22410aa82448504a28964b9fa9e436a6014c8d2545f9adf9653f9c9a39ceecea`).
+
 The preceding Linux Triton rerun at `d0e63026` used the same package and
 completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
