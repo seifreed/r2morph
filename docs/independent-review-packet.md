@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `49e74b7`
-- Production evidence baseline: `49e74b7`.
+- Commit: `64471961`
+- Production evidence baseline: `64471961`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -79,7 +79,7 @@ functions, zero unsupported or partial virtualizations, 939 completed analyzer
 runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
 rows. Angr and Triton complete every original/protected pair. Binary Ninja is
 omitted by project decision. Human signoff remains `not-attested`.
-The pushed CI workflow `34063047247` completed successfully across its Linux,
+The pushed CI workflow `34065194410` completed successfully across its Linux,
 macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
 lint, integration, and property/fuzz validation.
 The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
@@ -126,7 +126,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 49e74b7
+Reviewed commit: 64471961
 ```
 
 No approval is implied until a human reviewer fills this section outside the
