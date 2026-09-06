@@ -442,7 +442,7 @@ class CodeVirtualizationPass(MutationPass):
           second, independently-keyed inner VM (default: 2, nested when a
           peelable register-op run exists, single-layer otherwise)
         - reject_partial_virtualization: Reject a function when only a
-          straight-line region can be proven (default: False)
+          straight-line region can be proven (default: True)
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -450,7 +450,7 @@ class CodeVirtualizationPass(MutationPass):
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 5)
         self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
-        self.reject_partial_virtualization = self.config.get("reject_partial_virtualization", False)
+        self.reject_partial_virtualization = self.config.get("reject_partial_virtualization", True)
         # Dispatch-shaped functions are inferred automatically; an explicit False
         # remains available for debugging and regression reproduction.
         self.virtualize_dispatch = self.config.get("virtualize_dispatch", True)

@@ -56,6 +56,14 @@ class _PaddedTerminalSyscallBinary:
     r2 = _Disassembler()
 
 
+def test_partial_virtualization_is_rejected_by_default() -> None:
+    expect(CodeVirtualizationPass(config={}).reject_partial_virtualization)
+
+
+def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> None:
+    expect(not CodeVirtualizationPass(config={"reject_partial_virtualization": False}).reject_partial_virtualization)
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
