@@ -1,0 +1,43 @@
+{
+  "commit": "702450d7",
+  "measurement": "fppackedidxnb-regression-tool-benchmark",
+  "sample": "elf_vm_fppackedidxnb_x86_64",
+  "transformation": {
+    "pass": "CodeVirtualization",
+    "functions_virtualized": 1,
+    "unsupported_functions": 0,
+    "partial_virtualization": 0
+  },
+  "runtime": {
+    "original_exit_code": 6,
+    "protected_exit_code": 6
+  },
+  "tools": {
+    "ida": {
+      "status": "completed",
+      "original_functions": 1,
+      "protected_functions": 2,
+      "errors": 0
+    },
+    "angr": {
+      "status": "completed",
+      "original_functions": 2,
+      "protected_functions": 71
+    },
+    "triton": {
+      "status": "completed",
+      "original_decoded_instructions": 8,
+      "original_semantically_supported_instructions": 8,
+      "original_invalid_bytes": 0,
+      "protected_decoded_instructions": 7463,
+      "protected_semantically_supported_instructions": 7443,
+      "protected_invalid_bytes": 46,
+      "instruction_budget_exhausted": false
+    },
+    "binary_ninja": {
+      "status": "omitted",
+      "reason": "project decision"
+    }
+  },
+  "schema_version": 1
+}

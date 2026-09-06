@@ -143,6 +143,13 @@ report is
 [`protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json`](protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json)
 (`SHA-256 22410aa82448504a28964b9fa9e436a6014c8d2545f9adf9653f9c9a39ceecea`).
 
+The focused IDA validation at `702450d7` covers the corrected
+`elf_vm_fppackedidxnb_x86_64` regression. Original and protected execution
+both return 6; IDA completes with 1 and 2 recovered functions respectively,
+with zero errors. Angr and Triton also complete both binaries. The bounded
+record is [`protection-fppackedidxnb-ida-2026-09-06-702450d7.json`](protection-fppackedidxnb-ida-2026-09-06-702450d7.json).
+Binary Ninja remains intentionally omitted.
+
 The preceding Linux Triton rerun at `d0e63026` used the same package and
 completed the same 954 Triton pair records; its raw report remains
 [`protection-adversarial-corpus-2026-09-04-triton.json`](protection-adversarial-corpus-2026-09-04-triton.json)
