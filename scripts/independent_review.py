@@ -29,6 +29,7 @@ _EXPECTED_BENCHMARK_TOOLS = {
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-bc2bff2.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-05-7c3d4f32.json"
+_CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-06-cf44477.json"
 
 
@@ -180,6 +181,35 @@ def _review_ida_corpus(root: Path) -> dict[str, object]:
     return _check("ida_corpus_evidence", passed, f"{sample_count} samples, {runs.get('total', 0)} completed analyses")
 
 
+def _review_fp_regression(root: Path) -> dict[str, object]:
+    """Validate the current-state evidence for the packed-index regression."""
+    path = root / "docs" / _CURRENT_FP_REGRESSION_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    transformation = document.get("transformation", {})
+    ida = document.get("tools", {}).get("ida_pro_mcp", {})
+    binary_ninja = document.get("tools", {}).get("binary_ninja", {})
+    passed = (
+        document.get("sample") == "elf_vm_fppackedidxnb_x86_64"
+        and transformation
+        == {
+            "pass_name": "CodeVirtualization",
+            "functions_virtualized": 1,
+            "unsupported_functions": 0,
+            "partial_virtualization": 0,
+        }
+        and document.get("runtime", {}).get("status") == "not_run_on_macos"
+        and ida
+        == {
+            "status": "completed",
+            "original_functions": 1,
+            "protected_functions": 9,
+            "error_analysis_runs": 0,
+        }
+        and binary_ninja.get("status") == "omitted"
+    )
+    return _check("fppackedidxnb_regression_evidence", passed, "1 function virtualized, 0 unsupported or partial")
+
+
 def _review_fuzz_artifact(root: Path) -> dict[str, object]:
     """Validate the bounded campaign recorded for all four fuzz targets."""
     path = root / "docs" / _CURRENT_FUZZ_REPORT
@@ -223,6 +253,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
         _review_ida_corpus(root),
+        _review_fp_regression(root),
         _review_fixtures(root),
         _review_fuzz_artifact(root),
         _check("independent_fuzz_recheck", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"),
