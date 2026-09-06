@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `bc2bff28`
+- Commit: `2a23f0b8`
 - Production evidence baseline: `bc2bff28`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -48,12 +48,11 @@ its explicit unavailable-tool rows.
 Binary Ninja remains excluded by project decision.
 The `bc2bff2` rerun was performed after making partial virtualization fail
 closed by default; the explicit `reject_partial_virtualization=False` override
-is retained only for regression reproduction. The pushed CI workflow for the
-previous code baseline `34017528056` completed successfully across all 16
-jobs; the current documentation/code push has a new workflow pending. The
-local Python 3.13 run completed 5529 tests with 123 expected skips and 81.14%
-coverage before this default-policy change. CI state is not used as human
-approval.
+is retained only for regression reproduction. The pushed CI workflow
+`34020383289` for commit `2a23f0b8` completed successfully across the full
+matrix. The local Python 3.13 run completed 5531 tests with 123 expected skips
+and 81.01% coverage after this default-policy change. CI state is not used as
+human approval.
 
 ## Reproduction
 
@@ -94,7 +93,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: bc2bff28
+Reviewed commit: 2a23f0b8
 ```
 
 No approval is implied until a human reviewer fills this section outside the
