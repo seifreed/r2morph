@@ -99,11 +99,24 @@ def _transform_unsupported_function(
     pass_instance: Any,
     binary: Any,
     func: dict[str, Any],
-    unsupported_instruction: dict[str, Any] | None,
+    instruction_context: tuple[dict[str, Any] | None, Any | None],
     records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
 ) -> dict[str, Any]:
     """Handle a function rejected by the whole-function classifier."""
+    unsupported_instruction, unwind_frame = instruction_context
     unsupported, partial = records
+    if unwind_frame is not None:
+        pass_instance._record_diagnostic(
+            unsupported,
+            func,
+            unsupported_instruction,
+            (
+                "error",
+                "exceptions_and_unwinding",
+                "partial virtualization has no unwind metadata for the injected VM run",
+            ),
+        )
+        return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
     if pass_instance.reject_partial_virtualization:
         pass_instance._record_unsupported_function(
             unsupported,
@@ -183,7 +196,13 @@ def _transform_function(
         return _transform_dispatch_function(pass_instance, binary, func, unsupported, unwind.frame)
     unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
     if unsupported_instruction is not None:
-        return _transform_unsupported_function(pass_instance, binary, func, unsupported_instruction, records)
+        return _transform_unsupported_function(
+            pass_instance,
+            binary,
+            func,
+            (unsupported_instruction, unwind.frame),
+            records,
+        )
 
     region_result = pass_instance._virtualize_function(binary, func, unwind.frame)
     if region_result is None:

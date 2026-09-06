@@ -6,6 +6,7 @@ from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, L
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _function_has_unproven_unwind_metadata,
+    _transform_unsupported_function,
     _unwind_blocking_instruction,
     _unwind_metadata_name,
 )
@@ -57,6 +58,33 @@ class _PaddedTerminalSyscallBinary:
             }
 
     r2 = _Disassembler()
+
+
+class _RecordingPass:
+    reject_partial_virtualization = False
+
+    def __init__(self) -> None:
+        self.diagnostics: list[dict[str, Any]] = []
+
+    def _record_diagnostic(
+        self,
+        records: list[dict[str, Any]],
+        _func: dict[str, Any],
+        _instruction: dict[str, Any] | None,
+        diagnostic: tuple[str, str, str],
+    ) -> None:
+        record = {"severity": diagnostic[0], "capability": diagnostic[1], "reason": diagnostic[2]}
+        records.append(record)
+        self.diagnostics.append(record)
+
+    def _record_unsupported_function(
+        self,
+        _records: list[dict[str, Any]],
+        _func: dict[str, Any],
+        _instruction: dict[str, Any] | None,
+        _reason_prefix: str = "",
+    ) -> None:
+        raise AssertionError("unwind-aware fallback must not use the legacy partial path")
 
 
 def test_partial_virtualization_is_rejected_by_default() -> None:
@@ -154,6 +182,26 @@ def test_unmapped_ordinary_eh_frame_is_not_an_unwind_failure() -> None:
 
 def test_unavailable_unwind_frames_fail_closed() -> None:
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
+
+
+def test_partial_virtualization_with_unwind_frame_is_rejected() -> None:
+    pass_instance = _RecordingPass()
+    records: tuple[list[dict[str, Any]], list[dict[str, Any]]] = ([], [])
+    outcome = _transform_unsupported_function(
+        pass_instance,
+        None,
+        {"addr": 0x401000},
+        ({"addr": 0x401010}, ExceptionFrame(function_start=0x401000, function_end=0x401050)),
+        records,
+    )
+
+    expect(
+        outcome["skipped"] == 1
+        and outcome["unsupported"] == 1
+        and records[0][0]["capability"] == "exceptions_and_unwinding"
+        and pass_instance.diagnostics[0]["reason"]
+        == "partial virtualization has no unwind metadata for the injected VM run"
+    )
 
 
 def test_unwind_diagnostic_points_to_call_site() -> None:
