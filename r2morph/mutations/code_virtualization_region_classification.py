@@ -130,6 +130,18 @@ _INSTRUCTION_PART_COUNT = 2
 
 _DIRECT_REGISTER_CALL_PART_COUNT = 2
 _MAX_RET_CLEANUP = 0xFFFF
+_IDENTITY_ITEMS = {
+    "endbr32": "nop",
+    "endbr64": "nop",
+    "rdtsc": "rdtsc",
+    "vzeroupper": "vzeroupper",
+    "vzeroall": "vzeroall",
+    "lahf": "lahf",
+    "sahf": "sahf",
+    "clc": "clc",
+    "stc": "stc",
+    "cmc": "cmc",
+}
 
 
 def _decode_ret_cleanup(text: str) -> int | None:
@@ -457,14 +469,9 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     text = insn.get("opcode", "")
     if kind == "syscall":
         return ["syscall"]
-    if text.strip().lower() == "rdtsc":
-        return ["rdtsc"]
-    if text.strip().lower() == "vzeroupper":
-        return ["vzeroupper"]
-    if text.strip().lower() == "vzeroall":
-        return ["vzeroall"]
-    if text.strip().lower() in ("lahf", "sahf", "clc", "stc", "cmc"):
-        return [text.strip().lower()]
+    identity_item = _IDENTITY_ITEMS.get(text.strip().lower())
+    if identity_item is not None:
+        return [identity_item]
     address = insn.get("addr", 0)
     size = insn.get("size", 0)
     result = _first_item(
