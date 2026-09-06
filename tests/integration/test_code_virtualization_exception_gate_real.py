@@ -13,6 +13,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 EXPECTED_EXIT_CODE = 42
+FIXTURE_SEED = 20260827
 
 
 def test_code_virtualization_rejects_lsda_function_without_mutation(tmp_path: Path) -> None:
@@ -53,7 +54,12 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         )
         original_protected_bytes = binary.read_bytes(protected_address, 8)
         stats = CodeVirtualizationPass(
-            config={"probability": 1.0, "max_functions": 1000, "reject_partial_virtualization": False}
+            config={
+                "probability": 1.0,
+                "max_functions": 1000,
+                "reject_partial_virtualization": False,
+                "seed": FIXTURE_SEED,
+            }
         ).apply(binary)
         protected_was_transformed = binary.read_bytes(protected_address, 8) != original_protected_bytes
 
@@ -109,7 +115,12 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
             if "safe_arithmetic" in function.get("name", "")
         )
         stats = CodeVirtualizationPass(
-            config={"probability": 1.0, "max_functions": 20, "reject_partial_virtualization": False}
+            config={
+                "probability": 1.0,
+                "max_functions": 20,
+                "reject_partial_virtualization": False,
+                "seed": FIXTURE_SEED,
+            }
         ).apply(binary)
 
     degraded_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
@@ -139,7 +150,9 @@ int main() { return caller(20) == 41 ? 42 : 1; }
             int(function["addr"]) for function in binary.get_functions() if "caller" in function.get("name", "")
         )
         original_bytes = binary.read_bytes(caller_address, 8)
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000, "seed": FIXTURE_SEED}).apply(
+            binary
+        )
         caller_transformed = binary.read_bytes(caller_address, 8) != original_bytes
 
     runtime_result = run_command([executable], timeout=30)
@@ -201,7 +214,9 @@ int main() { return caller(); }
             int(function["addr"]) for function in binary.get_functions() if "boundary" in function.get("name", "")
         )
         original_boundary_bytes = binary.read_bytes(boundary_address, 8)
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000, "seed": FIXTURE_SEED}).apply(
+            binary
+        )
         boundary_was_transformed = binary.read_bytes(boundary_address, 8) != original_boundary_bytes
 
     runtime_result = run_command([executable], timeout=30)
