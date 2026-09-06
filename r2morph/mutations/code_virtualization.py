@@ -62,7 +62,7 @@ from r2morph.mutations.code_virtualization_region import (
     build_region_scheme,
     extract_region,
 )
-from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
+from r2morph.mutations.code_virtualization_region_codegen import build_region_blob, call_unwind_ranges
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     FpIndexedItem,
     FpIndexedNoBaseItem,
@@ -112,6 +112,15 @@ _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _MIN_NESTING_DEPTH = 2
+
+
+@dataclass(frozen=True, slots=True)
+class _UnwindPayload:
+    """Unwind data paired with an injected VM blob."""
+
+    frame_size: int | None
+    call_ranges: tuple[tuple[int, int, int], ...]
+
 
 # Minimum instructions in a run worth virtualizing.
 _MIN_RUN_LENGTH = 2
@@ -795,12 +804,13 @@ class CodeVirtualizationPass(MutationPass):
         rng: random.Random,
         use_nesting: bool,
         unwind_frame: Any | None = None,
-    ) -> tuple[int, bytes, bytes, int | None] | None:
+    ) -> tuple[int, bytes, bytes, _UnwindPayload] | None:
         complete_unwind = unwind_frame is not None
         blob_vaddr = predict_blob_vaddr(binary, allow_inline=not complete_unwind)
         if blob_vaddr is None:
             return None
         blob = None
+        scheme: Any | None = None
         frame_size: int | None = None
         if use_nesting and self.vm_nesting_depth >= _MIN_NESTING_DEPTH and not complete_unwind:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
@@ -811,18 +821,37 @@ class CodeVirtualizationPass(MutationPass):
                 frame_size = frame_size_for_seed(scheme.junk_seed)
         if blob is None:
             return None
+        call_ranges: tuple[tuple[int, int, int], ...] = ()
+        if complete_unwind:
+            if scheme is None:
+                raise RuntimeError("complete unwind payload was built without a region scheme")
+            unwind_ranges = call_unwind_ranges(blob, scheme, region)
+            if unwind_ranges is None:
+                return None
+            call_ranges = unwind_ranges
         original_bytes = binary.read_bytes(region.entry_vaddr, _TRAMPOLINE_SIZE)
         if not original_bytes or len(original_bytes) != _TRAMPOLINE_SIZE:
             return None
-        return blob_vaddr, blob, bytes(original_bytes), frame_size
+        return blob_vaddr, blob, bytes(original_bytes), _UnwindPayload(frame_size, call_ranges)
 
     def _install_region_payload(
-        self, binary: Any, region: Any, blob_vaddr: int, blob: bytes, frame_size: int | None
+        self,
+        binary: Any,
+        region: Any,
+        blob_vaddr: int,
+        blob: bytes,
+        unwind: _UnwindPayload,
     ) -> tuple[Any] | None:
         checkpoint = self._create_mutation_checkpoint("virtualize_function")
         unwind_metadata = (
-            build_vm_eh_frame(blob_vaddr, len(blob), frame_size, blob_vaddr + len(blob))
-            if frame_size is not None
+            build_vm_eh_frame(
+                blob_vaddr,
+                len(blob),
+                unwind.frame_size,
+                blob_vaddr + len(blob),
+                unwind.call_ranges,
+            )
+            if unwind.frame_size is not None
             else None
         )
         injected_vaddr = inject_blob(binary, blob, unwind_metadata=unwind_metadata)
@@ -864,8 +893,8 @@ class CodeVirtualizationPass(MutationPass):
         payload = self._build_region_payload(binary, region, options.rng, options.use_nesting, options.unwind_frame)
         if payload is None:
             return None
-        blob_vaddr, blob, original_bytes, frame_size = payload
-        installed = self._install_region_payload(binary, region, blob_vaddr, blob, frame_size)
+        blob_vaddr, blob, original_bytes, unwind = payload
+        installed = self._install_region_payload(binary, region, blob_vaddr, blob, unwind)
         if installed is None:
             return None
         checkpoint = installed[0]

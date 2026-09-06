@@ -171,6 +171,8 @@ _XMM_REGISTERS = tuple(range(16))
 _CALL_VPC_OFFSET = 0x2D0
 _CALL_BASE_OFFSET = 0x2D8
 _CALL_CALLEE_SAVED_REGISTERS: tuple[str, ...] = ("rbx", "rbp", "r13", "r14", "r15", "r12")
+_CALL_UNWIND_START_MAGIC = 0x135C0000
+_CALL_UNWIND_END_MAGIC = 0x12AC0000
 
 
 @dataclass(frozen=True)
@@ -279,8 +281,10 @@ def _call_bridge_asm(
         + "  mov rsp, r11\n"
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
-        + f"call_resume_{index}:\n  lea r12, [rsp+{bridge.stack_guard - bridge.frame_size + bridge.stack_depth}]\n"
+        + f"call_resume_{index}:\n  mov r11d, {hex(_CALL_UNWIND_START_MAGIC | index)}\n"
+        + f"  lea r12, [rsp+{bridge.stack_guard - bridge.frame_size + bridge.stack_depth}]\n"
         + _call_frame_spills_asm(slot, bridge.flags_offset, bridge.preserve_ymm)
+        + f"  mov r11d, {hex(_CALL_UNWIND_END_MAGIC | index)}\n"
         + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
     )
 

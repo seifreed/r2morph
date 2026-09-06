@@ -43,6 +43,10 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
     build_ijmp_targets,
     encode_region,
 )
+from r2morph.mutations.code_virtualization_region_control_handlers import (
+    _CALL_UNWIND_END_MAGIC,
+    _CALL_UNWIND_START_MAGIC,
+)
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     avx128_upper_clear_asm,
     xmm_reload_asm,
@@ -448,6 +452,37 @@ def _relocate_flags_slot(assembly: str, flags_offset: int) -> str:
         rf"\1[rsp + {flags_offset}]",
         assembly,
     )
+
+
+def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tuple[tuple[int, int, int], ...] | None:
+    """Locate native-call resume ranges and their relocated-stack CFA offsets."""
+    frame_size = frame_size_for_seed(scheme.junk_seed)
+    stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    ranges: list[tuple[int, int, int]] = []
+    call_prefixes = ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb")
+
+    for handler_key, indices in scheme.dup.items():
+        if not handler_key.startswith(call_prefixes):
+            continue
+        try:
+            stack_depth = int(handler_key.rsplit("_", 1)[1]) if "_" in handler_key else 0
+        except ValueError:
+            return None
+        for index in indices:
+            start_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_START_MAGIC | index)
+            end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | index)
+            start = blob.find(start_pattern)
+            end = blob.find(end_pattern)
+            if (
+                start < 0
+                or end <= start
+                or blob.find(start_pattern, start + 1) >= 0
+                or blob.find(end_pattern, end + 1) >= 0
+            ):
+                return None
+            ranges.append((start, end, stack_guard + stack_depth + 8))
+    return tuple(sorted(ranges))
 
 
 def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> bytes | None:

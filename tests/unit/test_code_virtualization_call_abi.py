@@ -1,11 +1,18 @@
 """Contracts for native-call register bridges in the region VM."""
 
-from r2morph.mutations.code_virtualization_region_codegen import _relocate_flags_slot
+from r2morph.core import randomness
+from r2morph.mutations.code_virtualization_region import build_region_scheme
+from r2morph.mutations.code_virtualization_region_codegen import (
+    _relocate_flags_slot,
+    build_region_blob,
+    call_unwind_ranges,
+)
 from r2morph.mutations.code_virtualization_region_control_handlers import (
     _GUARD,
     CallBridgeConfig,
     _call_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
 
@@ -56,7 +63,10 @@ def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:
 def test_call_bridge_reconstructs_frame_after_native_return() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)), CallBridgeConfig(frame_size=0x340))
 
-    expect(f"call_resume_0:\n  lea r12, [rsp+{_GUARD - 0x340}]" in assembly)
+    expect(
+        f"call_resume_0:\n  mov r11d, 0x135c0000\n  lea r12, [rsp+{_GUARD - 0x340}]" in assembly
+        and "mov r11d, 0x12ac0000" in assembly
+    )
 
 
 def test_flags_slot_relocation_preserves_call_resume_frame_base() -> None:
@@ -65,3 +75,21 @@ def test_flags_slot_relocation_preserves_call_resume_frame_base() -> None:
     relocated = _relocate_flags_slot(assembly, 200)
 
     expect(relocated == "call_resume_0:\n  lea r12, [rsp+128]\n  pushfq\n  pop qword ptr [rsp + 200]\n")
+
+
+def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
+    items = [("call", 0x9000), ("exit", 0x2000)]
+    region = Region(
+        items,
+        0x2000,
+        0x1000,
+        {key for item in items if (key := _op_key(item)) is not None},
+        [(0x1000, 5)],
+    )
+    scheme = build_region_scheme(region, randomness.Random(7))
+    blob = build_region_blob(region, 0x500000, scheme)
+
+    expect(blob is not None)
+    ranges = call_unwind_ranges(blob, scheme, region) if blob is not None else None
+    expect(ranges is not None and len(ranges) == len(scheme.dup["call"]))
+    expect(all(start < end and cfa_offset > _GUARD for start, end, cfa_offset in ranges or ()))
