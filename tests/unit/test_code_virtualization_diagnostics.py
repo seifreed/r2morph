@@ -203,6 +203,12 @@ def test_unwind_frame_lookup_accepts_function_address_inside_frame_range() -> No
     expect(not _function_has_unproven_unwind_metadata(".gcc_except_table", 0x401020, {0x401000: frame}))
 
 
+def test_unmapped_ordinary_eh_frame_is_not_an_unwind_failure() -> None:
+    frame = ExceptionFrame(function_start=0x401000, function_end=0x401050)
+
+    expect(not _function_has_unproven_unwind_metadata(".eh_frame", 0x402000, {0x401000: frame}))
+
+
 def test_unavailable_unwind_frames_fail_closed() -> None:
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
 

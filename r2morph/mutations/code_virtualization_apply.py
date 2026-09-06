@@ -284,7 +284,9 @@ def _function_has_unproven_unwind_metadata(
             None,
         )
     if frame is None:
-        return True
+        # A linked ELF may carry .eh_frame entries for startup/runtime code
+        # while a target function intentionally has no unwind contract.
+        return unwind_section != ".eh_frame"
     return function_contains_call
 
 
