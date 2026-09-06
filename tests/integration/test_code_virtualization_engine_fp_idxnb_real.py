@@ -17,6 +17,8 @@ from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_fpengineidxnb_x86_64"
 _EXPECTED_EXIT_CODE = 42
+_PACKED_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_fppackedidxnb_x86_64"
+_PACKED_EXPECTED_EXIT_CODE = 6
 
 pytestmark = pytest.mark.integration
 
@@ -46,6 +48,21 @@ def test_region_no_base_fp_indexed_fixture_virtualizes_complete_function(tmp_pat
 
     expect(stats["partial_virtualization_total"] == 0 and stats["unsupported_functions_total"] == 0)
     expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_region_fppacked_no_base_indexed_fixture_preserves_exit_code(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated_fppackedidxnb"
+    shutil.copyfile(_PACKED_FIXTURE, mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260906}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] == 1 and stats["unsupported_functions_total"] == 0)
+    expect(emulate_exit_code(mutated) == _PACKED_EXPECTED_EXIT_CODE)
 
 
 def test_engine_no_base_packed_indexed_moves_preserve_native_result(tmp_path: Path) -> None:
