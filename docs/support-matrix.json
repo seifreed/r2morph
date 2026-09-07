@@ -56,9 +56,16 @@
       "architectures": [
         "x86-64"
       ],
+      "evidence_cells": [
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64"
+        }
+      ],
       "evidence": [
         "tests/product_smoke",
-        "tests/integration"
+        "tests/integration",
+        "tests/integration/test_mutation_nop_insertion_arm64.py"
       ]
     },
     {
@@ -639,7 +646,8 @@
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke",
-          "tests/integration"
+          "tests/integration",
+          "tests/integration/test_mutation_nop_insertion_arm64.py"
         ]
       },
       {
@@ -709,8 +717,12 @@
         "pass": "substitute",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_nop_insertion_arm64.py"
+        ]
       },
       {
         "pass": "substitute",
