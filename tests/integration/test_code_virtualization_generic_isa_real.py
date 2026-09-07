@@ -90,6 +90,36 @@ int main() {
 }
 """
 
+_FLOATING_POINT_SOURCE = r"""
+__attribute__((noinline)) static double compute(double value) {
+    volatile double scale = 1.5;
+    volatile double bias = 2.25;
+    return value * scale + bias;
+}
+
+int main(void) {
+    volatile double result = compute(3.0);
+    return result == 6.75 ? 42 : 1;
+}
+"""
+
+_SIMD_SOURCE = r"""
+#include <emmintrin.h>
+
+__attribute__((noinline)) static int compute(int value) {
+    __m128i packed = _mm_set_epi32(value + 3, value + 2, value + 1, value);
+    packed = _mm_add_epi32(packed, _mm_set1_epi32(5));
+    packed = _mm_xor_si128(packed, _mm_set1_epi32(3));
+    int lanes[4];
+    _mm_storeu_si128((__m128i *)lanes, packed);
+    return lanes[0] + lanes[1] - lanes[2] + lanes[3];
+}
+
+int main(void) {
+    return compute(7) == 28 ? 42 : 1;
+}
+"""
+
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
@@ -228,5 +258,104 @@ def test_virtualized_compiler_generated_control_flow_preserves_native_result(
     expect(
         (original_result.returncode, mutated_result.returncode) == (42, 42),
         "structured C++ control flow changed native behavior: "
+        f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("compiler", "optimization"),
+    (("gcc", "-O0"), ("gcc", "-O2"), ("clang", "-O2")),
+    ids=("gcc-o0", "gcc-o2", "clang-o2"),
+)
+def test_virtualized_compiler_generated_floating_point_preserves_native_result(
+    tmp_path: Path, compiler: str, optimization: str
+) -> None:
+    source = tmp_path / "floating_point.c"
+    original = tmp_path / "floating_point_original"
+    mutated = tmp_path / "floating_point_mutated"
+    source.write_text(_FLOATING_POINT_SOURCE, encoding="utf-8")
+
+    compile_result = run_command(
+        [
+            compiler,
+            optimization,
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the floating-point fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 2, "seed": 20260909}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"floating-point fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        "floating-point semantics changed after virtualization: "
+        f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("compiler", "optimization"),
+    (("gcc", "-O2"), ("clang", "-O2")),
+    ids=("gcc-o2", "clang-o2"),
+)
+def test_virtualized_compiler_generated_sse2_preserves_native_result(
+    tmp_path: Path, compiler: str, optimization: str
+) -> None:
+    source = tmp_path / "sse2.c"
+    original = tmp_path / "sse2_original"
+    mutated = tmp_path / "sse2_mutated"
+    source.write_text(_SIMD_SOURCE, encoding="utf-8")
+
+    compile_result = run_command(
+        [
+            compiler,
+            optimization,
+            "-msse2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the SSE2 fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 2, "seed": 20260910}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"SSE2 fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        "SSE2 semantics changed after virtualization: "
         f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
     )

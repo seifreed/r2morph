@@ -15,14 +15,17 @@ dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
-It builds fourteen temporary ELF x86-64 images: nine C images covering GCC
+It builds nineteen temporary ELF x86-64 images: nine C images covering GCC
 `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, a frame-pointer-preserving GCC `-O2`, PIE,
-stripped output, and Clang `-O2`, plus five C++
-images covering GCC `-O0`, `-O2`, `-O3`, `-Os`, and Clang++ `-O2`. The C image
-exercises `imul`, `neg`, `not`, `cmp`, `sete`, `movzx`, shifts, carry, rotates,
-and memory loads/stores; the C++ image exercises compiler-generated loops and
-`switch` control flow. Each transformed image must preserve the native result
-and, for the C image, stdout and stderr.
+stripped output, and Clang `-O2`; three scalar floating-point images covering
+GCC `-O0`, GCC `-O2`, and Clang `-O2`; two packed SSE2 images covering GCC and
+Clang `-O2`; plus five C++ images covering GCC `-O0`, `-O2`, `-O3`, `-Os`, and
+Clang++ `-O2`. The C image exercises `imul`, `neg`, `not`, `cmp`, `sete`,
+`movzx`, shifts, carry, rotates, and memory loads/stores; the floating-point
+images exercise scalar multiply, add, and compare; the SSE2 images exercise
+packed integer add, xor, and unaligned stores; the C++ image exercises
+compiler-generated loops and `switch` control flow. Each transformed image must
+preserve the native result and, for the C image, stdout and stderr.
 
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
