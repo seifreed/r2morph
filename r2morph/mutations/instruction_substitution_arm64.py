@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 
 _ARM_MOV_OPERAND_COUNT = 2
 _MAX_ARM_MOV_IMMEDIATE = 0xFFFF
+_MAX_ADD_IMMEDIATE = 0xFFF
+
+
+def _alternative_mov_replacement(destination: str, immediate: int) -> str | None:
+    if not destination.startswith(("w", "x")) or not 0 <= immediate <= _MAX_ADD_IMMEDIATE:
+        return None
+    zero_register = "wzr" if destination.startswith("w") else "xzr"
+    return f"add {destination}, {zero_register}, {hex(immediate)}"
 
 
 def _movz_replacement(disasm: str) -> str | None:
@@ -33,7 +41,7 @@ def _movz_replacement(disasm: str) -> str | None:
         return None
     if not 0 <= value <= _MAX_ARM_MOV_IMMEDIATE:
         return None
-    return f"movz {dst}, {hex(value)}"
+    return _alternative_mov_replacement(dst, value)
 
 
 def apply_arm64_mov_substitution(binary: Any, max_substitutions: int) -> dict[str, Any]:

@@ -11,8 +11,9 @@ _EXPECTED_RESULT_TOTAL_FUNCTIONS_2 = 2
 
 
 class _Binary:
-    def __init__(self) -> None:
+    def __init__(self, instructions: list[dict[str, object]] | None = None) -> None:
         self.writes: list[tuple[int, bytes]] = []
+        self.instructions = instructions
 
     def get_functions(self):
         return [
@@ -21,6 +22,8 @@ class _Binary:
         ]
 
     def get_function_disasm(self, addr: int):
+        if self.instructions is not None:
+            return self.instructions
         if addr == _EXPECTED_ADDR_4096:
             return [
                 {"disasm": "mov x0, 0x1", "addr": 0x1000, "size": 4},
@@ -32,9 +35,9 @@ class _Binary:
 
     def assemble(self, insn: str, _func_addr: int):
         table = {
-            "movz x0, 0x1": b"\x01\x00\x80\xd2",
-            "movz x1, 0x2": b"\x41\x00\x80\xd2",
-            "movz x0, 0x3": b"\x61\x00\x80\xd2",
+            "add x0, xzr, 0x1": b"\xe0\x07\x00\x91",
+            "add x1, xzr, 0x2": b"\xe1\x0b\x00\x91",
+            "add x0, xzr, 0x3": b"\xe0\x0f\x00\x91",
         }
         return table.get(insn)
 
@@ -43,7 +46,7 @@ class _Binary:
         return True
 
 
-def test_arm64_mov_substitution_helper_applies_matching_movz_writes() -> None:
+def test_arm64_mov_substitution_helper_applies_distinct_add_writes() -> None:
     binary = _Binary()
     result = apply_arm64_mov_substitution(binary, max_substitutions=4)
 
@@ -51,3 +54,11 @@ def test_arm64_mov_substitution_helper_applies_matching_movz_writes() -> None:
     expect(result["functions_mutated"] == 1)
     expect(result["total_functions"] == _EXPECTED_RESULT_TOTAL_FUNCTIONS_2)
     expect(binary.writes[0][0] == _EXPECTED_BINARY_WRITES_0_0_4096)
+
+
+def test_arm64_mov_substitution_helper_rejects_immediate_without_distinct_encoding() -> None:
+    binary = _Binary([{"disasm": "mov x0, 0x1000", "addr": 0x1000, "size": 4}])
+
+    result = apply_arm64_mov_substitution(binary, max_substitutions=4)
+
+    expect(result["mutations_applied"] == 0)
