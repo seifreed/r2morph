@@ -67,11 +67,21 @@ pytestmark = [
     (
         ("gcc", "-O0", ("-fno-pie", "-no-pie")),
         ("gcc", "-O2", ("-fno-pie", "-no-pie")),
+        ("gcc", "-O3", ("-fno-pie", "-no-pie")),
+        ("gcc", "-Os", ("-fno-pie", "-no-pie")),
         ("gcc", "-O2", ("-fPIE", "-pie")),
         ("gcc", "-O2", ("-fno-pie", "-no-pie", "-s")),
         ("clang", "-O2", ("-fno-pie", "-no-pie")),
     ),
-    ids=("gcc-o0", "gcc-o2", "gcc-pie-o2", "gcc-stripped-o2", "clang-o2"),
+    ids=(
+        "gcc-o0",
+        "gcc-o2",
+        "gcc-o3",
+        "gcc-os",
+        "gcc-pie-o2",
+        "gcc-stripped-o2",
+        "clang-o2",
+    ),
 )
 def test_virtualized_compiler_generated_isa_mix_preserves_native_result(
     tmp_path: Path, compiler: str, optimization: str, build_flags: tuple[str, ...]
