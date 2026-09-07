@@ -60,12 +60,17 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
         "tests/product_smoke",
         "tests/integration",
-        "tests/integration/test_mutation_nop_insertion_arm64.py"
+        "tests/integration/test_mutation_nop_insertion_arm64.py",
+        "tests/integration/test_mutation_passes_end_to_end_more2.py"
       ]
     },
     {
@@ -647,7 +652,8 @@
         "evidence": [
           "tests/product_smoke",
           "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutation_passes_end_to_end_more2.py"
         ]
       },
       {
@@ -675,8 +681,13 @@
         "pass": "substitute",
         "format": "PE",
         "architecture": "x86-64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+        ]
       },
       {
         "pass": "substitute",
@@ -721,7 +732,8 @@
         "evidence": [
           "tests/product_smoke",
           "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutation_passes_end_to_end_more2.py"
         ]
       },
       {
