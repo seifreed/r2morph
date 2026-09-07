@@ -95,7 +95,7 @@ class NopInsertionPass(MutationPass):
     def _init_support(self) -> None:
         """Set the pass support metadata."""
         self.set_support(
-            formats=("ELF", "Mach-O"),
+            formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "arm64", "arm"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",

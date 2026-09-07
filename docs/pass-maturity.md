@@ -7,7 +7,7 @@ promoted.
 
 | Pass | Status | Target | Current limitation | Evidence |
 |---|---|---|---|---|
-| NOP insertion | Tier 1 | Linux ELF x86-64 | No official PE/Mach-O contract | `tests/product_smoke`, `tests/integration` |
+| NOP insertion | Tier 1 | Linux ELF x86-64; PE x86-64 preview | PE requires real structural validation and checksum repair; no Mach-O contract | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py` |
 | Instruction substitution | Tier 1 | Linux ELF x86-64 | Rule coverage is ISA-specific | `tests/product_smoke`, `tests/integration` |
 | Register substitution | Tier 1 | Linux ELF x86-64 | Requires proven liveness and ABI preservation | `tests/product_smoke`, `tests/integration` |
 | Instruction expansion | Experimental | ELF x86-64 | Wider replacements need more corpus coverage | `README.md` |

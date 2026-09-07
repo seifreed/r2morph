@@ -62,7 +62,7 @@ def validate_integrity(handler: Any) -> tuple[bool, list[str]]:
     section_bounds: dict[int, int] = {}
     for i, section in enumerate(sections):
         va = section.get("virtual_address", 0)
-        size = section.get("size", 0)
+        size = section.get("virtual_size", section.get("raw_size", 0))
         for other_va, other_size in section_bounds.items():
             if va < other_va + other_size and va + size > other_va:
                 issues.append(f"Overlapping sections at index {i}")
@@ -74,7 +74,7 @@ def validate_integrity(handler: Any) -> tuple[bool, list[str]]:
         in_section = False
         for section in sections:
             va = section.get("virtual_address", 0)
-            size = section.get("size", 0)
+            size = section.get("virtual_size", section.get("raw_size", 0))
             if va <= addr < va + size:
                 in_section = True
                 break

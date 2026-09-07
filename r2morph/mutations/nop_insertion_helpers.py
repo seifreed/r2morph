@@ -107,7 +107,8 @@ def _is_x86_redundant(disasm: str, bits: int) -> bool:
     destination, source = operands
     if "lea" in disasm:
         source = source.strip("[]")
-    return source == destination and is_safe_self_redundancy(destination, bits)
+    operand_bits = _X86_32_BITS if destination.startswith("e") else bits
+    return source == destination and is_safe_self_redundancy(destination, operand_bits)
 
 
 def _is_arm_redundant(disasm: str) -> bool:

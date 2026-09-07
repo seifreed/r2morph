@@ -23,14 +23,16 @@
       "name": "nop",
       "stability": "tier-1",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE"
       ],
       "architectures": [
         "x86-64"
       ],
       "evidence": [
         "tests/product_smoke",
-        "tests/integration"
+        "tests/integration",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ]
     },
     {

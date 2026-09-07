@@ -45,3 +45,9 @@ def test_nop_insertion_helpers_cover_the_core_paths() -> None:
     expect(init_nop_equivalents()["x86"])
     expect(generate_jmp_dead_code(3, 32, binary, 0x1000) is not None)
     expect(select_candidates(binary, functions, "x86", 32, 5)[0][0]["name"] == "main")
+
+
+def test_x86_64_nop_candidates_accept_32_bit_self_moves() -> None:
+    instruction = {"disasm": "mov eax, eax", "type": "mov"}
+
+    expect(nop_helpers._is_redundant_instruction(instruction, "x86", 64))

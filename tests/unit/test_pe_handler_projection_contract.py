@@ -18,3 +18,24 @@ def test_pe_handler_projection_contract() -> None:
     expect(imports == [{"library": "KERNEL32.dll", "entries": ["CreateFileA"]}])
     expect(exports == [{"name": "Foo", "address": 4096, "ordinal": 7}])
     expect(relocations == [{"address": 8192, "size": 4, "type": "HIGHLOW"}])
+
+
+def test_pe_handler_projects_relocation_block_entries() -> None:
+    binary = SimpleNamespace(
+        relocations=[
+            SimpleNamespace(
+                entries=[
+                    SimpleNamespace(address=0x3000, size=64, type="DIR64"),
+                    SimpleNamespace(address=0x3040, size=64, type="DIR64"),
+                ]
+            )
+        ]
+    )
+
+    expect(
+        project_relocations(binary)
+        == [
+            {"address": 0x3000, "size": 64, "type": "DIR64"},
+            {"address": 0x3040, "size": 64, "type": "DIR64"},
+        ]
+    )

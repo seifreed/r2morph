@@ -37,13 +37,17 @@ def project_relocations(binary: Any) -> list[dict[str, Any]]:
     """Convert LIEF relocations into plain dictionaries."""
     relocations: list[dict[str, Any]] = []
     for reloc in binary.relocations:
-        relocations.append(
-            {
-                "address": reloc.address,
-                "size": reloc.size,
-                "type": str(reloc.type),
-            }
-        )
+        entries = getattr(reloc, "entries", None)
+        if entries is None:
+            entries = (reloc,)
+        for entry in entries:
+            relocations.append(
+                {
+                    "address": entry.address,
+                    "size": entry.size,
+                    "type": str(entry.type),
+                }
+            )
     return relocations
 
 
