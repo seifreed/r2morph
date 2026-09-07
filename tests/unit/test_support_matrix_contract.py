@@ -24,3 +24,21 @@ def test_support_matrix_marks_unsupported_combinations_without_evidence() -> Non
     unsupported = [cell for cell in matrix["cells"] if cell["status"] == "not-supported"]
 
     expect(unsupported and all(cell["evidence"] == [] for cell in unsupported))
+
+
+def test_support_matrix_honors_explicit_evidence_cells() -> None:
+    document = {
+        "formats": {"PE": "preview"},
+        "architectures": {"AArch64": "experimental"},
+        "passes": [
+            {
+                "name": "nop",
+                "formats": [],
+                "architectures": [],
+                "evidence_cells": [{"format": "PE", "architecture": "AArch64"}],
+                "evidence": ["tests/integration"],
+            }
+        ],
+    }
+
+    expect(build_matrix(document)["cells"][0]["status"] == "evidenced")

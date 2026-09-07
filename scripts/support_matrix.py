@@ -18,9 +18,13 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         name = mutation_pass["name"]
         supported_formats = set(mutation_pass.get("formats", []))
         supported_architectures = set(mutation_pass.get("architectures", []))
+        evidence_cells = {(cell["format"], cell["architecture"]) for cell in mutation_pass.get("evidence_cells", [])}
         for binary_format in formats:
             for architecture in architectures:
-                covered = binary_format in supported_formats and architecture in supported_architectures
+                covered = (binary_format in supported_formats and architecture in supported_architectures) or (
+                    binary_format,
+                    architecture,
+                ) in evidence_cells
                 cells.append(
                     {
                         "pass": name,

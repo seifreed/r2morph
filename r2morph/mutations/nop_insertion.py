@@ -310,7 +310,10 @@ class NopInsertionPass(MutationPass):
             return None
         immediate = int(source, 16) if source.startswith("0x") else int(source)
         replacement = None
-        if 0 <= immediate <= _MAX_ARM_MOV_IMMEDIATE:
+        if immediate == 0 and destination not in ("sp", "wsp"):
+            zero_register = "wzr" if destination.startswith("w") else "xzr"
+            replacement = f"orr {destination}, {zero_register}, {zero_register}"
+        elif 0 <= immediate <= _MAX_ARM_MOV_IMMEDIATE:
             replacement = f"movz {destination}, {hex(immediate)}"
         return replacement
 

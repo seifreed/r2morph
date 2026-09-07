@@ -25,9 +25,7 @@ def test_nop_insertion_arm64_path(tmp_path: Path):
 
 
 def test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites(tmp_path: Path):
-    """ARM64 `mov w0, #0` is an alias of `movz w0, #0` and assembles to the same
-    bytes; rewriting one as the other changes nothing, so it must not be recorded
-    or counted as a mutation."""
+    """ARM64 zero-immediate replacement must change bytes without false records."""
     binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
@@ -42,4 +40,5 @@ def test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites(tmp_pat
 
     noop_records = [r for r in pass_obj._records if r.original_bytes == r.mutated_bytes]
     expect(noop_records == [])
+    expect(result["mutations_applied"] > 0)
     expect(result["mutations_applied"] == len(pass_obj._records))
