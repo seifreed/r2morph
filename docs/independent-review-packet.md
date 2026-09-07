@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `2a5f7068`
+- Commit: `448caf0a`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -15,6 +15,7 @@ checks are evidence, not a human approval.
 ## Evidence
 
 - [`compatibility-corpus.md`](compatibility-corpus.md)
+- [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py)
 - [`protection-adversarial-corpus-2026-09-06-aad4aeb9-triton.json`](protection-adversarial-corpus-2026-09-06-aad4aeb9-triton.json)
 - [`protection-adversarial-corpus-2026-09-06-de3111e4.json`](protection-adversarial-corpus-2026-09-06-de3111e4.json)
 - [`protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json`](protection-adversarial-corpus-2026-09-06-dbf77c59-triton.json)
@@ -87,8 +88,11 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
-The current automated review rerun for `2a5f7068` passes all 11 checks, including
+The current automated review rerun for `448caf0a` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
+The same commit adds a compiler-generated ELF regression outside that corpus;
+the Linux CI integration job virtualizes its generic GP, shift, and memory mix
+and preserves the native exit code.
 The same rerun reports `human_signoff: not-attested`; this packet therefore
 remains technically updated but not human-approved.
 
@@ -131,7 +135,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 2a5f7068
+Reviewed commit: 448caf0a
 ```
 
 No approval is implied until a human reviewer fills this section outside the
