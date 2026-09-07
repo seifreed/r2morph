@@ -120,6 +120,24 @@ int main(void) {
 }
 """
 
+_CALL_GRAPH_SOURCE = r"""
+__attribute__((noinline)) static long sum_to(long value) {
+    if (value <= 0) {
+        return 0;
+    }
+    return value + sum_to(value - 1);
+}
+
+__attribute__((noinline)) static long dispatch(long value) {
+    long (*operation)(long) = sum_to;
+    return operation(value);
+}
+
+int main(void) {
+    return dispatch(7) == 28 ? 42 : 1;
+}
+"""
+
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
@@ -357,5 +375,54 @@ def test_virtualized_compiler_generated_sse2_preserves_native_result(
     expect(
         (original_result.returncode, mutated_result.returncode) == (42, 42),
         "SSE2 semantics changed after virtualization: "
+        f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
+    )
+
+
+@pytest.mark.parametrize(
+    ("compiler", "optimization"),
+    (("gcc", "-O0"), ("gcc", "-O2"), ("clang", "-O2")),
+    ids=("gcc-o0", "gcc-o2", "clang-o2"),
+)
+def test_virtualized_compiler_generated_call_graph_preserves_native_result(
+    tmp_path: Path, compiler: str, optimization: str
+) -> None:
+    source = tmp_path / "call_graph.c"
+    original = tmp_path / "call_graph_original"
+    mutated = tmp_path / "call_graph_mutated"
+    source.write_text(_CALL_GRAPH_SOURCE, encoding="utf-8")
+
+    compile_result = run_command(
+        [
+            compiler,
+            optimization,
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the call-graph fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260911}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"call-graph fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        "call-graph semantics changed after virtualization: "
         f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
     )
