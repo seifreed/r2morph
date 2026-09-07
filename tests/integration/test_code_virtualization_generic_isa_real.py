@@ -13,9 +13,10 @@ from tests.utils.platform_binaries import supports_native_elf_x86_64
 from tests.utils.process import run_command
 
 _EXPECTED_EXIT_CODE = 42
+_EXPECTED_STDOUT = "result=44 slot=22\n"
 
 _SOURCE = r"""
-#include <stdint.h>
+#include <stdio.h>
 
 __attribute__((noinline)) static long exercise(long value, long *slot) {
     long result;
@@ -41,6 +42,7 @@ __attribute__((noinline)) static long exercise(long value, long *slot) {
 int main(void) {
     long slot = 0;
     long result = exercise(41, &slot);
+    printf("result=%ld slot=%ld\n", result, slot);
     return result == 44 && slot == 22 ? 42 : 1;
 }
 """
@@ -76,7 +78,7 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path
         timeout=30,
     )
     expect(compile_result.returncode == 0, "failed to compile the generic ISA fixture")
-    original_result = run_command([original], timeout=30)
+    original_result = run_command([original], text=True, timeout=30)
     original.rename(mutated)
 
     binary = Binary(mutated, writable=True)
@@ -87,9 +89,19 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path
     finally:
         binary.close()
 
-    mutated_result = run_command([mutated], timeout=30)
+    mutated_result = run_command([mutated], text=True, timeout=30)
     expect(stats["functions_virtualized"] >= 1, f"generic ISA mix was not virtualized: {stats=}")
     expect(
-        (original_result.returncode, mutated_result.returncode) == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE),
+        (
+            original_result.returncode,
+            original_result.stdout,
+            original_result.stderr,
+        )
+        == (
+            mutated_result.returncode,
+            mutated_result.stdout,
+            mutated_result.stderr,
+        )
+        == (_EXPECTED_EXIT_CODE, _EXPECTED_STDOUT, ""),
         f"generic ISA mix changed native behavior: {stats=}",
     )
