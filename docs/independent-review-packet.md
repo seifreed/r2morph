@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `151df243`
-- Production evidence baseline: `151df243`.
+- Commit: `7c0ad92`
+- Production evidence baseline: `7c0ad92`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -87,6 +87,11 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
+The current automated review rerun for `7c0ad92` passes all 11 checks, including
+the 264-cell support matrix and the existing 159-sample virtualization corpus.
+The same rerun reports `human_signoff: not-attested`; this packet therefore
+remains technically updated but not human-approved.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -126,7 +131,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 151df243
+Reviewed commit: 7c0ad92
 ```
 
 No approval is implied until a human reviewer fills this section outside the
