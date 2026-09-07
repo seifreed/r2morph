@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0-alpha.3
+
+- Fixes release artifact download in the isolated PyPI publish job.
+- Publishes the same verified ELF x86-64 support contract as alpha.2.
+
 ## 0.4.0-alpha.2
 
 - Publishes the current ELF x86-64 virtualization and validation evidence.

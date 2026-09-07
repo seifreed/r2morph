@@ -139,6 +139,13 @@ def test_release_workflow_excludes_sbom_from_pypi_upload() -> None:
     expect("rm dist/sbom.cdx.json" in publish_job)
 
 
+def test_release_workflow_downloads_pypi_artifacts_with_repository_context() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    publish_job = workflow.split("  publish-pypi:", 1)[1].split("  create-release:", 1)[0]
+
+    expect('gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY"' in publish_job)
+
+
 def test_release_recovery_validates_source_run_and_tag() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "release-recovery.yml").read_text(encoding="utf-8")
 

@@ -59,7 +59,7 @@ def test_cli_version_option_reports_installed_version() -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["--version"])
     expect(result.exit_code == 0)
-    expect("r2morph 0.4.0-alpha.2" in result.output)
+    expect("r2morph 0.4.0-alpha.3" in result.output)
 
 
 def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:

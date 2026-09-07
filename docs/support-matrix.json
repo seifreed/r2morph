@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release": "0.4.0-alpha.2",
+  "release": "0.4.0-alpha.3",
   "official_target": {
     "os": "linux",
     "format": "ELF",
