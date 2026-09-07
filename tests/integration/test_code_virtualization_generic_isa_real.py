@@ -56,8 +56,9 @@ pytestmark = [
 ]
 
 
-def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path: Path) -> None:
-    source = tmp_path / "isa_mix.c"
+@pytest.mark.parametrize("optimization", ("-O0", "-O2"), ids=("o0", "o2"))
+def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path: Path, optimization: str) -> None:
+    source = tmp_path / f"isa_mix_{optimization[1:]}.c"
     original = tmp_path / "original"
     mutated = tmp_path / "mutated"
     source.write_text(_SOURCE)
@@ -65,7 +66,7 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path
     compile_result = run_command(
         [
             "gcc",
-            "-O0",
+            optimization,
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",
