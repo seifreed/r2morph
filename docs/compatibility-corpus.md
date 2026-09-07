@@ -13,6 +13,16 @@ non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static
 linking when the host toolchain provides it. C and C++ fixtures exercise switch
 dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
+The repository also runs an out-of-corpus native regression at
+[`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
+It builds twelve temporary ELF x86-64 images: seven C images covering GCC
+`-O0`, `-O2`, `-O3`, `-Os`, PIE, stripped output, and Clang `-O2`, plus five C++
+images covering GCC `-O0`, `-O2`, `-O3`, `-Os`, and Clang++ `-O2`. The C image
+exercises `imul`, `neg`, `not`, `cmp`, `sete`, `movzx`, shifts, carry, rotates,
+and memory loads/stores; the C++ image exercises compiler-generated loops and
+`switch` control flow. Each transformed image must preserve the native result
+and, for the C image, stdout and stderr.
+
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
 digests, elapsed time, and output size/hash. The public CI then transforms and
