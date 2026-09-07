@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.check_release_contract import _check_changelog, _validate_inventory, main
+from scripts.check_release_contract import _check_changelog, _check_documentation_links, _validate_inventory, main
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +68,23 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
 
 def test_release_contract_current_tree_is_valid() -> None:
     expect(main() == 0)
+
+
+def test_release_contract_documentation_links_exist() -> None:
+    expect(_check_documentation_links() is None)
+
+
+def test_release_contract_rejects_missing_documentation_link(tmp_path: Path) -> None:
+    document = tmp_path / "review.md"
+    document.write_text("[missing](missing.json)", encoding="utf-8")
+
+    rejected = False
+    try:
+        _check_documentation_links((document,))
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
 
 
 def test_release_contract_rejects_incomplete_runtime_evidence() -> None:

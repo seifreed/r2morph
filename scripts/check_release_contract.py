@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -21,6 +22,11 @@ REQUIRED_CI_JOBS = (
     "package-smoke",
 )
 MINIMUM_COVERAGE_PERCENT = 75
+_MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
+_DOCUMENTATION_LINK_FILES = (
+    ROOT / "docs" / "independent-review-packet.md",
+    ROOT / "docs" / "compatibility-corpus.md",
+)
 
 
 def _load_matrix() -> dict[str, object]:
@@ -104,6 +110,16 @@ def _check_inventory() -> None:
     _validate_inventory(inventory)
 
 
+def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
+    for document in documents:
+        for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
+            target_path = target.split("#", 1)[0].strip().strip("<>")
+            if not target_path or target.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            if not (document.parent / target_path).exists():
+                raise ValueError(f"missing documentation link: {target}")
+
+
 def _check_ci_contract() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     for job in REQUIRED_CI_JOBS:
@@ -181,6 +197,7 @@ def main() -> int:
         _check_matrix(matrix, package_version)
         _check_changelog(package_version)
         _check_inventory()
+        _check_documentation_links()
         _check_ci_contract()
         _check_release_workflow()
         _check_release_recovery_workflow()
