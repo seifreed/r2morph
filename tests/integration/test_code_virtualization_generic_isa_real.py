@@ -172,7 +172,20 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(
     )
 
 
-def test_virtualized_compiler_generated_control_flow_preserves_native_result(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("compiler", "optimization"),
+    (
+        ("g++", "-O0"),
+        ("g++", "-O2"),
+        ("g++", "-O3"),
+        ("g++", "-Os"),
+        ("clang++", "-O2"),
+    ),
+    ids=("gxx-o0", "gxx-o2", "gxx-o3", "gxx-os", "clangxx-o2"),
+)
+def test_virtualized_compiler_generated_control_flow_preserves_native_result(
+    tmp_path: Path, compiler: str, optimization: str
+) -> None:
     source = tmp_path / "structured.cpp"
     original = tmp_path / "structured_original"
     mutated = tmp_path / "structured_mutated"
@@ -180,9 +193,9 @@ def test_virtualized_compiler_generated_control_flow_preserves_native_result(tmp
 
     compile_result = run_command(
         [
-            "g++",
+            compiler,
             "-std=c++17",
-            "-O2",
+            optimization,
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",
