@@ -519,7 +519,8 @@
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke",
-          "tests/integration"
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -547,8 +548,12 @@
         "pass": "nop",
         "format": "PE",
         "architecture": "x86-64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "nop",
