@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `dcc1ed0`
-- Production evidence baseline: `dcc1ed0`.
+- Commit: `9ac3e14`
+- Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -87,7 +87,7 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
-The current automated review rerun for `dcc1ed0` passes all 11 checks, including
+The current automated review rerun for `9ac3e14` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
 The same rerun reports `human_signoff: not-attested`; this packet therefore
 remains technically updated but not human-approved.
@@ -131,7 +131,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: dcc1ed0
+Reviewed commit: 9ac3e14
 ```
 
 No approval is implied until a human reviewer fills this section outside the
