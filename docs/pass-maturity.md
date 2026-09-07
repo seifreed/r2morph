@@ -15,7 +15,7 @@ promoted.
 | Dead code injection | Experimental | ELF x86-64 | Placement depends on available safe regions | `README.md` |
 | Control-flow flattening | Experimental | ELF x86-64 | No cross-tool decompiler benchmark | `README.md` |
 | Opaque predicates | Experimental | ELF x86-64 | Predicate families are not exhaustive | `README.md` |
-| Code virtualization | Experimental | ELF x86-64 | Unsupported functions are conservatively unchanged | `docs/protection-maturity.md` |
+| Code virtualization | Experimental | ELF x86-64 | Unsupported functions are conservatively unchanged | `docs/protection-maturity.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |

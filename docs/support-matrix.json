@@ -168,7 +168,8 @@
       ],
       "evidence": [
         "docs/protection-maturity.md",
-        "tests/integration"
+        "tests/integration",
+        "tests/integration/test_code_virtualization_generic_isa_real.py"
       ]
     },
     {
@@ -1272,7 +1273,8 @@
         "status": "evidenced",
         "evidence": [
           "docs/protection-maturity.md",
-          "tests/integration"
+          "tests/integration",
+          "tests/integration/test_code_virtualization_generic_isa_real.py"
         ]
       },
       {
