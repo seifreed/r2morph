@@ -76,7 +76,7 @@ __attribute__((noinline)) static long dispatch(long value) {
 }
 
 int main() {
-    return dispatch(19) == 147 ? 42 : 1;
+    return dispatch(19) == 139 ? 42 : 1;
 }
 """
 
