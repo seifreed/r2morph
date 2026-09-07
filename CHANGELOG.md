@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0-alpha.2
+
+- Publishes the current ELF x86-64 virtualization and validation evidence.
+- Includes the complete 159-fixture CodeVirtualization corpus result.
+- Retains Triton and angr as reproducible analyzer dependencies for the Linux
+  x86-64 release target.
+
 ## 0.4.0-alpha.1
 
 - Declares Linux ELF x86-64 as the official initial target.
