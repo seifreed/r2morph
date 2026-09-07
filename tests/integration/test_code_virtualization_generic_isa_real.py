@@ -56,8 +56,18 @@ pytestmark = [
 ]
 
 
-@pytest.mark.parametrize("optimization", ("-O0", "-O2"), ids=("o0", "o2"))
-def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path: Path, optimization: str) -> None:
+@pytest.mark.parametrize(
+    ("optimization", "linker_flags"),
+    (
+        ("-O0", ("-fno-pie", "-no-pie")),
+        ("-O2", ("-fno-pie", "-no-pie")),
+        ("-O2", ("-fPIE", "-pie")),
+    ),
+    ids=("o0", "o2", "pie-o2"),
+)
+def test_virtualized_compiler_generated_isa_mix_preserves_native_result(
+    tmp_path: Path, optimization: str, linker_flags: tuple[str, str]
+) -> None:
     source = tmp_path / f"isa_mix_{optimization[1:]}.c"
     original = tmp_path / "original"
     mutated = tmp_path / "mutated"
@@ -67,8 +77,7 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(tmp_path
         [
             "gcc",
             optimization,
-            "-fno-pie",
-            "-no-pie",
+            *linker_flags,
             "-fno-unwind-tables",
             "-fno-asynchronous-unwind-tables",
             "-fno-stack-protector",
