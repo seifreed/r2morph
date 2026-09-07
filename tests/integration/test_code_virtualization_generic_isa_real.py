@@ -54,8 +54,6 @@ int main(void) {
 """
 
 _STRUCTURED_SOURCE = r"""
-using callback_t = long (*)(long);
-
 __attribute__((noinline)) static long dispatch(long value) {
     long total = 0;
     for (long index = 0; index < 6; ++index) {
@@ -77,10 +75,8 @@ __attribute__((noinline)) static long dispatch(long value) {
     return total;
 }
 
-static callback_t volatile callback = dispatch;
-
 int main() {
-    return callback(19) == 147 ? 42 : 1;
+    return dispatch(19) == 147 ? 42 : 1;
 }
 """
 
