@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `48ade898`
+- Commit: `948cccd8`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -88,16 +88,18 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
-The current automated review rerun for `48ade898` passes all 11 checks, including
+The current automated review rerun for `948cccd8` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
 The same commit extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O2`, `-O3`, and `-Os`, GCC PIE `-O2`, GCC
 stripped fixed-load `-O2`, and Clang fixed-load `-O2`; the Linux CI integration
 job virtualizes its generic GP, shift, and memory mix in all seven images and
-preserves the native exit code, stdout, and stderr. The generated instruction
-mix also exercises carry consumption and rotate round-trips through `stc`,
-`adc`, `clc`, `sbb`, `rol`, and `ror`. CI run `34143709316` completed
-successfully across the configured matrix.
+preserves the native exit code, stdout, and stderr. The same job also builds an
+arbitrary C++ ELF with structured `switch`/loop control flow and verifies the
+native result after virtualization. The generated instruction mix exercises
+carry consumption and rotate round-trips through `stc`, `adc`, `clc`, `sbb`,
+`rol`, and `ror`. CI run `34150873600` completed successfully across the
+configured matrix.
 The same rerun reports `human_signoff: not-attested`; this packet therefore
 remains technically updated but not human-approved.
 
@@ -140,7 +142,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 48ade898
+Reviewed commit: 948cccd8
 ```
 
 No approval is implied until a human reviewer fills this section outside the
