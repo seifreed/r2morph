@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `3ca1d5b6`
+- Commit: `24fd28ff`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -45,6 +45,8 @@ checks are evidence, not a human approval.
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json)
 - [`independent-review.json`](independent-review.json)
+- [`../scripts/check_release_contract.py`](../scripts/check_release_contract.py)
+- [`../tests/unit/test_release_contract.py`](../tests/unit/test_release_contract.py)
 
 The current `de3111e4` evidence records 159/159 virtualized samples, 171 virtualized
 functions, zero unsupported functions, zero partial virtualizations, 939
@@ -88,7 +90,7 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
-The current automated review rerun for `3ca1d5b6` passes all 11 checks, including
+The current automated review rerun for `24fd28ff` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
 The same commit extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O2`, `-O3`, and `-Os`, GCC PIE `-O2`, GCC
@@ -103,7 +105,11 @@ integer operations and comparisons through `imul`, `neg`, `not`, `cmp`,
 through `stc`, `adc`, `clc`, `sbb`, `rol`, and `ror`. CI run `34156637529`
 completed successfully across the configured matrix.
 The same rerun reports `human_signoff: not-attested`; this packet therefore
-remains technically updated but not human-approved.
+remains technically updated but not human-approved. The release contract at
+this commit also validates that the packet and compatibility documentation do
+not contain broken local Markdown links. Release `v0.4.0-alpha.1` is published
+with wheel, source archive, SBOM, checksums, and verified provenance; this is
+release evidence, not human approval.
 
 ## Reproduction
 
@@ -144,7 +150,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 3ca1d5b6
+Reviewed commit: 24fd28ff
 ```
 
 No approval is implied until a human reviewer fills this section outside the
