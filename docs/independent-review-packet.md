@@ -6,8 +6,8 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `c2c985be`
-- Production evidence baseline: `c2c985be`.
+- Commit: `151df243`
+- Production evidence baseline: `151df243`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: excluded by project decision.
@@ -126,7 +126,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: c2c985be
+Reviewed commit: 151df243
 ```
 
 No approval is implied until a human reviewer fills this section outside the
