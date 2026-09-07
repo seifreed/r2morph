@@ -93,9 +93,10 @@ coverage evidence, not a claim of universal ISA support.
 The current automated review rerun for `24fd28ff` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
 The same commit extends the compiler-generated ELF regression outside that
-corpus to GCC fixed-load `-O0`, `-O2`, `-O3`, and `-Os`, GCC PIE `-O2`, GCC
-stripped fixed-load `-O2`, and Clang fixed-load `-O2`; the Linux CI integration
-job virtualizes its generic GP, shift, and memory mix in all seven images and
+corpus to GCC fixed-load `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, GCC fixed-load
+`-O2` with frame pointers, GCC PIE `-O2`, GCC stripped fixed-load `-O2`, and
+Clang fixed-load `-O2`; the Linux CI integration job virtualizes its generic
+GP, shift, and memory mix in all nine C images and
 preserves the native exit code, stdout, and stderr. The same job also builds
 five arbitrary C++ ELF variants with structured `switch`/loop control flow
 using GCC `-O0`, `-O2`, `-O3`, and `-Os`, plus Clang++ `-O2`, and verifies the

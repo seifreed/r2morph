@@ -15,8 +15,9 @@ dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
-It builds twelve temporary ELF x86-64 images: seven C images covering GCC
-`-O0`, `-O2`, `-O3`, `-Os`, PIE, stripped output, and Clang `-O2`, plus five C++
+It builds fourteen temporary ELF x86-64 images: nine C images covering GCC
+`-O0`, `-O1`, `-O2`, `-O3`, `-Os`, a frame-pointer-preserving GCC `-O2`, PIE,
+stripped output, and Clang `-O2`, plus five C++
 images covering GCC `-O0`, `-O2`, `-O3`, `-Os`, and Clang++ `-O2`. The C image
 exercises `imul`, `neg`, `not`, `cmp`, `sete`, `movzx`, shifts, carry, rotates,
 and memory loads/stores; the C++ image exercises compiler-generated loops and
