@@ -33,13 +33,18 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
         "tests/product_smoke",
         "tests/integration",
         "tests/integration/test_nop_insertion_pe_real.py",
-        "tests/integration/test_mutation_nop_insertion_arm64.py"
+        "tests/integration/test_mutation_nop_insertion_arm64.py",
+        "tests/integration/test_mutations_x86_compiled_binary.py"
       ]
     },
     {
@@ -528,7 +533,8 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py"
         ]
       },
       {
@@ -561,7 +567,8 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py"
         ]
       },
       {
@@ -589,8 +596,14 @@
         "pass": "nop",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py"
+        ]
       },
       {
         "pass": "nop",
@@ -608,7 +621,8 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py"
         ]
       },
       {

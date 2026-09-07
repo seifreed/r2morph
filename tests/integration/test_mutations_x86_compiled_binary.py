@@ -96,8 +96,8 @@ def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path
         )
         sub_result = sub_pass.apply(bin_obj)
 
-    expect(not ("mutations_applied" not in nop_result))
-    expect(not ("mutations_applied" not in sub_result))
+    expect(nop_result["mutations_applied"] > 0)
+    expect(sub_result["mutations_applied"] > 0)
 
 
 def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_path: Path, tmp_path: Path):
