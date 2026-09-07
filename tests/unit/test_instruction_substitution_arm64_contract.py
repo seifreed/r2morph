@@ -38,6 +38,7 @@ class _Binary:
             "add x0, xzr, 0x1": b"\xe0\x07\x00\x91",
             "add x1, xzr, 0x2": b"\xe1\x0b\x00\x91",
             "add x0, xzr, 0x3": b"\xe0\x0f\x00\x91",
+            "add x0, xzr, 0x1, lsl 12": b"\xe0\x07\x40\x91",
         }
         return table.get(insn)
 
@@ -56,8 +57,16 @@ def test_arm64_mov_substitution_helper_applies_distinct_add_writes() -> None:
     expect(binary.writes[0][0] == _EXPECTED_BINARY_WRITES_0_0_4096)
 
 
-def test_arm64_mov_substitution_helper_rejects_immediate_without_distinct_encoding() -> None:
+def test_arm64_mov_substitution_helper_accepts_shifted_immediate_encoding() -> None:
     binary = _Binary([{"disasm": "mov x0, 0x1000", "addr": 0x1000, "size": 4}])
+
+    result = apply_arm64_mov_substitution(binary, max_substitutions=4)
+
+    expect(result["mutations_applied"] == 1)
+
+
+def test_arm64_mov_substitution_helper_rejects_unrepresentable_immediate() -> None:
+    binary = _Binary([{"disasm": "mov x0, 0x1001", "addr": 0x1000, "size": 4}])
 
     result = apply_arm64_mov_substitution(binary, max_substitutions=4)
 
