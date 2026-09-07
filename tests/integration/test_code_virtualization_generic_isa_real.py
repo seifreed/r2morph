@@ -200,5 +200,6 @@ def test_virtualized_compiler_generated_control_flow_preserves_native_result(tmp
     expect(stats["functions_virtualized"] >= 1, f"structured C++ fixture was not virtualized: {stats=}")
     expect(
         (original_result.returncode, mutated_result.returncode) == (42, 42),
-        f"structured C++ control flow changed native behavior: {stats=}",
+        "structured C++ control flow changed native behavior: "
+        f"original={original_result.returncode}, mutated={mutated_result.returncode}, {stats=}",
     )
