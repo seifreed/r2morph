@@ -53,6 +53,37 @@ int main(void) {
 }
 """
 
+_STRUCTURED_SOURCE = r"""
+using callback_t = long (*)(long);
+
+__attribute__((noinline)) static long dispatch(long value) {
+    long total = 0;
+    for (long index = 0; index < 6; ++index) {
+        switch ((value + index) & 3) {
+        case 0:
+            total += value + index;
+            break;
+        case 1:
+            total -= value - index;
+            break;
+        case 2:
+            total ^= value << 1;
+            break;
+        default:
+            total = (total << 1) + value;
+            break;
+        }
+    }
+    return total;
+}
+
+static callback_t volatile callback = dispatch;
+
+int main() {
+    return callback(19) == 147 ? 42 : 1;
+}
+"""
+
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
@@ -132,4 +163,46 @@ def test_virtualized_compiler_generated_isa_mix_preserves_native_result(
         )
         == (_EXPECTED_EXIT_CODE, _EXPECTED_STDOUT, ""),
         f"generic ISA mix changed native behavior: {stats=}",
+    )
+
+
+def test_virtualized_compiler_generated_control_flow_preserves_native_result(tmp_path: Path) -> None:
+    source = tmp_path / "structured.cpp"
+    original = tmp_path / "structured_original"
+    mutated = tmp_path / "structured_mutated"
+    source.write_text(_STRUCTURED_SOURCE)
+
+    compile_result = run_command(
+        [
+            "g++",
+            "-std=c++17",
+            "-O2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the structured C++ fixture")
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260908}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"structured C++ fixture was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (42, 42),
+        f"structured C++ control flow changed native behavior: {stats=}",
     )
