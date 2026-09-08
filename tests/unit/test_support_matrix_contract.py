@@ -42,3 +42,11 @@ def test_support_matrix_honors_explicit_evidence_cells() -> None:
     }
 
     expect(build_matrix(document)["cells"][0]["status"] == "evidenced")
+
+
+def test_support_matrix_keeps_non_official_targets_out_of_supported_status() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    cells = build_matrix(document)["cells"]
+    non_official_cells = [cell for cell in cells if cell["format"] != "ELF" or cell["architecture"] != "x86-64"]
+
+    expect(non_official_cells and all(cell["status"] != "supported" for cell in non_official_cells))
