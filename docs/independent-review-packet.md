@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `b30e3e56`
+- Commit: `fed05f2d`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -173,6 +173,11 @@ instruction is rewritten. The original and mutated images both exit with
 code `0`; checksum repair and PE integrity validation pass before and after
 mutation. The local regression passes and CI run `34187173363` completed the
 full matrix successfully. PE remains preview-only.
+The current target also adds native PE substitution coverage on a generated
+arbitrary executable with the same memory and control-flow mix. The pass
+applies real substitutions, checksum repair and integrity validation pass,
+and the mutated image preserves exit code `0`. The focused PE module passes
+`2/2`, and CI run `34192212419` completed the full matrix successfully.
 
 ## Reproduction
 
@@ -213,7 +218,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: b30e3e56
+Reviewed commit: fed05f2d
 ```
 
 No approval is implied until a human reviewer fills this section outside the
