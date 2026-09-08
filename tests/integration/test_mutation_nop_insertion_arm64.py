@@ -97,3 +97,32 @@ def test_instruction_substitution_arm64_changes_real_instruction_encoding(tmp_pa
 
     expect(result["mutations_applied"] > 0)
     expect(mutated_bytes != original_bytes)
+
+
+def test_instruction_substitution_arm64_preserves_native_output(tmp_path: Path):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = Path("fixtures/dataset/macho_arm64")
+    if not binary_path.exists():
+        pytest.skip("Mach-O binary not available")
+
+    temp_binary = tmp_path / "macho_arm64_substitution_runtime"
+    shutil.copy(binary_path, temp_binary)
+    original = run_command([temp_binary], text=True, timeout=30)
+
+    with Binary(temp_binary, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = InstructionSubstitutionPass(
+            {"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(bin_obj)
+
+    expect(CodeSigner().sign(temp_binary, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([temp_binary], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (0, "hello\n", ""),
+        "ARM64 instruction substitution changed native execution",
+    )

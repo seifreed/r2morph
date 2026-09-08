@@ -11,25 +11,15 @@ logger = logging.getLogger(__name__)
 
 _ARM_MOV_OPERAND_COUNT = 2
 _MAX_ARM_MOV_IMMEDIATE = 0xFFFF
-_MAX_ADD_IMMEDIATE = 0xFFF
-_ADD_IMMEDIATE_SHIFT = 12
-_ADD_IMMEDIATE_SCALE = 1 << _ADD_IMMEDIATE_SHIFT
 
 
 def _alternative_mov_replacement(destination: str, immediate: int) -> str | None:
     if not destination.startswith(("w", "x")) or immediate < 0:
         return None
-    if immediate <= _MAX_ADD_IMMEDIATE:
-        shift = ""
-    else:
-        if immediate % _ADD_IMMEDIATE_SCALE != 0:
-            return None
-        immediate >>= _ADD_IMMEDIATE_SHIFT
-        if immediate > _MAX_ADD_IMMEDIATE:
-            return None
-        shift = f", lsl {_ADD_IMMEDIATE_SHIFT}"
     zero_register = "wzr" if destination.startswith("w") else "xzr"
-    return f"add {destination}, {zero_register}, {hex(immediate)}{shift}"
+    if immediate == 0:
+        return f"orr {destination}, {zero_register}, {zero_register}"
+    return f"orr {destination}, {zero_register}, {hex(immediate)}"
 
 
 def _movz_replacement(disasm: str) -> str | None:
