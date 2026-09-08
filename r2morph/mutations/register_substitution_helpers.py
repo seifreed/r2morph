@@ -649,7 +649,9 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
             unused_base = eligible_bases[0]
             unused_bases.remove(unused_base)
             substitute = next(
-                spelling for spelling in _REGISTER_FAMILY[unused_base] if _register_size(spelling) == register_size
+                spelling
+                for spelling in sorted(_REGISTER_FAMILY[unused_base])
+                if _register_size(spelling) == register_size
             )
             candidates.append((used_register, substitute))
         return candidates
@@ -662,18 +664,20 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     random.shuffle(unused)
 
     candidates = []
-    used_registers = {
-        register
-        for register in caller_saved
-        if register in used_spellings
-        and not any(
-            spelling in used_spellings
-            for spelling in _REGISTER_FAMILY.get(_CANONICAL_REGISTER.get(register, register), set())
-            if spelling != register
-        )
-        and _CANONICAL_REGISTER.get(register) not in abi_bases
-    }
-    for i, used_reg in enumerate(sorted(used_registers)):
+    used_registers = sorted(
+        {
+            register
+            for register in caller_saved
+            if register in used_spellings
+            and not any(
+                spelling in used_spellings
+                for spelling in _REGISTER_FAMILY.get(_CANONICAL_REGISTER.get(register, register), set())
+                if spelling != register
+            )
+            and _CANONICAL_REGISTER.get(register) not in abi_bases
+        }
+    )
+    for i, used_reg in enumerate(used_registers):
         if i < len(unused):
             candidates.append((used_reg, unused[i]))
     return candidates

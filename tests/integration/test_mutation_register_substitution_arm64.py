@@ -1,3 +1,4 @@
+import platform
 import shutil
 from pathlib import Path
 
@@ -27,6 +28,8 @@ def test_register_substitution_arm64_real_binary_skips_implicit_link_register(tm
 
 
 def test_register_substitution_arm64_preserves_generated_native_execution(tmp_path: Path):
+    if platform.system() != "Darwin":
+        pytest.skip("ARM64 Mach-O execution requires macOS")
     if shutil.which("clang") is None:
         pytest.skip("clang not available")
 
