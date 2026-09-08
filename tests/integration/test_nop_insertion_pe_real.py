@@ -18,11 +18,18 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
 
     source = tmp_path / "nop_sample.c"
     source.write_text(
-        "__attribute__((noinline)) int redundant(int value) {\n"
+        "#include <stdint.h>\n"
+        "__attribute__((noinline)) int transform(int value) {\n"
+        "  volatile uint32_t cell = (uint32_t)value;\n"
+        "  if ((cell & 1U) != 0U) {\n"
+        "    cell = cell * 3U + 2U;\n"
+        "  } else {\n"
+        "    cell = cell / 2U;\n"
+        "  }\n"
         '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
-        "  return value + 1;\n"
+        "  return (int)(cell ^ (uint32_t)value);\n"
         "}\n"
-        "int main(void) { return redundant(41) != 42; }\n"
+        "int main(void) { return transform(41) != 84; }\n"
     )
     binary_path = tmp_path / "nop_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
