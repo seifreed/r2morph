@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `9a79e10`
+- Commit: `c9e4bb9`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -187,6 +187,12 @@ focused ARM64 contract passes `25/25` locally; CI run `34196695434` completed
 the full configured matrix successfully, including typecheck, integration,
 core, installed-wheel, and platform jobs. ARM64 remains experimental.
 
+The current target records the generated ARM64 register-substitution evidence
+in the exhaustive support matrix. The Mach-O/AArch64 cell is marked
+`evidenced`, while the platform remains experimental and outside the official
+Linux ELF x86-64 guarantee. The matrix still contains 264 explicit cells and
+the automated review continues to require human signoff.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -224,7 +230,7 @@ the aggregate counters alone.
 Reviewer: Codex (AI coding agent)
 Date (UTC): 2026-09-08
 Result: TECHNICAL REVIEW RECORDED; HUMAN APPROVAL NOT ATTESTED
-Reviewed commit: `9a79e10`
+Reviewed commit: `c9e4bb9`
 Independence statement: This is an AI-assisted repository review, not a
 human independent review or approval. The reviewer has no authority to attest
 human independence on behalf of a person.
@@ -236,7 +242,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 9a79e10
+Reviewed commit: c9e4bb9
 ```
 
 No approval is implied until a human reviewer fills this section outside the
