@@ -27,6 +27,33 @@ def _build_arm64_return_binary(tmp_path: Path, return_code: int) -> Path:
     return binary_path
 
 
+def _build_arm64_control_flow_binary(tmp_path: Path) -> Path:
+    clang = shutil.which("clang")
+    if clang is None:
+        pytest.skip("clang not available")
+    source = tmp_path / "arm64_control_flow.c"
+    source.write_text(
+        "#include <stdint.h>\n"
+        "__attribute__((noinline)) int transform(int value) {\n"
+        "    volatile uint32_t cell = (uint32_t)value;\n"
+        "    if ((cell & 1U) != 0U) {\n"
+        "        cell = cell * 3U + 2U;\n"
+        "    } else {\n"
+        "        cell = cell / 2U;\n"
+        "    }\n"
+        "    return (int)(cell ^ 0x5aU);\n"
+        "}\n"
+        "int main(void) { return transform(7) == 77 ? 0 : 1; }\n"
+    )
+    binary_path = tmp_path / "arm64_control_flow"
+    run_command(
+        [clang, "-arch", "arm64", "-O0", "-fno-inline", "-o", str(binary_path), str(source)],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
 def test_nop_insertion_arm64_path(tmp_path: Path):
     binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
@@ -189,4 +216,30 @@ def test_instruction_substitution_arm64_compiled_binary_rejects_unrepresentable_
         == (original.returncode, original.stdout, original.stderr)
         == (37, "", ""),
         "ARM64 substitution did not fail closed for an unrepresentable immediate",
+    )
+
+
+def test_instruction_substitution_arm64_preserves_compiled_control_flow_and_memory(
+    tmp_path: Path,
+):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_control_flow_binary(tmp_path)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = InstructionSubstitutionPass(
+            {"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(bin_obj)
+
+    expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (0, "", ""),
+        "ARM64 substitution changed compiled control-flow or memory semantics",
     )
