@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `229d2c92`
+- Commit: `b30e3e56`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -160,6 +160,11 @@ volatile memory, conditional control flow, arithmetic, division, and XOR; the
 substitution pass applies two mutations across two functions and preserves the
 native exit code. The focused module passes `8/8`, and CI run `34185103592`
 completed the full matrix successfully.
+The same generated ARM64 executable now includes an explicit redundant
+instruction so the NOP pass is exercised on the arbitrary memory/control-flow
+path as well; it applies a real mutation and preserves the native exit code.
+The focused module passes `9/9`, and CI run `34189480116` completed the full
+matrix successfully. ARM64 remains experimental.
 
 The current target strengthens the PE preview evidence with a generated
 x86-64 executable whose mutated function performs volatile memory access,
@@ -208,7 +213,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 229d2c92
+Reviewed commit: b30e3e56
 ```
 
 No approval is implied until a human reviewer fills this section outside the
