@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `f7beab4e`
+- Commit: `229d2c92`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -137,8 +137,8 @@ The current target also adds a real Mach-O arm64 execution regression. On
 macOS, the test compares the original fixture with the NOP-mutated fixture,
 re-signing the mutated image ad hoc because the original code signature is
 invalidated by modification; exit code, stdout, and stderr remain identical.
-The four local ARM64/Mach-O tests pass, and CI run `34177508565` completed the
-full matrix successfully. Mach-O and ARM64 remain experimental.
+The local ARM64/Mach-O regression tests pass, and CI run `34177508565`
+completed the full matrix successfully. Mach-O and ARM64 remain experimental.
 
 The current target fixes a semantic defect exposed by executing ARM64
 instruction substitution on the real Mach-O fixture. The previous replacement
@@ -160,6 +160,14 @@ volatile memory, conditional control flow, arithmetic, division, and XOR; the
 substitution pass applies two mutations across two functions and preserves the
 native exit code. The focused module passes `8/8`, and CI run `34185103592`
 completed the full matrix successfully.
+
+The current target strengthens the PE preview evidence with a generated
+x86-64 executable whose mutated function performs volatile memory access,
+conditional control flow, arithmetic, and division before the redundant
+instruction is rewritten. The original and mutated images both exit with
+code `0`; checksum repair and PE integrity validation pass before and after
+mutation. The local regression passes and CI run `34187173363` completed the
+full matrix successfully. PE remains preview-only.
 
 ## Reproduction
 
@@ -200,7 +208,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: f7beab4e
+Reviewed commit: 229d2c92
 ```
 
 No approval is implied until a human reviewer fills this section outside the
