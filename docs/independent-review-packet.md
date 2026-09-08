@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `83df4c02`
+- Commit: `94ead726`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -90,7 +90,7 @@ The fixture inventory covers 150 ELF x86-64 virtualization fixtures across all
 repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
-The current automated review rerun for `f541a1b3` passes all 11 checks, including
+The current automated review rerun for `94ead726` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
 The target history extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, GCC fixed-load
@@ -128,10 +128,17 @@ The current target also adds a real PE x86-64 regression outside the stable
 ELF contract. The test compiles an arbitrary PE fixture, executes the original
 and NOP-mutated images with the same exit code, and verifies repaired PE
 checksum and integrity. The local test passes and the full CI run
-`34173770557` validates the integration suite. Its only failed job was a
+`34173770557` validated the integration suite. Its only failed job was a
 transient macOS radare2 checkout caused by DNS resolution; rerun
 `34174862496` completed the full matrix successfully. PE remains
 preview-only.
+
+The current target also adds a real Mach-O arm64 execution regression. On
+macOS, the test compares the original fixture with the NOP-mutated fixture,
+re-signing the mutated image ad hoc because the original code signature is
+invalidated by modification; exit code, stdout, and stderr remain identical.
+The four local ARM64/Mach-O tests pass, and CI run `34177508565` completed the
+full matrix successfully. Mach-O and ARM64 remain experimental.
 
 ## Reproduction
 
@@ -172,7 +179,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 83df4c02
+Reviewed commit: 94ead726
 ```
 
 No approval is implied until a human reviewer fills this section outside the
