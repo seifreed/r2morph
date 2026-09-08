@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `94ead726`
+- Commit: `1b6cb13d`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -140,6 +140,16 @@ invalidated by modification; exit code, stdout, and stderr remain identical.
 The four local ARM64/Mach-O tests pass, and CI run `34177508565` completed the
 full matrix successfully. Mach-O and ARM64 remain experimental.
 
+The current target fixes a semantic defect exposed by executing ARM64
+instruction substitution on the real Mach-O fixture. The previous replacement
+encoded `add w0, wzr, 0` as an operation using `wsp`, changing the process exit
+code to `224`; the replacement now uses an `orr` form with `wzr`/`xzr` and
+rejects immediates that cannot be represented by that encoding. The unit and
+native regression tests pass (`9 passed`), and CI run `34180345005` completed
+the full matrix successfully. This closes the tested immediate-substitution
+case; ARM64 instruction and binary coverage remains experimental and
+incomplete outside this fixture and encoding subset.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -179,7 +189,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 94ead726
+Reviewed commit: 1b6cb13d
 ```
 
 No approval is implied until a human reviewer fills this section outside the
