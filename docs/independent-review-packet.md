@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `c9e4bb9`
+- Commit: `5c33735`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -193,6 +193,10 @@ in the exhaustive support matrix. The Mach-O/AArch64 cell is marked
 Linux ELF x86-64 guarantee. The matrix still contains 264 explicit cells and
 the automated review continues to require human signoff.
 
+The current target also adds a regression contract that rejects `supported`
+status for every non-official format or architecture. PE, Mach-O, ARM, and
+AArch64 may carry explicit evidence, but remain outside the official target.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -230,7 +234,7 @@ the aggregate counters alone.
 Reviewer: Codex (AI coding agent)
 Date (UTC): 2026-09-08
 Result: TECHNICAL REVIEW RECORDED; HUMAN APPROVAL NOT ATTESTED
-Reviewed commit: `c9e4bb9`
+Reviewed commit: `5c33735`
 Independence statement: This is an AI-assisted repository review, not a
 human independent review or approval. The reviewer has no authority to attest
 human independence on behalf of a person.
@@ -242,7 +246,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: c9e4bb9
+Reviewed commit: 5c33735
 ```
 
 No approval is implied until a human reviewer fills this section outside the
