@@ -86,12 +86,17 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
         "tests/product_smoke",
         "tests/integration",
-        "tests/integration/test_mutation_register_substitution_arm64.py"
+        "tests/integration/test_mutation_register_substitution_arm64.py",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ]
     },
     {
@@ -759,7 +764,8 @@
         "evidence": [
           "tests/product_smoke",
           "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py"
+          "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -787,8 +793,13 @@
         "pass": "register",
         "format": "PE",
         "architecture": "x86-64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "register",
@@ -833,7 +844,8 @@
         "evidence": [
           "tests/product_smoke",
           "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py"
+          "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
