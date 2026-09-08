@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `fef7793e`
+- Commit: `f7beab4e`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -155,7 +155,11 @@ executables compiled from C at test time. A representable `return 3` is
 mutated and preserves its native exit code; an unrepresentable `return 37`
 is rejected without mutation and preserves execution. The focused ARM64
 integration module passes `7/7`, and CI run `34182601293` completed the full
-matrix successfully.
+matrix successfully. It also adds an arbitrary compiled ARM64 executable with
+volatile memory, conditional control flow, arithmetic, division, and XOR; the
+substitution pass applies two mutations across two functions and preserves the
+native exit code. The focused module passes `8/8`, and CI run `34185103592`
+completed the full matrix successfully.
 
 ## Reproduction
 
@@ -196,7 +200,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: fef7793e
+Reviewed commit: f7beab4e
 ```
 
 No approval is implied until a human reviewer fills this section outside the
