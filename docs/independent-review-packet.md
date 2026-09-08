@@ -113,6 +113,17 @@ not contain broken local Markdown links. Release `v0.4.0-alpha.1` is published
 with wheel, source archive, SBOM, checksums, and verified provenance; this is
 release evidence, not human approval.
 
+The published `v0.4.0-alpha.1` release gate was rerun on 2026-09-08. The
+release `SHA256SUMS` manifest verifies the wheel, source archive, and SBOM;
+their SHA-256 values are `f175db70c2b176949d7d07bc7a5329c3b111bb0573f768f4bc9db956055666bb`,
+`1a08e4ea9ac6872b463f43210ffb486c257a4fab64dbaef8e31488f054de3bb9`, and
+`61ea1a117bb453782243b8ada1495a259e3bc7e1764074be96c777827fefc78e`,
+respectively. GitHub attestation verification passes for all three release
+artifacts. A fresh Python 3.13 isolated environment installs the wheel from
+the release, imports `r2morph` as `0.4.0-alpha.1`, and reports
+`r2morph 0.4.0-alpha.1` from the CLI. The repository release contract also
+passes its current documentation-link and counter checks.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
