@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `fed05f2d`
+- Commit: `9a79e10`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -179,6 +179,14 @@ applies real substitutions, checksum repair and integrity validation pass,
 and the mutated image preserves exit code `0`. The focused PE module passes
 `2/2`, and CI run `34192212419` completed the full matrix successfully.
 
+The current target also fixes ARM64 register substitution for 32-bit register
+spellings. Candidate selection now preserves `wN` versus `xN` width, chooses
+substitutes deterministically, and the generated native ARM64 regression is
+restricted to macOS where the Mach-O compiler and executor are available. The
+focused ARM64 contract passes `25/25` locally; CI run `34196695434` completed
+the full configured matrix successfully, including typecheck, integration,
+core, installed-wheel, and platform jobs. ARM64 remains experimental.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -211,6 +219,16 @@ the aggregate counters alone.
 
 ## Sign-off
 
+### Agent review record
+
+Reviewer: Codex (AI coding agent)
+Date (UTC): 2026-09-08
+Result: TECHNICAL REVIEW RECORDED; HUMAN APPROVAL NOT ATTESTED
+Reviewed commit: `9a79e10`
+Independence statement: This is an AI-assisted repository review, not a
+human independent review or approval. The reviewer has no authority to attest
+human independence on behalf of a person.
+
 ```text
 Reviewer:
 Affiliation:
@@ -218,7 +236,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: fed05f2d
+Reviewed commit: 9a79e10
 ```
 
 No approval is implied until a human reviewer fills this section outside the
