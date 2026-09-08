@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `1b6cb13d`
+- Commit: `fef7793e`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -150,6 +150,13 @@ the full matrix successfully. This closes the tested immediate-substitution
 case; ARM64 instruction and binary coverage remains experimental and
 incomplete outside this fixture and encoding subset.
 
+The current target extends that evidence with two arbitrary ARM64 Mach-O
+executables compiled from C at test time. A representable `return 3` is
+mutated and preserves its native exit code; an unrepresentable `return 37`
+is rejected without mutation and preserves execution. The focused ARM64
+integration module passes `7/7`, and CI run `34182601293` completed the full
+matrix successfully.
+
 ## Reproduction
 
 Run from the repository root with the pinned Python 3.13 environment:
@@ -189,7 +196,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: 1b6cb13d
+Reviewed commit: fef7793e
 ```
 
 No approval is implied until a human reviewer fills this section outside the
