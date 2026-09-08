@@ -105,6 +105,18 @@ def test_find_substitution_candidates_without_call_still_renames_arg_register() 
     expect(not ("x0" not in sources))
 
 
+def test_find_substitution_candidates_arm64_preserves_register_width() -> None:
+    instructions = [
+        {"disasm": "add w8, w0, 2"},
+        {"disasm": "mov w0, w8"},
+        {"disasm": "ret"},
+    ]
+
+    candidates = find_substitution_candidates(instructions, "arm64")
+
+    expect(("w8", "w1") in candidates)
+
+
 def test_find_substitution_candidates_with_arm64_return_excludes_link_register() -> None:
     instructions = [
         {"disasm": "stp x29, x30, [sp, -0x10]!"},

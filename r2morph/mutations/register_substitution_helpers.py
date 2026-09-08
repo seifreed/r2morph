@@ -362,6 +362,14 @@ def _register_bases(instructions: list[dict[str, Any]]) -> set[str]:
     return bases
 
 
+def _register_size(register: str) -> int:
+    if register.startswith("w") and register[1:].isdigit():
+        return ARCH_BITS_32
+    if register.startswith("x") and register[1:].isdigit():
+        return ARCH_BITS_64
+    return REGISTER_SIZES.get(register, 0)
+
+
 def _transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
     """(inputs, outputs) canonical register sets for a call/syscall, else None."""
     tokens = disasm.split()
@@ -609,6 +617,39 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
             unused_bases.remove(unused_base)
             substitute = next(
                 spelling for spelling in _REGISTER_FAMILY[unused_base] if REGISTER_SIZES.get(spelling) == register_size
+            )
+            candidates.append((used_register, substitute))
+        return candidates
+
+    if arch == "arm64":
+        caller_saved_bases = {_CANONICAL_REGISTER[register] for register in caller_saved}
+        unused_bases = sorted(base for base in caller_saved_bases if base not in used_bases | abi_bases)
+        used_registers = sorted(
+            register
+            for register in used_spellings
+            if _CANONICAL_REGISTER.get(register) in caller_saved_bases
+            and _CANONICAL_REGISTER.get(register) not in abi_bases
+            and _register_size(register) in (ARCH_BITS_32, ARCH_BITS_64)
+            and not any(
+                spelling in used_spellings
+                for spelling in _REGISTER_FAMILY.get(_CANONICAL_REGISTER[register], set())
+                if spelling != register
+            )
+        )
+        candidates = []
+        for used_register in used_registers:
+            register_size = _register_size(used_register)
+            eligible_bases = [
+                base
+                for base in unused_bases
+                if any(_register_size(spelling) == register_size for spelling in _REGISTER_FAMILY[base])
+            ]
+            if not eligible_bases:
+                continue
+            unused_base = eligible_bases[0]
+            unused_bases.remove(unused_base)
+            substitute = next(
+                spelling for spelling in _REGISTER_FAMILY[unused_base] if _register_size(spelling) == register_size
             )
             candidates.append((used_register, substitute))
         return candidates
