@@ -12,6 +12,21 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 
+def _build_arm64_return_binary(tmp_path: Path, return_code: int) -> Path:
+    clang = shutil.which("clang")
+    if clang is None:
+        pytest.skip("clang not available")
+    source = tmp_path / f"arm64_return_{return_code}.c"
+    source.write_text(f"int main(void) {{ return {return_code}; }}\n")
+    binary_path = tmp_path / f"arm64_return_{return_code}"
+    run_command(
+        [clang, "-arch", "arm64", "-O0", "-fno-inline", "-o", str(binary_path), str(source)],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
 def test_nop_insertion_arm64_path(tmp_path: Path):
     binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
@@ -125,4 +140,53 @@ def test_instruction_substitution_arm64_preserves_native_output(tmp_path: Path):
         == (original.returncode, original.stdout, original.stderr)
         == (0, "hello\n", ""),
         "ARM64 instruction substitution changed native execution",
+    )
+
+
+def test_instruction_substitution_arm64_compiled_binary_preserves_return_code(tmp_path: Path):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_return_binary(tmp_path, 3)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = InstructionSubstitutionPass(
+            {"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(bin_obj)
+
+    expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (3, "", ""),
+        "ARM64 substitution changed a compiled binary return code",
+    )
+
+
+def test_instruction_substitution_arm64_compiled_binary_rejects_unrepresentable_immediate(
+    tmp_path: Path,
+):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_return_binary(tmp_path, 37)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = InstructionSubstitutionPass(
+            {"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(bin_obj)
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] == 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (37, "", ""),
+        "ARM64 substitution did not fail closed for an unrepresentable immediate",
     )
