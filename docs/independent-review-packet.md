@@ -128,7 +128,10 @@ The current target also adds a real PE x86-64 regression outside the stable
 ELF contract. The test compiles an arbitrary PE fixture, executes the original
 and NOP-mutated images with the same exit code, and verifies repaired PE
 checksum and integrity. The local test passes and the full CI run
-`34173770557` validates the integration suite; PE remains preview-only.
+`34173770557` validates the integration suite. Its only failed job was a
+transient macOS radare2 checkout caused by DNS resolution; rerun
+`34174862496` completed the full matrix successfully. PE remains
+preview-only.
 
 ## Reproduction
 
