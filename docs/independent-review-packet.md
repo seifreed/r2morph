@@ -6,7 +6,7 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `f541a1b3`
+- Commit: `83df4c02`
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
@@ -92,7 +92,7 @@ coverage evidence, not a claim of universal ISA support.
 
 The current automated review rerun for `f541a1b3` passes all 11 checks, including
 the 264-cell support matrix and the existing 159-sample virtualization corpus.
-The same commit extends the compiler-generated ELF regression outside that
+The target history extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, GCC fixed-load
 `-O2` with frame pointers, GCC PIE `-O2`, GCC stripped fixed-load `-O2`, and
 Clang fixed-load `-O2`; the Linux CI integration job virtualizes its generic
@@ -104,7 +104,7 @@ using GCC `-O0`, `-O2`, `-O3`, and `-Os`, plus Clang++ `-O2`, and verifies the
 native result after virtualization. The generated instruction mix exercises
 integer operations and comparisons through `imul`, `neg`, `not`, `cmp`,
 `sete`, and `movzx`, as well as carry consumption and rotate round-trips
-through `stc`, `adc`, `clc`, `sbb`, `rol`, and `ror`. CI run `34170429215`
+through `stc`, `adc`, `clc`, `sbb`, `rol`, and `ror`. CI run `34173770557`
 completed successfully across the configured matrix.
 The same rerun reports `human_signoff: not-attested`; this packet therefore
 remains technically updated but not human-approved. The release contract at
@@ -123,6 +123,12 @@ artifacts. A fresh Python 3.13 isolated environment installs the wheel from
 the release, imports `r2morph` as `0.4.0-alpha.1`, and reports
 `r2morph 0.4.0-alpha.1` from the CLI. The repository release contract also
 passes its current documentation-link and counter checks.
+
+The current target also adds a real PE x86-64 regression outside the stable
+ELF contract. The test compiles an arbitrary PE fixture, executes the original
+and NOP-mutated images with the same exit code, and verifies repaired PE
+checksum and integrity. The local test passes and the full CI run
+`34173770557` validates the integration suite; PE remains preview-only.
 
 ## Reproduction
 
@@ -163,7 +169,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: f541a1b3
+Reviewed commit: 83df4c02
 ```
 
 No approval is implied until a human reviewer fills this section outside the
