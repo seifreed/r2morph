@@ -12,8 +12,9 @@ from tests.utils.process import run_command
 
 def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) -> None:
     compiler = shutil.which("x86_64-w64-mingw32-gcc")
-    if compiler is None:
-        pytest.skip("PE compiler not available")
+    wine = shutil.which("wine")
+    if compiler is None or wine is None:
+        pytest.skip("PE compiler and Wine runtime are required")
 
     source = tmp_path / "nop_sample.c"
     source.write_text(
@@ -25,6 +26,11 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
     )
     binary_path = tmp_path / "nop_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    original_execution = run_command([wine, str(binary_path)], timeout=30)
+    expect(
+        original_execution.returncode == 0,
+        f"generated PE fixture did not execute successfully: {original_execution.returncode}",
+    )
 
     handler = PEHandler(binary_path)
     expect(handler.fix_checksum())
@@ -44,3 +50,9 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
     expect(result["mutations_applied"] > 0)
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
+
+    mutated_execution = run_command([wine, str(binary_path)], timeout=30)
+    expect(
+        mutated_execution.returncode == original_execution.returncode == 0,
+        "PE NOP insertion changed the native execution result",
+    )
