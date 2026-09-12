@@ -13,6 +13,7 @@ from scripts.adversarial_benchmark import (
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
+_PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
 _EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 
@@ -81,6 +82,19 @@ def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path)
             "samples": 1,
             "unsupported_functions": 0,
         }
+    )
+
+
+def test_adversarial_benchmark_corpus_measures_pattern_substitution(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    (dataset / _PATTERN_FIXTURE.name).write_bytes(_PATTERN_FIXTURE.read_bytes())
+
+    report = benchmark_corpus(dataset, ("PatternSubstitution",))
+
+    expect(
+        report["pass_summary"]["PatternSubstitution"]["applied"] == 1
+        and report["pass_summary"]["PatternSubstitution"]["mutations_applied"] == 1
     )
 
 
