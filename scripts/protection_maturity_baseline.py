@@ -469,6 +469,24 @@ def _static_metric_deltas(seed_runs: list[tuple[dict[str, object], Mapping[str, 
     return deltas
 
 
+def _has_static_metrics(value: object) -> bool:
+    return (
+        isinstance(value, Mapping) and value.get("status") == "completed" and isinstance(value.get("metrics"), Mapping)
+    )
+
+
+def _static_metric_coverage(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
+    complete = sum(
+        1
+        for fixture, run in seed_runs
+        if _has_static_metrics(fixture.get("baseline")) and _has_static_metrics(run.get("after"))
+    )
+    return {
+        "static_metric_complete_runs": complete,
+        "static_metric_missing_runs": len(seed_runs) - complete,
+    }
+
+
 def _transformation_reason_counts(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
 ) -> dict[str, int]:
@@ -529,6 +547,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
     static_metric_deltas = _static_metric_deltas(seed_runs)
+    static_metric_coverage = _static_metric_coverage(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
     error_reasons = _transformation_reason_counts(seed_runs, "error")
     return {
@@ -554,6 +573,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
             "omission_reasons": omission_reasons,
             "error_reasons": error_reasons,
+            **static_metric_coverage,
             **static_metric_deltas,
         },
     }
