@@ -503,6 +503,39 @@ def _runtime_observable_coverage(seed_runs: list[tuple[dict[str, object], Mappin
     }
 
 
+def _numeric_metric_coverage(
+    seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
+    summary_prefix: str,
+    baseline_field: str | None,
+    run_field: str,
+) -> dict[str, int]:
+    complete = sum(
+        1
+        for fixture, run in seed_runs
+        if (baseline_field is None or isinstance(fixture.get(baseline_field), int | float))
+        and isinstance(run.get(run_field), int | float)
+    )
+    return {
+        f"{summary_prefix}_complete_runs": complete,
+        f"{summary_prefix}_missing_runs": len(seed_runs) - complete,
+    }
+
+
+def _runtime_duration_coverage(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
+    complete = sum(
+        1
+        for fixture, run in seed_runs
+        if isinstance(baseline_runtime := fixture.get("baseline_runtime"), Mapping)
+        and isinstance(runtime := run.get("runtime"), Mapping)
+        and isinstance(baseline_runtime.get("duration_seconds"), int | float)
+        and isinstance(runtime.get("duration_seconds"), int | float)
+    )
+    return {
+        "runtime_duration_complete_runs": complete,
+        "runtime_duration_missing_runs": len(seed_runs) - complete,
+    }
+
+
 def _transformation_reason_counts(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
 ) -> dict[str, int]:
@@ -563,6 +596,14 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
     runtime_observable_coverage = _runtime_observable_coverage(seed_runs)
+    output_size_coverage = _numeric_metric_coverage(seed_runs, "output_size", "baseline_size", "output_size")
+    transform_duration_coverage = _numeric_metric_coverage(
+        seed_runs,
+        "transform_duration",
+        None,
+        "transform_duration_seconds",
+    )
+    runtime_duration_coverage = _runtime_duration_coverage(seed_runs)
     static_metric_deltas = _static_metric_deltas(seed_runs)
     static_metric_coverage = _static_metric_coverage(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
@@ -584,10 +625,13 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "runtime_observable_passes": runtime_observable_passes,
             "runtime_observable_failures": runtime_observable_failures,
             **runtime_observable_coverage,
+            **output_size_coverage,
             "total_output_size_delta_bytes": output_size_delta_bytes,
             "max_output_size_delta_bytes": max(output_size_deltas, default=0),
             "min_output_size_delta_bytes": min(output_size_deltas, default=0),
+            **transform_duration_coverage,
             "total_transform_duration_seconds": transform_duration_seconds,
+            **runtime_duration_coverage,
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
             "omission_reasons": omission_reasons,
             "error_reasons": error_reasons,
