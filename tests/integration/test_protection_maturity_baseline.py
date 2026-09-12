@@ -188,7 +188,11 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
                     },
                     {
                         "status": "passed",
-                        "transformation": {"status": "omitted", "reason": "no eligible function was transformed"},
+                        "transformation": {
+                            "status": "omitted",
+                            "reason": "no eligible function was transformed",
+                            "severity": "warning",
+                        },
                         "output_size": 95,
                         "transform_duration_seconds": 0.25,
                         "runtime": {"status": "completed", "duration_seconds": 0.75},
@@ -226,6 +230,8 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
         and report["summary"]["total_static_number_of_instructions_delta"] == _EXPECTED_STATIC_INSTRUCTIONS_DELTA
         and report["summary"]["omission_reasons"] == {"no eligible function was transformed": 1}
         and report["summary"]["error_reasons"] == {}
+        and report["summary"]["omission_severities"] == {"warning": 1}
+        and report["summary"]["error_severities"] == {}
     )
 
 

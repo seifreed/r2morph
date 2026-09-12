@@ -553,6 +553,20 @@ def _transformation_reason_counts(
     return dict(sorted(reasons.items()))
 
 
+def _transformation_severity_counts(
+    seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
+) -> dict[str, int]:
+    severities: dict[str, int] = {}
+    for _, run in seed_runs:
+        transformation = run.get("transformation")
+        if not isinstance(transformation, Mapping) or transformation.get("status") != status:
+            continue
+        severity = transformation.get("severity")
+        if isinstance(severity, str) and severity:
+            severities[severity] = severities.get(severity, 0) + 1
+    return dict(sorted(severities.items()))
+
+
 def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     seed_runs = [(fixture, run) for fixture in fixtures for run in fixture.get("runs", []) if isinstance(run, Mapping)]
     successful_seed_runs = sum(
@@ -612,6 +626,8 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
     static_metric_coverage = _static_metric_coverage(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
     error_reasons = _transformation_reason_counts(seed_runs, "error")
+    omission_severities = _transformation_severity_counts(seed_runs, "omitted")
+    error_severities = _transformation_severity_counts(seed_runs, "error")
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
@@ -639,6 +655,8 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
             "omission_reasons": omission_reasons,
             "error_reasons": error_reasons,
+            "omission_severities": omission_severities,
+            "error_severities": error_severities,
             **static_metric_coverage,
             **static_metric_deltas,
         },
