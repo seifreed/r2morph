@@ -26,8 +26,13 @@ _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
 _EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL = 3
 _EXPECTED_PARTIAL_TOOL_ROWS = 3
 _EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
+_EXPECTED_HALF_COVERAGE_PERCENT = 50.0
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT = 33.33
+_EXPECTED_TWO_PASS_TOOL_RUNS = 18
+_EXPECTED_TWO_PASS_TOOL_MISSING_RUNS = 15
+_EXPECTED_TWO_PASS_TOOL_COVERAGE_PERCENT = 16.67
+_EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL = 2
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -94,7 +99,10 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
     summary = _campaign_summary(
         [
             {
-                "passes": [{"pass_name": "CodeVirtualization", "status": "applied"}],
+                "passes": [
+                    {"pass_name": "CodeVirtualization", "status": "applied"},
+                    {"pass_name": "PatternSubstitution", "status": "omitted", "reason": "no eligible pattern"},
+                ],
                 "tools": [
                     {"tool": "binary-ninja", "status": "completed"},
                     {"tool": "ida-pro", "status": "error", "error_type": "RuntimeError"},
@@ -103,7 +111,7 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
             }
         ],
         fixture_count=1,
-        pass_names=("CodeVirtualization",),
+        pass_names=("CodeVirtualization", "PatternSubstitution"),
     )
 
     expect(
@@ -112,21 +120,23 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_passes"] == []
         and summary["missing_pass_runs_by_pass"] == {}
         and summary["applied_pass_runs"] == 1
-        and summary["applied_pass_run_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
+        and summary["applied_pass_run_percent"] == _EXPECTED_HALF_COVERAGE_PERCENT
         and summary["applied_pass_runs_by_pass"] == {"CodeVirtualization": 1}
-        and summary["omitted_pass_runs"] == 0
-        and summary["omitted_pass_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
-        and summary["omitted_pass_runs_by_pass"] == {}
+        and summary["omitted_pass_runs"] == 1
+        and summary["omitted_pass_run_percent"] == _EXPECTED_HALF_COVERAGE_PERCENT
+        and summary["omitted_pass_runs_by_pass"] == {"PatternSubstitution": 1}
+        and summary["omission_reasons_by_pass"] == {"PatternSubstitution": {"no eligible pattern": 1}}
         and summary["error_pass_runs"] == 0
         and summary["error_pass_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
         and summary["error_pass_runs_by_pass"] == {}
-        and summary["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
+        and summary["error_reasons_by_pass"] == {}
+        and summary["expected_tool_runs"] == _EXPECTED_TWO_PASS_TOOL_RUNS
         and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
-        and summary["missing_tool_runs"] == _EXPECTED_TOOL_COUNT - _EXPECTED_PARTIAL_TOOL_ROWS
-        and summary["tool_run_coverage_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
+        and summary["missing_tool_runs"] == _EXPECTED_TWO_PASS_TOOL_MISSING_RUNS
+        and summary["tool_run_coverage_percent"] == _EXPECTED_TWO_PASS_TOOL_COVERAGE_PERCENT
         and {"angr", "custom"}.issubset(summary["missing_tools"])
-        and summary["missing_tool_runs_by_tool"]["angr"] == 1
-        and summary["missing_tool_runs_by_tool"]["custom"] == 1
+        and summary["missing_tool_runs_by_tool"]["angr"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
+        and summary["missing_tool_runs_by_tool"]["custom"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["completed_tool_runs"] == 1
         and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["unavailable_tool_runs"] == 1

@@ -730,9 +730,11 @@ def _campaign_summary(
         "omitted_pass_runs": omitted_pass_runs,
         "omitted_pass_run_percent": _coverage_percent(omitted_pass_runs, observed_pass_runs),
         "omitted_pass_runs_by_pass": _pass_status_counts(samples, "omitted"),
+        "omission_reasons_by_pass": _pass_reason_map(samples, "omitted"),
         "error_pass_runs": error_pass_runs,
         "error_pass_run_percent": _coverage_percent(error_pass_runs, observed_pass_runs),
         "error_pass_runs_by_pass": _pass_status_counts(samples, "error"),
+        "error_reasons_by_pass": _pass_reason_map(samples, "error"),
         "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
         "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
@@ -772,6 +774,20 @@ def _pass_status_counts(samples: list[dict[str, object]], status: str) -> dict[s
         if isinstance(row, dict) and row.get("status") == status and isinstance(pass_name := row.get("pass_name"), str)
     )
     return dict(sorted(counts.items()))
+
+
+def _pass_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:
+    reasons: dict[str, Counter[str]] = {}
+    for sample in samples:
+        for row in sample.get("passes", []):
+            if not isinstance(row, dict) or row.get("status") != status:
+                continue
+            pass_name = row.get("pass_name")
+            if not isinstance(pass_name, str):
+                continue
+            reason = str(row.get("reason") or row.get("error_type") or "unspecified")
+            reasons.setdefault(pass_name, Counter())[reason] += 1
+    return {pass_name: dict(sorted(counts.items())) for pass_name, counts in sorted(reasons.items())}
 
 
 def _tool_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
