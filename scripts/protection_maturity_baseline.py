@@ -450,6 +450,30 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         value if isinstance(value := fixture.get("successful_runs"), int) else 0 for fixture in fixtures
     )
     failed_seed_runs = sum(value if isinstance(value := fixture.get("failed_runs"), int) else 0 for fixture in fixtures)
+    applied_runs = sum(
+        1
+        for fixture in fixtures
+        for run in fixture.get("runs", [])
+        if isinstance(run, Mapping)
+        and isinstance(transformation := run.get("transformation"), Mapping)
+        and transformation.get("status") == "applied"
+    )
+    omitted_runs = sum(
+        1
+        for fixture in fixtures
+        for run in fixture.get("runs", [])
+        if isinstance(run, Mapping)
+        and isinstance(transformation := run.get("transformation"), Mapping)
+        and transformation.get("status") == "omitted"
+    )
+    error_runs = sum(
+        1
+        for fixture in fixtures
+        for run in fixture.get("runs", [])
+        if isinstance(run, Mapping)
+        and isinstance(transformation := run.get("transformation"), Mapping)
+        and transformation.get("status") == "error"
+    )
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
@@ -461,6 +485,9 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "semantic_failures": sum(1 for fixture in fixtures if not fixture["all_semantic_equal"]),
             "successful_seed_runs": successful_seed_runs,
             "failed_seed_runs": failed_seed_runs,
+            "applied_runs": applied_runs,
+            "omitted_runs": omitted_runs,
+            "error_runs": error_runs,
         },
     }
 
@@ -503,6 +530,11 @@ def main() -> None:
         help="comma-separated pass names or 'all' (default: CodeVirtualization)",
     )
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--require-applied",
+        action="store_true",
+        help="fail when a selected pass does not apply to any fixture",
+    )
     args = parser.parse_args()
     if args.count < 1:
         parser.error("--count must be positive")
@@ -525,6 +557,14 @@ def main() -> None:
     report = _render_result(measurements[pass_names[0]], pass_names[0])
     if len(pass_names) > 1:
         report = _render_multi_pass_result(measurements)
+    if args.require_applied:
+        passes_without_mutations = [
+            name
+            for name, fixtures_for_pass in measurements.items()
+            if _render_result(fixtures_for_pass, name)["summary"]["applied_runs"] == 0
+        ]
+        if passes_without_mutations:
+            parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered)

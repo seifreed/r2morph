@@ -37,6 +37,8 @@ BlockReordering, CodeVirtualization, ConstantUnfolding, ControlFlowFlattening,
 DeadCodeInjection, InstructionExpansion,
 InstructionSubstitution, NopInsertion, and RegisterSubstitution. It retains one
 bounded matrix record per sample/pass pair and an aggregate result for each
+pass. The scheduled workflow fails when a selected pass does not apply to at
+least one fixture, so an unchanged output cannot count as evidence for that
 pass.
 Raw sample bytes and unbounded process output are not stored in reports. Each
 transformation record includes the pass name, status (`applied`, `omitted`, or
