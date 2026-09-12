@@ -726,10 +726,13 @@ def _campaign_summary(
         "pass_run_coverage_percent": _coverage_percent(observed_pass_runs, expected_pass_runs),
         "applied_pass_runs": applied_pass_runs,
         "applied_pass_run_percent": _coverage_percent(applied_pass_runs, observed_pass_runs),
+        "applied_pass_runs_by_pass": _pass_status_counts(samples, "applied"),
         "omitted_pass_runs": omitted_pass_runs,
         "omitted_pass_run_percent": _coverage_percent(omitted_pass_runs, observed_pass_runs),
+        "omitted_pass_runs_by_pass": _pass_status_counts(samples, "omitted"),
         "error_pass_runs": error_pass_runs,
         "error_pass_run_percent": _coverage_percent(error_pass_runs, observed_pass_runs),
+        "error_pass_runs_by_pass": _pass_status_counts(samples, "error"),
         "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
         "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
@@ -759,6 +762,16 @@ def _pass_status_count(samples: list[dict[str, object]], status: str) -> int:
         for row in sample.get("passes", [])
         if isinstance(row, dict) and row.get("status") == status
     )
+
+
+def _pass_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
+    counts = Counter(
+        pass_name
+        for sample in samples
+        for row in sample.get("passes", [])
+        if isinstance(row, dict) and row.get("status") == status and isinstance(pass_name := row.get("pass_name"), str)
+    )
+    return dict(sorted(counts.items()))
 
 
 def _tool_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:

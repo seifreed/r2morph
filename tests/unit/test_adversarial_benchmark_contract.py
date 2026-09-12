@@ -113,10 +113,13 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_pass_runs_by_pass"] == {}
         and summary["applied_pass_runs"] == 1
         and summary["applied_pass_run_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
+        and summary["applied_pass_runs_by_pass"] == {"CodeVirtualization": 1}
         and summary["omitted_pass_runs"] == 0
         and summary["omitted_pass_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
+        and summary["omitted_pass_runs_by_pass"] == {}
         and summary["error_pass_runs"] == 0
         and summary["error_pass_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
+        and summary["error_pass_runs_by_pass"] == {}
         and summary["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
         and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
         and summary["missing_tool_runs"] == _EXPECTED_TOOL_COUNT - _EXPECTED_PARTIAL_TOOL_ROWS
