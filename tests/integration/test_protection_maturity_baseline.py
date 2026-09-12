@@ -49,6 +49,7 @@ _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
+_EXPECTED_MULTI_PASS_SEED_RUNS = 2
 _EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
 _EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
 _EXPECTED_INCOMPLETE_COVERAGE = {
@@ -374,6 +375,11 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["applied_run_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["omitted_run_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["error_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_seed_runs"] == _EXPECTED_MULTI_PASS_SEED_RUNS
+        and report["campaign_summary"]["total_successful_seed_runs"] == 1
+        and report["campaign_summary"]["total_failed_seed_runs"] == 1
+        and report["campaign_summary"]["semantic_success_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["semantic_failure_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["average_runtime_observable_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["average_output_size_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT

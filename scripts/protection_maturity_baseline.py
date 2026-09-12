@@ -742,6 +742,9 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
     total_omitted_runs = _sum_summary_field(summaries, "omitted_runs")
     total_error_runs = _sum_summary_field(summaries, "error_runs")
     total_classified_runs = total_applied_runs + total_omitted_runs + total_error_runs
+    total_successful_seed_runs = _sum_summary_field(summaries, "successful_seed_runs")
+    total_failed_seed_runs = _sum_summary_field(summaries, "failed_seed_runs")
+    total_seed_runs = total_successful_seed_runs + total_failed_seed_runs
     return {
         "pass_count": len(summaries),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
@@ -764,6 +767,11 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "applied_run_percent": _coverage_percent(total_applied_runs, total_classified_runs),
         "omitted_run_percent": _coverage_percent(total_omitted_runs, total_classified_runs),
         "error_run_percent": _coverage_percent(total_error_runs, total_classified_runs),
+        "total_seed_runs": total_seed_runs,
+        "total_successful_seed_runs": total_successful_seed_runs,
+        "total_failed_seed_runs": total_failed_seed_runs,
+        "semantic_success_percent": _coverage_percent(total_successful_seed_runs, total_seed_runs),
+        "semantic_failure_percent": _coverage_percent(total_failed_seed_runs, total_seed_runs),
         "average_runtime_observable_coverage_percent": _average_percent(
             summaries,
             "runtime_observable_coverage_percent",
