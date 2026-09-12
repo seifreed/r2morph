@@ -738,6 +738,10 @@ def _sum_summary_field(summaries: dict[str, object], field: str) -> int:
 
 
 def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
+    total_applied_runs = _sum_summary_field(summaries, "applied_runs")
+    total_omitted_runs = _sum_summary_field(summaries, "omitted_runs")
+    total_error_runs = _sum_summary_field(summaries, "error_runs")
+    total_classified_runs = total_applied_runs + total_omitted_runs + total_error_runs
     return {
         "pass_count": len(summaries),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
@@ -753,9 +757,13 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "error_reasons_by_pass": _reason_map_by_pass(summaries, "error_reasons"),
         "omission_severities_by_pass": _reason_map_by_pass(summaries, "omission_severities"),
         "error_severities_by_pass": _reason_map_by_pass(summaries, "error_severities"),
-        "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
-        "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
-        "total_error_runs": _sum_summary_field(summaries, "error_runs"),
+        "total_classified_runs": total_classified_runs,
+        "total_applied_runs": total_applied_runs,
+        "total_omitted_runs": total_omitted_runs,
+        "total_error_runs": total_error_runs,
+        "applied_run_percent": _coverage_percent(total_applied_runs, total_classified_runs),
+        "omitted_run_percent": _coverage_percent(total_omitted_runs, total_classified_runs),
+        "error_run_percent": _coverage_percent(total_error_runs, total_classified_runs),
         "average_runtime_observable_coverage_percent": _average_percent(
             summaries,
             "runtime_observable_coverage_percent",

@@ -48,7 +48,9 @@ _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
+_EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
 _EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
+_EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
 _EXPECTED_INCOMPLETE_COVERAGE = {
     "runtime_observable": ["PatternSubstitution"],
     "output_size": ["PatternSubstitution"],
@@ -365,9 +367,13 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["error_reasons_by_pass"] == {}
         and report["campaign_summary"]["omission_severities_by_pass"] == _EXPECTED_OMISSION_SEVERITIES_BY_PASS
         and report["campaign_summary"]["error_severities_by_pass"] == {}
+        and report["campaign_summary"]["total_classified_runs"] == _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS
         and report["campaign_summary"]["total_applied_runs"] == 1
         and report["campaign_summary"]["total_omitted_runs"] == 1
         and report["campaign_summary"]["total_error_runs"] == 0
+        and report["campaign_summary"]["applied_run_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["omitted_run_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["error_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
         and report["campaign_summary"]["average_runtime_observable_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["average_output_size_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
