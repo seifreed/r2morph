@@ -71,10 +71,12 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
         and report["summary"]["observed_pass_count"] == 1
         and report["summary"]["expected_pass_runs"] == 1
         and report["summary"]["observed_pass_runs"] == 1
+        and report["summary"]["missing_pass_runs"] == 0
         and report["summary"]["expected_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["observed_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["observed_tool_runs"] == _EXPECTED_TOOL_COUNT
+        and report["summary"]["missing_tool_runs"] == 0
         and "binary-ninja" in report["tool_summary"]
     )
     sample = report["samples"][0]
