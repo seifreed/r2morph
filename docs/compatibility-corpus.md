@@ -32,10 +32,11 @@ preserve the native result and, for the C image, stdout and stderr.
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
 digests, elapsed time, and output size/hash. The public CI then transforms and
-compares every built record independently for nine selected passes:
+compares every built record independently for ten selected passes:
 BlockReordering, CodeVirtualization, ConstantUnfolding, ControlFlowFlattening,
 DeadCodeInjection, InstructionExpansion,
-InstructionSubstitution, NopInsertion, and RegisterSubstitution. It retains one
+InstructionSubstitution, NopInsertion, PatternSubstitution, and
+RegisterSubstitution. It retains one
 bounded matrix record per sample/pass pair and an aggregate result for each
 pass. The scheduled workflow fails when a selected pass does not apply to at
 least one fixture, so an unchanged output cannot count as evidence for that
@@ -65,10 +66,10 @@ from workflow `33907747531` (artifact SHA-256
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
-The ConstantUnfolding, ControlFlowFlattening, DeadCodeInjection, and
-NopInsertion selections are guarded by `elf_constant_unfold_x86_64`,
+The ConstantUnfolding, ControlFlowFlattening, DeadCodeInjection, NopInsertion,
+and PatternSubstitution selections are guarded by `elf_constant_unfold_x86_64`,
 `elf_cff_flagdead_x86_64`, and `elf_nop_x86_64`. They are measured from this
-revision onward; a full nine-pass campaign is required before this document
+revision onward; a full ten-pass campaign is required before this document
 claims a complete Linux CI record.
 The preceding local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
 and all 159 transformations, with 171 functions virtualized, zero unsupported

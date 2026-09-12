@@ -31,6 +31,7 @@ from r2morph.mutations import (
 )
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
 from tests.integration.elf_emulator import emulate_exit_code
 
 _ELF_MAGIC = b"\x7fELF"
@@ -52,6 +53,7 @@ CORPUS_PASS_NAMES = (
     "InstructionExpansion",
     "InstructionSubstitution",
     "NopInsertion",
+    "PatternSubstitution",
     "RegisterSubstitution",
 )
 _PASS_TYPES: dict[str, type[MutationPass]] = {
@@ -63,6 +65,7 @@ _PASS_TYPES: dict[str, type[MutationPass]] = {
     "InstructionExpansion": InstructionExpansionPass,
     "InstructionSubstitution": InstructionSubstitutionPass,
     "NopInsertion": NopInsertionPass,
+    "PatternSubstitution": PatternSubstitutionPass,
     "RegisterSubstitution": RegisterSubstitutionPass,
 }
 _PASS_LABELS = {
@@ -74,6 +77,7 @@ _PASS_LABELS = {
     "InstructionExpansion": "instruction-expansion",
     "InstructionSubstitution": "instruction-substitution",
     "NopInsertion": "nop-insertion",
+    "PatternSubstitution": "pattern-substitution",
     "RegisterSubstitution": "register-substitution",
 }
 

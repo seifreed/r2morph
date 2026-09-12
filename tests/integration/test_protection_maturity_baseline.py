@@ -136,6 +136,18 @@ def test_nop_insertion_fixture_records_a_semantic_mutation(tmp_path: Path) -> No
     expect(run["transformation"]["status"] == "applied" and result["all_semantic_equal"] is (sys.platform == "linux"))
 
 
+def test_pattern_substitution_fixture_records_a_semantic_mutation(tmp_path: Path) -> None:
+    result = measure_fixture(
+        _CONTROL_FLOW_FIXTURE,
+        range(20260912, 20260913),
+        tmp_path,
+        "PatternSubstitution",
+    )
+
+    run = result["runs"][0]
+    expect(run["transformation"]["status"] == "applied" and result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
 def test_parse_pass_names_expands_the_public_corpus_selection() -> None:
     expect(_parse_pass_names("all") == CORPUS_PASS_NAMES)
 
