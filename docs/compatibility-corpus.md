@@ -80,8 +80,10 @@ coverage, coverage percentages, and bounded omission/error reasons and
 severities.
 The by-pass report also includes a campaign summary with total applied,
 omitted, and error runs, their rates, plus average coverage percentages across selected
-passes and aggregate semantic success/failure rates; it lists passes with zero
-applied runs, omitted runs, and error runs so
+passes and aggregate semantic success/failure rates; it records expected,
+covered, and missing corpus passes so subset campaigns cannot be mistaken for
+full per-pass evidence, and lists passes with zero applied runs, omitted runs,
+and error runs so
 weak per-pass evidence is visible without expanding every row. It also groups
 passes with incomplete runtime, size, duration, or static-metric coverage, plus
 passes with semantic or runtime-observable failures, and records omission/error

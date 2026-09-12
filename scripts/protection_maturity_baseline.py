@@ -770,6 +770,8 @@ def _sum_summary_field(summaries: dict[str, object], field: str) -> int:
 
 
 def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
+    selected_passes = set(summaries)
+    corpus_passes = set(CORPUS_PASS_NAMES)
     total_applied_runs = _sum_summary_field(summaries, "applied_runs")
     total_omitted_runs = _sum_summary_field(summaries, "omitted_runs")
     total_error_runs = _sum_summary_field(summaries, "error_runs")
@@ -779,6 +781,10 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
     total_seed_runs = total_successful_seed_runs + total_failed_seed_runs
     return {
         "pass_count": len(summaries),
+        "expected_corpus_pass_count": len(CORPUS_PASS_NAMES),
+        "covered_corpus_pass_count": len(selected_passes & corpus_passes),
+        "corpus_pass_coverage_percent": _coverage_percent(len(selected_passes & corpus_passes), len(CORPUS_PASS_NAMES)),
+        "missing_corpus_passes": sorted(corpus_passes - selected_passes),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
         "passes_with_omitted_runs": _passes_with_positive_runs(summaries, "omitted_runs"),
         "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),

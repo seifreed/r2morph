@@ -49,6 +49,9 @@ _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_COMPLETE_EVIDENCE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
+_EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
+_EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
+_EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
 _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
 _EXPECTED_MULTI_PASS_SEED_RUNS = 2
 _EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
@@ -365,6 +368,10 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
 
     expect(
         report["campaign_summary"]["pass_count"] == _EXPECTED_MULTI_PASS_COUNT
+        and report["campaign_summary"]["expected_corpus_pass_count"] == _EXPECTED_CORPUS_PASS_COUNT
+        and report["campaign_summary"]["covered_corpus_pass_count"] == _EXPECTED_MULTI_PASS_COUNT
+        and report["campaign_summary"]["corpus_pass_coverage_percent"] == _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT
+        and report["campaign_summary"]["missing_corpus_passes"] == _EXPECTED_MISSING_CORPUS_PASSES
         and report["campaign_summary"]["passes_without_applied_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_omitted_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
