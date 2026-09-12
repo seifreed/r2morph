@@ -19,7 +19,7 @@ promoted.
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |
-| Constant unfolding | Experimental | ELF x86-64 | x86-only transformation rules | `README.md` |
+| Constant unfolding | Experimental | ELF x86-64 | x86-only transformation rules; one native differential fixture is measured, but broad corpus evidence is pending | `tests/integration/test_protection_maturity_baseline.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S` |
 | Code mobility | Experimental | ELF x86-64 | Code-cave geometry is input-dependent | `README.md` |
 | Function outlining | Experimental | ELF x86-64 | ABI and exception edges need more evidence | `README.md` |
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |

@@ -1646,7 +1646,8 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration"
+          "tests/integration/test_protection_maturity_baseline.py",
+          "fixtures/dataset/elf_constant_unfold_x86_64.S"
         ]
       },
       {

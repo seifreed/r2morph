@@ -32,8 +32,8 @@ preserve the native result and, for the C image, stdout and stderr.
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
 digests, elapsed time, and output size/hash. The public CI then transforms and
-compares every built record independently for six selected passes:
-BlockReordering, CodeVirtualization, InstructionExpansion,
+compares every built record independently for seven selected passes:
+BlockReordering, CodeVirtualization, ConstantUnfolding, InstructionExpansion,
 InstructionSubstitution, NopInsertion, and RegisterSubstitution. It retains one
 bounded matrix record per sample/pass pair and an aggregate result for each
 pass.
@@ -48,13 +48,16 @@ files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
-and all six selected passes. Its per-pass summary is committed in
+and the six selected passes available at that commit. Its per-pass summary is committed in
 [`protection-maturity-by-pass-2026-09-04-8b6cfb40.json`](protection-maturity-by-pass-2026-09-04-8b6cfb40.json),
 from workflow `33907747531` (artifact SHA-256
 `606d4be7f8f91a89bd37ef77cce149ee8c2e3e332f21eec296d38314443713a6`). All six
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
+The seventh selection, ConstantUnfolding, is guarded by the synthetic
+`elf_constant_unfold_x86_64` fixture and is measured from this revision onward;
+the first full seven-pass campaign remains pending its Linux CI record.
 The preceding local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
 and all 159 transformations, with 171 functions virtualized, zero unsupported
 functions, and zero transformation errors. Its raw report is

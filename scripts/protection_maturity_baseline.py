@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from r2morph.core.binary import Binary
 from r2morph.mutations import (
     BlockReorderingPass,
+    ConstantUnfoldingPass,
     InstructionExpansionPass,
     InstructionSubstitutionPass,
     NopInsertionPass,
@@ -43,6 +44,7 @@ DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
     "CodeVirtualization",
+    "ConstantUnfolding",
     "InstructionExpansion",
     "InstructionSubstitution",
     "NopInsertion",
@@ -51,6 +53,7 @@ CORPUS_PASS_NAMES = (
 _PASS_TYPES: dict[str, type[MutationPass]] = {
     "BlockReordering": BlockReorderingPass,
     "CodeVirtualization": CodeVirtualizationPass,
+    "ConstantUnfolding": ConstantUnfoldingPass,
     "InstructionExpansion": InstructionExpansionPass,
     "InstructionSubstitution": InstructionSubstitutionPass,
     "NopInsertion": NopInsertionPass,
@@ -59,6 +62,7 @@ _PASS_TYPES: dict[str, type[MutationPass]] = {
 _PASS_LABELS = {
     "BlockReordering": "block-reordering",
     "CodeVirtualization": "code-virtualization",
+    "ConstantUnfolding": "constant-unfolding",
     "InstructionExpansion": "instruction-expansion",
     "InstructionSubstitution": "instruction-substitution",
     "NopInsertion": "nop-insertion",
