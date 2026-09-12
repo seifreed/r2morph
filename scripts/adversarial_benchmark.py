@@ -373,6 +373,52 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]
     return dict(sorted(summary.items()))
 
 
+def _tool_duration_seconds(row: dict[str, object]) -> float:
+    duration = 0.0
+    for side in ("original", "protected"):
+        metrics = row.get(side)
+        if isinstance(metrics, dict) and isinstance(value := metrics.get("duration_seconds"), int | float):
+            duration += value
+    return duration
+
+
+def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float | int]]:
+    summary: dict[str, dict[str, float | int]] = {}
+    for sample in samples:
+        rows = sample.get("tools", [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            tool = row.get("tool")
+            status = row.get("status")
+            if not isinstance(tool, str) or not isinstance(status, str):
+                continue
+            counters = summary.setdefault(
+                tool,
+                {
+                    "runs": 0,
+                    "completed": 0,
+                    "unavailable": 0,
+                    "errors": 0,
+                    "changed": 0,
+                    "total_duration_seconds": 0.0,
+                },
+            )
+            counters["runs"] += 1
+            if status == "completed":
+                counters["completed"] += 1
+                counters["total_duration_seconds"] += _tool_duration_seconds(row)
+                if row.get("changed") is True:
+                    counters["changed"] += 1
+            elif status == "unavailable":
+                counters["unavailable"] += 1
+            else:
+                counters["errors"] += 1
+    return dict(sorted(summary.items()))
+
+
 def _passes_without_applications(report: dict[str, object]) -> tuple[str, ...]:
     """Return selected passes that did not transform a corpus fixture."""
     summary = report.get("pass_summary")
@@ -472,6 +518,7 @@ def benchmark_corpus(
         "sample_count": len(samples),
         "samples": samples,
         "pass_summary": _pass_summary(samples),
+        "tool_summary": _tool_summary(samples),
         "summary": {
             "completed_tool_runs": completed_tools,
             "unavailable_tool_runs": unavailable_tools,

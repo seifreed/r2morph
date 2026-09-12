@@ -7,6 +7,7 @@ from scripts.adversarial_benchmark import (
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     _passes_without_applications,
+    _tool_summary,
     benchmark_corpus,
     benchmark_pair,
 )
@@ -16,6 +17,7 @@ _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_v
 _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
 _EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
+_EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -58,7 +60,7 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
 
     report = benchmark_corpus(dataset)
 
-    expect(report["sample_count"] == 1)
+    expect(report["sample_count"] == 1 and "binary-ninja" in report["tool_summary"])
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
 
@@ -82,6 +84,34 @@ def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path)
             "samples": 1,
             "unsupported_functions": 0,
         }
+    )
+
+
+def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
+    summary = _tool_summary(
+        [
+            {
+                "tools": [
+                    {
+                        "tool": "binary-ninja",
+                        "status": "completed",
+                        "changed": True,
+                        "original": {"duration_seconds": 0.5},
+                        "protected": {"duration_seconds": 0.75},
+                    },
+                    {"tool": "ghidra", "status": "unavailable"},
+                    {"tool": "ida-pro", "status": "error"},
+                ]
+            }
+        ]
+    )
+
+    expect(
+        summary["binary-ninja"]["completed"] == 1
+        and summary["binary-ninja"]["changed"] == 1
+        and summary["binary-ninja"]["total_duration_seconds"] == _EXPECTED_TOTAL_TOOL_DURATION_SECONDS
+        and summary["ghidra"]["unavailable"] == 1
+        and summary["ida-pro"]["errors"] == 1
     )
 
 
