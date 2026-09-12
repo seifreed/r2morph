@@ -48,7 +48,8 @@ reported as unavailable rather than omitted.
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
 bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas
-per analyzer so campaigns remain comparable by tool.
+per analyzer so campaigns remain comparable by tool. Their top-level summary
+also records expected versus observed pass/tool counts for campaign coverage.
 The real VM diversification regression builds the same fixture with four
 independent seeds, requiring identical emulated exit behavior and four distinct
 output digests. This covers the combined opcode, handler, dispatcher, checksum,

@@ -65,7 +65,14 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
 
     report = benchmark_corpus(dataset)
 
-    expect(report["sample_count"] == 1 and "binary-ninja" in report["tool_summary"])
+    expect(
+        report["sample_count"] == 1
+        and report["summary"]["expected_pass_count"] == 1
+        and report["summary"]["observed_pass_count"] == 1
+        and report["summary"]["expected_tool_count"] == _EXPECTED_TOOL_COUNT
+        and report["summary"]["observed_tool_count"] == _EXPECTED_TOOL_COUNT
+        and "binary-ninja" in report["tool_summary"]
+    )
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
 

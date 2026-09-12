@@ -633,6 +633,18 @@ def benchmark_corpus(
     if not pass_names:
         raise ValueError("at least one corpus pass is required")
     samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
+    observed_passes = {
+        pass_name
+        for sample in samples
+        for row in sample.get("passes", [])
+        if isinstance(row, dict) and isinstance(pass_name := row.get("pass_name"), str)
+    }
+    observed_tools = {
+        tool
+        for sample in samples
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
+    }
     completed_tools = sum(
         1
         for sample in samples
@@ -654,6 +666,10 @@ def benchmark_corpus(
         "pass_summary": _pass_summary(samples),
         "tool_summary": _tool_summary(samples),
         "summary": {
+            "expected_pass_count": len(pass_names),
+            "observed_pass_count": len(observed_passes),
+            "expected_tool_count": len(_EXPECTED_TOOLS) + 1,
+            "observed_tool_count": len(observed_tools),
             "completed_tool_runs": completed_tools,
             "unavailable_tool_runs": unavailable_tools,
             "error_tool_runs": len(fixtures) * len(pass_names) * (len(_EXPECTED_TOOLS) + 1)
