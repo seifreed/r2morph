@@ -81,7 +81,7 @@ passes; it lists passes with zero applied runs, omitted runs, and error runs so
 weak per-pass evidence is visible without expanding every row. It also groups
 passes with incomplete runtime, size, duration, or static-metric coverage, plus
 passes with semantic or runtime-observable failures, and records omission/error
-reasons by pass.
+reasons and severities by pass.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

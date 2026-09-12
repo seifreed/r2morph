@@ -751,6 +751,8 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         ),
         "omission_reasons_by_pass": _reason_map_by_pass(summaries, "omission_reasons"),
         "error_reasons_by_pass": _reason_map_by_pass(summaries, "error_reasons"),
+        "omission_severities_by_pass": _reason_map_by_pass(summaries, "omission_severities"),
+        "error_severities_by_pass": _reason_map_by_pass(summaries, "error_severities"),
         "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
         "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
         "total_error_runs": _sum_summary_field(summaries, "error_runs"),
