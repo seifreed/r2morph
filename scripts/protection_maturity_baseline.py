@@ -749,6 +749,8 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "runtime_observable_failures",
         ),
+        "omission_reasons_by_pass": _reason_map_by_pass(summaries, "omission_reasons"),
+        "error_reasons_by_pass": _reason_map_by_pass(summaries, "error_reasons"),
         "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
         "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
         "total_error_runs": _sum_summary_field(summaries, "error_runs"),
@@ -779,6 +781,17 @@ def _passes_with_positive_runs(summaries: dict[str, object], field: str) -> list
         for name, summary in summaries.items()
         if isinstance(summary, dict) and isinstance(value := summary.get(field), int) and value > 0
     )
+
+
+def _reason_map_by_pass(summaries: dict[str, object], field: str) -> dict[str, dict[str, int]]:
+    return {
+        name: dict(sorted(reasons.items()))
+        for name, summary in summaries.items()
+        if isinstance(summary, dict)
+        and isinstance(reasons := summary.get(field), dict)
+        and reasons
+        and all(isinstance(reason, str) and isinstance(count, int) for reason, count in reasons.items())
+    }
 
 
 def _passes_with_incomplete_coverage(summaries: dict[str, object]) -> dict[str, list[str]]:

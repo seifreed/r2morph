@@ -56,6 +56,7 @@ _EXPECTED_INCOMPLETE_COVERAGE = {
     "runtime_duration": ["PatternSubstitution"],
     "static_metric": ["PatternSubstitution"],
 }
+_EXPECTED_OMISSION_REASONS_BY_PASS = {"PatternSubstitution": {"no eligible function was transformed": 1}}
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -337,7 +338,14 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
                     "all_semantic_equal": False,
                     "successful_runs": 0,
                     "failed_runs": 1,
-                    "runs": [{"transformation": {"status": "omitted"}}],
+                    "runs": [
+                        {
+                            "transformation": {
+                                "status": "omitted",
+                                "reason": "no eligible function was transformed",
+                            }
+                        }
+                    ],
                 }
             ],
         }
@@ -351,6 +359,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_runtime_observable_failures"] == []
+        and report["campaign_summary"]["omission_reasons_by_pass"] == _EXPECTED_OMISSION_REASONS_BY_PASS
+        and report["campaign_summary"]["error_reasons_by_pass"] == {}
         and report["campaign_summary"]["total_applied_runs"] == 1
         and report["campaign_summary"]["total_omitted_runs"] == 1
         and report["campaign_summary"]["total_error_runs"] == 0
