@@ -469,6 +469,19 @@ def _static_metric_deltas(seed_runs: list[tuple[dict[str, object], Mapping[str, 
     return deltas
 
 
+def _transformation_reason_counts(
+    seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
+) -> dict[str, int]:
+    reasons: dict[str, int] = {}
+    for _, run in seed_runs:
+        transformation = run.get("transformation")
+        if not isinstance(transformation, Mapping) or transformation.get("status") != status:
+            continue
+        reason = str(transformation.get("reason", "unspecified"))
+        reasons[reason] = reasons.get(reason, 0) + 1
+    return dict(sorted(reasons.items()))
+
+
 def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     seed_runs = [(fixture, run) for fixture in fixtures for run in fixture.get("runs", []) if isinstance(run, Mapping)]
     successful_seed_runs = sum(
@@ -516,6 +529,8 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
     static_metric_deltas = _static_metric_deltas(seed_runs)
+    omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
+    error_reasons = _transformation_reason_counts(seed_runs, "error")
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
@@ -537,6 +552,8 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "min_output_size_delta_bytes": min(output_size_deltas, default=0),
             "total_transform_duration_seconds": transform_duration_seconds,
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
+            "omission_reasons": omission_reasons,
+            "error_reasons": error_reasons,
             **static_metric_deltas,
         },
     }

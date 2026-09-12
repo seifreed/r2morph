@@ -65,7 +65,7 @@ files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 The per-pass summary also aggregates runtime-observable pass/fail counts,
 output-size deltas, static analyzer metric deltas, transformation duration,
-and native runtime duration delta.
+native runtime duration delta, and bounded omission/error reasons.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in
