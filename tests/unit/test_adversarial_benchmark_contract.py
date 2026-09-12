@@ -18,6 +18,8 @@ _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" 
 _EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
+_EXPECTED_TOTAL_FUNCTIONS_DELTA = 4
+_EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -96,8 +98,8 @@ def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
                         "tool": "binary-ninja",
                         "status": "completed",
                         "changed": True,
-                        "original": {"duration_seconds": 0.5},
-                        "protected": {"duration_seconds": 0.75},
+                        "original": {"duration_seconds": 0.5, "functions": 10, "instruction_lines": 5},
+                        "protected": {"duration_seconds": 0.75, "functions": 14, "instruction_lines": 8},
                     },
                     {"tool": "ghidra", "status": "unavailable"},
                     {"tool": "ida-pro", "status": "error"},
@@ -110,6 +112,8 @@ def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
         summary["binary-ninja"]["completed"] == 1
         and summary["binary-ninja"]["changed"] == 1
         and summary["binary-ninja"]["total_duration_seconds"] == _EXPECTED_TOTAL_TOOL_DURATION_SECONDS
+        and summary["binary-ninja"]["total_functions_delta"] == _EXPECTED_TOTAL_FUNCTIONS_DELTA
+        and summary["binary-ninja"]["total_instruction_lines_delta"] == _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA
         and summary["ghidra"]["unavailable"] == 1
         and summary["ida-pro"]["errors"] == 1
     )
