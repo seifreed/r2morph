@@ -741,6 +741,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
     return {
         "pass_count": len(summaries),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
+        "passes_with_omitted_runs": _passes_with_positive_runs(summaries, "omitted_runs"),
         "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),
         "passes_with_incomplete_coverage": _passes_with_incomplete_coverage(summaries),
         "passes_with_semantic_failures": _passes_with_positive_runs(summaries, "semantic_failures"),

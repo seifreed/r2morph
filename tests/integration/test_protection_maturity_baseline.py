@@ -346,6 +346,7 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
     expect(
         report["campaign_summary"]["pass_count"] == _EXPECTED_MULTI_PASS_COUNT
         and report["campaign_summary"]["passes_without_applied_runs"] == ["PatternSubstitution"]
+        and report["campaign_summary"]["passes_with_omitted_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
