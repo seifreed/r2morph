@@ -49,6 +49,13 @@ _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
+_EXPECTED_INCOMPLETE_COVERAGE = {
+    "runtime_observable": ["PatternSubstitution"],
+    "output_size": ["PatternSubstitution"],
+    "transform_duration": ["PatternSubstitution"],
+    "runtime_duration": ["PatternSubstitution"],
+    "static_metric": ["PatternSubstitution"],
+}
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -340,6 +347,7 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         report["campaign_summary"]["pass_count"] == _EXPECTED_MULTI_PASS_COUNT
         and report["campaign_summary"]["passes_without_applied_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
+        and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
         and report["campaign_summary"]["total_applied_runs"] == 1
         and report["campaign_summary"]["total_omitted_runs"] == 1
         and report["campaign_summary"]["total_error_runs"] == 0

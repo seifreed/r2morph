@@ -43,6 +43,7 @@ _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
+_FULL_COVERAGE_PERCENT = 100.0
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -741,6 +742,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "pass_count": len(summaries),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
         "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),
+        "passes_with_incomplete_coverage": _passes_with_incomplete_coverage(summaries),
         "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
         "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
         "total_error_runs": _sum_summary_field(summaries, "error_runs"),
@@ -770,6 +772,32 @@ def _passes_with_positive_runs(summaries: dict[str, object], field: str) -> list
         name
         for name, summary in summaries.items()
         if isinstance(summary, dict) and isinstance(value := summary.get(field), int) and value > 0
+    )
+
+
+def _passes_with_incomplete_coverage(summaries: dict[str, object]) -> dict[str, list[str]]:
+    fields = {
+        "runtime_observable": "runtime_observable_coverage_percent",
+        "output_size": "output_size_coverage_percent",
+        "transform_duration": "transform_duration_coverage_percent",
+        "runtime_duration": "runtime_duration_coverage_percent",
+        "static_metric": "static_metric_coverage_percent",
+    }
+    incomplete: dict[str, list[str]] = {}
+    for name, field in fields.items():
+        passes = _passes_below_full_coverage(summaries, field)
+        if passes:
+            incomplete[name] = passes
+    return incomplete
+
+
+def _passes_below_full_coverage(summaries: dict[str, object], field: str) -> list[str]:
+    return sorted(
+        name
+        for name, summary in summaries.items()
+        if isinstance(summary, dict)
+        and isinstance(value := summary.get(field), int | float)
+        and value < _FULL_COVERAGE_PERCENT
     )
 
 
