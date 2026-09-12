@@ -80,17 +80,24 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
     counts = Counter(all_signatures)
     repeated = sum(value for value in counts.values() if value > 1)
     nearest = [score for left, right in pairwise(all_normalised) for score in _nearest_similarities(left, right)]
+    above_threshold = sum(score >= _SIMILARITY_THRESHOLD for score in nearest)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "first_seed": first_seed,
         "seed_count": count,
         "seeds": seed_rows,
+        "cross_seed_exact_normalised_matches": repeated,
         "cross_seed_exact_normalised_match_rate": repeated / len(all_signatures) if all_signatures else 0.0,
+        "cross_seed_has_exact_normalised_matches": repeated > 0,
         "cross_seed_normalised_cluster_count": sum(value > 1 for value in counts.values()),
         "cross_seed_largest_normalised_cluster": max(counts.values(), default=0),
+        "cross_seed_nearest_similarity_comparisons": len(nearest),
         "cross_seed_nearest_similarity_mean": sum(nearest) / len(nearest) if nearest else 0.0,
         "cross_seed_nearest_similarity_max": max(nearest, default=0.0),
-        "cross_seed_nearest_similarity_above_threshold": sum(score >= _SIMILARITY_THRESHOLD for score in nearest),
+        "cross_seed_nearest_similarity_above_threshold": above_threshold,
+        "cross_seed_nearest_similarity_above_threshold_percent": (
+            above_threshold / len(nearest) * 100.0 if nearest else 0.0
+        ),
         "similarity_threshold": _SIMILARITY_THRESHOLD,
     }
 

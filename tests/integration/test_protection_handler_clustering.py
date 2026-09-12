@@ -5,8 +5,21 @@ from __future__ import annotations
 from scripts.protection_handler_clustering import measure
 from tests.utils.assertions import expect
 
+_EXPECTED_SCHEMA_VERSION = 2
+_EXPECTED_NEAREST_COMPARISONS = 510
+_EXPECTED_ABOVE_THRESHOLD = 72
+_EXPECTED_ABOVE_THRESHOLD_PERCENT = 14.117647058823529
+
 
 def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
     result = measure(20260820, 3)
 
-    expect(not (result["cross_seed_nearest_similarity_mean"] <= 0.0))
+    expect(
+        result["schema_version"] == _EXPECTED_SCHEMA_VERSION
+        and result["cross_seed_exact_normalised_matches"] == 0
+        and result["cross_seed_has_exact_normalised_matches"] is False
+        and result["cross_seed_nearest_similarity_comparisons"] == _EXPECTED_NEAREST_COMPARISONS
+        and result["cross_seed_nearest_similarity_above_threshold"] == _EXPECTED_ABOVE_THRESHOLD
+        and result["cross_seed_nearest_similarity_above_threshold_percent"] == _EXPECTED_ABOVE_THRESHOLD_PERCENT
+        and not (result["cross_seed_nearest_similarity_mean"] <= 0.0)
+    )
