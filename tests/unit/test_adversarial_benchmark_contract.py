@@ -13,7 +13,7 @@ from scripts.adversarial_benchmark import (
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
-_EXPECTED_TOOL_COUNT = 8
+_EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 
 
@@ -23,8 +23,7 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
     tools = report["tools"]
     expect(
         len(tools) == _EXPECTED_TOOL_COUNT
-        and {item["tool"] for item in tools} >= {"radare2", "angr", "unicorn", "triton"}
-        and all(item["tool"] != "binary-ninja" for item in tools)
+        and {item["tool"] for item in tools} >= {"radare2", "angr", "binary-ninja", "unicorn", "triton"}
     )
 
 
@@ -32,7 +31,9 @@ def test_adversarial_benchmark_marks_missing_tools_explicitly() -> None:
     report = benchmark_pair(_FIXTURE, _FIXTURE)
 
     statuses = {item["tool"]: item["status"] for item in report["tools"]}
-    expect(statuses["ida-pro"] == "unavailable" or statuses["ida-pro"] == "completed")
+    expect(
+        statuses["binary-ninja"] in {"unavailable", "completed"} and statuses["ida-pro"] in {"unavailable", "completed"}
+    )
 
 
 def test_adversarial_benchmark_runs_triton_when_available() -> None:

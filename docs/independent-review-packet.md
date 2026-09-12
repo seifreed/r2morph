@@ -10,7 +10,8 @@ checks are evidence, not a human approval.
 - Production evidence baseline: `9ac3e14`.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
-- Binary Ninja: excluded by project decision.
+- Binary Ninja: measured by the benchmark when its licensed API is available;
+  unavailable environments retain an explicit non-passing row.
 
 ## Evidence
 

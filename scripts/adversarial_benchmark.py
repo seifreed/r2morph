@@ -32,8 +32,13 @@ from tests.integration.elf_emulator import emulate_exit_code
 
 _COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "idat", "ghidra": "ghidra"}
 _COMMAND_ENVIRONMENT = {"ida-pro": "IDA_HEADLESS", "ghidra": "GHIDRA_HEADLESS"}
-_PYTHON_MODULES = {"angr": "angr", "triton": "triton", "unicorn": "unicorn"}
-_EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra")
+_PYTHON_MODULES = {
+    "angr": "angr",
+    "binary-ninja": "binaryninja",
+    "triton": "triton",
+    "unicorn": "unicorn",
+}
+_EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "triton", "ida-pro", "ghidra")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
@@ -100,6 +105,19 @@ def _angr_metric(path: Path) -> dict[str, object]:
     return {
         "status": "completed",
         "functions": len(cfg.kb.functions),
+        "duration_seconds": time.perf_counter() - started,
+    }
+
+
+def _binary_ninja_metric(path: Path) -> dict[str, object]:
+    binaryninja = import_module("binaryninja")
+    started = time.perf_counter()
+    with binaryninja.load(str(path), update_analysis=False) as view:
+        view.update_analysis_and_wait()
+        functions = len(view.functions)
+    return {
+        "status": "completed",
+        "functions": functions,
         "duration_seconds": time.perf_counter() - started,
     }
 
@@ -250,6 +268,7 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
     "radare2": _radare2_metric,
     "objdump": _objdump_metric,
     "angr": _angr_metric,
+    "binary-ninja": _binary_ninja_metric,
     "unicorn": _unicorn_metric,
     "triton": _triton_metric,
     "ida-pro": _ida_metric,
