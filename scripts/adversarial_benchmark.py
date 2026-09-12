@@ -318,6 +318,19 @@ def _capability_counts(records: object) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def _severity_counts(records: object) -> dict[str, int]:
+    if not isinstance(records, list):
+        return {}
+    counts: dict[str, int] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        severity = record.get("severity")
+        if isinstance(severity, str) and severity:
+            counts[severity] = counts.get(severity, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
@@ -341,10 +354,16 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
         result["partial_virtualization"] = partial
         unsupported_capabilities = _capability_counts(stats.get("unsupported_functions"))
         partial_capabilities = _capability_counts(stats.get("partial_virtualization"))
+        unsupported_severities = _severity_counts(stats.get("unsupported_functions"))
+        partial_severities = _severity_counts(stats.get("partial_virtualization"))
         if unsupported_capabilities:
             result["unsupported_capabilities"] = unsupported_capabilities
         if partial_capabilities:
             result["partial_virtualization_capabilities"] = partial_capabilities
+        if unsupported_severities:
+            result["unsupported_severities"] = unsupported_severities
+        if partial_severities:
+            result["partial_virtualization_severities"] = partial_severities
     else:
         result["mutations_applied"] = applied
     return result
@@ -420,6 +439,12 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, objec
                 counters,
                 "partial_virtualization_capabilities",
                 row.get("partial_virtualization_capabilities"),
+            )
+            _merge_capability_summary(counters, "unsupported_severities", row.get("unsupported_severities"))
+            _merge_capability_summary(
+                counters,
+                "partial_virtualization_severities",
+                row.get("partial_virtualization_severities"),
             )
     return dict(sorted(summary.items()))
 

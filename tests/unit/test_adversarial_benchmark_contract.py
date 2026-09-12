@@ -147,10 +147,10 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
             "unsupported_functions_total": 2,
             "partial_virtualization_total": 1,
             "unsupported_functions": [
-                {"capability": "computed_control_flow"},
-                {"capability": "computed_control_flow"},
+                {"capability": "computed_control_flow", "severity": "error"},
+                {"capability": "computed_control_flow", "severity": "error"},
             ],
-            "partial_virtualization": [{"capability": "exceptions_and_unwinding"}],
+            "partial_virtualization": [{"capability": "exceptions_and_unwinding", "severity": "warning"}],
         }
     )
 
@@ -158,6 +158,8 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
         result["status"] == "omitted"
         and result["unsupported_capabilities"] == {"computed_control_flow": 2}
         and result["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
+        and result["unsupported_severities"] == {"error": 2}
+        and result["partial_virtualization_severities"] == {"warning": 1}
     )
 
 
@@ -175,6 +177,8 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
                         "partial_virtualization": 1,
                         "unsupported_capabilities": {"computed_control_flow": 2},
                         "partial_virtualization_capabilities": {"exceptions_and_unwinding": 1},
+                        "unsupported_severities": {"error": 2},
+                        "partial_virtualization_severities": {"warning": 1},
                     },
                     {
                         "pass_name": "CodeVirtualization",
@@ -184,6 +188,7 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
                         "unsupported_functions": 1,
                         "partial_virtualization": 0,
                         "unsupported_capabilities": {"memory_access": 1},
+                        "unsupported_severities": {"error": 1},
                     },
                 ]
             }
@@ -196,6 +201,8 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
         and summary["CodeVirtualization"]["unsupported_capabilities"]
         == {"computed_control_flow": 2, "memory_access": 1}
         and summary["CodeVirtualization"]["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
+        and summary["CodeVirtualization"]["unsupported_severities"] == {"error": 3}
+        and summary["CodeVirtualization"]["partial_virtualization_severities"] == {"warning": 1}
         and summary["CodeVirtualization"]["omission_reasons"]
         == {
             "computed_control_flow: indirect branch not proven": 1,
