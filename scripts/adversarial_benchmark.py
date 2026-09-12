@@ -699,6 +699,8 @@ def _campaign_summary(
     error_tools = sum(
         1 for sample in samples for tool in sample["tools"] if isinstance(tool, dict) and tool.get("status") == "error"
     )
+    unavailable_tools_by_tool = _tool_status_counts(samples, "unavailable")
+    error_tools_by_tool = _tool_status_counts(samples, "error")
     expected_pass_runs = fixture_count * len(pass_names)
     expected_tool_runs = expected_pass_runs * len(expected_tools)
     missing_pass_runs_by_pass = {
@@ -730,8 +732,33 @@ def _campaign_summary(
         "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
         "completed_tool_runs": completed_tools,
         "unavailable_tool_runs": unavailable_tools,
+        "unavailable_tool_runs_by_tool": unavailable_tools_by_tool,
+        "unavailable_reasons_by_tool": _tool_reason_map(samples, "unavailable"),
         "error_tool_runs": error_tools,
+        "error_tool_runs_by_tool": error_tools_by_tool,
+        "error_reasons_by_tool": _tool_reason_map(samples, "error"),
     }
+
+
+def _tool_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
+    counts = Counter(
+        tool
+        for sample in samples
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and row.get("status") == status and isinstance(tool := row.get("tool"), str)
+    )
+    return dict(sorted(counts.items()))
+
+
+def _tool_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:
+    reasons: dict[str, Counter[str]] = {}
+    for sample in samples:
+        for row in sample.get("tools", []):
+            if not isinstance(row, dict) or row.get("status") != status or not isinstance(tool := row.get("tool"), str):
+                continue
+            reason = str(row.get("reason") or row.get("error_type") or row.get("detail") or "unspecified")
+            reasons.setdefault(tool, Counter())[reason] += 1
+    return {tool: dict(sorted(counts.items())) for tool, counts in sorted(reasons.items())}
 
 
 def main() -> None:

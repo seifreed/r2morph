@@ -24,10 +24,10 @@ _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
 _EXPECTED_TOTAL_FUNCTIONS_DELTA = 4
 _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
 _EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL = 3
-_EXPECTED_PARTIAL_TOOL_ROWS = 2
+_EXPECTED_PARTIAL_TOOL_ROWS = 3
 _EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
-_EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT = 22.22
+_EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT = 33.33
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -97,7 +97,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
                 "passes": [],
                 "tools": [
                     {"tool": "binary-ninja", "status": "completed"},
-                    {"tool": "ida-pro", "status": "error"},
+                    {"tool": "ida-pro", "status": "error", "error_type": "RuntimeError"},
+                    {"tool": "ghidra", "status": "unavailable", "reason": "missing local executable"},
                 ],
             }
         ],
@@ -118,7 +119,12 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_tool_runs_by_tool"]["angr"] == 1
         and summary["missing_tool_runs_by_tool"]["custom"] == 1
         and summary["completed_tool_runs"] == 1
+        and summary["unavailable_tool_runs"] == 1
+        and summary["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
+        and summary["unavailable_reasons_by_tool"] == {"ghidra": {"missing local executable": 1}}
         and summary["error_tool_runs"] == 1
+        and summary["error_tool_runs_by_tool"] == {"ida-pro": 1}
+        and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
     )
 
 
