@@ -342,19 +342,20 @@ def _transformation_evidence(
             "status": "applied",
             count_field: applied,
         }
-    diagnostics = stats.get("unsupported_functions")
-    if isinstance(diagnostics, list) and diagnostics and isinstance(diagnostics[0], Mapping):
-        capability = diagnostics[0].get("capability", "unsupported capability")
-        reason = diagnostics[0].get("reason", "pass precondition was not met")
-        evidence = {
-            "pass_name": label,
-            "status": "omitted",
-            "reason": f"{capability}: {reason}",
-        }
-        severity = diagnostics[0].get("severity")
-        if isinstance(severity, str) and severity:
-            evidence["severity"] = severity
-        return evidence
+    for diagnostic_field in ("unsupported_functions", "partial_virtualization"):
+        diagnostics = stats.get(diagnostic_field)
+        if isinstance(diagnostics, list) and diagnostics and isinstance(diagnostics[0], Mapping):
+            capability = diagnostics[0].get("capability", "unsupported capability")
+            reason = diagnostics[0].get("reason", "pass precondition was not met")
+            evidence = {
+                "pass_name": label,
+                "status": "omitted",
+                "reason": f"{capability}: {reason}",
+            }
+            severity = diagnostics[0].get("severity")
+            if isinstance(severity, str) and severity:
+                evidence["severity"] = severity
+            return evidence
     return {
         "pass_name": label,
         "status": "omitted",

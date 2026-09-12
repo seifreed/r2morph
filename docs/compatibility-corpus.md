@@ -66,6 +66,9 @@ transformation record includes the pass name, status (`applied`, `omitted`, or
 `error`), a bounded reason, and severity when the selected pass cannot
 transform the sample. Unsupported-virtualization diagnostics identify the
 function address, instruction address, missing capability, reason, and severity.
+Partial-virtualization diagnostics are rendered with the same bounded
+capability, reason, and severity contract instead of falling back to a generic
+omission.
 Adversarial CodeVirtualization rows and pass summaries also retain bounded
 unsupported and partial virtualization capability/severity counts when
 diagnostics are present.

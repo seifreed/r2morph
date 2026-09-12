@@ -489,6 +489,28 @@ def test_transformation_evidence_records_unsupported_capability() -> None:
     )
 
 
+def test_transformation_evidence_records_partial_virtualization_capability() -> None:
+    evidence = _transformation_evidence(
+        "passed",
+        {
+            "functions_virtualized": 0,
+            "partial_virtualization": [
+                {"capability": "floating_point", "reason": "SIMD lane semantics not proven", "severity": "error"}
+            ],
+        },
+    )
+
+    expect(
+        evidence
+        == {
+            "pass_name": "code-virtualization",
+            "status": "omitted",
+            "reason": "floating_point: SIMD lane semantics not proven",
+            "severity": "error",
+        }
+    )
+
+
 def test_runtime_observables_detect_changed_stdout_digest() -> None:
     baseline = {
         "status": "completed",
