@@ -540,6 +540,12 @@ def _runtime_duration_coverage(seed_runs: list[tuple[dict[str, object], Mapping[
     }
 
 
+def _coverage_percent(complete: int, total: int) -> float:
+    if total == 0:
+        return 0.0
+    return round(complete / total * 100.0, 2)
+
+
 def _transformation_reason_counts(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
 ) -> dict[str, int]:
@@ -624,6 +630,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
     runtime_duration_coverage = _runtime_duration_coverage(seed_runs)
     static_metric_deltas = _static_metric_deltas(seed_runs)
     static_metric_coverage = _static_metric_coverage(seed_runs)
+    seed_run_count = len(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
     error_reasons = _transformation_reason_counts(seed_runs, "error")
     omission_severities = _transformation_severity_counts(seed_runs, "omitted")
@@ -645,19 +652,39 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "runtime_observable_passes": runtime_observable_passes,
             "runtime_observable_failures": runtime_observable_failures,
             **runtime_observable_coverage,
+            "runtime_observable_coverage_percent": _coverage_percent(
+                runtime_observable_coverage["runtime_observable_complete_runs"],
+                seed_run_count,
+            ),
             **output_size_coverage,
+            "output_size_coverage_percent": _coverage_percent(
+                output_size_coverage["output_size_complete_runs"],
+                seed_run_count,
+            ),
             "total_output_size_delta_bytes": output_size_delta_bytes,
             "max_output_size_delta_bytes": max(output_size_deltas, default=0),
             "min_output_size_delta_bytes": min(output_size_deltas, default=0),
             **transform_duration_coverage,
+            "transform_duration_coverage_percent": _coverage_percent(
+                transform_duration_coverage["transform_duration_complete_runs"],
+                seed_run_count,
+            ),
             "total_transform_duration_seconds": transform_duration_seconds,
             **runtime_duration_coverage,
+            "runtime_duration_coverage_percent": _coverage_percent(
+                runtime_duration_coverage["runtime_duration_complete_runs"],
+                seed_run_count,
+            ),
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
             "omission_reasons": omission_reasons,
             "error_reasons": error_reasons,
             "omission_severities": omission_severities,
             "error_severities": error_severities,
             **static_metric_coverage,
+            "static_metric_coverage_percent": _coverage_percent(
+                static_metric_coverage["static_metric_complete_runs"],
+                seed_run_count,
+            ),
             **static_metric_deltas,
         },
     }

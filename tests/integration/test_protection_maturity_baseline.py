@@ -45,6 +45,7 @@ _EXPECTED_OUTPUT_SIZE_COMPLETE_RUNS = 2
 _EXPECTED_TRANSFORM_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_STATIC_COMPLETE_RUNS = 2
+_EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -213,19 +214,24 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
         and report["summary"]["runtime_observable_failures"] == 1
         and report["summary"]["runtime_observable_complete_runs"] == _EXPECTED_RUNTIME_COMPLETE_RUNS
         and report["summary"]["runtime_observable_missing_runs"] == 0
+        and report["summary"]["runtime_observable_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["output_size_complete_runs"] == _EXPECTED_OUTPUT_SIZE_COMPLETE_RUNS
         and report["summary"]["output_size_missing_runs"] == 0
+        and report["summary"]["output_size_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["total_output_size_delta_bytes"] == _EXPECTED_TOTAL_SIZE_DELTA_BYTES
         and report["summary"]["max_output_size_delta_bytes"] == _EXPECTED_MAX_SIZE_DELTA_BYTES
         and report["summary"]["min_output_size_delta_bytes"] == _EXPECTED_MIN_SIZE_DELTA_BYTES
         and report["summary"]["transform_duration_complete_runs"] == _EXPECTED_TRANSFORM_DURATION_COMPLETE_RUNS
         and report["summary"]["transform_duration_missing_runs"] == 0
+        and report["summary"]["transform_duration_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["total_transform_duration_seconds"] == _EXPECTED_TRANSFORM_DURATION_SECONDS
         and report["summary"]["runtime_duration_complete_runs"] == _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS
         and report["summary"]["runtime_duration_missing_runs"] == 0
+        and report["summary"]["runtime_duration_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["total_runtime_duration_delta_seconds"] == 0.0
         and report["summary"]["static_metric_complete_runs"] == _EXPECTED_STATIC_COMPLETE_RUNS
         and report["summary"]["static_metric_missing_runs"] == 0
+        and report["summary"]["static_metric_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["total_static_number_of_functions_delta"] == _EXPECTED_STATIC_FUNCTIONS_DELTA
         and report["summary"]["total_static_number_of_instructions_delta"] == _EXPECTED_STATIC_INSTRUCTIONS_DELTA
         and report["summary"]["omission_reasons"] == {"no eligible function was transformed": 1}
