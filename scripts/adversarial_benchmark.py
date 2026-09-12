@@ -731,10 +731,13 @@ def _campaign_summary(
         "tool_run_coverage_percent": _coverage_percent(observed_tool_runs, expected_tool_runs),
         "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
         "completed_tool_runs": completed_tools,
+        "completed_tool_run_percent": _coverage_percent(completed_tools, observed_tool_runs),
         "unavailable_tool_runs": unavailable_tools,
+        "unavailable_tool_run_percent": _coverage_percent(unavailable_tools, observed_tool_runs),
         "unavailable_tool_runs_by_tool": unavailable_tools_by_tool,
         "unavailable_reasons_by_tool": _tool_reason_map(samples, "unavailable"),
         "error_tool_runs": error_tools,
+        "error_tool_run_percent": _coverage_percent(error_tools, observed_tool_runs),
         "error_tool_runs_by_tool": error_tools_by_tool,
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
     }

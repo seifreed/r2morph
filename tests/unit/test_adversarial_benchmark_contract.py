@@ -119,10 +119,13 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_tool_runs_by_tool"]["angr"] == 1
         and summary["missing_tool_runs_by_tool"]["custom"] == 1
         and summary["completed_tool_runs"] == 1
+        and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["unavailable_tool_runs"] == 1
+        and summary["unavailable_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
         and summary["unavailable_reasons_by_tool"] == {"ghidra": {"missing local executable": 1}}
         and summary["error_tool_runs"] == 1
+        and summary["error_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["error_tool_runs_by_tool"] == {"ida-pro": 1}
         and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
     )
