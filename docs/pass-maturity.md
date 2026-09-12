@@ -4,6 +4,8 @@ The release contract is per-pass. A pass is Tier 1 only when native tests,
 runtime validation, and the compatibility corpus cover the official Linux ELF
 x86-64 target. Every other entry remains experimental until its evidence is
 promoted.
+Preview PE, Mach-O, ARM, and AArch64 evidence does not imply parity with the
+official Linux ELF x86-64 target.
 
 The compatibility corpus selection currently covers `BlockReordering`,
 `CodeVirtualization`, `ConstantUnfolding`, `ControlFlowFlattening`,

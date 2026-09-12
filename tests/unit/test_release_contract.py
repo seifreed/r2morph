@@ -21,6 +21,26 @@ def test_support_matrix_declares_linux_elf_x86_64_as_official() -> None:
     )
 
 
+def test_support_matrix_keeps_preview_targets_out_of_official_support() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+
+    expect(
+        matrix["formats"]
+        == {
+            "ELF": "official-linux-x86-64",
+            "PE": "preview-alpha",
+            "Mach-O": "experimental",
+        }
+        and matrix["architectures"]
+        == {
+            "x86-64": "official-linux-elf",
+            "x86": "experimental",
+            "AArch64": "experimental",
+            "ARM": "experimental",
+        }
+    )
+
+
 def test_support_matrix_evidence_paths_exist() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     paths = [
