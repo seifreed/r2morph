@@ -33,6 +33,8 @@ _EXPECTED_TWO_PASS_TOOL_RUNS = 18
 _EXPECTED_TWO_PASS_TOOL_MISSING_RUNS = 15
 _EXPECTED_TWO_PASS_TOOL_COVERAGE_PERCENT = 16.67
 _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL = 2
+_EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT = 5.56
+_EXPECTED_NON_COMPLETED_TOOL_RUNS = 17
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -139,6 +141,11 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_tool_runs_by_tool"]["custom"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["completed_tool_runs"] == 1
         and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
+        and summary["completed_tool_run_coverage_percent"] == _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT
+        and summary["non_completed_tool_runs"] == _EXPECTED_NON_COMPLETED_TOOL_RUNS
+        and summary["non_completed_tool_runs_by_tool"]["binary-ninja"] == 1
+        and summary["non_completed_tool_runs_by_tool"]["ida-pro"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
+        and summary["non_completed_tool_runs_by_tool"]["ghidra"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["unavailable_tool_runs"] == 1
         and summary["unavailable_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["unavailable_tool_runs_by_tool"] == {"ghidra": 1}

@@ -716,6 +716,17 @@ def _campaign_summary(
         for tool in expected_tools
         if (missing_runs := expected_pass_runs - observed_tool_runs_by_tool[tool]) > 0
     }
+    non_completed_tool_runs_by_tool = {
+        tool: runs
+        for tool in expected_tools
+        if (
+            runs := missing_tool_runs_by_tool.get(tool, 0)
+            + unavailable_tools_by_tool.get(tool, 0)
+            + error_tools_by_tool.get(tool, 0)
+        )
+        > 0
+    }
+    non_completed_tool_runs = expected_tool_runs - completed_tools
     return {
         "expected_pass_count": len(pass_names),
         "observed_pass_count": len(observed_passes),
@@ -746,6 +757,9 @@ def _campaign_summary(
         "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
         "completed_tool_runs": completed_tools,
         "completed_tool_run_percent": _coverage_percent(completed_tools, observed_tool_runs),
+        "completed_tool_run_coverage_percent": _coverage_percent(completed_tools, expected_tool_runs),
+        "non_completed_tool_runs": non_completed_tool_runs,
+        "non_completed_tool_runs_by_tool": non_completed_tool_runs_by_tool,
         "unavailable_tool_runs": unavailable_tools,
         "unavailable_tool_run_percent": _coverage_percent(unavailable_tools, observed_tool_runs),
         "unavailable_tool_runs_by_tool": unavailable_tools_by_tool,
