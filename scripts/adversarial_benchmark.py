@@ -633,6 +633,19 @@ def benchmark_corpus(
     if not pass_names:
         raise ValueError("at least one corpus pass is required")
     samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
+    return {
+        "schema_version": 3,
+        "measurement": "protection-adversarial-corpus",
+        "corpus": dataset.name,
+        "sample_count": len(samples),
+        "samples": samples,
+        "pass_summary": _pass_summary(samples),
+        "tool_summary": _tool_summary(samples),
+        "summary": _campaign_summary(samples, len(fixtures), len(pass_names)),
+    }
+
+
+def _campaign_summary(samples: list[dict[str, object]], fixture_count: int, pass_count: int) -> dict[str, int]:
     observed_passes = {
         pass_name
         for sample in samples
@@ -647,8 +660,6 @@ def benchmark_corpus(
     }
     observed_pass_runs = sum(1 for sample in samples for row in sample.get("passes", []) if isinstance(row, dict))
     observed_tool_runs = sum(1 for sample in samples for row in sample.get("tools", []) if isinstance(row, dict))
-    expected_pass_runs = len(fixtures) * len(pass_names)
-    expected_tool_runs = expected_pass_runs * (len(_EXPECTED_TOOLS) + 1)
     completed_tools = sum(
         1
         for sample in samples
@@ -661,29 +672,25 @@ def benchmark_corpus(
         for tool in sample["tools"]
         if isinstance(tool, dict) and tool.get("status") == "unavailable"
     )
+    error_tools = sum(
+        1 for sample in samples for tool in sample["tools"] if isinstance(tool, dict) and tool.get("status") == "error"
+    )
+    expected_pass_runs = fixture_count * pass_count
+    expected_tool_runs = expected_pass_runs * (len(_EXPECTED_TOOLS) + 1)
     return {
-        "schema_version": 3,
-        "measurement": "protection-adversarial-corpus",
-        "corpus": dataset.name,
-        "sample_count": len(samples),
-        "samples": samples,
-        "pass_summary": _pass_summary(samples),
-        "tool_summary": _tool_summary(samples),
-        "summary": {
-            "expected_pass_count": len(pass_names),
-            "observed_pass_count": len(observed_passes),
-            "expected_pass_runs": expected_pass_runs,
-            "observed_pass_runs": observed_pass_runs,
-            "missing_pass_runs": expected_pass_runs - observed_pass_runs,
-            "expected_tool_count": len(_EXPECTED_TOOLS) + 1,
-            "observed_tool_count": len(observed_tools),
-            "expected_tool_runs": expected_tool_runs,
-            "observed_tool_runs": observed_tool_runs,
-            "missing_tool_runs": expected_tool_runs - observed_tool_runs,
-            "completed_tool_runs": completed_tools,
-            "unavailable_tool_runs": unavailable_tools,
-            "error_tool_runs": expected_tool_runs - completed_tools - unavailable_tools,
-        },
+        "expected_pass_count": pass_count,
+        "observed_pass_count": len(observed_passes),
+        "expected_pass_runs": expected_pass_runs,
+        "observed_pass_runs": observed_pass_runs,
+        "missing_pass_runs": expected_pass_runs - observed_pass_runs,
+        "expected_tool_count": len(_EXPECTED_TOOLS) + 1,
+        "observed_tool_count": len(observed_tools),
+        "expected_tool_runs": expected_tool_runs,
+        "observed_tool_runs": observed_tool_runs,
+        "missing_tool_runs": expected_tool_runs - observed_tool_runs,
+        "completed_tool_runs": completed_tools,
+        "unavailable_tool_runs": unavailable_tools,
+        "error_tool_runs": error_tools,
     }
 
 

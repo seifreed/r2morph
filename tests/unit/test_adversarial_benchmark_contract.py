@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from scripts.adversarial_benchmark import (
+    _campaign_summary,
     _measure_tool,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
@@ -23,6 +24,7 @@ _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
 _EXPECTED_TOTAL_FUNCTIONS_DELTA = 4
 _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
 _EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL = 3
+_EXPECTED_PARTIAL_TOOL_ROWS = 2
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -81,6 +83,31 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
     )
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
+
+
+def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_rows() -> None:
+    summary = _campaign_summary(
+        [
+            {
+                "passes": [],
+                "tools": [
+                    {"tool": "binary-ninja", "status": "completed"},
+                    {"tool": "ida-pro", "status": "error"},
+                ],
+            }
+        ],
+        fixture_count=1,
+        pass_count=1,
+    )
+
+    expect(
+        summary["missing_pass_runs"] == 1
+        and summary["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
+        and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
+        and summary["missing_tool_runs"] == _EXPECTED_TOOL_COUNT - _EXPECTED_PARTIAL_TOOL_ROWS
+        and summary["completed_tool_runs"] == 1
+        and summary["error_tool_runs"] == 1
+    )
 
 
 def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path) -> None:
