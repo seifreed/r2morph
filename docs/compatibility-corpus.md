@@ -50,6 +50,8 @@ The real VM diversification regression builds the same fixture with four
 independent seeds, requiring identical emulated exit behavior and four distinct
 output digests. This covers the combined opcode, handler, dispatcher, checksum,
 and bytecode scheme rather than treating seed selection as an untested option.
+It also requires each diversified build to report non-empty VM bytecode payloads
+with zero unsupported or partial virtualizations.
 Raw sample bytes and unbounded process output are not stored in reports. Each
 transformation record includes the pass name, status (`applied`, `omitted`, or
 `error`), and a bounded reason when the selected pass cannot transform the

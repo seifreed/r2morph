@@ -16,8 +16,8 @@ _FIXTURE = _DATASET / "elf_vm_shift_x86_64"
 _SEEDS = (20260913, 20260914, 20260915, 20260916)
 
 
-def _virtualized_builds(tmp_path: Path) -> tuple[Path, ...]:
-    builds: list[Path] = []
+def _virtualized_builds(tmp_path: Path) -> tuple[tuple[Path, dict[str, object]], ...]:
+    builds: list[tuple[Path, dict[str, object]]] = []
     for seed in _SEEDS:
         output = tmp_path / f"seed-{seed}"
         shutil.copyfile(_FIXTURE, output)
@@ -30,7 +30,7 @@ def _virtualized_builds(tmp_path: Path) -> tuple[Path, ...]:
             binary.close()
         if stats["functions_virtualized"] < 1:
             raise RuntimeError(f"seed {seed} did not virtualize the fixture")
-        builds.append(output)
+        builds.append((output, stats))
     return tuple(builds)
 
 
@@ -41,12 +41,26 @@ def _sha256(path: Path) -> str:
 
 def test_diversified_vm_builds_preserve_fixture_exit_code(tmp_path: Path) -> None:
     baseline = emulate_exit_code(_FIXTURE)
-    observed = tuple(emulate_exit_code(path) for path in _virtualized_builds(tmp_path))
+    observed = tuple(emulate_exit_code(path) for path, _ in _virtualized_builds(tmp_path))
 
     expect(observed == (baseline,) * len(_SEEDS))
 
 
 def test_diversified_vm_builds_have_distinct_artifacts(tmp_path: Path) -> None:
-    digests = {_sha256(path) for path in _virtualized_builds(tmp_path)}
+    digests = {_sha256(path) for path, _ in _virtualized_builds(tmp_path)}
 
     expect(len(digests) == len(_SEEDS))
+
+
+def test_diversified_vm_builds_report_protected_bytecode_payloads(tmp_path: Path) -> None:
+    stats = tuple(stats for _, stats in _virtualized_builds(tmp_path))
+
+    expect(
+        all(
+            item["functions_virtualized"] == 1
+            and item["total_bytecode_bytes"] > 0
+            and item["unsupported_functions_total"] == 0
+            and item["partial_virtualization_total"] == 0
+            for item in stats
+        )
+    )
