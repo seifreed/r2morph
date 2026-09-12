@@ -350,8 +350,21 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
     return result
 
 
-def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]:
-    summary: dict[str, dict[str, int]] = {}
+def _merge_capability_summary(counters: dict[str, object], field: str, value: object) -> None:
+    if not isinstance(value, dict):
+        return
+    aggregate = counters.get(field)
+    if not isinstance(aggregate, dict):
+        aggregate = {}
+    for capability, count in value.items():
+        if isinstance(capability, str) and isinstance(count, int):
+            aggregate[capability] = aggregate.get(capability, 0) + count
+    if aggregate:
+        counters[field] = dict(sorted(aggregate.items()))
+
+
+def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    summary: dict[str, dict[str, object]] = {}
     for sample in samples:
         rows = sample.get("passes", [])
         if not isinstance(rows, list):
@@ -389,6 +402,12 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]
                 value = row["mutations_applied"]
                 if isinstance(value, int):
                     counters["mutations_applied"] += value
+            _merge_capability_summary(counters, "unsupported_capabilities", row.get("unsupported_capabilities"))
+            _merge_capability_summary(
+                counters,
+                "partial_virtualization_capabilities",
+                row.get("partial_virtualization_capabilities"),
+            )
     return dict(sorted(summary.items()))
 
 

@@ -7,6 +7,7 @@ from scripts.adversarial_benchmark import (
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     _pass_result,
+    _pass_summary,
     _passes_without_applications,
     _tool_summary,
     benchmark_corpus,
@@ -21,6 +22,7 @@ _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
 _EXPECTED_TOTAL_FUNCTIONS_DELTA = 4
 _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
+_EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL = 3
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -151,6 +153,42 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
         result["status"] == "omitted"
         and result["unsupported_capabilities"] == {"computed_control_flow": 2}
         and result["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
+    )
+
+
+def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabilities() -> None:
+    summary = _pass_summary(
+        [
+            {
+                "passes": [
+                    {
+                        "pass_name": "CodeVirtualization",
+                        "status": "omitted",
+                        "functions_virtualized": 0,
+                        "unsupported_functions": 2,
+                        "partial_virtualization": 1,
+                        "unsupported_capabilities": {"computed_control_flow": 2},
+                        "partial_virtualization_capabilities": {"exceptions_and_unwinding": 1},
+                    },
+                    {
+                        "pass_name": "CodeVirtualization",
+                        "status": "omitted",
+                        "functions_virtualized": 0,
+                        "unsupported_functions": 1,
+                        "partial_virtualization": 0,
+                        "unsupported_capabilities": {"memory_access": 1},
+                    },
+                ]
+            }
+        ]
+    )
+
+    expect(
+        summary["CodeVirtualization"]["unsupported_functions"] == _EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL
+        and summary["CodeVirtualization"]["partial_virtualization"] == 1
+        and summary["CodeVirtualization"]["unsupported_capabilities"]
+        == {"computed_control_flow": 2, "memory_access": 1}
+        and summary["CodeVirtualization"]["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
     )
 
 
