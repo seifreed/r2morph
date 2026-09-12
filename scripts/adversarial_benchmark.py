@@ -435,6 +435,21 @@ def _tool_metric_deltas(row: dict[str, object]) -> dict[str, float]:
     return deltas
 
 
+def _tool_metric_pair_counts(row: dict[str, object]) -> dict[str, int]:
+    original = row.get("original")
+    protected = row.get("protected")
+    if not isinstance(original, dict) or not isinstance(protected, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for key, original_value in original.items():
+        if key in {"duration_seconds", "return_code", "exit_code", "status"}:
+            continue
+        protected_value = protected.get(key)
+        if type(original_value) in {int, float} and type(protected_value) in {int, float}:
+            counts[f"metric_{key}_pairs"] = 1
+    return counts
+
+
 def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float | int]]:
     summary: dict[str, dict[str, float | int]] = {}
     for sample in samples:
@@ -465,6 +480,8 @@ def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float
                 counters["total_duration_seconds"] += _tool_duration_seconds(row)
                 for key, delta in _tool_metric_deltas(row).items():
                     counters[key] = counters.get(key, 0) + delta
+                for key, count in _tool_metric_pair_counts(row).items():
+                    counters[key] = counters.get(key, 0) + count
                 if row.get("changed") is True:
                     counters["changed"] += 1
             elif status == "unavailable":

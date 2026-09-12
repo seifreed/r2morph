@@ -115,7 +115,9 @@ def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
         summary["binary-ninja"]["completed"] == 1
         and summary["binary-ninja"]["changed"] == 1
         and summary["binary-ninja"]["total_duration_seconds"] == _EXPECTED_TOTAL_TOOL_DURATION_SECONDS
+        and summary["binary-ninja"]["metric_functions_pairs"] == 1
         and summary["binary-ninja"]["total_functions_delta"] == _EXPECTED_TOTAL_FUNCTIONS_DELTA
+        and summary["binary-ninja"]["metric_instruction_lines_pairs"] == 1
         and summary["binary-ninja"]["total_instruction_lines_delta"] == _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA
         and summary["ghidra"]["unavailable"] == 1
         and summary["ida-pro"]["errors"] == 1

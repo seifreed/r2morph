@@ -45,8 +45,9 @@ The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
-duration totals, and numeric original-versus-protected metric deltas per
-analyzer so campaigns remain comparable by tool.
+duration totals, comparable numeric metric pair counts, and numeric
+original-versus-protected metric deltas per analyzer so campaigns remain
+comparable by tool.
 The real VM diversification regression builds the same fixture with four
 independent seeds, requiring identical emulated exit behavior and four distinct
 output digests. This covers the combined opcode, handler, dispatcher, checksum,
