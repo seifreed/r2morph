@@ -5,21 +5,26 @@ runtime validation, and the compatibility corpus cover the official Linux ELF
 x86-64 target. Every other entry remains experimental until its evidence is
 promoted.
 
+The compatibility corpus selection currently covers `BlockReordering`,
+`CodeVirtualization`, `ConstantUnfolding`, `ControlFlowFlattening`,
+`DeadCodeInjection`, `InstructionExpansion`, `InstructionSubstitution`,
+`NopInsertion`, `PatternSubstitution`, and `RegisterSubstitution`.
+
 | Pass | Status | Target | Current limitation | Evidence |
 |---|---|---|---|---|
 | NOP insertion | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O x86-64/AArch64 preview | Preview targets require real structural validation and checksum/signature handling; no official cross-platform contract | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
 | Instruction substitution | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O AArch64 preview | Rule coverage is ISA-specific; preview evidence covers one real PE fixture and direct 12-bit ARM64 move-immediate substitutions | `tests/product_smoke`, `tests/integration`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutation_passes_end_to_end_more2.py` |
 | Register substitution | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O AArch64 preview | Requires proven liveness and ABI preservation; non-ELF targets remain experimental | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_register_substitution_arm64.py` |
-| Instruction expansion | Experimental | ELF x86-64 | Wider replacements need more corpus coverage | `README.md` |
-| Block reordering | Experimental | ELF x86-64 | Complex indirect control flow is rejected | `tests/integration` |
-| Dead code injection | Experimental | ELF x86-64 | Placement depends on available safe regions; one native differential fixture is measured, but broad corpus evidence is pending | `tests/integration/test_dead_code_injection_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py` |
-| Control-flow flattening | Experimental | ELF x86-64 | One native differential fixture is measured; no cross-tool decompiler benchmark or broad corpus evidence | `tests/integration/test_control_flow_flattening_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py` |
+| Instruction expansion | Experimental | ELF x86-64 | Selected by the compatibility corpus; wider replacements still need cross-platform evidence and analyzer-effectiveness results | `README.md`, `docs/compatibility-corpus.md` |
+| Block reordering | Experimental | ELF x86-64 | Selected by the compatibility corpus; complex indirect control flow is rejected | `tests/integration`, `docs/compatibility-corpus.md` |
+| Dead code injection | Experimental | ELF x86-64 | Selected by the compatibility corpus; placement depends on available safe regions and analyzer-effectiveness evidence remains incomplete | `tests/integration/test_dead_code_injection_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
+| Control-flow flattening | Experimental | ELF x86-64 | Selected by the compatibility corpus; cross-tool decompiler benchmark and composition evidence remain incomplete | `tests/integration/test_control_flow_flattening_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
 | Opaque predicates | Experimental | ELF x86-64 | Predicate families are not exhaustive | `README.md` |
-| Code virtualization | Experimental | ELF x86-64 | Unsupported functions are conservatively unchanged | `docs/protection-maturity.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
+| Code virtualization | Experimental | ELF x86-64 | Selected by the compatibility corpus; unsupported functions are rejected or conservatively unchanged with diagnostics | `docs/protection-maturity.md`, `docs/compatibility-corpus.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |
-| Constant unfolding | Experimental | ELF x86-64 | x86-only transformation rules; one native differential fixture is measured, but broad corpus evidence is pending | `tests/integration/test_protection_maturity_baseline.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S` |
+| Constant unfolding | Experimental | ELF x86-64 | Selected by the compatibility corpus; x86-only transformation rules and analyzer-effectiveness evidence remain incomplete | `tests/integration/test_protection_maturity_baseline.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S`, `docs/compatibility-corpus.md` |
 | Code mobility | Experimental | ELF x86-64 | Code-cave geometry is input-dependent | `README.md` |
 | Function outlining | Experimental | ELF x86-64 | ABI and exception edges need more evidence | `README.md` |
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
@@ -27,7 +32,7 @@ promoted.
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
 | Stack strings | Experimental | ELF x86-64 | String layout and ABI interactions need more corpus coverage | `README.md` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
-| Pattern substitution | Experimental | ELF x86-64 | Pattern coverage is intentionally narrow | `README.md` |
+| Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus; pattern coverage is intentionally narrow and composition evidence remains incomplete | `README.md`, `docs/compatibility-corpus.md` |
 | Polymorphic engine | Experimental | ELF x86-64 | Pipeline composition requires per-pass validation | `README.md` |
 
 The machine-readable format and evidence paths are in

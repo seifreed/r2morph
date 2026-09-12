@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from scripts.check_release_contract import _check_changelog, _check_documentation_links, _validate_inventory, main
+from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -64,6 +65,13 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
             for profile in set(maturity["pass_profiles"].values())
         )
     )
+
+
+def test_pass_maturity_contract_names_the_public_corpus_selection() -> None:
+    contract = (_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8")
+
+    expect(all(f"`{pass_name}`" in contract for pass_name in CORPUS_PASS_NAMES))
+    expect("broad corpus evidence is pending" not in contract)
 
 
 def test_release_contract_current_tree_is_valid() -> None:
