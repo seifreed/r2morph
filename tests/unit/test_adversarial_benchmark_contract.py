@@ -97,14 +97,19 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
             }
         ],
         fixture_count=1,
-        pass_count=1,
+        pass_names=("CodeVirtualization",),
     )
 
     expect(
         summary["missing_pass_runs"] == 1
+        and summary["missing_passes"] == ["CodeVirtualization"]
+        and summary["missing_pass_runs_by_pass"] == {"CodeVirtualization": 1}
         and summary["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
         and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
         and summary["missing_tool_runs"] == _EXPECTED_TOOL_COUNT - _EXPECTED_PARTIAL_TOOL_ROWS
+        and {"angr", "custom"}.issubset(summary["missing_tools"])
+        and summary["missing_tool_runs_by_tool"]["angr"] == 1
+        and summary["missing_tool_runs_by_tool"]["custom"] == 1
         and summary["completed_tool_runs"] == 1
         and summary["error_tool_runs"] == 1
     )

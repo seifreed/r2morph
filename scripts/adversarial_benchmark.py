@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import time
+from collections import Counter
 from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
@@ -641,11 +642,16 @@ def benchmark_corpus(
         "samples": samples,
         "pass_summary": _pass_summary(samples),
         "tool_summary": _tool_summary(samples),
-        "summary": _campaign_summary(samples, len(fixtures), len(pass_names)),
+        "summary": _campaign_summary(samples, len(fixtures), pass_names),
     }
 
 
-def _campaign_summary(samples: list[dict[str, object]], fixture_count: int, pass_count: int) -> dict[str, int]:
+def _campaign_summary(
+    samples: list[dict[str, object]],
+    fixture_count: int,
+    pass_names: tuple[str, ...],
+) -> dict[str, object]:
+    expected_tools = (*_EXPECTED_TOOLS, "custom")
     observed_passes = {
         pass_name
         for sample in samples
@@ -658,6 +664,18 @@ def _campaign_summary(samples: list[dict[str, object]], fixture_count: int, pass
         for row in sample.get("tools", [])
         if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
     }
+    observed_pass_runs_by_pass = Counter(
+        pass_name
+        for sample in samples
+        for row in sample.get("passes", [])
+        if isinstance(row, dict) and isinstance(pass_name := row.get("pass_name"), str)
+    )
+    observed_tool_runs_by_tool = Counter(
+        tool
+        for sample in samples
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
+    )
     observed_pass_runs = sum(1 for sample in samples for row in sample.get("passes", []) if isinstance(row, dict))
     observed_tool_runs = sum(1 for sample in samples for row in sample.get("tools", []) if isinstance(row, dict))
     completed_tools = sum(
@@ -675,19 +693,33 @@ def _campaign_summary(samples: list[dict[str, object]], fixture_count: int, pass
     error_tools = sum(
         1 for sample in samples for tool in sample["tools"] if isinstance(tool, dict) and tool.get("status") == "error"
     )
-    expected_pass_runs = fixture_count * pass_count
-    expected_tool_runs = expected_pass_runs * (len(_EXPECTED_TOOLS) + 1)
+    expected_pass_runs = fixture_count * len(pass_names)
+    expected_tool_runs = expected_pass_runs * len(expected_tools)
+    missing_pass_runs_by_pass = {
+        pass_name: missing_runs
+        for pass_name in pass_names
+        if (missing_runs := fixture_count - observed_pass_runs_by_pass[pass_name]) > 0
+    }
+    missing_tool_runs_by_tool = {
+        tool: missing_runs
+        for tool in expected_tools
+        if (missing_runs := expected_pass_runs - observed_tool_runs_by_tool[tool]) > 0
+    }
     return {
-        "expected_pass_count": pass_count,
+        "expected_pass_count": len(pass_names),
         "observed_pass_count": len(observed_passes),
+        "missing_passes": sorted(set(pass_names) - observed_passes),
         "expected_pass_runs": expected_pass_runs,
         "observed_pass_runs": observed_pass_runs,
         "missing_pass_runs": expected_pass_runs - observed_pass_runs,
-        "expected_tool_count": len(_EXPECTED_TOOLS) + 1,
+        "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
+        "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
+        "missing_tools": sorted(set(expected_tools) - observed_tools),
         "expected_tool_runs": expected_tool_runs,
         "observed_tool_runs": observed_tool_runs,
         "missing_tool_runs": expected_tool_runs - observed_tool_runs,
+        "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
         "completed_tool_runs": completed_tools,
         "unavailable_tool_runs": unavailable_tools,
         "error_tool_runs": error_tools,
