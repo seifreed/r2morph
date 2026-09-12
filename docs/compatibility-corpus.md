@@ -75,8 +75,9 @@ files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 The per-pass summary also aggregates runtime-observable coverage and pass/fail
 counts, output-size coverage and deltas, transform/runtime duration coverage
-and totals, static analyzer metric coverage and deltas, coverage percentages,
-and bounded omission/error reasons and severities.
+and totals, static analyzer metric coverage and deltas, complete-evidence
+coverage, coverage percentages, and bounded omission/error reasons and
+severities.
 The by-pass report also includes a campaign summary with total applied,
 omitted, and error runs, their rates, plus average coverage percentages across selected
 passes and aggregate semantic success/failure rates; it lists passes with zero
@@ -84,7 +85,9 @@ applied runs, omitted runs, and error runs so
 weak per-pass evidence is visible without expanding every row. It also groups
 passes with incomplete runtime, size, duration, or static-metric coverage, plus
 passes with semantic or runtime-observable failures, and records omission/error
-reasons and severities by pass.
+reasons and severities by pass. Complete-evidence coverage requires the same
+run to have runtime, size, transform-duration, runtime-duration, and static
+analyzer evidence.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

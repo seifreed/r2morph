@@ -541,6 +541,32 @@ def _runtime_duration_coverage(seed_runs: list[tuple[dict[str, object], Mapping[
     }
 
 
+def _complete_evidence_coverage(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
+    complete = sum(1 for fixture, run in seed_runs if _has_complete_evidence(fixture, run))
+    return {
+        "complete_evidence_runs": complete,
+        "complete_evidence_missing_runs": len(seed_runs) - complete,
+    }
+
+
+def _has_complete_evidence(fixture: dict[str, object], run: Mapping[str, object]) -> bool:
+    baseline_runtime = fixture.get("baseline_runtime")
+    runtime = run.get("runtime")
+    return (
+        _has_completed_runtime(baseline_runtime)
+        and _has_completed_runtime(runtime)
+        and isinstance(fixture.get("baseline_size"), int)
+        and isinstance(run.get("output_size"), int)
+        and isinstance(run.get("transform_duration_seconds"), int | float)
+        and isinstance(baseline_runtime, Mapping)
+        and isinstance(runtime, Mapping)
+        and isinstance(baseline_runtime.get("duration_seconds"), int | float)
+        and isinstance(runtime.get("duration_seconds"), int | float)
+        and _has_static_metrics(fixture.get("baseline"))
+        and _has_static_metrics(run.get("after"))
+    )
+
+
 def _coverage_percent(complete: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -631,6 +657,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
     runtime_duration_coverage = _runtime_duration_coverage(seed_runs)
     static_metric_deltas = _static_metric_deltas(seed_runs)
     static_metric_coverage = _static_metric_coverage(seed_runs)
+    complete_evidence_coverage = _complete_evidence_coverage(seed_runs)
     seed_run_count = len(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
     error_reasons = _transformation_reason_counts(seed_runs, "error")
@@ -684,6 +711,11 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             **static_metric_coverage,
             "static_metric_coverage_percent": _coverage_percent(
                 static_metric_coverage["static_metric_complete_runs"],
+                seed_run_count,
+            ),
+            **complete_evidence_coverage,
+            "complete_evidence_coverage_percent": _coverage_percent(
+                complete_evidence_coverage["complete_evidence_runs"],
                 seed_run_count,
             ),
             **static_metric_deltas,
@@ -786,6 +818,10 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             "runtime_duration_coverage_percent",
         ),
         "average_static_metric_coverage_percent": _average_percent(summaries, "static_metric_coverage_percent"),
+        "average_complete_evidence_coverage_percent": _average_percent(
+            summaries,
+            "complete_evidence_coverage_percent",
+        ),
     }
 
 
@@ -819,6 +855,7 @@ def _passes_with_incomplete_coverage(summaries: dict[str, object]) -> dict[str, 
         "transform_duration": "transform_duration_coverage_percent",
         "runtime_duration": "runtime_duration_coverage_percent",
         "static_metric": "static_metric_coverage_percent",
+        "complete_evidence": "complete_evidence_coverage_percent",
     }
     incomplete: dict[str, list[str]] = {}
     for name, field in fields.items():

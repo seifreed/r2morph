@@ -46,6 +46,7 @@ _EXPECTED_OUTPUT_SIZE_COMPLETE_RUNS = 2
 _EXPECTED_TRANSFORM_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_STATIC_COMPLETE_RUNS = 2
+_EXPECTED_COMPLETE_EVIDENCE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
@@ -58,6 +59,7 @@ _EXPECTED_INCOMPLETE_COVERAGE = {
     "transform_duration": ["PatternSubstitution"],
     "runtime_duration": ["PatternSubstitution"],
     "static_metric": ["PatternSubstitution"],
+    "complete_evidence": ["PatternSubstitution"],
 }
 _EXPECTED_OMISSION_REASONS_BY_PASS = {"PatternSubstitution": {"no eligible function was transformed": 1}}
 _EXPECTED_OMISSION_SEVERITIES_BY_PASS = {"PatternSubstitution": {"warning": 1}}
@@ -247,6 +249,9 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
         and report["summary"]["static_metric_complete_runs"] == _EXPECTED_STATIC_COMPLETE_RUNS
         and report["summary"]["static_metric_missing_runs"] == 0
         and report["summary"]["static_metric_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
+        and report["summary"]["complete_evidence_runs"] == _EXPECTED_COMPLETE_EVIDENCE_RUNS
+        and report["summary"]["complete_evidence_missing_runs"] == 0
+        and report["summary"]["complete_evidence_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["total_static_number_of_functions_delta"] == _EXPECTED_STATIC_FUNCTIONS_DELTA
         and report["summary"]["total_static_number_of_instructions_delta"] == _EXPECTED_STATIC_INSTRUCTIONS_DELTA
         and report["summary"]["omission_reasons"] == {"no eligible function was transformed": 1}
@@ -283,6 +288,8 @@ def test_render_result_counts_missing_size_and_duration_pairs() -> None:
         and report["summary"]["transform_duration_missing_runs"] == 1
         and report["summary"]["runtime_duration_complete_runs"] == 0
         and report["summary"]["runtime_duration_missing_runs"] == 1
+        and report["summary"]["complete_evidence_runs"] == 0
+        and report["summary"]["complete_evidence_missing_runs"] == 1
     )
 
 
@@ -388,6 +395,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["average_runtime_duration_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["average_static_metric_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["average_complete_evidence_coverage_percent"]
+        == _EXPECTED_AVERAGE_COVERAGE_PERCENT
     )
 
 
