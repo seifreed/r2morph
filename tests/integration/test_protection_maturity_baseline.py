@@ -348,6 +348,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["passes_without_applied_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
+        and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
+        and report["campaign_summary"]["passes_with_runtime_observable_failures"] == []
         and report["campaign_summary"]["total_applied_runs"] == 1
         and report["campaign_summary"]["total_omitted_runs"] == 1
         and report["campaign_summary"]["total_error_runs"] == 0
