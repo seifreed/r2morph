@@ -71,7 +71,7 @@ def _normalize_architecture_name(architecture: str, bits: int | None = None) -> 
     if lowered in {"arm64", "aarch64", "arm64e"}:
         return "arm64"
     if lowered in {"arm", "armv7", "armv7l", "armv7a", "thumb"}:
-        return "arm"
+        return "arm64" if lowered == "arm" and bits == ARCH_BITS_64 else "arm"
     return normalized_arch
 
 

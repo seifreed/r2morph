@@ -12,6 +12,7 @@ from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.core.support import _normalize_architecture_name
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,56 @@ class _UnwindContext:
 
     unproven: bool
     frame: Any | None
+
+
+def _normalise_loader_format(raw_format: object) -> str:
+    lowered = str(raw_format).strip().lower()
+    if lowered.startswith("elf"):
+        return "ELF"
+    if lowered.startswith("pe"):
+        return "PE"
+    if "mach" in lowered:
+        return "Mach-O"
+    return str(raw_format).strip() or "unknown"
+
+
+def _target_diagnostic(pass_instance: Any, binary: Any) -> dict[str, Any] | None:
+    try:
+        arch_info = binary.get_arch_info()
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        arch_info = {}
+    bits = arch_info.get("bits")
+    try:
+        normalized_bits = int(bits)
+    except (TypeError, ValueError):
+        normalized_bits = None
+    target_format = _normalise_loader_format(arch_info.get("format", "unknown"))
+    target_arch = _normalize_architecture_name(arch_info.get("arch", "unknown"), normalized_bits)
+    support = pass_instance.get_support()
+    if target_format in support.formats and target_arch in support.architectures:
+        return None
+    return {
+        "format": target_format,
+        "architecture": target_arch,
+        "bits": normalized_bits,
+        "supported_formats": list(support.formats),
+        "supported_architectures": list(support.architectures),
+        "reason": "target is outside the code virtualization support envelope",
+    }
+
+
+def _empty_result(target_diagnostic: dict[str, Any] | None) -> dict[str, Any]:
+    return {
+        "functions_virtualized": 0,
+        "functions_skipped": 0,
+        "total_instructions": 0,
+        "total_bytecode_bytes": 0,
+        "unsupported_functions": [],
+        "unsupported_functions_total": 0,
+        "partial_virtualization": [],
+        "partial_virtualization_total": 0,
+        "target_diagnostic": target_diagnostic,
+    }
 
 
 def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
@@ -335,6 +386,10 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
     """Apply code virtualization using the pass instance's transformation seams."""
     pass_instance._reset_random()
+    target_diagnostic = _target_diagnostic(pass_instance, binary)
+    if target_diagnostic is not None:
+        logger.warning("Skipping code virtualization for unsupported target: %s", target_diagnostic)
+        return _empty_result(target_diagnostic)
     pass_instance._ensure_analyzed(binary)
     logger.info("Applying code virtualization")
 
@@ -417,4 +472,5 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         "unsupported_functions_total": unsupported_total,
         "partial_virtualization": partial,
         "partial_virtualization_total": partial_total,
+        "target_diagnostic": None,
     }
