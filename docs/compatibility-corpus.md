@@ -43,6 +43,10 @@ pass.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.
+The real VM diversification regression builds the same fixture with four
+independent seeds, requiring identical emulated exit behavior and four distinct
+output digests. This covers the combined opcode, handler, dispatcher, checksum,
+and bytecode scheme rather than treating seed selection as an untested option.
 Raw sample bytes and unbounded process output are not stored in reports. Each
 transformation record includes the pass name, status (`applied`, `omitted`, or
 `error`), and a bounded reason when the selected pass cannot transform the
