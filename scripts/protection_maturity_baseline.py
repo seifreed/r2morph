@@ -487,6 +487,22 @@ def _static_metric_coverage(seed_runs: list[tuple[dict[str, object], Mapping[str
     }
 
 
+def _has_completed_runtime(value: object) -> bool:
+    return isinstance(value, Mapping) and value.get("status") == "completed"
+
+
+def _runtime_observable_coverage(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
+    complete = sum(
+        1
+        for fixture, run in seed_runs
+        if _has_completed_runtime(fixture.get("baseline_runtime")) and _has_completed_runtime(run.get("runtime"))
+    )
+    return {
+        "runtime_observable_complete_runs": complete,
+        "runtime_observable_missing_runs": len(seed_runs) - complete,
+    }
+
+
 def _transformation_reason_counts(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]], status: str
 ) -> dict[str, int]:
@@ -546,6 +562,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         for fixture, run in seed_runs
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
+    runtime_observable_coverage = _runtime_observable_coverage(seed_runs)
     static_metric_deltas = _static_metric_deltas(seed_runs)
     static_metric_coverage = _static_metric_coverage(seed_runs)
     omission_reasons = _transformation_reason_counts(seed_runs, "omitted")
@@ -566,6 +583,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "error_runs": error_runs,
             "runtime_observable_passes": runtime_observable_passes,
             "runtime_observable_failures": runtime_observable_failures,
+            **runtime_observable_coverage,
             "total_output_size_delta_bytes": output_size_delta_bytes,
             "max_output_size_delta_bytes": max(output_size_deltas, default=0),
             "min_output_size_delta_bytes": min(output_size_deltas, default=0),
