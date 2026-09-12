@@ -58,10 +58,11 @@ from workflow `33907747531` (artifact SHA-256
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
-The ConstantUnfolding, ControlFlowFlattening, and DeadCodeInjection selections
-are guarded by `elf_constant_unfold_x86_64` and `elf_cff_flagdead_x86_64`, and
-are measured from this revision onward; the first full nine-pass campaign
-remains pending its Linux CI record.
+The ConstantUnfolding, ControlFlowFlattening, DeadCodeInjection, and
+NopInsertion selections are guarded by `elf_constant_unfold_x86_64`,
+`elf_cff_flagdead_x86_64`, and `elf_nop_x86_64`. They are measured from this
+revision onward; a full nine-pass campaign is required before this document
+claims a complete Linux CI record.
 The preceding local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
 and all 159 transformations, with 171 functions virtualized, zero unsupported
 functions, and zero transformation errors. Its raw report is

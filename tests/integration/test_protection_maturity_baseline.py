@@ -26,6 +26,7 @@ _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 _CONSTANT_UNFOLD_FIXTURE = _DATASET / "elf_constant_unfold_x86_64"
 _CONTROL_FLOW_FIXTURE = _DATASET / "elf_cff_flagdead_x86_64"
 _DEAD_CODE_FIXTURE = _DATASET / "elf_cff_flagdead_x86_64"
+_NOP_FIXTURE = _DATASET / "elf_nop_x86_64"
 _PIE_FIXTURE = _DATASET / "elf_vm_pie_x86_64"
 _VARARGS_FIXTURE = _DATASET / "elf_vm_varargs_x86_64"
 _PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
@@ -117,6 +118,18 @@ def test_control_flow_flattening_fixture_records_a_semantic_mutation(tmp_path: P
         range(20260912, 20260913),
         tmp_path,
         "ControlFlowFlattening",
+    )
+
+    run = result["runs"][0]
+    expect(run["transformation"]["status"] == "applied" and result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
+def test_nop_insertion_fixture_records_a_semantic_mutation(tmp_path: Path) -> None:
+    result = measure_fixture(
+        _NOP_FIXTURE,
+        range(20260912, 20260913),
+        tmp_path,
+        "NopInsertion",
     )
 
     run = result["runs"][0]

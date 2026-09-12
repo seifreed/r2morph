@@ -44,7 +44,8 @@
         "tests/integration",
         "tests/integration/test_nop_insertion_pe_real.py",
         "tests/integration/test_mutation_nop_insertion_arm64.py",
-        "tests/integration/test_mutations_x86_compiled_binary.py"
+        "tests/integration/test_mutations_x86_compiled_binary.py",
+        "tests/integration/test_protection_maturity_baseline.py"
       ]
     },
     {
