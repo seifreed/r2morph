@@ -420,6 +420,17 @@ def _tool_duration_seconds(row: dict[str, object]) -> float:
     return duration
 
 
+def _tool_duration_pair_count(row: dict[str, object]) -> int:
+    original = row.get("original")
+    protected = row.get("protected")
+    if not isinstance(original, dict) or not isinstance(protected, dict):
+        return 0
+    return int(
+        isinstance(original.get("duration_seconds"), int | float)
+        and isinstance(protected.get("duration_seconds"), int | float)
+    )
+
+
 def _tool_metric_deltas(row: dict[str, object]) -> dict[str, float]:
     original = row.get("original")
     protected = row.get("protected")
@@ -471,12 +482,14 @@ def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float
                     "unavailable": 0,
                     "errors": 0,
                     "changed": 0,
+                    "duration_pairs": 0,
                     "total_duration_seconds": 0.0,
                 },
             )
             counters["runs"] += 1
             if status == "completed":
                 counters["completed"] += 1
+                counters["duration_pairs"] += _tool_duration_pair_count(row)
                 counters["total_duration_seconds"] += _tool_duration_seconds(row)
                 for key, delta in _tool_metric_deltas(row).items():
                     counters[key] = counters.get(key, 0) + delta
