@@ -104,8 +104,8 @@ def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
                         "original": {"duration_seconds": 0.5, "functions": 10, "instruction_lines": 5},
                         "protected": {"duration_seconds": 0.75, "functions": 14, "instruction_lines": 8},
                     },
-                    {"tool": "ghidra", "status": "unavailable"},
-                    {"tool": "ida-pro", "status": "error"},
+                    {"tool": "ghidra", "status": "unavailable", "reason": "missing local executable"},
+                    {"tool": "ida-pro", "status": "error", "error_type": "RuntimeError"},
                 ]
             }
         ]
@@ -121,7 +121,9 @@ def test_adversarial_benchmark_corpus_summarizes_results_by_tool() -> None:
         and summary["binary-ninja"]["metric_instruction_lines_pairs"] == 1
         and summary["binary-ninja"]["total_instruction_lines_delta"] == _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA
         and summary["ghidra"]["unavailable"] == 1
+        and summary["ghidra"]["unavailable_reasons"] == {"missing local executable": 1}
         and summary["ida-pro"]["errors"] == 1
+        and summary["ida-pro"]["error_reasons"] == {"RuntimeError": 1}
     )
 
 

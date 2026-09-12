@@ -461,8 +461,17 @@ def _tool_metric_pair_counts(row: dict[str, object]) -> dict[str, int]:
     return counts
 
 
-def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float | int]]:
-    summary: dict[str, dict[str, float | int]] = {}
+def _merge_tool_reason(counters: dict[str, object], field: str, row: dict[str, object]) -> None:
+    reason = row.get("reason") or row.get("error_type") or row.get("detail") or "unspecified"
+    reasons = counters.get(field)
+    if not isinstance(reasons, dict):
+        reasons = {}
+    reasons[str(reason)] = reasons.get(str(reason), 0) + 1
+    counters[field] = dict(sorted(reasons.items()))
+
+
+def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, object]]:
+    summary: dict[str, dict[str, object]] = {}
     for sample in samples:
         rows = sample.get("tools", [])
         if not isinstance(rows, list):
@@ -499,8 +508,10 @@ def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, float
                     counters["changed"] += 1
             elif status == "unavailable":
                 counters["unavailable"] += 1
+                _merge_tool_reason(counters, "unavailable_reasons", row)
             else:
                 counters["errors"] += 1
+                _merge_tool_reason(counters, "error_reasons", row)
     return dict(sorted(summary.items()))
 
 
