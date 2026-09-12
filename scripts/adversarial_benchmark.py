@@ -554,6 +554,12 @@ def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, objec
     return dict(sorted(summary.items()))
 
 
+def _coverage_percent(observed: int, expected: int) -> float:
+    if expected == 0:
+        return 0.0
+    return round(observed / expected * 100.0, 2)
+
+
 def _passes_without_applications(report: dict[str, object]) -> tuple[str, ...]:
     """Return selected passes that did not transform a corpus fixture."""
     summary = report.get("pass_summary")
@@ -712,6 +718,7 @@ def _campaign_summary(
         "expected_pass_runs": expected_pass_runs,
         "observed_pass_runs": observed_pass_runs,
         "missing_pass_runs": expected_pass_runs - observed_pass_runs,
+        "pass_run_coverage_percent": _coverage_percent(observed_pass_runs, expected_pass_runs),
         "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
         "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
@@ -719,6 +726,7 @@ def _campaign_summary(
         "expected_tool_runs": expected_tool_runs,
         "observed_tool_runs": observed_tool_runs,
         "missing_tool_runs": expected_tool_runs - observed_tool_runs,
+        "tool_run_coverage_percent": _coverage_percent(observed_tool_runs, expected_tool_runs),
         "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
         "completed_tool_runs": completed_tools,
         "unavailable_tool_runs": unavailable_tools,

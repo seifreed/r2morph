@@ -25,6 +25,9 @@ _EXPECTED_TOTAL_FUNCTIONS_DELTA = 4
 _EXPECTED_TOTAL_INSTRUCTION_LINES_DELTA = 3
 _EXPECTED_UNSUPPORTED_CAPABILITY_TOTAL = 3
 _EXPECTED_PARTIAL_TOOL_ROWS = 2
+_EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
+_EXPECTED_FULL_COVERAGE_PERCENT = 100.0
+_EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT = 22.22
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -74,11 +77,13 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
         and report["summary"]["expected_pass_runs"] == 1
         and report["summary"]["observed_pass_runs"] == 1
         and report["summary"]["missing_pass_runs"] == 0
+        and report["summary"]["pass_run_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and report["summary"]["expected_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["observed_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["observed_tool_runs"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["missing_tool_runs"] == 0
+        and report["summary"]["tool_run_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
         and "binary-ninja" in report["tool_summary"]
     )
     sample = report["samples"][0]
@@ -102,11 +107,13 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
 
     expect(
         summary["missing_pass_runs"] == 1
+        and summary["pass_run_coverage_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
         and summary["missing_passes"] == ["CodeVirtualization"]
         and summary["missing_pass_runs_by_pass"] == {"CodeVirtualization": 1}
         and summary["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
         and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
         and summary["missing_tool_runs"] == _EXPECTED_TOOL_COUNT - _EXPECTED_PARTIAL_TOOL_ROWS
+        and summary["tool_run_coverage_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and {"angr", "custom"}.issubset(summary["missing_tools"])
         and summary["missing_tool_runs_by_tool"]["angr"] == 1
         and summary["missing_tool_runs_by_tool"]["custom"] == 1
