@@ -74,7 +74,8 @@ def generator_dec_to_sub(operands: list[Any], os_type: str) -> list[Instruction]
 
 def generator_add_to_lea(operands: list[Any], os_type: str) -> list[Instruction]:
     reg = operands[0]
-    return [_create_instruction("lea", [reg, f"[{reg} + 1]"], "lea")]
+    immediate = operands[1] if len(operands) > 1 else "1"
+    return [_create_instruction("lea", [reg, f"[{reg} + {immediate}]"], "lea")]
 
 
 def generator_shl_to_lea(operands: list[Any], os_type: str) -> list[Instruction]:
@@ -143,11 +144,11 @@ def generator_mov_with_junk_before(operands: list[Any], os_type: str) -> list[In
 
 def generator_add_inc_chain(operands: list[Any], os_type: str) -> list[Instruction]:
     reg = operands[0]
-    inc_ins = _create_instruction("inc", [reg], "inc")
-    return [inc_ins]
+    count = int(operands[1], 0) if len(operands) > 1 else 1
+    return [_create_instruction("inc", [reg], "inc") for _ in range(count)]
 
 
 def generator_dec_chain(operands: list[Any], os_type: str) -> list[Instruction]:
     reg = operands[0]
-    dec_ins = _create_instruction("dec", [reg], "dec")
-    return [dec_ins]
+    count = int(operands[1], 0) if len(operands) > 1 else 1
+    return [_create_instruction("dec", [reg], "dec") for _ in range(count)]

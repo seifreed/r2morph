@@ -25,6 +25,7 @@ from typing import Any
 import r2morph.core.randomness as random
 from r2morph.core.constants import ARCH_BITS_64
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,7 @@ class PatternSubstitutionPass(MutationPass):
     def _mutate_function(self, binary: Any, func_addr: int, instructions: list[dict[str, Any]]) -> int:
         """Apply size-preserving substitutions within a single function."""
         applied = 0
+        disasms = [str(instruction.get("disasm", instruction.get("opcode", ""))) for instruction in instructions]
         for edit in self._integration.enumerate_substitutions(instructions):
             if edit["length"] != 1:
                 continue
@@ -109,6 +111,8 @@ class PatternSubstitutionPass(MutationPass):
 
             idx = edit["index"]
             if idx >= len(instructions):
+                continue
+            if flags_live_after(disasms, idx):
                 continue
             if self._apply_edit(binary, func_addr, instructions[idx], edit):
                 applied += 1

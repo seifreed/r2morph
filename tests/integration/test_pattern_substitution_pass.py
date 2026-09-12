@@ -7,6 +7,8 @@ and validated end-to-end.
 """
 
 import importlib.util
+import shutil
+from pathlib import Path
 
 import pytest
 
@@ -19,9 +21,11 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 from r2morph import MorphEngine
+from r2morph.core.binary import Binary
 from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
+from tests.integration.elf_emulator import emulate_exit_code
 
 
 def test_enumerate_substitutions_reports_per_match_edits_without_mutating():
@@ -71,3 +75,16 @@ def test_pattern_substitution_preserves_instruction_region_size(
         span = mutation["end_address"] - mutation["start_address"] + 1
         expect(len(mutation["original_bytes"]) == span)
         expect(len(mutation["mutated_bytes"]) == span)
+
+
+def test_pattern_substitution_preserves_flag_live_fixture_exit(tmp_path):
+    source = Path("fixtures/dataset/elf_vm_arith_x86_64")
+    mutated = tmp_path / "pattern_flag_live"
+    shutil.copyfile(source, mutated)
+    before = emulate_exit_code(mutated)
+
+    with Binary(mutated, writable=True) as binary:
+        stats = PatternSubstitutionPass({"probability": 1.0, "seed": 20260912}).apply(binary)
+        binary.save()
+
+    expect(stats["mutations_applied"] == 0 and emulate_exit_code(mutated) == before)
