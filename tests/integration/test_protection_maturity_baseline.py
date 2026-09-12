@@ -11,6 +11,7 @@ from scripts.protection_maturity_baseline import (
     CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
     _parse_pass_names,
+    _render_multi_pass_result,
     _render_result,
     _runtime_artifacts,
     _runtime_observables_equal,
@@ -46,6 +47,8 @@ _EXPECTED_TRANSFORM_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
+_EXPECTED_MULTI_PASS_COUNT = 2
+_EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -296,6 +299,56 @@ def test_render_result_counts_missing_runtime_pairs() -> None:
     expect(
         report["summary"]["runtime_observable_complete_runs"] == 0
         and report["summary"]["runtime_observable_missing_runs"] == 1
+    )
+
+
+def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
+    report = _render_multi_pass_result(
+        {
+            "CodeVirtualization": [
+                {
+                    "all_semantic_equal": True,
+                    "successful_runs": 1,
+                    "failed_runs": 0,
+                    "baseline_size": 100,
+                    "baseline": {"status": "completed", "metrics": {"number_of_functions": 1}},
+                    "baseline_runtime": {"status": "completed", "duration_seconds": 1.0},
+                    "runs": [
+                        {
+                            "transformation": {"status": "applied"},
+                            "output_size": 120,
+                            "transform_duration_seconds": 0.5,
+                            "runtime": {"status": "completed", "duration_seconds": 1.25},
+                            "runtime_observable_equal": True,
+                            "after": {"status": "completed", "metrics": {"number_of_functions": 2}},
+                        }
+                    ],
+                }
+            ],
+            "PatternSubstitution": [
+                {
+                    "all_semantic_equal": False,
+                    "successful_runs": 0,
+                    "failed_runs": 1,
+                    "runs": [{"transformation": {"status": "omitted"}}],
+                }
+            ],
+        }
+    )
+
+    expect(
+        report["campaign_summary"]["pass_count"] == _EXPECTED_MULTI_PASS_COUNT
+        and report["campaign_summary"]["total_applied_runs"] == 1
+        and report["campaign_summary"]["total_omitted_runs"] == 1
+        and report["campaign_summary"]["total_error_runs"] == 0
+        and report["campaign_summary"]["average_runtime_observable_coverage_percent"]
+        == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["average_output_size_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["average_transform_duration_coverage_percent"]
+        == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["average_runtime_duration_coverage_percent"]
+        == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["average_static_metric_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
     )
 
 

@@ -706,12 +706,56 @@ def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
 ) -> dict[str, object]:
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
+    summaries = {name: result["summary"] for name, result in rendered.items()}
     return {
         "schema_version": 3,
         "measurement": "protection-maturity-corpus-by-pass",
         "pass_names": list(rendered),
         "passes": rendered,
-        "summary": {name: result["summary"] for name, result in rendered.items()},
+        "summary": summaries,
+        "campaign_summary": _multi_pass_campaign_summary(summaries),
+    }
+
+
+def _average_percent(summaries: dict[str, object], field: str) -> float:
+    values = [
+        summary[field]
+        for summary in summaries.values()
+        if isinstance(summary, dict) and isinstance(summary.get(field), int | float)
+    ]
+    if not values:
+        return 0.0
+    return round(sum(values) / len(values), 2)
+
+
+def _sum_summary_field(summaries: dict[str, object], field: str) -> int:
+    return sum(
+        value
+        for summary in summaries.values()
+        if isinstance(summary, dict) and isinstance(value := summary.get(field), int)
+    )
+
+
+def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
+    return {
+        "pass_count": len(summaries),
+        "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
+        "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
+        "total_error_runs": _sum_summary_field(summaries, "error_runs"),
+        "average_runtime_observable_coverage_percent": _average_percent(
+            summaries,
+            "runtime_observable_coverage_percent",
+        ),
+        "average_output_size_coverage_percent": _average_percent(summaries, "output_size_coverage_percent"),
+        "average_transform_duration_coverage_percent": _average_percent(
+            summaries,
+            "transform_duration_coverage_percent",
+        ),
+        "average_runtime_duration_coverage_percent": _average_percent(
+            summaries,
+            "runtime_duration_coverage_percent",
+        ),
+        "average_static_metric_coverage_percent": _average_percent(summaries, "static_metric_coverage_percent"),
     }
 
 

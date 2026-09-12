@@ -75,6 +75,9 @@ The per-pass summary also aggregates runtime-observable coverage and pass/fail
 counts, output-size coverage and deltas, transform/runtime duration coverage
 and totals, static analyzer metric coverage and deltas, coverage percentages,
 and bounded omission/error reasons and severities.
+The by-pass report also includes a campaign summary with total applied,
+omitted, and error runs plus average coverage percentages across selected
+passes.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in
