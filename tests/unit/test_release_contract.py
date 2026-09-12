@@ -184,3 +184,11 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--count 1" in differential
         and "differential-corpus-by-pass" in differential
     )
+
+
+def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
+    packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+
+    expect("Binary Ninja: measured by the benchmark when its licensed API is available" in packet)
+    expect("Binary Ninja remains excluded by project decision" not in packet)
+    expect("Binary Ninja is omitted by project decision" not in packet)

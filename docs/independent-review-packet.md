@@ -58,17 +58,18 @@ remains represented by the completed 318-analysis report listed above.
 For the named regression `elf_vm_fppackedidxnb_x86_64`, the bounded evidence
 records one virtualized function, zero unsupported/partial functions, native
 exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
-original instructions semantically supported. Binary Ninja is explicitly
-recorded as omitted by project decision in the same artifact.
+original instructions semantically supported. Binary Ninja is measured by the
+benchmark when its licensed API is available; older artifacts that predate
+that integration remain historical evidence only.
 The automated review still reports `human_signoff: not-attested`.
 The current-state IDA MCP rerun for the named regression is recorded in the
 `a3b8c6e` artifact: one original function, nine protected functions, and zero
 analysis errors. Native ELF execution was not attempted on macOS.
 The current CodeVirtualization corpus rerun records 15 explicit Unicorn
 errors and 318 local IDA/Ghidra-unavailable rows; these are not attributed to
-Triton or angr. The full six-pass rerun remains documented separately with
-its explicit unavailable-tool rows.
-Binary Ninja remains excluded by project decision.
+Triton or angr. Binary Ninja availability is now recorded by the adversarial
+benchmark rather than excluded as a project decision. The full six-pass rerun
+remains documented separately with its explicit unavailable-tool rows.
 The `bc2bff2` rerun was performed after making partial virtualization fail
 closed by default; the explicit `reject_partial_virtualization=False` override
 is retained only for regression reproduction. The pushed CI workflow
@@ -82,7 +83,8 @@ metadata. It records 159/159 CodeVirtualization applications, 171 virtualized
 functions, zero unsupported or partial virtualizations, 939 completed analyzer
 runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
 rows. Angr and Triton complete every original/protected pair. Binary Ninja is
-omitted by project decision. Human signoff remains `not-attested`.
+measured when its licensed API is present and otherwise recorded as
+unavailable. Human signoff remains `not-attested`.
 The pushed CI workflow `34065194410` completed successfully across its Linux,
 macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
 lint, integration, and property/fuzz validation.
