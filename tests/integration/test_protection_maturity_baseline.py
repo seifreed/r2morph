@@ -352,7 +352,9 @@ def test_transformation_evidence_records_unsupported_capability() -> None:
         "passed",
         {
             "functions_virtualized": 0,
-            "unsupported_functions": [{"capability": "thread_local_storage", "reason": "TLS addressing not proven"}],
+            "unsupported_functions": [
+                {"capability": "thread_local_storage", "reason": "TLS addressing not proven", "severity": "error"}
+            ],
         },
     )
 
@@ -362,6 +364,7 @@ def test_transformation_evidence_records_unsupported_capability() -> None:
             "pass_name": "code-virtualization",
             "status": "omitted",
             "reason": "thread_local_storage: TLS addressing not proven",
+            "severity": "error",
         }
     )
 
