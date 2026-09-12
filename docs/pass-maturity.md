@@ -13,7 +13,7 @@ promoted.
 | Instruction expansion | Experimental | ELF x86-64 | Wider replacements need more corpus coverage | `README.md` |
 | Block reordering | Experimental | ELF x86-64 | Complex indirect control flow is rejected | `tests/integration` |
 | Dead code injection | Experimental | ELF x86-64 | Placement depends on available safe regions; one native differential fixture is measured, but broad corpus evidence is pending | `tests/integration/test_dead_code_injection_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py` |
-| Control-flow flattening | Experimental | ELF x86-64 | No cross-tool decompiler benchmark | `README.md` |
+| Control-flow flattening | Experimental | ELF x86-64 | One native differential fixture is measured; no cross-tool decompiler benchmark or broad corpus evidence | `tests/integration/test_control_flow_flattening_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py` |
 | Opaque predicates | Experimental | ELF x86-64 | Predicate families are not exhaustive | `README.md` |
 | Code virtualization | Experimental | ELF x86-64 | Unsupported functions are conservatively unchanged | `docs/protection-maturity.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
