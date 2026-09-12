@@ -305,6 +305,19 @@ def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Pa
     return protected, _pass_result(stats, pass_name)
 
 
+def _capability_counts(records: object) -> dict[str, int]:
+    if not isinstance(records, list):
+        return {}
+    counts: dict[str, int] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        capability = record.get("capability")
+        if isinstance(capability, str) and capability:
+            counts[capability] = counts.get(capability, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
@@ -326,6 +339,12 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
         result["functions_virtualized"] = virtualized
         result["unsupported_functions"] = unsupported
         result["partial_virtualization"] = partial
+        unsupported_capabilities = _capability_counts(stats.get("unsupported_functions"))
+        partial_capabilities = _capability_counts(stats.get("partial_virtualization"))
+        if unsupported_capabilities:
+            result["unsupported_capabilities"] = unsupported_capabilities
+        if partial_capabilities:
+            result["partial_virtualization_capabilities"] = partial_capabilities
     else:
         result["mutations_applied"] = applied
     return result

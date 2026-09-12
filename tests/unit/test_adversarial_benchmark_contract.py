@@ -6,6 +6,7 @@ from scripts.adversarial_benchmark import (
     _measure_tool,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
+    _pass_result,
     _passes_without_applications,
     _tool_summary,
     benchmark_corpus,
@@ -129,6 +130,27 @@ def test_adversarial_benchmark_corpus_measures_pattern_substitution(tmp_path: Pa
     expect(
         report["pass_summary"]["PatternSubstitution"]["applied"] == 1
         and report["pass_summary"]["PatternSubstitution"]["mutations_applied"] == 1
+    )
+
+
+def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_counts() -> None:
+    result = _pass_result(
+        {
+            "functions_virtualized": 0,
+            "unsupported_functions_total": 2,
+            "partial_virtualization_total": 1,
+            "unsupported_functions": [
+                {"capability": "computed_control_flow"},
+                {"capability": "computed_control_flow"},
+            ],
+            "partial_virtualization": [{"capability": "exceptions_and_unwinding"}],
+        }
+    )
+
+    expect(
+        result["status"] == "omitted"
+        and result["unsupported_capabilities"] == {"computed_control_flow": 2}
+        and result["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
     )
 
 

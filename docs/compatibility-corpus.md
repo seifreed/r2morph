@@ -58,6 +58,8 @@ transformation record includes the pass name, status (`applied`, `omitted`, or
 `error`), and a bounded reason when the selected pass cannot transform the
 sample. Unsupported-virtualization diagnostics identify the function address,
 instruction address, missing capability, reason, and severity.
+Adversarial CodeVirtualization rows also retain bounded unsupported and partial
+virtualization capability counts when diagnostics are present.
 
 The differential contract is original versus transformed execution across nine
 seed-derived command-line inputs per sample: exit code, stdout, stderr, created
