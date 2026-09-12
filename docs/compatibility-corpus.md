@@ -32,8 +32,8 @@ preserve the native result and, for the C image, stdout and stderr.
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
 digests, elapsed time, and output size/hash. The public CI then transforms and
-compares every built record independently for seven selected passes:
-BlockReordering, CodeVirtualization, ConstantUnfolding, InstructionExpansion,
+compares every built record independently for eight selected passes:
+BlockReordering, CodeVirtualization, ConstantUnfolding, DeadCodeInjection, InstructionExpansion,
 InstructionSubstitution, NopInsertion, and RegisterSubstitution. It retains one
 bounded matrix record per sample/pass pair and an aggregate result for each
 pass.
@@ -55,9 +55,10 @@ from workflow `33907747531` (artifact SHA-256
 passes recorded 159 semantic passes with no failures. The corrected
 `elf_vm_fppackedidxnb_x86_64` baseline and transformed binary both return 6 in
 native and Unicorn execution.
-The seventh selection, ConstantUnfolding, is guarded by the synthetic
-`elf_constant_unfold_x86_64` fixture and is measured from this revision onward;
-the first full seven-pass campaign remains pending its Linux CI record.
+The ConstantUnfolding and DeadCodeInjection selections are guarded by
+`elf_constant_unfold_x86_64` and `elf_cff_flagdead_x86_64` respectively, and
+are measured from this revision onward; the first full eight-pass campaign
+remains pending its Linux CI record.
 The preceding local CodeVirtualization rerun at `bb3eb3bf` covered 159 fixtures
 and all 159 transformations, with 171 functions virtualized, zero unsupported
 functions, and zero transformation errors. Its raw report is

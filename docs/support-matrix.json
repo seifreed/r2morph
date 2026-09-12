@@ -1036,7 +1036,8 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration"
+          "tests/integration/test_dead_code_injection_flag_safe_real.py",
+          "tests/integration/test_protection_maturity_baseline.py"
         ]
       },
       {
