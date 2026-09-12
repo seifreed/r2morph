@@ -450,33 +450,50 @@ def discover_executables(dataset: Path) -> list[Path]:
 
 
 def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
+    seed_runs = [(fixture, run) for fixture in fixtures for run in fixture.get("runs", []) if isinstance(run, Mapping)]
     successful_seed_runs = sum(
         value if isinstance(value := fixture.get("successful_runs"), int) else 0 for fixture in fixtures
     )
     failed_seed_runs = sum(value if isinstance(value := fixture.get("failed_runs"), int) else 0 for fixture in fixtures)
     applied_runs = sum(
         1
-        for fixture in fixtures
-        for run in fixture.get("runs", [])
-        if isinstance(run, Mapping)
-        and isinstance(transformation := run.get("transformation"), Mapping)
+        for _, run in seed_runs
+        if isinstance(transformation := run.get("transformation"), Mapping)
         and transformation.get("status") == "applied"
     )
     omitted_runs = sum(
         1
-        for fixture in fixtures
-        for run in fixture.get("runs", [])
-        if isinstance(run, Mapping)
-        and isinstance(transformation := run.get("transformation"), Mapping)
+        for _, run in seed_runs
+        if isinstance(transformation := run.get("transformation"), Mapping)
         and transformation.get("status") == "omitted"
     )
     error_runs = sum(
         1
-        for fixture in fixtures
-        for run in fixture.get("runs", [])
-        if isinstance(run, Mapping)
-        and isinstance(transformation := run.get("transformation"), Mapping)
-        and transformation.get("status") == "error"
+        for _, run in seed_runs
+        if isinstance(transformation := run.get("transformation"), Mapping) and transformation.get("status") == "error"
+    )
+    output_size_delta_bytes = sum(
+        run["output_size"] - fixture["baseline_size"]
+        for fixture, run in seed_runs
+        if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
+    )
+    transform_duration_seconds = sum(
+        duration for _, run in seed_runs if isinstance(duration := run.get("transform_duration_seconds"), int | float)
+    )
+    runtime_duration_delta_seconds = sum(
+        runtime["duration_seconds"] - baseline_runtime["duration_seconds"]
+        for fixture, run in seed_runs
+        if isinstance(baseline_runtime := fixture.get("baseline_runtime"), Mapping)
+        and isinstance(runtime := run.get("runtime"), Mapping)
+        and isinstance(baseline_runtime.get("duration_seconds"), int | float)
+        and isinstance(runtime.get("duration_seconds"), int | float)
+    )
+    runtime_observable_passes = sum(1 for _, run in seed_runs if run.get("runtime_observable_equal") is True)
+    runtime_observable_failures = sum(1 for _, run in seed_runs if run.get("runtime_observable_equal") is False)
+    output_size_deltas = tuple(
+        run["output_size"] - fixture["baseline_size"]
+        for fixture, run in seed_runs
+        if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
     return {
         "schema_version": 2,
@@ -492,6 +509,13 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "applied_runs": applied_runs,
             "omitted_runs": omitted_runs,
             "error_runs": error_runs,
+            "runtime_observable_passes": runtime_observable_passes,
+            "runtime_observable_failures": runtime_observable_failures,
+            "total_output_size_delta_bytes": output_size_delta_bytes,
+            "max_output_size_delta_bytes": max(output_size_deltas, default=0),
+            "min_output_size_delta_bytes": min(output_size_deltas, default=0),
+            "total_transform_duration_seconds": transform_duration_seconds,
+            "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
         },
     }
 

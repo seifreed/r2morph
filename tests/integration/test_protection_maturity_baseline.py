@@ -11,6 +11,7 @@ from scripts.protection_maturity_baseline import (
     CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
     _parse_pass_names,
+    _render_result,
     _runtime_artifacts,
     _runtime_observables_equal,
     _semantic_run_matches,
@@ -33,6 +34,10 @@ _PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
 _EXPECTED_PIE_EXIT_CODE = 73
 _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
+_EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
+_EXPECTED_MAX_SIZE_DELTA_BYTES = 25
+_EXPECTED_MIN_SIZE_DELTA_BYTES = -5
+_EXPECTED_TRANSFORM_DURATION_SECONDS = 0.75
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -146,6 +151,49 @@ def test_pattern_substitution_fixture_records_a_semantic_mutation(tmp_path: Path
 
     run = result["runs"][0]
     expect(run["transformation"]["status"] == "applied" and result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
+def test_render_result_summarizes_size_runtime_and_observables() -> None:
+    report = _render_result(
+        [
+            {
+                "all_semantic_equal": False,
+                "successful_runs": 1,
+                "failed_runs": 1,
+                "baseline_size": 100,
+                "baseline_runtime": {"duration_seconds": 1.0},
+                "runs": [
+                    {
+                        "status": "passed",
+                        "transformation": {"status": "applied"},
+                        "output_size": 125,
+                        "transform_duration_seconds": 0.5,
+                        "runtime": {"duration_seconds": 1.25},
+                        "runtime_observable_equal": True,
+                    },
+                    {
+                        "status": "passed",
+                        "transformation": {"status": "omitted"},
+                        "output_size": 95,
+                        "transform_duration_seconds": 0.25,
+                        "runtime": {"duration_seconds": 0.75},
+                        "runtime_observable_equal": False,
+                    },
+                ],
+            }
+        ],
+        "NopInsertion",
+    )
+
+    expect(
+        report["summary"]["runtime_observable_passes"] == 1
+        and report["summary"]["runtime_observable_failures"] == 1
+        and report["summary"]["total_output_size_delta_bytes"] == _EXPECTED_TOTAL_SIZE_DELTA_BYTES
+        and report["summary"]["max_output_size_delta_bytes"] == _EXPECTED_MAX_SIZE_DELTA_BYTES
+        and report["summary"]["min_output_size_delta_bytes"] == _EXPECTED_MIN_SIZE_DELTA_BYTES
+        and report["summary"]["total_transform_duration_seconds"] == _EXPECTED_TRANSFORM_DURATION_SECONDS
+        and report["summary"]["total_runtime_duration_delta_seconds"] == 0.0
+    )
 
 
 def test_parse_pass_names_expands_the_public_corpus_selection() -> None:
