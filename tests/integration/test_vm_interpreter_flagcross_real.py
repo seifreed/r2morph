@@ -67,14 +67,22 @@ def test_flag_crossing_dispatch_left_untouched_without_opt_in(tmp_path: Path) ->
 
 
 def test_dispatch_rejection_reports_missing_capability(tmp_path: Path) -> None:
-    """A rejected computed jump identifies the function, instruction, and gap."""
+    """Rejected instructions identify their function, instruction, gap, and severity."""
     mutated = tmp_path / "flagcross_rejected"
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=False)
 
     records = stats["unsupported_functions"]
     expect(
-        any(
+        all(
+            record["function_address"] > 0
+            and record["instruction_address"] > 0
+            and record["capability"]
+            and record["reason"]
+            and record["severity"] == "error"
+            for record in records
+        )
+        and any(
             record["capability"] == "computed_control_flow"
             and record["instruction_address"] > 0
             and record["function_address"] > 0
