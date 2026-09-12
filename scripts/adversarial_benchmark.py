@@ -354,6 +354,20 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]
     return dict(sorted(summary.items()))
 
 
+def _passes_without_applications(report: dict[str, object]) -> tuple[str, ...]:
+    """Return selected passes that did not transform a corpus fixture."""
+    summary = report.get("pass_summary")
+    if not isinstance(summary, dict):
+        return ()
+    return tuple(
+        sorted(
+            name
+            for name, values in summary.items()
+            if isinstance(name, str) and isinstance(values, dict) and values.get("applied") == 0
+        )
+    )
+
+
 def _measure_pair_tools(original: Path, protected: Path) -> list[dict[str, object]]:
     tools = [_measure_tool(tool, original, protected) for tool in _EXPECTED_TOOLS]
     tools.append(
@@ -462,6 +476,11 @@ def main() -> None:
         default=DEFAULT_MUTATION_NAME,
         help="comma-separated pass names or 'all' (default: CodeVirtualization)",
     )
+    parser.add_argument(
+        "--require-applied",
+        action="store_true",
+        help="fail when a selected pass does not apply to any corpus fixture",
+    )
     args = parser.parse_args()
     if args.all_fixtures and args.protected:
         parser.error("--protected is valid only with one original binary")
@@ -474,6 +493,10 @@ def main() -> None:
         if args.all_fixtures
         else benchmark_pair(args.original, args.protected)
     )
+    if args.require_applied:
+        passes_without_mutations = _passes_without_applications(report)
+        if passes_without_mutations:
+            parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")

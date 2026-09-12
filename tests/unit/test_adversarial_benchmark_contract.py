@@ -6,6 +6,7 @@ from scripts.adversarial_benchmark import (
     _measure_tool,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
+    _passes_without_applications,
     benchmark_corpus,
     benchmark_pair,
 )
@@ -80,6 +81,17 @@ def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path)
             "unsupported_functions": 0,
         }
     )
+
+
+def test_adversarial_benchmark_identifies_passes_without_applications() -> None:
+    report = {
+        "pass_summary": {
+            "Applied": {"applied": 1},
+            "NoOp": {"applied": 0},
+        }
+    }
+
+    expect(_passes_without_applications(report) == ("NoOp",))
 
 
 def test_adversarial_benchmark_parses_ghidra_function_count_marker() -> None:
