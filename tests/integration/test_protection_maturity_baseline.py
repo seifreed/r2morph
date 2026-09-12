@@ -38,6 +38,8 @@ _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
 _EXPECTED_MAX_SIZE_DELTA_BYTES = 25
 _EXPECTED_MIN_SIZE_DELTA_BYTES = -5
 _EXPECTED_TRANSFORM_DURATION_SECONDS = 0.75
+_EXPECTED_STATIC_FUNCTIONS_DELTA = 2
+_EXPECTED_STATIC_INSTRUCTIONS_DELTA = 9
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -161,6 +163,10 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
                 "successful_runs": 1,
                 "failed_runs": 1,
                 "baseline_size": 100,
+                "baseline": {
+                    "status": "completed",
+                    "metrics": {"number_of_functions": 3, "number_of_instructions": 10},
+                },
                 "baseline_runtime": {"duration_seconds": 1.0},
                 "runs": [
                     {
@@ -170,6 +176,10 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
                         "transform_duration_seconds": 0.5,
                         "runtime": {"duration_seconds": 1.25},
                         "runtime_observable_equal": True,
+                        "after": {
+                            "status": "completed",
+                            "metrics": {"number_of_functions": 6, "number_of_instructions": 14},
+                        },
                     },
                     {
                         "status": "passed",
@@ -178,6 +188,10 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
                         "transform_duration_seconds": 0.25,
                         "runtime": {"duration_seconds": 0.75},
                         "runtime_observable_equal": False,
+                        "after": {
+                            "status": "completed",
+                            "metrics": {"number_of_functions": 2, "number_of_instructions": 15},
+                        },
                     },
                 ],
             }
@@ -193,6 +207,8 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
         and report["summary"]["min_output_size_delta_bytes"] == _EXPECTED_MIN_SIZE_DELTA_BYTES
         and report["summary"]["total_transform_duration_seconds"] == _EXPECTED_TRANSFORM_DURATION_SECONDS
         and report["summary"]["total_runtime_duration_delta_seconds"] == 0.0
+        and report["summary"]["total_static_number_of_functions_delta"] == _EXPECTED_STATIC_FUNCTIONS_DELTA
+        and report["summary"]["total_static_number_of_instructions_delta"] == _EXPECTED_STATIC_INSTRUCTIONS_DELTA
     )
 
 

@@ -449,6 +449,26 @@ def discover_executables(dataset: Path) -> list[Path]:
     return executables
 
 
+def _static_metric_deltas(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
+    deltas: dict[str, int] = {}
+    for fixture, run in seed_runs:
+        baseline = fixture.get("baseline")
+        after = run.get("after")
+        if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
+            continue
+        baseline_metrics = baseline.get("metrics")
+        after_metrics = after.get("metrics")
+        if not isinstance(baseline_metrics, Mapping) or not isinstance(after_metrics, Mapping):
+            continue
+        for key, baseline_value in baseline_metrics.items():
+            after_value = after_metrics.get(key)
+            if key.startswith("number_of_") and isinstance(baseline_value, int) and isinstance(after_value, int):
+                deltas[f"total_static_{key}_delta"] = deltas.get(f"total_static_{key}_delta", 0) + (
+                    after_value - baseline_value
+                )
+    return deltas
+
+
 def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     seed_runs = [(fixture, run) for fixture in fixtures for run in fixture.get("runs", []) if isinstance(run, Mapping)]
     successful_seed_runs = sum(
@@ -495,6 +515,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         for fixture, run in seed_runs
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
+    static_metric_deltas = _static_metric_deltas(seed_runs)
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
@@ -516,6 +537,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "min_output_size_delta_bytes": min(output_size_deltas, default=0),
             "total_transform_duration_seconds": transform_duration_seconds,
             "total_runtime_duration_delta_seconds": runtime_duration_delta_seconds,
+            **static_metric_deltas,
         },
     }
 

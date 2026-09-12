@@ -64,7 +64,8 @@ seed-derived command-line inputs per sample: exit code, stdout, stderr, created
 files, and declared observable effects must match. A failed comparison is a
 release failure for the official Linux ELF x86-64 target.
 The per-pass summary also aggregates runtime-observable pass/fail counts,
-output-size deltas, transformation duration, and native runtime duration delta.
+output-size deltas, static analyzer metric deltas, transformation duration,
+and native runtime duration delta.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in
