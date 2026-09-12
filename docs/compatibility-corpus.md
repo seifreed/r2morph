@@ -51,8 +51,8 @@ numeric metric pair counts, and numeric original-versus-protected metric deltas
 per analyzer so campaigns remain comparable by tool. Their top-level summary
 also records expected versus observed pass/tool counts and run counts for
 campaign coverage, including coverage percentages, missing names, and
-per-pass/per-tool run counts, plus completed/unavailable/error tool rates,
-counts, and reasons by analyzer.
+applied/omitted/error pass rates, per-pass/per-tool run counts, plus
+completed/unavailable/error tool rates, counts, and reasons by analyzer.
 The real VM diversification regression builds the same fixture with four
 independent seeds, requiring identical emulated exit behavior and four distinct
 output digests. This covers the combined opcode, handler, dispatcher, checksum,

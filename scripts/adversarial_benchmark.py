@@ -684,6 +684,9 @@ def _campaign_summary(
     )
     observed_pass_runs = sum(1 for sample in samples for row in sample.get("passes", []) if isinstance(row, dict))
     observed_tool_runs = sum(1 for sample in samples for row in sample.get("tools", []) if isinstance(row, dict))
+    applied_pass_runs = _pass_status_count(samples, "applied")
+    omitted_pass_runs = _pass_status_count(samples, "omitted")
+    error_pass_runs = _pass_status_count(samples, "error")
     completed_tools = sum(
         1
         for sample in samples
@@ -721,6 +724,12 @@ def _campaign_summary(
         "observed_pass_runs": observed_pass_runs,
         "missing_pass_runs": expected_pass_runs - observed_pass_runs,
         "pass_run_coverage_percent": _coverage_percent(observed_pass_runs, expected_pass_runs),
+        "applied_pass_runs": applied_pass_runs,
+        "applied_pass_run_percent": _coverage_percent(applied_pass_runs, observed_pass_runs),
+        "omitted_pass_runs": omitted_pass_runs,
+        "omitted_pass_run_percent": _coverage_percent(omitted_pass_runs, observed_pass_runs),
+        "error_pass_runs": error_pass_runs,
+        "error_pass_run_percent": _coverage_percent(error_pass_runs, observed_pass_runs),
         "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
         "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
@@ -741,6 +750,15 @@ def _campaign_summary(
         "error_tool_runs_by_tool": error_tools_by_tool,
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
     }
+
+
+def _pass_status_count(samples: list[dict[str, object]], status: str) -> int:
+    return sum(
+        1
+        for sample in samples
+        for row in sample.get("passes", [])
+        if isinstance(row, dict) and row.get("status") == status
+    )
 
 
 def _tool_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
