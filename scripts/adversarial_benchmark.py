@@ -645,6 +645,10 @@ def benchmark_corpus(
         for row in sample.get("tools", [])
         if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
     }
+    observed_pass_runs = sum(1 for sample in samples for row in sample.get("passes", []) if isinstance(row, dict))
+    observed_tool_runs = sum(1 for sample in samples for row in sample.get("tools", []) if isinstance(row, dict))
+    expected_pass_runs = len(fixtures) * len(pass_names)
+    expected_tool_runs = expected_pass_runs * (len(_EXPECTED_TOOLS) + 1)
     completed_tools = sum(
         1
         for sample in samples
@@ -668,13 +672,15 @@ def benchmark_corpus(
         "summary": {
             "expected_pass_count": len(pass_names),
             "observed_pass_count": len(observed_passes),
+            "expected_pass_runs": expected_pass_runs,
+            "observed_pass_runs": observed_pass_runs,
             "expected_tool_count": len(_EXPECTED_TOOLS) + 1,
             "observed_tool_count": len(observed_tools),
+            "expected_tool_runs": expected_tool_runs,
+            "observed_tool_runs": observed_tool_runs,
             "completed_tool_runs": completed_tools,
             "unavailable_tool_runs": unavailable_tools,
-            "error_tool_runs": len(fixtures) * len(pass_names) * (len(_EXPECTED_TOOLS) + 1)
-            - completed_tools
-            - unavailable_tools,
+            "error_tool_runs": expected_tool_runs - completed_tools - unavailable_tools,
         },
     }
 
