@@ -77,7 +77,8 @@ and totals, static analyzer metric coverage and deltas, coverage percentages,
 and bounded omission/error reasons and severities.
 The by-pass report also includes a campaign summary with total applied,
 omitted, and error runs plus average coverage percentages across selected
-passes.
+passes; it lists passes with zero applied runs and passes with error runs so
+weak per-pass evidence is visible without expanding every row.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

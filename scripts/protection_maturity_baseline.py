@@ -739,6 +739,8 @@ def _sum_summary_field(summaries: dict[str, object], field: str) -> int:
 def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
     return {
         "pass_count": len(summaries),
+        "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
+        "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),
         "total_applied_runs": _sum_summary_field(summaries, "applied_runs"),
         "total_omitted_runs": _sum_summary_field(summaries, "omitted_runs"),
         "total_error_runs": _sum_summary_field(summaries, "error_runs"),
@@ -757,6 +759,18 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         ),
         "average_static_metric_coverage_percent": _average_percent(summaries, "static_metric_coverage_percent"),
     }
+
+
+def _passes_with_zero_runs(summaries: dict[str, object], field: str) -> list[str]:
+    return sorted(name for name, summary in summaries.items() if isinstance(summary, dict) and summary.get(field) == 0)
+
+
+def _passes_with_positive_runs(summaries: dict[str, object], field: str) -> list[str]:
+    return sorted(
+        name
+        for name, summary in summaries.items()
+        if isinstance(summary, dict) and isinstance(value := summary.get(field), int) and value > 0
+    )
 
 
 def main() -> None:
