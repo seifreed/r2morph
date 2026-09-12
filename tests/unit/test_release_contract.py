@@ -11,6 +11,14 @@ from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _MIN_CONCRETE_PASSES = 20
+_CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
+    "instruction-expansion",
+    "block-reordering",
+    "dead-code-injection",
+    "control-flow-flattening",
+    "constant-unfolding",
+    "pattern-substitution",
+}
 
 
 def test_support_matrix_declares_linux_elf_x86_64_as_official() -> None:
@@ -92,6 +100,20 @@ def test_pass_maturity_contract_names_the_public_corpus_selection() -> None:
 
     expect(all(f"`{pass_name}`" in contract for pass_name in CORPUS_PASS_NAMES))
     expect("broad corpus evidence is pending" not in contract)
+
+
+def test_support_matrix_uses_corpus_selected_profile_for_measured_experimental_passes() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    maturity = matrix["maturity"]
+
+    expect(
+        all(
+            maturity["pass_profiles"][pass_name] == "experimental-corpus-selected"
+            for pass_name in _CORPUS_SELECTED_EXPERIMENTAL_PASSES
+        )
+        and "output-size" in maturity["profiles"]["experimental-corpus-selected"]["performance"]
+        and "adversarial benchmark" in maturity["profiles"]["experimental-corpus-selected"]["decompiler_effectiveness"]
+    )
 
 
 def test_release_contract_current_tree_is_valid() -> None:

@@ -449,22 +449,43 @@
         "performance": "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.",
         "decompiler_effectiveness": "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.",
         "compatibility": "Only Linux ELF x86-64 functions satisfying the preconditions are in scope."
+      },
+      "experimental-corpus-selected": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample; selected passes are exercised by the compatibility corpus.",
+        "invariants": "Structural validity and bounded runtime parity are measured by the compatibility corpus for selected passes.",
+        "instructions_affected": "Not exhaustively catalogued.",
+        "false_positive_risk": "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.",
+        "unit_tests": [
+          "tests/unit"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.",
+        "decompiler_effectiveness": "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.",
+        "compatibility": "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported."
       }
     },
     "pass_profiles": {
       "nop": "tier-1-native",
       "substitute": "tier-1-native",
       "register": "tier-1-native",
-      "instruction-expansion": "experimental",
-      "block-reordering": "experimental",
-      "dead-code-injection": "experimental",
-      "control-flow-flattening": "experimental",
+      "instruction-expansion": "experimental-corpus-selected",
+      "block-reordering": "experimental-corpus-selected",
+      "dead-code-injection": "experimental-corpus-selected",
+      "control-flow-flattening": "experimental-corpus-selected",
       "opaque-predicates": "experimental",
       "code-virtualization": "code-virtualization",
       "anti-disassembly": "experimental",
       "data-flow-mutation": "experimental",
       "short-jump-patching": "experimental",
-      "constant-unfolding": "experimental",
+      "constant-unfolding": "experimental-corpus-selected",
       "code-mobility": "experimental",
       "function-outlining": "experimental",
       "api-hashing": "experimental",
@@ -472,7 +493,7 @@
       "self-modifying-code": "experimental",
       "stack-strings": "experimental",
       "string-obfuscation": "experimental",
-      "pattern-substitution": "experimental",
+      "pattern-substitution": "experimental-corpus-selected",
       "polymorphic-engine": "experimental"
     }
   },
