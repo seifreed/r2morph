@@ -67,20 +67,27 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
         )
 
     total_handlers = sum(int(row["handler_count"]) for row in seed_rows)
+    seeds_with_target_handlers = sum(int(row["target_handler_count"]) > 0 for row in seed_rows)
+    target_stride_unique_count = len(set(target_strides))
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "first_seed": first_seed,
         "seed_count": count,
         "target_operation": {"mnemonic": "mov", "is_immediate": False, "width": 64},
         "seeds": seed_rows,
+        "seeds_with_target_handlers": seeds_with_target_handlers,
+        "seeds_without_target_handlers": count - seeds_with_target_handlers,
         "total_handlers": total_handlers,
         "total_padding_bytes": sum(value * count for value, count in padding_counts.items()),
         "padding_histogram": {str(value): count for value, count in sorted(padding_counts.items())},
         "mean_padding_bytes_per_handler": sum(value * count for value, count in padding_counts.items())
         / total_handlers,
         "all_handler_stride_values": sorted(set(all_strides)),
+        "all_handler_stride_unique_count": len(set(all_strides)),
         "target_stride_values": sorted(set(target_strides)),
-        "target_stride_mean": sum(target_strides) / len(target_strides),
+        "target_stride_unique_count": target_stride_unique_count,
+        "target_stride_diverse": target_stride_unique_count > 1,
+        "target_stride_mean": sum(target_strides) / len(target_strides) if target_strides else 0.0,
     }
 
 
