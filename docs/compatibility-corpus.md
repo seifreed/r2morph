@@ -40,7 +40,8 @@ RegisterSubstitution. It retains one
 bounded matrix record per sample/pass pair and an aggregate result for each
 pass. The scheduled workflow fails when a selected pass does not apply to at
 least one fixture, so an unchanged output cannot count as evidence for that
-pass.
+pass. Pass summaries retain bounded omission/error reasons for comparable
+campaign triage.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.

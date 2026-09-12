@@ -363,6 +363,15 @@ def _merge_capability_summary(counters: dict[str, object], field: str, value: ob
         counters[field] = dict(sorted(aggregate.items()))
 
 
+def _merge_pass_reason(counters: dict[str, object], field: str, row: dict[str, object]) -> None:
+    reason = row.get("reason") or row.get("error_type") or "unspecified"
+    reasons = counters.get(field)
+    if not isinstance(reasons, dict):
+        reasons = {}
+    reasons[str(reason)] = reasons.get(str(reason), 0) + 1
+    counters[field] = dict(sorted(reasons.items()))
+
+
 def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, object]]:
     summary: dict[str, dict[str, object]] = {}
     for sample in samples:
@@ -393,6 +402,10 @@ def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, objec
             status_field = _PASS_STATUS_FIELDS.get(status)
             if status_field is not None:
                 counters[status_field] += 1
+            if status == "omitted":
+                _merge_pass_reason(counters, "omission_reasons", row)
+            elif status == "error":
+                _merge_pass_reason(counters, "error_reasons", row)
             for field in ("functions_virtualized", "unsupported_functions", "partial_virtualization"):
                 value = row.get(field)
                 if isinstance(value, int):

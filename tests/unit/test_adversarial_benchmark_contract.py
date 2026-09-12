@@ -169,6 +169,7 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
                     {
                         "pass_name": "CodeVirtualization",
                         "status": "omitted",
+                        "reason": "computed_control_flow: indirect branch not proven",
                         "functions_virtualized": 0,
                         "unsupported_functions": 2,
                         "partial_virtualization": 1,
@@ -178,6 +179,7 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
                     {
                         "pass_name": "CodeVirtualization",
                         "status": "omitted",
+                        "reason": "memory_access: memory model not proven",
                         "functions_virtualized": 0,
                         "unsupported_functions": 1,
                         "partial_virtualization": 0,
@@ -194,6 +196,11 @@ def test_adversarial_benchmark_pass_summary_aggregates_virtualization_capabiliti
         and summary["CodeVirtualization"]["unsupported_capabilities"]
         == {"computed_control_flow": 2, "memory_access": 1}
         and summary["CodeVirtualization"]["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
+        and summary["CodeVirtualization"]["omission_reasons"]
+        == {
+            "computed_control_flow: indirect branch not proven": 1,
+            "memory_access: memory model not proven": 1,
+        }
     )
 
 
