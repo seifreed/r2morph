@@ -30,6 +30,7 @@ from scripts.check_release_contract import (
     _check_release_blockers,
     _check_vm_resistance_gap_evidence,
     _check_vm_semantic_fixture_coverage,
+    _check_vm_semantic_gap_evidence,
     _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
     _validate_angr_runtime_available,
@@ -537,6 +538,19 @@ def test_release_contract_rejects_missing_vm_semantic_gap_evidence() -> None:
         _check_matrix(matrix, matrix["release"])
     except ValueError as error:
         rejected = "vm semantic gap evidence" in str(error)
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_stale_vm_semantic_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_vm_semantic_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "vm semantic blocker totals" in str(error)
 
     expect(rejected)
 

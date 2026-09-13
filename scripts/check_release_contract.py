@@ -227,6 +227,9 @@ def _check_vm_semantic_gap_evidence(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     if summary["vm_semantic_gap_scope"] != gap_scope or summary["vm_semantic_gap_evidence"] != evidence:
         raise ValueError("vm semantic gap summary must match source evidence")
+    totals = summary["vm_semantic_blocker_totals"]
+    if totals["vm_semantic_gap_scope"] != len(gap_scope) or totals["total_vm_semantic_blockers"] != len(gap_scope):
+        raise ValueError("vm semantic blocker totals must match declared gap scope")
     for gap, row in evidence.items():
         if not row["status"].endswith("-incomplete"):
             raise ValueError(f"vm semantic gap must remain incomplete until closed: {gap}")
