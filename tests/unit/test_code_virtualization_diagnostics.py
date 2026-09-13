@@ -444,6 +444,22 @@ def test_interrupt_return_reports_signals_and_system_calls_capability() -> None:
     expect(capability == "signals_and_system_calls")
 
 
+def test_user_interrupt_return_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "uiret"}
+    )
+
+    expect(capability == "signals_and_system_calls")
+
+
+def test_user_interrupt_send_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "senduipi rax"}
+    )
+
+    expect(capability == "signals_and_system_calls")
+
+
 def test_trap_instruction_reports_signals_and_system_calls_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "trap", "opcode": "ud2"})
 
