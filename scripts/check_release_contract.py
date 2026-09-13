@@ -168,6 +168,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
 def _check_readme_support_summary(matrix: dict[str, object]) -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     summary = matrix["matrix"]["summary"]
+    stability_counts = summary["stability_counts"]
     official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
     non_official_total = summary["non_official_evidenced_cells"] + summary["non_official_not_supported_cells"]
     for fragment in (
@@ -175,6 +176,8 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
         f"{summary['official_evidence_percent']}% evidence",
         f"{summary['non_official_evidence_percent']}% evidence",
+        f"{stability_counts['tier-1']} passes as Tier 1",
+        f"{stability_counts['experimental']} passes as experimental",
     ):
         if fragment not in readme:
             raise ValueError(f"README support summary is missing: {fragment}")

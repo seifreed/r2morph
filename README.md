@@ -101,7 +101,8 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
 ELF x86-64 target (100.0% evidence) and 7/242 evidenced cells for non-official
-targets (2.89% evidence).
+targets (2.89% evidence). It currently classifies 3 passes as Tier 1 and
+19 passes as experimental.
 The reproducible GCC/Clang corpus and its build manifest live in the public
 [`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
 
