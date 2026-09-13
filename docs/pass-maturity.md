@@ -82,6 +82,9 @@ architectures, preconditions, invariants, affected instructions, false-positive
 risk, unit and end-to-end tests, performance, decompiler effectiveness, and
 pass-composition compatibility. Entries marked as not measured are deliberate
 release gaps, not implied support.
+The generated summary also exposes `vm_semantic_gap_scope` so memory,
+direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
+FP/SIMD, and SSA/liveness remain machine-readable VM blockers.
 
 The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries

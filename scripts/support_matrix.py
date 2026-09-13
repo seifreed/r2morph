@@ -28,6 +28,17 @@ _MATURITY_GAP_VALUES = {
     "compatibility": {"Composition with other passes is not contractually supported."},
     "instructions_affected": {"Not exhaustively catalogued."},
 }
+_VM_SEMANTIC_GAP_SCOPE = (
+    "memory",
+    "direct-calls",
+    "indirect-calls",
+    "abi-varargs",
+    "unwinding-exceptions",
+    "tls-signals",
+    "threads",
+    "fp-simd",
+    "ssa-liveness",
+)
 
 
 def _add_count(counts: dict[str, int], value: str) -> None:
@@ -216,6 +227,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,
+            "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
         },
         "cells": cells,
     }

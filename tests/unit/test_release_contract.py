@@ -316,6 +316,26 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
     )
 
 
+def test_support_matrix_names_vm_semantic_gap_scope() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        summary["vm_semantic_gap_scope"]
+        == [
+            "memory",
+            "direct-calls",
+            "indirect-calls",
+            "abi-varargs",
+            "unwinding-exceptions",
+            "tls-signals",
+            "threads",
+            "fp-simd",
+            "ssa-liveness",
+        ]
+    )
+
+
 def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

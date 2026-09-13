@@ -794,7 +794,18 @@
           "stack-strings",
           "string-obfuscation"
         ]
-      }
+      },
+      "vm_semantic_gap_scope": [
+        "memory",
+        "direct-calls",
+        "indirect-calls",
+        "abi-varargs",
+        "unwinding-exceptions",
+        "tls-signals",
+        "threads",
+        "fp-simd",
+        "ssa-liveness"
+      ]
     },
     "cells": [
       {
