@@ -1229,6 +1229,94 @@
           "thread_runtime_boundaries"
         ]
       },
+      "vm_semantic_gap_evidence": {
+        "memory": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "memory_addressing"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_memory_widths_real.py"
+          ]
+        },
+        "direct-calls": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "calls_and_returns"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_call_abi_real.py"
+          ]
+        },
+        "indirect-calls": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "calls_and_returns"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_internal_icall_real.py"
+          ]
+        },
+        "abi-varargs": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "stack_and_abi"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_call_abi_real.py"
+          ]
+        },
+        "unwinding-exceptions": {
+          "status": "fail-closed-regression-incomplete",
+          "capabilities": [],
+          "evidence": [
+            "tests/integration/test_code_virtualization_exception_gate_real.py"
+          ]
+        },
+        "tls-signals": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "thread_runtime_boundaries",
+            "signals_and_system_calls"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_elf_emulator_runtime_boundaries.py"
+          ]
+        },
+        "threads": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "thread_runtime_boundaries"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_atomic_xchg_real.py"
+          ]
+        },
+        "fp-simd": {
+          "status": "fixture-backed-incomplete",
+          "capabilities": [
+            "floating_point_and_simd"
+          ],
+          "evidence": [
+            "docs/virtualization-coverage.json",
+            "tests/integration/test_code_virtualization_avx256_real.py"
+          ]
+        },
+        "ssa-liveness": {
+          "status": "analysis-contract-incomplete",
+          "capabilities": [],
+          "evidence": [
+            "r2morph/analysis/liveness.py",
+            "tests/unit/test_dataflow.py"
+          ]
+        }
+      },
       "vm_semantic_evidence_blockers": {
         "vm_semantic_gap_scope": [
           "memory",
@@ -3267,6 +3355,94 @@
         "stack_and_abi",
         "thread_runtime_boundaries"
       ]
+    },
+    "gap_evidence": {
+      "memory": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "memory_addressing"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_memory_widths_real.py"
+        ]
+      },
+      "direct-calls": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "calls_and_returns"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_call_abi_real.py"
+        ]
+      },
+      "indirect-calls": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "calls_and_returns"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_internal_icall_real.py"
+        ]
+      },
+      "abi-varargs": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "stack_and_abi"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_call_abi_real.py"
+        ]
+      },
+      "unwinding-exceptions": {
+        "status": "fail-closed-regression-incomplete",
+        "capabilities": [],
+        "evidence": [
+          "tests/integration/test_code_virtualization_exception_gate_real.py"
+        ]
+      },
+      "tls-signals": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "thread_runtime_boundaries",
+          "signals_and_system_calls"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_elf_emulator_runtime_boundaries.py"
+        ]
+      },
+      "threads": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "thread_runtime_boundaries"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_atomic_xchg_real.py"
+        ]
+      },
+      "fp-simd": {
+        "status": "fixture-backed-incomplete",
+        "capabilities": [
+          "floating_point_and_simd"
+        ],
+        "evidence": [
+          "docs/virtualization-coverage.json",
+          "tests/integration/test_code_virtualization_avx256_real.py"
+        ]
+      },
+      "ssa-liveness": {
+        "status": "analysis-contract-incomplete",
+        "capabilities": [],
+        "evidence": [
+          "r2morph/analysis/liveness.py",
+          "tests/unit/test_dataflow.py"
+        ]
+      }
     }
   }
 }

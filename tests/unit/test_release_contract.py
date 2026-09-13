@@ -422,6 +422,28 @@ def test_support_matrix_names_vm_semantic_fixture_coverage() -> None:
     )
 
 
+def test_support_matrix_names_vm_semantic_gap_evidence_without_signoff() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["vm_semantic_gap_evidence"]
+    gap_scope = summary["vm_semantic_gap_scope"]
+
+    evidence_paths = [
+        item
+        for row in evidence.values()
+        for item in row["evidence"]
+        if isinstance(item, str) and not item.startswith("http")
+    ]
+
+    expect(
+        sorted(evidence) == sorted(gap_scope)
+        and evidence == matrix["vm_semantics"]["gap_evidence"]
+        and all(row["status"].endswith("-incomplete") for row in evidence.values())
+        and all((_ROOT / path).exists() for path in evidence_paths)
+        and summary["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] == len(gap_scope)
+    )
+
+
 def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
