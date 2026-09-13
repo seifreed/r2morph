@@ -854,6 +854,20 @@ def test_runtime_artifacts_records_files_created_by_real_process(tmp_path: Path)
     )
 
 
+def test_runtime_artifacts_stabilizes_program_argv_zero(tmp_path: Path) -> None:
+    program = tmp_path / "program"
+    program.write_text(
+        "#!/bin/sh\nprintf '%s' \"$0\"\n",
+        encoding="utf-8",
+    )
+    program.chmod(0o700)
+
+    first = _runtime_artifacts(program)
+    second = _runtime_artifacts(program)
+
+    expect(_runtime_observables_equal(first, second))
+
+
 def test_runtime_artifacts_records_files_before_real_process_timeout(tmp_path: Path) -> None:
     program = tmp_path / "program"
     program.write_text(

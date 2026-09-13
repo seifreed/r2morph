@@ -300,13 +300,18 @@ def _snapshot_created_files(directory: Path) -> dict[str, dict[str, object]]:
     return files
 
 
-def _runtime_command(path: Path, arguments: tuple[str, ...] = ()) -> list[str]:
+def _runtime_command(
+    path: Path,
+    arguments: tuple[str, ...] = (),
+    invocation_path: str | None = None,
+) -> list[str]:
     with path.open("rb") as handle:
         first_line = handle.readline(4096)
+    command_path = invocation_path or str(path)
     if not first_line.startswith(b"#!"):
-        return [str(path), *arguments]
+        return [command_path, *arguments]
     interpreter = shlex.split(first_line[2:].decode("utf-8", errors="replace"))
-    return [*interpreter, str(path), *arguments] if interpreter else [str(path), *arguments]
+    return [*interpreter, command_path, *arguments] if interpreter else [command_path, *arguments]
 
 
 async def _capture_runtime_stream(stream: asyncio.StreamReader) -> dict[str, object]:
@@ -354,7 +359,7 @@ def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str,
         runtime_path = workdir / "program"
         shutil.copyfile(path, runtime_path)
         runtime_path.chmod(0o700)
-        result = asyncio.run(_run_runtime(_runtime_command(runtime_path, arguments), workdir))
+        result = asyncio.run(_run_runtime(_runtime_command(runtime_path, arguments, f"./{runtime_path.name}"), workdir))
         result["argv"] = list(arguments)
         result["duration_seconds"] = time.perf_counter() - started
         result["created_files"] = _snapshot_created_files(workdir)
