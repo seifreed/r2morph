@@ -81,3 +81,8 @@ The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
 are engine-only capabilities until their configuration and end-to-end workflow
 are promoted into the public CLI surface.
+
+VM resistance artifacts currently cover 10 seeds with 255 handlers per seed,
+0 exact normalized cross-seed handler matches, 12 handler stride values, and
+target handler stride diversity. These are resistance indicators, not human
+approval of anti-tamper or progressive bytecode protection.

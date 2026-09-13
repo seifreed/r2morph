@@ -272,6 +272,8 @@ def _check_readme_differential_summary() -> None:
 def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
     stability_counts = summary["stability_counts"]
     maturity_profile_counts = summary["maturity_profile_counts"]
     fragments = (
@@ -300,6 +302,11 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
             f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
             "affected-instruction catalogue"
         ),
+        f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
+        f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
+        f"{bytecode['all_handler_stride_unique_count']} handler stride values",
+        "target handler stride diversity",
+        "not human approval of anti-tamper or progressive bytecode protection",
     )
     for fragment in fragments:
         if fragment not in contract:
