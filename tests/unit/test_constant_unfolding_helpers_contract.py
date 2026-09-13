@@ -49,3 +49,11 @@ def test_constant_unfolding_helpers_cover_the_core_paths() -> None:
     expect(not (is_constant is not True))
     expect(unfolded)
     expect(select_candidates(binary, functions, 2)[0][0]["name"] == "main")
+
+
+def test_constant_unfolding_preserves_even_split_immediate() -> None:
+    expect(unfold_constant_add("eax", 4, 32, 10) == ["add eax, 2", "add eax, 2"])
+
+
+def test_constant_unfolding_preserves_uneven_split_immediate() -> None:
+    expect(unfold_constant_sub("eax", 5, 32, 10) == ["sub eax, 2", "sub eax, 3"])

@@ -81,12 +81,8 @@ def _unfold_constant_step(reg: str, value: int, max_sequence: int, unit_op: str,
         return [f"{unit_op} {reg}"] * value
 
     half = value // 2
-    remainder = value % 2
-
-    result = [f"{bulk_op} {reg}, {half}"]
-    if remainder:
-        result.append(f"{unit_op} {reg}")
-    return result
+    remainder = value - half
+    return [f"{bulk_op} {reg}, {half}", f"{bulk_op} {reg}, {remainder}"]
 
 
 def unfold_constant_add(reg: str, value: int, bits: int, max_sequence: int) -> list[str] | None:
