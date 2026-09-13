@@ -103,6 +103,8 @@ differential platform gap scope, the native/performance/false-positive/decompile
 composition/instruction maturity gap scope, the memory/calls/ABI/unwind/TLS/thread/
 FP/SSA VM semantic gap scope, the pending human-adversarial VM resistance scope,
 and the existing 159-sample virtualization corpus.
+The same automated review verifies that unavailable analyzer slots, including
+Binary Ninja, remain release-signoff blockers instead of completed evidence.
 The target history extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, GCC fixed-load
 `-O2` with frame pointers, GCC PIE `-O2`, GCC stripped fixed-load `-O2`, and

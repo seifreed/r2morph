@@ -64,6 +64,7 @@ ADVERSARIAL_TOOL_SLOTS = {
 INDEPENDENT_REVIEW_CHECKS = {
     "adversarial_benchmark_evidence",
     "adversarial_corpus_evidence",
+    "adversarial_signoff_blockers",
     "binary_ninja_benchmark_contract",
     "differential_platform_gap_scope",
     "fppackedidxnb_regression_evidence",

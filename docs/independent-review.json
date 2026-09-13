@@ -36,6 +36,11 @@
       "status": "passed"
     },
     {
+      "detail": "unavailable analyzers block adversarial signoff",
+      "name": "adversarial_signoff_blockers",
+      "status": "passed"
+    },
+    {
       "detail": "binary-ninja is an expected analyzer slot",
       "name": "binary_ninja_benchmark_contract",
       "status": "passed"

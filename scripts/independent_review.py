@@ -130,6 +130,23 @@ def _review_benchmark(root: Path) -> dict[str, object]:
     )
 
 
+def _review_adversarial_signoff_blockers(root: Path) -> dict[str, object]:
+    path = root / "docs" / "protection-adversarial-benchmark.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    tool_summary = document.get("tool_summary", {})
+    expected_unavailable = {
+        tool: summary["unavailable_reasons"]
+        for tool, summary in tool_summary.items()
+        if isinstance(tool, str)
+        and isinstance(summary, dict)
+        and summary.get("unavailable", 0) > 0
+        and isinstance(summary.get("unavailable_reasons"), dict)
+    }
+    blockers = document.get("release_signoff_blockers", {})
+    passed = blockers == {"unavailable_analyzers": expected_unavailable} and "binary-ninja" in expected_unavailable
+    return _check("adversarial_signoff_blockers", passed, "unavailable analyzers block adversarial signoff")
+
+
 def _review_binary_ninja_contract() -> dict[str, object]:
     passed = "binary-ninja" in _EXPECTED_TOOLS
     return _check("binary_ninja_benchmark_contract", passed, "binary-ninja is an expected analyzer slot")
@@ -334,6 +351,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_vm_semantic_gap_scope(root),
         _review_vm_resistance_adversarial_scope(root),
         _review_benchmark(root),
+        _review_adversarial_signoff_blockers(root),
         _review_binary_ninja_contract(),
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
