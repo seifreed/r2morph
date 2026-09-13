@@ -35,6 +35,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
             "binary_ninja_benchmark_contract",
             "differential_platform_gap_scope",
             "ghidra_corpus_evidence",
+            "pass_maturity_gap_scope",
             "parser_rewriter_fuzz_campaign",
             "vm_semantic_gap_scope",
         }

@@ -72,6 +72,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "ida_current_summary_evidence",
     "independent_fuzz_recheck",
     "parser_rewriter_fuzz_campaign",
+    "pass_maturity_gap_scope",
     "support_matrix_consistency",
     "virtualization_fixture_coverage",
     "virtualization_fixture_headers",

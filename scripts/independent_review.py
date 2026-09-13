@@ -20,6 +20,13 @@ from scripts.virtualization_coverage import build_coverage_inventory
 
 _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
 _EXPECTED_CORPUS_TOOLS = _EXPECTED_BENCHMARK_TOOLS - {"binary-ninja"}
+_EXPECTED_MATURITY_BLOCKER_FIELDS = {
+    "compatibility",
+    "decompiler_effectiveness",
+    "false_positive_risk",
+    "instructions_affected",
+    "performance",
+}
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
@@ -58,6 +65,23 @@ def _review_differential_platform_gap(root: Path) -> dict[str, object]:
     gap_scope = blockers.get("parity_gap_scope") if isinstance(blockers, dict) else None
     passed = gap_scope == _DIFFERENTIAL_PLATFORM_GAP_SCOPE
     return _check("differential_platform_gap_scope", passed, "PE/Mach-O and ARM/AArch64/x86 remain gaps")
+
+
+def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
+    path = root / "docs" / "support-matrix.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    matrix = document.get("matrix", {})
+    summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
+    blockers = summary.get("maturity_evidence_blockers", {}) if isinstance(summary, dict) else {}
+    missing_fields = blockers.get("missing_fields_by_field") if isinstance(blockers, dict) else None
+    native_gaps = blockers.get("native_evidence_gap_passes") if isinstance(blockers, dict) else None
+    passed = (
+        isinstance(missing_fields, dict)
+        and set(missing_fields) == _EXPECTED_MATURITY_BLOCKER_FIELDS
+        and isinstance(native_gaps, list)
+        and bool(native_gaps)
+    )
+    return _check("pass_maturity_gap_scope", passed, "native/performance/FP/decompiler/composition/ISA gaps tracked")
 
 
 def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
@@ -285,6 +309,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_differential_platform_gap(root),
+        _review_pass_maturity_gap_scope(root),
         _review_vm_semantic_gap_scope(root),
         _review_benchmark(root),
         _review_binary_ninja_contract(),
