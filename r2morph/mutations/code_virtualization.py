@@ -781,7 +781,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
         elif kind in ("swi", "syscall") or opcode.startswith(("syscall", "sysenter", "int ")):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
-        elif kind in ("call", "rcall", "ucall") or opcode.startswith("call"):
+        elif "call" in kind or opcode.startswith("call"):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
         elif any(
             token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7")
