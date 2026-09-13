@@ -494,6 +494,22 @@ def test_transaction_instruction_reports_thread_synchronization_capability() -> 
     expect(capability == "thread_synchronization")
 
 
+def test_transaction_suspend_tracking_instruction_reports_thread_synchronization_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "xsusldtrk"}
+    )
+
+    expect(capability == "thread_synchronization")
+
+
+def test_transaction_resume_tracking_instruction_reports_thread_synchronization_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "xresldtrk"}
+    )
+
+    expect(capability == "thread_synchronization")
+
+
 def test_syscall_instruction_reports_signals_and_system_calls_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "syscall", "opcode": "syscall"}

@@ -835,6 +835,8 @@ class CodeVirtualizationPass(MutationPass):
                     "xabort",
                     "xbegin",
                     "xend",
+                    "xresldtrk",
+                    "xsusldtrk",
                     "xtest",
                     "lock ",
                 )
