@@ -729,6 +729,17 @@ def test_counter_loop_instruction_reports_computed_control_flow_capability() -> 
     expect(loop_capability == "computed_control_flow" and jecxz_capability == "computed_control_flow")
 
 
+def test_prefixed_indirect_jump_reports_computed_control_flow_capability() -> None:
+    rex_capability, _rex_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w jmp qword [rax]"}
+    )
+    addr_capability, _addr_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "addr32 jmp qword [eax]"}
+    )
+
+    expect(rex_capability == "computed_control_flow" and addr_capability == "computed_control_flow")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
@@ -743,6 +754,17 @@ def test_direct_call_instruction_reports_call_capability() -> None:
     )
 
     expect(capability == "calls")
+
+
+def test_prefixed_call_instruction_reports_call_capability() -> None:
+    rex_capability, _rex_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w call rax"}
+    )
+    data_capability, _data_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "data16 call 0x401000"}
+    )
+
+    expect(rex_capability == "calls" and data_capability == "calls")
 
 
 def test_notrack_indirect_call_opcode_reports_call_capability() -> None:

@@ -117,6 +117,28 @@ _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _MIN_NESTING_DEPTH = 2
+_CONTROL_TRANSFER_PREFIXES = (
+    "rex ",
+    "rex.w ",
+    "rex.r ",
+    "rex.x ",
+    "rex.b ",
+    "data16 ",
+    "addr32 ",
+    "notrack ",
+    "bnd ",
+)
+
+
+def _strip_control_transfer_prefixes(opcode: str) -> str:
+    stripped = opcode
+    while True:
+        next_opcode = stripped
+        for prefix in _CONTROL_TRANSFER_PREFIXES:
+            next_opcode = next_opcode.removeprefix(prefix)
+        if next_opcode == stripped:
+            return stripped
+        stripped = next_opcode
 
 
 @dataclass(frozen=True, slots=True)
@@ -791,12 +813,7 @@ class CodeVirtualizationPass(MutationPass):
         opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
-        control_opcode = (
-            opcode_without_repeat.removeprefix("notrack ")
-            .removeprefix("bnd ")
-            .removeprefix("notrack ")
-            .removeprefix("bnd ")
-        )
+        control_opcode = _strip_control_transfer_prefixes(opcode_without_repeat)
         control_mnemonic_parts = control_opcode.split(maxsplit=1)
         control_mnemonic = control_mnemonic_parts[0] if control_mnemonic_parts else ""
         if (
