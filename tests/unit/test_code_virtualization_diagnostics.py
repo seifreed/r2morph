@@ -684,6 +684,12 @@ def test_x87_state_instruction_reports_fp_simd_capability() -> None:
     expect(capability == "floating_point_and_simd")
 
 
+def test_x87_wait_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "fpu", "opcode": "fwait"})
+
+    expect(capability == "floating_point_and_simd")
+
+
 def test_mmx_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "simd", "opcode": "paddb mm0, mm7"}

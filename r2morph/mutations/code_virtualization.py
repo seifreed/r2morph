@@ -938,6 +938,7 @@ class CodeVirtualizationPass(MutationPass):
                 "fstcw",
                 "fstenv",
                 "fstsw",
+                "fwait",
                 "fxrstor",
                 "fxsave",
                 "ldmxcsr",
@@ -950,6 +951,7 @@ class CodeVirtualizationPass(MutationPass):
                 "tilestored",
                 "tilezero",
                 "vzero",
+                "wait",
                 "xrstor",
                 "xsave",
             )
