@@ -13,6 +13,7 @@ from scripts.check_release_contract import (
     _check_independent_review_packet_claims,
     _check_matrix,
     _check_pass_maturity_gap_summary,
+    _check_pass_selection_contract,
     _check_readme_support_summary,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
@@ -87,14 +88,8 @@ def test_support_matrix_enumerates_concrete_unique_passes() -> None:
 def test_support_matrix_partitions_cli_and_engine_only_passes() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     pass_names = {entry["name"] for entry in matrix["passes"]}
-    cli_aliases = matrix["selection"]["cli_aliases"]
-    engine_only = set(matrix["selection"]["engine_only_passes"])
 
-    expect(
-        set(cli_aliases.values()) | engine_only == pass_names
-        and set(cli_aliases) == {"nop", "substitute", "register", "expand", "block"}
-        and not (set(cli_aliases.values()) & engine_only)
-    )
+    expect(_check_pass_selection_contract(matrix, pass_names) is None)
 
 
 def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:

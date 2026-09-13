@@ -29,6 +29,7 @@ REQUIRED_CI_JOBS = (
 MINIMUM_COVERAGE_PERCENT = 75
 FULL_EVIDENCE_PERCENT = 100.0
 TIER_1_MATURITY_PROFILE = "tier-1-native"
+PUBLIC_CLI_ALIASES = {"block", "expand", "nop", "register", "substitute"}
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 2
@@ -112,6 +113,18 @@ def _check_maturity_profile_values(profile_name: str, profile: dict[str, object]
                 raise ValueError(f"maturity profile has missing evidence path: {profile_name}.{field}.{evidence_path}")
 
 
+def _check_pass_selection_contract(matrix: dict[str, object], pass_names: set[str]) -> None:
+    selection = matrix["selection"]
+    cli_aliases = selection["cli_aliases"]
+    engine_only = set(selection["engine_only_passes"])
+    if set(cli_aliases.values()) | engine_only != pass_names:
+        raise ValueError("pass selection must cover every pass exactly")
+    if set(cli_aliases) != PUBLIC_CLI_ALIASES:
+        raise ValueError("public CLI aliases changed without release contract update")
+    if set(cli_aliases.values()) & engine_only:
+        raise ValueError("public CLI aliases must not overlap engine-only passes")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -132,6 +145,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     required_fields = maturity["required_fields"]
     pass_profiles = maturity["pass_profiles"]
     pass_names = {entry["name"] for entry in matrix["passes"]}
+    _check_pass_selection_contract(matrix, pass_names)
     if set(pass_profiles) != pass_names:
         raise ValueError("maturity profile map must cover every pass exactly")
     for profile_name in set(pass_profiles.values()):
