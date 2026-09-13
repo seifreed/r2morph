@@ -97,7 +97,7 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
 
 
 def test_pass_maturity_contract_names_the_public_corpus_selection() -> None:
-    contract = (_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8")
+    contract = " ".join((_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
 
     expect(all(f"`{pass_name}`" in contract for pass_name in CORPUS_PASS_NAMES))
     expect("broad corpus evidence is pending" not in contract)
@@ -200,6 +200,36 @@ def test_support_matrix_summarizes_test_evidence_profiles() -> None:
         and "tests/unit" in unit_counts
         and sum(e2e_counts.values()) >= len(matrix["passes"])
         and "tests/integration" in e2e_counts
+    )
+
+
+def test_pass_maturity_gap_counts_match_generated_summary() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    contract = " ".join((_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+
+    expect(
+        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance" in contract
+        and (
+            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
+            "false-positive measurement"
+        )
+        in contract
+        and (
+            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
+            "decompiler-effectiveness measurement"
+        )
+        in contract
+        and (
+            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
+            "without contractual composition support"
+        )
+        in contract
+        and (
+            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
+            "affected-instruction catalogue"
+        )
+        in contract
     )
 
 
