@@ -43,7 +43,7 @@ jobs:
           wheel_root=/tmp/r2morph-differential-wheel-check
           rm -rf "$wheel_root"
           mkdir -p "$wheel_root"
-          cp -R scripts tests fixtures "$wheel_root"/
+          cp -R scripts tests fixtures pyproject.toml "$wheel_root"/
           cd "$wheel_root"
           python scripts/protection_maturity_baseline.py \
             --all \
@@ -317,7 +317,7 @@ jobs:
 
       - name: Upload composition differential evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && hashFiles('composition-differential.xml') != ''
         with:
           name: composition-differential
           path: composition-differential.xml
