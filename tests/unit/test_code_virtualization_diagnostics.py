@@ -598,6 +598,14 @@ def test_indirect_call_instruction_reports_call_capability() -> None:
     expect(capability == "calls")
 
 
+def test_notrack_indirect_call_opcode_reports_call_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "notrack call qword [rax]"}
+    )
+
+    expect(capability == "calls")
+
+
 def test_far_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "lcall 0x33:0x401000"}
