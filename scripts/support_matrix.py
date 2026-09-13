@@ -93,7 +93,6 @@ _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "tls-signals",
     "threads",
     "fp-simd",
-    "ssa-liveness",
 )
 _VM_RESISTANCE_GAP_SCOPE = (
     "human-adversarial-validation",

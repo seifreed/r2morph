@@ -103,7 +103,7 @@ scope, the RB-001 through RB-007 release-blocker ledger, the PE/Mach-O and
 ARM/AArch64/x86 differential platform gap scope, the generated-corpus/generated-input
 differential coverage scope, the scheduled continuous-evidence differential gate, the
 native/performance/false-positive/decompiler/composition/instruction maturity
-gap scope, the memory/calls/ABI/unwind/TLS/thread/FP/SSA VM semantic gap scope,
+gap scope, the memory/calls/ABI/unwind/TLS/thread/FP VM semantic gap scope,
 the VM fail-closed diagnostics contract, the pending human-adversarial VM
 resistance scope, the scheduled adversarial continuous-evidence gate, the
 `angr`/Binary Ninja analyzer availability split, and the existing 159-sample

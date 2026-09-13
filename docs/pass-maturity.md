@@ -117,8 +117,10 @@ separate corpus evidence, but the full comparable campaign scope remains a
 release blocker.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
-FP/SIMD, and SSA/liveness remain machine-readable VM blockers. The companion
-`total_vm_semantic_blockers` count is currently 9 VM semantic blockers.
+and FP/SIMD remain machine-readable VM blockers. SSA/liveness preflight coverage
+is backed by the static dataflow, def-use, and liveness regression contracts.
+The companion `total_vm_semantic_blockers` count is currently 8 VM semantic
+blockers.
 
 The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
