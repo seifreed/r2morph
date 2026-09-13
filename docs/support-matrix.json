@@ -531,6 +531,27 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "api-hashing-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_api_hashing_record.py"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "code-virtualization": {
         "formats": [
           "ELF"
@@ -593,7 +614,7 @@
       "constant-unfolding": "experimental-corpus-selected",
       "code-mobility": "experimental",
       "function-outlining": "function-outlining-instruction-catalogued",
-      "api-hashing": "experimental",
+      "api-hashing": "api-hashing-instruction-catalogued",
       "import-obfuscation": "experimental",
       "self-modifying-code": "experimental",
       "stack-strings": "stack-strings-instruction-catalogued",
@@ -961,9 +982,10 @@
         "tier-1": 3
       },
       "maturity_profile_counts": {
+        "api-hashing-instruction-catalogued": 1,
         "code-virtualization": 1,
         "data-flow-mutation-instruction-catalogued": 1,
-        "experimental": 7,
+        "experimental": 6,
         "experimental-corpus-selected": 6,
         "function-outlining-instruction-catalogued": 1,
         "short-jump-patching-instruction-catalogued": 1,
@@ -997,8 +1019,9 @@
       },
       "instructions_affected_counts": {
         "Eligible basic-block chunks with at least five bytes and no RIP-relative operands are copied to executable caves; the original chunk start is replaced with an x86/x86-64 rel32 JMP trampoline and remaining bytes are padded with NOPs.": 1,
+        "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.": 1,
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
-        "Not exhaustively catalogued.": 7,
+        "Not exhaustively catalogued.": 6,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
@@ -1013,7 +1036,8 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 16,
+        "tests/unit": 15,
+        "tests/unit/test_api_hashing_record.py": 1,
         "tests/unit/test_code_virtualization_diagnostics.py": 1,
         "tests/unit/test_data_flow_mutation_helpers_contract.py": 1,
         "tests/unit/test_function_outlining_offset_range.py": 1,
@@ -1088,7 +1112,6 @@
         ],
         "instructions_affected": [
           "anti-disassembly",
-          "api-hashing",
           "code-mobility",
           "import-obfuscation",
           "opaque-predicates",
@@ -1108,7 +1131,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "code-mobility": [
@@ -1279,7 +1301,6 @@
           ],
           "instructions_affected": [
             "anti-disassembly",
-            "api-hashing",
             "code-mobility",
             "import-obfuscation",
             "opaque-predicates",
@@ -1299,7 +1320,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "code-mobility": [
@@ -1467,7 +1487,6 @@
           ],
           "passes": [
             "anti-disassembly",
-            "api-hashing",
             "code-mobility",
             "import-obfuscation",
             "opaque-predicates",
@@ -1509,13 +1528,13 @@
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 74,
-        "total_maturity_field_gaps": 55,
+        "total_maturity_blockers": 73,
+        "total_maturity_field_gaps": 54,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 7
+        "instructions_affected_gap_passes": 6
       },
       "differential_evidence_scope": {
         "platform_scope": {
