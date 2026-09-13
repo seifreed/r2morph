@@ -356,6 +356,14 @@ def test_syscall_instruction_reports_signals_and_system_calls_capability() -> No
     expect(capability == "signals_and_system_calls")
 
 
+def test_interrupt_return_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "iret", "opcode": "iretq"}
+    )
+
+    expect(capability == "signals_and_system_calls")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
