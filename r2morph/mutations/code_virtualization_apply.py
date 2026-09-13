@@ -232,6 +232,12 @@ def _transform_dispatch_function(
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
 
 
+def _preflight_rejection_diagnostic(unwind: _UnwindContext) -> tuple[str, str]:
+    if unwind.unproven:
+        return "exceptions_and_unwinding", "unwind metadata could not be mapped to a complete function frame"
+    return "ssa_liveness", "CFG, liveness, and SSA coverage was not proven for the function"
+
+
 def _transform_function(
     pass_instance: Any,
     binary: Any,
@@ -243,12 +249,7 @@ def _transform_function(
     unsupported, partial = records
     cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
     if (unwind.unproven and unwind.frame is None) or not _static_dataflow_is_complete(cfg):
-        capability = "exceptions_and_unwinding" if unwind.unproven else "static_dataflow"
-        reason = (
-            "unwind metadata could not be mapped to a complete function frame"
-            if unwind.unproven
-            else "CFG, liveness, and SSA coverage was not proven for the function"
-        )
+        capability, reason = _preflight_rejection_diagnostic(unwind)
         pass_instance._record_diagnostic(
             unsupported,
             func,

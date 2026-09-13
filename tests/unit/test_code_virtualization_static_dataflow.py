@@ -2,7 +2,11 @@
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
-from r2morph.mutations.code_virtualization_apply import _static_dataflow_is_complete
+from r2morph.mutations.code_virtualization_apply import (
+    _preflight_rejection_diagnostic,
+    _static_dataflow_is_complete,
+    _UnwindContext,
+)
 from tests.utils.assertions import expect
 
 
@@ -52,3 +56,9 @@ def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions
     analyzer.analyze()
 
     expect(analyzer.has_complete_liveness_coverage())
+
+
+def test_incomplete_static_dataflow_reports_ssa_liveness_capability() -> None:
+    capability, reason = _preflight_rejection_diagnostic(_UnwindContext(unproven=False, frame=None))
+
+    expect(capability == "ssa_liveness" and "SSA" in reason and "liveness" in reason)
