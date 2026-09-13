@@ -113,10 +113,18 @@ jobs:
               raise SystemExit(f"unexpected extended pass names: {report['pass_names']}")
           if report["campaign_summary"]["pass_count"] != len(expected):
               raise SystemExit(f"unexpected extended pass count: {report['campaign_summary']['pass_count']}")
+          if report["campaign_summary"]["missing_extended_passes"]:
+              raise SystemExit(f"missing extended pass rows: {report['campaign_summary']['missing_extended_passes']}")
           if set(report["summary"]) != set(expected):
               raise SystemExit("extended maturity summary is missing pass rows")
-          if report["campaign_summary"]["passes_with_error_runs"]:
-              raise SystemExit(f"extended maturity pass errors: {report['campaign_summary']['passes_with_error_runs']}")
+          if "passes_without_extended_applied_runs" not in report["campaign_summary"]:
+              raise SystemExit("extended maturity summary is missing passes_without_extended_applied_runs")
+          if "extended_maturity_evidence_blockers" not in report["campaign_summary"]:
+              raise SystemExit("extended maturity summary is missing extended_maturity_evidence_blockers")
+          if report["campaign_summary"]["extended_passes_with_error_runs"]:
+              raise SystemExit(
+                  f"extended maturity pass errors: {report['campaign_summary']['extended_passes_with_error_runs']}"
+              )
           PY
 
       - name: Upload per-pass differential report

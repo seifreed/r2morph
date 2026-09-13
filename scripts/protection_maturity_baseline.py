@@ -80,6 +80,20 @@ CORPUS_PASS_NAMES = (
     "PatternSubstitution",
     "RegisterSubstitution",
 )
+EXTENDED_MATURITY_PASS_NAMES = (
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation",
+)
 _PASS_TYPES: dict[str, type[MutationPass]] = {
     "AntiDisassembly": AntiDisassemblyPass,
     "APIHashing": APIHashingPass,
@@ -915,6 +929,8 @@ def _sum_static_delta_fields(summaries: dict[str, object]) -> dict[str, int]:
 def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
     selected_passes = set(summaries)
     corpus_passes = set(CORPUS_PASS_NAMES)
+    extended_passes = set(EXTENDED_MATURITY_PASS_NAMES)
+    selected_extended_passes = selected_passes & extended_passes
     total_applied_runs = _sum_summary_field(summaries, "applied_runs")
     total_omitted_runs = _sum_summary_field(summaries, "omitted_runs")
     total_error_runs = _sum_summary_field(summaries, "error_runs")
@@ -928,9 +944,22 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "covered_corpus_pass_count": len(selected_passes & corpus_passes),
         "corpus_pass_coverage_percent": _coverage_percent(len(selected_passes & corpus_passes), len(CORPUS_PASS_NAMES)),
         "missing_corpus_passes": sorted(corpus_passes - selected_passes),
+        "expected_extended_pass_count": len(EXTENDED_MATURITY_PASS_NAMES),
+        "covered_extended_pass_count": len(selected_extended_passes),
+        "extended_pass_coverage_percent": _coverage_percent(
+            len(selected_extended_passes),
+            len(EXTENDED_MATURITY_PASS_NAMES),
+        ),
+        "missing_extended_passes": sorted(extended_passes - selected_passes),
         "passes_without_applied_runs": _passes_with_zero_runs(summaries, "applied_runs"),
+        "passes_without_extended_applied_runs": sorted(
+            selected_extended_passes & set(_passes_with_zero_runs(summaries, "applied_runs"))
+        ),
         "passes_with_omitted_runs": _passes_with_positive_runs(summaries, "omitted_runs"),
         "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),
+        "extended_passes_with_error_runs": sorted(
+            selected_extended_passes & set(_passes_with_positive_runs(summaries, "error_runs"))
+        ),
         "passes_with_incomplete_coverage": _passes_with_incomplete_coverage(summaries),
         "metric_complete_runs": _metric_run_totals(summaries, _COMPLETE_RUN_FIELD),
         "metric_missing_runs": _metric_run_totals(summaries, _MISSING_RUN_FIELD),
@@ -1012,11 +1041,28 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "total_complete_evidence_missing_runs": _sum_summary_field(summaries, "complete_evidence_missing_runs"),
         **_sum_static_delta_fields(summaries),
     }
+    summary["extended_maturity_evidence_blockers"] = _extended_maturity_evidence_blockers(summary)
+    summary["extended_maturity_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
+        summary["extended_maturity_evidence_blockers"]
+    )
     summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(summary)
     summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
         summary["continuous_evidence_blockers"]
     )
     return summary
+
+
+def _extended_maturity_evidence_blockers(summary: Mapping[str, object]) -> dict[str, object]:
+    blockers: dict[str, object] = {}
+    for field in (
+        "missing_extended_passes",
+        "passes_without_extended_applied_runs",
+        "extended_passes_with_error_runs",
+    ):
+        value = summary.get(field)
+        if isinstance(value, list) and value:
+            blockers[field] = value
+    return blockers
 
 
 def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, object]:

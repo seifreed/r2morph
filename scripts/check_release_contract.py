@@ -873,7 +873,10 @@ def _check_corpus_workflows() -> None:
         "EXTENDED_MATURITY_PASSES",
         "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation",
         "SelfModifyingCode,ShortJumpPatching",
-        "passes_with_error_runs",
+        "missing_extended_passes",
+        "passes_without_extended_applied_runs",
+        "extended_passes_with_error_runs",
+        "extended_maturity_evidence_blockers",
         "extended maturity pass errors",
         "extended-maturity-passes",
     ):

@@ -10,6 +10,7 @@ from scripts.protection_maturity_baseline import (
     _PASS_TYPES,
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
+    EXTENDED_MATURITY_PASS_NAMES,
     _ArtifactAccumulator,
     _complete_evidence_error,
     _diagnostic_counts,
@@ -53,7 +54,9 @@ _EXPECTED_COMPLETE_EVIDENCE_RUNS = 2
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
+_EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
+_EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
 _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
 _EXPECTED_MULTI_PASS_SEED_RUNS = 2
@@ -105,6 +108,12 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
     "passes_without_applied_runs": 1,
     "platform_gap_scope": 2,
     "total_continuous_evidence_blockers": 27,
+}
+_EXPECTED_EXTENDED_MATURITY_BLOCKERS = {"missing_extended_passes": _EXPECTED_MISSING_EXTENDED_PASSES}
+_EXPECTED_EXTENDED_MATURITY_BLOCKER_TOTALS = {
+    "blocker_categories": len(_EXPECTED_EXTENDED_MATURITY_BLOCKERS),
+    "missing_extended_passes": len(_EXPECTED_MISSING_EXTENDED_PASSES),
+    "total_continuous_evidence_blockers": len(_EXPECTED_MISSING_EXTENDED_PASSES),
 }
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
@@ -419,6 +428,15 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["covered_corpus_pass_count"] == _EXPECTED_MULTI_PASS_COUNT
         and report["campaign_summary"]["corpus_pass_coverage_percent"] == _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT
         and report["campaign_summary"]["missing_corpus_passes"] == _EXPECTED_MISSING_CORPUS_PASSES
+        and report["campaign_summary"]["expected_extended_pass_count"] == _EXPECTED_EXTENDED_PASS_COUNT
+        and report["campaign_summary"]["covered_extended_pass_count"] == 0
+        and report["campaign_summary"]["extended_pass_coverage_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
+        and report["campaign_summary"]["missing_extended_passes"] == _EXPECTED_MISSING_EXTENDED_PASSES
+        and report["campaign_summary"]["passes_without_extended_applied_runs"] == []
+        and report["campaign_summary"]["extended_passes_with_error_runs"] == []
+        and report["campaign_summary"]["extended_maturity_evidence_blockers"] == _EXPECTED_EXTENDED_MATURITY_BLOCKERS
+        and report["campaign_summary"]["extended_maturity_evidence_blocker_totals"]
+        == _EXPECTED_EXTENDED_MATURITY_BLOCKER_TOTALS
         and report["campaign_summary"]["passes_without_applied_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_omitted_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
