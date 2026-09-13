@@ -26,6 +26,7 @@ from scripts.check_release_contract import (
     _check_release_blockers,
     _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
+    _validate_angr_runtime_available,
     _validate_independent_review_artifact,
     _validate_independent_review_freshness,
     _validate_inventory,
@@ -180,6 +181,20 @@ def test_local_adversarial_angr_evidence_completes_original_and_protected() -> N
         and angr["original"]["status"] == "completed"
         and angr["protected"]["status"] == "completed"
     )
+
+
+def test_release_contract_rejects_missing_angr_runtime_dependency() -> None:
+    rejected = False
+    try:
+        _validate_angr_runtime_available("linux", lambda _name: None)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_allows_missing_angr_runtime_on_windows() -> None:
+    _validate_angr_runtime_available("win32", lambda _name: None)
 
 
 def test_release_contract_rejects_missing_binary_ninja_slot() -> None:

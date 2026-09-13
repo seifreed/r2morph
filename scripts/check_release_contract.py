@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import json
 import re
 import sys
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 try:
@@ -651,6 +653,17 @@ def _check_adversarial_benchmark_artifacts() -> None:
         _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
 
 
+def _validate_angr_runtime_available(platform_name: str, find_module: Callable[[str], object | None]) -> None:
+    if platform_name == "win32":
+        return
+    if find_module("angr") is None:
+        raise ValueError("angr must be importable for adversarial benchmark evidence")
+
+
+def _check_angr_runtime_available() -> None:
+    _validate_angr_runtime_available(sys.platform, importlib.util.find_spec)
+
+
 def _check_readme_adversarial_summary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     report_name = "protection-adversarial-angr-local-2026-09-13-13214f9.json"
@@ -924,6 +937,7 @@ def main() -> int:
         _check_independent_review_artifact()
         _check_independent_review_packet_claims()
         _check_adversarial_benchmark_artifacts()
+        _check_angr_runtime_available()
         _check_readme_adversarial_summary()
         _check_readme_vm_review_scope()
         _check_readme_vm_resistance_summary()
