@@ -596,6 +596,19 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
     )
 
 
+def test_release_contract_rejects_stale_vm_resistance_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_vm_resistance_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "vm resistance blocker totals" in str(error)
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_missing_vm_resistance_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["vm_resistance_gap_evidence"].pop("anti-tamper")

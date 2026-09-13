@@ -250,6 +250,11 @@ def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
     evidence = summary["vm_resistance_gap_evidence"]
     if sorted(evidence) != sorted(gap_scope):
         raise ValueError("vm resistance gap evidence must cover every declared gap")
+    if summary["vm_resistance_evidence_blockers"]["vm_resistance_gap_scope"] != gap_scope:
+        raise ValueError("vm resistance evidence blockers must match declared gap scope")
+    totals = summary["vm_resistance_blocker_totals"]
+    if totals["vm_resistance_gap_scope"] != len(gap_scope) or totals["total_vm_resistance_blockers"] != len(gap_scope):
+        raise ValueError("vm resistance blocker totals must match declared gap scope")
     for gap, row in evidence.items():
         if row["status"] == "complete" or row["evidence_quality"] != "seed-diversity-only":
             raise ValueError(f"vm resistance gap must remain pending adversarial review: {gap}")
