@@ -24,6 +24,7 @@ from scripts.check_release_contract import (
     _check_readme_vm_resistance_summary,
     _check_readme_vm_review_scope,
     _check_release_blockers,
+    _check_vm_resistance_gap_evidence,
     _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
     _validate_angr_runtime_available,
@@ -547,6 +548,19 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
         and all((_ROOT / path).exists() for path in evidence_paths)
         and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(gap_scope)
     )
+
+
+def test_release_contract_rejects_missing_vm_resistance_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["vm_resistance_gap_evidence"].pop("anti-tamper")
+
+    rejected = False
+    try:
+        _check_vm_resistance_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "vm resistance gap evidence" in str(error)
+
+    expect(rejected)
 
 
 def test_support_matrix_names_differential_gap_evidence() -> None:

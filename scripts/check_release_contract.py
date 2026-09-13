@@ -241,6 +241,26 @@ def _check_vm_semantic_gap_evidence(matrix: dict[str, object]) -> None:
                 raise ValueError(f"vm semantic gap evidence path is missing: {gap}.{evidence_path}")
 
 
+def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    gap_scope = summary["vm_resistance_gap_scope"]
+    evidence = summary["vm_resistance_gap_evidence"]
+    if sorted(evidence) != sorted(gap_scope):
+        raise ValueError("vm resistance gap evidence must cover every declared gap")
+    for gap, row in evidence.items():
+        if row["status"] == "complete" or row["evidence_quality"] != "seed-diversity-only":
+            raise ValueError(f"vm resistance gap must remain pending adversarial review: {gap}")
+        if not row["evidence"]:
+            raise ValueError(f"vm resistance gap evidence is empty: {gap}")
+        for evidence_path in row["evidence"]:
+            if (
+                isinstance(evidence_path, str)
+                and not evidence_path.startswith("http")
+                and not (ROOT / evidence_path).exists()
+            ):
+                raise ValueError(f"vm resistance gap evidence path is missing: {gap}.{evidence_path}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -276,6 +296,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
         raise ValueError("non-official targets must not claim official-target parity")
     _check_vm_semantic_gap_evidence(matrix)
+    _check_vm_resistance_gap_evidence(matrix)
 
 
 def _check_readme_support_summary(matrix: dict[str, object]) -> None:
