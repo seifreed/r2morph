@@ -85,6 +85,18 @@ def _check_tier_1_maturity(matrix: dict[str, object], pass_profiles: dict[str, s
         raise ValueError("tier-1 passes must exactly match the tier-1 maturity profile")
 
 
+def _check_maturity_profile_values(profile_name: str, profile: dict[str, object]) -> None:
+    for field, value in profile.items():
+        if isinstance(value, str):
+            if not value.strip():
+                raise ValueError(f"maturity profile has empty field: {profile_name}.{field}")
+        elif isinstance(value, list):
+            if not value or any(not isinstance(item, str) or not item.strip() for item in value):
+                raise ValueError(f"maturity profile has empty field: {profile_name}.{field}")
+        else:
+            raise ValueError(f"maturity profile has invalid field type: {profile_name}.{field}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -111,6 +123,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         profile = profiles[profile_name]
         if set(profile) != set(required_fields):
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
+        _check_maturity_profile_values(profile_name, profile)
     _check_tier_1_maturity(matrix, pass_profiles)
     summary = matrix["matrix"]["summary"]
     if summary["official_evidence_percent"] != FULL_EVIDENCE_PERCENT:
