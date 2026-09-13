@@ -568,6 +568,20 @@ def test_enclave_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_measured_launch_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "getsec"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_system_management_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other", "opcode": "rsm"})
+
+    expect(capability == "cpu_environment")
+
+
 def test_privileged_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other", "opcode": "hlt"})
 
