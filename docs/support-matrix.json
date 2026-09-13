@@ -1281,6 +1281,86 @@
         "compatibility_gap_passes": 12,
         "instructions_affected_gap_passes": 12
       },
+      "differential_evidence_scope": {
+        "platform_scope": {
+          "os": "linux",
+          "format": "ELF",
+          "architecture": "x86-64"
+        },
+        "platform_gap_scope": {
+          "formats": [
+            "Mach-O",
+            "PE"
+          ],
+          "architectures": [
+            "AArch64",
+            "ARM",
+            "x86"
+          ]
+        },
+        "corpus_gap_scope": {
+          "corpus_families": [
+            "additional-corpus-families"
+          ],
+          "input_sources": [
+            "generated-inputs"
+          ]
+        }
+      },
+      "differential_gap_evidence": {
+        "platform_scope": {
+          "status": "scheduled-official-target-only",
+          "evidence_quality": "scheduled-corpus-gate",
+          "evidence": [
+            ".github/workflows/differential-corpus.yml",
+            "docs/compatibility-corpus.md",
+            "docs/protection-maturity-corpus.json"
+          ]
+        },
+        "platform_gap_scope": {
+          "status": "platform-parity-incomplete",
+          "evidence_quality": "declared-gap-scope",
+          "evidence": [
+            ".github/workflows/differential-corpus.yml",
+            "docs/compatibility-corpus.md",
+            "docs/support-matrix.json"
+          ]
+        },
+        "corpus_gap_scope": {
+          "status": "corpus-breadth-incomplete",
+          "evidence_quality": "declared-gap-scope",
+          "evidence": [
+            ".github/workflows/differential-corpus.yml",
+            "docs/compatibility-corpus.md"
+          ]
+        }
+      },
+      "differential_evidence_blockers": {
+        "platform_gap_scope": {
+          "formats": [
+            "Mach-O",
+            "PE"
+          ],
+          "architectures": [
+            "AArch64",
+            "ARM",
+            "x86"
+          ]
+        },
+        "corpus_gap_scope": {
+          "corpus_families": [
+            "additional-corpus-families"
+          ],
+          "input_sources": [
+            "generated-inputs"
+          ]
+        }
+      },
+      "differential_blocker_totals": {
+        "platform_gap_scope": 5,
+        "corpus_gap_scope": 2,
+        "total_differential_blockers": 7
+      },
       "vm_semantic_gap_scope": [
         "memory",
         "direct-calls",

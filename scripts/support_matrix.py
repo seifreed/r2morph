@@ -28,6 +28,15 @@ _MATURITY_GAP_VALUES = {
     "compatibility": {"Composition with other passes is not contractually supported."},
     "instructions_affected": {"Not exhaustively catalogued."},
 }
+_DIFFERENTIAL_PLATFORM_SCOPE = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+_DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
+    "formats": ["Mach-O", "PE"],
+    "architectures": ["AArch64", "ARM", "x86"],
+}
+_DIFFERENTIAL_CORPUS_GAP_SCOPE = {
+    "corpus_families": ["additional-corpus-families"],
+    "input_sources": ["generated-inputs"],
+}
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
     "direct-calls",
@@ -274,6 +283,53 @@ def _vm_resistance_blocker_totals() -> dict[str, int]:
     }
 
 
+def _differential_evidence_scope() -> dict[str, object]:
+    return {
+        "platform_scope": dict(_DIFFERENTIAL_PLATFORM_SCOPE),
+        "platform_gap_scope": dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE),
+        "corpus_gap_scope": dict(_DIFFERENTIAL_CORPUS_GAP_SCOPE),
+    }
+
+
+def _differential_gap_evidence() -> dict[str, object]:
+    workflow = ".github/workflows/differential-corpus.yml"
+    contract = "docs/compatibility-corpus.md"
+    return {
+        "platform_scope": {
+            "status": "scheduled-official-target-only",
+            "evidence_quality": "scheduled-corpus-gate",
+            "evidence": [workflow, contract, "docs/protection-maturity-corpus.json"],
+        },
+        "platform_gap_scope": {
+            "status": "platform-parity-incomplete",
+            "evidence_quality": "declared-gap-scope",
+            "evidence": [workflow, contract, "docs/support-matrix.json"],
+        },
+        "corpus_gap_scope": {
+            "status": "corpus-breadth-incomplete",
+            "evidence_quality": "declared-gap-scope",
+            "evidence": [workflow, contract],
+        },
+    }
+
+
+def _differential_evidence_blockers() -> dict[str, object]:
+    return {
+        "platform_gap_scope": dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE),
+        "corpus_gap_scope": dict(_DIFFERENTIAL_CORPUS_GAP_SCOPE),
+    }
+
+
+def _differential_blocker_totals() -> dict[str, int]:
+    platform_gaps = sum(len(values) for values in _DIFFERENTIAL_PLATFORM_GAP_SCOPE.values())
+    corpus_gaps = sum(len(values) for values in _DIFFERENTIAL_CORPUS_GAP_SCOPE.values())
+    return {
+        "platform_gap_scope": platform_gaps,
+        "corpus_gap_scope": corpus_gaps,
+        "total_differential_blockers": platform_gaps + corpus_gaps,
+    }
+
+
 def _coverage_percent(evidenced: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -499,6 +555,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                 maturity_gaps_by_pass,
                 native_evidence_gap_passes,
             ),
+            "differential_evidence_scope": _differential_evidence_scope(),
+            "differential_gap_evidence": _differential_gap_evidence(),
+            "differential_evidence_blockers": _differential_evidence_blockers(),
+            "differential_blocker_totals": _differential_blocker_totals(),
             "vm_semantic_gap_scope": vm_semantic_gap_scope,
             "vm_semantic_fixture_coverage": vm_semantic_fixture_coverage,
             "vm_semantic_gap_evidence": vm_semantic_gap_evidence,

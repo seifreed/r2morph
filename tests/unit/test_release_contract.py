@@ -40,6 +40,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
+_EXPECTED_DIFFERENTIAL_BLOCKERS = 7
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "instruction-expansion",
     "block-reordering",
@@ -482,6 +483,31 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
         and all(row["status"] != "complete" for row in evidence.values())
         and all((_ROOT / path).exists() for path in evidence_paths)
         and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(gap_scope)
+    )
+
+
+def test_support_matrix_names_differential_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["differential_gap_evidence"]
+    evidence_paths = {
+        item
+        for row in evidence.values()
+        for item in row["evidence"]
+        if isinstance(item, str) and not item.startswith("http")
+    }
+
+    expect(
+        summary["differential_evidence_scope"]["platform_scope"]
+        == {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+        and summary["differential_evidence_blockers"]["platform_gap_scope"]
+        == {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]}
+        and summary["differential_evidence_blockers"]["corpus_gap_scope"]
+        == {"corpus_families": ["additional-corpus-families"], "input_sources": ["generated-inputs"]}
+        and summary["differential_blocker_totals"]["total_differential_blockers"] == _EXPECTED_DIFFERENTIAL_BLOCKERS
+        and sorted(evidence) == ["corpus_gap_scope", "platform_gap_scope", "platform_scope"]
+        and all(row["status"] != "complete" for row in evidence.values())
+        and all((_ROOT / path).exists() for path in evidence_paths)
     )
 
 
