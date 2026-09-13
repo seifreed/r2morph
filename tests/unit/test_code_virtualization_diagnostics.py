@@ -1000,6 +1000,14 @@ def test_mmx_instruction_reports_fp_simd_capability() -> None:
     expect(capability == "floating_point_and_simd")
 
 
+def test_mmx_state_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "simd", "opcode": "femms"}
+    )
+
+    expect(capability == "floating_point_and_simd")
+
+
 def test_avx512_mask_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "simd", "opcode": "kortestw k1, k7"}

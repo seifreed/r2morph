@@ -1037,6 +1037,7 @@ class CodeVirtualizationPass(MutationPass):
             or opcode.startswith(
                 (
                     "emms",
+                    "femms",
                     "fclex",
                     "finit",
                     "fldcw",
