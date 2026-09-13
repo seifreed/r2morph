@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.support_matrix import build_matrix
 from tests.utils.assertions import expect
 
+_README = Path(__file__).resolve().parents[2] / "README.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
 _EXPECTED_EVIDENCED_CELLS = 29
 _EXPECTED_NOT_SUPPORTED_CELLS = 235
@@ -54,6 +55,19 @@ def test_support_matrix_summarizes_parity_gaps() -> None:
         and summary["non_official_not_supported_cells"] == _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS
         and summary["stability_counts"] == _EXPECTED_STABILITY_COUNTS
         and summary["maturity_profile_counts"] == _EXPECTED_MATURITY_PROFILE_COUNTS
+    )
+
+
+def test_support_matrix_readme_parity_gap_matches_generated_summary() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    summary = build_matrix(document)["summary"]
+    official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
+    non_official_total = summary["non_official_evidenced_cells"] + summary["non_official_not_supported_cells"]
+    readme = _README.read_text(encoding="utf-8")
+
+    expect(
+        f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official" in readme
+        and f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official" in readme
     )
 
 
