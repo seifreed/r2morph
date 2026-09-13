@@ -1209,6 +1209,26 @@
         "fp-simd",
         "ssa-liveness"
       ],
+      "vm_semantic_fixture_coverage": {
+        "artifact": "docs/virtualization-coverage.json",
+        "scope": "elf-x86-64-virtualization-fixtures",
+        "fixture_count": 150,
+        "capability_count": 10,
+        "covered_capability_count": 10,
+        "unclassified_count": 0,
+        "capabilities": [
+          "calls_and_returns",
+          "control_flow_and_dispatch",
+          "fallback_paths",
+          "flags_and_conditions",
+          "floating_point_and_simd",
+          "gp_arithmetic",
+          "memory_addressing",
+          "signals_and_system_calls",
+          "stack_and_abi",
+          "thread_runtime_boundaries"
+        ]
+      },
       "vm_semantic_evidence_blockers": {
         "vm_semantic_gap_scope": [
           "memory",
@@ -3215,5 +3235,38 @@
         "evidence": []
       }
     ]
+  },
+  "vm_semantics": {
+    "gap_scope": [
+      "memory",
+      "direct-calls",
+      "indirect-calls",
+      "abi-varargs",
+      "unwinding-exceptions",
+      "tls-signals",
+      "threads",
+      "fp-simd",
+      "ssa-liveness"
+    ],
+    "fixture_coverage": {
+      "artifact": "docs/virtualization-coverage.json",
+      "scope": "elf-x86-64-virtualization-fixtures",
+      "fixture_count": 150,
+      "capability_count": 10,
+      "covered_capability_count": 10,
+      "unclassified_count": 0,
+      "capabilities": [
+        "calls_and_returns",
+        "control_flow_and_dispatch",
+        "fallback_paths",
+        "flags_and_conditions",
+        "floating_point_and_simd",
+        "gp_arithmetic",
+        "memory_addressing",
+        "signals_and_system_calls",
+        "stack_and_abi",
+        "thread_runtime_boundaries"
+      ]
+    }
   }
 }

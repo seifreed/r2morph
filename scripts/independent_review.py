@@ -18,7 +18,7 @@ from scripts.protection_maturity_baseline import (
     _DIFFERENTIAL_CORPUS_GAP_SCOPE,
     _DIFFERENTIAL_PLATFORM_GAP_SCOPE,
 )
-from scripts.support_matrix import _VM_SEMANTIC_GAP_SCOPE, build_matrix
+from scripts.support_matrix import _vm_semantic_gap_scope, build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
 _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
@@ -194,7 +194,7 @@ def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
     document = json.loads(path.read_text(encoding="utf-8"))
     matrix = document.get("matrix", {})
     summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
-    passed = summary.get("vm_semantic_gap_scope") == list(_VM_SEMANTIC_GAP_SCOPE)
+    passed = summary.get("vm_semantic_gap_scope") == _vm_semantic_gap_scope(document)
     return _check("vm_semantic_gap_scope", passed, "memory/calls/ABI/unwind/TLS/thread/FP/SSA gaps remain tracked")
 
 

@@ -39,6 +39,7 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
+_EXPECTED_VM_FIXTURE_COUNT = 150
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "instruction-expansion",
     "block-reordering",
@@ -396,23 +397,28 @@ def test_support_matrix_counts_maturity_blockers() -> None:
 def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
-    expected = [
-        "memory",
-        "direct-calls",
-        "indirect-calls",
-        "abi-varargs",
-        "unwinding-exceptions",
-        "tls-signals",
-        "threads",
-        "fp-simd",
-        "ssa-liveness",
-    ]
+    expected = matrix["vm_semantics"]["gap_scope"]
 
     expect(
         summary["vm_semantic_gap_scope"] == expected
         and summary["vm_semantic_evidence_blockers"]["vm_semantic_gap_scope"] == expected
         and summary["vm_semantic_blocker_totals"]["vm_semantic_gap_scope"] == len(expected)
         and summary["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] == len(expected)
+    )
+
+
+def test_support_matrix_names_vm_semantic_fixture_coverage() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    coverage = matrix["matrix"]["summary"]["vm_semantic_fixture_coverage"]
+
+    expect(
+        coverage == matrix["vm_semantics"]["fixture_coverage"]
+        and (_ROOT / coverage["artifact"]).exists()
+        and coverage["fixture_count"] == _EXPECTED_VM_FIXTURE_COUNT
+        and coverage["covered_capability_count"] == coverage["capability_count"]
+        and coverage["unclassified_count"] == 0
+        and "memory_addressing" in coverage["capabilities"]
+        and "floating_point_and_simd" in coverage["capabilities"]
     )
 
 

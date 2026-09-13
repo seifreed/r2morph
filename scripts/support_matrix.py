@@ -28,7 +28,7 @@ _MATURITY_GAP_VALUES = {
     "compatibility": {"Composition with other passes is not contractually supported."},
     "instructions_affected": {"Not exhaustively catalogued."},
 }
-_VM_SEMANTIC_GAP_SCOPE = (
+_DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
     "direct-calls",
     "indirect-calls",
@@ -186,14 +186,32 @@ def _maturity_blocker_totals(
     }
 
 
-def _vm_semantic_evidence_blockers() -> dict[str, object]:
-    return {"vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE)}
+def _vm_semantic_gap_scope(document: dict[str, Any]) -> list[str]:
+    vm_semantics = document.get("vm_semantics")
+    if not isinstance(vm_semantics, dict):
+        return list(_DEFAULT_VM_SEMANTIC_GAP_SCOPE)
+    gap_scope = vm_semantics.get("gap_scope")
+    if not isinstance(gap_scope, list) or not all(isinstance(item, str) for item in gap_scope):
+        return list(_DEFAULT_VM_SEMANTIC_GAP_SCOPE)
+    return gap_scope
 
 
-def _vm_semantic_blocker_totals() -> dict[str, int]:
+def _vm_semantic_fixture_coverage(document: dict[str, Any]) -> dict[str, object]:
+    vm_semantics = document.get("vm_semantics")
+    if not isinstance(vm_semantics, dict):
+        return {}
+    coverage = vm_semantics.get("fixture_coverage")
+    return coverage if isinstance(coverage, dict) else {}
+
+
+def _vm_semantic_evidence_blockers(gap_scope: list[str]) -> dict[str, object]:
+    return {"vm_semantic_gap_scope": gap_scope}
+
+
+def _vm_semantic_blocker_totals(gap_scope: list[str]) -> dict[str, int]:
     return {
-        "total_vm_semantic_blockers": len(_VM_SEMANTIC_GAP_SCOPE),
-        "vm_semantic_gap_scope": len(_VM_SEMANTIC_GAP_SCOPE),
+        "total_vm_semantic_blockers": len(gap_scope),
+        "vm_semantic_gap_scope": len(gap_scope),
     }
 
 
@@ -366,6 +384,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     native_evidence_gap_passes = _native_evidence_gap_passes(document.get("maturity"))
     non_official_gap_targets = _non_official_gap_targets(cells, official_format, official_architecture)
     parity_gap_scope = _parity_gap_scope(formats, architectures, official_format, official_architecture)
+    vm_semantic_gap_scope = _vm_semantic_gap_scope(document)
+    vm_semantic_fixture_coverage = _vm_semantic_fixture_coverage(document)
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -407,9 +427,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                 maturity_gaps_by_pass,
                 native_evidence_gap_passes,
             ),
-            "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
-            "vm_semantic_evidence_blockers": _vm_semantic_evidence_blockers(),
-            "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(),
+            "vm_semantic_gap_scope": vm_semantic_gap_scope,
+            "vm_semantic_fixture_coverage": vm_semantic_fixture_coverage,
+            "vm_semantic_evidence_blockers": _vm_semantic_evidence_blockers(vm_semantic_gap_scope),
+            "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(vm_semantic_gap_scope),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
             "vm_resistance_evidence_blockers": _vm_resistance_evidence_blockers(),
             "vm_resistance_blocker_totals": _vm_resistance_blocker_totals(),
