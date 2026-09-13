@@ -804,7 +804,23 @@ class CodeVirtualizationPass(MutationPass):
         elif opcode.startswith(("enter", "leave")):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
         elif opcode.startswith(
-            ("cli", "cpuid", "hlt", "in ", "out ", "rdrand", "rdseed", "rdtsc", "rdtscp", "sti", "xgetbv")
+            (
+                "clflush",
+                "clflushopt",
+                "clwb",
+                "cli",
+                "cpuid",
+                "hlt",
+                "in ",
+                "out ",
+                "prefetch",
+                "rdrand",
+                "rdseed",
+                "rdtsc",
+                "rdtscp",
+                "sti",
+                "xgetbv",
+            )
         ) or any(
             token in opcode
             for token in (
