@@ -341,8 +341,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
                             "transformation": {"status": "applied"},
                             "output_size": 120,
                             "transform_duration_seconds": 0.5,
-                            "runtime": {"status": "completed", "duration_seconds": 1.25},
-                            "runtime_observable_equal": True,
+                            "runtime": {"status": "completed", "duration_seconds": 1.25, "return_code": 1},
+                            "runtime_observable_equal": False,
                             "after": {"status": "completed", "metrics": {"number_of_functions": 2}},
                         }
                     ],
@@ -378,7 +378,9 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["passes_with_error_runs"] == []
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
-        and report["campaign_summary"]["passes_with_runtime_observable_failures"] == []
+        and report["campaign_summary"]["passes_with_runtime_observable_failures"] == ["CodeVirtualization"]
+        and report["campaign_summary"]["runtime_observable_failure_reasons_by_pass"]
+        == {"CodeVirtualization": {"return_code": 1}}
         and report["campaign_summary"]["omission_reasons_by_pass"] == _EXPECTED_OMISSION_REASONS_BY_PASS
         and report["campaign_summary"]["error_reasons_by_pass"] == {}
         and report["campaign_summary"]["omission_severities_by_pass"] == _EXPECTED_OMISSION_SEVERITIES_BY_PASS

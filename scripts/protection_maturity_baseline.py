@@ -822,6 +822,10 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "runtime_observable_failures",
         ),
+        "runtime_observable_failure_reasons_by_pass": _reason_map_by_pass(
+            summaries,
+            "runtime_observable_failure_reasons",
+        ),
         "omission_reasons_by_pass": _reason_map_by_pass(summaries, "omission_reasons"),
         "error_reasons_by_pass": _reason_map_by_pass(summaries, "error_reasons"),
         "omission_severities_by_pass": _reason_map_by_pass(summaries, "omission_severities"),
