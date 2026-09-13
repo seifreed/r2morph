@@ -458,6 +458,18 @@ def test_release_contract_rejects_unlinked_release_blocker() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_release_blocker_without_exit_criteria() -> None:
+    blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
+
+    rejected = False
+    try:
+        _validate_release_blockers_text(blockers.replace("Exit criteria:", "Closure:", 1))
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_overstated_release_claims() -> None:
     claims = _forbidden_release_claims(
         "This is production-ready with full parity and ready to ship. " "VM milestone approved; anti-tamper approved."

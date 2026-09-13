@@ -629,6 +629,8 @@ def _validate_release_blockers_text(blockers: str) -> None:
         section = tail.split("RB-", 1)[0]
         if "Evidence map:" not in section or not _MARKDOWN_LINK_PATTERN.search(section):
             raise ValueError(f"release blocker is missing evidence links: {blocker_id}")
+        if "Exit criteria:" not in section:
+            raise ValueError(f"release blocker is missing exit criteria: {blocker_id}")
 
 
 def _check_release_blockers() -> None:
