@@ -11,7 +11,8 @@ applications, 171 virtualized functions, zero unsupported functions, zero
 partial virtualizations, and zero transformation errors. Angr and Triton
 complete every original/protected pair; the 15 Unicorn errors and 318 local
 IDA/Ghidra-unavailable rows remain explicit non-passing tool results. Binary
-Ninja is omitted by project decision. The raw evidence is
+Ninja is measured when its licensed API is present and otherwise recorded as
+unavailable. The raw evidence is
 [`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json).
 The named `elf_vm_fppackedidxnb_x86_64` regression virtualizes one function
 with no unsupported or partial result. The code commit's full CI workflow
