@@ -820,6 +820,25 @@ def _sum_summary_field(summaries: dict[str, object], field: str) -> int:
     )
 
 
+def _sum_numeric_summary_field(summaries: dict[str, object], field: str) -> int | float:
+    total: int | float = 0
+    for summary in summaries.values():
+        if isinstance(summary, dict) and isinstance(value := summary.get(field), int | float):
+            total += value
+    return total
+
+
+def _sum_static_delta_fields(summaries: dict[str, object]) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    for summary in summaries.values():
+        if not isinstance(summary, dict):
+            continue
+        for field, value in summary.items():
+            if field.startswith("total_static_") and field.endswith("_delta") and isinstance(value, int):
+                totals[field] = totals.get(field, 0) + value
+    return dict(sorted(totals.items()))
+
+
 def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, object]:
     selected_passes = set(summaries)
     corpus_passes = set(CORPUS_PASS_NAMES)
@@ -880,6 +899,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "average_output_size_coverage_percent": _average_percent(summaries, "output_size_coverage_percent"),
         "total_output_size_complete_runs": _sum_summary_field(summaries, "output_size_complete_runs"),
         "total_output_size_missing_runs": _sum_summary_field(summaries, "output_size_missing_runs"),
+        "total_output_size_delta_bytes": _sum_summary_field(summaries, "total_output_size_delta_bytes"),
         "average_transform_duration_coverage_percent": _average_percent(
             summaries,
             "transform_duration_coverage_percent",
@@ -892,12 +912,20 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "transform_duration_missing_runs",
         ),
+        "total_transform_duration_seconds": _sum_numeric_summary_field(
+            summaries,
+            "total_transform_duration_seconds",
+        ),
         "average_runtime_duration_coverage_percent": _average_percent(
             summaries,
             "runtime_duration_coverage_percent",
         ),
         "total_runtime_duration_complete_runs": _sum_summary_field(summaries, "runtime_duration_complete_runs"),
         "total_runtime_duration_missing_runs": _sum_summary_field(summaries, "runtime_duration_missing_runs"),
+        "total_runtime_duration_delta_seconds": _sum_numeric_summary_field(
+            summaries,
+            "total_runtime_duration_delta_seconds",
+        ),
         "average_static_metric_coverage_percent": _average_percent(summaries, "static_metric_coverage_percent"),
         "total_static_metric_complete_runs": _sum_summary_field(summaries, "static_metric_complete_runs"),
         "total_static_metric_missing_runs": _sum_summary_field(summaries, "static_metric_missing_runs"),
@@ -907,6 +935,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         ),
         "total_complete_evidence_runs": _sum_summary_field(summaries, "complete_evidence_runs"),
         "total_complete_evidence_missing_runs": _sum_summary_field(summaries, "complete_evidence_missing_runs"),
+        **_sum_static_delta_fields(summaries),
     }
 
 

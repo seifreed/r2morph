@@ -57,6 +57,10 @@ _EXPECTED_MULTI_PASS_CLASSIFIED_RUNS = 2
 _EXPECTED_MULTI_PASS_SEED_RUNS = 2
 _EXPECTED_AVERAGE_COVERAGE_PERCENT = 50.0
 _EXPECTED_EMPTY_COVERAGE_PERCENT = 0.0
+_EXPECTED_CAMPAIGN_OUTPUT_SIZE_DELTA_BYTES = 20
+_EXPECTED_CAMPAIGN_TRANSFORM_DURATION_SECONDS = 0.5
+_EXPECTED_CAMPAIGN_RUNTIME_DURATION_DELTA_SECONDS = 0.25
+_EXPECTED_CAMPAIGN_STATIC_FUNCTIONS_DELTA = 1
 _EXPECTED_INCOMPLETE_COVERAGE = {
     "runtime_observable": ["PatternSubstitution"],
     "output_size": ["PatternSubstitution"],
@@ -405,17 +409,24 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["average_output_size_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_output_size_complete_runs"] == 1
         and report["campaign_summary"]["total_output_size_missing_runs"] == 1
+        and report["campaign_summary"]["total_output_size_delta_bytes"] == _EXPECTED_CAMPAIGN_OUTPUT_SIZE_DELTA_BYTES
         and report["campaign_summary"]["average_transform_duration_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_transform_duration_complete_runs"] == 1
         and report["campaign_summary"]["total_transform_duration_missing_runs"] == 1
+        and report["campaign_summary"]["total_transform_duration_seconds"]
+        == _EXPECTED_CAMPAIGN_TRANSFORM_DURATION_SECONDS
         and report["campaign_summary"]["average_runtime_duration_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_runtime_duration_complete_runs"] == 1
         and report["campaign_summary"]["total_runtime_duration_missing_runs"] == 1
+        and report["campaign_summary"]["total_runtime_duration_delta_seconds"]
+        == _EXPECTED_CAMPAIGN_RUNTIME_DURATION_DELTA_SECONDS
         and report["campaign_summary"]["average_static_metric_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_static_metric_complete_runs"] == 1
         and report["campaign_summary"]["total_static_metric_missing_runs"] == 1
+        and report["campaign_summary"]["total_static_number_of_functions_delta"]
+        == _EXPECTED_CAMPAIGN_STATIC_FUNCTIONS_DELTA
         and report["campaign_summary"]["average_complete_evidence_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_complete_evidence_runs"] == 1
