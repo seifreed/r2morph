@@ -100,8 +100,8 @@ coverage evidence, not a claim of universal ISA support.
 The current automated review rerun for `94ead726` passes all automated checks,
 including the 264-cell support matrix, the Linux ELF x86-64 official target
 scope, the RB-001 through RB-007 release-blocker ledger, the PE/Mach-O and
-ARM/AArch64/x86 differential platform gap scope, the additional-corpus
-differential gap scope, the scheduled continuous-evidence differential gate, the
+ARM/AArch64/x86 differential platform gap scope, the generated-corpus/generated-input
+differential coverage scope, the scheduled continuous-evidence differential gate, the
 native/performance/false-positive/decompiler/composition/instruction maturity
 gap scope, the memory/calls/ABI/unwind/TLS/thread/FP/SSA VM semantic gap scope,
 the VM fail-closed diagnostics contract, the pending human-adversarial VM

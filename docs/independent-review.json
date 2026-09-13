@@ -26,7 +26,7 @@
       "status": "passed"
     },
     {
-      "detail": "additional corpus families remain a gap; generated inputs are scheduled",
+      "detail": "generated corpus families and inputs are scheduled",
       "name": "differential_corpus_gap_scope",
       "status": "passed"
     },

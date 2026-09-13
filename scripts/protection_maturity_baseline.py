@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from r2morph.adapters.process import run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations import (
     BlockReorderingPass,
@@ -81,6 +82,47 @@ _GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
 )
 _DEFAULT_INPUT_SOURCE = "default-argv"
 _GENERATED_INPUT_SOURCE = "generated-argv"
+_GENERATED_CORPUS_FAMILY = "generated-elf-x86-64"
+_GENERATED_CORPUS_SOURCES = {
+    "generated_branch": r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int fold(int argc, char **argv) {
+    int acc = argc;
+    for (int i = 0; i < argc; ++i) {
+        const unsigned char *p = (const unsigned char *)argv[i];
+        while (*p) {
+            acc = ((acc << 3) ^ *p) + (acc >> 1);
+            ++p;
+        }
+    }
+    switch (acc & 3) {
+    case 0: return acc & 127;
+    case 1: return (acc + 7) & 127;
+    case 2: return (acc ^ 0x55) & 127;
+    default: return (acc - 3) & 127;
+    }
+}
+
+int main(int argc, char **argv) { return fold(argc, argv); }
+""",
+    "generated_memory": r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int mix(const uint8_t *data, int count) {
+    uint32_t acc = 0x12345678u;
+    for (int i = 0; i < count; ++i) {
+        acc ^= (uint32_t)data[i] << ((i & 3) * 8);
+        acc = (acc << 5) | (acc >> 27);
+    }
+    return (int)(acc & 127u);
+}
+
+int main(int argc, char **argv) {
+    return argc > 1 ? mix((const uint8_t *)argv[1], 16) : mix((const uint8_t *)"r2morph", 7);
+}
+""",
+}
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -607,6 +649,36 @@ def discover_executables(dataset: Path) -> list[Path]:
     return executables
 
 
+def build_generated_corpus(output_dir: Path) -> list[Path]:
+    """Build synthetic Linux ELF x86-64 fixtures for the differential corpus."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fixtures = []
+    for name, source_text in _GENERATED_CORPUS_SOURCES.items():
+        source = output_dir / f"{name}.c"
+        binary = output_dir / name
+        source.write_text(source_text, encoding="utf-8")
+        command = [
+            "gcc",
+            "-O2",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source.as_posix(),
+            "-o",
+            binary.as_posix(),
+        ]
+        result = run_process(command, timeout=30)
+        if result.returncode != 0:
+            raise RuntimeError(f"failed to compile generated corpus fixture {name}: {result.stderr_text.strip()}")
+        fixtures.append(binary)
+    executables = discover_executables(output_dir)
+    if len(executables) != len(fixtures):
+        raise RuntimeError("generated corpus did not produce ELF x86-64 executable fixtures")
+    return executables
+
+
 def _static_metric_deltas(seed_runs: list[tuple[dict[str, object], Mapping[str, object]]]) -> dict[str, int]:
     deltas: dict[str, int] = {}
     for fixture, run in seed_runs:
@@ -906,6 +978,7 @@ def _parse_pass_names(value: str) -> tuple[str, ...]:
 def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
     dataset: Path | None = None,
+    corpus_families: list[str] | None = None,
 ) -> dict[str, object]:
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
     summaries = {name: result["summary"] for name, result in rendered.items()}
@@ -914,7 +987,11 @@ def _render_multi_pass_result(
     campaign_summary["platform_scope"] = dict(_DIFFERENTIAL_PLATFORM_SCOPE)
     campaign_summary["platform_gap_scope"] = dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE)
     campaign_summary["input_sources"] = input_sources
-    campaign_summary["corpus_gap_scope"] = _differential_corpus_gap_scope(input_sources)
+    campaign_summary["corpus_families"] = list(corpus_families or ["repository-fixtures"])
+    campaign_summary["corpus_gap_scope"] = _differential_corpus_gap_scope(
+        input_sources,
+        campaign_summary["corpus_families"],
+    )
     campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
     campaign_summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(campaign_summary)
     campaign_summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
@@ -939,9 +1016,16 @@ def _runtime_input_sources(measurements: dict[str, list[dict[str, object]]]) -> 
     return [_DEFAULT_INPUT_SOURCE, _GENERATED_INPUT_SOURCE] if generated else [_DEFAULT_INPUT_SOURCE]
 
 
-def _differential_corpus_gap_scope(input_sources: list[str]) -> dict[str, list[str]]:
+def _differential_corpus_gap_scope(
+    input_sources: list[str],
+    corpus_families: list[str],
+) -> dict[str, list[str]]:
     return {
-        "corpus_families": list(_DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"]),
+        "corpus_families": (
+            []
+            if _GENERATED_CORPUS_FAMILY in corpus_families
+            else list(_DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"])
+        ),
         "input_sources": [] if _GENERATED_INPUT_SOURCE in input_sources else ["generated-inputs"],
     }
 
@@ -1150,7 +1234,12 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
             if missing_metrics:
                 blockers[field] = missing_metrics
             continue
-        if isinstance(value, (list, dict)) and value:
+        if isinstance(value, dict):
+            pending = {str(name): item for name, item in value.items() if item}
+            if pending:
+                blockers[field] = pending
+            continue
+        if isinstance(value, list) and value:
             blockers[field] = value
     return blockers
 
@@ -1263,14 +1352,17 @@ def main() -> None:
         action="store_true",
         help="compare default and generated argv runtime observables",
     )
+    parser.add_argument(
+        "--generated-corpus",
+        action="store_true",
+        help="compile synthetic Linux ELF x86-64 fixtures and include them in the corpus",
+    )
     args = parser.parse_args()
     if args.count < 1:
         parser.error("--count must be positive")
     if args.all_fixtures and args.fixtures:
         parser.error("pass either --all or explicit fixture paths")
-    fixtures = discover_executables(args.dataset) if args.all_fixtures else args.fixtures
-    if not fixtures:
-        parser.error("no executable fixtures selected")
+    fixtures = discover_executables(args.dataset) if args.all_fixtures else list(args.fixtures)
     try:
         pass_names = _parse_pass_names(args.passes)
     except ValueError as error:
@@ -1279,6 +1371,15 @@ def main() -> None:
     seeds = range(args.first_seed, args.first_seed + args.count)
     runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
     with tempfile.TemporaryDirectory(prefix="r2morph-maturity-") as temp_dir:
+        corpus_families = ["repository-fixtures"] if fixtures else []
+        if args.generated_corpus:
+            try:
+                fixtures.extend(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
+            except RuntimeError as error:
+                parser.error(str(error))
+            corpus_families.append(_GENERATED_CORPUS_FAMILY)
+        if not fixtures:
+            parser.error("no executable fixtures selected")
         measurements = {
             pass_name: [
                 measure_fixture(fixture, seeds, Path(temp_dir), pass_name, runtime_inputs) for fixture in fixtures
@@ -1287,7 +1388,11 @@ def main() -> None:
         }
     report = _render_result(measurements[pass_names[0]], pass_names[0])
     if len(pass_names) > 1:
-        report = _render_multi_pass_result(measurements, args.dataset if args.all_fixtures else None)
+        report = _render_multi_pass_result(
+            measurements,
+            args.dataset if args.all_fixtures else None,
+            corpus_families,
+        )
     if args.require_applied:
         passes_without_mutations = [
             name

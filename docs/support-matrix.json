@@ -1632,9 +1632,7 @@
           ]
         },
         "corpus_gap_scope": {
-          "corpus_families": [
-            "additional-corpus-families"
-          ],
+          "corpus_families": [],
           "input_sources": []
         }
       },
@@ -1679,16 +1677,14 @@
           ]
         },
         "corpus_gap_scope": {
-          "corpus_families": [
-            "additional-corpus-families"
-          ],
+          "corpus_families": [],
           "input_sources": []
         }
       },
       "differential_blocker_totals": {
         "platform_gap_scope": 5,
-        "corpus_gap_scope": 1,
-        "total_differential_blockers": 6
+        "corpus_gap_scope": 0,
+        "total_differential_blockers": 5
       },
       "adversarial_benchmark_evidence": {
         "expected_tools": [

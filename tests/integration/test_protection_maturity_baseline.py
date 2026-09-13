@@ -7,6 +7,7 @@ from pathlib import Path
 
 from r2morph.adapters.process import run_process
 from scripts.protection_maturity_baseline import (
+    _GENERATED_CORPUS_FAMILY,
     _GENERATED_RUNTIME_INPUTS,
     _PASS_TYPES,
     _PREVIEW_BYTES,
@@ -511,15 +512,15 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
                     "runs": [{"transformation": {"status": "applied"}}],
                 }
             ]
-        }
+        },
+        corpus_families=["repository-fixtures", _GENERATED_CORPUS_FAMILY],
     )
 
     expect(
         report["campaign_summary"]["input_sources"] == ["default-argv", "generated-argv"]
-        and report["campaign_summary"]["corpus_gap_scope"]
-        == {"corpus_families": ["additional-corpus-families"], "input_sources": []}
-        and report["campaign_summary"]["continuous_evidence_blockers"]["corpus_gap_scope"]
-        == {"corpus_families": ["additional-corpus-families"], "input_sources": []}
+        and report["campaign_summary"]["corpus_families"] == ["repository-fixtures", _GENERATED_CORPUS_FAMILY]
+        and report["campaign_summary"]["corpus_gap_scope"] == {"corpus_families": [], "input_sources": []}
+        and report["campaign_summary"]["continuous_evidence_blockers"].get("corpus_gap_scope") is None
     )
 
 

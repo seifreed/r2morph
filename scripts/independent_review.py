@@ -15,7 +15,6 @@ from r2morph.platform.elf_handler_parsing import parse_elf_header
 from scripts.adversarial_benchmark import _EXPECTED_TOOLS
 from scripts.continuous_fuzz import run_campaign
 from scripts.protection_maturity_baseline import (
-    _DIFFERENTIAL_CORPUS_GAP_SCOPE,
     _DIFFERENTIAL_PLATFORM_GAP_SCOPE,
 )
 from scripts.support_matrix import _vm_semantic_gap_scope, build_matrix
@@ -138,14 +137,14 @@ def _review_differential_corpus_gap(root: Path) -> dict[str, object]:
     contract = (root / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
     passed = (
         "corpus_gap_scope" in workflow
-        and all(value in workflow for value in _DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"])
+        and "--generated-corpus" in workflow
         and "--generated-inputs" in workflow
-        and "additional-corpus-family gap scope" in contract
+        and "generated corpus family coverage" in contract
     )
     return _check(
         "differential_corpus_gap_scope",
         passed,
-        "additional corpus families remain a gap; generated inputs are scheduled",
+        "generated corpus families and inputs are scheduled",
     )
 
 

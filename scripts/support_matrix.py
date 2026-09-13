@@ -69,7 +69,7 @@ _DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
     "architectures": ["AArch64", "ARM", "x86"],
 }
 _DIFFERENTIAL_CORPUS_GAP_SCOPE = {
-    "corpus_families": ["additional-corpus-families"],
+    "corpus_families": [],
     "input_sources": [],
 }
 _ADVERSARIAL_EXPECTED_TOOLS = (

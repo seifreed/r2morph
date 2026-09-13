@@ -40,7 +40,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
-_EXPECTED_DIFFERENTIAL_BLOCKERS = 6
+_EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
 _EXPECTED_TOTAL_MATURITY_BLOCKERS = 60
 _EXPECTED_ADVERSARIAL_TOOLS = [
@@ -537,7 +537,7 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         and summary["differential_evidence_blockers"]["platform_gap_scope"]
         == {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]}
         and summary["differential_evidence_blockers"]["corpus_gap_scope"]
-        == {"corpus_families": ["additional-corpus-families"], "input_sources": []}
+        == {"corpus_families": [], "input_sources": []}
         and summary["differential_blocker_totals"]["total_differential_blockers"] == _EXPECTED_DIFFERENTIAL_BLOCKERS
         and sorted(evidence) == ["corpus_gap_scope", "platform_gap_scope", "platform_scope"]
         and all(row["status"] != "complete" for row in evidence.values())
@@ -1172,6 +1172,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--passes all" in differential
         and "--require-complete-evidence" in differential
         and "--generated-inputs" in differential
+        and "--generated-corpus" in differential
         and "--count 3" in differential
         and "Validate differential campaign summary" in differential
         and "platform_scope" in differential
