@@ -98,8 +98,10 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
 
 def test_pass_maturity_contract_names_the_public_corpus_selection() -> None:
     contract = " ".join((_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+    expected_passes = ", ".join(f"`{pass_name}`" for pass_name in CORPUS_PASS_NAMES[:-1])
+    expected_selection = f"{expected_passes}, and `{CORPUS_PASS_NAMES[-1]}`."
 
-    expect(all(f"`{pass_name}`" in contract for pass_name in CORPUS_PASS_NAMES))
+    expect(expected_selection in contract)
     expect("broad corpus evidence is pending" not in contract)
 
 
