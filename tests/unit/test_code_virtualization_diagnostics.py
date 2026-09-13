@@ -656,6 +656,14 @@ def test_cache_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_repeated_cache_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rep clflush [rax]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_platform_config_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "pconfig"}
