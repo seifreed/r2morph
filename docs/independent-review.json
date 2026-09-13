@@ -11,7 +11,7 @@
       "status": "passed"
     },
     {
-      "detail": "7 completed, 1 unavailable",
+      "detail": "5 completed, 4 unavailable",
       "name": "adversarial_benchmark_evidence",
       "status": "passed"
     },

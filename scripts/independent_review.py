@@ -17,16 +17,8 @@ from scripts.continuous_fuzz import run_campaign
 from scripts.support_matrix import build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
-_EXPECTED_BENCHMARK_TOOLS = {
-    "radare2",
-    "objdump",
-    "angr",
-    "unicorn",
-    "triton",
-    "ida-pro",
-    "ghidra",
-    "custom",
-}
+_EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
+_EXPECTED_CORPUS_TOOLS = _EXPECTED_BENCHMARK_TOOLS - {"binary-ninja"}
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
@@ -92,7 +84,7 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
         pass_rows = sample.get("passes", [])
         tool_names = {row.get("tool") for row in tool_rows if isinstance(row, dict)}
         pass_names = {row.get("pass_name") for row in pass_rows if isinstance(row, dict)}
-        if tool_names != _EXPECTED_BENCHMARK_TOOLS or "CodeVirtualization" not in pass_names:
+        if tool_names != _EXPECTED_CORPUS_TOOLS or "CodeVirtualization" not in pass_names:
             rows_valid = False
             break
         if any(
