@@ -789,13 +789,16 @@ class CodeVirtualizationPass(MutationPass):
         opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
+        control_opcode = opcode_without_repeat.removeprefix("notrack ")
+        control_mnemonic_parts = control_opcode.split(maxsplit=1)
+        control_mnemonic = control_mnemonic_parts[0] if control_mnemonic_parts else ""
         if (
             kind in _COMPUTED_JUMP_TYPES
-            or opcode.startswith(("jmpf", "ljmp"))
+            or control_opcode.startswith(("jmpf", "ljmp"))
             or (
-                mnemonic in {"jmp", "jmpq"}
-                and len(mnemonic_parts) > 1
-                and ("[" in opcode or not mnemonic_parts[1].startswith(("0x", "$")))
+                control_mnemonic in {"jmp", "jmpq"}
+                and len(control_mnemonic_parts) > 1
+                and ("[" in opcode or not control_mnemonic_parts[1].startswith(("0x", "$")))
             )
         ):
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
