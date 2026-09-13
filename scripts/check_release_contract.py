@@ -357,6 +357,18 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
     observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
     if observed != ADVERSARIAL_TOOL_SLOTS:
         raise ValueError("adversarial benchmark artifact must contain every analyzer slot")
+    for tool in tools:
+        if not isinstance(tool, dict):
+            raise ValueError("adversarial benchmark artifact contains an invalid tool row")
+        status = tool.get("status")
+        if status == "completed":
+            if not isinstance(tool.get("original"), dict) or not isinstance(tool.get("protected"), dict):
+                raise ValueError("completed analyzer rows must include original and protected evidence")
+        elif status == "unavailable":
+            if not isinstance(tool.get("reason"), str) or not tool["reason"].strip():
+                raise ValueError("unavailable analyzer rows must include a reason")
+        else:
+            raise ValueError("analyzer rows must be completed or unavailable")
 
 
 def _check_adversarial_benchmark_artifacts() -> None:

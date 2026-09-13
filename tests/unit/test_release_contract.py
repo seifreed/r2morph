@@ -173,6 +173,38 @@ def test_release_contract_rejects_missing_binary_ninja_slot() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_incomplete_completed_analyzer_row() -> None:
+    report = json.loads(
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+    )
+    tools = {row["tool"]: row for row in report["tools"]}
+    del tools["angr"]["protected"]
+
+    rejected = False
+    try:
+        _validate_adversarial_benchmark_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_unexplained_unavailable_analyzer_row() -> None:
+    report = json.loads(
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+    )
+    tools = {row["tool"]: row for row in report["tools"]}
+    tools["binary-ninja"]["reason"] = ""
+
+    rejected = False
+    try:
+        _validate_adversarial_benchmark_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> None:
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 
