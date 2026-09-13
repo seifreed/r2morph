@@ -1112,6 +1112,7 @@ def _check_release_recovery_workflow() -> None:
 def _check_corpus_workflows() -> None:
     adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    fuzz = (ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
     for fragment in (
         "schedule:",
         "workflow_dispatch:",
@@ -1211,6 +1212,22 @@ def _check_corpus_workflows() -> None:
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
+    for fragment in (
+        "schedule:",
+        "workflow_dispatch:",
+        "Build and install package wheel",
+        "python -m build",
+        "python -m pip install --force-reinstall dist/*.whl",
+        "wheel_root=/tmp/r2morph-fuzz-wheel-check",
+        'cp -R scripts fixtures "$wheel_root"/',
+        'cd "$wheel_root"',
+        'python -c "import r2morph; print(r2morph.__file__)"',
+        "scripts/continuous_fuzz.py",
+        '--output "$GITHUB_WORKSPACE/fuzz-campaign.json"',
+        "continuous-fuzz-report",
+    ):
+        if fragment not in fuzz:
+            raise ValueError(f"continuous fuzz workflow is missing: {fragment}")
 
 
 def main() -> int:

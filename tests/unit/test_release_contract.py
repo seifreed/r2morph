@@ -1508,6 +1508,21 @@ def test_release_contract_validates_corpus_workflows() -> None:
     expect(_check_corpus_workflows() is None)
 
 
+def test_continuous_fuzz_workflow_runs_against_installed_wheel() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
+
+    expect(
+        "Build and install package wheel" in workflow
+        and "python -m build" in workflow
+        and "python -m pip install --force-reinstall dist/*.whl" in workflow
+        and "wheel_root=/tmp/r2morph-fuzz-wheel-check" in workflow
+        and 'cp -R scripts fixtures "$wheel_root"/' in workflow
+        and 'cd "$wheel_root"' in workflow
+        and 'python -c "import r2morph; print(r2morph.__file__)"' in workflow
+        and '--output "$GITHUB_WORKSPACE/fuzz-campaign.json"' in workflow
+    )
+
+
 def test_ci_runs_generated_support_matrix_freshness_check() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
