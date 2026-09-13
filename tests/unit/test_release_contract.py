@@ -11,6 +11,7 @@ from scripts.check_release_contract import (
     _check_documentation_claims,
     _check_documentation_links,
     _check_matrix,
+    _check_readme_support_summary,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
     _validate_inventory,
@@ -342,6 +343,19 @@ def test_release_contract_rejects_missing_maturity_evidence_path() -> None:
     rejected = False
     try:
         _check_matrix(matrix, matrix["release"])
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_stale_readme_support_summary() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["non_official_evidenced_cells"] += 1
+
+    rejected = False
+    try:
+        _check_readme_support_summary(matrix)
     except ValueError:
         rejected = True
 

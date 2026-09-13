@@ -147,6 +147,19 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         raise ValueError("non-official targets must not claim official-target parity")
 
 
+def _check_readme_support_summary(matrix: dict[str, object]) -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    summary = matrix["matrix"]["summary"]
+    official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
+    non_official_total = summary["non_official_evidenced_cells"] + summary["non_official_not_supported_cells"]
+    for fragment in (
+        f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
+        f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README support summary is missing: {fragment}")
+
+
 def _check_changelog(package_version: str) -> None:
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if f"## {package_version}" not in changelog:
@@ -386,6 +399,7 @@ def main() -> int:
         package_version = _check_version()
         matrix = _load_matrix()
         _check_matrix(matrix, package_version)
+        _check_readme_support_summary(matrix)
         _check_changelog(package_version)
         _check_inventory()
         _check_vm_resistance_artifacts()
