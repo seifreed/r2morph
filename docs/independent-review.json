@@ -66,6 +66,10 @@
     "This artifact is not a substitute for an external human review."
   ],
   "passed": true,
+  "release_decision": {
+    "reason": "automated evidence is not a substitute for external human review",
+    "status": "block-vm-milestone"
+  },
   "review_type": "automated-independent-second-pass",
   "schema_version": 1
 }

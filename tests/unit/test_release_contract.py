@@ -543,6 +543,19 @@ def test_release_contract_rejects_failed_independent_review_check() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_independent_review_without_vm_block() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report["release_decision"]["status"] = "ship"
+
+    rejected = False
+    try:
+        _validate_independent_review_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_stale_independent_review_artifact() -> None:
     report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
     report["checks"][0]["detail"] = "stale detail"

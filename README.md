@@ -178,11 +178,11 @@ The current local adversarial analyzer fixture records
 [`docs/protection-adversarial-angr-local-2026-09-13-13214f9.json`](docs/protection-adversarial-angr-local-2026-09-13-13214f9.json).
 Binary Ninja is an explicit analyzer slot; the current local fixture records
 `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
-The VM review packet still has `human_signoff: not-attested`; memory,
-direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding,
-TLS/signals, SSA, and liveness paths remain explicit review scope, and
-unsupported instructions must fail closed instead of producing partial protected
-functions.
+The VM review packet still has `human_signoff: not-attested` and
+`release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
+flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths
+remain explicit review scope, and unsupported instructions must fail closed
+instead of producing partial protected functions.
 VM ISA/opcode diversification, dispatcher/handler alternatives,
 superinstructions, anti-tamper, and progressive bytecode protection remain
 explicit human-review scope before the virtualizer milestone can be marked

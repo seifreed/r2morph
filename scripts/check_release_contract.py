@@ -425,6 +425,9 @@ def _validate_independent_review_artifact(report: dict[str, object]) -> None:
         raise ValueError("independent review artifact must pass")
     if report.get("human_signoff") != "not-attested":
         raise ValueError("independent review artifact must not claim human signoff")
+    release_decision = report.get("release_decision")
+    if not isinstance(release_decision, dict) or release_decision.get("status") != "block-vm-milestone":
+        raise ValueError("independent review artifact must block the VM milestone without human signoff")
     checks = report.get("checks")
     if not isinstance(checks, list):
         raise ValueError("independent review artifact must contain checks")
@@ -449,6 +452,7 @@ def _check_independent_review_artifact() -> None:
 def _check_independent_review_packet_claims() -> None:
     packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
     for fragment in (
+        "release_decision: block-vm-milestone",
         "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
         "SSA, and liveness",
         "unsupported instructions fail closed",
@@ -515,8 +519,10 @@ def _check_readme_vm_review_scope() -> None:
     readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
     packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
     review = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    release_decision = review["release_decision"]
     for fragment in (
         f"human_signoff: {review['human_signoff']}",
+        f"release_decision: {release_decision['status']}",
         "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
         "SSA, and liveness paths remain explicit review scope",
         "unsupported instructions must fail closed",

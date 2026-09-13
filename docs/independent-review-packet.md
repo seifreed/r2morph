@@ -63,7 +63,8 @@ exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
 original instructions semantically supported. Binary Ninja is measured by the
 benchmark when its licensed API is available; older artifacts that predate
 that integration remain historical evidence only.
-The automated review still reports `human_signoff: not-attested`.
+The automated review still reports `human_signoff: not-attested` and
+`release_decision: block-vm-milestone`.
 The current-state IDA MCP rerun for the named regression is recorded in the
 `a3b8c6e` artifact: one original function, nine protected functions, and zero
 analysis errors. Native ELF execution was not attempted on macOS.

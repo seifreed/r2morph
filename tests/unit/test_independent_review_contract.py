@@ -11,7 +11,11 @@ _ROOT = Path(__file__).resolve().parents[2]
 def test_independent_review_passes_published_artifacts() -> None:
     report = review(_ROOT)
 
-    expect(report["passed"] is True and report["human_signoff"] == "not-attested")
+    expect(
+        report["passed"] is True
+        and report["human_signoff"] == "not-attested"
+        and report["release_decision"]["status"] == "block-vm-milestone"
+    )
 
 
 def test_independent_review_includes_corpus_benchmark_check() -> None:

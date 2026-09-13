@@ -278,6 +278,10 @@ def review(root: Path) -> dict[str, Any]:
         "schema_version": 1,
         "review_type": "automated-independent-second-pass",
         "human_signoff": "not-attested",
+        "release_decision": {
+            "status": "block-vm-milestone",
+            "reason": "automated evidence is not a substitute for external human review",
+        },
         "checks": checks,
         "passed": all(check["status"] == "passed" for check in checks),
         "limitations": ["This artifact is not a substitute for an external human review."],
