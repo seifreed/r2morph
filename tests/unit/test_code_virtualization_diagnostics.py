@@ -362,3 +362,11 @@ def test_simd_memory_instruction_reports_fp_simd_capability() -> None:
     )
 
     expect(capability == "floating_point_and_simd")
+
+
+def test_x87_stack_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "fpu", "opcode": "fadd st0, st7"}
+    )
+
+    expect(capability == "floating_point_and_simd")
