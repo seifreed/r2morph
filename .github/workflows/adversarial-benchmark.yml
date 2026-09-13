@@ -104,6 +104,7 @@ jobs:
               "error_pass_runs_by_pass",
               "incomplete_tool_coverage",
               "non_completed_tool_runs_by_tool",
+              "tools_without_full_completion",
               "unavailable_tool_runs_by_tool",
               "unavailable_reasons_by_tool",
           ):
