@@ -234,7 +234,7 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
             "unsupported_functions_total": 2,
             "partial_virtualization_total": 1,
             "unsupported_functions": [
-                {"capability": "computed_control_flow", "severity": "error"},
+                {"capability": "computed_control_flow", "reason": "indirect branch not proven", "severity": "error"},
                 {"capability": "computed_control_flow", "severity": "error"},
             ],
             "partial_virtualization": [{"capability": "exceptions_and_unwinding", "severity": "warning"}],
@@ -243,10 +243,31 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
 
     expect(
         result["status"] == "omitted"
+        and result["reason"] == "computed_control_flow: indirect branch not proven"
         and result["unsupported_capabilities"] == {"computed_control_flow": 2}
         and result["partial_virtualization_capabilities"] == {"exceptions_and_unwinding": 1}
         and result["unsupported_severities"] == {"error": 2}
         and result["partial_virtualization_severities"] == {"warning": 1}
+    )
+
+
+def test_adversarial_benchmark_pass_result_omits_partial_virtualization_without_unsupported_functions() -> None:
+    result = _pass_result(
+        {
+            "functions_virtualized": 0,
+            "unsupported_functions_total": 0,
+            "partial_virtualization_total": 1,
+            "partial_virtualization": [
+                {"capability": "floating_point", "reason": "SIMD lane semantics not proven", "severity": "error"}
+            ],
+        }
+    )
+
+    expect(
+        result["status"] == "omitted"
+        and result["reason"] == "floating_point: SIMD lane semantics not proven"
+        and result["partial_virtualization_capabilities"] == {"floating_point": 1}
+        and result["partial_virtualization_severities"] == {"error": 1}
     )
 
 

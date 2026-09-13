@@ -71,7 +71,8 @@ capability, reason, and severity contract instead of falling back to a generic
 omission.
 Adversarial CodeVirtualization rows and pass summaries also retain bounded
 unsupported and partial virtualization capability/severity counts when
-diagnostics are present.
+diagnostics are present. A partial-only virtualization result is classified as
+an omitted pass with its diagnostic reason, not as a no-op.
 
 The differential contract is original versus transformed execution across nine
 seed-derived command-line inputs per sample: exit code, stdout, stderr, created

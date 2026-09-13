@@ -332,6 +332,18 @@ def _severity_counts(records: object) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def _diagnostic_reason(records: object) -> str | None:
+    if not isinstance(records, list):
+        return None
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        capability = record.get("capability", "unsupported capability")
+        reason = record.get("reason", "pass precondition was not met")
+        return f"{capability}: {reason}"
+    return None
+
+
 def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
@@ -341,7 +353,7 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
         applied = stats.get("mutations_applied", 0)
     if isinstance(applied, int) and applied > 0:
         status = "applied"
-    elif isinstance(unsupported, int) and unsupported > 0:
+    elif (isinstance(unsupported, int) and unsupported > 0) or (isinstance(partial, int) and partial > 0):
         status = "omitted"
     else:
         status = "no-op"
@@ -353,6 +365,11 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
         result["functions_virtualized"] = virtualized
         result["unsupported_functions"] = unsupported
         result["partial_virtualization"] = partial
+        reason = _diagnostic_reason(stats.get("unsupported_functions")) or _diagnostic_reason(
+            stats.get("partial_virtualization")
+        )
+        if reason is not None:
+            result["reason"] = reason
         unsupported_capabilities = _capability_counts(stats.get("unsupported_functions"))
         partial_capabilities = _capability_counts(stats.get("partial_virtualization"))
         unsupported_severities = _severity_counts(stats.get("unsupported_functions"))
