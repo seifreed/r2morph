@@ -165,6 +165,27 @@ def test_unsupported_record_includes_bounded_instruction_context() -> None:
     )
 
 
+def test_unsupported_record_uses_disasm_when_opcode_is_absent() -> None:
+    record = CodeVirtualizationPass._unsupported_record(
+        {"addr": 0x401000},
+        {
+            "addr": 0x401004,
+            "type": "call",
+            "disasm": "call 0x401080",
+            "size": _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE,
+        },
+        "calls",
+        "call semantics were not proven",
+        "error",
+    )
+
+    expect(
+        record["instruction_mnemonic"] == "call"
+        and record["instruction_opcode"] == "call 0x401080"
+        and record["instruction_size"] == _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE
+    )
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
@@ -588,6 +609,14 @@ def test_missing_opcode_reports_instruction_semantics_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other"})
 
     expect(capability == "instruction_semantics")
+
+
+def test_disasm_fallback_reports_computed_control_flow_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "disasm": "jmp qword [rax]"}
+    )
+
+    expect(capability == "computed_control_flow")
 
 
 def test_far_jump_instruction_reports_computed_control_flow_capability() -> None:
