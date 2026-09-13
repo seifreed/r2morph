@@ -10,8 +10,10 @@ import tomllib
 from pathlib import Path
 
 try:
+    from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
     from scripts.support_matrix import build_matrix
 except ModuleNotFoundError:
+    from protection_maturity_baseline import CORPUS_PASS_NAMES
     from support_matrix import build_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -199,6 +201,17 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     for fragment in fragments:
         if fragment not in contract:
             raise ValueError(f"pass maturity summary is missing: {fragment}")
+
+
+def _check_corpus_pass_selection_docs() -> None:
+    maturity = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+    compatibility = " ".join((ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
+    maturity_passes = ", ".join(f"`{pass_name}`" for pass_name in CORPUS_PASS_NAMES[:-1])
+    compatibility_passes = ", ".join(CORPUS_PASS_NAMES[:-1])
+    if f"{maturity_passes}, and `{CORPUS_PASS_NAMES[-1]}`." not in maturity:
+        raise ValueError("pass maturity contract must name the public corpus selection")
+    if f"for ten selected passes: {compatibility_passes}, and {CORPUS_PASS_NAMES[-1]}." not in compatibility:
+        raise ValueError("compatibility corpus must name the full pass selection")
 
 
 def _check_changelog(package_version: str) -> None:
@@ -456,6 +469,7 @@ def main() -> int:
         _check_matrix(matrix, package_version)
         _check_readme_support_summary(matrix)
         _check_pass_maturity_gap_summary(matrix)
+        _check_corpus_pass_selection_docs()
         _check_changelog(package_version)
         _check_inventory()
         _check_vm_resistance_artifacts()

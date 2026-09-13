@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.check_release_contract import (
     _check_changelog,
+    _check_corpus_pass_selection_docs,
     _check_corpus_workflows,
     _check_documentation_claims,
     _check_documentation_links,
@@ -21,7 +22,6 @@ from scripts.check_release_contract import (
     _validate_vm_resistance_artifacts,
     main,
 )
-from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
 from scripts.support_matrix import build_matrix
 from tests.utils.assertions import expect
 
@@ -107,20 +107,14 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
 
 
 def test_pass_maturity_contract_names_the_public_corpus_selection() -> None:
-    contract = " ".join((_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
-    expected_passes = ", ".join(f"`{pass_name}`" for pass_name in CORPUS_PASS_NAMES[:-1])
-    expected_selection = f"{expected_passes}, and `{CORPUS_PASS_NAMES[-1]}`."
+    contract = (_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8")
 
-    expect(expected_selection in contract)
+    expect(_check_corpus_pass_selection_docs() is None)
     expect("broad corpus evidence is pending" not in contract)
 
 
 def test_compatibility_corpus_names_the_full_pass_selection() -> None:
-    contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
-    expected_passes = ", ".join(CORPUS_PASS_NAMES[:-1])
-    expected_selection = f"for ten selected passes: {expected_passes}, and {CORPUS_PASS_NAMES[-1]}."
-
-    expect(expected_selection in contract)
+    expect(_check_corpus_pass_selection_docs() is None)
 
 
 def test_compatibility_corpus_documents_differential_metrics() -> None:
