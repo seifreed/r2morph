@@ -173,6 +173,8 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
     for fragment in (
         f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
+        f"{summary['official_evidence_percent']}% evidence",
+        f"{summary['non_official_evidence_percent']}% evidence",
     ):
         if fragment not in readme:
             raise ValueError(f"README support summary is missing: {fragment}")
