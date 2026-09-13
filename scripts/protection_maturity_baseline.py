@@ -215,6 +215,16 @@ _METRIC_RUN_FIELDS = {
     "static_metric": ("static_metric_complete_runs", "static_metric_missing_runs"),
     "complete_evidence": ("complete_evidence_runs", "complete_evidence_missing_runs"),
 }
+_APPLIED_COUNT_FIELDS = (
+    "functions_virtualized",
+    "mutations_applied",
+    "total_injections",
+    "imports_hashed",
+    "blocks_moved",
+    "functions_outlined",
+    "strings_transformed",
+    "strings_obfuscated",
+)
 
 
 class _ArtifactAccumulator:
@@ -493,14 +503,15 @@ def _transformation_evidence(
 
     if not isinstance(stats, Mapping):
         return {"pass_name": label, "status": "omitted", "reason": "no pass statistics"}
-    virtualized = stats.get("functions_virtualized")
-    applied = virtualized if isinstance(virtualized, int) and virtualized > 0 else stats.get("mutations_applied")
-    if isinstance(applied, int) and applied > 0:
-        count_field = "functions_virtualized" if pass_name == DEFAULT_MUTATION_NAME else "mutations_applied"
+    count_field = next(
+        (field for field in _APPLIED_COUNT_FIELDS if isinstance(stats.get(field), int) and stats[field] > 0),
+        None,
+    )
+    if count_field is not None:
         return {
             "pass_name": label,
             "status": "applied",
-            count_field: applied,
+            count_field: stats[count_field],
         }
     for diagnostic_field in ("unsupported_functions", "partial_virtualization"):
         diagnostics = stats.get(diagnostic_field)

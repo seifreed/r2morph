@@ -699,6 +699,12 @@ def test_transformation_evidence_records_partial_virtualization_capability() -> 
     )
 
 
+def test_transformation_evidence_accepts_extended_pass_counters() -> None:
+    evidence = _transformation_evidence("passed", {"total_injections": 2}, None, "AntiDisassembly")
+
+    expect(evidence == {"pass_name": "anti-disassembly", "status": "applied", "total_injections": 2})
+
+
 def test_diagnostic_counts_groups_capabilities_and_severities() -> None:
     diagnostics = [
         {"capability": "memory", "severity": "error"},
