@@ -760,7 +760,10 @@ class CodeVirtualizationPass(MutationPass):
             kind = instruction.get("type")
             opcode_parts = str(instruction.get("opcode", "")).lower().split(maxsplit=1)
             opcode_mnemonic = opcode_parts[0] if opcode_parts else ""
-            if kind == "ret" and (not opcode_mnemonic or opcode_mnemonic in {"ret", "retq", "retn", "retl", "retw"}):
+            if kind == "ret" and (
+                not opcode_mnemonic
+                or (opcode_mnemonic in {"ret", "retq", "retn", "retl", "retw"} and len(opcode_parts) == 1)
+            ):
                 continue
             if _is_syscall_instruction(instruction):
                 continue
@@ -853,29 +856,33 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
         elif "call" in kind or opcode.startswith(("call", "callf", "lcall")):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
-        elif mnemonic in {"retf", "retfq", "lret", "lretq"} or opcode.startswith(
-            (
-                "cld",
-                "clc",
-                "cmc",
-                "clrssbsy",
-                "enter",
-                "incssp",
-                "lahf",
-                "leave",
-                "pop ",
-                "popa",
-                "popf",
-                "push",
-                "rdssp",
-                "rstorssp",
-                "saveprevssp",
-                "sahf",
-                "setssbsy",
-                "stc",
-                "std",
-                "wrss",
-                "wruss",
+        elif (
+            (kind == "ret" and len(mnemonic_parts) > 1)
+            or mnemonic in {"retf", "retfq", "lret", "lretq"}
+            or opcode.startswith(
+                (
+                    "cld",
+                    "clc",
+                    "cmc",
+                    "clrssbsy",
+                    "enter",
+                    "incssp",
+                    "lahf",
+                    "leave",
+                    "pop ",
+                    "popa",
+                    "popf",
+                    "push",
+                    "rdssp",
+                    "rstorssp",
+                    "saveprevssp",
+                    "sahf",
+                    "setssbsy",
+                    "stc",
+                    "std",
+                    "wrss",
+                    "wruss",
+                )
             )
         ):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"

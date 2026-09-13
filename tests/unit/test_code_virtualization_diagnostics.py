@@ -79,6 +79,15 @@ class _FarReturnBinary:
     r2 = _Disassembler()
 
 
+class _StackAdjustReturnBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
+            return {"ops": [{"type": "ret", "opcode": "ret 0x10", "addr": 0x1000, "size": 3}]}
+
+    r2 = _Disassembler()
+
+
 class _RecordingPass:
     reject_partial_virtualization = False
 
@@ -184,6 +193,14 @@ def test_far_return_is_not_treated_as_ordinary_region_exit() -> None:
     instruction = pass_instance._find_first_unvirtualizable_instruction(_FarReturnBinary(), {"addr": 0x1000})
 
     expect(instruction == {"type": "ret", "opcode": "retfq", "addr": 0x1000, "size": 1})
+
+
+def test_stack_adjusting_return_is_not_treated_as_ordinary_region_exit() -> None:
+    pass_instance = CodeVirtualizationPass(config={})
+
+    instruction = pass_instance._find_first_unvirtualizable_instruction(_StackAdjustReturnBinary(), {"addr": 0x1000})
+
+    expect(instruction == {"type": "ret", "opcode": "ret 0x10", "addr": 0x1000, "size": 3})
 
 
 def test_rt_sigreturn_does_not_virtualize_unreachable_tail() -> None:
@@ -633,6 +650,14 @@ def test_shadow_stack_instruction_reports_stack_abi_capability() -> None:
 
 def test_far_return_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "ret", "opcode": "retfq"})
+
+    expect(capability == "stack_and_abi")
+
+
+def test_stack_adjusting_return_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "ret", "opcode": "ret 0x10"}
+    )
 
     expect(capability == "stack_and_abi")
 
