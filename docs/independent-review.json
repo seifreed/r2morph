@@ -11,6 +11,11 @@
       "status": "passed"
     },
     {
+      "detail": "only Linux ELF x86-64 is supported; PE/Mach-O/ARM/AArch64 remain preview or experimental",
+      "name": "official_target_scope",
+      "status": "passed"
+    },
+    {
       "detail": "PE/Mach-O and ARM/AArch64/x86 remain gaps",
       "name": "differential_platform_gap_scope",
       "status": "passed"

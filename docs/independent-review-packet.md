@@ -98,13 +98,13 @@ repository contains 65 focused virtualization integration modules. This is
 coverage evidence, not a claim of universal ISA support.
 
 The current automated review rerun for `94ead726` passes all automated checks,
-including the 264-cell support matrix, the PE/Mach-O and ARM/AArch64/x86
-differential platform gap scope, the additional-corpus/generated-input
-differential gap scope, the scheduled continuous-evidence differential gate,
-the native/performance/false-positive/decompiler/composition/instruction maturity
-gap scope, the memory/calls/ABI/unwind/TLS/thread/FP/SSA VM semantic gap scope,
-the pending human-adversarial VM resistance scope, and the existing 159-sample
-virtualization corpus.
+including the 264-cell support matrix, the Linux ELF x86-64 official target
+scope, the PE/Mach-O and ARM/AArch64/x86 differential platform gap scope, the
+additional-corpus/generated-input differential gap scope, the scheduled
+continuous-evidence differential gate, the native/performance/false-positive/
+decompiler/composition/instruction maturity gap scope, the memory/calls/ABI/
+unwind/TLS/thread/FP/SSA VM semantic gap scope, the pending human-adversarial VM
+resistance scope, and the existing 159-sample virtualization corpus.
 The same automated review verifies that unavailable analyzer slots, including
 Binary Ninja, remain release-signoff blockers instead of completed evidence.
 The target history extends the compiler-generated ELF regression outside that

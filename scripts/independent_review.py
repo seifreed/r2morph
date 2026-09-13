@@ -41,6 +41,25 @@ _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     ],
     "status": "pending-human-adversarial-review",
 }
+_EXPECTED_OFFICIAL_TARGET_SCOPE = {
+    "architectures": {
+        "AArch64": "experimental",
+        "ARM": "experimental",
+        "x86": "experimental",
+        "x86-64": "official-linux-elf",
+    },
+    "formats": {
+        "ELF": "official-linux-x86-64",
+        "Mach-O": "experimental",
+        "PE": "preview-alpha",
+    },
+    "official_target": {
+        "architecture": "x86-64",
+        "format": "ELF",
+        "os": "linux",
+        "status": "supported",
+    },
+}
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
@@ -68,6 +87,16 @@ def _review_matrix(root: Path) -> dict[str, object]:
     matrix = build_matrix(document)
     passed = document.get("matrix") == matrix
     return _check("support_matrix_consistency", passed, f"{matrix['cell_count']} explicit cells")
+
+
+def _review_official_target_scope(root: Path) -> dict[str, object]:
+    document = json.loads((root / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    passed = all(document.get(key) == value for key, value in _EXPECTED_OFFICIAL_TARGET_SCOPE.items())
+    return _check(
+        "official_target_scope",
+        passed,
+        "only Linux ELF x86-64 is supported; PE/Mach-O/ARM/AArch64 remain preview or experimental",
+    )
 
 
 def _review_differential_platform_gap(root: Path) -> dict[str, object]:
@@ -383,6 +412,7 @@ def review(root: Path) -> dict[str, Any]:
     checks = [
         _review_virtualization(root),
         _review_matrix(root),
+        _review_official_target_scope(root),
         _review_differential_platform_gap(root),
         _review_differential_corpus_gap(root),
         _review_differential_continuous_evidence(root),
