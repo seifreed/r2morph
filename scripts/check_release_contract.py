@@ -111,6 +111,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "Per-pass maturity remains incomplete",
     "Differential corpus coverage remains incomplete",
     "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
+    "vm_semantic_gap_scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "Binary Ninja is an explicit slot",
     "anti-tamper and progressive bytecode protection",

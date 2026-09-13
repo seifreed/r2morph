@@ -23,6 +23,7 @@ review. It is not a feature roadmap and must not be read as a support claim.
   threads, FP/SIMD, and SSA/liveness. Unsupported instructions must fail closed
   with precise diagnostics. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
+  [support-matrix.json](support-matrix.json) `vm_semantic_gap_scope`,
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:
   every unsupported instruction reports the precise rejected instruction and
   missing capability, and supported VM semantics cover the declared ISA scope.
