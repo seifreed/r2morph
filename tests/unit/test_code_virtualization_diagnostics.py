@@ -869,6 +869,22 @@ def test_x87_arithmetic_instruction_reports_fp_simd_capability() -> None:
     expect(capability == "floating_point_and_simd")
 
 
+def test_x87_conditional_move_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "fpu", "opcode": "fcmovb st0, st1"}
+    )
+
+    expect(capability == "floating_point_and_simd")
+
+
+def test_x87_stack_pointer_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "fpu", "opcode": "fincstp"}
+    )
+
+    expect(capability == "floating_point_and_simd")
+
+
 def test_x87_wait_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "fpu", "opcode": "fwait"})
 
