@@ -194,7 +194,7 @@ def flags_preserved_for_unfold(original: str, unfolded: list[str], flags_live: b
     if mnemonic in {"add", "sub"}:
         return False
     original_flags = instruction_flags_written(original)
-    unfolded_flags = frozenset()
+    unfolded_flags: frozenset[str] = frozenset()
     for instruction in unfolded:
         written = instruction_flags_written(instruction)
         if written:
