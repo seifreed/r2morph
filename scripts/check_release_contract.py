@@ -183,6 +183,42 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
             raise ValueError(f"README support summary is missing: {fragment}")
 
 
+def _check_readme_pass_surface(matrix: dict[str, object]) -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    pass_surface = {
+        "nop": ("NOP Insertion", "`-m nop`"),
+        "substitute": ("Instruction Substitution", "`-m substitute`"),
+        "register": ("Register Substitution", "`-m register`"),
+        "instruction-expansion": ("Instruction Expansion", "`-m expand`"),
+        "block-reordering": ("Block Reordering", "`-m block`"),
+        "dead-code-injection": ("Dead Code Injection", "engine-only"),
+        "control-flow-flattening": ("Control Flow Flattening", "engine-only"),
+        "opaque-predicates": ("Opaque Predicates", "engine-only"),
+        "code-virtualization": ("Code Virtualization", "engine-only"),
+        "anti-disassembly": ("Anti-Disassembly", "engine-only"),
+        "data-flow-mutation": ("Data Flow Mutation", "engine-only"),
+        "short-jump-patching": ("Short Jump Patching", "engine-only"),
+        "constant-unfolding": ("Constant Unfolding", "engine-only"),
+        "code-mobility": ("Code Mobility", "engine-only"),
+        "function-outlining": ("Function Outlining", "engine-only"),
+        "api-hashing": ("API Hashing", "engine-only"),
+        "import-obfuscation": ("Import Obfuscation", "engine-only"),
+        "self-modifying-code": ("Self-Modifying Code", "engine-only"),
+        "stack-strings": ("Stack Strings", "engine-only"),
+        "string-obfuscation": ("String Obfuscation", "engine-only"),
+        "pattern-substitution": ("Pattern Substitution", "engine-only"),
+        "polymorphic-engine": ("Polymorphic Engine", "engine-only"),
+    }
+    for entry in matrix["passes"]:
+        name = entry["name"]
+        if name not in pass_surface:
+            raise ValueError(f"README pass surface map is missing: {name}")
+        display_name, surface = pass_surface[name]
+        row_prefix = f"| **{display_name}** | {surface} |"
+        if row_prefix not in readme:
+            raise ValueError(f"README pass surface is missing: {row_prefix}")
+
+
 def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
@@ -503,6 +539,7 @@ def main() -> int:
         matrix = _load_matrix()
         _check_matrix(matrix, package_version)
         _check_readme_support_summary(matrix)
+        _check_readme_pass_surface(matrix)
         _check_pass_maturity_gap_summary(matrix)
         _check_corpus_pass_selection_docs()
         _check_changelog(package_version)

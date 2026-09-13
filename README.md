@@ -126,23 +126,27 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 
 ### Experimental (working, limited testing)
 
-| Pass | CLI Flag | Description |
+| Pass | Surface | Description |
 |------|----------|-------------|
 | **Instruction Expansion** | `-m expand` | Expands single instructions into longer equivalent sequences |
 | **Block Reordering** | `-m block` | Reorders basic blocks with jump patching |
-| **Dead Code Injection** | `-m dead-code` | Injects semantically neutral code in padding regions |
-| **Control Flow Flattening** | `-m cff` | Inserts opaque predicates and jump obfuscation |
-| **Opaque Predicates** | `-m opaque` | Writes opaque predicate instructions into basic blocks |
-| **Code Virtualization** | `-m code-virtualization` | Translates instructions to VM bytecode with dispatcher |
-| **Anti-Disassembly** | `-m anti-disassembly` | Injects anti-disassembly snippets |
-| **Data Flow Mutation** | `-m data-flow` | Data flow analysis-driven safe substitutions |
-| **Short Jump Patching** | `-m short-jump` | Patches short jumps to equivalent sequences |
-| **Constant Unfolding** | `-m constant-unfolding` | Unfolds constant expressions into multi-instruction equivalents |
-| **Code Mobility** | `-m code-mobility` | Relocates blocks to code caves with trampolines |
-| **Function Outlining** | `-m function-outlining` | Distributes function chunks across code caves |
-| **API Hashing** | `-m api-hashing` | Hash trampolines obscuring PLT references |
-| **Import Obfuscation** | `-m import-obfuscation` | Jump stub indirection for import calls |
-| **Self-Modifying Code** | `-m self-modifying` | XOR-encrypts function bodies with runtime decryptor |
+| **Dead Code Injection** | engine-only | Injects semantically neutral code in padding regions |
+| **Control Flow Flattening** | engine-only | Inserts opaque predicates and jump obfuscation |
+| **Opaque Predicates** | engine-only | Writes opaque predicate instructions into basic blocks |
+| **Code Virtualization** | engine-only | Translates instructions to VM bytecode with dispatcher |
+| **Anti-Disassembly** | engine-only | Injects anti-disassembly snippets |
+| **Data Flow Mutation** | engine-only | Data flow analysis-driven safe substitutions |
+| **Short Jump Patching** | engine-only | Patches short jumps to equivalent sequences |
+| **Constant Unfolding** | engine-only | Unfolds constant expressions into multi-instruction equivalents |
+| **Code Mobility** | engine-only | Relocates blocks to code caves with trampolines |
+| **Function Outlining** | engine-only | Distributes function chunks across code caves |
+| **API Hashing** | engine-only | Hash trampolines obscuring PLT references |
+| **Import Obfuscation** | engine-only | Jump stub indirection for import calls |
+| **Self-Modifying Code** | engine-only | XOR-encrypts function bodies with runtime decryptor |
+| **Stack Strings** | engine-only | Rebuilds string literals on the stack at runtime |
+| **String Obfuscation** | engine-only | Encodes string data behind runtime reconstruction |
+| **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
+| **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 
 ---
 
