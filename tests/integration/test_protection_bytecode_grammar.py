@@ -30,6 +30,7 @@ def test_measure_bytecode_grammar_varies_same_operation_stride_across_seeds() ->
         and result["target_stride_diverse"] is True
         and result["adversarial_validation"]["status"] == _EXPECTED_ADVERSARIAL_STATUS
         and result["adversarial_validation"]["evidence_quality"] == "seed-diversity-only"
+        and "human-adversarial-validation" in result["adversarial_validation"]["pending_scope"]
     )
 
 

@@ -2,6 +2,7 @@
   "adversarial_validation": {
     "evidence_quality": "seed-diversity-only",
     "pending_scope": [
+      "human-adversarial-validation",
       "isa-opcode-diversity",
       "handler-diversity",
       "dispatcher-diversity",

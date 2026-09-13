@@ -33,6 +33,7 @@ _EXPECTED_MATURITY_BLOCKER_FIELDS = {
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     "evidence_quality": "seed-diversity-only",
     "pending_scope": [
+        "human-adversarial-validation",
         "isa-opcode-diversity",
         "handler-diversity",
         "dispatcher-diversity",

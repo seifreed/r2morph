@@ -43,6 +43,7 @@ VM_ADVERSARIAL_VALIDATION = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "seed-diversity-only",
     "pending_scope": [
+        "human-adversarial-validation",
         "isa-opcode-diversity",
         "handler-diversity",
         "dispatcher-diversity",

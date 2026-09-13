@@ -29,6 +29,7 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         and result["cross_seed_nearest_similarity_above_threshold_percent"] == _EXPECTED_ABOVE_THRESHOLD_PERCENT
         and result["adversarial_validation"]["status"] == _EXPECTED_ADVERSARIAL_STATUS
         and result["adversarial_validation"]["evidence_quality"] == "seed-diversity-only"
+        and "human-adversarial-validation" in result["adversarial_validation"]["pending_scope"]
         and not (result["cross_seed_nearest_similarity_mean"] <= 0.0)
     )
 
