@@ -42,6 +42,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
             "official_target_scope",
             "pass_maturity_gap_scope",
             "parser_rewriter_fuzz_campaign",
+            "release_blocker_ledger_scope",
             "vm_resistance_adversarial_scope",
             "vm_semantic_gap_scope",
         }

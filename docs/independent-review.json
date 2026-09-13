@@ -16,6 +16,11 @@
       "status": "passed"
     },
     {
+      "detail": "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and signoff gaps",
+      "name": "release_blocker_ledger_scope",
+      "status": "passed"
+    },
+    {
       "detail": "PE/Mach-O and ARM/AArch64/x86 remain gaps",
       "name": "differential_platform_gap_scope",
       "status": "passed"

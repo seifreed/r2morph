@@ -78,6 +78,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "official_target_scope",
     "parser_rewriter_fuzz_campaign",
     "pass_maturity_gap_scope",
+    "release_blocker_ledger_scope",
     "support_matrix_consistency",
     "virtualization_fixture_coverage",
     "virtualization_fixture_headers",

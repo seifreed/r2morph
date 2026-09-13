@@ -60,6 +60,16 @@ _EXPECTED_OFFICIAL_TARGET_SCOPE = {
         "status": "supported",
     },
 }
+_EXPECTED_RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
+_EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
+    "Per-pass maturity remains incomplete",
+    "Differential corpus coverage remains incomplete",
+    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
+    "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
+    "Binary Ninja is an explicit slot",
+    "anti-tamper and progressive bytecode protection",
+    "external human review records signoff",
+)
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
@@ -97,6 +107,18 @@ def _review_official_target_scope(root: Path) -> dict[str, object]:
         "official_target_scope",
         passed,
         "only Linux ELF x86-64 is supported; PE/Mach-O/ARM/AArch64 remain preview or experimental",
+    )
+
+
+def _review_release_blocker_ledger(root: Path) -> dict[str, object]:
+    blockers = " ".join((root / "docs" / "release-blockers.md").read_text(encoding="utf-8").split())
+    passed = all(blocker_id in blockers for blocker_id in _EXPECTED_RELEASE_BLOCKER_IDS) and all(
+        fragment in blockers for fragment in _EXPECTED_RELEASE_BLOCKER_FRAGMENTS
+    )
+    return _check(
+        "release_blocker_ledger_scope",
+        passed,
+        "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and signoff gaps",
     )
 
 
@@ -434,6 +456,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_official_target_scope(root),
+        _review_release_blocker_ledger(root),
         _review_differential_platform_gap(root),
         _review_differential_corpus_gap(root),
         _review_differential_continuous_evidence(root),
