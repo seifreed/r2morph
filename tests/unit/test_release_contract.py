@@ -134,6 +134,24 @@ def test_compatibility_corpus_does_not_promote_historical_six_pass_campaign() ->
     )
 
 
+def test_local_adversarial_angr_evidence_completes_original_and_protected() -> None:
+    report = json.loads(
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+    )
+    tools = {row["tool"]: row for row in report["tools"]}
+    angr = tools["angr"]
+
+    expect(
+        report["original"] == "elf_vm_fppackedidxnb_x86_64"
+        and report["passes"][0]["status"] == "applied"
+        and report["passes"][0]["unsupported_functions"] == 0
+        and report["passes"][0]["partial_virtualization"] == 0
+        and angr["status"] == "completed"
+        and angr["original"]["status"] == "completed"
+        and angr["protected"]["status"] == "completed"
+    )
+
+
 def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> None:
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 
