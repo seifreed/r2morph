@@ -458,6 +458,14 @@ def test_entropy_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_msr_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rdmsr"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_privileged_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other", "opcode": "hlt"})
 

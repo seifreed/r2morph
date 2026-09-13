@@ -818,6 +818,8 @@ class CodeVirtualizationPass(MutationPass):
                 "ltr",
                 "out ",
                 "prefetch",
+                "rdmsr",
+                "rdpmc",
                 "rdrand",
                 "rdseed",
                 "rdtsc",
@@ -828,6 +830,8 @@ class CodeVirtualizationPass(MutationPass):
                 "sti",
                 "str",
                 "xgetbv",
+                "xsetbv",
+                "wrmsr",
             )
         ) or any(
             token in opcode
