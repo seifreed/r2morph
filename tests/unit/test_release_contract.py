@@ -12,6 +12,7 @@ from scripts.check_release_contract import (
     _check_documentation_links,
     _check_independent_review_packet_claims,
     _check_matrix,
+    _check_pass_maturity_gap_summary,
     _check_readme_support_summary,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
@@ -379,32 +380,8 @@ def test_support_matrix_summarizes_test_evidence_profiles() -> None:
 
 def test_pass_maturity_gap_counts_match_generated_summary() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    summary = matrix["matrix"]["summary"]
-    contract = " ".join((_ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
 
-    expect(
-        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance" in contract
-        and (
-            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
-            "false-positive measurement"
-        )
-        in contract
-        and (
-            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
-            "decompiler-effectiveness measurement"
-        )
-        in contract
-        and (
-            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
-            "without contractual composition support"
-        )
-        in contract
-        and (
-            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
-            "affected-instruction catalogue"
-        )
-        in contract
-    )
+    expect(_check_pass_maturity_gap_summary(matrix) is None)
 
 
 def test_release_contract_current_tree_is_valid() -> None:

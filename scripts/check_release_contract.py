@@ -160,6 +160,33 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
             raise ValueError(f"README support summary is missing: {fragment}")
 
 
+def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+    fragments = (
+        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
+        (
+            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
+            "false-positive measurement"
+        ),
+        (
+            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
+            "decompiler-effectiveness measurement"
+        ),
+        (
+            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
+            "without contractual composition support"
+        ),
+        (
+            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
+            "affected-instruction catalogue"
+        ),
+    )
+    for fragment in fragments:
+        if fragment not in contract:
+            raise ValueError(f"pass maturity summary is missing: {fragment}")
+
+
 def _check_changelog(package_version: str) -> None:
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if f"## {package_version}" not in changelog:
@@ -414,6 +441,7 @@ def main() -> int:
         matrix = _load_matrix()
         _check_matrix(matrix, package_version)
         _check_readme_support_summary(matrix)
+        _check_pass_maturity_gap_summary(matrix)
         _check_changelog(package_version)
         _check_inventory()
         _check_vm_resistance_artifacts()
