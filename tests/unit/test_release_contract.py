@@ -316,6 +316,24 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
     )
 
 
+def test_support_matrix_names_maturity_gaps_by_pass() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    gaps_by_field = summary["maturity_gap_passes"]
+    gaps_by_pass = summary["maturity_gaps_by_pass"]
+    inverted = {
+        field: sorted(pass_name for pass_name, fields in gaps_by_pass.items() if field in fields)
+        for field in gaps_by_field
+    }
+
+    expect(
+        inverted == gaps_by_field
+        and "anti-disassembly" in gaps_by_pass
+        and "performance" in gaps_by_pass["anti-disassembly"]
+        and all(gaps for gaps in gaps_by_pass.values())
+    )
+
+
 def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

@@ -795,6 +795,119 @@
           "string-obfuscation"
         ]
       },
+      "maturity_gaps_by_pass": {
+        "anti-disassembly": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "api-hashing": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "block-reordering": [
+          "instructions_affected"
+        ],
+        "code-mobility": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "constant-unfolding": [
+          "instructions_affected"
+        ],
+        "control-flow-flattening": [
+          "instructions_affected"
+        ],
+        "data-flow-mutation": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "dead-code-injection": [
+          "instructions_affected"
+        ],
+        "function-outlining": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "import-obfuscation": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "instruction-expansion": [
+          "instructions_affected"
+        ],
+        "nop": [
+          "decompiler_effectiveness"
+        ],
+        "opaque-predicates": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "pattern-substitution": [
+          "instructions_affected"
+        ],
+        "polymorphic-engine": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "register": [
+          "decompiler_effectiveness"
+        ],
+        "self-modifying-code": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "short-jump-patching": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "stack-strings": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "string-obfuscation": [
+          "compatibility",
+          "decompiler_effectiveness",
+          "false_positive_risk",
+          "instructions_affected",
+          "performance"
+        ],
+        "substitute": [
+          "decompiler_effectiveness"
+        ]
+      },
       "vm_semantic_gap_scope": [
         "memory",
         "direct-calls",
