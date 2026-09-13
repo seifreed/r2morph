@@ -53,6 +53,14 @@ class ShortJumpPatchingPass(MutationPass):
         super().__init__(name="ShortJumpPatching", config=config)
         self.patch_probability = self.config.get("probability", 1.0)
 
+    @staticmethod
+    def _instruction_mnemonic(instruction: dict[str, Any]) -> str:
+        mnemonic = instruction.get("mnemonic")
+        if isinstance(mnemonic, str) and mnemonic:
+            return mnemonic.lower()
+        opcode = instruction.get("opcode") or instruction.get("disasm") or ""
+        return str(opcode).split(maxsplit=1)[0].lower()
+
     def _get_replacement(self, mnemonic: str) -> tuple[str, str] | None:
         """
         Get replacement instruction pair for a short-jump-exclusive mnemonic.
@@ -89,7 +97,7 @@ class ShortJumpPatchingPass(MutationPass):
     def _assemble_patch(
         self, binary: Any, function_address: int, instruction: dict[str, Any]
     ) -> tuple[bytes, str, str, str] | None:
-        mnemonic = instruction.get("mnemonic", "").lower()
+        mnemonic = self._instruction_mnemonic(instruction)
         replacement = self._get_replacement(mnemonic)
         operand = instruction.get("jump")
         if operand is None:
@@ -101,24 +109,40 @@ class ShortJumpPatchingPass(MutationPass):
         target = f"0x{operand:x}" if isinstance(operand, int) else operand
         prefix, jump = replacement
         assembled = binary.assemble(f"{prefix}\n{jump} {target}", function_addr=function_address)
-        instruction_size = instruction.get("size", 0)
         if not assembled:
             logger.debug(f"Failed to assemble replacement at 0x{instruction.get('addr', 0):x}")
-            return None
-        if len(assembled) > instruction_size:
-            logger.debug(
-                f"Replacement too large at 0x{instruction.get('addr', 0):x}: {len(assembled)} > {instruction_size}"
-            )
             return None
         return assembled, prefix, jump, target
 
     @staticmethod
+    def _patch_span_size(
+        binary: Any, instruction_address: int, instruction_size: int, required_size: int
+    ) -> int | None:
+        if required_size <= instruction_size:
+            return instruction_size
+        padding_size = required_size - instruction_size
+        padding = binary.read_bytes(instruction_address + instruction_size, padding_size)
+        if padding == b"\x90" * padding_size:
+            return required_size
+        logger.debug(
+            "Replacement too large at 0x%x: %d > %d and no trailing NOP slack",
+            instruction_address,
+            required_size,
+            instruction_size,
+        )
+        return None
+
+    @staticmethod
     def _pad_patch(
-        binary: Any, function_address: int, instruction_address: int, instruction_size: int, assembled: bytes
+        binary: Any,
+        function_address: int,
+        instruction_address: int,
+        patch_size: int,
+        assembled: bytes,
     ) -> bool:
-        if len(assembled) == instruction_size:
+        if len(assembled) == patch_size:
             return True
-        nop_count = instruction_size - len(assembled)
+        nop_count = patch_size - len(assembled)
         nop_pad = binary.assemble("\n".join(["nop"] * nop_count), function_addr=function_address)
         if nop_pad and binary.write_bytes(instruction_address + len(assembled), nop_pad):
             return True
@@ -139,7 +163,10 @@ class ShortJumpPatchingPass(MutationPass):
         assembled, prefix, jump, target = patch
         address = instruction.get("addr", 0)
         size = instruction.get("size", 0)
-        original_bytes = binary.read_bytes(address, size)
+        patch_size = self._patch_span_size(binary, address, size, len(assembled))
+        if patch_size is None:
+            return False
+        original_bytes = binary.read_bytes(address, patch_size)
         if not original_bytes:
             return False
         checkpoint = self._create_mutation_checkpoint("short_jump")
@@ -148,19 +175,19 @@ class ShortJumpPatchingPass(MutationPass):
             baseline = self._validation_manager.capture_structural_baseline(binary, function_address)
         if not binary.write_bytes(address, assembled):
             return False
-        if not self._pad_patch(binary, function_address, address, size, assembled):
+        if not self._pad_patch(binary, function_address, address, patch_size, assembled):
             self._rollback_uncommitted(
                 binary,
                 checkpoint,
                 reason="Short-jump NOP padding failed; aborting (fail-fast)",
             )
             return False
-        mnemonic = instruction.get("mnemonic", "").lower()
-        mutated_bytes = binary.read_bytes(address, size)
+        mnemonic = self._instruction_mnemonic(instruction)
+        mutated_bytes = binary.read_bytes(address, patch_size)
         record = self._record_mutation(
             function_address=function_address,
             start_address=address,
-            end_address=address + size - 1,
+            end_address=address + patch_size - 1,
             original_bytes=original_bytes,
             mutated_bytes=mutated_bytes if mutated_bytes else assembled,
             original_disasm=instruction.get("disasm", ""),
@@ -200,7 +227,7 @@ class ShortJumpPatchingPass(MutationPass):
             patches_in_func = 0
             for block in self._get_blocks(binary, func):
                 for insn in self._disassemble_block(binary, block):
-                    mnemonic = insn.get("mnemonic", "").lower()
+                    mnemonic = self._instruction_mnemonic(insn)
                     if (
                         mnemonic not in SHORT_JUMP_EXCLUSIVE
                         or random.random() > self.patch_probability

@@ -219,6 +219,7 @@ _APPLIED_COUNT_FIELDS = (
     "functions_virtualized",
     "mutations_applied",
     "total_injections",
+    "total_patched",
     "imports_hashed",
     "blocks_moved",
     "functions_outlined",

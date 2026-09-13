@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 
 from r2morph.adapters.process import run_process
+from r2morph.core.binary import Binary
+from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_FAMILY,
     _GENERATED_RUNTIME_INPUTS,
@@ -26,6 +28,7 @@ from scripts.protection_maturity_baseline import (
     discover_executables,
     measure_fixture,
 )
+from tests.conftest import _compile_elf_x86_64_binary
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
@@ -68,6 +71,21 @@ _EXPECTED_CAMPAIGN_OUTPUT_SIZE_DELTA_BYTES = 20
 _EXPECTED_CAMPAIGN_TRANSFORM_DURATION_SECONDS = 0.5
 _EXPECTED_CAMPAIGN_RUNTIME_DURATION_DELTA_SECONDS = 0.25
 _EXPECTED_CAMPAIGN_STATIC_FUNCTIONS_DELTA = 1
+_SHORT_JUMP_SOURCE = """
+.intel_syntax noprefix
+.global _start
+.text
+_start:
+    xor rcx, rcx
+    jrcxz done
+    .rept 8
+    nop
+    .endr
+done:
+    mov edi, 7
+    mov eax, 60
+    syscall
+"""
 _EXPECTED_INCOMPLETE_COVERAGE = {
     "runtime_observable": ["PatternSubstitution"],
     "output_size": ["PatternSubstitution"],
@@ -189,6 +207,28 @@ def test_measure_fixture_records_data_flow_mutation_on_real_fixture(tmp_path: Pa
         range(20260820, 20260821),
         tmp_path,
         "DataFlowMutation",
+    )
+
+    expect(result["runs"][0]["transformation"]["status"] == "applied")
+
+
+def test_short_jump_patching_uses_trailing_nop_slack_in_real_elf(tmp_path: Path) -> None:
+    executable = _compile_elf_x86_64_binary(tmp_path, "shortjump", _SHORT_JUMP_SOURCE)
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze("aa")
+        stats = ShortJumpPatchingPass(config={"probability": 1.0, "seed": 20260820}).apply(binary)
+
+    expect(stats["total_patched"] == 1)
+
+
+def test_measure_fixture_records_short_jump_patching_on_real_fixture(tmp_path: Path) -> None:
+    executable = _compile_elf_x86_64_binary(tmp_path, "shortjump", _SHORT_JUMP_SOURCE)
+    result = measure_fixture(
+        executable,
+        range(20260820, 20260821),
+        tmp_path,
+        "ShortJumpPatching",
     )
 
     expect(result["runs"][0]["transformation"]["status"] == "applied")
@@ -725,6 +765,12 @@ def test_transformation_evidence_accepts_extended_pass_counters() -> None:
     evidence = _transformation_evidence("passed", {"total_injections": 2}, None, "AntiDisassembly")
 
     expect(evidence == {"pass_name": "anti-disassembly", "status": "applied", "total_injections": 2})
+
+
+def test_transformation_evidence_accepts_short_jump_patch_counter() -> None:
+    evidence = _transformation_evidence("passed", {"total_patched": 1}, None, "ShortJumpPatching")
+
+    expect(evidence == {"pass_name": "short-jump-patching", "status": "applied", "total_patched": 1})
 
 
 def test_diagnostic_counts_groups_capabilities_and_severities() -> None:
