@@ -519,6 +519,23 @@ def test_support_matrix_names_parity_gap_scope() -> None:
     )
 
 
+def test_support_matrix_classifies_non_official_parity_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["parity_gap_evidence"]
+    preview_targets = evidence["preview_evidence_targets"]
+    zero_targets = evidence["zero_evidence_targets"]
+
+    expect(
+        sum(row["evidenced_cells"] for row in preview_targets) == summary["non_official_evidenced_cells"]
+        and len(preview_targets) + len(zero_targets) == len(summary["non_official_gap_targets"])
+        and all(row["evidenced_cells"] > 0 for row in preview_targets)
+        and all(row["evidenced_cells"] == 0 for row in zero_targets)
+        and {(row["format"], row["architecture"]) for row in preview_targets}
+        == {("Mach-O", "AArch64"), ("Mach-O", "x86-64"), ("PE", "x86-64")}
+    )
+
+
 def test_support_matrix_names_parity_evidence_blockers() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

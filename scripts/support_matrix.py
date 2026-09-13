@@ -303,6 +303,28 @@ def _parity_evidence_blockers(
     return blockers
 
 
+def _parity_gap_evidence(gap_targets: list[dict[str, object]]) -> dict[str, list[dict[str, object]]]:
+    zero_evidence = []
+    preview_evidence = []
+    for target in gap_targets:
+        evidenced_cells = int(target["evidenced_cells"])
+        row = {
+            "format": target["format"],
+            "architecture": target["architecture"],
+            "evidenced_cells": evidenced_cells,
+            "not_supported_cells": int(target["not_supported_cells"]),
+            "evidence_percent": target["evidence_percent"],
+        }
+        if evidenced_cells == 0:
+            zero_evidence.append(row)
+        else:
+            preview_evidence.append(row)
+    return {
+        "preview_evidence_targets": preview_evidence,
+        "zero_evidence_targets": zero_evidence,
+    }
+
+
 def _parity_blocker_totals(
     gap_targets: list[dict[str, object]],
     gap_scope: dict[str, list[str]],
@@ -413,6 +435,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
             "non_official_gap_targets": non_official_gap_targets,
             "parity_gap_scope": parity_gap_scope,
+            "parity_gap_evidence": _parity_gap_evidence(non_official_gap_targets),
             "parity_evidence_blockers": _parity_evidence_blockers(
                 non_official_gap_targets,
                 parity_gap_scope,
