@@ -561,6 +561,7 @@ def _measure_seed(
         binary = Binary(output, writable=True)
         binary.open()
         try:
+            binary.analyze("aa")
             stats = _build_mutation_pass(pass_name, seed).apply(binary)
             binary.save()
         finally:
