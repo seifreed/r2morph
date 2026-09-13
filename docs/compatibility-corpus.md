@@ -133,8 +133,9 @@ the scheduled campaign to pass. The same workflow also emits an
 AntiDisassembly, APIHashing, CodeMobility, DataFlowMutation,
 FunctionOutlining, ImportObfuscation, OpaquePredicates, PolymorphicEngine,
 SelfModifyingCode, ShortJumpPatching, StackStrings, and StringObfuscation.
-That artifact is evidence triage only; it does not promote those passes until
-their applied-run and complete-evidence blockers are zero.
+That artifact is evidence triage only and fails on `passes_with_error_runs`;
+it does not promote those passes until their applied-run and complete-evidence
+blockers are zero.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also

@@ -1180,6 +1180,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "EXTENDED_MATURITY_PASSES" in differential
         and "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation" in differential
         and "SelfModifyingCode,ShortJumpPatching" in differential
+        and "passes_with_error_runs" in differential
+        and "extended maturity pass errors" in differential
         and "extended-maturity-passes" in differential
     )
 

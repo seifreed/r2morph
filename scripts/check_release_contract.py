@@ -873,6 +873,8 @@ def _check_corpus_workflows() -> None:
         "EXTENDED_MATURITY_PASSES",
         "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation",
         "SelfModifyingCode,ShortJumpPatching",
+        "passes_with_error_runs",
+        "extended maturity pass errors",
         "extended-maturity-passes",
     ):
         if fragment not in differential:
