@@ -831,6 +831,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
         elif opcode.startswith(
             (
+                "bnd",
                 "clac",
                 "clflush",
                 "clflushopt",

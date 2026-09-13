@@ -544,6 +544,14 @@ def test_memory_protection_key_instruction_reports_cpu_environment_capability() 
     expect(capability == "cpu_environment")
 
 
+def test_bounds_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "bndcl bnd0, [rax]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_virtual_machine_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "vmcall"}
