@@ -66,6 +66,8 @@ jobs:
               raise SystemExit("differential report has incomplete evidence")
           if summary["passes_with_incomplete_coverage"]:
               raise SystemExit(f"incomplete coverage: {summary['passes_with_incomplete_coverage']}")
+          if summary["continuous_evidence_blocker_totals"]["total_continuous_evidence_blockers"] != 0:
+              raise SystemExit(f"continuous evidence blocker totals: {summary['continuous_evidence_blocker_totals']}")
           if summary["continuous_evidence_blockers"]:
               raise SystemExit(f"continuous evidence blockers: {summary['continuous_evidence_blockers']}")
           PY

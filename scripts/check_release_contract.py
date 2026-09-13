@@ -331,6 +331,7 @@ def _check_readme_differential_summary() -> None:
         "nine seed-derived command-line inputs",
         "exit code, stdout, stderr, created files, and declared observable effects",
         "runtime, size, transform-duration, runtime-duration, and static analyzer evidence",
+        "total_continuous_evidence_blockers",
     ):
         if fragment not in corpus:
             raise ValueError(f"compatibility corpus differential contract is missing: {fragment}")

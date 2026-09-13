@@ -1004,6 +1004,9 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
 def _continuous_evidence_blocker_totals(blockers: Mapping[str, object]) -> dict[str, int]:
     totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
     totals["blocker_categories"] = len(blockers)
+    totals["total_continuous_evidence_blockers"] = sum(
+        count for field, count in totals.items() if field != "blocker_categories"
+    )
     return dict(sorted(totals.items()))
 
 

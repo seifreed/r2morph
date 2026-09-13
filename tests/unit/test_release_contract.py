@@ -993,6 +993,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "total_complete_evidence_missing_runs" in differential
         and "passes_with_incomplete_coverage" in differential
         and "continuous_evidence_blockers" in differential
+        and "total_continuous_evidence_blockers" in differential
         and "differential-corpus-by-pass" in differential
     )
 

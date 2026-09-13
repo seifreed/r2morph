@@ -101,6 +101,7 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
     "passes_with_semantic_failures": 1,
     "passes_without_applied_runs": 1,
     "platform_gap_scope": 2,
+    "total_continuous_evidence_blockers": 21,
 }
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 

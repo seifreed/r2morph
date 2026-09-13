@@ -125,7 +125,8 @@ uploading the artifact, including the Linux ELF x86-64 platform scope,
 scope, the additional-corpus-family and generated-input gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
-counts that must be empty for the scheduled campaign to pass.
+counts, including `total_continuous_evidence_blockers`, that must be zero for
+the scheduled campaign to pass.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
