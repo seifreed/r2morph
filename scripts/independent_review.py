@@ -27,7 +27,6 @@ _EXPECTED_MATURITY_BLOCKER_FIELDS = {
     "compatibility",
     "decompiler_effectiveness",
     "false_positive_risk",
-    "instructions_affected",
     "performance",
 }
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {

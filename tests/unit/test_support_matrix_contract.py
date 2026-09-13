@@ -21,20 +21,20 @@ _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "code-mobility-instruction-catalogued": 1,
     "code-virtualization": 1,
     "data-flow-mutation-instruction-catalogued": 1,
-    "experimental": 1,
     "experimental-corpus-selected": 6,
     "function-outlining-instruction-catalogued": 1,
     "import-obfuscation-instruction-catalogued": 1,
     "opaque-predicates-instruction-catalogued": 1,
+    "polymorphic-engine-instruction-catalogued": 1,
     "self-modifying-code-instruction-catalogued": 1,
     "short-jump-patching-instruction-catalogued": 1,
     "stack-strings-instruction-catalogued": 1,
     "string-obfuscation-instruction-catalogued": 1,
     "tier-1-native": 3,
 }
-_EXPECTED_MATURITY_GAP_CATEGORIES = 5
-_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 49
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 68
+_EXPECTED_MATURITY_GAP_CATEGORIES = 4
+_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 48
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 67
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:

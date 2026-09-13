@@ -42,7 +42,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 7
 _EXPECTED_ADVERSARIAL_BLOCKERS = 7
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 68
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 67
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -332,7 +332,7 @@ def test_support_matrix_summarizes_instruction_coverage_profiles() -> None:
 
     expect(
         sum(summary["instructions_affected_counts"].values()) == len(matrix["passes"])
-        and any("Not exhaustively catalogued" in value for value in summary["instructions_affected_counts"])
+        and "Not exhaustively catalogued." not in summary["instructions_affected_counts"]
     )
 
 
@@ -348,7 +348,6 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
             "false_positive_risk",
             "decompiler_effectiveness",
             "compatibility",
-            "instructions_affected",
         }
         and len(gaps["performance"]) == summary["performance_counts"]["Not measured per pass."]
         and len(gaps["false_positive_risk"]) == summary["false_positive_risk_counts"]["Not independently measured."]
@@ -356,8 +355,6 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
         == summary["decompiler_effectiveness_counts"]["Not independently measured."]
         and len(gaps["compatibility"])
         == summary["compatibility_counts"]["Composition with other passes is not contractually supported."]
-        and len(gaps["instructions_affected"])
-        == summary["instructions_affected_counts"]["Not exhaustively catalogued."]
     )
 
 
@@ -711,7 +708,7 @@ def test_release_contract_rejects_tier_1_profile_drift() -> None:
 
 def test_release_contract_rejects_empty_maturity_profile_field() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["maturity"]["profiles"]["experimental"]["performance"] = ""
+    matrix["maturity"]["profiles"]["polymorphic-engine-instruction-catalogued"]["performance"] = ""
     matrix["matrix"] = build_matrix(matrix)
 
     rejected = False
@@ -725,7 +722,9 @@ def test_release_contract_rejects_empty_maturity_profile_field() -> None:
 
 def test_release_contract_rejects_missing_maturity_evidence_path() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["maturity"]["profiles"]["experimental"]["unit_tests"] = ["tests/missing-unit-evidence"]
+    matrix["maturity"]["profiles"]["polymorphic-engine-instruction-catalogued"]["unit_tests"] = [
+        "tests/missing-unit-evidence"
+    ]
     matrix["matrix"] = build_matrix(matrix)
 
     rejected = False
@@ -771,7 +770,7 @@ def test_support_matrix_summarizes_test_evidence_profiles() -> None:
     e2e_counts = summary["e2e_test_evidence_counts"]
 
     expect(
-        sum(unit_counts.values()) == len(matrix["passes"])
+        sum(unit_counts.values()) >= len(matrix["passes"])
         and "tests/unit" in unit_counts
         and sum(e2e_counts.values()) >= len(matrix["passes"])
         and "tests/integration" in e2e_counts

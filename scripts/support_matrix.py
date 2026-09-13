@@ -212,7 +212,7 @@ def _maturity_gap_passes(maturity: object) -> dict[str, list[str]]:
         for field, gap_values in _MATURITY_GAP_VALUES.items():
             if profile_fields.get(field) in gap_values:
                 gaps[field].append(pass_name)
-    return {field: sorted(pass_names) for field, pass_names in gaps.items()}
+    return {field: sorted(pass_names) for field, pass_names in gaps.items() if pass_names}
 
 
 def _maturity_gaps_by_pass(maturity: object) -> dict[str, list[str]]:

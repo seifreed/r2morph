@@ -252,6 +252,12 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
     stability_counts = summary["stability_counts"]
     official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
     non_official_total = summary["non_official_evidenced_cells"] + summary["non_official_not_supported_cells"]
+    instruction_gap_count = summary["instructions_affected_counts"].get("Not exhaustively catalogued.", 0)
+    instruction_gap_fragment = (
+        f"{instruction_gap_count} without an exhaustive affected-instruction catalogue"
+        if instruction_gap_count
+        else "no remaining affected-instruction catalogue gap"
+    )
     for fragment in (
         f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
@@ -272,10 +278,7 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
             f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
             "without contractual composition support"
         ),
-        (
-            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
-            "affected-instruction catalogue"
-        ),
+        instruction_gap_fragment,
     ):
         if fragment not in readme:
             raise ValueError(f"README support summary is missing: {fragment}")
@@ -358,7 +361,7 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
     stability_counts = summary["stability_counts"]
     maturity_profile_counts = summary["maturity_profile_counts"]
-    fragments = (
+    fragments = [
         f"{summary['official_evidence_percent']}% official evidence",
         f"{summary['non_official_evidence_percent']}% non-official evidence",
         f"{summary['parity_blocker_totals']['total_parity_blockers']} total parity blockers",
@@ -367,7 +370,6 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         f"{maturity_profile_counts['tier-1-native']} tier-1-native profile passes",
         f"{maturity_profile_counts['experimental-corpus-selected']} experimental-corpus-selected profile passes",
         f"{maturity_profile_counts['code-virtualization']} code-virtualization profile pass",
-        f"{maturity_profile_counts['experimental']} experimental profile passes",
         f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
         (
             f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
@@ -381,10 +383,6 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
             f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
             "without contractual composition support"
         ),
-        (
-            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
-            "affected-instruction catalogue"
-        ),
         f"{summary['maturity_blocker_totals']['total_maturity_field_gaps']} total per-pass maturity field gaps",
         f"{summary['maturity_blocker_totals']['maturity_gap_categories']} maturity gap categories",
         f"{summary['vm_semantic_blocker_totals']['total_vm_semantic_blockers']} VM semantic blockers",
@@ -394,6 +392,15 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         f"{bytecode['all_handler_stride_unique_count']} handler stride values",
         "target handler stride diversity",
         "not human approval of anti-tamper or progressive bytecode protection",
+    ]
+    experimental_profile_count = maturity_profile_counts.get("experimental", 0)
+    if experimental_profile_count:
+        fragments.append(f"{experimental_profile_count} experimental profile passes")
+    instruction_gap_count = summary["instructions_affected_counts"].get("Not exhaustively catalogued.", 0)
+    fragments.append(
+        f"{instruction_gap_count} without an exhaustive affected-instruction catalogue"
+        if instruction_gap_count
+        else "no remaining exhaustive affected-instruction catalogue gap"
     )
     for fragment in fragments:
         if fragment not in contract:

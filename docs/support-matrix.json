@@ -447,6 +447,28 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "polymorphic-engine-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "The polymorphic engine is a state-machine composition layer. By default it applies the enabled child-pass instruction families in sequence: instruction substitution, pattern substitution, dead-code injection, block reordering, control-flow flattening, string obfuscation, and a final NoOp; optional stages add code virtualization, code mobility, and function outlining. It does not introduce a separate instruction encoding beyond the registered child passes.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_polymorphic_engine_pass_registration.py",
+          "tests/unit/test_polymorphic_engine_setup_contract.py"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "short-jump-patching-instruction-catalogued": {
         "formats": [
           "ELF"
@@ -725,7 +747,7 @@
       "stack-strings": "stack-strings-instruction-catalogued",
       "string-obfuscation": "string-obfuscation-instruction-catalogued",
       "pattern-substitution": "experimental-corpus-selected",
-      "polymorphic-engine": "experimental"
+      "polymorphic-engine": "polymorphic-engine-instruction-catalogued"
     }
   },
   "selection": {
@@ -1092,11 +1114,11 @@
         "code-mobility-instruction-catalogued": 1,
         "code-virtualization": 1,
         "data-flow-mutation-instruction-catalogued": 1,
-        "experimental": 1,
         "experimental-corpus-selected": 6,
         "function-outlining-instruction-catalogued": 1,
         "import-obfuscation-instruction-catalogued": 1,
         "opaque-predicates-instruction-catalogued": 1,
+        "polymorphic-engine-instruction-catalogued": 1,
         "self-modifying-code-instruction-catalogued": 1,
         "short-jump-patching-instruction-catalogued": 1,
         "stack-strings-instruction-catalogued": 1,
@@ -1134,7 +1156,6 @@
         "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.": 1,
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
-        "Not exhaustively catalogued.": 1,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
@@ -1142,7 +1163,8 @@
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.": 1,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
-        "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
+        "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1,
+        "The polymorphic engine is a state-machine composition layer. By default it applies the enabled child-pass instruction families in sequence: instruction substitution, pattern substitution, dead-code injection, block reordering, control-flow flattening, string obfuscation, and a final NoOp; optional stages add code virtualization, code mobility, and function outlining. It does not introduce a separate instruction encoding beyond the registered child passes.": 1
       },
       "maturity_format_counts": {
         "ELF": 22
@@ -1151,7 +1173,7 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 10,
+        "tests/unit": 9,
         "tests/unit/test_anti_disassembly_snippets_contract.py": 1,
         "tests/unit/test_api_hashing_record.py": 1,
         "tests/unit/test_code_mobility_offset_range.py": 1,
@@ -1161,6 +1183,8 @@
         "tests/unit/test_morphing_evasion.py": 1,
         "tests/unit/test_mutation_opaque_predicates_helpers.py": 1,
         "tests/unit/test_new_mutations.py": 2,
+        "tests/unit/test_polymorphic_engine_pass_registration.py": 1,
+        "tests/unit/test_polymorphic_engine_setup_contract.py": 1,
         "tests/unit/test_self_modifying_code_rel32.py": 1,
         "tests/unit/test_short_jump_patching.py": 1
       },
@@ -1229,9 +1253,6 @@
           "short-jump-patching",
           "stack-strings",
           "string-obfuscation"
-        ],
-        "instructions_affected": [
-          "polymorphic-engine"
         ]
       },
       "maturity_gaps_by_pass": {
@@ -1281,7 +1302,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "self-modifying-code": [
@@ -1408,9 +1428,6 @@
             "short-jump-patching",
             "stack-strings",
             "string-obfuscation"
-          ],
-          "instructions_affected": [
-            "polymorphic-engine"
           ]
         },
         "missing_fields_by_pass": {
@@ -1460,7 +1477,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "self-modifying-code": [
@@ -1578,17 +1594,6 @@
             "string-obfuscation"
           ]
         },
-        "instructions_affected": {
-          "status": "affected-instruction-catalog-incomplete",
-          "evidence_quality": "declared-gap-scope",
-          "evidence": [
-            "docs/pass-maturity.md",
-            "docs/support-matrix.json"
-          ],
-          "passes": [
-            "polymorphic-engine"
-          ]
-        },
         "native_evidence": {
           "status": "native-evidence-incomplete",
           "evidence_quality": "partial-native-regression",
@@ -1620,16 +1625,15 @@
         }
       },
       "maturity_blocker_totals": {
-        "maturity_gap_categories": 5,
+        "maturity_gap_categories": 4,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 68,
-        "total_maturity_field_gaps": 49,
+        "total_maturity_blockers": 67,
+        "total_maturity_field_gaps": 48,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
-        "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 1
+        "compatibility_gap_passes": 12
       },
       "differential_evidence_scope": {
         "platform_scope": {
