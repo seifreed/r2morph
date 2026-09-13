@@ -46,9 +46,9 @@ visible without expanding every cell. It also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
 code-virtualization, and experimental coverage remain visible at release-gate
 level. It also summarizes the declared false-positive-risk and
-decompiler-effectiveness text by profile so unmeasured risk and analyzer
-effectiveness remain visible release gaps instead of being buried in each pass
-row.
+decompiler-effectiveness text plus the compatibility/composition text by
+profile so unmeasured risk, analyzer effectiveness, and pass-composition gaps
+remain visible release gaps instead of being buried in each pass row.
 Runtime support classification also exposes `parity_gap` and
 `parity_gap_scope` so reports can distinguish stable ELF x86-64 from
 format-level and architecture-level preview gaps.

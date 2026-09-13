@@ -595,6 +595,12 @@
         "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.": 6,
         "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.": 1,
         "Not independently measured.": 15
+      },
+      "compatibility_counts": {
+        "Composition with other passes is not contractually supported.": 12,
+        "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
+        "Pass combinations are not exhaustively covered.": 3,
+        "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
       }
     },
     "cells": [
