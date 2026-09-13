@@ -16,11 +16,12 @@ _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 235
 _EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 235
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
+    "anti-disassembly-instruction-catalogued": 1,
     "api-hashing-instruction-catalogued": 1,
     "code-mobility-instruction-catalogued": 1,
     "code-virtualization": 1,
     "data-flow-mutation-instruction-catalogued": 1,
-    "experimental": 2,
+    "experimental": 1,
     "experimental-corpus-selected": 6,
     "function-outlining-instruction-catalogued": 1,
     "import-obfuscation-instruction-catalogued": 1,
@@ -32,8 +33,8 @@ _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "tier-1-native": 3,
 }
 _EXPECTED_MATURITY_GAP_CATEGORIES = 5
-_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 50
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 69
+_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 49
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 68
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
