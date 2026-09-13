@@ -10,6 +10,7 @@ from scripts.check_release_contract import (
     _check_documentation_links,
     _check_matrix,
     _validate_inventory,
+    _validate_vm_resistance_artifacts,
     main,
 )
 from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
@@ -379,6 +380,27 @@ def test_release_contract_rejects_inconsistent_inventory_summary() -> None:
     rejected = False
     try:
         _validate_inventory(inventory)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_validates_vm_resistance_artifacts() -> None:
+    handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+
+    _validate_vm_resistance_artifacts(handler, bytecode)
+
+
+def test_release_contract_rejects_vm_handler_similarity_regression() -> None:
+    handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    handler["cross_seed_has_exact_normalised_matches"] = True
+
+    rejected = False
+    try:
+        _validate_vm_resistance_artifacts(handler, bytecode)
     except ValueError:
         rejected = True
 

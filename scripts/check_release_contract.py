@@ -23,6 +23,9 @@ REQUIRED_CI_JOBS = (
 )
 MINIMUM_COVERAGE_PERCENT = 75
 FULL_EVIDENCE_PERCENT = 100.0
+VM_RESISTANCE_SEED_COUNT = 10
+VM_HANDLER_COUNT = 255
+MINIMUM_VM_VARIANT_COUNT = 2
 _MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
 _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
@@ -116,6 +119,37 @@ def _check_inventory() -> None:
     _validate_inventory(inventory)
 
 
+def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict[str, object]) -> None:
+    if handler.get("seed_count") != VM_RESISTANCE_SEED_COUNT or bytecode.get("seed_count") != VM_RESISTANCE_SEED_COUNT:
+        raise ValueError("VM resistance artifacts must cover ten seeds")
+    if handler.get("cross_seed_has_exact_normalised_matches") is not False:
+        raise ValueError("handler clustering must not contain exact cross-seed matches")
+    if handler.get("cross_seed_largest_normalised_cluster") != 1:
+        raise ValueError("handler clustering must keep normalized clusters unique")
+    seeds = handler.get("seeds")
+    if not isinstance(seeds, list) or any(
+        not isinstance(seed, dict)
+        or seed.get("handler_count") != VM_HANDLER_COUNT
+        or seed.get("raw_unique_count") != seed.get("handler_count")
+        or seed.get("normalised_unique_count") != seed.get("handler_count")
+        for seed in seeds
+    ):
+        raise ValueError("handler clustering artifact must preserve per-seed handler uniqueness")
+    if bytecode.get("all_handler_stride_unique_count") != len(bytecode.get("all_handler_stride_values", [])):
+        raise ValueError("bytecode grammar stride count must match stride values")
+    if bytecode.get("all_handler_stride_unique_count", 0) < MINIMUM_VM_VARIANT_COUNT:
+        raise ValueError("bytecode grammar must record multiple handler strides")
+    padding = bytecode.get("padding_histogram")
+    if not isinstance(padding, dict) or len(padding) < MINIMUM_VM_VARIANT_COUNT:
+        raise ValueError("bytecode grammar must record varied handler padding")
+
+
+def _check_vm_resistance_artifacts() -> None:
+    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    _validate_vm_resistance_artifacts(handler, bytecode)
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -203,6 +237,7 @@ def main() -> int:
         _check_matrix(matrix, package_version)
         _check_changelog(package_version)
         _check_inventory()
+        _check_vm_resistance_artifacts()
         _check_documentation_links()
         _check_ci_contract()
         _check_release_workflow()
