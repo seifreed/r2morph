@@ -447,6 +447,27 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "stack-strings-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_morphing_evasion.py"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "code-virtualization": {
         "formats": [
           "ELF"
@@ -512,7 +533,7 @@
       "api-hashing": "experimental",
       "import-obfuscation": "experimental",
       "self-modifying-code": "experimental",
-      "stack-strings": "experimental",
+      "stack-strings": "stack-strings-instruction-catalogued",
       "string-obfuscation": "experimental",
       "pattern-substitution": "experimental-corpus-selected",
       "polymorphic-engine": "experimental"
@@ -878,9 +899,10 @@
       },
       "maturity_profile_counts": {
         "code-virtualization": 1,
-        "experimental": 11,
+        "experimental": 10,
         "experimental-corpus-selected": 6,
         "short-jump-patching-instruction-catalogued": 1,
+        "stack-strings-instruction-catalogued": 1,
         "tier-1-native": 3
       },
       "false_positive_risk_counts": {
@@ -908,8 +930,9 @@
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       },
       "instructions_affected_counts": {
-        "Not exhaustively catalogued.": 11,
+        "Not exhaustively catalogued.": 10,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
+        "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
         "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
@@ -921,8 +944,9 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 20,
+        "tests/unit": 19,
         "tests/unit/test_code_virtualization_diagnostics.py": 1,
+        "tests/unit/test_morphing_evasion.py": 1,
         "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
@@ -1000,7 +1024,6 @@
           "opaque-predicates",
           "polymorphic-engine",
           "self-modifying-code",
-          "stack-strings",
           "string-obfuscation"
         ]
       },
@@ -1078,7 +1101,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "string-obfuscation": [
@@ -1199,7 +1221,6 @@
             "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code",
-            "stack-strings",
             "string-obfuscation"
           ]
         },
@@ -1277,7 +1298,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "string-obfuscation": [
@@ -1395,7 +1415,6 @@
             "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code",
-            "stack-strings",
             "string-obfuscation"
           ]
         },
@@ -1433,13 +1452,13 @@
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 78,
-        "total_maturity_field_gaps": 59,
+        "total_maturity_blockers": 77,
+        "total_maturity_field_gaps": 58,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 11
+        "instructions_affected_gap_passes": 10
       },
       "differential_evidence_scope": {
         "platform_scope": {
