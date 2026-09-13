@@ -16,7 +16,13 @@ from scripts.check_release_contract import (
     _check_matrix,
     _check_pass_maturity_gap_summary,
     _check_pass_selection_contract,
+    _check_readme_adversarial_summary,
+    _check_readme_cross_platform_parity,
+    _check_readme_differential_summary,
+    _check_readme_pass_surface,
     _check_readme_support_summary,
+    _check_readme_vm_resistance_summary,
+    _check_readme_vm_review_scope,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
     _validate_independent_review_freshness,
@@ -385,6 +391,20 @@ def test_release_contract_rejects_stale_readme_support_summary() -> None:
         rejected = True
 
     expect(rejected)
+
+
+def test_readme_support_claims_match_release_artifacts() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+
+    expect(
+        _check_readme_support_summary(matrix) is None
+        and _check_readme_pass_surface(matrix) is None
+        and _check_readme_cross_platform_parity() is None
+        and _check_readme_differential_summary() is None
+        and _check_readme_adversarial_summary() is None
+        and _check_readme_vm_review_scope() is None
+        and _check_readme_vm_resistance_summary() is None
+    )
 
 
 def test_support_matrix_summarizes_test_evidence_profiles() -> None:
