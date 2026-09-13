@@ -21,6 +21,13 @@ _MATURITY_SEQUENCE_FIELDS = (
     ("unit_tests", "unit_test_evidence_counts"),
     ("e2e_tests", "e2e_test_evidence_counts"),
 )
+_MATURITY_GAP_VALUES = {
+    "performance": {"Not measured per pass."},
+    "false_positive_risk": {"Not independently measured."},
+    "decompiler_effectiveness": {"Not independently measured."},
+    "compatibility": {"Composition with other passes is not contractually supported."},
+    "instructions_affected": {"Not exhaustively catalogued."},
+}
 
 
 def _add_count(counts: dict[str, int], value: str) -> None:
@@ -67,6 +74,26 @@ def _maturity_summary_counts(maturity: object) -> dict[str, dict[str, int]]:
         if isinstance(profile_fields, dict):
             _merge_profile_counts(profile_fields, summaries)
     return summaries
+
+
+def _maturity_gap_passes(maturity: object) -> dict[str, list[str]]:
+    gaps = {field: [] for field in _MATURITY_GAP_VALUES}
+    if not isinstance(maturity, dict):
+        return gaps
+    pass_profiles = maturity.get("pass_profiles")
+    profiles = maturity.get("profiles")
+    if not isinstance(pass_profiles, dict) or not isinstance(profiles, dict):
+        return gaps
+    for pass_name, profile_name in pass_profiles.items():
+        if not isinstance(pass_name, str) or not isinstance(profile_name, str):
+            continue
+        profile_fields = profiles.get(profile_name)
+        if not isinstance(profile_fields, dict):
+            continue
+        for field, gap_values in _MATURITY_GAP_VALUES.items():
+            if profile_fields.get(field) in gap_values:
+                gaps[field].append(pass_name)
+    return {field: sorted(pass_names) for field, pass_names in gaps.items()}
 
 
 def _coverage_percent(evidenced: int, total: int) -> float:
@@ -137,6 +164,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     official_cell_count = official_evidenced + official_not_supported
     non_official_cell_count = non_official_evidenced + non_official_not_supported
     maturity_summaries = _maturity_summary_counts(document.get("maturity"))
+    maturity_gap_passes = _maturity_gap_passes(document.get("maturity"))
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -155,6 +183,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
+            "maturity_gap_passes": maturity_gap_passes,
         },
         "cells": cells,
     }

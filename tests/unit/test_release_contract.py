@@ -291,6 +291,31 @@ def test_support_matrix_summarizes_instruction_coverage_profiles() -> None:
     )
 
 
+def test_support_matrix_names_maturity_gap_passes() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    gaps = summary["maturity_gap_passes"]
+
+    expect(
+        set(gaps)
+        == {
+            "performance",
+            "false_positive_risk",
+            "decompiler_effectiveness",
+            "compatibility",
+            "instructions_affected",
+        }
+        and len(gaps["performance"]) == summary["performance_counts"]["Not measured per pass."]
+        and len(gaps["false_positive_risk"]) == summary["false_positive_risk_counts"]["Not independently measured."]
+        and len(gaps["decompiler_effectiveness"])
+        == summary["decompiler_effectiveness_counts"]["Not independently measured."]
+        and len(gaps["compatibility"])
+        == summary["compatibility_counts"]["Composition with other passes is not contractually supported."]
+        and len(gaps["instructions_affected"])
+        == summary["instructions_affected_counts"]["Not exhaustively catalogued."]
+    )
+
+
 def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

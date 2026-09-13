@@ -62,7 +62,9 @@ The current summary still reports 12 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement, 15 with no
 independent decompiler-effectiveness measurement, 12 without contractual
 composition support, and 18 without an exhaustive affected-instruction
-catalogue.
+catalogue. The generated matrix also names the affected passes in
+`maturity_gap_passes`, so per-pass maturity gaps are reviewable without
+reconstructing them from profile text.
 Runtime support classification also exposes `parity_gap` and
 `parity_gap_scope` so reports can distinguish stable ELF x86-64 from
 format-level and architecture-level preview gaps. Maturity-profile summaries
