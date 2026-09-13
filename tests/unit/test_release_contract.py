@@ -23,6 +23,7 @@ from scripts.check_release_contract import (
     _check_readme_support_summary,
     _check_readme_vm_resistance_summary,
     _check_readme_vm_review_scope,
+    _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
     _validate_independent_review_freshness,
@@ -437,6 +438,12 @@ def test_release_contract_documentation_links_exist() -> None:
 
 def test_release_contract_documentation_claims_remain_current() -> None:
     expect(_check_documentation_claims() is None)
+
+
+def test_release_contract_rejects_overstated_release_claims() -> None:
+    claims = _forbidden_release_claims("This is production-ready with full parity and ready to ship.")
+
+    expect(claims == ("production-ready", "ready to ship", "full parity"))
 
 
 def test_independent_review_packet_lists_vm_resistance_reports() -> None:

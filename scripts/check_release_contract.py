@@ -69,6 +69,19 @@ _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
     ROOT / "docs" / "compatibility-corpus.md",
 )
+_RELEASE_HONESTY_FILES = (
+    ROOT / "README.md",
+    ROOT / "CHANGELOG.md",
+    ROOT / "docs" / "independent-review-packet.md",
+    ROOT / "docs" / "pass-maturity.md",
+)
+_FORBIDDEN_RELEASE_CLAIMS = (
+    "production-ready",
+    "production ready",
+    "ready to ship",
+    "full parity",
+    "universal protector",
+)
 _BANNED_BINARY_NINJA_OMISSION_PHRASES = (
     "Binary Ninja is explicitly omitted",
     "Binary Ninja is intentionally omitted",
@@ -571,10 +584,16 @@ def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK
                 raise ValueError(f"missing documentation link: {target}")
 
 
+def _forbidden_release_claims(text: str) -> tuple[str, ...]:
+    normalized = text.lower()
+    return tuple(phrase for phrase in _FORBIDDEN_RELEASE_CLAIMS if phrase in normalized)
+
+
 def _check_documentation_claims() -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    if "production" + "-ready" in readme:
-        raise ValueError("README must not claim alpha support is production grade")
+    for document in _RELEASE_HONESTY_FILES:
+        claims = _forbidden_release_claims(document.read_text(encoding="utf-8"))
+        if claims:
+            raise ValueError(f"{document.relative_to(ROOT)} contains unsupported release claim: {claims[0]}")
     corpus = (ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
     if any(phrase in corpus for phrase in _BANNED_BINARY_NINJA_OMISSION_PHRASES):
         raise ValueError("compatibility corpus must not claim Binary Ninja is intentionally omitted")
