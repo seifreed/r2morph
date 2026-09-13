@@ -117,6 +117,7 @@ _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _MIN_NESTING_DEPTH = 2
+_REPEAT_PREFIXES = ("rep ", "repe ", "repne ", "repz ", "repnz ")
 _INSTRUCTION_ENCODING_PREFIXES = (
     "rex ",
     "rex.w ",
@@ -127,10 +128,13 @@ _INSTRUCTION_ENCODING_PREFIXES = (
     "addr32 ",
 )
 _CONTROL_TRANSFER_PREFIXES = (
+    *_REPEAT_PREFIXES,
     *_INSTRUCTION_ENCODING_PREFIXES,
     "notrack ",
     "bnd ",
 )
+_DIAGNOSTIC_PREFIXES = (*_REPEAT_PREFIXES, *_INSTRUCTION_ENCODING_PREFIXES)
+_SYNC_PREFIXES = ("xacquire ", "xrelease ")
 
 
 def _strip_opcode_prefixes(opcode: str, prefixes: tuple[str, ...]) -> str:
@@ -810,18 +814,9 @@ class CodeVirtualizationPass(MutationPass):
             instruction.get("opcode") or instruction.get("disasm") or instruction.get("mnemonic") or ""
         ).lower()
         opcode_terms = opcode.replace(",", " ").replace("[", " ").replace("]", " ").split()
-        opcode_without_repeat = (
-            opcode.removeprefix("rep ")
-            .removeprefix("repe ")
-            .removeprefix("repne ")
-            .removeprefix("repz ")
-            .removeprefix("repnz ")
-        )
-        opcode_without_encoding_prefix = _strip_opcode_prefixes(opcode_without_repeat, _INSTRUCTION_ENCODING_PREFIXES)
-        opcode_without_sync_prefix = _strip_opcode_prefixes(
-            opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease "),
-            _INSTRUCTION_ENCODING_PREFIXES,
-        )
+        opcode_without_repeat = _strip_opcode_prefixes(opcode, _REPEAT_PREFIXES)
+        opcode_without_encoding_prefix = _strip_opcode_prefixes(opcode, _DIAGNOSTIC_PREFIXES)
+        opcode_without_sync_prefix = _strip_opcode_prefixes(opcode, (*_DIAGNOSTIC_PREFIXES, *_SYNC_PREFIXES))
         mnemonic_parts = opcode_without_encoding_prefix.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
         control_opcode = _strip_control_transfer_prefixes(opcode_without_repeat)

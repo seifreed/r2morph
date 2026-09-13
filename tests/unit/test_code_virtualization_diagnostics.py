@@ -542,6 +542,17 @@ def test_implicit_string_memory_instruction_reports_memory_capability() -> None:
     expect(capability == "memory_operands")
 
 
+def test_prefixed_repeated_string_memory_instruction_reports_memory_capability() -> None:
+    movs_capability, _movs_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "data16 rep movsb"}
+    )
+    scas_capability, _scas_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "addr32 repnz scasb"}
+    )
+
+    expect(movs_capability == "memory_operands" and scas_capability == "memory_operands")
+
+
 def test_memory_fence_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "sync", "opcode": "mfence"}
