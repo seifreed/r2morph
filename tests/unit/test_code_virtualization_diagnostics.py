@@ -480,6 +480,14 @@ def test_cache_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_descriptor_table_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "sgdt [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_simd_memory_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "mov", "opcode": "vmovdqu ymm0, ymmword [rax]"}
