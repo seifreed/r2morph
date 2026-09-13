@@ -646,7 +646,15 @@ def _check_release_recovery_workflow() -> None:
 def _check_corpus_workflows() -> None:
     adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
-    for fragment in ("--passes all", "--require-tool-slots", "--require-applied"):
+    for fragment in (
+        "--passes all",
+        "--require-tool-slots",
+        "--require-applied",
+        "Validate adversarial campaign summary",
+        "missing_pass_runs",
+        "missing_tool_runs",
+        "passes without applications",
+    ):
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
     for fragment in (

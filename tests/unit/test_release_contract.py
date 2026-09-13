@@ -624,6 +624,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
     expect(
         "--passes all" in adversarial
         and "--require-tool-slots" in adversarial
+        and "Validate adversarial campaign summary" in adversarial
+        and "missing_pass_runs" in adversarial
+        and "missing_tool_runs" in adversarial
+        and "passes without applications" in adversarial
         and "--passes all" in differential
         and "--require-complete-evidence" in differential
         and "--count 3" in differential

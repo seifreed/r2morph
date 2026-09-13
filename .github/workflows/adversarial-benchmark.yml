@@ -42,6 +42,27 @@ jobs:
             --require-tool-slots \
             --output adversarial-benchmark.json
 
+      - name: Validate adversarial campaign summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("adversarial-benchmark.json").read_text(encoding="utf-8"))
+          summary = report["summary"]
+          if summary["missing_pass_runs"] != 0:
+              raise SystemExit(f"missing pass runs: {summary['missing_pass_runs_by_pass']}")
+          if summary["missing_tool_runs"] != 0:
+              raise SystemExit(f"missing tool runs: {summary['missing_tool_runs_by_tool']}")
+          missing_applications = [
+              name
+              for name, values in report["pass_summary"].items()
+              if values["applied"] == 0
+          ]
+          if missing_applications:
+              raise SystemExit(f"passes without applications: {missing_applications}")
+          PY
+
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7
         with:
