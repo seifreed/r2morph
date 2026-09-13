@@ -777,7 +777,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif "fs:" in opcode or "gs:" in opcode:
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
-        elif opcode.startswith("lock "):
+        elif opcode.startswith("lock ") or (opcode.startswith("xchg") and "[" in opcode):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
         elif kind in ("swi", "syscall") or opcode.startswith(("syscall", "sysenter", "int ", "iret")):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
