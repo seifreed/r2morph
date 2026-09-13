@@ -595,6 +595,18 @@ def test_direction_flag_instruction_reports_stack_abi_capability() -> None:
     expect(capability == "stack_and_abi")
 
 
+def test_carry_flag_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other", "opcode": "stc"})
+
+    expect(capability == "stack_and_abi")
+
+
+def test_complement_carry_flag_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other", "opcode": "cmc"})
+
+    expect(capability == "stack_and_abi")
+
+
 def test_load_flags_instruction_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "lahf"}

@@ -856,6 +856,8 @@ class CodeVirtualizationPass(MutationPass):
         elif mnemonic in {"retf", "retfq", "lret", "lretq"} or opcode.startswith(
             (
                 "cld",
+                "clc",
+                "cmc",
                 "clrssbsy",
                 "enter",
                 "incssp",
@@ -870,6 +872,7 @@ class CodeVirtualizationPass(MutationPass):
                 "saveprevssp",
                 "sahf",
                 "setssbsy",
+                "stc",
                 "std",
                 "wrss",
                 "wruss",
