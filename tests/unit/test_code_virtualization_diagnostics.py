@@ -140,6 +140,7 @@ def test_unsupported_record_includes_bounded_instruction_context() -> None:
 
     expect(
         record["instruction_type"] == "call"
+        and record["instruction_mnemonic"] == "call"
         and str(record["instruction_opcode"]).startswith("call ")
         and len(str(record["instruction_opcode"])) == _EXPECTED_DIAGNOSTIC_OPCODE_CHARS
         and record["instruction_size"] == _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE

@@ -807,11 +807,13 @@ class CodeVirtualizationPass(MutationPass):
     ) -> dict[str, Any]:
         """Build a stable, actionable record for a rejected function."""
         instruction_size = (instruction or {}).get("size", 0)
+        instruction_opcode = str((instruction or {}).get("opcode", ""))[:_MAX_DIAGNOSTIC_OPCODE_CHARS]
         return {
             "function_address": int(func.get("addr", 0)),
             "instruction_address": int((instruction or {}).get("addr", func.get("addr", 0))),
             "instruction_type": str((instruction or {}).get("type", "")),
-            "instruction_opcode": str((instruction or {}).get("opcode", ""))[:_MAX_DIAGNOSTIC_OPCODE_CHARS],
+            "instruction_mnemonic": instruction_opcode.split(maxsplit=1)[0] if instruction_opcode else "",
+            "instruction_opcode": instruction_opcode,
             "instruction_size": instruction_size if isinstance(instruction_size, int) and instruction_size > 0 else 0,
             "capability": capability,
             "reason": reason,

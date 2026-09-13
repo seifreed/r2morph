@@ -160,7 +160,8 @@ def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> N
         "missing capability, reason, and severity" in contract
         and "Partial-virtualization diagnostics are rendered with the same bounded capability" in contract
         and "partial-only virtualization result is classified as an omitted pass with its diagnostic reason" in contract
-        and "Each unsupported-function diagnostic keeps the rejected instruction address, type, size" in contract
+        and "Each unsupported-function diagnostic keeps the rejected instruction address, mnemonic, type, size"
+        in contract
     )
 
 
