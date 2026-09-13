@@ -273,8 +273,22 @@ def _check_differential_gap_evidence(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     scope = summary["differential_evidence_scope"]
     evidence = summary["differential_gap_evidence"]
+    blockers = summary["differential_evidence_blockers"]
     if sorted(evidence) != sorted(scope):
         raise ValueError("differential gap evidence must cover every declared scope")
+    if blockers["platform_gap_scope"] != scope["platform_gap_scope"]:
+        raise ValueError("differential platform blockers must match declared gap scope")
+    if blockers["corpus_gap_scope"] != scope["corpus_gap_scope"]:
+        raise ValueError("differential corpus blockers must match declared gap scope")
+    totals = summary["differential_blocker_totals"]
+    platform_blockers = sum(len(values) for values in blockers["platform_gap_scope"].values())
+    corpus_blockers = sum(len(values) for values in blockers["corpus_gap_scope"].values())
+    if (
+        totals["platform_gap_scope"] != platform_blockers
+        or totals["corpus_gap_scope"] != corpus_blockers
+        or totals["total_differential_blockers"] != platform_blockers + corpus_blockers
+    ):
+        raise ValueError("differential blocker totals must match declared gap scope")
     for gap, row in evidence.items():
         if row["status"] == "complete":
             raise ValueError(f"differential gap must remain incomplete until closed: {gap}")
@@ -301,6 +315,17 @@ def _check_adversarial_benchmark_evidence(matrix: dict[str, object]) -> None:
         raise ValueError("Binary Ninja must remain an explicit unavailable analyzer slot")
     if blockers["binary_ninja_unavailable"] != ["binary-ninja"]:
         raise ValueError("Binary Ninja unavailable blocker must remain explicit")
+    totals = summary["adversarial_blocker_totals"]
+    incomplete_tool_count = len(blockers["incomplete_tool_coverage"])
+    binary_ninja_count = len(blockers["binary_ninja_unavailable"])
+    campaign_scope_count = len(blockers["comparable_campaign_scope"])
+    if (
+        totals["incomplete_tool_coverage"] != incomplete_tool_count
+        or totals["binary_ninja_unavailable"] != binary_ninja_count
+        or totals["comparable_campaign_scope"] != campaign_scope_count
+        or totals["total_adversarial_blockers"] != incomplete_tool_count + binary_ninja_count + campaign_scope_count
+    ):
+        raise ValueError("adversarial blocker totals must match declared benchmark blockers")
     for tool, row in measured.items():
         if row["status"] != "completed":
             raise ValueError(f"adversarial benchmark measured tool is incomplete: {tool}")

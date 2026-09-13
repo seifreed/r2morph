@@ -660,6 +660,19 @@ def test_release_contract_rejects_missing_differential_gap_evidence() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_stale_differential_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["differential_blocker_totals"]["total_differential_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_differential_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "differential blocker totals" in str(error)
+
+    expect(rejected)
+
+
 def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
@@ -704,6 +717,19 @@ def test_release_contract_rejects_missing_binary_ninja_adversarial_slot() -> Non
         _check_adversarial_benchmark_evidence(matrix)
     except ValueError as error:
         rejected = "Binary Ninja" in str(error)
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_stale_adversarial_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["adversarial_blocker_totals"]["total_adversarial_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_adversarial_benchmark_evidence(matrix)
+    except ValueError as error:
+        rejected = "adversarial blocker totals" in str(error)
 
     expect(rejected)
 
