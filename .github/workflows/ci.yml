@@ -313,6 +313,10 @@ jobs:
           cd /tmp/radare2
           sys/install.sh
 
+      - name: Install radare2 (Windows)
+        if: runner.os == 'Windows'
+        run: choco install radare2 -y --no-progress
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip

@@ -1536,6 +1536,8 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
     expect(
         "Run cross-platform package smoke tests" in cross_platform_job
         and "Install build backend for cross-platform wheel smoke" in cross_platform_job
+        and "Install radare2 (Windows)" in cross_platform_job
+        and "choco install radare2 -y --no-progress" in cross_platform_job
         and 'run: python -m pip install "build>=1.2.0"' in cross_platform_job
         and "shell: bash" in cross_platform_job
         and "python -m build" in cross_platform_job

@@ -1010,6 +1010,8 @@ def _check_ci_contract() -> None:
         "python -W error -m pytest",
         "windows-latest",
         "runner.os == 'Windows'",
+        "Install radare2 (Windows)",
+        "choco install radare2 -y --no-progress",
         "python -m pip install --force-reinstall dist/*.whl",
         'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
         'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")',
