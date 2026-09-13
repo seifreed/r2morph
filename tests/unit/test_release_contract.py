@@ -211,6 +211,12 @@ def test_release_contract_documentation_links_exist() -> None:
     expect(_check_documentation_links() is None)
 
 
+def test_independent_review_packet_lists_vm_resistance_reports() -> None:
+    packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+
+    expect("protection-handler-clustering.json" in packet and "protection-bytecode-grammar.json" in packet)
+
+
 def test_release_contract_rejects_missing_documentation_link(tmp_path: Path) -> None:
     document = tmp_path / "review.md"
     document.write_text("[missing](missing.json)", encoding="utf-8")

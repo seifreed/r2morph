@@ -45,6 +45,8 @@ checks are evidence, not a human approval.
 - [`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e.json)
 - [`protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json`](protection-ida-mcp-corpus-2026-09-06-6de7999e-summary.json)
+- [`protection-handler-clustering.json`](protection-handler-clustering.json)
+- [`protection-bytecode-grammar.json`](protection-bytecode-grammar.json)
 - [`independent-review.json`](independent-review.json)
 - [`../scripts/check_release_contract.py`](../scripts/check_release_contract.py)
 - [`../tests/unit/test_release_contract.py`](../tests/unit/test_release_contract.py)
