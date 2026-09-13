@@ -157,6 +157,30 @@ def _check_inventory() -> None:
     _validate_inventory(inventory)
 
 
+def _validate_bytecode_diversification(bytecode: dict[str, object]) -> None:
+    if (
+        bytecode.get("seeds_with_target_handlers") != VM_RESISTANCE_SEED_COUNT
+        or bytecode.get("seeds_without_target_handlers") != 0
+    ):
+        raise ValueError("bytecode grammar must find target handlers for every seed")
+    if bytecode.get("target_stride_diverse") is not True:
+        raise ValueError("bytecode grammar target handler stride must be diverse")
+    if bytecode.get("target_stride_unique_count") != len(bytecode.get("target_stride_values", [])):
+        raise ValueError("bytecode grammar target stride count must match stride values")
+    if bytecode.get("target_stride_unique_count", 0) < MINIMUM_VM_VARIANT_COUNT:
+        raise ValueError("bytecode grammar target handlers must record multiple strides")
+    seeds = bytecode.get("seeds")
+    if not isinstance(seeds, list) or any(
+        not isinstance(seed, dict)
+        or seed.get("handler_count") != VM_HANDLER_COUNT
+        or not isinstance(seed.get("target_handler_count"), int)
+        or seed["target_handler_count"] < 1
+        or not seed.get("target_stride_values")
+        for seed in seeds
+    ):
+        raise ValueError("bytecode grammar artifact must preserve per-seed target handler diversity")
+
+
 def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict[str, object]) -> None:
     if handler.get("seed_count") != VM_RESISTANCE_SEED_COUNT or bytecode.get("seed_count") != VM_RESISTANCE_SEED_COUNT:
         raise ValueError("VM resistance artifacts must cover ten seeds")
@@ -180,6 +204,7 @@ def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict
     padding = bytecode.get("padding_histogram")
     if not isinstance(padding, dict) or len(padding) < MINIMUM_VM_VARIANT_COUNT:
         raise ValueError("bytecode grammar must record varied handler padding")
+    _validate_bytecode_diversification(bytecode)
 
 
 def _check_vm_resistance_artifacts() -> None:
