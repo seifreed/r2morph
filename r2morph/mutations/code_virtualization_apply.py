@@ -81,9 +81,11 @@ def _empty_result(target_diagnostic: dict[str, Any] | None) -> dict[str, Any]:
         "total_bytecode_bytes": 0,
         "unsupported_functions": [],
         "unsupported_functions_total": 0,
+        "unsupported_function_capabilities": {},
         "unsupported_function_severities": {},
         "partial_virtualization": [],
         "partial_virtualization_total": 0,
+        "partial_virtualization_capabilities": {},
         "partial_virtualization_severities": {},
         "target_diagnostic": target_diagnostic,
     }
@@ -481,9 +483,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         "total_bytecode_bytes": total_bytecode,
         "unsupported_functions": unsupported,
         "unsupported_functions_total": unsupported_total,
+        "unsupported_function_capabilities": _field_counts(unsupported, "capability"),
         "unsupported_function_severities": _field_counts(unsupported, "severity"),
         "partial_virtualization": partial,
         "partial_virtualization_total": partial_total,
+        "partial_virtualization_capabilities": _field_counts(partial, "capability"),
         "partial_virtualization_severities": _field_counts(partial, "severity"),
         "target_diagnostic": None,
     }

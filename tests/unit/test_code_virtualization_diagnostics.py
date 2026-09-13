@@ -102,13 +102,21 @@ def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> 
     expect(not CodeVirtualizationPass(config={"reject_partial_virtualization": False}).reject_partial_virtualization)
 
 
-def test_virtualization_result_exposes_diagnostic_severity_counts() -> None:
-    records = [{"severity": "error"}, {"severity": "warning"}, {"severity": "error"}, {"capability": "calls"}]
+def test_virtualization_result_exposes_diagnostic_counts() -> None:
+    records = [
+        {"severity": "error", "capability": "calls"},
+        {"severity": "warning", "capability": "memory_operands"},
+        {"severity": "error", "capability": "calls"},
+        {"capability": "calls"},
+    ]
     empty = _empty_result(None)
 
     expect(
         _field_counts(records, "severity") == {"error": 2, "warning": 1}
+        and _field_counts(records, "capability") == {"calls": 3, "memory_operands": 1}
+        and empty["unsupported_function_capabilities"] == {}
         and empty["unsupported_function_severities"] == {}
+        and empty["partial_virtualization_capabilities"] == {}
         and empty["partial_virtualization_severities"] == {}
     )
 
