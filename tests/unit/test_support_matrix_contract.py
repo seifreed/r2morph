@@ -7,6 +7,10 @@ from scripts.support_matrix import build_matrix
 from tests.utils.assertions import expect
 
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
+_EXPECTED_EVIDENCED_CELLS = 29
+_EXPECTED_NOT_SUPPORTED_CELLS = 235
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 7
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 235
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
@@ -24,6 +28,18 @@ def test_support_matrix_marks_unsupported_combinations_without_evidence() -> Non
     unsupported = [cell for cell in matrix["cells"] if cell["status"] == "not-supported"]
 
     expect(unsupported and all(cell["evidence"] == [] for cell in unsupported))
+
+
+def test_support_matrix_summarizes_parity_gaps() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    summary = build_matrix(document)["summary"]
+
+    expect(
+        summary["evidenced_cells"] == _EXPECTED_EVIDENCED_CELLS
+        and summary["not_supported_cells"] == _EXPECTED_NOT_SUPPORTED_CELLS
+        and summary["non_official_evidenced_cells"] == _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS
+        and summary["non_official_not_supported_cells"] == _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS
+    )
 
 
 def test_support_matrix_honors_explicit_evidence_cells() -> None:

@@ -40,6 +40,9 @@ The compatibility corpus selection currently covers `BlockReordering`,
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
 single fixture or a static disassembly result alone.
+The generated matrix summary records evidenced versus not-supported cells,
+including non-official targets, so PE, Mach-O, ARM, and AArch64 parity gaps are
+visible without expanding every cell.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive

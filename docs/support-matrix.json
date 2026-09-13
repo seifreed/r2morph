@@ -570,6 +570,12 @@
       ]
     },
     "cell_count": 264,
+    "summary": {
+      "evidenced_cells": 29,
+      "not_supported_cells": 235,
+      "non_official_evidenced_cells": 7,
+      "non_official_not_supported_cells": 235
+    },
     "cells": [
       {
         "pass": "nop",
@@ -581,7 +587,8 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
         ]
       },
       {
@@ -615,7 +622,8 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
         ]
       },
       {
@@ -649,7 +657,8 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
         ]
       },
       {
@@ -669,7 +678,8 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
         ]
       },
       {
@@ -1058,8 +1068,7 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration/test_dead_code_injection_flag_safe_real.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration"
         ]
       },
       {
@@ -1146,8 +1155,7 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration/test_control_flow_flattening_flag_safe_real.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration"
         ]
       },
       {
@@ -1670,8 +1678,7 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration/test_protection_maturity_baseline.py",
-          "fixtures/dataset/elf_constant_unfold_x86_64.S"
+          "tests/integration"
         ]
       },
       {

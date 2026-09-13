@@ -13,6 +13,9 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
     architectures = tuple(document.get("architectures", {}))
+    official = document.get("official_target", {})
+    official_format = official.get("format")
+    official_architecture = official.get("architecture")
     cells: list[dict[str, Any]] = []
     for mutation_pass in document.get("passes", []):
         name = mutation_pass["name"]
@@ -34,6 +37,19 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                         "evidence": mutation_pass.get("evidence", []) if covered else [],
                     }
                 )
+    evidenced = sum(1 for cell in cells if cell["status"] == "evidenced")
+    non_official_evidenced = sum(
+        1
+        for cell in cells
+        if cell["status"] == "evidenced"
+        and (cell["format"] != official_format or cell["architecture"] != official_architecture)
+    )
+    non_official_not_supported = sum(
+        1
+        for cell in cells
+        if cell["status"] == "not-supported"
+        and (cell["format"] != official_format or cell["architecture"] != official_architecture)
+    )
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -41,6 +57,12 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "architectures": list(architectures),
         },
         "cell_count": len(cells),
+        "summary": {
+            "evidenced_cells": evidenced,
+            "not_supported_cells": len(cells) - evidenced,
+            "non_official_evidenced_cells": non_official_evidenced,
+            "non_official_not_supported_cells": non_official_not_supported,
+        },
         "cells": cells,
     }
 
