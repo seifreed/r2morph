@@ -278,17 +278,19 @@ def _parity_blocker_totals(
     gap_targets: list[dict[str, object]],
     gap_scope: dict[str, list[str]],
 ) -> dict[str, int]:
+    incomplete_gap_targets = [
+        target
+        for target in gap_targets
+        if isinstance(target.get("evidence_percent"), int | float)
+        and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
+    ]
     return {
-        "non_official_gap_targets": len(
-            [
-                target
-                for target in gap_targets
-                if isinstance(target.get("evidence_percent"), int | float)
-                and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
-            ]
-        ),
+        "non_official_gap_targets": len(incomplete_gap_targets),
         "parity_gap_architectures": len(gap_scope["architectures"]),
         "parity_gap_formats": len(gap_scope["formats"]),
+        "total_parity_blockers": len(incomplete_gap_targets)
+        + len(gap_scope["architectures"])
+        + len(gap_scope["formats"]),
     }
 
 

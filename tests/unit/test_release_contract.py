@@ -503,6 +503,8 @@ def test_support_matrix_names_parity_evidence_blockers() -> None:
         and totals["non_official_gap_targets"] == len(summary["non_official_gap_targets"])
         and totals["parity_gap_formats"] == len(summary["parity_gap_scope"]["formats"])
         and totals["parity_gap_architectures"] == len(summary["parity_gap_scope"]["architectures"])
+        and totals["total_parity_blockers"]
+        == totals["non_official_gap_targets"] + totals["parity_gap_formats"] + totals["parity_gap_architectures"]
         and all(
             target["evidence_percent"] < summary["official_evidence_percent"]
             for target in blockers["non_official_gap_targets"]

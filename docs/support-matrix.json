@@ -764,7 +764,8 @@
       "parity_blocker_totals": {
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
-        "parity_gap_formats": 2
+        "parity_gap_formats": 2,
+        "total_parity_blockers": 16
       },
       "stability_counts": {
         "experimental": 19,
