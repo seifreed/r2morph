@@ -26,6 +26,7 @@ _EXPECTED_LEN_RESULT_LIVE_IN_5 = 5
 _EXPECTED_LEN_RESULT_LIVE_OUT_4 = 4
 _EXPECTED_LEN_RESULT_LIVE_OUT_5 = 5
 _EXPECTED_REG_SIZE_64 = 64
+_EXPECTED_RMW_USE_ADDRESS = 0x1010
 _EXPECTED_USE_ADDRESS_4101 = 0x1005
 
 
@@ -480,6 +481,32 @@ class TestDataFlowAnalyzer:
         expect(not (len(used) <= 0))
         reg_names = {r.name for r in used}
         expect("eax" in reg_names or "ebx" in reg_names)
+
+    def test_read_modify_write_destination_is_live_in(self):
+        """Test read-modify-write destinations are block live-ins."""
+        cfg = ControlFlowGraph(function_address=0x4000, function_name="rmw_func")
+        block = BasicBlock(
+            address=0x4000,
+            size=4,
+            instructions=[{"offset": 0x4000, "type": "add", "disasm": "add eax, ebx"}],
+            successors=[],
+            predecessors=[],
+            block_type=BlockType.RETURN,
+        )
+        cfg.add_block(block)
+
+        result = DataFlowAnalyzer(cfg).analyze()
+        live_names = {register.name for register in result.live_in[0x4000]}
+
+        expect({"eax", "ebx"}.issubset(live_names))
+
+    def test_read_modify_write_destination_has_def_use_chain(self):
+        """Test read-modify-write destinations consume reaching definitions."""
+        result = DataFlowAnalyzer(create_test_cfg()).analyze()
+        eax_chain = result.get_def_use_chain(Register("eax", 32))
+
+        uses = set() if eax_chain is None else {use.address for use in eax_chain.uses}
+        expect(_EXPECTED_RMW_USE_ADDRESS in uses)
 
     def test_get_block_def(self):
         """Test extracting registers defined in block."""

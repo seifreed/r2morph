@@ -12,7 +12,7 @@ def test_dataflow_block_sets_track_use_and_def() -> None:
     ]
 
     expect(compute_block_def(instructions) == {("eax", 32), ("ecx", 32), ("rflags", 64)})
-    expect(compute_block_use(instructions) == {("ebx", 32), ("memory", 0)})
+    expect(compute_block_use(instructions) == {("ebx", 32), ("ecx", 32), ("memory", 0)})
 
 
 def test_dataflow_block_sets_branch_reads_status_flags() -> None:
@@ -25,6 +25,18 @@ def test_dataflow_block_sets_arithmetic_defines_status_flags() -> None:
     instructions = [{"disasm": "add eax, ebx", "type": "add"}]
 
     expect(compute_block_def(instructions) == {("eax", 32), ("rflags", 64)})
+
+
+def test_dataflow_block_sets_read_modify_write_uses_destination() -> None:
+    instructions = [{"disasm": "add eax, ebx", "type": "add"}]
+
+    expect(compute_block_use(instructions) == {("eax", 32), ("ebx", 32)})
+
+
+def test_dataflow_block_sets_store_uses_address_register() -> None:
+    instructions = [{"disasm": "mov [rax], ebx", "type": "mov"}]
+
+    expect(compute_block_use(instructions) == {("rax", 64), ("ebx", 32)})
 
 
 def test_dataflow_block_sets_varargs_call_reads_sysv_argument_state() -> None:

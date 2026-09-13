@@ -10,6 +10,31 @@ from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SI
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
+_READ_BOTH_OPERANDS_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bt",
+        "cmp",
+        "cmpxchg",
+        "imul",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "test",
+        "xadd",
+        "xchg",
+        "xor",
+    }
+)
 
 
 def compute_block_use(instructions: list[dict[str, Any]], abi: str = "sysv_amd64") -> set[tuple[str, int]]:
@@ -61,11 +86,15 @@ def _extract_used_registers(insn: dict[str, Any], abi: str) -> set[tuple[str, in
         return used
 
     operands = operand_parts[1]
+    opcode = operand_parts[0]
     if "," in operands:
         src_parts = operands.split(",")
         if len(src_parts) >= _MIN_INSTRUCTION_PART_COUNT:
             src = src_parts[1].strip()
             used.update(extract_registers_from_operand(src))
+            dest = src_parts[0].strip()
+            if "[" in dest or opcode in _READ_BOTH_OPERANDS_MNEMONICS or opcode.startswith("cmov"):
+                used.update(extract_registers_from_operand(dest))
 
     for reg in extract_registers_from_operand(operands):
         if "(" in operands and ")" in operands:

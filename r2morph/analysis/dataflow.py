@@ -33,6 +33,31 @@ from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SI
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 
 _MIN_INSTRUCTION_PART_COUNT = 2
+_READ_BOTH_OPERANDS_MNEMONICS = frozenset(
+    {
+        "adc",
+        "add",
+        "and",
+        "bt",
+        "cmp",
+        "cmpxchg",
+        "imul",
+        "or",
+        "rcl",
+        "rcr",
+        "rol",
+        "ror",
+        "sbb",
+        "sar",
+        "shl",
+        "shr",
+        "sub",
+        "test",
+        "xadd",
+        "xchg",
+        "xor",
+    }
+)
 
 DataFlowDirection = _DataFlowDirection
 
@@ -135,12 +160,17 @@ class DataFlowAnalyzer:
             return used
 
         operands = operand_parts[1]
+        opcode = operand_parts[0]
         if "," in operands:
             src_parts = operands.split(",")
             if len(src_parts) >= _MIN_INSTRUCTION_PART_COUNT:
                 src = src_parts[1].strip()
                 for reg in self._extract_registers_from_operand(src):
                     used.add(reg)
+                dest = src_parts[0].strip()
+                if "[" in dest or opcode in _READ_BOTH_OPERANDS_MNEMONICS or opcode.startswith("cmov"):
+                    for reg in self._extract_registers_from_operand(dest):
+                        used.add(reg)
 
         for reg in self._extract_registers_from_operand(operands):
             if "(" in operands and ")" in operands:
