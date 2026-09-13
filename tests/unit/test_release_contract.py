@@ -1491,6 +1491,20 @@ def test_ci_runs_generated_support_matrix_freshness_check() -> None:
     expect("python scripts/support_matrix.py --check docs/support-matrix.json" in workflow)
 
 
+def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    expect(
+        "Run cross-platform package smoke tests" in workflow
+        and "python -m build" in workflow
+        and "python -m pip install --force-reinstall dist/*.whl" in workflow
+        and 'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")' in workflow
+        and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in workflow
+        and '"tests/unit/test_circular_imports.py"' in workflow
+        and '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"' in workflow
+    )
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 

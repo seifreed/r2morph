@@ -141,6 +141,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
           pip install -r requirements.txt
           python -m pip install --editable .
 
@@ -329,7 +330,42 @@ jobs:
       - name: Run cross-platform package smoke tests
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
         run: |
-          python -W error -m pytest -v tests/unit/test_circular_imports.py tests/unit/test_cli_basic_commands.py::test_cli_version_function --no-cov --tb=short
+          python -m build
+          python -m pip install --force-reinstall dist/*.whl
+          python - <<'PY'
+          import shutil
+          import subprocess
+          import sys
+          import tempfile
+          from pathlib import Path
+
+          source_root = Path.cwd()
+          wheel_root = Path(tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-"))
+          for name in ("tests", "fixtures", "pyproject.toml"):
+              source = source_root / name
+              target = wheel_root / name
+              if source.is_dir():
+                  shutil.copytree(source, target)
+              else:
+                  shutil.copy2(source, target)
+          subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"], cwd=wheel_root, check=True)
+          subprocess.run(
+              [
+                  sys.executable,
+                  "-W",
+                  "error",
+                  "-m",
+                  "pytest",
+                  "-v",
+                  "tests/unit/test_circular_imports.py",
+                  "tests/unit/test_cli_basic_commands.py::test_cli_version_function",
+                  "--no-cov",
+                  "--tb=short",
+              ],
+              cwd=wheel_root,
+              check=True,
+          )
+          PY
 
       - name: Upload cross-platform coverage artifact
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
