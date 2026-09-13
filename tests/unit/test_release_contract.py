@@ -1448,10 +1448,20 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
         and "Run VM resistance seed-diversity smoke" in adversarial
+        and "scripts/protection_handler_clustering.py" in adversarial
+        and '--output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"' in adversarial
+        and "Validate VM resistance seed-diversity evidence" in adversarial
+        and "pending-human-adversarial-review" in adversarial
+        and "cross_seed_has_exact_normalised_matches" in adversarial
+        and "cross_seed_largest_normalised_cluster" in adversarial
+        and "cross_seed_nearest_similarity_mean" in adversarial
+        and "similarity_threshold" in adversarial
         and 'cp -R docs "$wheel_root"/' in adversarial
         and "test_protection_bytecode_grammar.py" in adversarial
         and "test_protection_handler_clustering.py" in adversarial
         and "test_resistance_measurement_contract.py" in adversarial
+        and "Upload VM resistance seed-diversity evidence" in adversarial
+        and "vm-resistance-seed-diversity" in adversarial
         and "--passes all" in differential
         and "--require-complete-evidence" in differential
         and "--generated-inputs" in differential

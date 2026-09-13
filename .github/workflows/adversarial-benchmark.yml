@@ -136,13 +136,42 @@ jobs:
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cp -R docs "$wheel_root"/
           cd "$wheel_root"
+          python scripts/protection_handler_clustering.py \
+            --first-seed 20260820 \
+            --count 10 \
+            --output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"
           python -W error -m pytest -q --no-cov --tb=short \
             tests/integration/test_protection_bytecode_grammar.py \
             tests/integration/test_protection_handler_clustering.py \
             tests/unit/test_resistance_measurement_contract.py
+
+      - name: Validate VM resistance seed-diversity evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("vm-resistance-seed-diversity.json").read_text(encoding="utf-8"))
+          if report["seed_count"] != 10:
+              raise SystemExit(f"unexpected seed count: {report['seed_count']}")
+          if report["adversarial_validation"]["status"] != "pending-human-adversarial-review":
+              raise SystemExit(f"unexpected adversarial validation: {report['adversarial_validation']}")
+          if report["cross_seed_has_exact_normalised_matches"]:
+              raise SystemExit("handler clustering has exact cross-seed matches")
+          if report["cross_seed_largest_normalised_cluster"] != 1:
+              raise SystemExit(f"unexpected largest cluster: {report['cross_seed_largest_normalised_cluster']}")
+          if report["cross_seed_nearest_similarity_mean"] >= report["similarity_threshold"]:
+              raise SystemExit("mean handler similarity reached the configured threshold")
+          PY
 
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7
         with:
           name: adversarial-benchmark
           path: adversarial-benchmark.json
+
+      - name: Upload VM resistance seed-diversity evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: vm-resistance-seed-diversity
+          path: vm-resistance-seed-diversity.json

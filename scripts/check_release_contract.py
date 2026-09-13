@@ -1149,10 +1149,20 @@ def _check_corpus_workflows() -> None:
         "incomplete tool coverage mismatch",
         "passes without applications",
         "Run VM resistance seed-diversity smoke",
+        "scripts/protection_handler_clustering.py",
+        '--output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"',
+        "Validate VM resistance seed-diversity evidence",
+        "pending-human-adversarial-review",
+        "cross_seed_has_exact_normalised_matches",
+        "cross_seed_largest_normalised_cluster",
+        "cross_seed_nearest_similarity_mean",
+        "similarity_threshold",
         'cp -R docs "$wheel_root"/',
         "test_protection_bytecode_grammar.py",
         "test_protection_handler_clustering.py",
         "test_resistance_measurement_contract.py",
+        "Upload VM resistance seed-diversity evidence",
+        "vm-resistance-seed-diversity",
     ):
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
