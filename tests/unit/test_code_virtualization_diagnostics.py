@@ -373,6 +373,14 @@ def test_swapgs_instruction_reports_thread_local_storage_capability() -> None:
     expect(capability == "thread_local_storage")
 
 
+def test_tls_segment_register_reports_thread_local_storage_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "mov", "opcode": "mov ax, fs"}
+    )
+
+    expect(capability == "thread_local_storage")
+
+
 def test_locked_instruction_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "lock", "opcode": "lock add qword [rax], 1"}
@@ -744,6 +752,14 @@ def test_descriptor_table_instruction_reports_cpu_environment_capability() -> No
 def test_segment_access_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "lar eax, ax"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_data_segment_register_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "mov", "opcode": "mov ds, ax"}
     )
 
     expect(capability == "cpu_environment")
