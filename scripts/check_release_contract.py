@@ -50,6 +50,13 @@ _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
     ROOT / "docs" / "compatibility-corpus.md",
 )
+_BANNED_BINARY_NINJA_OMISSION_PHRASES = (
+    "Binary Ninja is explicitly omitted",
+    "Binary Ninja is intentionally omitted",
+    "Binary Ninja remains intentionally omitted",
+    "Binary Ninja remains omitted by project decision",
+    "Binary Ninja remains excluded by project decision",
+)
 
 
 def _load_matrix() -> dict[str, object]:
@@ -201,6 +208,14 @@ def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK
                 raise ValueError(f"missing documentation link: {target}")
 
 
+def _check_documentation_claims() -> None:
+    corpus = (ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
+    if any(phrase in corpus for phrase in _BANNED_BINARY_NINJA_OMISSION_PHRASES):
+        raise ValueError("compatibility corpus must not claim Binary Ninja is intentionally omitted")
+    if "Binary Ninja through its installed API" not in corpus:
+        raise ValueError("compatibility corpus must retain the Binary Ninja availability-slot contract")
+
+
 def _check_ci_contract() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     for job in REQUIRED_CI_JOBS:
@@ -282,6 +297,7 @@ def main() -> int:
         _check_vm_resistance_artifacts()
         _check_independent_review_artifact()
         _check_documentation_links()
+        _check_documentation_claims()
         _check_ci_contract()
         _check_release_workflow()
         _check_release_recovery_workflow()

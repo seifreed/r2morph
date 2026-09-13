@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.check_release_contract import (
     _check_changelog,
+    _check_documentation_claims,
     _check_documentation_links,
     _check_matrix,
     _validate_independent_review_artifact,
@@ -337,6 +338,10 @@ def test_release_contract_current_tree_is_valid() -> None:
 
 def test_release_contract_documentation_links_exist() -> None:
     expect(_check_documentation_links() is None)
+
+
+def test_release_contract_documentation_claims_remain_current() -> None:
+    expect(_check_documentation_claims() is None)
 
 
 def test_independent_review_packet_lists_vm_resistance_reports() -> None:
