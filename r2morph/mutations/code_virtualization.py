@@ -921,6 +921,8 @@ class CodeVirtualizationPass(MutationPass):
             opcode.removeprefix("rep ")
             .removeprefix("repe ")
             .removeprefix("repne ")
+            .removeprefix("repz ")
+            .removeprefix("repnz ")
             .startswith(("cmps", "lods", "movs", "scas", "stos", "xlat"))
         ):
             capability, reason = (
