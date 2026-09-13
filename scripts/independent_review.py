@@ -174,10 +174,14 @@ def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
     summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
     blockers = summary.get("maturity_evidence_blockers", {}) if isinstance(summary, dict) else {}
     missing_fields = blockers.get("missing_fields_by_field") if isinstance(blockers, dict) else None
+    missing_by_pass = blockers.get("missing_fields_by_pass") if isinstance(blockers, dict) else None
     native_gaps = blockers.get("native_evidence_gap_passes") if isinstance(blockers, dict) else None
     passed = (
         isinstance(missing_fields, dict)
         and set(missing_fields) == _EXPECTED_MATURITY_BLOCKER_FIELDS
+        and missing_fields == summary.get("maturity_gap_passes")
+        and missing_by_pass == summary.get("maturity_gaps_by_pass")
+        and native_gaps == summary.get("native_evidence_gap_passes")
         and isinstance(native_gaps, list)
         and bool(native_gaps)
     )
