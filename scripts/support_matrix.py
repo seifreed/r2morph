@@ -174,11 +174,14 @@ def _maturity_blocker_totals(
     native_evidence_gap_passes: list[str],
 ) -> dict[str, int]:
     gap_counts = {f"{field}_gap_passes": len(pass_names) for field, pass_names in maturity_gap_passes.items()}
+    total_field_gaps = sum(gap_counts.values())
+    native_gap_count = len(native_evidence_gap_passes)
     return {
         "maturity_gap_categories": len([field for field, pass_names in maturity_gap_passes.items() if pass_names]),
-        "native_evidence_gap_passes": len(native_evidence_gap_passes),
+        "native_evidence_gap_passes": native_gap_count,
         "passes_with_maturity_field_gaps": len(maturity_gaps_by_pass),
-        "total_maturity_field_gaps": sum(gap_counts.values()),
+        "total_maturity_blockers": native_gap_count + total_field_gaps,
+        "total_maturity_field_gaps": total_field_gaps,
         **gap_counts,
     }
 

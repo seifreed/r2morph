@@ -22,6 +22,7 @@ _EXPECTED_MATURITY_PROFILE_COUNTS = {
 }
 _EXPECTED_MATURITY_GAP_CATEGORIES = 5
 _EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 69
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 88
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
@@ -68,6 +69,7 @@ def test_support_matrix_summarizes_total_maturity_field_gaps() -> None:
     expect(
         totals["maturity_gap_categories"] == _EXPECTED_MATURITY_GAP_CATEGORIES
         and totals["total_maturity_field_gaps"] == _EXPECTED_TOTAL_MATURITY_FIELD_GAPS
+        and totals["total_maturity_blockers"] == _EXPECTED_TOTAL_MATURITY_BLOCKERS
     )
 
 
