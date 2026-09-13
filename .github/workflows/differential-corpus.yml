@@ -144,7 +144,14 @@ jobs:
             tests/integration/test_code_virtualization_call_callee_saved_real.py::test_virtualized_callee_saved_fixture_preserves_registers \
             tests/integration/test_code_virtualization_call_flags_stack_real.py::test_call_flags_stack_fixture_virtualization_preserves_exit_code \
             tests/integration/test_code_virtualization_tls_real.py::test_virtualized_elf_preserves_fs_relative_access \
-            tests/integration/test_code_virtualization_threads_signals_real.py::test_virtualized_threads_tls_and_signal_preserve_exit_code
+            tests/integration/test_code_virtualization_threads_signals_real.py::test_virtualized_threads_tls_and_signal_preserve_exit_code \
+            tests/integration/test_code_virtualization_call_abi_real.py::test_virtualized_elf_preserves_integer_varargs_stack_abi \
+            tests/integration/test_code_virtualization_call_abi_real.py::test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi \
+            tests/integration/test_code_virtualization_internal_icall_real.py::test_virtualized_direct_call_to_separate_function_preserves_exit_code \
+            tests/integration/test_code_virtualization_internal_icall_real.py::test_virtualized_local_indirect_call_preserves_exit_code \
+            tests/integration/test_code_virtualization_fp_vex_nondestructive_real.py::test_virtualized_vex_nondestructive_packed_add_preserves_result \
+            tests/integration/test_code_virtualization_simd_integer_real.py::test_simd_integer_fixture_virtualization_preserves_exit_code \
+            tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function
 
       - name: Run parser and rewriter fuzz smoke
         run: |

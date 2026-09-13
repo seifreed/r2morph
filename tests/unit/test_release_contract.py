@@ -1496,6 +1496,13 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_call_flags_stack_fixture_virtualization_preserves_exit_code" in differential
         and "test_virtualized_elf_preserves_fs_relative_access" in differential
         and "test_virtualized_threads_tls_and_signal_preserve_exit_code" in differential
+        and "test_virtualized_elf_preserves_integer_varargs_stack_abi" in differential
+        and "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi" in differential
+        and "test_virtualized_direct_call_to_separate_function_preserves_exit_code" in differential
+        and "test_virtualized_local_indirect_call_preserves_exit_code" in differential
+        and "test_virtualized_vex_nondestructive_packed_add_preserves_result" in differential
+        and "test_simd_integer_fixture_virtualization_preserves_exit_code" in differential
+        and "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function" in differential
         and "Run parser and rewriter fuzz smoke" in differential
         and "Validate parser and rewriter fuzz smoke" in differential
         and "scripts/continuous_fuzz.py" in differential
