@@ -209,6 +209,9 @@ def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK
 
 
 def _check_documentation_claims() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    if "production" + "-ready" in readme:
+        raise ValueError("README must not claim alpha support is production grade")
     corpus = (ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
     if any(phrase in corpus for phrase in _BANNED_BINARY_NINJA_OMISSION_PHRASES):
         raise ValueError("compatibility corpus must not claim Binary Ninja is intentionally omitted")

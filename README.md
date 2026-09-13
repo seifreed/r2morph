@@ -114,7 +114,7 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 
 ## Mutation Passes
 
-### Stable (tested, production-ready)
+### Tier 1 (official target)
 
 | Pass | CLI Flag | Description |
 |------|----------|-------------|
