@@ -582,6 +582,30 @@ def test_descriptor_table_instruction_reports_cpu_environment_capability() -> No
     expect(capability == "cpu_environment")
 
 
+def test_page_invalidation_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "invpcid rax, [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_machine_status_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "lmsw ax"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_access_control_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "stac"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_simd_memory_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "mov", "opcode": "vmovdqu ymm0, ymmword [rax]"}
