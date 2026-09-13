@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 
 from scripts.adversarial_benchmark import (
+    _EXPECTED_TOOLS,
     _campaign_summary,
     _measure_tool,
+    _missing_tool_slot_error,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     _pass_result,
@@ -202,6 +204,40 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["error_tool_runs_by_tool"] == {"ida-pro": 1}
         and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
     )
+
+
+def test_adversarial_benchmark_tool_slot_gate_accepts_unavailable_rows() -> None:
+    tools = [
+        {"tool": tool, "status": "unavailable", "reason": "local tool unavailable"}
+        for tool in (*_EXPECTED_TOOLS, "custom")
+    ]
+    report = {
+        "summary": _campaign_summary(
+            [{"passes": [{"pass_name": "CodeVirtualization", "status": "applied"}], "tools": tools}],
+            fixture_count=1,
+            pass_names=("CodeVirtualization",),
+        )
+    }
+
+    expect(_missing_tool_slot_error(report) is None)
+
+
+def test_adversarial_benchmark_tool_slot_gate_rejects_missing_rows() -> None:
+    report = {
+        "summary": _campaign_summary(
+            [
+                {
+                    "passes": [{"pass_name": "CodeVirtualization", "status": "applied"}],
+                    "tools": [{"tool": "custom", "status": "completed"}],
+                }
+            ],
+            fixture_count=1,
+            pass_names=("CodeVirtualization",),
+        )
+    }
+    error = _missing_tool_slot_error(report)
+
+    expect(error is not None and "missing analyzer tool slots" in error and "angr" in error)
 
 
 def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path) -> None:

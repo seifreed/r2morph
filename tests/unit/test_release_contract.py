@@ -430,6 +430,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
 
     expect(
         "--passes all" in adversarial
+        and "--require-tool-slots" in adversarial
         and "--passes all" in differential
         and "--count 1" in differential
         and "differential-corpus-by-pass" in differential

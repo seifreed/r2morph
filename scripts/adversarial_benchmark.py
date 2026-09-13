@@ -591,6 +591,19 @@ def _passes_without_applications(report: dict[str, object]) -> tuple[str, ...]:
     )
 
 
+def _missing_tool_slot_error(report: dict[str, object]) -> str | None:
+    summary = report.get("summary")
+    if not isinstance(summary, dict):
+        return "analyzer tool slot validation requires a corpus benchmark report"
+    missing_runs = summary.get("missing_tool_runs")
+    missing_tools = summary.get("missing_tools")
+    if isinstance(missing_runs, int) and missing_runs == 0 and missing_tools == []:
+        return None
+    if isinstance(missing_tools, list) and missing_tools:
+        return "missing analyzer tool slots: " + ", ".join(str(tool) for tool in missing_tools)
+    return "missing analyzer tool runs"
+
+
 def _measure_pair_tools(original: Path, protected: Path) -> list[dict[str, object]]:
     tools = [_measure_tool(tool, original, protected) for tool in _EXPECTED_TOOLS]
     tools.append(
@@ -887,9 +900,16 @@ def main() -> None:
         action="store_true",
         help="fail when a selected pass does not apply to any corpus fixture",
     )
+    parser.add_argument(
+        "--require-tool-slots",
+        action="store_true",
+        help="fail when an expected analyzer slot is missing from a corpus benchmark",
+    )
     args = parser.parse_args()
     if args.all_fixtures and args.protected:
         parser.error("--protected is valid only with one original binary")
+    if args.require_tool_slots and not args.all_fixtures:
+        parser.error("--require-tool-slots requires --all")
     try:
         pass_names = _parse_pass_names(args.passes)
     except ValueError as error:
@@ -903,6 +923,8 @@ def main() -> None:
         passes_without_mutations = _passes_without_applications(report)
         if passes_without_mutations:
             parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))
+    if args.require_tool_slots and (error := _missing_tool_slot_error(report)):
+        parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")

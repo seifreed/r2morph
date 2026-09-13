@@ -39,6 +39,7 @@ jobs:
             --dataset fixtures/dataset \
             --passes all \
             --require-applied \
+            --require-tool-slots \
             --output adversarial-benchmark.json
 
       - name: Upload benchmark report
