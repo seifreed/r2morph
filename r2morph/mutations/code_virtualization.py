@@ -795,7 +795,7 @@ class CodeVirtualizationPass(MutationPass):
             ("cli", "cpuid", "hlt", "in ", "out ", "rdrand", "rdseed", "rdtsc", "rdtscp", "sti", "xgetbv")
         ):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
-        elif any(
+        elif opcode.startswith(("fxrstor", "fxsave", "xrstor", "xsave")) or any(
             token in opcode
             for token in (
                 "xmm",
