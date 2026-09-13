@@ -90,7 +90,10 @@ def test_support_matrix_declares_virtualization_static_dataflow_gate() -> None:
     profile_name = document["maturity"]["pass_profiles"]["code-virtualization"]
     preconditions = document["maturity"]["profiles"][profile_name]["preconditions"]
 
-    expect(all(term in preconditions for term in ("CFG", "SSA", "liveness")))
+    expect(
+        all(term in preconditions for term in ("Whole-function semantics", "CFG", "SSA", "liveness"))
+        and "unsupported capabilities are rejected before mutation" in preconditions
+    )
 
 
 def test_support_matrix_declares_virtualization_runtime_boundary_coverage() -> None:
@@ -98,7 +101,23 @@ def test_support_matrix_declares_virtualization_runtime_boundary_coverage() -> N
     profile_name = document["maturity"]["pass_profiles"]["code-virtualization"]
     instructions = document["maturity"]["profiles"][profile_name]["instructions_affected"]
 
-    expect(all(term in instructions for term in ("stack/ABI", "TLS", "signals", "threads")))
+    expect(
+        all(
+            term in instructions
+            for term in (
+                "memory",
+                "calls/returns",
+                "stack/ABI",
+                "TLS",
+                "signals",
+                "threads",
+                "floating-point",
+                "SIMD",
+                "exception/unwinding",
+                "diagnostics",
+            )
+        )
+    )
 
 
 def test_support_matrix_honors_explicit_evidence_cells() -> None:
