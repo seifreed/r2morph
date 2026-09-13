@@ -758,7 +758,9 @@ class CodeVirtualizationPass(MutationPass):
         instructions = _trim_after_unreferenced_terminal_syscall(instructions)
         for instruction in instructions:
             kind = instruction.get("type")
-            if kind == "ret":
+            opcode_parts = str(instruction.get("opcode", "")).lower().split(maxsplit=1)
+            opcode_mnemonic = opcode_parts[0] if opcode_parts else ""
+            if kind == "ret" and (not opcode_mnemonic or opcode_mnemonic in {"ret", "retq", "retn", "retl", "retw"}):
                 continue
             if _is_syscall_instruction(instruction):
                 continue
@@ -780,6 +782,7 @@ class CodeVirtualizationPass(MutationPass):
             .removeprefix("repz ")
             .removeprefix("repnz ")
         )
+        mnemonic = opcode_without_repeat.split(maxsplit=1)[0]
         if kind in _COMPUTED_JUMP_TYPES:
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
@@ -834,7 +837,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
         elif "call" in kind or opcode.startswith("call"):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
-        elif opcode.startswith(
+        elif mnemonic in {"retf", "retfq", "lret", "lretq"} or opcode.startswith(
             (
                 "cld",
                 "clrssbsy",
