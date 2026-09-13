@@ -113,6 +113,18 @@ def test_compatibility_corpus_names_the_full_pass_selection() -> None:
     expect(expected_selection in contract)
 
 
+def test_compatibility_corpus_documents_differential_metrics() -> None:
+    contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
+
+    expect(
+        "Each transformed image must preserve the native result" in contract
+        and "stdout and stderr" in contract
+        and "output size/hash" in contract
+        and "transform-duration, runtime-duration, and static analyzer evidence" in contract
+        and "runtime-observable failure reasons" in contract
+    )
+
+
 def test_support_matrix_uses_corpus_selected_profile_for_measured_experimental_passes() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     maturity = matrix["maturity"]
