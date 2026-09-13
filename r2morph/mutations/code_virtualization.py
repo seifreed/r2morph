@@ -788,7 +788,28 @@ class CodeVirtualizationPass(MutationPass):
         elif opcode.startswith(("cpuid", "rdtsc", "rdtscp", "xgetbv")):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
         elif any(
-            token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7")
+            token in opcode
+            for token in (
+                "xmm",
+                "ymm",
+                "zmm",
+                "mm0",
+                "mm1",
+                "mm2",
+                "mm3",
+                "mm4",
+                "mm5",
+                "mm6",
+                "mm7",
+                "st0",
+                "st1",
+                "st2",
+                "st3",
+                "st4",
+                "st5",
+                "st6",
+                "st7",
+            )
         ):
             capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
         elif "[" in opcode:
