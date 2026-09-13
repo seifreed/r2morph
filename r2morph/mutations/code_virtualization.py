@@ -783,6 +783,8 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
         elif "call" in kind or opcode.startswith("call"):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
+        elif opcode.startswith(("enter", "leave")):
+            capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
         elif any(
             token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1", "st2", "st3", "st4", "st5", "st6", "st7")
         ):

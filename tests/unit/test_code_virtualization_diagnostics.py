@@ -372,6 +372,14 @@ def test_indirect_call_instruction_reports_call_capability() -> None:
     expect(capability == "calls")
 
 
+def test_stack_frame_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "push", "opcode": "enter 0x20, 0x0"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
 def test_simd_memory_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "mov", "opcode": "vmovdqu ymm0, ymmword [rax]"}
