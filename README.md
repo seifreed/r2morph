@@ -106,8 +106,10 @@ the generated matrix currently records 22/22 evidenced cells for the official
 ELF x86-64 target (100.0% evidence) and 7/242 evidenced cells for non-official
 targets (2.89% evidence). It currently classifies 3 passes as Tier 1 and
 19 passes as experimental.
-The same summary still records 10 passes with no per-pass performance
-measurement, 12 with no independent false-positive measurement,
+The scheduled extended maturity smoke now records output-size,
+transform-duration, runtime-duration, and static metric summaries for every
+selected pass. The same summary still records 12 with no independent
+false-positive measurement,
 12 with no independent decompiler-effectiveness measurement,
 11 without contractual composition support, and no remaining affected-instruction catalogue gap.
 The reproducible GCC/Clang corpus and its build manifest live in the public

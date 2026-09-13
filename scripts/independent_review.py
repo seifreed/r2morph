@@ -26,7 +26,6 @@ _EXPECTED_MATURITY_BLOCKER_FIELDS = {
     "compatibility",
     "decompiler_effectiveness",
     "false_positive_risk",
-    "performance",
 }
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     "evidence_quality": "seed-diversity-only",

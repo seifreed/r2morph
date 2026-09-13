@@ -50,7 +50,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 57
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 47
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -344,7 +344,8 @@ def test_support_matrix_summarizes_performance_profiles() -> None:
 
     expect(
         sum(summary["performance_counts"].values()) == len(matrix["passes"])
-        and any("Not measured" in value for value in summary["performance_counts"])
+        and "Not measured per pass." not in summary["performance_counts"]
+        and any("scheduled extended maturity pass smoke" in value for value in summary["performance_counts"])
     )
 
 
@@ -366,12 +367,12 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
     expect(
         set(gaps)
         == {
-            "performance",
             "false_positive_risk",
             "decompiler_effectiveness",
             "compatibility",
         }
-        and len(gaps["performance"]) == summary["performance_counts"]["Not measured per pass."]
+        and "Not measured per pass." not in summary["performance_counts"]
+        and any("scheduled extended maturity pass smoke" in value for value in summary["performance_counts"])
         and len(gaps["false_positive_risk"]) == summary["false_positive_risk_counts"]["Not independently measured."]
         and len(gaps["decompiler_effectiveness"])
         == summary["decompiler_effectiveness_counts"]["Not independently measured."]
@@ -393,7 +394,7 @@ def test_support_matrix_names_maturity_gaps_by_pass() -> None:
     expect(
         inverted == gaps_by_field
         and "anti-disassembly" in gaps_by_pass
-        and "performance" in gaps_by_pass["anti-disassembly"]
+        and "performance" not in gaps_by_pass["anti-disassembly"]
         and all(gaps for gaps in gaps_by_pass.values())
     )
 
@@ -407,7 +408,7 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
         blockers["native_evidence_gap_passes"] == summary["native_evidence_gap_passes"]
         and blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
         and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
-        and "performance" in blockers["missing_fields_by_field"]
+        and "performance" not in blockers["missing_fields_by_field"]
         and "anti-disassembly" in blockers["missing_fields_by_pass"]
     )
 
@@ -438,7 +439,7 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
 
 def test_release_contract_rejects_missing_maturity_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("performance")
+    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("false_positive_risk")
 
     rejected = False
     try:
@@ -1520,6 +1521,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "Run extended maturity pass smoke" in differential
         and "Validate extended maturity pass smoke" in differential
         and "EXTENDED_MATURITY_PASSES" in differential
+        and 'required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}'
+        in differential
+        and "extended maturity performance metrics are incomplete" in differential
+        and "extended maturity performance coverage is incomplete" in differential
         and "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation" in differential
         and "SelfModifyingCode,ShortJumpPatching" in differential
         and "missing_extended_passes" in differential

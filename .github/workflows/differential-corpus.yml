@@ -248,6 +248,21 @@ jobs:
               raise SystemExit(
                   f"extended maturity pass errors: {report['campaign_summary']['extended_passes_with_error_runs']}"
               )
+          required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}
+          missing_metrics = {
+              name: count
+              for name, count in report["campaign_summary"]["metric_missing_runs"].items()
+              if name in required_metrics and count != 0
+          }
+          if missing_metrics:
+              raise SystemExit(f"extended maturity performance metrics are incomplete: {missing_metrics}")
+          incomplete_metrics = {
+              name: passes
+              for name, passes in report["campaign_summary"]["passes_with_incomplete_coverage"].items()
+              if name in required_metrics and passes
+          }
+          if incomplete_metrics:
+              raise SystemExit(f"extended maturity performance coverage is incomplete: {incomplete_metrics}")
           PY
 
       - name: Upload per-pass differential report

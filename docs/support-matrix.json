@@ -443,7 +443,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -465,7 +465,7 @@
         "e2e_tests": [
           "tests/integration/test_polymorphic_engine_real.py"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "A real ELF x86-64 composition smoke records successful child-pass sequencing and exit-code parity; arbitrary pass combinations remain unsupported."
       },
@@ -507,7 +507,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -528,7 +528,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -549,7 +549,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -591,7 +591,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -612,7 +612,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -633,7 +633,7 @@
         "e2e_tests": [
           "tests/integration/test_mutation_opaque_predicates_apply_real.py"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -654,7 +654,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -675,7 +675,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Not measured per pass.",
+        "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -1147,7 +1147,7 @@
       "performance_counts": {
         "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
         "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
-        "Not measured per pass.": 10,
+        "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.": 10,
         "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 9,
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       },
@@ -1201,18 +1201,6 @@
         "tests/product_smoke": 3
       },
       "maturity_gap_passes": {
-        "performance": [
-          "anti-disassembly",
-          "api-hashing",
-          "code-mobility",
-          "function-outlining",
-          "import-obfuscation",
-          "opaque-predicates",
-          "polymorphic-engine",
-          "self-modifying-code",
-          "stack-strings",
-          "string-obfuscation"
-        ],
         "false_positive_risk": [
           "anti-disassembly",
           "api-hashing",
@@ -1259,20 +1247,17 @@
         "anti-disassembly": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "api-hashing": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "code-mobility": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "data-flow-mutation": [
           "compatibility",
@@ -1282,31 +1267,26 @@
         "function-outlining": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "import-obfuscation": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "opaque-predicates": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "polymorphic-engine": [
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "self-modifying-code": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "short-jump-patching": [
           "compatibility",
@@ -1316,14 +1296,12 @@
         "stack-strings": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ],
         "string-obfuscation": [
           "compatibility",
           "decompiler_effectiveness",
-          "false_positive_risk",
-          "performance"
+          "false_positive_risk"
         ]
       },
       "native_evidence_gap_passes": [
@@ -1356,18 +1334,6 @@
           "string-obfuscation"
         ],
         "missing_fields_by_field": {
-          "performance": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "stack-strings",
-            "string-obfuscation"
-          ],
           "false_positive_risk": [
             "anti-disassembly",
             "api-hashing",
@@ -1414,20 +1380,17 @@
           "anti-disassembly": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "api-hashing": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "code-mobility": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "data-flow-mutation": [
             "compatibility",
@@ -1437,31 +1400,26 @@
           "function-outlining": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "import-obfuscation": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "opaque-predicates": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "polymorphic-engine": [
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "self-modifying-code": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "short-jump-patching": [
             "compatibility",
@@ -1471,38 +1429,16 @@
           "stack-strings": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ],
           "string-obfuscation": [
             "compatibility",
             "decompiler_effectiveness",
-            "false_positive_risk",
-            "performance"
+            "false_positive_risk"
           ]
         }
       },
       "maturity_gap_evidence": {
-        "performance": {
-          "status": "per-pass-performance-incomplete",
-          "evidence_quality": "partial-corpus-metrics",
-          "evidence": [
-            "docs/protection-maturity-corpus.json",
-            "docs/pass-maturity.md"
-          ],
-          "passes": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "stack-strings",
-            "string-obfuscation"
-          ]
-        },
         "false_positive_risk": {
           "status": "independent-false-positive-rate-incomplete",
           "evidence_quality": "declared-gap-scope",
@@ -1592,12 +1528,11 @@
         }
       },
       "maturity_blocker_totals": {
-        "maturity_gap_categories": 4,
+        "maturity_gap_categories": 3,
         "native_evidence_gap_passes": 12,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 57,
-        "total_maturity_field_gaps": 45,
-        "performance_gap_passes": 10,
+        "total_maturity_blockers": 47,
+        "total_maturity_field_gaps": 35,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 11

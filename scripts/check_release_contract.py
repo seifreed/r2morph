@@ -465,7 +465,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
 
 
 def _check_readme_support_summary(matrix: dict[str, object]) -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
     summary = matrix["matrix"]["summary"]
     stability_counts = summary["stability_counts"]
     official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
@@ -476,6 +476,12 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         if instruction_gap_count
         else "no remaining affected-instruction catalogue gap"
     )
+    performance_gap_count = summary["performance_counts"].get("Not measured per pass.", 0)
+    performance_fragment = (
+        f"{performance_gap_count} passes with no per-pass performance"
+        if performance_gap_count
+        else "scheduled extended maturity smoke now records output-size,"
+    )
     for fragment in (
         f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
@@ -483,7 +489,7 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         f"{summary['non_official_evidence_percent']}% evidence",
         f"{stability_counts['tier-1']} passes as Tier 1",
         f"{stability_counts['experimental']} passes as experimental",
-        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
+        performance_fragment,
         (
             f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
             "false-positive measurement"
@@ -579,6 +585,12 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
     stability_counts = summary["stability_counts"]
     maturity_profile_counts = summary["maturity_profile_counts"]
+    performance_gap_count = summary["performance_counts"].get("Not measured per pass.", 0)
+    performance_fragment = (
+        f"{performance_gap_count} passes with no per-pass performance"
+        if performance_gap_count
+        else "scheduled extended maturity smoke now records output-size,"
+    )
     fragments = [
         f"{summary['official_evidence_percent']}% official evidence",
         f"{summary['non_official_evidence_percent']}% non-official evidence",
@@ -588,7 +600,7 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         f"{maturity_profile_counts['tier-1-native']} tier-1-native profile passes",
         f"{maturity_profile_counts['experimental-corpus-selected']} experimental-corpus-selected profile passes",
         f"{maturity_profile_counts['code-virtualization']} code-virtualization profile pass",
-        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
+        performance_fragment,
         (
             f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
             "false-positive measurement"
