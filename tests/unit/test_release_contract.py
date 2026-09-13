@@ -678,7 +678,13 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
     differential = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
 
     expect(
-        "--passes all" in adversarial
+        "schedule:" in adversarial
+        and "workflow_dispatch:" in adversarial
+        and "cron:" in adversarial
+        and "schedule:" in differential
+        and "workflow_dispatch:" in differential
+        and "cron:" in differential
+        and "--passes all" in adversarial
         and "--require-tool-slots" in adversarial
         and "Validate adversarial campaign summary" in adversarial
         and "missing_pass_runs" in adversarial

@@ -711,6 +711,9 @@ def _check_corpus_workflows() -> None:
     adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     for fragment in (
+        "schedule:",
+        "workflow_dispatch:",
+        "cron:",
         "--passes all",
         "--require-tool-slots",
         "--require-applied",
@@ -722,6 +725,9 @@ def _check_corpus_workflows() -> None:
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
     for fragment in (
+        "schedule:",
+        "workflow_dispatch:",
+        "cron:",
         "--passes all",
         "--require-complete-evidence",
         "--require-applied",
