@@ -166,6 +166,16 @@ def test_support_matrix_summarizes_instruction_coverage_profiles() -> None:
     )
 
 
+def test_support_matrix_summarizes_maturity_target_profiles() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        summary["maturity_format_counts"] == {"ELF": len(matrix["passes"])}
+        and summary["maturity_architecture_counts"] == {"x86-64": len(matrix["passes"])}
+    )
+
+
 def test_release_contract_current_tree_is_valid() -> None:
     expect(main() == 0)
 

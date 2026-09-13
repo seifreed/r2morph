@@ -8,6 +8,62 @@ import json
 from pathlib import Path
 from typing import Any
 
+_MATURITY_STRING_FIELDS = (
+    ("false_positive_risk", "false_positive_risk_counts"),
+    ("decompiler_effectiveness", "decompiler_effectiveness_counts"),
+    ("compatibility", "compatibility_counts"),
+    ("performance", "performance_counts"),
+    ("instructions_affected", "instructions_affected_counts"),
+)
+_MATURITY_SEQUENCE_FIELDS = (
+    ("formats", "maturity_format_counts"),
+    ("architectures", "maturity_architecture_counts"),
+)
+
+
+def _add_count(counts: dict[str, int], value: str) -> None:
+    counts[value] = counts.get(value, 0) + 1
+
+
+def _merge_profile_counts(profile_fields: dict[str, Any], summaries: dict[str, dict[str, int]]) -> None:
+    for field, summary_name in _MATURITY_STRING_FIELDS:
+        value = profile_fields.get(field)
+        if isinstance(value, str):
+            _add_count(summaries[summary_name], value)
+    for field, summary_name in _MATURITY_SEQUENCE_FIELDS:
+        values = profile_fields.get(field)
+        if isinstance(values, list):
+            for value in values:
+                if isinstance(value, str):
+                    _add_count(summaries[summary_name], value)
+
+
+def _maturity_summary_counts(maturity: object) -> dict[str, dict[str, int]]:
+    summaries = {
+        "maturity_profile_counts": {},
+        "false_positive_risk_counts": {},
+        "decompiler_effectiveness_counts": {},
+        "compatibility_counts": {},
+        "performance_counts": {},
+        "instructions_affected_counts": {},
+        "maturity_format_counts": {},
+        "maturity_architecture_counts": {},
+    }
+    if not isinstance(maturity, dict):
+        return summaries
+    pass_profiles = maturity.get("pass_profiles")
+    profiles = maturity.get("profiles")
+    if not isinstance(pass_profiles, dict) or not isinstance(profiles, dict):
+        return summaries
+    for profile in pass_profiles.values():
+        if not isinstance(profile, str):
+            continue
+        _add_count(summaries["maturity_profile_counts"], profile)
+        profile_fields = profiles.get(profile)
+        if isinstance(profile_fields, dict):
+            _merge_profile_counts(profile_fields, summaries)
+    return summaries
+
 
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
@@ -54,45 +110,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         if cell["status"] == "not-supported"
         and (cell["format"] != official_format or cell["architecture"] != official_architecture)
     )
-    maturity_profile_counts: dict[str, int] = {}
-    false_positive_risk_counts: dict[str, int] = {}
-    decompiler_effectiveness_counts: dict[str, int] = {}
-    compatibility_counts: dict[str, int] = {}
-    performance_counts: dict[str, int] = {}
-    instructions_affected_counts: dict[str, int] = {}
-    maturity = document.get("maturity", {})
-    profiles = maturity.get("profiles") if isinstance(maturity, dict) else None
-    if (
-        isinstance(maturity, dict)
-        and isinstance(pass_profiles := maturity.get("pass_profiles"), dict)
-        and isinstance(profiles, dict)
-    ):
-        for profile in pass_profiles.values():
-            if isinstance(profile, str):
-                maturity_profile_counts[profile] = maturity_profile_counts.get(profile, 0) + 1
-                profile_fields = profiles.get(profile)
-                if isinstance(profile_fields, dict) and isinstance(
-                    risk := profile_fields.get("false_positive_risk"), str
-                ):
-                    false_positive_risk_counts[risk] = false_positive_risk_counts.get(risk, 0) + 1
-                if isinstance(profile_fields, dict) and isinstance(
-                    effectiveness := profile_fields.get("decompiler_effectiveness"), str
-                ):
-                    decompiler_effectiveness_counts[effectiveness] = (
-                        decompiler_effectiveness_counts.get(effectiveness, 0) + 1
-                    )
-                if isinstance(profile_fields, dict) and isinstance(
-                    compatibility := profile_fields.get("compatibility"), str
-                ):
-                    compatibility_counts[compatibility] = compatibility_counts.get(compatibility, 0) + 1
-                if isinstance(profile_fields, dict) and isinstance(
-                    performance := profile_fields.get("performance"), str
-                ):
-                    performance_counts[performance] = performance_counts.get(performance, 0) + 1
-                if isinstance(profile_fields, dict) and isinstance(
-                    instructions := profile_fields.get("instructions_affected"), str
-                ):
-                    instructions_affected_counts[instructions] = instructions_affected_counts.get(instructions, 0) + 1
+    maturity_summaries = _maturity_summary_counts(document.get("maturity"))
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -106,12 +124,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
             "stability_counts": dict(sorted(stability_counts.items())),
-            "maturity_profile_counts": dict(sorted(maturity_profile_counts.items())),
-            "false_positive_risk_counts": dict(sorted(false_positive_risk_counts.items())),
-            "decompiler_effectiveness_counts": dict(sorted(decompiler_effectiveness_counts.items())),
-            "compatibility_counts": dict(sorted(compatibility_counts.items())),
-            "performance_counts": dict(sorted(performance_counts.items())),
-            "instructions_affected_counts": dict(sorted(instructions_affected_counts.items())),
+            **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
         },
         "cells": cells,
     }

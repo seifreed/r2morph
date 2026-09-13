@@ -612,6 +612,12 @@
         "Not exhaustively catalogued.": 18,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
+      },
+      "maturity_format_counts": {
+        "ELF": 22
+      },
+      "maturity_architecture_counts": {
+        "x86-64": 22
       }
     },
     "cells": [

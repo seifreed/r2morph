@@ -52,7 +52,9 @@ and pass-composition gaps remain visible release gaps instead of being buried in
 each pass row.
 Runtime support classification also exposes `parity_gap` and
 `parity_gap_scope` so reports can distinguish stable ELF x86-64 from
-format-level and architecture-level preview gaps.
+format-level and architecture-level preview gaps. Maturity-profile summaries
+also count declared formats and architectures, making the current ELF x86-64
+scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive
