@@ -503,6 +503,16 @@ class TestLivenessAnalysis:
 
         expect({register.name for register in used} == {"eax", "ebx"})
 
+    def test_read_modify_write_destination_is_live_before_address(self):
+        """Backward liveness preserves a destination that is also read."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+        analyzer.compute()
+
+        liveness = analyzer.get_instruction_liveness(0x100A)
+        live_before = set() if liveness is None else {register.name for register in liveness.live_before}
+
+        expect({"eax", "ebx"} <= live_before)
+
     def test_conditional_branch_reads_status_flags(self):
         """A conditional branch consumes the flags produced by its predecessor."""
         analyzer = LivenessAnalysis(create_simple_cfg())

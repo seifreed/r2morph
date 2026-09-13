@@ -176,16 +176,16 @@ class LivenessAnalysis:
                 insn_live.defined = defined
                 insn_live.used = used
 
-                for reg in used:
-                    if not self._register_in_set(reg, current_live):
-                        current_live.add(reg)
-
                 for reg in defined:
                     to_remove = set()
                     for live_reg in current_live:
                         if live_reg.name == reg.name:
                             to_remove.add(live_reg)
                     current_live -= to_remove
+
+                for reg in used:
+                    if not self._register_in_set(reg, current_live):
+                        current_live.add(reg)
 
                 insn_live.live_before = current_live.copy()
 

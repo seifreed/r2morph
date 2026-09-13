@@ -1877,7 +1877,8 @@
           "capabilities": [],
           "evidence": [
             "r2morph/analysis/liveness.py",
-            "tests/unit/test_dataflow.py"
+            "tests/unit/test_dataflow.py",
+            "tests/unit/test_liveness.py"
           ]
         }
       },
@@ -4050,7 +4051,8 @@
         "capabilities": [],
         "evidence": [
           "r2morph/analysis/liveness.py",
-          "tests/unit/test_dataflow.py"
+          "tests/unit/test_dataflow.py",
+          "tests/unit/test_liveness.py"
         ]
       }
     }
