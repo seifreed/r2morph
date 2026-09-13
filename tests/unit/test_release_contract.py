@@ -693,6 +693,27 @@ def test_release_contract_rejects_vm_blocker_without_semantic_gap_scope() -> Non
     expect(rejected)
 
 
+def test_release_contract_rejects_release_blockers_without_totals() -> None:
+    blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
+
+    total_fields = (
+        " `maturity_blocker_totals`",
+        " `continuous_evidence_blocker_totals`",
+        " `vm_semantic_blocker_totals`",
+        " `parity_blocker_totals`",
+        " `adversarial_evidence_blocker_totals`",
+        " `vm_resistance_blocker_totals`",
+    )
+    rejected_count = 0
+    for field in total_fields:
+        try:
+            _validate_release_blockers_text(blockers.replace(field, "", 1))
+        except ValueError:
+            rejected_count += 1
+
+    expect(rejected_count == len(total_fields))
+
+
 def test_release_contract_rejects_incomplete_release_blocker_index() -> None:
     blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
 
