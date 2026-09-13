@@ -612,6 +612,22 @@ def test_cache_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_platform_config_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "pconfig"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_cache_writeback_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "wbnoinvd"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_direct_store_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "movdir64b rdi, [rsi]"}
