@@ -1,11 +1,13 @@
 """Regression contract for the VM fixture coverage inventory."""
 
+import json
 from pathlib import Path
 
 from scripts.virtualization_coverage import _capabilities_for_fixture, build_coverage_inventory
 from tests.utils.assertions import expect
 
 _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
+_REPORT = Path(__file__).resolve().parents[2] / "docs" / "virtualization-coverage.json"
 _MINIMUM_FIXTURE_COUNT = 80
 
 
@@ -20,6 +22,12 @@ def test_virtualization_coverage_inventory_classifies_every_vm_fixture() -> None
     report = build_coverage_inventory(_DATASET)
 
     expect(report["unclassified"] == [])
+
+
+def test_virtualization_coverage_report_matches_current_fixtures() -> None:
+    report = json.loads(_REPORT.read_text(encoding="utf-8"))
+
+    expect(report == build_coverage_inventory(_DATASET))
 
 
 def test_virtualization_coverage_classifies_syscall_outside_call_capability() -> None:
