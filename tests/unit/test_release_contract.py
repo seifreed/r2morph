@@ -401,17 +401,19 @@ def test_support_matrix_names_vm_semantic_gap_scope() -> None:
 def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
+    expected = [
+        "human-adversarial-validation",
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection",
+    ]
 
     expect(
-        summary["vm_resistance_gap_scope"]
-        == [
-            "human-adversarial-validation",
-            "isa-opcode-diversity",
-            "handler-diversity",
-            "dispatcher-diversity",
-            "anti-tamper",
-            "progressive-bytecode-protection",
-        ]
+        summary["vm_resistance_gap_scope"] == expected
+        and summary["vm_resistance_evidence_blockers"]["vm_resistance_gap_scope"] == expected
+        and summary["vm_resistance_blocker_totals"]["vm_resistance_gap_scope"] == len(expected)
     )
 
 

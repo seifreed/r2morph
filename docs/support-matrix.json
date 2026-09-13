@@ -1276,7 +1276,20 @@
         "dispatcher-diversity",
         "anti-tamper",
         "progressive-bytecode-protection"
-      ]
+      ],
+      "vm_resistance_evidence_blockers": {
+        "vm_resistance_gap_scope": [
+          "human-adversarial-validation",
+          "isa-opcode-diversity",
+          "handler-diversity",
+          "dispatcher-diversity",
+          "anti-tamper",
+          "progressive-bytecode-protection"
+        ]
+      },
+      "vm_resistance_blocker_totals": {
+        "vm_resistance_gap_scope": 6
+      }
     },
     "cells": [
       {

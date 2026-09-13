@@ -180,6 +180,14 @@ def _maturity_blocker_totals(
     }
 
 
+def _vm_resistance_evidence_blockers() -> dict[str, object]:
+    return {"vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE)}
+
+
+def _vm_resistance_blocker_totals() -> dict[str, int]:
+    return {"vm_resistance_gap_scope": len(_VM_RESISTANCE_GAP_SCOPE)}
+
+
 def _coverage_percent(evidenced: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -355,6 +363,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             ),
             "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
+            "vm_resistance_evidence_blockers": _vm_resistance_evidence_blockers(),
+            "vm_resistance_blocker_totals": _vm_resistance_blocker_totals(),
         },
         "cells": cells,
     }
