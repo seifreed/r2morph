@@ -71,6 +71,21 @@ def test_adversarial_benchmark_pair_report_summarizes_tool_rows() -> None:
     expect(report["tool_summary"] == _tool_summary([{"tools": report["tools"]}]))
 
 
+def test_adversarial_benchmark_pair_report_summarizes_release_signoff_blockers() -> None:
+    report = benchmark_pair(_FIXTURE, _FIXTURE)
+    blockers = report["release_signoff_blockers"]
+    unavailable = blockers.get("unavailable_analyzers", {}) if isinstance(blockers, dict) else {}
+    totals = report["release_signoff_blocker_totals"]
+
+    expect(
+        isinstance(blockers, dict)
+        and isinstance(unavailable, dict)
+        and isinstance(totals, dict)
+        and totals["blocker_categories"] == len(blockers)
+        and totals["unavailable_analyzers"] == len(unavailable)
+    )
+
+
 def test_adversarial_benchmark_artifact_summary_matches_tool_rows() -> None:
     report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
 

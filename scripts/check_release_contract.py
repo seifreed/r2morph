@@ -549,8 +549,7 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
         raise ValueError("adversarial benchmark artifact must contain tools")
     if report.get("tool_summary") != _tool_summary([{"tools": tools}]):
         raise ValueError("adversarial benchmark artifact tool summary must match tool rows")
-    if report.get("release_signoff_blockers") != _adversarial_release_signoff_blockers(report):
-        raise ValueError("adversarial benchmark artifact must expose release signoff blockers")
+    _validate_adversarial_signoff_blockers(report)
     observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
     if observed != ADVERSARIAL_TOOL_SLOTS:
         raise ValueError("adversarial benchmark artifact must contain every analyzer slot")
@@ -568,6 +567,16 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
             raise ValueError("analyzer rows must be completed or unavailable")
 
 
+def _validate_adversarial_signoff_blockers(report: dict[str, object]) -> None:
+    signoff_blockers = report.get("release_signoff_blockers")
+    if signoff_blockers != _adversarial_release_signoff_blockers(report):
+        raise ValueError("adversarial benchmark artifact must expose release signoff blockers")
+    if not isinstance(signoff_blockers, dict):
+        raise ValueError("adversarial benchmark artifact release signoff blockers must be a map")
+    if report.get("release_signoff_blocker_totals") != _blocker_totals(signoff_blockers):
+        raise ValueError("adversarial benchmark artifact must expose release signoff blocker totals")
+
+
 def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str, object]:
     tool_summary = report.get("tool_summary")
     if not isinstance(tool_summary, dict):
@@ -581,6 +590,12 @@ def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str
         and isinstance(summary.get("unavailable_reasons"), dict)
     }
     return {"unavailable_analyzers": unavailable} if unavailable else {}
+
+
+def _blocker_totals(blockers: dict[str, object]) -> dict[str, int]:
+    totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
+    totals["blocker_categories"] = len(blockers)
+    return dict(sorted(totals.items()))
 
 
 def _check_adversarial_benchmark_artifacts() -> None:

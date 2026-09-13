@@ -137,9 +137,9 @@ runs with reasons, and non-completed analyzer runs. Companion
 `adversarial_evidence_blocker_totals` counts keep the remaining signoff blockers
 visible without expanding every row; both must be empty before the adversarial
 benchmark can support release signoff.
-Single-fixture benchmark artifacts also expose `release_signoff_blockers` so
-unavailable analyzer slots cannot be mistaken for completed adversarial
-coverage.
+Single-fixture benchmark artifacts also expose `release_signoff_blockers` and
+`release_signoff_blocker_totals` so unavailable analyzer slots cannot be
+mistaken for completed adversarial coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and passes without applications fail the run.
 

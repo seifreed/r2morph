@@ -13,6 +13,10 @@
     }
   ],
   "protected": "protected",
+  "release_signoff_blocker_totals": {
+    "blocker_categories": 1,
+    "unavailable_analyzers": 4
+  },
   "release_signoff_blockers": {
     "unavailable_analyzers": {
       "binary-ninja": {
@@ -38,7 +42,7 @@
       "errors": 0,
       "metric_functions_pairs": 1,
       "runs": 1,
-      "total_duration_seconds": 0.1586650419048965,
+      "total_duration_seconds": 0.09937683283351362,
       "total_functions_delta": 62,
       "unavailable": 0
     },
@@ -129,7 +133,7 @@
       "duration_pairs": 1,
       "errors": 0,
       "runs": 1,
-      "total_duration_seconds": 0.009680916089564562,
+      "total_duration_seconds": 0.004128207918256521,
       "unavailable": 0
     }
   },
@@ -169,13 +173,13 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.017953749978914857,
+        "duration_seconds": 0.014887082856148481,
         "functions": 2,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.14071129192598164,
+        "duration_seconds": 0.08448974997736514,
         "functions": 64,
         "status": "completed"
       },
@@ -191,13 +195,13 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.00367283308878541,
+        "duration_seconds": 0.002486333018168807,
         "exit_code": 6,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.006008083000779152,
+        "duration_seconds": 0.0016418749000877142,
         "exit_code": 6,
         "status": "completed"
       },
