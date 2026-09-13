@@ -1043,6 +1043,20 @@ def test_release_contract_rejects_vm_bytecode_stride_value_regression() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_vm_bytecode_target_operation_regression() -> None:
+    handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    bytecode["target_operation"] = {"is_immediate": True, "mnemonic": "xor", "width": 32}
+
+    rejected = False
+    try:
+        _validate_vm_resistance_artifacts(handler, bytecode)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_vm_padding_diversity_regression() -> None:
     handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
