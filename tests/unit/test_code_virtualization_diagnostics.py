@@ -21,6 +21,7 @@ from r2morph.mutations.code_virtualization_region_models import Region
 from tests.utils.assertions import expect
 
 _EXPECTED_DIAGNOSTIC_OPCODE_CHARS = 96
+_EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE = 5
 
 
 class _SectionsBinary:
@@ -126,7 +127,12 @@ def test_virtualization_result_exposes_diagnostic_counts() -> None:
 def test_unsupported_record_includes_bounded_instruction_context() -> None:
     record = CodeVirtualizationPass._unsupported_record(
         {"addr": 0x401000},
-        {"addr": 0x401004, "type": "call", "opcode": "call " + "x" * 200},
+        {
+            "addr": 0x401004,
+            "type": "call",
+            "opcode": "call " + "x" * 200,
+            "size": _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE,
+        },
         "calls",
         "call semantics were not proven",
         "error",
@@ -136,6 +142,7 @@ def test_unsupported_record_includes_bounded_instruction_context() -> None:
         record["instruction_type"] == "call"
         and str(record["instruction_opcode"]).startswith("call ")
         and len(str(record["instruction_opcode"])) == _EXPECTED_DIAGNOSTIC_OPCODE_CHARS
+        and record["instruction_size"] == _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE
     )
 
 
