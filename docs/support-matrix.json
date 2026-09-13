@@ -590,6 +590,11 @@
         "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.": 1,
         "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.": 6,
         "Not independently measured.": 12
+      },
+      "decompiler_effectiveness_counts": {
+        "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.": 6,
+        "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.": 1,
+        "Not independently measured.": 15
       }
     },
     "cells": [
