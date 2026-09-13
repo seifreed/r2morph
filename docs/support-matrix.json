@@ -401,7 +401,7 @@
           "tests/product_smoke",
           "tests/integration"
         ],
-        "performance": "Not recorded per pass in the public corpus.",
+        "performance": "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.",
         "decompiler_effectiveness": "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.",
         "compatibility": "Pass combinations are not exhaustively covered."
       },
@@ -1147,8 +1147,7 @@
         "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
         "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
         "Not measured per pass.": 10,
-        "Not recorded per pass in the public corpus.": 3,
-        "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 6,
+        "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 9,
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       },
       "instructions_affected_counts": {
