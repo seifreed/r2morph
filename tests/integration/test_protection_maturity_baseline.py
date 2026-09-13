@@ -7,6 +7,7 @@ from pathlib import Path
 
 from r2morph.adapters.process import run_process
 from r2morph.core.binary import Binary
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_FAMILY,
@@ -47,6 +48,8 @@ _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
 _EXPECTED_NOP_EXIT_CODE = 42
 _EXPECTED_SHORT_JUMP_EXIT_CODE = 7
+_FLAG_LIVE_FIXTURE = _DATASET / "elf_flag_live_x86_64"
+_FLAG_LIVE_MOV_RSI_ADDRESS = 0x1008
 _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
 _EXPECTED_MAX_SIZE_DELTA_BYTES = 25
 _EXPECTED_MIN_SIZE_DELTA_BYTES = -5
@@ -162,6 +165,15 @@ def test_register_substitution_preserves_pie_live_in_arguments(tmp_path: Path) -
     )
 
     expect(result["runs"][0]["unicorn"]["exit_code"] == _EXPECTED_PIE_EXIT_CODE)
+
+
+def test_constant_unfolding_keeps_flag_neutral_instruction_before_branch(tmp_path: Path) -> None:
+    mutated = tmp_path / "flag_live"
+    mutated.write_bytes(_FLAG_LIVE_FIXTURE.read_bytes())
+    with Binary(mutated, writable=True) as binary:
+        binary.analyze()
+        ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260901}).apply(binary)
+        expect(binary.read_bytes(_FLAG_LIVE_MOV_RSI_ADDRESS, 7) == bytes.fromhex("48c7c600000000"))
 
 
 def test_register_substitution_preserves_varargs_indirect_call_target(tmp_path: Path) -> None:

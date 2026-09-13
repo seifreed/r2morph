@@ -8,6 +8,10 @@ from typing import Any
 
 import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.mutations.instruction_substitution_helpers import (
+    flags_live_after,
+    instruction_flags_written,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -127,15 +131,18 @@ def select_candidates(
             logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
             continue
 
+        disasms = [insn.get("disasm", "").lower() for insn in instructions]
         candidates = []
-        for insn in instructions:
+        for index, insn in enumerate(instructions):
             disasm = insn.get("disasm", "").lower()
             mnemonic = disasm.split()[0] if disasm else ""
 
             if mnemonic not in ["mov", "add", "sub", "push", "xor"]:
                 continue
 
-            candidates.append(insn)
+            candidate = dict(insn)
+            candidate["flags_live_after"] = flags_live_after(disasms, index)
+            candidates.append(candidate)
 
         selected = random.sample(candidates, min(max_unfolds, len(candidates)))
         if selected:
@@ -177,6 +184,22 @@ def match_unfold_pattern(
     elif mnemonic == "sub" and 1 < value <= max_sequence:
         instructions = unfold_constant_sub(reg, value, bits, max_sequence)
     return instructions, instructions is not None
+
+
+def flags_preserved_for_unfold(original: str, unfolded: list[str], flags_live: bool) -> bool:
+    """Reject an unfold whose final flags can differ while flags remain live."""
+    if not flags_live:
+        return True
+    mnemonic = original.split(maxsplit=1)[0] if original else ""
+    if mnemonic in {"add", "sub"}:
+        return False
+    original_flags = instruction_flags_written(original)
+    unfolded_flags = frozenset()
+    for instruction in unfolded:
+        written = instruction_flags_written(instruction)
+        if written:
+            unfolded_flags = written
+    return original_flags == unfolded_flags
 
 
 def apply_single_unfold(
@@ -246,6 +269,7 @@ __all__ = [
     "UnfoldMutation",
     "apply_single_unfold",
     "calculate_sequence_size",
+    "flags_preserved_for_unfold",
     "get_reg_mapping",
     "match_unfold_pattern",
     "select_candidates",

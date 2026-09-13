@@ -21,6 +21,7 @@ from r2morph.mutations.constant_unfolding_helpers import (
     UnfoldMutation,
     apply_single_unfold,
     calculate_sequence_size,
+    flags_preserved_for_unfold,
     match_unfold_pattern,
     select_candidates,
     unfold_constant_add,
@@ -203,7 +204,11 @@ class ConstantUnfoldingPass(MutationPass):
         is_constant = False
         try:
             unfolded, is_constant = self._match_unfold_pattern(disasm, bits, binary, func["addr"])
-            if not unfolded:
+            if not unfolded or not flags_preserved_for_unfold(
+                disasm,
+                unfolded,
+                bool(insn.get("flags_live_after")),
+            ):
                 return False, is_constant, 0
 
             new_size = self._calculate_sequence_size(unfolded, binary, func["addr"])

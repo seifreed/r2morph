@@ -17,7 +17,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _EXTENDED_REGISTER_ENCODING_START = 8
+_REGISTER_BITS_64 = 64
 _XMM_REGISTER_COUNT = 16
+_SELF_REGISTER_OPERATION = re.compile(r"(xor|sub)\s+([a-z][a-z0-9]*),\s*\2$", re.IGNORECASE)
 
 
 # Register encoding tables for manual instruction encoding
@@ -115,7 +117,10 @@ class AssemblyService:
             hex_str = result.strip()
             if hex_str:
                 try:
-                    return bytes.fromhex(hex_str)
+                    assembled = bytes.fromhex(hex_str)
+                    # rasm2 can omit the REX prefix for self-operations on
+                    # r8-r15; those bytes address the wrong legacy register.
+                    return self._assemble_self_register_operation_fallback(normalized_instruction) or assembled
                 except ValueError as e:
                     logger.error(f"Failed to parse hex '{hex_str[:20]}...': {e}")
 
@@ -174,6 +179,31 @@ class AssemblyService:
         # No longer removing size specifiers with segment prefixes
         # The segment prefix fallback will handle these correctly
         return instruction
+
+    @staticmethod
+    def _assemble_self_register_operation_fallback(instruction: str) -> bytes | None:
+        """Encode ``xor/sub reg, reg`` with the required x86-64 REX bits."""
+        match = _SELF_REGISTER_OPERATION.fullmatch(instruction.strip())
+        if match is None:
+            return None
+        mnemonic, register = match.groups()
+        if register in REGISTER_ENCODING["reg64"]:
+            width = _REGISTER_BITS_64
+            code = REGISTER_ENCODING["reg64"][register]
+        elif register.startswith("r") and register.endswith("d"):
+            base = register[:-1]
+            if base not in REGISTER_ENCODING["reg64"]:
+                return None
+            width = 32
+            code = REGISTER_ENCODING["reg64"][base]
+        else:
+            return None
+        rex = 0x40 | (0x08 if width == _REGISTER_BITS_64 else 0)
+        if code >= _EXTENDED_REGISTER_ENCODING_START:
+            rex |= 0x05
+            code &= 0x07
+        opcode = 0x31 if mnemonic.lower() == "xor" else 0x29
+        return bytes((rex, opcode, 0xC0 | (code << 3) | code))
 
     def _assemble_movzx_movsx_fallback(self, instruction: str) -> bytes | None:
         """

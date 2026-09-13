@@ -94,6 +94,16 @@ def test_binary_resolve_symbolic_vars_and_assemble(tmp_path: Path) -> None:
         expect(not (seg_bytes is not None and seg_bytes[0] not in {0x26, 0x2E, 0x36, 0x3E, 0x64, 0x65}))
 
 
+def test_binary_assemble_preserves_extended_register_self_operations(tmp_path: Path) -> None:
+    source = Path("fixtures/dataset/elf_x86_64")
+    work_path = tmp_path / "sample.bin"
+    work_path.write_bytes(source.read_bytes())
+    with Binary(work_path, writable=True) as binary:
+        binary.analyze()
+        expect(binary.assemble("xor r12d, r12d") == bytes.fromhex("4531e4"))
+        expect(binary.assemble("sub r13d, r13d") == bytes.fromhex("4529ed"))
+
+
 def test_binary_arch_info_and_reload(tmp_path: Path) -> None:
     source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():

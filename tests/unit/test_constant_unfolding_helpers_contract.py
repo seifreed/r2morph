@@ -1,5 +1,6 @@
 from r2morph.mutations.constant_unfolding_helpers import (
     calculate_sequence_size,
+    flags_preserved_for_unfold,
     get_reg_mapping,
     match_unfold_pattern,
     select_candidates,
@@ -57,3 +58,11 @@ def test_constant_unfolding_preserves_even_split_immediate() -> None:
 
 def test_constant_unfolding_preserves_uneven_split_immediate() -> None:
     expect(unfold_constant_sub("eax", 5, 32, 10) == ["sub eax, 2", "sub eax, 3"])
+
+
+def test_constant_unfolding_rejects_flag_changing_split_when_flags_are_live() -> None:
+    expect(not flags_preserved_for_unfold("sub eax, 10", ["sub eax, 5", "sub eax, 5"], True))
+
+
+def test_constant_unfolding_accepts_flag_neutral_mov_when_flags_are_live() -> None:
+    expect(flags_preserved_for_unfold("mov eax, 1", ["mov eax, 1"], True))
