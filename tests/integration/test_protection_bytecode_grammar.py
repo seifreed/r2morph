@@ -9,6 +9,7 @@ from scripts.protection_bytecode_grammar import measure
 from tests.utils.assertions import expect
 
 _REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-bytecode-grammar.json"
+_MATURITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "protection-maturity.md"
 _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_SEED_COUNT = 10
 _EXPECTED_ALL_HANDLER_STRIDE_UNIQUE_COUNT = 12
@@ -33,3 +34,15 @@ def test_bytecode_grammar_report_matches_current_measurement() -> None:
     report = json.loads(_REPORT.read_text(encoding="utf-8"))
 
     expect(report == measure(20260820, 10))
+
+
+def test_bytecode_grammar_maturity_doc_matches_report() -> None:
+    report = json.loads(_REPORT.read_text(encoding="utf-8"))
+    document = _MATURITY_DOC.read_text(encoding="utf-8")
+    stride_values = str(report["target_stride_values"]).replace(" ", "")
+
+    expect(
+        f"their stride changes from fixed `[3]` to `{stride_values}`" in document
+        and f"`{report['total_padding_bytes']:,}` padding bytes across `{report['total_handlers']:,}` handlers"
+        in document
+    )
