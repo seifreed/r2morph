@@ -761,6 +761,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "binary-ninja" in adversarial
         and "missing_pass_runs" in adversarial
         and "missing_tool_runs" in adversarial
+        and "incomplete_tool_coverage" in adversarial
+        and "completed_tool_runs_by_tool" in adversarial
+        and "unavailable_tool_runs_by_tool" in adversarial
+        and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
         and "--passes all" in differential
         and "--require-complete-evidence" in differential

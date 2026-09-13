@@ -727,6 +727,10 @@ def _check_corpus_workflows() -> None:
         "binary-ninja",
         "missing_pass_runs",
         "missing_tool_runs",
+        "incomplete_tool_coverage",
+        "completed_tool_runs_by_tool",
+        "unavailable_tool_runs_by_tool",
+        "incomplete tool coverage mismatch",
         "passes without applications",
     ):
         if fragment not in adversarial:

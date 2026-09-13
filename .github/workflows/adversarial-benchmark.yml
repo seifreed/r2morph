@@ -69,6 +69,27 @@ jobs:
               raise SystemExit(f"missing pass runs: {summary['missing_pass_runs_by_pass']}")
           if summary["missing_tool_runs"] != 0:
               raise SystemExit(f"missing tool runs: {summary['missing_tool_runs_by_tool']}")
+          incomplete_by_tool = {
+              row["tool"]: row
+              for row in summary["incomplete_tool_coverage"]
+          }
+          expected_incomplete = {
+              tool
+              for tool in expected_tools
+              if summary["completed_tool_runs_by_tool"].get(tool, 0) != summary["expected_pass_runs"]
+          }
+          if set(incomplete_by_tool) != expected_incomplete:
+              raise SystemExit(f"incomplete tool coverage drift: {incomplete_by_tool}")
+          for tool, row in incomplete_by_tool.items():
+              expected_row = {
+                  "completed_runs": summary["completed_tool_runs_by_tool"].get(tool, 0),
+                  "missing_runs": summary["missing_tool_runs_by_tool"].get(tool, 0),
+                  "unavailable_runs": summary["unavailable_tool_runs_by_tool"].get(tool, 0),
+                  "error_runs": summary["error_tool_runs_by_tool"].get(tool, 0),
+              }
+              observed_row = {key: row[key] for key in expected_row}
+              if observed_row != expected_row:
+                  raise SystemExit(f"incomplete tool coverage mismatch for {tool}: {row}")
           missing_applications = [
               name
               for name, values in report["pass_summary"].items()
