@@ -273,26 +273,38 @@ def _semantic_artifacts(path: Path) -> dict[str, object]:
 
 def _runtime_observables_equal(expected: object, actual: object) -> bool:
     """Compare bounded native-runtime observables without retaining raw output."""
+    return _runtime_observable_failure_reason(expected, actual) is None
+
+
+def _runtime_observable_failure_reason(expected: object, actual: object) -> str | None:
     if (
         not isinstance(expected, Mapping)
         or not isinstance(actual, Mapping)
         or expected.get("status") != "completed"
         or actual.get("status") != "completed"
     ):
-        return False
-    for field in ("status", "return_code", "error_type"):
+        return "runtime_not_completed"
+    for field in ("return_code", "error_type"):
         if expected.get(field) != actual.get(field):
-            return False
+            return field
     for stream in ("stdout", "stderr"):
         expected_digest = expected.get(stream)
         actual_digest = actual.get(stream)
         if not isinstance(expected_digest, Mapping) or not isinstance(actual_digest, Mapping):
-            return False
-        if expected_digest.get("sha256") != actual_digest.get("sha256"):
-            return False
-        if expected_digest.get("size") != actual_digest.get("size"):
-            return False
-    return expected.get("created_files") == actual.get("created_files")
+            return f"{stream}_missing"
+        reason = _digest_failure_reason(stream, expected_digest, actual_digest)
+        if reason is not None:
+            return reason
+    if expected.get("created_files") != actual.get("created_files"):
+        return "created_files"
+    return None
+
+
+def _digest_failure_reason(stream: str, expected: Mapping[str, object], actual: Mapping[str, object]) -> str | None:
+    for field in ("sha256", "size"):
+        if expected.get(field) != actual.get(field):
+            return f"{stream}_{field}"
+    return None
 
 
 def _semantic_run_matches(baseline: object, baseline_runtime: object, run: object) -> bool:
@@ -509,6 +521,19 @@ def _runtime_observable_coverage(seed_runs: list[tuple[dict[str, object], Mappin
     }
 
 
+def _runtime_observable_failure_reasons(
+    seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
+) -> dict[str, int]:
+    reasons: dict[str, int] = {}
+    for fixture, run in seed_runs:
+        if run.get("runtime_observable_equal") is not False:
+            continue
+        reason = _runtime_observable_failure_reason(fixture.get("baseline_runtime"), run.get("runtime"))
+        key = reason or "unspecified"
+        reasons[key] = reasons.get(key, 0) + 1
+    return dict(sorted(reasons.items()))
+
+
 def _numeric_metric_coverage(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
     summary_prefix: str,
@@ -648,6 +673,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
         if isinstance(fixture.get("baseline_size"), int) and isinstance(run.get("output_size"), int)
     )
     runtime_observable_coverage = _runtime_observable_coverage(seed_runs)
+    runtime_observable_failure_reasons = _runtime_observable_failure_reasons(seed_runs)
     output_size_coverage = _numeric_metric_coverage(seed_runs, "output_size", "baseline_size", "output_size")
     transform_duration_coverage = _numeric_metric_coverage(
         seed_runs,
@@ -680,6 +706,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "error_runs": error_runs,
             "runtime_observable_passes": runtime_observable_passes,
             "runtime_observable_failures": runtime_observable_failures,
+            "runtime_observable_failure_reasons": runtime_observable_failure_reasons,
             **runtime_observable_coverage,
             "runtime_observable_coverage_percent": _coverage_percent(
                 runtime_observable_coverage["runtime_observable_complete_runs"],

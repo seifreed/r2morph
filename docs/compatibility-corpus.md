@@ -81,8 +81,8 @@ release failure for the official Linux ELF x86-64 target.
 The per-pass summary also aggregates runtime-observable coverage and pass/fail
 counts, output-size coverage and deltas, transform/runtime duration coverage
 and totals, static analyzer metric coverage and deltas, complete-evidence
-coverage, coverage percentages, and bounded omission/error reasons and
-severities.
+coverage, coverage percentages, bounded runtime-observable failure reasons,
+and bounded omission/error reasons and severities.
 The by-pass report also includes a campaign summary with total applied,
 omitted, and error runs, their rates, plus average coverage percentages across selected
 passes and aggregate semantic success/failure rates; it records expected,

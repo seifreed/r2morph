@@ -232,6 +232,7 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
     expect(
         report["summary"]["runtime_observable_passes"] == 1
         and report["summary"]["runtime_observable_failures"] == 1
+        and report["summary"]["runtime_observable_failure_reasons"] == {"stdout_missing": 1}
         and report["summary"]["runtime_observable_complete_runs"] == _EXPECTED_RUNTIME_COMPLETE_RUNS
         and report["summary"]["runtime_observable_missing_runs"] == 0
         and report["summary"]["runtime_observable_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
