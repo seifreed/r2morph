@@ -158,12 +158,16 @@ def _review_differential_continuous_evidence(root: Path) -> dict[str, object]:
             "missing_corpus_passes",
             "passes_with_incomplete_coverage",
             "continuous_evidence_blockers",
+            "passes_without_extended_applied_runs",
+            "extended_passes_with_error_runs",
+            "extended_maturity_evidence_blockers",
+            "total_extended_maturity_evidence_blockers",
         )
     )
     return _check(
         "differential_continuous_evidence_gate",
         passed,
-        "scheduled differential campaign gates continuous evidence blockers",
+        "scheduled differential campaign gates continuous and extended maturity evidence blockers",
     )
 
 

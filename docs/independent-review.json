@@ -31,7 +31,7 @@
       "status": "passed"
     },
     {
-      "detail": "scheduled differential campaign gates continuous evidence blockers",
+      "detail": "scheduled differential campaign gates continuous and extended maturity evidence blockers",
       "name": "differential_continuous_evidence_gate",
       "status": "passed"
     },
