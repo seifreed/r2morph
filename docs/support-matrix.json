@@ -601,6 +601,12 @@
         "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
         "Pass combinations are not exhaustively covered.": 3,
         "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
+      },
+      "performance_counts": {
+        "Not measured per pass.": 12,
+        "Not recorded per pass in the public corpus.": 3,
+        "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 6,
+        "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       }
     },
     "cells": [

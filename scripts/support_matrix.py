@@ -58,6 +58,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     false_positive_risk_counts: dict[str, int] = {}
     decompiler_effectiveness_counts: dict[str, int] = {}
     compatibility_counts: dict[str, int] = {}
+    performance_counts: dict[str, int] = {}
     maturity = document.get("maturity", {})
     profiles = maturity.get("profiles") if isinstance(maturity, dict) else None
     if (
@@ -83,6 +84,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                     compatibility := profile_fields.get("compatibility"), str
                 ):
                     compatibility_counts[compatibility] = compatibility_counts.get(compatibility, 0) + 1
+                if isinstance(profile_fields, dict) and isinstance(
+                    performance := profile_fields.get("performance"), str
+                ):
+                    performance_counts[performance] = performance_counts.get(performance, 0) + 1
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -100,6 +105,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "false_positive_risk_counts": dict(sorted(false_positive_risk_counts.items())),
             "decompiler_effectiveness_counts": dict(sorted(decompiler_effectiveness_counts.items())),
             "compatibility_counts": dict(sorted(compatibility_counts.items())),
+            "performance_counts": dict(sorted(performance_counts.items())),
         },
         "cells": cells,
     }
