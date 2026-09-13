@@ -987,6 +987,7 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
     blockers: dict[str, object] = {}
     for field in (
         "missing_corpus_passes",
+        "metric_missing_runs",
         "passes_without_applied_runs",
         "passes_with_error_runs",
         "passes_with_incomplete_coverage",
@@ -996,6 +997,13 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
         "corpus_gap_scope",
     ):
         value = summary.get(field)
+        if field == "metric_missing_runs" and isinstance(value, dict):
+            missing_metrics = {
+                str(name): count for name, count in value.items() if isinstance(count, int) and count > 0
+            }
+            if missing_metrics:
+                blockers[field] = missing_metrics
+            continue
         if isinstance(value, (list, dict)) and value:
             blockers[field] = value
     return blockers

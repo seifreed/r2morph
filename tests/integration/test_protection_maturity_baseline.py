@@ -82,6 +82,7 @@ _EXPECTED_OMISSION_REASONS_BY_PASS = {"PatternSubstitution": {"no eligible funct
 _EXPECTED_OMISSION_SEVERITIES_BY_PASS = {"PatternSubstitution": {"warning": 1}}
 _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
     "missing_corpus_passes": _EXPECTED_MISSING_CORPUS_PASSES,
+    "metric_missing_runs": _EXPECTED_METRIC_RUN_TOTALS,
     "passes_without_applied_runs": ["PatternSubstitution"],
     "passes_with_incomplete_coverage": _EXPECTED_INCOMPLETE_COVERAGE,
     "passes_with_semantic_failures": ["PatternSubstitution"],
@@ -95,13 +96,14 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
 _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
     "blocker_categories": len(_EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS),
     "corpus_gap_scope": 2,
+    "metric_missing_runs": len(_EXPECTED_METRIC_RUN_TOTALS),
     "missing_corpus_passes": len(_EXPECTED_MISSING_CORPUS_PASSES),
     "passes_with_incomplete_coverage": len(_EXPECTED_INCOMPLETE_COVERAGE),
     "passes_with_runtime_observable_failures": 1,
     "passes_with_semantic_failures": 1,
     "passes_without_applied_runs": 1,
     "platform_gap_scope": 2,
-    "total_continuous_evidence_blockers": 21,
+    "total_continuous_evidence_blockers": 27,
 }
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
