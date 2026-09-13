@@ -28,6 +28,41 @@ _MATURITY_GAP_VALUES = {
     "compatibility": {"Composition with other passes is not contractually supported."},
     "instructions_affected": {"Not exhaustively catalogued."},
 }
+_MATURITY_GAP_EVIDENCE = {
+    "performance": {
+        "status": "per-pass-performance-incomplete",
+        "evidence_quality": "partial-corpus-metrics",
+        "evidence": ["docs/protection-maturity-corpus.json", "docs/pass-maturity.md"],
+    },
+    "false_positive_risk": {
+        "status": "independent-false-positive-rate-incomplete",
+        "evidence_quality": "declared-gap-scope",
+        "evidence": ["docs/pass-maturity.md", "docs/release-blockers.md"],
+    },
+    "decompiler_effectiveness": {
+        "status": "cross-tool-decompiler-evidence-incomplete",
+        "evidence_quality": "partial-adversarial-corpus",
+        "evidence": [
+            "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
+            "docs/pass-maturity.md",
+        ],
+    },
+    "compatibility": {
+        "status": "arbitrary-pass-composition-unsupported",
+        "evidence_quality": "scheduled-corpus-gate",
+        "evidence": ["docs/compatibility-corpus.md", "docs/pass-maturity.md"],
+    },
+    "instructions_affected": {
+        "status": "affected-instruction-catalog-incomplete",
+        "evidence_quality": "declared-gap-scope",
+        "evidence": ["docs/pass-maturity.md", "docs/support-matrix.json"],
+    },
+    "native_evidence": {
+        "status": "native-evidence-incomplete",
+        "evidence_quality": "partial-native-regression",
+        "evidence": ["docs/pass-maturity.md", "docs/protection-maturity.md"],
+    },
+}
 _DIFFERENTIAL_PLATFORM_SCOPE = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
     "formats": ["Mach-O", "PE"],
@@ -229,6 +264,23 @@ def _maturity_evidence_blockers(
     if maturity_gaps_by_pass:
         blockers["missing_fields_by_pass"] = maturity_gaps_by_pass
     return blockers
+
+
+def _maturity_gap_evidence(
+    maturity_gap_passes: dict[str, list[str]],
+    native_evidence_gap_passes: list[str],
+) -> dict[str, object]:
+    evidence = {
+        field: {**_MATURITY_GAP_EVIDENCE[field], "passes": pass_names}
+        for field, pass_names in maturity_gap_passes.items()
+        if pass_names
+    }
+    if native_evidence_gap_passes:
+        evidence["native_evidence"] = {
+            **_MATURITY_GAP_EVIDENCE["native_evidence"],
+            "passes": native_evidence_gap_passes,
+        }
+    return evidence
 
 
 def _maturity_blocker_totals(
@@ -612,6 +664,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "maturity_evidence_blockers": _maturity_evidence_blockers(
                 maturity_gap_passes,
                 maturity_gaps_by_pass,
+                native_evidence_gap_passes,
+            ),
+            "maturity_gap_evidence": _maturity_gap_evidence(
+                maturity_gap_passes,
                 native_evidence_gap_passes,
             ),
             "maturity_blocker_totals": _maturity_blocker_totals(

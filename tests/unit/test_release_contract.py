@@ -42,6 +42,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 7
 _EXPECTED_ADVERSARIAL_BLOCKERS = 7
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 79
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -389,6 +390,30 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
         and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
         and "performance" in blockers["missing_fields_by_field"]
         and "anti-disassembly" in blockers["missing_fields_by_pass"]
+    )
+
+
+def test_support_matrix_names_maturity_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["maturity_gap_evidence"]
+    expected_fields = set(summary["maturity_gap_passes"]) | {"native_evidence"}
+    evidence_paths = {
+        item
+        for row in evidence.values()
+        for item in row["evidence"]
+        if isinstance(item, str) and not item.startswith("http")
+    }
+
+    expect(
+        set(evidence) == expected_fields
+        and evidence["native_evidence"]["passes"] == summary["native_evidence_gap_passes"]
+        and all(row["passes"] for row in evidence.values())
+        and all(
+            row["status"].endswith("-incomplete") or row["status"].endswith("-unsupported") for row in evidence.values()
+        )
+        and all((_ROOT / path).exists() for path in evidence_paths)
+        and summary["maturity_blocker_totals"]["total_maturity_blockers"] == _EXPECTED_TOTAL_MATURITY_BLOCKERS
     )
 
 

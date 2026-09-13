@@ -1269,6 +1269,147 @@
           ]
         }
       },
+      "maturity_gap_evidence": {
+        "performance": {
+          "status": "per-pass-performance-incomplete",
+          "evidence_quality": "partial-corpus-metrics",
+          "evidence": [
+            "docs/protection-maturity-corpus.json",
+            "docs/pass-maturity.md"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "code-mobility",
+            "data-flow-mutation",
+            "function-outlining",
+            "import-obfuscation",
+            "opaque-predicates",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        },
+        "false_positive_risk": {
+          "status": "independent-false-positive-rate-incomplete",
+          "evidence_quality": "declared-gap-scope",
+          "evidence": [
+            "docs/pass-maturity.md",
+            "docs/release-blockers.md"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "code-mobility",
+            "data-flow-mutation",
+            "function-outlining",
+            "import-obfuscation",
+            "opaque-predicates",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        },
+        "decompiler_effectiveness": {
+          "status": "cross-tool-decompiler-evidence-incomplete",
+          "evidence_quality": "partial-adversarial-corpus",
+          "evidence": [
+            "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
+            "docs/pass-maturity.md"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "code-mobility",
+            "data-flow-mutation",
+            "function-outlining",
+            "import-obfuscation",
+            "opaque-predicates",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        },
+        "compatibility": {
+          "status": "arbitrary-pass-composition-unsupported",
+          "evidence_quality": "scheduled-corpus-gate",
+          "evidence": [
+            "docs/compatibility-corpus.md",
+            "docs/pass-maturity.md"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "code-mobility",
+            "data-flow-mutation",
+            "function-outlining",
+            "import-obfuscation",
+            "opaque-predicates",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        },
+        "instructions_affected": {
+          "status": "affected-instruction-catalog-incomplete",
+          "evidence_quality": "declared-gap-scope",
+          "evidence": [
+            "docs/pass-maturity.md",
+            "docs/support-matrix.json"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "code-mobility",
+            "data-flow-mutation",
+            "function-outlining",
+            "import-obfuscation",
+            "opaque-predicates",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        },
+        "native_evidence": {
+          "status": "native-evidence-incomplete",
+          "evidence_quality": "partial-native-regression",
+          "evidence": [
+            "docs/pass-maturity.md",
+            "docs/protection-maturity.md"
+          ],
+          "passes": [
+            "anti-disassembly",
+            "api-hashing",
+            "block-reordering",
+            "code-mobility",
+            "code-virtualization",
+            "constant-unfolding",
+            "control-flow-flattening",
+            "data-flow-mutation",
+            "dead-code-injection",
+            "function-outlining",
+            "import-obfuscation",
+            "instruction-expansion",
+            "opaque-predicates",
+            "pattern-substitution",
+            "polymorphic-engine",
+            "self-modifying-code",
+            "short-jump-patching",
+            "stack-strings",
+            "string-obfuscation"
+          ]
+        }
+      },
       "maturity_blocker_totals": {
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
