@@ -1255,8 +1255,10 @@
         }
       },
       "maturity_blocker_totals": {
+        "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 21,
+        "total_maturity_field_gaps": 69,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 15,

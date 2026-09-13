@@ -66,7 +66,8 @@ The current summary still reports 12 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement, 15 with no
 independent decompiler-effectiveness measurement, 12 without contractual
 composition support, and 18 without an exhaustive affected-instruction
-catalogue. The generated matrix also names the affected passes in
+catalogue: 69 total per-pass maturity field gaps across 5 maturity gap
+categories. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
