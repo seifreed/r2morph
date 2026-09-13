@@ -789,7 +789,12 @@ class CodeVirtualizationPass(MutationPass):
         opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
-        control_opcode = opcode_without_repeat.removeprefix("notrack ").removeprefix("bnd ").removeprefix("notrack ")
+        control_opcode = (
+            opcode_without_repeat.removeprefix("notrack ")
+            .removeprefix("bnd ")
+            .removeprefix("notrack ")
+            .removeprefix("bnd ")
+        )
         control_mnemonic_parts = control_opcode.split(maxsplit=1)
         control_mnemonic = control_mnemonic_parts[0] if control_mnemonic_parts else ""
         if (
