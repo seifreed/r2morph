@@ -869,20 +869,44 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "runtime_observable_coverage_percent",
         ),
+        "total_runtime_observable_complete_runs": _sum_summary_field(
+            summaries,
+            "runtime_observable_complete_runs",
+        ),
+        "total_runtime_observable_missing_runs": _sum_summary_field(
+            summaries,
+            "runtime_observable_missing_runs",
+        ),
         "average_output_size_coverage_percent": _average_percent(summaries, "output_size_coverage_percent"),
+        "total_output_size_complete_runs": _sum_summary_field(summaries, "output_size_complete_runs"),
+        "total_output_size_missing_runs": _sum_summary_field(summaries, "output_size_missing_runs"),
         "average_transform_duration_coverage_percent": _average_percent(
             summaries,
             "transform_duration_coverage_percent",
+        ),
+        "total_transform_duration_complete_runs": _sum_summary_field(
+            summaries,
+            "transform_duration_complete_runs",
+        ),
+        "total_transform_duration_missing_runs": _sum_summary_field(
+            summaries,
+            "transform_duration_missing_runs",
         ),
         "average_runtime_duration_coverage_percent": _average_percent(
             summaries,
             "runtime_duration_coverage_percent",
         ),
+        "total_runtime_duration_complete_runs": _sum_summary_field(summaries, "runtime_duration_complete_runs"),
+        "total_runtime_duration_missing_runs": _sum_summary_field(summaries, "runtime_duration_missing_runs"),
         "average_static_metric_coverage_percent": _average_percent(summaries, "static_metric_coverage_percent"),
+        "total_static_metric_complete_runs": _sum_summary_field(summaries, "static_metric_complete_runs"),
+        "total_static_metric_missing_runs": _sum_summary_field(summaries, "static_metric_missing_runs"),
         "average_complete_evidence_coverage_percent": _average_percent(
             summaries,
             "complete_evidence_coverage_percent",
         ),
+        "total_complete_evidence_runs": _sum_summary_field(summaries, "complete_evidence_runs"),
+        "total_complete_evidence_missing_runs": _sum_summary_field(summaries, "complete_evidence_missing_runs"),
     }
 
 

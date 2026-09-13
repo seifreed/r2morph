@@ -400,14 +400,26 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["semantic_failure_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["average_runtime_observable_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_runtime_observable_complete_runs"] == 1
+        and report["campaign_summary"]["total_runtime_observable_missing_runs"] == 1
         and report["campaign_summary"]["average_output_size_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_output_size_complete_runs"] == 1
+        and report["campaign_summary"]["total_output_size_missing_runs"] == 1
         and report["campaign_summary"]["average_transform_duration_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_transform_duration_complete_runs"] == 1
+        and report["campaign_summary"]["total_transform_duration_missing_runs"] == 1
         and report["campaign_summary"]["average_runtime_duration_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_runtime_duration_complete_runs"] == 1
+        and report["campaign_summary"]["total_runtime_duration_missing_runs"] == 1
         and report["campaign_summary"]["average_static_metric_coverage_percent"] == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_static_metric_complete_runs"] == 1
+        and report["campaign_summary"]["total_static_metric_missing_runs"] == 1
         and report["campaign_summary"]["average_complete_evidence_coverage_percent"]
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
+        and report["campaign_summary"]["total_complete_evidence_runs"] == 1
+        and report["campaign_summary"]["total_complete_evidence_missing_runs"] == 1
     )
 
 
