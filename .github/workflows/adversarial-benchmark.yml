@@ -50,6 +50,21 @@ jobs:
 
           report = json.loads(Path("adversarial-benchmark.json").read_text(encoding="utf-8"))
           summary = report["summary"]
+          expected_tools = [
+              "radare2",
+              "objdump",
+              "angr",
+              "binary-ninja",
+              "unicorn",
+              "triton",
+              "ida-pro",
+              "ghidra",
+              "custom",
+          ]
+          if summary["expected_tools"] != expected_tools:
+              raise SystemExit(f"unexpected analyzer slots: {summary['expected_tools']}")
+          if summary["observed_tools"] != sorted(expected_tools):
+              raise SystemExit(f"missing observed analyzer slots: {summary['observed_tools']}")
           if summary["missing_pass_runs"] != 0:
               raise SystemExit(f"missing pass runs: {summary['missing_pass_runs_by_pass']}")
           if summary["missing_tool_runs"] != 0:

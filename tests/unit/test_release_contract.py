@@ -711,6 +711,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--passes all" in adversarial
         and "--require-tool-slots" in adversarial
         and "Validate adversarial campaign summary" in adversarial
+        and "expected_tools" in adversarial
+        and "observed_tools" in adversarial
+        and "binary-ninja" in adversarial
         and "missing_pass_runs" in adversarial
         and "missing_tool_runs" in adversarial
         and "passes without applications" in adversarial
