@@ -78,6 +78,8 @@ an omitted pass with its diagnostic reason, not as a no-op.
 CodeVirtualization pass stats also expose unsupported and partial diagnostic
 capability and severity totals directly, so release gates can fail on closed
 semantic gaps without expanding every diagnostic row.
+Each unsupported-function diagnostic keeps the rejected instruction address,
+type, and a bounded opcode preview alongside the capability and reason.
 
 The differential contract is original versus transformed execution across nine
 seed-derived command-line inputs per sample: exit code, stdout, stderr, created

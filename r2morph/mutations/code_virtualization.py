@@ -220,6 +220,7 @@ _EH_FRAME_ALIGNMENT = 4
 # linearly (its analysis stops at the computed jump, so there is no function size).
 _MAX_DISPATCH_INSNS = 256
 _MAX_UNSUPPORTED_RECORDS = 256
+_MAX_DIAGNOSTIC_OPCODE_CHARS = 96
 _COMPUTED_JUMP_TYPES = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
@@ -808,6 +809,8 @@ class CodeVirtualizationPass(MutationPass):
         return {
             "function_address": int(func.get("addr", 0)),
             "instruction_address": int((instruction or {}).get("addr", func.get("addr", 0))),
+            "instruction_type": str((instruction or {}).get("type", "")),
+            "instruction_opcode": str((instruction or {}).get("opcode", ""))[:_MAX_DIAGNOSTIC_OPCODE_CHARS],
             "capability": capability,
             "reason": reason,
             "severity": severity,

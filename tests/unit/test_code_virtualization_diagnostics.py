@@ -20,6 +20,8 @@ from r2morph.mutations.code_virtualization_region import (
 from r2morph.mutations.code_virtualization_region_models import Region
 from tests.utils.assertions import expect
 
+_EXPECTED_DIAGNOSTIC_OPCODE_CHARS = 96
+
 
 class _SectionsBinary:
     def __init__(self, names: list[str], size: int | None = None) -> None:
@@ -118,6 +120,22 @@ def test_virtualization_result_exposes_diagnostic_counts() -> None:
         and empty["unsupported_function_severities"] == {}
         and empty["partial_virtualization_capabilities"] == {}
         and empty["partial_virtualization_severities"] == {}
+    )
+
+
+def test_unsupported_record_includes_bounded_instruction_context() -> None:
+    record = CodeVirtualizationPass._unsupported_record(
+        {"addr": 0x401000},
+        {"addr": 0x401004, "type": "call", "opcode": "call " + "x" * 200},
+        "calls",
+        "call semantics were not proven",
+        "error",
+    )
+
+    expect(
+        record["instruction_type"] == "call"
+        and str(record["instruction_opcode"]).startswith("call ")
+        and len(str(record["instruction_opcode"])) == _EXPECTED_DIAGNOSTIC_OPCODE_CHARS
     )
 
 
