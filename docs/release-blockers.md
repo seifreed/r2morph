@@ -17,7 +17,8 @@ review. It is not a feature roadmap and must not be read as a support claim.
   Linux ELF x86-64 campaign; more corpus families, generated inputs, and
   platform coverage are still required. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
-  [differential-corpus.yml](../.github/workflows/differential-corpus.yml).
+  [differential-corpus.yml](../.github/workflows/differential-corpus.yml)
+  `continuous_evidence_blockers`.
   Exit criteria: all relevant passes have complete differential evidence across
   the supported corpus and declared platform matrix.
 - RB-003: VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals,
