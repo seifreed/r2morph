@@ -1740,6 +1740,19 @@
             "evidence": [
               "docs/protection-adversarial-benchmark.json"
             ]
+          },
+          "ghidra": {
+            "status": "completed",
+            "evidence": [
+              "docs/protection-ghidra-corpus.json"
+            ]
+          },
+          "ida-pro": {
+            "status": "completed",
+            "evidence": [
+              "docs/protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json",
+              "docs/protection-ida-mcp-corpus-2026-09-06-646e0942.json"
+            ]
           }
         },
         "unavailable_reference_tools": {
@@ -1760,8 +1773,6 @@
       "adversarial_evidence_blockers": {
         "incomplete_tool_coverage": [
           "binary-ninja",
-          "ghidra",
-          "ida-pro",
           "triton"
         ],
         "binary_ninja_unavailable": [
@@ -1772,10 +1783,10 @@
         ]
       },
       "adversarial_blocker_totals": {
-        "incomplete_tool_coverage": 4,
+        "incomplete_tool_coverage": 2,
         "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": 6
+        "total_adversarial_blockers": 4
       },
       "vm_semantic_gap_scope": [
         "memory",

@@ -85,8 +85,6 @@ _ADVERSARIAL_EXPECTED_TOOLS = (
 )
 _ADVERSARIAL_INCOMPLETE_TOOLS = (
     "binary-ninja",
-    "ghidra",
-    "ida-pro",
     "triton",
 )
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
@@ -413,6 +411,17 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
             "unicorn": {
                 "status": "completed",
                 "evidence": ["docs/protection-adversarial-benchmark.json"],
+            },
+            "ghidra": {
+                "status": "completed",
+                "evidence": ["docs/protection-ghidra-corpus.json"],
+            },
+            "ida-pro": {
+                "status": "completed",
+                "evidence": [
+                    "docs/protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json",
+                    "docs/protection-ida-mcp-corpus-2026-09-06-646e0942.json",
+                ],
             },
         },
         "unavailable_reference_tools": {
