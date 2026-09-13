@@ -785,7 +785,7 @@ class CodeVirtualizationPass(MutationPass):
         )
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
-        if kind in _COMPUTED_JUMP_TYPES:
+        if kind in _COMPUTED_JUMP_TYPES or opcode.startswith(("jmpf", "ljmp")):
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
             "fs:" in opcode

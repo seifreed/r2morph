@@ -509,6 +509,14 @@ def test_missing_opcode_reports_instruction_semantics_capability() -> None:
     expect(capability == "instruction_semantics")
 
 
+def test_far_jump_instruction_reports_computed_control_flow_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "ljmp 0x33:0x401000"}
+    )
+
+    expect(capability == "computed_control_flow")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
