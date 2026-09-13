@@ -135,9 +135,10 @@ FunctionOutlining, ImportObfuscation, OpaquePredicates, PolymorphicEngine,
 SelfModifyingCode, ShortJumpPatching, StackStrings, and StringObfuscation.
 That artifact is evidence triage only and records `missing_extended_passes`,
 `passes_without_extended_applied_runs`, `extended_passes_with_error_runs`, and
-`extended_maturity_evidence_blockers`; it fails on extended pass errors but does
-not promote those passes until their applied-run and complete-evidence blockers
-are zero.
+`extended_maturity_evidence_blockers`, with
+`total_extended_maturity_evidence_blockers` as the compact total; it fails on
+extended pass errors but does not promote those passes until their applied-run
+and complete-evidence blockers are zero.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also

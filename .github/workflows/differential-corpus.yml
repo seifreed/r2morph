@@ -121,6 +121,10 @@ jobs:
               raise SystemExit("extended maturity summary is missing passes_without_extended_applied_runs")
           if "extended_maturity_evidence_blockers" not in report["campaign_summary"]:
               raise SystemExit("extended maturity summary is missing extended_maturity_evidence_blockers")
+          if "total_extended_maturity_evidence_blockers" not in report["campaign_summary"][
+              "extended_maturity_evidence_blocker_totals"
+          ]:
+              raise SystemExit("extended maturity blocker totals are missing total_extended_maturity_evidence_blockers")
           if report["campaign_summary"]["extended_passes_with_error_runs"]:
               raise SystemExit(
                   f"extended maturity pass errors: {report['campaign_summary']['extended_passes_with_error_runs']}"

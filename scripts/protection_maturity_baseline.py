@@ -1042,7 +1042,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         **_sum_static_delta_fields(summaries),
     }
     summary["extended_maturity_evidence_blockers"] = _extended_maturity_evidence_blockers(summary)
-    summary["extended_maturity_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
+    summary["extended_maturity_evidence_blocker_totals"] = _extended_maturity_evidence_blocker_totals(
         summary["extended_maturity_evidence_blockers"]
     )
     summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(summary)
@@ -1063,6 +1063,12 @@ def _extended_maturity_evidence_blockers(summary: Mapping[str, object]) -> dict[
         if isinstance(value, list) and value:
             blockers[field] = value
     return blockers
+
+
+def _extended_maturity_evidence_blocker_totals(blockers: Mapping[str, object]) -> dict[str, int]:
+    totals = _continuous_evidence_blocker_totals(blockers)
+    totals["total_extended_maturity_evidence_blockers"] = totals.pop("total_continuous_evidence_blockers")
+    return totals
 
 
 def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, object]:

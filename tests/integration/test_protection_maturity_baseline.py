@@ -113,7 +113,7 @@ _EXPECTED_EXTENDED_MATURITY_BLOCKERS = {"missing_extended_passes": _EXPECTED_MIS
 _EXPECTED_EXTENDED_MATURITY_BLOCKER_TOTALS = {
     "blocker_categories": len(_EXPECTED_EXTENDED_MATURITY_BLOCKERS),
     "missing_extended_passes": len(_EXPECTED_MISSING_EXTENDED_PASSES),
-    "total_continuous_evidence_blockers": len(_EXPECTED_MISSING_EXTENDED_PASSES),
+    "total_extended_maturity_evidence_blockers": len(_EXPECTED_MISSING_EXTENDED_PASSES),
 }
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 

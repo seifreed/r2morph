@@ -877,6 +877,7 @@ def _check_corpus_workflows() -> None:
         "passes_without_extended_applied_runs",
         "extended_passes_with_error_runs",
         "extended_maturity_evidence_blockers",
+        "total_extended_maturity_evidence_blockers",
         "extended maturity pass errors",
         "extended-maturity-passes",
     ):

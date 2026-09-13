@@ -1184,6 +1184,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "passes_without_extended_applied_runs" in differential
         and "extended_passes_with_error_runs" in differential
         and "extended_maturity_evidence_blockers" in differential
+        and "total_extended_maturity_evidence_blockers" in differential
         and "extended maturity pass errors" in differential
         and "extended-maturity-passes" in differential
     )
