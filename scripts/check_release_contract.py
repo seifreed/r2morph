@@ -135,7 +135,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "continuous_evidence_blocker_totals",
     "extended_maturity_evidence_blockers",
     "extended_maturity_evidence_blocker_totals",
-    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, and FP/SIMD",
+    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
     "vm_semantic_gap_scope",
     "vm_semantic_blocker_totals",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",

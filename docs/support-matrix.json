@@ -1762,7 +1762,8 @@
         "unwinding-exceptions",
         "tls-signals",
         "threads",
-        "fp-simd"
+        "fp-simd",
+        "ssa-liveness"
       ],
       "vm_semantic_fixture_coverage": {
         "artifact": "docs/virtualization-coverage.json",
@@ -1862,6 +1863,16 @@
             "docs/virtualization-coverage.json",
             "tests/integration/test_code_virtualization_avx256_real.py"
           ]
+        },
+        "ssa-liveness": {
+          "status": "fail-closed-regression-incomplete",
+          "capabilities": [
+            "ssa_liveness"
+          ],
+          "evidence": [
+            "tests/unit/test_code_virtualization_static_dataflow.py",
+            "tests/unit/test_code_virtualization_diagnostics.py"
+          ]
         }
       },
       "vm_semantic_evidence_blockers": {
@@ -1873,12 +1884,13 @@
           "unwinding-exceptions",
           "tls-signals",
           "threads",
-          "fp-simd"
+          "fp-simd",
+          "ssa-liveness"
         ]
       },
       "vm_semantic_blocker_totals": {
-        "total_vm_semantic_blockers": 8,
-        "vm_semantic_gap_scope": 8
+        "total_vm_semantic_blockers": 9,
+        "vm_semantic_gap_scope": 9
       },
       "vm_resistance_gap_scope": [
         "human-adversarial-validation",
@@ -3925,7 +3937,8 @@
       "unwinding-exceptions",
       "tls-signals",
       "threads",
-      "fp-simd"
+      "fp-simd",
+      "ssa-liveness"
     ],
     "fixture_coverage": {
       "artifact": "docs/virtualization-coverage.json",
@@ -4024,6 +4037,16 @@
         "evidence": [
           "docs/virtualization-coverage.json",
           "tests/integration/test_code_virtualization_avx256_real.py"
+        ]
+      },
+      "ssa-liveness": {
+        "status": "fail-closed-regression-incomplete",
+        "capabilities": [
+          "ssa_liveness"
+        ],
+        "evidence": [
+          "tests/unit/test_code_virtualization_static_dataflow.py",
+          "tests/unit/test_code_virtualization_diagnostics.py"
         ]
       }
     }

@@ -41,7 +41,7 @@
       "status": "passed"
     },
     {
-      "detail": "memory/calls/ABI/unwind/TLS/thread/FP gaps remain tracked",
+      "detail": "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness gaps remain tracked",
       "name": "vm_semantic_gap_scope",
       "status": "passed"
     },
