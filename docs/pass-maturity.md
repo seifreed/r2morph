@@ -111,8 +111,10 @@ The Tier 1 native profile now links a focused adversarial corpus summary for
 NopInsertion, InstructionSubstitution, and RegisterSubstitution:
 [`protection-adversarial-tier1-2026-09-13-400c2a48-summary.json`](protection-adversarial-tier1-2026-09-13-400c2a48-summary.json).
 That run completed `angr`, radare2, objdump, and the custom analyzer across all
-483 Tier 1 pass/sample rows, with Unicorn completing 463 rows. Binary Ninja,
-IDA, Ghidra, and Triton remain explicit unavailable-tool blockers.
+483 Tier 1 pass/sample rows, with Unicorn completing 463 rows. Binary Ninja
+remains an explicit unavailable-tool blocker; IDA, Ghidra, and Triton have
+separate corpus evidence, but the full comparable campaign scope remains a
+release blocker.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. The companion
