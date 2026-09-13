@@ -81,6 +81,11 @@ _FORBIDDEN_RELEASE_CLAIMS = (
     "ready to ship",
     "full parity",
     "universal protector",
+    "vm milestone complete",
+    "vm milestone approved",
+    "anti-tamper approved",
+    "progressive bytecode protection approved",
+    "external human review passed",
 )
 _BANNED_BINARY_NINJA_OMISSION_PHRASES = (
     "Binary Ninja is explicitly omitted",

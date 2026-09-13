@@ -441,9 +441,13 @@ def test_release_contract_documentation_claims_remain_current() -> None:
 
 
 def test_release_contract_rejects_overstated_release_claims() -> None:
-    claims = _forbidden_release_claims("This is production-ready with full parity and ready to ship.")
+    claims = _forbidden_release_claims(
+        "This is production-ready with full parity and ready to ship. " "VM milestone approved; anti-tamper approved."
+    )
 
-    expect(claims == ("production-ready", "ready to ship", "full parity"))
+    expect(
+        claims == ("production-ready", "ready to ship", "full parity", "vm milestone approved", "anti-tamper approved")
+    )
 
 
 def test_independent_review_packet_lists_vm_resistance_reports() -> None:
