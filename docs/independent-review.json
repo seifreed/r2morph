@@ -21,6 +21,11 @@
       "status": "passed"
     },
     {
+      "detail": "scheduled differential campaign gates continuous evidence blockers",
+      "name": "differential_continuous_evidence_gate",
+      "status": "passed"
+    },
+    {
       "detail": "native/performance/FP/decompiler/composition/ISA gaps tracked",
       "name": "pass_maturity_gap_scope",
       "status": "passed"

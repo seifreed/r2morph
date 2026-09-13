@@ -66,6 +66,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "adversarial_corpus_evidence",
     "adversarial_signoff_blockers",
     "binary_ninja_benchmark_contract",
+    "differential_continuous_evidence_gate",
     "differential_corpus_gap_scope",
     "differential_platform_gap_scope",
     "fppackedidxnb_regression_evidence",

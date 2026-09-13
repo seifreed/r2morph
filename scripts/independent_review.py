@@ -97,6 +97,24 @@ def _review_differential_corpus_gap(root: Path) -> dict[str, object]:
     )
 
 
+def _review_differential_continuous_evidence(root: Path) -> dict[str, object]:
+    workflow = (root / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    passed = all(
+        fragment in workflow
+        for fragment in (
+            "schedule:",
+            "missing_corpus_passes",
+            "passes_with_incomplete_coverage",
+            "continuous_evidence_blockers",
+        )
+    )
+    return _check(
+        "differential_continuous_evidence_gate",
+        passed,
+        "scheduled differential campaign gates continuous evidence blockers",
+    )
+
+
 def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
     path = root / "docs" / "support-matrix.json"
     document = json.loads(path.read_text(encoding="utf-8"))
@@ -367,6 +385,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_matrix(root),
         _review_differential_platform_gap(root),
         _review_differential_corpus_gap(root),
+        _review_differential_continuous_evidence(root),
         _review_pass_maturity_gap_scope(root),
         _review_vm_semantic_gap_scope(root),
         _review_vm_resistance_adversarial_scope(root),
