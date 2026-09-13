@@ -47,9 +47,10 @@ review. It is not a feature roadmap and must not be read as a support claim.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
   Evidence map: [protection-handler-clustering.json](protection-handler-clustering.json),
-  [protection-bytecode-grammar.json](protection-bytecode-grammar.json). Exit
-  criteria: adversarial review validates VM diversity, anti-tamper, and
-  progressive bytecode protection instead of treating seed diversity as signoff.
+  [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
+  `adversarial_validation`. Exit criteria: adversarial review validates VM
+  diversity, anti-tamper, and progressive bytecode protection instead of
+  treating seed diversity as signoff.
 - RB-007: The VM milestone remains blocked until external human review records signoff.
   Evidence map: [independent-review.json](independent-review.json),
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:

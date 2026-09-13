@@ -118,6 +118,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "parity_evidence_blockers",
     "Binary Ninja is an explicit slot",
     "adversarial_evidence_blockers",
+    "adversarial_validation",
     "anti-tamper and progressive bytecode protection",
     "external human review records signoff",
 )
