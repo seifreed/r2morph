@@ -125,6 +125,15 @@ def test_compatibility_corpus_documents_differential_metrics() -> None:
     )
 
 
+def test_compatibility_corpus_does_not_promote_historical_six_pass_campaign() -> None:
+    contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
+
+    expect(
+        "six selected passes available at that commit" in contract
+        and "a full ten-pass campaign is required before this document claims a complete Linux CI record" in contract
+    )
+
+
 def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> None:
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 
