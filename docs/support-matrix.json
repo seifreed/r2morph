@@ -1777,9 +1777,7 @@
         ]
       },
       "adversarial_evidence_blockers": {
-        "incomplete_tool_coverage": [
-          "binary-ninja"
-        ],
+        "incomplete_tool_coverage": [],
         "binary_ninja_unavailable": [
           "binary-ninja"
         ],
@@ -1788,10 +1786,10 @@
         ]
       },
       "adversarial_blocker_totals": {
-        "incomplete_tool_coverage": 1,
+        "incomplete_tool_coverage": 0,
         "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": 3
+        "total_adversarial_blockers": 2
       },
       "vm_semantic_gap_scope": [
         "memory",

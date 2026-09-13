@@ -83,7 +83,7 @@ _ADVERSARIAL_EXPECTED_TOOLS = (
     "ghidra",
     "custom",
 )
-_ADVERSARIAL_INCOMPLETE_TOOLS = ("binary-ninja",)
+_ADVERSARIAL_INCOMPLETE_TOOLS: tuple[str, ...] = ()
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
     "direct-calls",
