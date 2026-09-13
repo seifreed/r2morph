@@ -789,7 +789,11 @@ class CodeVirtualizationPass(MutationPass):
         opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
-        if kind in _COMPUTED_JUMP_TYPES or opcode.startswith(("jmpf", "ljmp")):
+        if (
+            kind in _COMPUTED_JUMP_TYPES
+            or opcode.startswith(("jmpf", "ljmp"))
+            or (mnemonic in {"jmp", "jmpq"} and "[" in opcode)
+        ):
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
             "fs:" in opcode
