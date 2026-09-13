@@ -44,6 +44,8 @@ _PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
 _EXPECTED_PIE_EXIT_CODE = 73
 _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
+_EXPECTED_NOP_EXIT_CODE = 42
+_EXPECTED_SHORT_JUMP_EXIT_CODE = 7
 _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
 _EXPECTED_MAX_SIZE_DELTA_BYTES = 25
 _EXPECTED_MIN_SIZE_DELTA_BYTES = -5
@@ -208,8 +210,13 @@ def test_measure_fixture_records_data_flow_mutation_on_real_fixture(tmp_path: Pa
         tmp_path,
         "DataFlowMutation",
     )
+    run = result["runs"][0]
 
-    expect(result["runs"][0]["transformation"]["status"] == "applied")
+    expect(
+        run["transformation"]["status"] == "applied"
+        and emulate_exit_code(_NOP_FIXTURE) == _EXPECTED_NOP_EXIT_CODE
+        and run["unicorn"]["exit_code"] == _EXPECTED_NOP_EXIT_CODE
+    )
 
 
 def test_short_jump_patching_uses_trailing_nop_slack_in_real_elf(tmp_path: Path) -> None:
@@ -230,8 +237,13 @@ def test_measure_fixture_records_short_jump_patching_on_real_fixture(tmp_path: P
         tmp_path,
         "ShortJumpPatching",
     )
+    run = result["runs"][0]
 
-    expect(result["runs"][0]["transformation"]["status"] == "applied")
+    expect(
+        run["transformation"]["status"] == "applied"
+        and emulate_exit_code(executable) == _EXPECTED_SHORT_JUMP_EXIT_CODE
+        and run["unicorn"]["exit_code"] == _EXPECTED_SHORT_JUMP_EXIT_CODE
+    )
 
 
 def test_constant_unfolding_fixture_records_a_semantic_mutation(tmp_path: Path) -> None:

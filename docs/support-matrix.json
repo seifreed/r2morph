@@ -486,7 +486,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Measured by protection maturity harness: total_patched, transform duration, output-size delta, runtime-duration delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
+        "performance": "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -570,7 +570,7 @@
         "e2e_tests": [
           "tests/integration"
         ],
-        "performance": "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, runtime-duration delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
+        "performance": "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
@@ -1144,8 +1144,8 @@
         "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
       },
       "performance_counts": {
-        "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, runtime-duration delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
-        "Measured by protection maturity harness: total_patched, transform duration, output-size delta, runtime-duration delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
+        "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
+        "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
         "Not measured per pass.": 10,
         "Not recorded per pass in the public corpus.": 3,
         "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 6,
