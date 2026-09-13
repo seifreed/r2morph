@@ -181,7 +181,15 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
 def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
+    stability_counts = summary["stability_counts"]
+    maturity_profile_counts = summary["maturity_profile_counts"]
     fragments = (
+        f"{stability_counts['tier-1']} tier-1 passes",
+        f"{stability_counts['experimental']} experimental passes",
+        f"{maturity_profile_counts['tier-1-native']} tier-1-native profile passes",
+        f"{maturity_profile_counts['experimental-corpus-selected']} experimental-corpus-selected profile passes",
+        f"{maturity_profile_counts['code-virtualization']} code-virtualization profile pass",
+        f"{maturity_profile_counts['experimental']} experimental profile passes",
         f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
         (
             f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "

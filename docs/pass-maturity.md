@@ -49,7 +49,10 @@ matrix records 7 non-official evidenced cells and 235 non-official
 not-supported cells. It also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
 code-virtualization, and experimental coverage remain visible at release-gate
-level. It also summarizes the declared performance, false-positive-risk,
+level: 3 tier-1 passes, 19 experimental passes, 3 tier-1-native profile passes,
+6 experimental-corpus-selected profile passes, 1 code-virtualization profile
+pass, and 12 experimental profile passes. It also summarizes the declared
+performance, false-positive-risk,
 instructions-affected, decompiler-effectiveness, and compatibility/composition
 text by profile so unmeasured cost, ISA coverage, risk, analyzer effectiveness,
 and pass-composition gaps remain visible release gaps instead of being buried in
