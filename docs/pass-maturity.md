@@ -52,6 +52,11 @@ instructions-affected, decompiler-effectiveness, and compatibility/composition
 text by profile so unmeasured cost, ISA coverage, risk, analyzer effectiveness,
 and pass-composition gaps remain visible release gaps instead of being buried in
 each pass row.
+The current summary still reports 12 passes with no per-pass performance
+measurement, 12 with no independent false-positive measurement, 15 with no
+independent decompiler-effectiveness measurement, 12 without contractual
+composition support, and 18 without an exhaustive affected-instruction
+catalogue.
 Runtime support classification also exposes `parity_gap` and
 `parity_gap_scope` so reports can distinguish stable ELF x86-64 from
 format-level and architecture-level preview gaps. Maturity-profile summaries
