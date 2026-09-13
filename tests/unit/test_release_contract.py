@@ -16,6 +16,7 @@ from scripts.check_release_contract import (
     _check_independent_review_artifact,
     _check_independent_review_packet_claims,
     _check_matrix,
+    _check_maturity_gap_evidence,
     _check_pass_maturity_gap_summary,
     _check_pass_selection_contract,
     _check_readme_adversarial_summary,
@@ -430,6 +431,19 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
         and all((_ROOT / path).exists() for path in evidence_paths)
         and summary["maturity_blocker_totals"]["total_maturity_blockers"] == _EXPECTED_TOTAL_MATURITY_BLOCKERS
     )
+
+
+def test_release_contract_rejects_missing_maturity_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("performance")
+
+    rejected = False
+    try:
+        _check_maturity_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "maturity gap evidence" in str(error)
+
+    expect(rejected)
 
 
 def test_support_matrix_counts_maturity_blockers() -> None:

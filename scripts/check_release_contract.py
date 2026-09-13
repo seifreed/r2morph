@@ -308,6 +308,33 @@ def _check_adversarial_benchmark_evidence(matrix: dict[str, object]) -> None:
             raise ValueError(f"adversarial benchmark evidence path is missing: {evidence_path}")
 
 
+def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["maturity_gap_evidence"]
+    blockers = summary["maturity_evidence_blockers"]
+    expected_fields = set(summary["maturity_gap_passes"]) | {"native_evidence"}
+    if set(evidence) != expected_fields:
+        raise ValueError("maturity gap evidence must cover every declared maturity gap")
+    if blockers["native_evidence_gap_passes"] != summary["native_evidence_gap_passes"]:
+        raise ValueError("maturity native evidence blockers must match summary")
+    if blockers["missing_fields_by_field"] != summary["maturity_gap_passes"]:
+        raise ValueError("maturity field blockers must match summary")
+    if blockers["missing_fields_by_pass"] != summary["maturity_gaps_by_pass"]:
+        raise ValueError("maturity pass blockers must match summary")
+    for gap, row in evidence.items():
+        if not row["passes"]:
+            raise ValueError(f"maturity gap evidence has no passes: {gap}")
+        if not (row["status"].endswith("-incomplete") or row["status"].endswith("-unsupported")):
+            raise ValueError(f"maturity gap must remain incomplete until closed: {gap}")
+        for evidence_path in row["evidence"]:
+            if (
+                isinstance(evidence_path, str)
+                and not evidence_path.startswith("http")
+                and not (ROOT / evidence_path).exists()
+            ):
+                raise ValueError(f"maturity gap evidence path is missing: {gap}.{evidence_path}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -344,6 +371,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         raise ValueError("non-official targets must not claim official-target parity")
     _check_adversarial_benchmark_evidence(matrix)
     _check_differential_gap_evidence(matrix)
+    _check_maturity_gap_evidence(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)
 
