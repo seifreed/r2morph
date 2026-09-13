@@ -487,6 +487,22 @@ def _check_readme_vm_review_scope() -> None:
             raise ValueError(f"README VM review scope is missing: {fragment}")
 
 
+def _check_readme_vm_resistance_summary() -> None:
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    for fragment in (
+        f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
+        f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
+        f"{bytecode['all_handler_stride_unique_count']} handler stride values",
+        "target handler stride diversity",
+        "protection-handler-clustering.json",
+        "protection-bytecode-grammar.json",
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README VM resistance summary is missing: {fragment}")
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -608,6 +624,7 @@ def main() -> int:
         _check_adversarial_benchmark_artifacts()
         _check_readme_adversarial_summary()
         _check_readme_vm_review_scope()
+        _check_readme_vm_resistance_summary()
         _check_documentation_links()
         _check_documentation_claims()
         _check_ci_contract()

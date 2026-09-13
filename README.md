@@ -175,6 +175,11 @@ direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding,
 TLS/signals, SSA, and liveness paths remain explicit review scope, and
 unsupported instructions must fail closed instead of producing partial protected
 functions.
+Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
+0 exact normalized cross-seed handler matches, 12 handler stride values, and
+target handler stride diversity recorded in
+[`docs/protection-handler-clustering.json`](docs/protection-handler-clustering.json)
+and [`docs/protection-bytecode-grammar.json`](docs/protection-bytecode-grammar.json).
 
 ---
 
