@@ -110,7 +110,7 @@ The same summary still records 12 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement,
 12 with no independent decompiler-effectiveness measurement,
 12 without contractual composition support, and
-9 without an exhaustive affected-instruction catalogue.
+8 without an exhaustive affected-instruction catalogue.
 The reproducible GCC/Clang corpus and its build manifest live in the public
 [`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
 

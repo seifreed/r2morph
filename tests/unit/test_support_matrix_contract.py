@@ -17,16 +17,17 @@ _EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 235
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "code-virtualization": 1,
-    "experimental": 9,
+    "experimental": 8,
     "experimental-corpus-selected": 6,
+    "function-outlining-instruction-catalogued": 1,
     "short-jump-patching-instruction-catalogued": 1,
     "stack-strings-instruction-catalogued": 1,
     "string-obfuscation-instruction-catalogued": 1,
     "tier-1-native": 3,
 }
 _EXPECTED_MATURITY_GAP_CATEGORIES = 5
-_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 57
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 76
+_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 56
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 75
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
