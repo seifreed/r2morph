@@ -123,8 +123,9 @@ pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
 The scheduled differential workflow validates this campaign summary before
 uploading the artifact, including the Linux ELF x86-64 platform scope,
-`fixtures/dataset` corpus scope, generated corpus family coverage, generated
-argv input coverage, the PE/Mach-O and ARM/AArch64/x86 platform gap scope, missing
+`fixtures/dataset` corpus scope, generated corpus family coverage
+(branch, memory, and lookup-table fixtures), generated argv input coverage,
+the PE/Mach-O and ARM/AArch64/x86 platform gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
 counts, including `total_continuous_evidence_blockers`; the scheduled campaign

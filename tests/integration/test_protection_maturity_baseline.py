@@ -10,6 +10,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_FAMILY,
+    _GENERATED_CORPUS_SOURCES,
     _GENERATED_RUNTIME_INPUTS,
     _PASS_TYPES,
     _PREVIEW_BYTES,
@@ -62,6 +63,7 @@ _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
 _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
+_EXPECTED_GENERATED_CORPUS_SOURCES = ("generated_branch", "generated_lookup", "generated_memory")
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
@@ -596,6 +598,10 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
         and report["campaign_summary"]["corpus_gap_scope"] == {"corpus_families": [], "input_sources": []}
         and report["campaign_summary"]["continuous_evidence_blockers"].get("corpus_gap_scope") is None
     )
+
+
+def test_generated_corpus_includes_branch_memory_and_lookup_shapes() -> None:
+    expect(tuple(sorted(_GENERATED_CORPUS_SOURCES)) == _EXPECTED_GENERATED_CORPUS_SOURCES)
 
 
 def test_complete_evidence_gate_accepts_full_single_pass_report() -> None:

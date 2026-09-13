@@ -123,6 +123,29 @@ int main(int argc, char **argv) {
     return argc > 1 ? mix((const uint8_t *)argv[1], (int)strlen(argv[1])) : mix((const uint8_t *)"r2morph", 7);
 }
 """,
+    "generated_lookup": r"""
+#include <stdint.h>
+
+static const uint8_t table[16] = {
+    0x31, 0x7c, 0x02, 0x55, 0x91, 0x0f, 0xa4, 0x18,
+    0xc3, 0x6d, 0x22, 0xb8, 0x49, 0x03, 0xee, 0x10
+};
+
+__attribute__((noinline)) static int lookup_mix(int argc) {
+    uint32_t acc = 0x6d2b79f5u ^ (uint32_t)argc;
+    for (int i = 0; i < 32; ++i) {
+        uint8_t value = table[(acc + (uint32_t)i) & 15u];
+        acc ^= (uint32_t)value << ((i & 3) * 8);
+        acc = (acc >> 7) | (acc << 25);
+    }
+    return (int)(acc & 127u);
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    return lookup_mix(argc);
+}
+""",
 }
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
