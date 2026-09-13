@@ -985,6 +985,8 @@ class CodeVirtualizationPass(MutationPass):
                     "f2xm1",
                     "fabs",
                     "fadd",
+                    "fbld",
+                    "fbstp",
                     "fcmov",
                     "fchs",
                     "fcom",
@@ -1008,7 +1010,9 @@ class CodeVirtualizationPass(MutationPass):
                     "fst",
                     "fsub",
                     "fucom",
+                    "fxam",
                     "fxch",
+                    "fxtract",
                     "fyl2x",
                 )
             )
