@@ -317,6 +317,20 @@ def test_release_contract_rejects_empty_maturity_profile_field() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_missing_maturity_evidence_path() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["maturity"]["profiles"]["experimental"]["unit_tests"] = ["tests/missing-unit-evidence"]
+    matrix["matrix"] = build_matrix(matrix)
+
+    rejected = False
+    try:
+        _check_matrix(matrix, matrix["release"])
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_support_matrix_summarizes_test_evidence_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

@@ -95,6 +95,10 @@ def _check_maturity_profile_values(profile_name: str, profile: dict[str, object]
                 raise ValueError(f"maturity profile has empty field: {profile_name}.{field}")
         else:
             raise ValueError(f"maturity profile has invalid field type: {profile_name}.{field}")
+    for field in ("unit_tests", "e2e_tests"):
+        for evidence_path in profile[field]:
+            if not (ROOT / evidence_path).exists():
+                raise ValueError(f"maturity profile has missing evidence path: {profile_name}.{field}.{evidence_path}")
 
 
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
