@@ -8,6 +8,7 @@ from tests.utils.assertions import expect
 
 _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 _REPORT = Path(__file__).resolve().parents[2] / "docs" / "virtualization-coverage.json"
+_MATURITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "protection-maturity.md"
 _MINIMUM_FIXTURE_COUNT = 80
 
 
@@ -28,6 +29,15 @@ def test_virtualization_coverage_report_matches_current_fixtures() -> None:
     report = json.loads(_REPORT.read_text(encoding="utf-8"))
 
     expect(report == build_coverage_inventory(_DATASET))
+
+
+def test_virtualization_coverage_doc_matches_generated_report() -> None:
+    report = json.loads(_REPORT.read_text(encoding="utf-8"))
+    document = _MATURITY_DOC.read_text(encoding="utf-8")
+
+    expect(
+        f": {report['fixture_count']} real\nfixtures cover {report['capability_count']} capability families" in document
+    )
 
 
 def test_virtualization_coverage_classifies_syscall_outside_call_capability() -> None:

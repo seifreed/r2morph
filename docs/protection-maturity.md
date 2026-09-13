@@ -158,7 +158,7 @@ The latest report records 4,342 completed tool runs and 3,480 explicit unavailab
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
 [`docs/virtualization-coverage.json`](virtualization-coverage.json): 150 real
-fixtures cover ten capability families with no unclassified fixture.
+fixtures cover 10 capability families with no unclassified fixture.
 
 ## 1. Current architecture
 
