@@ -69,6 +69,12 @@ def _maturity_summary_counts(maturity: object) -> dict[str, dict[str, int]]:
     return summaries
 
 
+def _coverage_percent(evidenced: int, total: int) -> float:
+    if total == 0:
+        return 0.0
+    return round(evidenced / total * 100.0, 2)
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -128,6 +134,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         if cell["status"] == "not-supported"
         and (cell["format"] != official_format or cell["architecture"] != official_architecture)
     )
+    official_cell_count = official_evidenced + official_not_supported
+    non_official_cell_count = non_official_evidenced + non_official_not_supported
     maturity_summaries = _maturity_summary_counts(document.get("maturity"))
     return {
         "dimensions": {
@@ -141,8 +149,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "not_supported_cells": len(cells) - evidenced,
             "official_evidenced_cells": official_evidenced,
             "official_not_supported_cells": official_not_supported,
+            "official_evidence_percent": _coverage_percent(official_evidenced, official_cell_count),
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
+            "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
         },

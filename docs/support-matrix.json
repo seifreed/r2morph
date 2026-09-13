@@ -575,8 +575,10 @@
       "not_supported_cells": 235,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
+      "official_evidence_percent": 100.0,
       "non_official_evidenced_cells": 7,
       "non_official_not_supported_cells": 235,
+      "non_official_evidence_percent": 2.89,
       "stability_counts": {
         "experimental": 19,
         "tier-1": 3

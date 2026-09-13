@@ -11,6 +11,7 @@ from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _MIN_CONCRETE_PASSES = 20
+_FULL_COVERAGE_PERCENT = 100.0
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "instruction-expansion",
     "block-reordering",
@@ -183,6 +184,8 @@ def test_support_matrix_summarizes_official_target_cells() -> None:
     expect(
         summary["official_evidenced_cells"] + summary["official_not_supported_cells"] == len(matrix["passes"])
         and summary["official_evidenced_cells"] == len(matrix["passes"])
+        and summary["official_evidence_percent"] == _FULL_COVERAGE_PERCENT
+        and summary["non_official_evidence_percent"] < summary["official_evidence_percent"]
     )
 
 
