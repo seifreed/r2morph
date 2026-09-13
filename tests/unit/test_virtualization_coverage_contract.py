@@ -37,6 +37,7 @@ def test_virtualization_coverage_doc_matches_generated_report() -> None:
 
     expect(
         f": {report['fixture_count']} real\nfixtures cover {report['capability_count']} capability families" in document
+        and f"| Control-flow virtualization | {report['fixture_count']}-fixture coverage inventory" in document
     )
 
 

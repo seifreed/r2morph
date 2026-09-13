@@ -243,7 +243,7 @@ The current local campaign at `2e4ad8e` ran 20,000 cases per target across
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handlers are present in every measured seed, their stride changes from fixed `[3]` to `[3,4,5]`, the report records unique stride counts/diversity explicitly, and `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 148-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 150-fixture coverage inventory and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
