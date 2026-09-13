@@ -783,13 +783,13 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
         elif kind in ("call", "rcall", "ucall") or opcode.startswith("call"):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
+        elif any(token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1")):
+            capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
         elif "[" in opcode:
             capability, reason = (
                 "memory_operands",
                 "memory operand semantics were not proven for whole-function virtualization",
             )
-        elif any(token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1")):
-            capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
         else:
             capability, reason = (
                 "instruction_semantics",

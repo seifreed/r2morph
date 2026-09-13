@@ -354,3 +354,11 @@ def test_syscall_instruction_reports_signals_and_system_calls_capability() -> No
     )
 
     expect(capability == "signals_and_system_calls")
+
+
+def test_simd_memory_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "mov", "opcode": "vmovdqu ymm0, ymmword [rax]"}
+    )
+
+    expect(capability == "floating_point_and_simd")
