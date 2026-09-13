@@ -783,6 +783,7 @@ class CodeVirtualizationPass(MutationPass):
             .removeprefix("repz ")
             .removeprefix("repnz ")
         )
+        opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
         mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
         if kind in _COMPUTED_JUMP_TYPES or opcode.startswith(("jmpf", "ljmp")):
@@ -796,7 +797,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
         elif (
             (
-                opcode.startswith(
+                opcode_without_sync_prefix.startswith(
                     (
                         "cmpxchg",
                         "xadd",
@@ -804,7 +805,7 @@ class CodeVirtualizationPass(MutationPass):
                 )
                 and "[" in opcode
             )
-            or opcode.startswith(
+            or opcode_without_sync_prefix.startswith(
                 (
                     "mfence",
                     "lfence",
@@ -824,7 +825,7 @@ class CodeVirtualizationPass(MutationPass):
                     "lock ",
                 )
             )
-            or (opcode.startswith("xchg") and "[" in opcode)
+            or (opcode_without_sync_prefix.startswith("xchg") and "[" in opcode)
         ):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
         elif kind in ("swi", "syscall") or opcode.startswith(
