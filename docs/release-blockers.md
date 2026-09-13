@@ -52,9 +52,11 @@ review. It is not a feature roadmap and must not be read as a support claim.
   diversity, anti-tamper, and progressive bytecode protection instead of
   treating seed diversity as signoff.
 - RB-007: The VM milestone remains blocked until external human review records signoff.
-  Evidence map: [independent-review.json](independent-review.json),
+  Evidence map: [independent-review.json](independent-review.json)
+  `human_signoff` and `release_decision`,
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:
-  external human review records signoff for the VM milestone.
+  external human review records signoff for the VM milestone and the release
+  decision no longer blocks the VM milestone.
 
 ## Blocker index
 

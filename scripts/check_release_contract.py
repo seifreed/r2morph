@@ -121,6 +121,8 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "adversarial_validation",
     "anti-tamper and progressive bytecode protection",
     "external human review records signoff",
+    "human_signoff",
+    "release_decision",
 )
 _RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
 _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT = 2
