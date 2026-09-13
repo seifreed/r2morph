@@ -16,6 +16,11 @@
       "status": "passed"
     },
     {
+      "detail": "additional corpus families and generated inputs remain gaps",
+      "name": "differential_corpus_gap_scope",
+      "status": "passed"
+    },
+    {
       "detail": "native/performance/FP/decompiler/composition/ISA gaps tracked",
       "name": "pass_maturity_gap_scope",
       "status": "passed"

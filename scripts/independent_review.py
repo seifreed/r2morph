@@ -14,7 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from r2morph.platform.elf_handler_parsing import parse_elf_header
 from scripts.adversarial_benchmark import _EXPECTED_TOOLS
 from scripts.continuous_fuzz import run_campaign
-from scripts.protection_maturity_baseline import _DIFFERENTIAL_PLATFORM_GAP_SCOPE
+from scripts.protection_maturity_baseline import (
+    _DIFFERENTIAL_CORPUS_GAP_SCOPE,
+    _DIFFERENTIAL_PLATFORM_GAP_SCOPE,
+)
 from scripts.support_matrix import _VM_SEMANTIC_GAP_SCOPE, build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
@@ -76,6 +79,22 @@ def _review_differential_platform_gap(root: Path) -> dict[str, object]:
     gap_scope = blockers.get("parity_gap_scope") if isinstance(blockers, dict) else None
     passed = gap_scope == _DIFFERENTIAL_PLATFORM_GAP_SCOPE
     return _check("differential_platform_gap_scope", passed, "PE/Mach-O and ARM/AArch64/x86 remain gaps")
+
+
+def _review_differential_corpus_gap(root: Path) -> dict[str, object]:
+    workflow = (root / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    contract = (root / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
+    passed = (
+        "corpus_gap_scope" in workflow
+        and all(value in workflow for value in _DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"])
+        and all(value in workflow for value in _DIFFERENTIAL_CORPUS_GAP_SCOPE["input_sources"])
+        and "additional-corpus-family and generated-input gap scope" in contract
+    )
+    return _check(
+        "differential_corpus_gap_scope",
+        passed,
+        "additional corpus families and generated inputs remain gaps",
+    )
 
 
 def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
@@ -347,6 +366,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_differential_platform_gap(root),
+        _review_differential_corpus_gap(root),
         _review_pass_maturity_gap_scope(root),
         _review_vm_semantic_gap_scope(root),
         _review_vm_resistance_adversarial_scope(root),
