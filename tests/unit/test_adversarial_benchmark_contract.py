@@ -20,6 +20,7 @@ from tests.utils.assertions import expect
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
 _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
 _SINGLE_FIXTURE_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-adversarial-benchmark.json"
+_COMPATIBILITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "compatibility-corpus.md"
 _EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
@@ -59,6 +60,20 @@ def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:
         == set(tools)
         and tools["angr"] == "completed"
         and tools["binary-ninja"] in {"unavailable", "completed"}
+    )
+
+
+def test_adversarial_benchmark_docs_match_local_tool_availability() -> None:
+    report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
+    tools = {item["tool"]: item["status"] for item in report["tools"]}
+    document = " ".join(_COMPATIBILITY_DOC.read_text(encoding="utf-8").split())
+
+    expect(
+        tools["angr"] == "completed"
+        and tools["binary-ninja"] == "unavailable"
+        and "reported as unavailable rather than omitted" in document
+        and "angr`, Unicorn, radare2, objdump, and the custom analyzer completed" in document
+        and "Binary Ninja, IDA, Ghidra, and Triton are explicit local availability gaps" in document
     )
 
 
