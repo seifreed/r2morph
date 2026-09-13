@@ -464,10 +464,14 @@ def _check_readme_adversarial_summary() -> None:
     tools = report["tools"]
     completed = sum(1 for tool in tools if tool["status"] == "completed")
     unavailable = sum(1 for tool in tools if tool["status"] == "unavailable")
+    binary_ninja = next(tool for tool in tools if tool["tool"] == "binary-ninja")
     for fragment in (
         f"{completed} completed analyzer slots",
         f"{unavailable} unavailable analyzer slots",
         report_name,
+        "Binary Ninja is an explicit analyzer slot",
+        f"`binary-ninja` as {binary_ninja['status']}",
+        binary_ninja["reason"],
     ):
         if fragment not in readme:
             raise ValueError(f"README adversarial summary is missing: {fragment}")
