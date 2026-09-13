@@ -9,7 +9,8 @@ review. It is not a feature roadmap and must not be read as a support claim.
   composition, false-positive measurement, analyzer effectiveness, and
   affected-instruction coverage are not complete for every pass. Evidence map:
   [pass-maturity.md](pass-maturity.md),
-  [support-matrix.json](support-matrix.json). Exit criteria: every pass has
+  [support-matrix.json](support-matrix.json) `maturity_evidence_blockers`.
+  Exit criteria: every pass has
   complete native, performance, composition, false-positive, analyzer, and
   affected-instruction evidence.
 - RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass

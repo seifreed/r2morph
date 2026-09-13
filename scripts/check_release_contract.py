@@ -109,6 +109,7 @@ _BANNED_BINARY_NINJA_OMISSION_PHRASES = (
 )
 _RELEASE_BLOCKER_FRAGMENTS = (
     "Per-pass maturity remains incomplete",
+    "maturity_evidence_blockers",
     "Differential corpus coverage remains incomplete",
     "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
     "vm_semantic_gap_scope",

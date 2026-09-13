@@ -129,6 +129,19 @@ def _maturity_gaps_by_pass(maturity: object) -> dict[str, list[str]]:
     return dict(sorted(gaps.items()))
 
 
+def _maturity_evidence_blockers(
+    maturity_gap_passes: dict[str, list[str]],
+    maturity_gaps_by_pass: dict[str, list[str]],
+) -> dict[str, object]:
+    blockers: dict[str, object] = {}
+    missing_fields = {field: pass_names for field, pass_names in maturity_gap_passes.items() if pass_names}
+    if missing_fields:
+        blockers["missing_fields_by_field"] = missing_fields
+    if maturity_gaps_by_pass:
+        blockers["missing_fields_by_pass"] = maturity_gaps_by_pass
+    return blockers
+
+
 def _coverage_percent(evidenced: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -266,6 +279,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,
             "maturity_gaps_by_pass": maturity_gaps_by_pass,
+            "maturity_evidence_blockers": _maturity_evidence_blockers(
+                maturity_gap_passes,
+                maturity_gaps_by_pass,
+            ),
             "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
         },
         "cells": cells,

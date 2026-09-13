@@ -334,6 +334,19 @@ def test_support_matrix_names_maturity_gaps_by_pass() -> None:
     )
 
 
+def test_support_matrix_names_maturity_evidence_blockers() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    blockers = summary["maturity_evidence_blockers"]
+
+    expect(
+        blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
+        and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
+        and "performance" in blockers["missing_fields_by_field"]
+        and "anti-disassembly" in blockers["missing_fields_by_pass"]
+    )
+
+
 def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
