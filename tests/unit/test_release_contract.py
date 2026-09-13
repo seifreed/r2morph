@@ -579,6 +579,12 @@ def test_release_contract_requires_versioned_changelog_heading() -> None:
     expect(rejected)
 
 
+def test_changelog_keeps_vm_milestone_blocker() -> None:
+    changelog = (_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+
+    expect("VM milestone blocked until external human review" in changelog)
+
+
 def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 

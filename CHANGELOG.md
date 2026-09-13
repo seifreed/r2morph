@@ -4,6 +4,7 @@
 
 - Fixes release artifact download in the isolated PyPI publish job.
 - Publishes the same verified ELF x86-64 support contract as alpha.2.
+- Keeps the VM milestone blocked until external human review records signoff.
 
 ## 0.4.0-alpha.2
 

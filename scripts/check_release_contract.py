@@ -330,6 +330,8 @@ def _check_changelog(package_version: str) -> None:
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if f"## {package_version}" not in changelog:
         raise ValueError("changelog must contain the package version heading")
+    if package_version == _check_version() and "VM milestone blocked until external human review" not in changelog:
+        raise ValueError("changelog must preserve the VM milestone signoff blocker")
 
 
 def _validate_inventory(inventory: dict[str, object]) -> None:
