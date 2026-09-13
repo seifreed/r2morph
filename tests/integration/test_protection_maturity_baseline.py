@@ -87,6 +87,10 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
     "passes_with_semantic_failures": ["PatternSubstitution"],
     "passes_with_runtime_observable_failures": ["CodeVirtualization"],
     "platform_gap_scope": {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]},
+    "corpus_gap_scope": {
+        "corpus_families": ["additional-corpus-families"],
+        "input_sources": ["generated-inputs"],
+    },
 }
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
@@ -394,6 +398,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["platform_scope"] == {"os": "linux", "format": "ELF", "architecture": "x86-64"}
         and report["campaign_summary"]["platform_gap_scope"]
         == {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]}
+        and report["campaign_summary"]["corpus_gap_scope"]
+        == {"corpus_families": ["additional-corpus-families"], "input_sources": ["generated-inputs"]}
         and report["campaign_summary"]["corpus_scope"] == {"dataset": "explicit-fixtures"}
         and report["campaign_summary"]["expected_corpus_pass_count"] == _EXPECTED_CORPUS_PASS_COUNT
         and report["campaign_summary"]["covered_corpus_pass_count"] == _EXPECTED_MULTI_PASS_COUNT

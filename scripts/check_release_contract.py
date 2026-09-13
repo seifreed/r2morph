@@ -811,6 +811,7 @@ def _check_corpus_workflows() -> None:
         "Validate differential campaign summary",
         "platform_scope",
         "platform_gap_scope",
+        "corpus_gap_scope",
         "corpus_scope",
         "linux",
         "ELF",

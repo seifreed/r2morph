@@ -56,6 +56,8 @@ jobs:
               raise SystemExit(f"unexpected platform scope: {summary['platform_scope']}")
           if summary["platform_gap_scope"] != {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]}:
               raise SystemExit(f"unexpected platform gap scope: {summary['platform_gap_scope']}")
+          if summary["corpus_gap_scope"] != {"corpus_families": ["additional-corpus-families"], "input_sources": ["generated-inputs"]}:
+              raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")
           if summary["corpus_scope"] != {"dataset": "fixtures/dataset"}:
               raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
           if summary["missing_corpus_passes"]:
