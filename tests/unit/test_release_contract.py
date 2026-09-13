@@ -1523,6 +1523,13 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and '"tests/unit/test_instruction_substitution_arm64_contract.py"' in cross_platform_job
         and '"tests/unit/test_package_data.py"' in cross_platform_job
         and '"tests/unit/test_support_matrix_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_metrics_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_runners_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_reporting_summary_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_reporting_breakdown_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_reporting_text_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_reporting_io_contract.py"' in cross_platform_job
+        and '"tests/unit/test_benchmark_reporting_exports_contract.py"' in cross_platform_job
         and '"tests/unit/test_performance_regression_suite_contract.py"' in cross_platform_job
         and '"tests/unit/test_performance_regression_measurement_contract.py"' in cross_platform_job
         and '"tests/unit/test_performance_regression_execution_contract.py"' in cross_platform_job
