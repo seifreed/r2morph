@@ -1129,6 +1129,11 @@ def _check_corpus_workflows() -> None:
         "unavailable_reasons_by_tool",
         "incomplete tool coverage mismatch",
         "passes without applications",
+        "Run VM resistance seed-diversity smoke",
+        'cp -R docs "$wheel_root"/',
+        "test_protection_bytecode_grammar.py",
+        "test_protection_handler_clustering.py",
+        "test_resistance_measurement_contract.py",
     ):
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")

@@ -131,6 +131,16 @@ jobs:
               raise SystemExit(f"passes without applications: {missing_applications}")
           PY
 
+      - name: Run VM resistance seed-diversity smoke
+        run: |
+          wheel_root=/tmp/r2morph-adversarial-wheel-check
+          cp -R docs "$wheel_root"/
+          cd "$wheel_root"
+          python -W error -m pytest -q --no-cov --tb=short \
+            tests/integration/test_protection_bytecode_grammar.py \
+            tests/integration/test_protection_handler_clustering.py \
+            tests/unit/test_resistance_measurement_contract.py
+
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7
         with:

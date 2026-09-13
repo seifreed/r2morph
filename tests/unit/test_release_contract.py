@@ -1447,6 +1447,11 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "unavailable_reasons_by_tool" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
+        and "Run VM resistance seed-diversity smoke" in adversarial
+        and 'cp -R docs "$wheel_root"/' in adversarial
+        and "test_protection_bytecode_grammar.py" in adversarial
+        and "test_protection_handler_clustering.py" in adversarial
+        and "test_resistance_measurement_contract.py" in adversarial
         and "--passes all" in differential
         and "--require-complete-evidence" in differential
         and "--generated-inputs" in differential
