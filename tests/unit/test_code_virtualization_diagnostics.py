@@ -930,6 +930,22 @@ def test_cache_zero_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_memory_commit_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "mcommit"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_persistent_commit_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "pcommit"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_repeated_cache_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "rep clflush [rax]"}
