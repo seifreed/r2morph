@@ -811,6 +811,7 @@ def _campaign_summary(
         ),
         "non_completed_tool_runs": non_completed_tool_runs,
         "non_completed_tool_runs_by_tool": non_completed_tool_runs_by_tool,
+        "tools_without_full_completion": sorted(non_completed_tool_runs_by_tool),
         "unavailable_tool_runs": unavailable_tools,
         "unavailable_tool_count": len(unavailable_tool_names),
         "unavailable_tools": unavailable_tool_names,
@@ -846,6 +847,7 @@ def _adversarial_evidence_blockers(
         "error_pass_runs_by_pass",
         "incomplete_tool_coverage",
         "non_completed_tool_runs_by_tool",
+        "tools_without_full_completion",
         "unavailable_tool_runs_by_tool",
         "unavailable_reasons_by_tool",
     ):

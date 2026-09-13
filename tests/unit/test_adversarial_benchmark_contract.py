@@ -242,6 +242,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["non_completed_tool_runs_by_tool"]["binary-ninja"] == 1
         and summary["non_completed_tool_runs_by_tool"]["ida-pro"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["non_completed_tool_runs_by_tool"]["ghidra"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
+        and len(summary["tools_without_full_completion"]) == _EXPECTED_TOOL_COUNT
+        and {"angr", "binary-ninja", "ghidra"}.issubset(summary["tools_without_full_completion"])
         and summary["unavailable_tool_runs"] == 1
         and summary["unavailable_tool_count"] == 1
         and summary["unavailable_tools"] == ["ghidra"]
@@ -258,6 +260,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and "missing_passes" not in summary["adversarial_evidence_blockers"]
         and "incomplete_tool_coverage" in summary["adversarial_evidence_blockers"]
         and "non_completed_tool_runs_by_tool" in summary["adversarial_evidence_blockers"]
+        and summary["adversarial_evidence_blockers"]["tools_without_full_completion"]
+        == summary["tools_without_full_completion"]
         and summary["adversarial_evidence_blockers"]["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
         and summary["adversarial_evidence_blockers"]["unavailable_reasons_by_tool"]
         == {"ghidra": {"missing local executable": 1}}
