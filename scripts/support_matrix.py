@@ -139,7 +139,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence": ["docs/protection-bytecode-grammar.json"],
     },
 }
-_NATIVE_EVIDENCE_PROFILE = "tier-1-native"
+_NATIVE_EVIDENCE_PROFILES = {"tier-1-native", "code-virtualization"}
 FULL_EVIDENCE_PERCENT = 100.0
 
 
@@ -240,7 +240,7 @@ def _native_evidence_gap_passes(maturity: object) -> list[str]:
     return sorted(
         pass_name
         for pass_name, profile_name in pass_profiles.items()
-        if isinstance(pass_name, str) and profile_name != _NATIVE_EVIDENCE_PROFILE
+        if isinstance(pass_name, str) and profile_name not in _NATIVE_EVIDENCE_PROFILES
     )
 
 
