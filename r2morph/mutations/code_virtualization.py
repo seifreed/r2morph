@@ -781,9 +781,21 @@ class CodeVirtualizationPass(MutationPass):
             or opcode.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
         ):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
-        elif opcode.startswith(("mfence", "lfence", "monitor", "mwait", "pause", "sfence", "lock ")) or (
-            opcode.startswith("xchg") and "[" in opcode
-        ):
+        elif opcode.startswith(
+            (
+                "mfence",
+                "lfence",
+                "monitor",
+                "mwait",
+                "pause",
+                "sfence",
+                "xabort",
+                "xbegin",
+                "xend",
+                "xtest",
+                "lock ",
+            )
+        ) or (opcode.startswith("xchg") and "[" in opcode):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
         elif kind in ("swi", "syscall") or opcode.startswith(("syscall", "sysenter", "int ", "iret")):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
