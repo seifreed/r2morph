@@ -344,7 +344,7 @@ jobs:
 
           source_root = Path.cwd()
           wheel_root = Path(tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-"))
-          for name in ("tests", "fixtures", "pyproject.toml"):
+          for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml"):
               source = source_root / name
               target = wheel_root / name
               if source.is_dir():
@@ -363,8 +363,11 @@ jobs:
                   "tests/unit/test_circular_imports.py",
                   "tests/unit/test_cli_basic_commands.py::test_cli_version_function",
                   "tests/unit/test_pe_handler_parsing_contract.py",
+                  "tests/unit/test_pe_handler_struct_parse.py",
                   "tests/unit/test_macho_parse_basic.py",
                   "tests/unit/test_instruction_substitution_arm64_contract.py",
+                  "tests/unit/test_package_data.py",
+                  "tests/unit/test_support_matrix_contract.py",
                   "tests/unit/test_performance_regression_suite_contract.py",
                   "tests/unit/test_performance_regression_measurement_contract.py",
                   "tests/unit/test_performance_regression_execution_contract.py",
