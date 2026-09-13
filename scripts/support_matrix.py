@@ -55,11 +55,22 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         and (cell["format"] != official_format or cell["architecture"] != official_architecture)
     )
     maturity_profile_counts: dict[str, int] = {}
+    false_positive_risk_counts: dict[str, int] = {}
     maturity = document.get("maturity", {})
-    if isinstance(maturity, dict) and isinstance(pass_profiles := maturity.get("pass_profiles"), dict):
+    profiles = maturity.get("profiles") if isinstance(maturity, dict) else None
+    if (
+        isinstance(maturity, dict)
+        and isinstance(pass_profiles := maturity.get("pass_profiles"), dict)
+        and isinstance(profiles, dict)
+    ):
         for profile in pass_profiles.values():
             if isinstance(profile, str):
                 maturity_profile_counts[profile] = maturity_profile_counts.get(profile, 0) + 1
+                profile_fields = profiles.get(profile)
+                if isinstance(profile_fields, dict) and isinstance(
+                    risk := profile_fields.get("false_positive_risk"), str
+                ):
+                    false_positive_risk_counts[risk] = false_positive_risk_counts.get(risk, 0) + 1
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -74,6 +85,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_not_supported_cells": non_official_not_supported,
             "stability_counts": dict(sorted(stability_counts.items())),
             "maturity_profile_counts": dict(sorted(maturity_profile_counts.items())),
+            "false_positive_risk_counts": dict(sorted(false_positive_risk_counts.items())),
         },
         "cells": cells,
     }

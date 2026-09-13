@@ -584,6 +584,12 @@
         "experimental": 12,
         "experimental-corpus-selected": 6,
         "tier-1-native": 3
+      },
+      "false_positive_risk_counts": {
+        "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.": 3,
+        "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.": 1,
+        "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.": 6,
+        "Not independently measured.": 12
       }
     },
     "cells": [
