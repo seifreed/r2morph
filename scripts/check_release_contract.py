@@ -695,6 +695,8 @@ def _validate_independent_review_artifact(report: dict[str, object]) -> None:
     release_decision = report.get("release_decision")
     if not isinstance(release_decision, dict) or release_decision.get("status") != "block-vm-milestone":
         raise ValueError("independent review artifact must block the VM milestone without human signoff")
+    if release_decision.get("reason") != "automated evidence is not a substitute for external human review":
+        raise ValueError("independent review artifact must require external human review")
     checks = report.get("checks")
     if not isinstance(checks, list):
         raise ValueError("independent review artifact must contain checks")

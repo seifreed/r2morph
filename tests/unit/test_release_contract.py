@@ -1217,6 +1217,19 @@ def test_release_contract_rejects_independent_review_without_vm_block() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_independent_review_without_human_review_reason() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report["release_decision"]["reason"] = "automated checks are sufficient"
+
+    rejected = False
+    try:
+        _validate_independent_review_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_stale_independent_review_artifact() -> None:
     report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
     report["checks"][0]["detail"] = "stale detail"
