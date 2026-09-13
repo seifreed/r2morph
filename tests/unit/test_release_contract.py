@@ -1505,6 +1505,9 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in cross_platform_job
         and '"tests/unit/test_circular_imports.py"' in cross_platform_job
         and '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"' in cross_platform_job
+        and '"tests/unit/test_pe_handler_parsing_contract.py"' in cross_platform_job
+        and '"tests/unit/test_macho_parse_basic.py"' in cross_platform_job
+        and '"tests/unit/test_instruction_substitution_arm64_contract.py"' in cross_platform_job
     )
 
 

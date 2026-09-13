@@ -1025,6 +1025,9 @@ def _check_ci_contract() -> None:
         "python -m build",
         "python -m pip install --force-reinstall dist/*.whl",
         'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
+        '"tests/unit/test_pe_handler_parsing_contract.py"',
+        '"tests/unit/test_macho_parse_basic.py"',
+        '"tests/unit/test_instruction_substitution_arm64_contract.py"',
     ):
         if fragment not in cross_platform_job:
             raise ValueError(f"cross-platform CI is missing installed-wheel contract: {fragment}")
