@@ -806,6 +806,7 @@ class CodeVirtualizationPass(MutationPass):
             "fs:" in opcode
             or "gs:" in opcode
             or any(term in {"fs", "gs"} for term in opcode_terms)
+            or opcode_without_repeat.startswith(("lfs", "lgs"))
             or opcode.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
         ):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
