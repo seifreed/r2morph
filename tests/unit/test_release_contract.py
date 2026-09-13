@@ -1493,15 +1493,18 @@ def test_ci_runs_generated_support_matrix_freshness_check() -> None:
 
 def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    cross_platform_job = workflow.split("  cross-platform-tests:", 1)[1].split("  package-smoke:", 1)[0]
 
     expect(
-        "Run cross-platform package smoke tests" in workflow
-        and "python -m build" in workflow
-        and "python -m pip install --force-reinstall dist/*.whl" in workflow
-        and 'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")' in workflow
-        and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in workflow
-        and '"tests/unit/test_circular_imports.py"' in workflow
-        and '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"' in workflow
+        "Run cross-platform package smoke tests" in cross_platform_job
+        and "Install build backend for cross-platform wheel smoke" in cross_platform_job
+        and 'run: python -m pip install "build>=1.2.0"' in cross_platform_job
+        and "python -m build" in cross_platform_job
+        and "python -m pip install --force-reinstall dist/*.whl" in cross_platform_job
+        and 'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")' in cross_platform_job
+        and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in cross_platform_job
+        and '"tests/unit/test_circular_imports.py"' in cross_platform_job
+        and '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"' in cross_platform_job
     )
 
 

@@ -141,7 +141,6 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "build>=1.2.0"
           pip install -r requirements.txt
           python -m pip install --editable .
 
@@ -326,6 +325,10 @@ jobs:
           python -W error -m pytest -v \
             -m "not product_smoke and not slow" \
             --cov-report=xml --tb=short
+
+      - name: Install build backend for cross-platform wheel smoke
+        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
+        run: python -m pip install "build>=1.2.0"
 
       - name: Run cross-platform package smoke tests
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'

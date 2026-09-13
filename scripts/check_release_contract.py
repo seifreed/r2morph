@@ -997,6 +997,7 @@ def _check_release_blockers() -> None:
 
 def _check_ci_contract() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    cross_platform_job = workflow.split("  cross-platform-tests:", 1)[1].split("  package-smoke:", 1)[0]
     for job in REQUIRED_CI_JOBS:
         if f"\n  {job}:" not in workflow:
             raise ValueError(f"CI is missing required job: {job}")
@@ -1018,6 +1019,15 @@ def _check_ci_contract() -> None:
     ):
         if fragment not in workflow:
             raise ValueError(f"CI is missing wheel smoke contract: {fragment}")
+    for fragment in (
+        "Install build backend for cross-platform wheel smoke",
+        'run: python -m pip install "build>=1.2.0"',
+        "python -m build",
+        "python -m pip install --force-reinstall dist/*.whl",
+        'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
+    ):
+        if fragment not in cross_platform_job:
+            raise ValueError(f"cross-platform CI is missing installed-wheel contract: {fragment}")
 
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     pytest_options = project["tool"]["pytest"]["ini_options"]
