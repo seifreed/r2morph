@@ -117,7 +117,7 @@ _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _MIN_NESTING_DEPTH = 2
-_CONTROL_TRANSFER_PREFIXES = (
+_INSTRUCTION_ENCODING_PREFIXES = (
     "rex ",
     "rex.w ",
     "rex.r ",
@@ -125,20 +125,27 @@ _CONTROL_TRANSFER_PREFIXES = (
     "rex.b ",
     "data16 ",
     "addr32 ",
+)
+_CONTROL_TRANSFER_PREFIXES = (
+    *_INSTRUCTION_ENCODING_PREFIXES,
     "notrack ",
     "bnd ",
 )
 
 
-def _strip_control_transfer_prefixes(opcode: str) -> str:
+def _strip_opcode_prefixes(opcode: str, prefixes: tuple[str, ...]) -> str:
     stripped = opcode
     while True:
         next_opcode = stripped
-        for prefix in _CONTROL_TRANSFER_PREFIXES:
+        for prefix in prefixes:
             next_opcode = next_opcode.removeprefix(prefix)
         if next_opcode == stripped:
             return stripped
         stripped = next_opcode
+
+
+def _strip_control_transfer_prefixes(opcode: str) -> str:
+    return _strip_opcode_prefixes(opcode, _CONTROL_TRANSFER_PREFIXES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -810,8 +817,12 @@ class CodeVirtualizationPass(MutationPass):
             .removeprefix("repz ")
             .removeprefix("repnz ")
         )
-        opcode_without_sync_prefix = opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease ")
-        mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
+        opcode_without_encoding_prefix = _strip_opcode_prefixes(opcode_without_repeat, _INSTRUCTION_ENCODING_PREFIXES)
+        opcode_without_sync_prefix = _strip_opcode_prefixes(
+            opcode_without_repeat.removeprefix("xacquire ").removeprefix("xrelease "),
+            _INSTRUCTION_ENCODING_PREFIXES,
+        )
+        mnemonic_parts = opcode_without_encoding_prefix.split(maxsplit=1)
         mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
         control_opcode = _strip_control_transfer_prefixes(opcode_without_repeat)
         control_mnemonic_parts = control_opcode.split(maxsplit=1)
@@ -831,8 +842,8 @@ class CodeVirtualizationPass(MutationPass):
             "fs:" in opcode
             or "gs:" in opcode
             or any(term in {"fs", "gs"} for term in opcode_terms)
-            or opcode_without_repeat.startswith(("lfs", "lgs"))
-            or opcode.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
+            or opcode_without_encoding_prefix.startswith(("lfs", "lgs"))
+            or opcode_without_encoding_prefix.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
         ):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
         elif (
@@ -870,7 +881,7 @@ class CodeVirtualizationPass(MutationPass):
             or (opcode_without_sync_prefix.startswith("xchg") and "[" in opcode)
         ):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
-        elif kind in ("swi", "syscall") or opcode.startswith(
+        elif kind in ("swi", "syscall") or opcode_without_encoding_prefix.startswith(
             (
                 "clui",
                 "int ",
@@ -897,10 +908,11 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
         elif (
             (kind == "ret" and len(mnemonic_parts) > 1)
+            or (mnemonic == "ret" and len(mnemonic_parts) > 1)
             or (mnemonic in {"retq", "retn", "retl", "retw"} and len(mnemonic_parts) > 1)
             or mnemonic in {"retf", "retfq", "lret", "lretq"}
             or mnemonic in {"pop", "popq", "popl", "popw"}
-            or opcode_without_repeat.startswith(
+            or opcode_without_encoding_prefix.startswith(
                 (
                     "cld",
                     "clc",
@@ -928,7 +940,7 @@ class CodeVirtualizationPass(MutationPass):
         ):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
         elif (
-            opcode_without_repeat.startswith(
+            opcode_without_encoding_prefix.startswith(
                 (
                     "bnd",
                     "bound",
@@ -1096,7 +1108,7 @@ class CodeVirtualizationPass(MutationPass):
                     "fyl2x",
                 )
             )
-            or opcode.startswith(
+            or opcode_without_encoding_prefix.startswith(
                 (
                     "emms",
                     "femms",
@@ -1174,7 +1186,7 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
-        elif opcode_without_repeat.startswith(("cmps", "lods", "movs", "scas", "stos", "xlat")):
+        elif opcode_without_encoding_prefix.startswith(("cmps", "lods", "movs", "scas", "stos", "xlat")):
             capability, reason = (
                 "memory_operands",
                 "implicit memory operand semantics were not proven for whole-function virtualization",

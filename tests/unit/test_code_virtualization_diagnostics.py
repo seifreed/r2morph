@@ -438,6 +438,14 @@ def test_tls_base_instruction_reports_thread_local_storage_capability() -> None:
     expect(capability == "thread_local_storage")
 
 
+def test_prefixed_tls_base_instruction_reports_thread_local_storage_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w wrfsbase rax"}
+    )
+
+    expect(capability == "thread_local_storage")
+
+
 def test_swapgs_instruction_reports_thread_local_storage_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "swapgs"}
@@ -473,6 +481,14 @@ def test_load_gs_far_pointer_reports_thread_local_storage_capability() -> None:
 def test_locked_instruction_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "lock", "opcode": "lock add qword [rax], 1"}
+    )
+
+    expect(capability == "thread_synchronization")
+
+
+def test_prefixed_lock_instruction_reports_thread_synchronization_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w lock add qword [rax], 1"}
     )
 
     expect(capability == "thread_synchronization")
@@ -585,6 +601,14 @@ def test_transaction_resume_tracking_instruction_reports_thread_synchronization_
 def test_syscall_instruction_reports_signals_and_system_calls_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "syscall", "opcode": "syscall"}
+    )
+
+    expect(capability == "signals_and_system_calls")
+
+
+def test_prefixed_syscall_instruction_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w syscall"}
     )
 
     expect(capability == "signals_and_system_calls")
@@ -914,6 +938,14 @@ def test_stack_adjusting_return_reports_stack_abi_capability() -> None:
 def test_stack_adjusting_retq_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "retq 0x10"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
+def test_prefixed_stack_adjusting_return_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "data16 ret 0x10"}
     )
 
     expect(capability == "stack_and_abi")
@@ -1294,6 +1326,14 @@ def test_simd_state_instruction_reports_fp_simd_capability() -> None:
 def test_simd_state_clear_instruction_reports_fp_simd_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "simd", "opcode": "vzeroupper"}
+    )
+
+    expect(capability == "floating_point_and_simd")
+
+
+def test_prefixed_simd_state_clear_instruction_reports_fp_simd_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rex.w vzeroupper"}
     )
 
     expect(capability == "floating_point_and_simd")
