@@ -9,6 +9,7 @@ from scripts.check_release_contract import (
     _check_changelog,
     _check_documentation_links,
     _check_matrix,
+    _validate_independent_review_artifact,
     _validate_inventory,
     _validate_vm_resistance_artifacts,
     main,
@@ -401,6 +402,25 @@ def test_release_contract_rejects_vm_handler_similarity_regression() -> None:
     rejected = False
     try:
         _validate_vm_resistance_artifacts(handler, bytecode)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_validates_independent_review_artifact() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+
+    _validate_independent_review_artifact(report)
+
+
+def test_release_contract_rejects_failed_independent_review_check() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report["checks"][0]["status"] = "failed"
+
+    rejected = False
+    try:
+        _validate_independent_review_artifact(report)
     except ValueError:
         rejected = True
 

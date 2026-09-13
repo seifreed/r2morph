@@ -26,6 +26,20 @@ FULL_EVIDENCE_PERCENT = 100.0
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 2
+INDEPENDENT_REVIEW_CHECKS = {
+    "adversarial_benchmark_evidence",
+    "adversarial_corpus_evidence",
+    "binary_ninja_benchmark_contract",
+    "fppackedidxnb_regression_evidence",
+    "ghidra_corpus_evidence",
+    "ida_corpus_evidence",
+    "ida_current_summary_evidence",
+    "independent_fuzz_recheck",
+    "parser_rewriter_fuzz_campaign",
+    "support_matrix_consistency",
+    "virtualization_fixture_coverage",
+    "virtualization_fixture_headers",
+}
 _MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
 _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
@@ -150,6 +164,26 @@ def _check_vm_resistance_artifacts() -> None:
     _validate_vm_resistance_artifacts(handler, bytecode)
 
 
+def _validate_independent_review_artifact(report: dict[str, object]) -> None:
+    if report.get("passed") is not True:
+        raise ValueError("independent review artifact must pass")
+    if report.get("human_signoff") != "not-attested":
+        raise ValueError("independent review artifact must not claim human signoff")
+    checks = report.get("checks")
+    if not isinstance(checks, list):
+        raise ValueError("independent review artifact must contain checks")
+    statuses = {check.get("name"): check.get("status") for check in checks if isinstance(check, dict)}
+    if set(statuses) != INDEPENDENT_REVIEW_CHECKS:
+        raise ValueError("independent review artifact checks are incomplete")
+    if any(status != "passed" for status in statuses.values()):
+        raise ValueError("independent review artifact contains a failed check")
+
+
+def _check_independent_review_artifact() -> None:
+    report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    _validate_independent_review_artifact(report)
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -238,6 +272,7 @@ def main() -> int:
         _check_changelog(package_version)
         _check_inventory()
         _check_vm_resistance_artifacts()
+        _check_independent_review_artifact()
         _check_documentation_links()
         _check_ci_contract()
         _check_release_workflow()
