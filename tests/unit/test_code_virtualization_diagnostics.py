@@ -870,6 +870,22 @@ def test_enclave_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_trust_domain_call_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "tdcall"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_secure_arbitration_mode_call_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "seamcall"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_measured_launch_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "getsec"}
