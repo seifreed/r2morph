@@ -83,10 +83,7 @@ _ADVERSARIAL_EXPECTED_TOOLS = (
     "ghidra",
     "custom",
 )
-_ADVERSARIAL_INCOMPLETE_TOOLS = (
-    "binary-ninja",
-    "triton",
-)
+_ADVERSARIAL_INCOMPLETE_TOOLS = ("binary-ninja",)
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
     "direct-calls",
@@ -422,6 +419,10 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
                     "docs/protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json",
                     "docs/protection-ida-mcp-corpus-2026-09-06-646e0942.json",
                 ],
+            },
+            "triton": {
+                "status": "completed",
+                "evidence": ["docs/protection-adversarial-corpus-2026-09-06-a727f304.json"],
             },
         },
         "unavailable_reference_tools": {

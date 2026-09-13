@@ -411,6 +411,29 @@ def _review_ghidra_corpus(root: Path) -> dict[str, object]:
     return _check("ghidra_corpus_evidence", passed, f"{expected_count} samples, {completed} completed analyses")
 
 
+def _review_triton_corpus(root: Path) -> dict[str, object]:
+    path = root / "docs" / _CURRENT_CORPUS_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    samples = document.get("samples", [])
+    expected_count = document.get("sample_count")
+    completed = 0
+    rows_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
+    for sample in samples if isinstance(samples, list) else []:
+        tool_rows = sample.get("tools", []) if isinstance(sample, dict) else []
+        triton_rows = [row for row in tool_rows if isinstance(row, dict) and row.get("tool") == "triton"]
+        if len(triton_rows) != 1 or triton_rows[0].get("status") != "completed":
+            rows_valid = False
+            continue
+        original = triton_rows[0].get("original", {})
+        protected = triton_rows[0].get("protected", {})
+        if original.get("status") != "completed" or protected.get("status") != "completed":
+            rows_valid = False
+            continue
+        completed += 1
+    passed = rows_valid and completed == expected_count
+    return _check("triton_corpus_evidence", passed, f"{expected_count} samples, {completed} Triton runs")
+
+
 def _review_ida_corpus(root: Path) -> dict[str, object]:
     """Validate the current full-corpus IDA MCP measurement."""
     path = root / "docs" / _CURRENT_IDA_REPORT
@@ -525,6 +548,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_angr_binary_ninja_availability(root),
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
+        _review_triton_corpus(root),
         _review_ida_corpus(root),
         _review_ida_summary(root),
         _review_fp_regression(root),

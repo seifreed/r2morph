@@ -82,6 +82,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "pass_maturity_gap_scope",
     "release_blocker_ledger_scope",
     "support_matrix_consistency",
+    "triton_corpus_evidence",
     "virtualization_fixture_coverage",
     "virtualization_fixture_headers",
     "vm_fail_closed_diagnostics_contract",

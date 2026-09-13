@@ -91,6 +91,11 @@
       "status": "passed"
     },
     {
+      "detail": "159 samples, 159 Triton runs",
+      "name": "triton_corpus_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "159 samples, 318 completed analyses",
       "name": "ida_corpus_evidence",
       "status": "passed"

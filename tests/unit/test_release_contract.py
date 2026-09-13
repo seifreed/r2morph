@@ -41,7 +41,7 @@ _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 7
-_EXPECTED_ADVERSARIAL_BLOCKERS = 4
+_EXPECTED_ADVERSARIAL_BLOCKERS = 3
 _EXPECTED_TOTAL_MATURITY_BLOCKERS = 67
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
@@ -566,12 +566,14 @@ def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
         and evidence["measured_available_tools"]["unicorn"]["status"] == "completed"
         and evidence["measured_available_tools"]["ghidra"]["status"] == "completed"
         and evidence["measured_available_tools"]["ida-pro"]["status"] == "completed"
+        and evidence["measured_available_tools"]["triton"]["status"] == "completed"
         and evidence["unavailable_reference_tools"]["binary-ninja"]["status"] == "unavailable"
         and "binary-ninja" in summary["adversarial_evidence_blockers"]["binary_ninja_unavailable"]
         and "angr" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and "unicorn" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and "ghidra" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and "ida-pro" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
+        and "triton" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and summary["adversarial_blocker_totals"]["total_adversarial_blockers"] == _EXPECTED_ADVERSARIAL_BLOCKERS
         and all((_ROOT / path).exists() for path in evidence_paths)
     )

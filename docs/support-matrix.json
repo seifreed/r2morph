@@ -1753,6 +1753,12 @@
               "docs/protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json",
               "docs/protection-ida-mcp-corpus-2026-09-06-646e0942.json"
             ]
+          },
+          "triton": {
+            "status": "completed",
+            "evidence": [
+              "docs/protection-adversarial-corpus-2026-09-06-a727f304.json"
+            ]
           }
         },
         "unavailable_reference_tools": {
@@ -1772,8 +1778,7 @@
       },
       "adversarial_evidence_blockers": {
         "incomplete_tool_coverage": [
-          "binary-ninja",
-          "triton"
+          "binary-ninja"
         ],
         "binary_ninja_unavailable": [
           "binary-ninja"
@@ -1783,10 +1788,10 @@
         ]
       },
       "adversarial_blocker_totals": {
-        "incomplete_tool_coverage": 2,
+        "incomplete_tool_coverage": 1,
         "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": 4
+        "total_adversarial_blockers": 3
       },
       "vm_semantic_gap_scope": [
         "memory",
