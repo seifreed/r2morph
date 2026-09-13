@@ -1361,6 +1361,63 @@
         "corpus_gap_scope": 2,
         "total_differential_blockers": 7
       },
+      "adversarial_benchmark_evidence": {
+        "expected_tools": [
+          "radare2",
+          "objdump",
+          "angr",
+          "binary-ninja",
+          "unicorn",
+          "triton",
+          "ida-pro",
+          "ghidra",
+          "custom"
+        ],
+        "measured_available_tools": {
+          "angr": {
+            "status": "completed",
+            "evidence": [
+              "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+              "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json"
+            ]
+          }
+        },
+        "unavailable_reference_tools": {
+          "binary-ninja": {
+            "status": "unavailable",
+            "evidence": [
+              "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+              ".github/workflows/adversarial-benchmark.yml"
+            ]
+          }
+        },
+        "campaign_evidence": [
+          ".github/workflows/adversarial-benchmark.yml",
+          "scripts/adversarial_benchmark.py",
+          "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json"
+        ]
+      },
+      "adversarial_evidence_blockers": {
+        "incomplete_tool_coverage": [
+          "binary-ninja",
+          "ghidra",
+          "ida-pro",
+          "triton",
+          "unicorn"
+        ],
+        "binary_ninja_unavailable": [
+          "binary-ninja"
+        ],
+        "comparable_campaign_scope": [
+          "full-pass-full-tool-completion"
+        ]
+      },
+      "adversarial_blocker_totals": {
+        "incomplete_tool_coverage": 5,
+        "binary_ninja_unavailable": 1,
+        "comparable_campaign_scope": 1,
+        "total_adversarial_blockers": 7
+      },
       "vm_semantic_gap_scope": [
         "memory",
         "direct-calls",

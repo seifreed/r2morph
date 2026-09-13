@@ -37,6 +37,24 @@ _DIFFERENTIAL_CORPUS_GAP_SCOPE = {
     "corpus_families": ["additional-corpus-families"],
     "input_sources": ["generated-inputs"],
 }
+_ADVERSARIAL_EXPECTED_TOOLS = (
+    "radare2",
+    "objdump",
+    "angr",
+    "binary-ninja",
+    "unicorn",
+    "triton",
+    "ida-pro",
+    "ghidra",
+    "custom",
+)
+_ADVERSARIAL_INCOMPLETE_TOOLS = (
+    "binary-ninja",
+    "ghidra",
+    "ida-pro",
+    "triton",
+    "unicorn",
+)
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
     "direct-calls",
@@ -330,6 +348,52 @@ def _differential_blocker_totals() -> dict[str, int]:
     }
 
 
+def _adversarial_benchmark_evidence() -> dict[str, object]:
+    return {
+        "expected_tools": list(_ADVERSARIAL_EXPECTED_TOOLS),
+        "measured_available_tools": {
+            "angr": {
+                "status": "completed",
+                "evidence": [
+                    "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+                    "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
+                ],
+            }
+        },
+        "unavailable_reference_tools": {
+            "binary-ninja": {
+                "status": "unavailable",
+                "evidence": [
+                    "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+                    ".github/workflows/adversarial-benchmark.yml",
+                ],
+            }
+        },
+        "campaign_evidence": [
+            ".github/workflows/adversarial-benchmark.yml",
+            "scripts/adversarial_benchmark.py",
+            "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
+        ],
+    }
+
+
+def _adversarial_evidence_blockers() -> dict[str, object]:
+    return {
+        "incomplete_tool_coverage": list(_ADVERSARIAL_INCOMPLETE_TOOLS),
+        "binary_ninja_unavailable": ["binary-ninja"],
+        "comparable_campaign_scope": ["full-pass-full-tool-completion"],
+    }
+
+
+def _adversarial_blocker_totals() -> dict[str, int]:
+    return {
+        "incomplete_tool_coverage": len(_ADVERSARIAL_INCOMPLETE_TOOLS),
+        "binary_ninja_unavailable": 1,
+        "comparable_campaign_scope": 1,
+        "total_adversarial_blockers": len(_ADVERSARIAL_INCOMPLETE_TOOLS) + 2,
+    }
+
+
 def _coverage_percent(evidenced: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -559,6 +623,9 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "differential_gap_evidence": _differential_gap_evidence(),
             "differential_evidence_blockers": _differential_evidence_blockers(),
             "differential_blocker_totals": _differential_blocker_totals(),
+            "adversarial_benchmark_evidence": _adversarial_benchmark_evidence(),
+            "adversarial_evidence_blockers": _adversarial_evidence_blockers(),
+            "adversarial_blocker_totals": _adversarial_blocker_totals(),
             "vm_semantic_gap_scope": vm_semantic_gap_scope,
             "vm_semantic_fixture_coverage": vm_semantic_fixture_coverage,
             "vm_semantic_gap_evidence": vm_semantic_gap_evidence,

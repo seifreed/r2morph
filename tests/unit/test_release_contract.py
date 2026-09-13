@@ -41,6 +41,18 @@ _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 7
+_EXPECTED_ADVERSARIAL_BLOCKERS = 7
+_EXPECTED_ADVERSARIAL_TOOLS = [
+    "radare2",
+    "objdump",
+    "angr",
+    "binary-ninja",
+    "unicorn",
+    "triton",
+    "ida-pro",
+    "ghidra",
+    "custom",
+]
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "instruction-expansion",
     "block-reordering",
@@ -507,6 +519,32 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         and summary["differential_blocker_totals"]["total_differential_blockers"] == _EXPECTED_DIFFERENTIAL_BLOCKERS
         and sorted(evidence) == ["corpus_gap_scope", "platform_gap_scope", "platform_scope"]
         and all(row["status"] != "complete" for row in evidence.values())
+        and all((_ROOT / path).exists() for path in evidence_paths)
+    )
+
+
+def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["adversarial_benchmark_evidence"]
+    evidence_paths = {
+        item
+        for value in evidence.values()
+        if isinstance(value, dict)
+        for row in value.values()
+        if isinstance(row, dict)
+        for item in row.get("evidence", [])
+        if isinstance(item, str) and not item.startswith("http")
+    }
+    evidence_paths.update(evidence["campaign_evidence"])
+
+    expect(
+        evidence["expected_tools"] == _EXPECTED_ADVERSARIAL_TOOLS
+        and evidence["measured_available_tools"]["angr"]["status"] == "completed"
+        and evidence["unavailable_reference_tools"]["binary-ninja"]["status"] == "unavailable"
+        and "binary-ninja" in summary["adversarial_evidence_blockers"]["binary_ninja_unavailable"]
+        and "angr" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
+        and summary["adversarial_blocker_totals"]["total_adversarial_blockers"] == _EXPECTED_ADVERSARIAL_BLOCKERS
         and all((_ROOT / path).exists() for path in evidence_paths)
     )
 
