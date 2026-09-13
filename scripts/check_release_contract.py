@@ -261,6 +261,26 @@ def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
                 raise ValueError(f"vm resistance gap evidence path is missing: {gap}.{evidence_path}")
 
 
+def _check_differential_gap_evidence(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    scope = summary["differential_evidence_scope"]
+    evidence = summary["differential_gap_evidence"]
+    if sorted(evidence) != sorted(scope):
+        raise ValueError("differential gap evidence must cover every declared scope")
+    for gap, row in evidence.items():
+        if row["status"] == "complete":
+            raise ValueError(f"differential gap must remain incomplete until closed: {gap}")
+        if not row["evidence"]:
+            raise ValueError(f"differential gap evidence is empty: {gap}")
+        for evidence_path in row["evidence"]:
+            if (
+                isinstance(evidence_path, str)
+                and not evidence_path.startswith("http")
+                and not (ROOT / evidence_path).exists()
+            ):
+                raise ValueError(f"differential gap evidence path is missing: {gap}.{evidence_path}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -295,6 +315,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         raise ValueError("official target must retain complete evidence")
     if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
         raise ValueError("non-official targets must not claim official-target parity")
+    _check_differential_gap_evidence(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)
 

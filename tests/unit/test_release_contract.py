@@ -9,6 +9,7 @@ from scripts.check_release_contract import (
     _check_changelog,
     _check_corpus_pass_selection_docs,
     _check_corpus_workflows,
+    _check_differential_gap_evidence,
     _check_documentation_claims,
     _check_documentation_links,
     _check_independent_review_artifact,
@@ -586,6 +587,19 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         and all(row["status"] != "complete" for row in evidence.values())
         and all((_ROOT / path).exists() for path in evidence_paths)
     )
+
+
+def test_release_contract_rejects_missing_differential_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["differential_gap_evidence"].pop("platform_gap_scope")
+
+    rejected = False
+    try:
+        _check_differential_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "differential gap evidence" in str(error)
+
+    expect(rejected)
 
 
 def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
