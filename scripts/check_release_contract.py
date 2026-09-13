@@ -9,6 +9,11 @@ import sys
 import tomllib
 from pathlib import Path
 
+try:
+    from scripts.support_matrix import build_matrix
+except ModuleNotFoundError:
+    from support_matrix import build_matrix
+
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_CI_JOBS = (
     "lint",
@@ -77,6 +82,8 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
                 continue
             if not (ROOT / evidence).exists():
                 raise ValueError(f"missing evidence path: {evidence}")
+    if matrix["matrix"] != build_matrix(matrix):
+        raise ValueError("support matrix generated cells must be up to date")
     maturity = matrix["maturity"]
     profiles = maturity["profiles"]
     required_fields = maturity["required_fields"]

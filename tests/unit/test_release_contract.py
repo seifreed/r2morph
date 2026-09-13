@@ -274,6 +274,19 @@ def test_release_contract_rejects_non_official_parity_claim() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_stale_generated_support_matrix() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["cell_count"] += 1
+
+    rejected = False
+    try:
+        _check_matrix(matrix, matrix["release"])
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_support_matrix_summarizes_test_evidence_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
