@@ -480,6 +480,14 @@ def test_cpu_environment_instruction_reports_cpu_environment_capability() -> Non
     expect(capability == "cpu_environment")
 
 
+def test_port_string_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "outsb"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_entropy_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "rdrand eax"}
