@@ -15,7 +15,7 @@ review. It is not a feature roadmap and must not be read as a support claim.
   complete native, performance, composition, false-positive, analyzer, and
   affected-instruction evidence.
 - RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass
-  Linux ELF x86-64 campaign; more corpus families, generated inputs, and
+  Linux ELF x86-64 campaign; more corpus families and
   platform coverage are still required. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [differential-corpus.yml](../.github/workflows/differential-corpus.yml)

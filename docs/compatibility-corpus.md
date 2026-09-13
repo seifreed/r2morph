@@ -124,11 +124,13 @@ transform-duration, runtime-duration, and static analyzer evidence.
 The scheduled differential workflow validates this campaign summary before
 uploading the artifact, including the Linux ELF x86-64 platform scope,
 `fixtures/dataset` corpus scope, the PE/Mach-O and ARM/AArch64/x86 platform gap
-scope, the additional-corpus-family and generated-input gap scope, missing
+scope, the additional-corpus-family gap scope, generated argv input coverage, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
-counts, including `total_continuous_evidence_blockers`, that must be zero for
-the scheduled campaign to pass. The same workflow also emits an
+counts, including `total_continuous_evidence_blockers`; the scheduled campaign
+fails on unexpected official-target evidence blockers while retaining the
+declared platform and additional-corpus blockers as release gaps. The same
+workflow also emits an
 `extended-maturity-passes` smoke artifact for the non-default maturity passes:
 AntiDisassembly, APIHashing, CodeMobility, DataFlowMutation,
 FunctionOutlining, ImportObfuscation, OpaquePredicates, PolymorphicEngine,

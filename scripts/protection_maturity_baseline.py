@@ -67,6 +67,20 @@ _DIFFERENTIAL_CORPUS_GAP_SCOPE = {
     "corpus_families": ["additional-corpus-families"],
     "input_sources": ["generated-inputs"],
 }
+_DEFAULT_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = ((),)
+_GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
+    (),
+    ("0",),
+    ("1",),
+    ("-1",),
+    ("4294967295",),
+    ("alpha",),
+    ("alpha", "7"),
+    ("--", "ffff"),
+    ("path/with/slash", "spaced value"),
+)
+_DEFAULT_INPUT_SOURCE = "default-argv"
+_GENERATED_INPUT_SOURCE = "generated-argv"
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -209,13 +223,13 @@ def _snapshot_created_files(directory: Path) -> dict[str, dict[str, object]]:
     return files
 
 
-def _runtime_command(path: Path) -> list[str]:
+def _runtime_command(path: Path, arguments: tuple[str, ...] = ()) -> list[str]:
     with path.open("rb") as handle:
         first_line = handle.readline(4096)
     if not first_line.startswith(b"#!"):
-        return [str(path)]
+        return [str(path), *arguments]
     interpreter = shlex.split(first_line[2:].decode("utf-8", errors="replace"))
-    return [*interpreter, str(path)] if interpreter else [str(path)]
+    return [*interpreter, str(path), *arguments] if interpreter else [str(path), *arguments]
 
 
 async def _capture_runtime_stream(stream: asyncio.StreamReader) -> dict[str, object]:
@@ -255,7 +269,7 @@ async def _run_runtime(command: list[str], workdir: Path) -> dict[str, object]:
     return {"status": "completed", "return_code": return_code, "stdout": stdout, "stderr": stderr}
 
 
-def _runtime_artifacts(path: Path) -> dict[str, object]:
+def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str, object]:
     """Run a fixture in isolation and retain bounded, reproducible observables."""
     started = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="r2morph-runtime-") as temporary:
@@ -263,10 +277,15 @@ def _runtime_artifacts(path: Path) -> dict[str, object]:
         runtime_path = workdir / "program"
         shutil.copyfile(path, runtime_path)
         runtime_path.chmod(0o700)
-        result = asyncio.run(_run_runtime(_runtime_command(runtime_path), workdir))
+        result = asyncio.run(_run_runtime(_runtime_command(runtime_path, arguments), workdir))
+        result["argv"] = list(arguments)
         result["duration_seconds"] = time.perf_counter() - started
         result["created_files"] = _snapshot_created_files(workdir)
         return result
+
+
+def _runtime_input_artifacts(path: Path, runtime_inputs: tuple[tuple[str, ...], ...]) -> list[dict[str, object]]:
+    return [_runtime_artifacts(path, arguments) for arguments in runtime_inputs]
 
 
 def _command_count(binary: Binary, command: str) -> int:
@@ -351,6 +370,15 @@ def _semantic_artifacts(path: Path) -> dict[str, object]:
 def _runtime_observables_equal(expected: object, actual: object) -> bool:
     """Compare bounded native-runtime observables without retaining raw output."""
     return _runtime_observable_failure_reason(expected, actual) is None
+
+
+def _runtime_input_observables_equal(expected: object, actual: object) -> bool:
+    if not isinstance(expected, list) or not isinstance(actual, list) or len(expected) != len(actual):
+        return False
+    return all(
+        _runtime_observables_equal(expected_item, actual_item)
+        for expected_item, actual_item in zip(expected, actual, strict=True)
+    )
 
 
 def _runtime_observable_failure_reason(expected: object, actual: object) -> str | None:
@@ -465,7 +493,13 @@ def _diagnostic_counts(records: object, field: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def _measure_seed(fixture: Path, seed: int, output_dir: Path, pass_name: str) -> dict[str, object]:
+def _measure_seed(
+    fixture: Path,
+    seed: int,
+    output_dir: Path,
+    pass_name: str,
+    runtime_inputs: tuple[tuple[str, ...], ...] = _DEFAULT_RUNTIME_INPUTS,
+) -> dict[str, object]:
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
     started = time.perf_counter()
@@ -492,6 +526,7 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path, pass_name: str) ->
         "output_size": output.stat().st_size,
         "transform_duration_seconds": time.perf_counter() - started,
         "runtime": _runtime_artifacts(output),
+        "runtime_inputs": _runtime_input_artifacts(output, runtime_inputs),
         "unicorn": _semantic_artifacts(output),
     }
     if status == "passed":
@@ -524,18 +559,22 @@ def measure_fixture(
     seeds: range,
     output_root: Path,
     pass_name: str = DEFAULT_MUTATION_NAME,
+    runtime_inputs: tuple[tuple[str, ...], ...] = _DEFAULT_RUNTIME_INPUTS,
 ) -> dict[str, object]:
     baseline_runtime = _runtime_artifacts(fixture)
+    baseline_runtime_inputs = _runtime_input_artifacts(fixture, runtime_inputs)
     baseline_unicorn = _semantic_artifacts(fixture)
     baseline = _safe_inspect(fixture)
     output_dir = output_root / _PASS_LABELS[pass_name] / fixture.name
     output_dir.mkdir(parents=True)
-    runs = [_measure_seed(fixture, seed, output_dir, pass_name) for seed in seeds]
+    runs = [_measure_seed(fixture, seed, output_dir, pass_name, runtime_inputs) for seed in seeds]
     semantic_runs = []
     for run in runs:
         runtime_equal = _runtime_observables_equal(baseline_runtime, run.get("runtime"))
+        runtime_input_equal = _runtime_input_observables_equal(baseline_runtime_inputs, run.get("runtime_inputs"))
         run["runtime_observable_equal"] = runtime_equal
-        if _semantic_run_matches(baseline_unicorn, baseline_runtime, run):
+        run["runtime_input_observable_equal"] = runtime_input_equal
+        if runtime_input_equal and _semantic_run_matches(baseline_unicorn, baseline_runtime, run):
             semantic_runs.append(run)
     return {
         "sample": fixture.name,
@@ -543,6 +582,7 @@ def measure_fixture(
         "baseline_size": fixture.stat().st_size,
         "baseline": baseline,
         "baseline_runtime": baseline_runtime,
+        "baseline_runtime_inputs": baseline_runtime_inputs,
         "baseline_unicorn": baseline_unicorn,
         "seeds": [run["seed"] for run in runs],
         "runs": runs,
@@ -870,9 +910,11 @@ def _render_multi_pass_result(
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
     summaries = {name: result["summary"] for name, result in rendered.items()}
     campaign_summary = _multi_pass_campaign_summary(summaries)
+    input_sources = _runtime_input_sources(measurements)
     campaign_summary["platform_scope"] = dict(_DIFFERENTIAL_PLATFORM_SCOPE)
     campaign_summary["platform_gap_scope"] = dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE)
-    campaign_summary["corpus_gap_scope"] = dict(_DIFFERENTIAL_CORPUS_GAP_SCOPE)
+    campaign_summary["input_sources"] = input_sources
+    campaign_summary["corpus_gap_scope"] = _differential_corpus_gap_scope(input_sources)
     campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
     campaign_summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(campaign_summary)
     campaign_summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
@@ -885,6 +927,22 @@ def _render_multi_pass_result(
         "passes": rendered,
         "summary": summaries,
         "campaign_summary": campaign_summary,
+    }
+
+
+def _runtime_input_sources(measurements: dict[str, list[dict[str, object]]]) -> list[str]:
+    generated = any(
+        isinstance(inputs := fixture.get("baseline_runtime_inputs"), list) and len(inputs) > 1
+        for fixtures in measurements.values()
+        for fixture in fixtures
+    )
+    return [_DEFAULT_INPUT_SOURCE, _GENERATED_INPUT_SOURCE] if generated else [_DEFAULT_INPUT_SOURCE]
+
+
+def _differential_corpus_gap_scope(input_sources: list[str]) -> dict[str, list[str]]:
+    return {
+        "corpus_families": list(_DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"]),
+        "input_sources": [] if _GENERATED_INPUT_SOURCE in input_sources else ["generated-inputs"],
     }
 
 
@@ -1200,6 +1258,11 @@ def main() -> None:
         action="store_true",
         help="fail when runtime, size, duration, or static metric evidence is incomplete",
     )
+    parser.add_argument(
+        "--generated-inputs",
+        action="store_true",
+        help="compare default and generated argv runtime observables",
+    )
     args = parser.parse_args()
     if args.count < 1:
         parser.error("--count must be positive")
@@ -1214,9 +1277,12 @@ def main() -> None:
         parser.error(str(error))
 
     seeds = range(args.first_seed, args.first_seed + args.count)
+    runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
     with tempfile.TemporaryDirectory(prefix="r2morph-maturity-") as temp_dir:
         measurements = {
-            pass_name: [measure_fixture(fixture, seeds, Path(temp_dir), pass_name) for fixture in fixtures]
+            pass_name: [
+                measure_fixture(fixture, seeds, Path(temp_dir), pass_name, runtime_inputs) for fixture in fixtures
+            ]
             for pass_name in pass_names
         }
     report = _render_result(measurements[pass_names[0]], pass_names[0])

@@ -70,7 +70,7 @@ _DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
 }
 _DIFFERENTIAL_CORPUS_GAP_SCOPE = {
     "corpus_families": ["additional-corpus-families"],
-    "input_sources": ["generated-inputs"],
+    "input_sources": [],
 }
 _ADVERSARIAL_EXPECTED_TOOLS = (
     "radare2",

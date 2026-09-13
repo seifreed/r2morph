@@ -139,13 +139,13 @@ def _review_differential_corpus_gap(root: Path) -> dict[str, object]:
     passed = (
         "corpus_gap_scope" in workflow
         and all(value in workflow for value in _DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"])
-        and all(value in workflow for value in _DIFFERENTIAL_CORPUS_GAP_SCOPE["input_sources"])
-        and "additional-corpus-family and generated-input gap scope" in contract
+        and "--generated-inputs" in workflow
+        and "additional-corpus-family gap scope" in contract
     )
     return _check(
         "differential_corpus_gap_scope",
         passed,
-        "additional corpus families and generated inputs remain gaps",
+        "additional corpus families remain a gap; generated inputs are scheduled",
     )
 
 

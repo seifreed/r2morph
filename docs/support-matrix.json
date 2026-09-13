@@ -1635,9 +1635,7 @@
           "corpus_families": [
             "additional-corpus-families"
           ],
-          "input_sources": [
-            "generated-inputs"
-          ]
+          "input_sources": []
         }
       },
       "differential_gap_evidence": {
@@ -1684,15 +1682,13 @@
           "corpus_families": [
             "additional-corpus-families"
           ],
-          "input_sources": [
-            "generated-inputs"
-          ]
+          "input_sources": []
         }
       },
       "differential_blocker_totals": {
         "platform_gap_scope": 5,
-        "corpus_gap_scope": 2,
-        "total_differential_blockers": 7
+        "corpus_gap_scope": 1,
+        "total_differential_blockers": 6
       },
       "adversarial_benchmark_evidence": {
         "expected_tools": [

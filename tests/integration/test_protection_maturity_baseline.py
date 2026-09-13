@@ -7,6 +7,7 @@ from pathlib import Path
 
 from r2morph.adapters.process import run_process
 from scripts.protection_maturity_baseline import (
+    _GENERATED_RUNTIME_INPUTS,
     _PASS_TYPES,
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
@@ -495,6 +496,30 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         == _EXPECTED_AVERAGE_COVERAGE_PERCENT
         and report["campaign_summary"]["total_complete_evidence_runs"] == 1
         and report["campaign_summary"]["total_complete_evidence_missing_runs"] == 1
+    )
+
+
+def test_render_multi_pass_result_records_generated_input_coverage() -> None:
+    report = _render_multi_pass_result(
+        {
+            "NopInsertion": [
+                {
+                    "all_semantic_equal": True,
+                    "successful_runs": 1,
+                    "failed_runs": 0,
+                    "baseline_runtime_inputs": [{"argv": list(arguments)} for arguments in _GENERATED_RUNTIME_INPUTS],
+                    "runs": [{"transformation": {"status": "applied"}}],
+                }
+            ]
+        }
+    )
+
+    expect(
+        report["campaign_summary"]["input_sources"] == ["default-argv", "generated-argv"]
+        and report["campaign_summary"]["corpus_gap_scope"]
+        == {"corpus_families": ["additional-corpus-families"], "input_sources": []}
+        and report["campaign_summary"]["continuous_evidence_blockers"]["corpus_gap_scope"]
+        == {"corpus_families": ["additional-corpus-families"], "input_sources": []}
     )
 
 
