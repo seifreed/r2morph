@@ -495,6 +495,12 @@ def test_undefined_instruction_reports_signals_and_system_calls_capability() -> 
     expect(capability == "signals_and_system_calls")
 
 
+def test_missing_opcode_reports_instruction_semantics_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "other"})
+
+    expect(capability == "instruction_semantics")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}

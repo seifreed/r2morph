@@ -782,7 +782,8 @@ class CodeVirtualizationPass(MutationPass):
             .removeprefix("repz ")
             .removeprefix("repnz ")
         )
-        mnemonic = opcode_without_repeat.split(maxsplit=1)[0]
+        mnemonic_parts = opcode_without_repeat.split(maxsplit=1)
+        mnemonic = mnemonic_parts[0] if mnemonic_parts else ""
         if kind in _COMPUTED_JUMP_TYPES:
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
