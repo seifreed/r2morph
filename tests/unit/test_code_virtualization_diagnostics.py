@@ -612,6 +612,22 @@ def test_cache_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_direct_store_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "movdir64b rdi, [rsi]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_device_queue_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "enqcmd rdi, [rsi]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_descriptor_table_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "sgdt [rsp]"}
