@@ -64,6 +64,8 @@ jobs:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
           if summary["generated_fixture_count"] != 3:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
+          if summary["generated_fixture_names"] != ["generated_branch", "generated_lookup", "generated_memory"]:
+              raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
               raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")
           if summary["corpus_scope"] != {"dataset": "fixtures/dataset"}:
