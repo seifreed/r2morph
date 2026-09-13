@@ -39,6 +39,7 @@ jobs:
             --dataset fixtures/dataset \
             --passes all \
             --require-applied \
+            --require-complete-evidence \
             --first-seed 20260901 \
             --count 1 \
             --output differential-corpus.json

@@ -10,6 +10,7 @@ from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
+    _complete_evidence_error,
     _diagnostic_counts,
     _parse_pass_names,
     _render_multi_pass_result,
@@ -442,6 +443,69 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["total_complete_evidence_runs"] == 1
         and report["campaign_summary"]["total_complete_evidence_missing_runs"] == 1
     )
+
+
+def test_complete_evidence_gate_accepts_full_single_pass_report() -> None:
+    report = _render_result(
+        [
+            {
+                "all_semantic_equal": True,
+                "successful_runs": 1,
+                "failed_runs": 0,
+                "baseline_size": 100,
+                "baseline": {"status": "completed", "metrics": {"number_of_functions": 1}},
+                "baseline_runtime": {"status": "completed", "duration_seconds": 1.0},
+                "runs": [
+                    {
+                        "transformation": {"status": "applied"},
+                        "output_size": 120,
+                        "transform_duration_seconds": 0.5,
+                        "runtime": {"status": "completed", "duration_seconds": 1.25},
+                        "after": {"status": "completed", "metrics": {"number_of_functions": 2}},
+                    }
+                ],
+            }
+        ]
+    )
+
+    expect(_complete_evidence_error(report) is None)
+
+
+def test_complete_evidence_gate_rejects_incomplete_multi_pass_report() -> None:
+    report = _render_multi_pass_result(
+        {
+            "CodeVirtualization": [
+                {
+                    "all_semantic_equal": True,
+                    "successful_runs": 1,
+                    "failed_runs": 0,
+                    "baseline_size": 100,
+                    "baseline": {"status": "completed", "metrics": {"number_of_functions": 1}},
+                    "baseline_runtime": {"status": "completed", "duration_seconds": 1.0},
+                    "runs": [
+                        {
+                            "transformation": {"status": "applied"},
+                            "output_size": 120,
+                            "transform_duration_seconds": 0.5,
+                            "runtime": {"status": "completed", "duration_seconds": 1.25},
+                            "after": {"status": "completed", "metrics": {"number_of_functions": 2}},
+                        }
+                    ],
+                }
+            ],
+            "PatternSubstitution": [
+                {
+                    "all_semantic_equal": True,
+                    "successful_runs": 1,
+                    "failed_runs": 0,
+                    "runs": [{"transformation": {"status": "applied"}}],
+                }
+            ],
+        }
+    )
+    error = _complete_evidence_error(report)
+
+    expect(error is not None and "PatternSubstitution" in error)
 
 
 def test_render_result_counts_missing_static_metric_pairs() -> None:

@@ -1005,6 +1005,31 @@ def _passes_below_full_coverage(summaries: dict[str, object], field: str) -> lis
     )
 
 
+def _complete_evidence_error(report: dict[str, object]) -> str | None:
+    campaign_summary = report.get("campaign_summary")
+    if isinstance(campaign_summary, Mapping):
+        missing_runs = campaign_summary.get("total_complete_evidence_missing_runs")
+        incomplete = campaign_summary.get("passes_with_incomplete_coverage")
+        incomplete_passes = []
+        if isinstance(incomplete, Mapping) and isinstance(value := incomplete.get("complete_evidence"), list):
+            incomplete_passes = [str(name) for name in value]
+        if missing_runs == 0 and not incomplete_passes:
+            return None
+        if incomplete_passes:
+            return "incomplete complete-evidence coverage for passes: " + ", ".join(incomplete_passes)
+        return "incomplete complete-evidence coverage"
+
+    summary = report.get("summary")
+    if isinstance(summary, Mapping):
+        missing_runs = summary.get("complete_evidence_missing_runs")
+        coverage = summary.get("complete_evidence_coverage_percent")
+        if missing_runs == 0 and coverage == _FULL_COVERAGE_PERCENT:
+            return None
+        return f"incomplete complete-evidence coverage for {report.get('pass_name', 'selected pass')}"
+
+    return "complete-evidence validation requires a maturity report summary"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
@@ -1022,6 +1047,11 @@ def main() -> None:
         "--require-applied",
         action="store_true",
         help="fail when a selected pass does not apply to any fixture",
+    )
+    parser.add_argument(
+        "--require-complete-evidence",
+        action="store_true",
+        help="fail when runtime, size, duration, or static metric evidence is incomplete",
     )
     args = parser.parse_args()
     if args.count < 1:
@@ -1053,6 +1083,8 @@ def main() -> None:
         ]
         if passes_without_mutations:
             parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))
+    if args.require_complete_evidence and (error := _complete_evidence_error(report)):
+        parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered)
