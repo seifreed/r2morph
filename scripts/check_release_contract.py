@@ -218,6 +218,29 @@ def _check_pass_selection_contract(matrix: dict[str, object], pass_names: set[st
         raise ValueError("public CLI aliases must not overlap engine-only passes")
 
 
+def _check_vm_semantic_gap_evidence(matrix: dict[str, object]) -> None:
+    vm_semantics = matrix["vm_semantics"]
+    gap_scope = vm_semantics["gap_scope"]
+    evidence = vm_semantics["gap_evidence"]
+    if sorted(evidence) != sorted(gap_scope):
+        raise ValueError("vm semantic gap evidence must cover every declared gap")
+    summary = matrix["matrix"]["summary"]
+    if summary["vm_semantic_gap_scope"] != gap_scope or summary["vm_semantic_gap_evidence"] != evidence:
+        raise ValueError("vm semantic gap summary must match source evidence")
+    for gap, row in evidence.items():
+        if not row["status"].endswith("-incomplete"):
+            raise ValueError(f"vm semantic gap must remain incomplete until closed: {gap}")
+        if not row["evidence"]:
+            raise ValueError(f"vm semantic gap evidence is empty: {gap}")
+        for evidence_path in row["evidence"]:
+            if (
+                isinstance(evidence_path, str)
+                and not evidence_path.startswith("http")
+                and not (ROOT / evidence_path).exists()
+            ):
+                raise ValueError(f"vm semantic gap evidence path is missing: {gap}.{evidence_path}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -252,6 +275,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         raise ValueError("official target must retain complete evidence")
     if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
         raise ValueError("non-official targets must not claim official-target parity")
+    _check_vm_semantic_gap_evidence(matrix)
 
 
 def _check_readme_support_summary(matrix: dict[str, object]) -> None:

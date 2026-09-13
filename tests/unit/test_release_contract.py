@@ -494,6 +494,20 @@ def test_support_matrix_names_vm_semantic_gap_evidence_without_signoff() -> None
     )
 
 
+def test_release_contract_rejects_missing_vm_semantic_gap_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    del matrix["vm_semantics"]["gap_evidence"]["ssa-liveness"]
+    matrix["matrix"] = build_matrix(matrix)
+
+    rejected = False
+    try:
+        _check_matrix(matrix, matrix["release"])
+    except ValueError as error:
+        rejected = "vm semantic gap evidence" in str(error)
+
+    expect(rejected)
+
+
 def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
