@@ -35,7 +35,7 @@ The compatibility corpus selection currently covers `BlockReordering`,
 | Stack strings | Experimental | ELF x86-64 | String layout and ABI interactions need more corpus coverage | `README.md` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus; pattern coverage is intentionally narrow and composition evidence remains incomplete | `README.md`, `docs/compatibility-corpus.md` |
-| Polymorphic engine | Experimental | ELF x86-64 | Pipeline composition requires per-pass validation | `README.md` |
+| Polymorphic engine | Experimental | ELF x86-64 | A real ELF x86-64 composition smoke covers child-pass sequencing and exit-code parity; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
 
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
@@ -86,9 +86,9 @@ and pass-composition gaps remain visible release gaps instead of being buried in
 each pass row.
 The current summary still reports 10 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement, 12 with no
-independent decompiler-effectiveness measurement, 12 without contractual
+independent decompiler-effectiveness measurement, 11 without contractual
 composition support, and no remaining exhaustive affected-instruction
-catalogue gap: 46 total per-pass maturity field gaps across 4 maturity gap
+catalogue gap: 45 total per-pass maturity field gaps across 4 maturity gap
 categories. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse

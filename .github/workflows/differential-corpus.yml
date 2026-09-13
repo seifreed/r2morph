@@ -135,6 +135,13 @@ jobs:
           Path("cross-format-differential.xml").stat()
           PY
 
+      - name: Run composition regression smoke
+        run: |
+          wheel_root=/tmp/r2morph-differential-wheel-check
+          cd "$wheel_root"
+          python -W error -m pytest -q --no-cov --tb=short \
+            tests/integration/test_polymorphic_engine_real.py
+
       - name: Run VM semantic regression smoke
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check

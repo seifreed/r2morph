@@ -109,7 +109,7 @@ targets (2.89% evidence). It currently classifies 3 passes as Tier 1 and
 The same summary still records 10 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement,
 12 with no independent decompiler-effectiveness measurement,
-12 without contractual composition support, and no remaining affected-instruction catalogue gap.
+11 without contractual composition support, and no remaining affected-instruction catalogue gap.
 The reproducible GCC/Clang corpus and its build manifest live in the public
 [`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
 

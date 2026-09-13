@@ -463,11 +463,11 @@
           "tests/unit/test_polymorphic_engine_setup_contract.py"
         ],
         "e2e_tests": [
-          "tests/integration"
+          "tests/integration/test_polymorphic_engine_real.py"
         ],
         "performance": "Not measured per pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "A real ELF x86-64 composition smoke records successful child-pass sequencing and exit-code parity; arbitrary pass combinations remain unsupported."
       },
       "short-jump-patching-instruction-catalogued": {
         "formats": [
@@ -1138,7 +1138,8 @@
         "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.": 3
       },
       "compatibility_counts": {
-        "Composition with other passes is not contractually supported.": 12,
+        "A real ELF x86-64 composition smoke records successful child-pass sequencing and exit-code parity; arbitrary pass combinations remain unsupported.": 1,
+        "Composition with other passes is not contractually supported.": 11,
         "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
         "Pass combinations are not exhaustively covered.": 3,
         "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
@@ -1190,11 +1191,12 @@
         "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
-        "tests/integration": 20,
+        "tests/integration": 19,
         "tests/integration/test_code_virtualization_exception_gate_real.py": 1,
         "tests/integration/test_code_virtualization_real.py": 1,
         "tests/integration/test_mutation_fuzzer_real.py": 1,
         "tests/integration/test_mutation_opaque_predicates_apply_real.py": 1,
+        "tests/integration/test_polymorphic_engine_real.py": 1,
         "tests/integration/test_protection_maturity_baseline.py": 1,
         "tests/product_smoke": 3
       },
@@ -1247,7 +1249,6 @@
           "function-outlining",
           "import-obfuscation",
           "opaque-predicates",
-          "polymorphic-engine",
           "self-modifying-code",
           "short-jump-patching",
           "stack-strings",
@@ -1297,7 +1298,6 @@
           "performance"
         ],
         "polymorphic-engine": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
           "performance"
@@ -1404,7 +1404,6 @@
             "function-outlining",
             "import-obfuscation",
             "opaque-predicates",
-            "polymorphic-engine",
             "self-modifying-code",
             "short-jump-patching",
             "stack-strings",
@@ -1454,7 +1453,6 @@
             "performance"
           ],
           "polymorphic-engine": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
             "performance"
@@ -1564,7 +1562,6 @@
             "function-outlining",
             "import-obfuscation",
             "opaque-predicates",
-            "polymorphic-engine",
             "self-modifying-code",
             "short-jump-patching",
             "stack-strings",
@@ -1598,12 +1595,12 @@
         "maturity_gap_categories": 4,
         "native_evidence_gap_passes": 12,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 58,
-        "total_maturity_field_gaps": 46,
+        "total_maturity_blockers": 57,
+        "total_maturity_field_gaps": 45,
         "performance_gap_passes": 10,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
-        "compatibility_gap_passes": 12
+        "compatibility_gap_passes": 11
       },
       "differential_evidence_scope": {
         "platform_scope": {

@@ -414,15 +414,19 @@ class PolymorphicEnginePass(MutationPass):
             "final_state": result.final_state.name,
             "iterations": result.iterations,
             "converged": result.converged,
-            "mutations_applied": len(result.mutations_applied),
-            "successful_mutations": sum(1 for m in result.mutations_applied if m.success),
-            "failed_mutations": sum(1 for m in result.mutations_applied if not m.success),
         }
 
         for name, mutations in mutations_by_name.items():
             stats[f"{name}_count"] = len(mutations)
 
         stats.update(result.final_stats)
+        stats.update(
+            {
+                "mutations_applied": len(result.mutations_applied),
+                "successful_mutations": sum(1 for m in result.mutations_applied if m.success),
+                "failed_mutations": sum(1 for m in result.mutations_applied if not m.success),
+            }
+        )
 
         logger.info(
             f"Polymorphic engine completed: {stats['successful_mutations']}/{stats['mutations_applied']} "

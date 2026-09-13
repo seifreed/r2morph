@@ -50,7 +50,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 150
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 58
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 57
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -1490,6 +1490,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "cross-format smoke coverage drift" in differential
         and "Upload cross-format differential evidence" in differential
         and "cross-format-differential" in differential
+        and "Run composition regression smoke" in differential
+        and "test_polymorphic_engine_real.py" in differential
         and "Run VM semantic regression smoke" in differential
         and "test_memory_width_fixture_virtualization_preserves_exit_code" in differential
         and "test_virtualized_callee_saved_fixture_preserves_registers" in differential
