@@ -801,6 +801,7 @@ class CodeVirtualizationPass(MutationPass):
         control_mnemonic = control_mnemonic_parts[0] if control_mnemonic_parts else ""
         if (
             kind in _COMPUTED_JUMP_TYPES
+            or control_mnemonic.startswith(("loop", "jcxz", "jecxz", "jrcxz"))
             or control_opcode.startswith(("jmpf", "ljmp"))
             or (
                 control_mnemonic in {"jmp", "jmpq"}
@@ -879,6 +880,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
         elif (
             (kind == "ret" and len(mnemonic_parts) > 1)
+            or (mnemonic in {"retq", "retn", "retl", "retw"} and len(mnemonic_parts) > 1)
             or mnemonic in {"retf", "retfq", "lret", "lretq"}
             or mnemonic in {"pop", "popq", "popl", "popw"}
             or opcode_without_repeat.startswith(

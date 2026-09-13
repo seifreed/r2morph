@@ -718,6 +718,17 @@ def test_notrack_bnd_indirect_jump_opcode_reports_computed_control_flow_capabili
     expect(capability == "computed_control_flow")
 
 
+def test_counter_loop_instruction_reports_computed_control_flow_capability() -> None:
+    loop_capability, _loop_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "loop 0x401000"}
+    )
+    jecxz_capability, _jecxz_reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "jecxz 0x401000"}
+    )
+
+    expect(loop_capability == "computed_control_flow" and jecxz_capability == "computed_control_flow")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
@@ -873,6 +884,14 @@ def test_far_return_reports_stack_abi_capability() -> None:
 def test_stack_adjusting_return_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "ret", "opcode": "ret 0x10"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
+def test_stack_adjusting_retq_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "retq 0x10"}
     )
 
     expect(capability == "stack_and_abi")
