@@ -753,6 +753,7 @@ def _check_corpus_workflows() -> None:
         "missing_corpus_passes",
         "total_complete_evidence_missing_runs",
         "passes_with_incomplete_coverage",
+        "continuous_evidence_blockers",
         "differential-corpus-by-pass",
     ):
         if fragment not in differential:

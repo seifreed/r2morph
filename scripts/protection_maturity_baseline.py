@@ -872,7 +872,7 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
     total_successful_seed_runs = _sum_summary_field(summaries, "successful_seed_runs")
     total_failed_seed_runs = _sum_summary_field(summaries, "failed_seed_runs")
     total_seed_runs = total_successful_seed_runs + total_failed_seed_runs
-    return {
+    summary = {
         "pass_count": len(summaries),
         "expected_corpus_pass_count": len(CORPUS_PASS_NAMES),
         "covered_corpus_pass_count": len(selected_passes & corpus_passes),
@@ -962,6 +962,24 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "total_complete_evidence_missing_runs": _sum_summary_field(summaries, "complete_evidence_missing_runs"),
         **_sum_static_delta_fields(summaries),
     }
+    summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(summary)
+    return summary
+
+
+def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, object]:
+    blockers: dict[str, object] = {}
+    for field in (
+        "missing_corpus_passes",
+        "passes_without_applied_runs",
+        "passes_with_error_runs",
+        "passes_with_incomplete_coverage",
+        "passes_with_semantic_failures",
+        "passes_with_runtime_observable_failures",
+    ):
+        value = summary.get(field)
+        if isinstance(value, (list, dict)) and value:
+            blockers[field] = value
+    return blockers
 
 
 def _metric_run_totals(summaries: dict[str, object], field_index: int) -> dict[str, int]:
