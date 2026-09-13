@@ -50,6 +50,12 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         if cell["status"] == "not-supported"
         and (cell["format"] != official_format or cell["architecture"] != official_architecture)
     )
+    maturity_profile_counts: dict[str, int] = {}
+    maturity = document.get("maturity", {})
+    if isinstance(maturity, dict) and isinstance(pass_profiles := maturity.get("pass_profiles"), dict):
+        for profile in pass_profiles.values():
+            if isinstance(profile, str):
+                maturity_profile_counts[profile] = maturity_profile_counts.get(profile, 0) + 1
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -62,6 +68,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "not_supported_cells": len(cells) - evidenced,
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
+            "maturity_profile_counts": dict(sorted(maturity_profile_counts.items())),
         },
         "cells": cells,
     }

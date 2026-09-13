@@ -574,7 +574,13 @@
       "evidenced_cells": 29,
       "not_supported_cells": 235,
       "non_official_evidenced_cells": 7,
-      "non_official_not_supported_cells": 235
+      "non_official_not_supported_cells": 235,
+      "maturity_profile_counts": {
+        "code-virtualization": 1,
+        "experimental": 12,
+        "experimental-corpus-selected": 6,
+        "tier-1-native": 3
+      }
     },
     "cells": [
       {

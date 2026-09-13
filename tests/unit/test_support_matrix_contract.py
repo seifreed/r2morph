@@ -11,6 +11,12 @@ _EXPECTED_EVIDENCED_CELLS = 29
 _EXPECTED_NOT_SUPPORTED_CELLS = 235
 _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 7
 _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 235
+_EXPECTED_MATURITY_PROFILE_COUNTS = {
+    "code-virtualization": 1,
+    "experimental": 12,
+    "experimental-corpus-selected": 6,
+    "tier-1-native": 3,
+}
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
@@ -39,6 +45,7 @@ def test_support_matrix_summarizes_parity_gaps() -> None:
         and summary["not_supported_cells"] == _EXPECTED_NOT_SUPPORTED_CELLS
         and summary["non_official_evidenced_cells"] == _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS
         and summary["non_official_not_supported_cells"] == _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS
+        and summary["maturity_profile_counts"] == _EXPECTED_MATURITY_PROFILE_COUNTS
     )
 
 
