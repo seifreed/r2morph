@@ -59,6 +59,7 @@ code-mobility-instruction-catalogued,
 code-virtualization, data-flow-mutation-instruction-catalogued,
 import-obfuscation-instruction-catalogued,
 opaque-predicates-instruction-catalogued,
+self-modifying-code-instruction-catalogued,
 short-jump-patching-instruction-catalogued,
 function-outlining-instruction-catalogued,
 stack-strings-instruction-catalogued,
@@ -70,9 +71,10 @@ pass, 1 data-flow-mutation-instruction-catalogued profile pass, 1
 function-outlining-instruction-catalogued profile pass, 1
 import-obfuscation-instruction-catalogued profile pass, 1
 opaque-predicates-instruction-catalogued profile pass, 1
+self-modifying-code-instruction-catalogued profile pass, 1
 short-jump-patching-instruction-catalogued profile pass, 1
 stack-strings-instruction-catalogued profile pass, 1
-string-obfuscation-instruction-catalogued profile pass, and 3
+string-obfuscation-instruction-catalogued profile pass, and 2
 experimental profile passes. It also summarizes the declared
 performance, false-positive-risk,
 instructions-affected, decompiler-effectiveness, and compatibility/composition
@@ -82,8 +84,8 @@ each pass row.
 The current summary still reports 12 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement, 12 with no
 independent decompiler-effectiveness measurement, 12 without contractual
-composition support, and 3 without an exhaustive affected-instruction
-catalogue: 51 total per-pass maturity field gaps across 5 maturity gap
+composition support, and 2 without an exhaustive affected-instruction
+catalogue: 50 total per-pass maturity field gaps across 5 maturity gap
 categories. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse

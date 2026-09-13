@@ -615,6 +615,27 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "self-modifying-code-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Eligible non-entry functions of at least 32 bytes keep their first five bytes as a saved prologue, XOR-encrypt the remaining body in place, and replace the entry with an x86/x86-64 rel32 JMP to a cave stub. The stub saves rbx/rcx/rsi, issues an mprotect syscall, restores the saved prologue with byte stores, XOR-decrypts func+5..end via a byte loop, restores registers, and jumps back to the function entry.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_self_modifying_code_rel32.py"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "code-virtualization": {
         "formats": [
           "ELF"
@@ -679,7 +700,7 @@
       "function-outlining": "function-outlining-instruction-catalogued",
       "api-hashing": "api-hashing-instruction-catalogued",
       "import-obfuscation": "import-obfuscation-instruction-catalogued",
-      "self-modifying-code": "experimental",
+      "self-modifying-code": "self-modifying-code-instruction-catalogued",
       "stack-strings": "stack-strings-instruction-catalogued",
       "string-obfuscation": "string-obfuscation-instruction-catalogued",
       "pattern-substitution": "experimental-corpus-selected",
@@ -1049,11 +1070,12 @@
         "code-mobility-instruction-catalogued": 1,
         "code-virtualization": 1,
         "data-flow-mutation-instruction-catalogued": 1,
-        "experimental": 3,
+        "experimental": 2,
         "experimental-corpus-selected": 6,
         "function-outlining-instruction-catalogued": 1,
         "import-obfuscation-instruction-catalogued": 1,
         "opaque-predicates-instruction-catalogued": 1,
+        "self-modifying-code-instruction-catalogued": 1,
         "short-jump-patching-instruction-catalogued": 1,
         "stack-strings-instruction-catalogued": 1,
         "string-obfuscation-instruction-catalogued": 1,
@@ -1086,10 +1108,11 @@
       "instructions_affected_counts": {
         "ELF relocation imports and PE import entries with direct x86/x86-64 E8 call xrefs are redirected through executable-cave jump stubs assembled as JMP-to-PLT targets; each patched call site is rewritten to a rel32 CALL to the stub when the offset fits int32.": 1,
         "Eligible basic-block chunks with at least five bytes and no RIP-relative operands are copied to executable caves; the original chunk start is replaced with an x86/x86-64 rel32 JMP trampoline and remaining bytes are padded with NOPs.": 1,
+        "Eligible non-entry functions of at least 32 bytes keep their first five bytes as a saved prologue, XOR-encrypt the remaining body in place, and replace the entry with an x86/x86-64 rel32 JMP to a cave stub. The stub saves rbx/rcx/rsi, issues an mprotect syscall, restores the saved prologue with byte stores, XOR-decrypts func+5..end via a byte loop, restores registers, and jumps back to the function entry.": 1,
         "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.": 1,
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
-        "Not exhaustively catalogued.": 3,
+        "Not exhaustively catalogued.": 2,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
@@ -1105,7 +1128,7 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 12,
+        "tests/unit": 11,
         "tests/unit/test_api_hashing_record.py": 1,
         "tests/unit/test_code_mobility_offset_range.py": 1,
         "tests/unit/test_code_virtualization_diagnostics.py": 1,
@@ -1114,6 +1137,7 @@
         "tests/unit/test_morphing_evasion.py": 1,
         "tests/unit/test_mutation_opaque_predicates_helpers.py": 1,
         "tests/unit/test_new_mutations.py": 2,
+        "tests/unit/test_self_modifying_code_rel32.py": 1,
         "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
@@ -1184,8 +1208,7 @@
         ],
         "instructions_affected": [
           "anti-disassembly",
-          "polymorphic-engine",
-          "self-modifying-code"
+          "polymorphic-engine"
         ]
       },
       "maturity_gaps_by_pass": {
@@ -1243,7 +1266,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "short-jump-patching": [
@@ -1367,8 +1389,7 @@
           ],
           "instructions_affected": [
             "anti-disassembly",
-            "polymorphic-engine",
-            "self-modifying-code"
+            "polymorphic-engine"
           ]
         },
         "missing_fields_by_pass": {
@@ -1426,7 +1447,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "short-jump-patching": [
@@ -1547,8 +1567,7 @@
           ],
           "passes": [
             "anti-disassembly",
-            "polymorphic-engine",
-            "self-modifying-code"
+            "polymorphic-engine"
           ]
         },
         "native_evidence": {
@@ -1585,13 +1604,13 @@
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 70,
-        "total_maturity_field_gaps": 51,
+        "total_maturity_blockers": 69,
+        "total_maturity_field_gaps": 50,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 3
+        "instructions_affected_gap_passes": 2
       },
       "differential_evidence_scope": {
         "platform_scope": {
