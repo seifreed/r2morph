@@ -1519,6 +1519,13 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and '"tests/unit/test_evasion_scorer_helpers_contract.py"' in cross_platform_job
         and '"tests/unit/test_enhanced_analyzer_reporting_contract.py"' in cross_platform_job
         and '"tests/unit/test_mutation_annotator_instruction_contract.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_memory_widths.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_call_abi.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_tls.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_static_dataflow.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_diagnostics.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_fp_indexed_shapes.py"' in cross_platform_job
+        and '"tests/unit/test_code_virtualization_avx256.py"' in cross_platform_job
     )
 
 
