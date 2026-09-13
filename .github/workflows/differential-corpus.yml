@@ -97,7 +97,11 @@ jobs:
               if key not in allowed or value != allowed[key]
           }
           if unexpected:
-              raise SystemExit(f"unexpected continuous evidence blockers: {unexpected}")
+              reasons = summary.get("runtime_observable_failure_reasons_by_pass", {})
+              raise SystemExit(
+                  "unexpected continuous evidence blockers: "
+                  f"{unexpected}; runtime failure reasons by pass: {reasons}"
+              )
           PY
 
       - name: Run cross-format differential smoke
@@ -268,6 +272,7 @@ jobs:
 
       - name: Upload per-pass differential report
         uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: differential-corpus-by-pass
           path: differential-corpus.json
