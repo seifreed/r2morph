@@ -435,7 +435,7 @@
         ],
         "preconditions": "Whole-function semantics plus CFG, SSA, and complete liveness coverage must be proven; unsupported capabilities are rejected before mutation.",
         "invariants": "VM output retains loader validity and must match emulator and bounded runtime observables.",
-        "instructions_affected": "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.",
+        "instructions_affected": "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.",
         "false_positive_risk": "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.",
         "unit_tests": [
           "tests/unit/test_code_virtualization_diagnostics.py"
@@ -615,7 +615,7 @@
       "instructions_affected_counts": {
         "Not exhaustively catalogued.": 18,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
-        "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
+        "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
       },
       "maturity_format_counts": {
         "ELF": 22
