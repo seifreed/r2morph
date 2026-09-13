@@ -909,6 +909,11 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
+        elif opcode.removeprefix("rep ").startswith(("cmps", "lods", "movs", "scas", "stos", "xlat")):
+            capability, reason = (
+                "memory_operands",
+                "implicit memory operand semantics were not proven for whole-function virtualization",
+            )
         elif "[" in opcode:
             capability, reason = (
                 "memory_operands",

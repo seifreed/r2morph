@@ -372,6 +372,14 @@ def test_memory_xchg_reports_thread_synchronization_capability() -> None:
     expect(capability == "thread_synchronization")
 
 
+def test_implicit_string_memory_instruction_reports_memory_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "mov", "opcode": "rep movsb"}
+    )
+
+    expect(capability == "memory_operands")
+
+
 def test_memory_fence_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "sync", "opcode": "mfence"}
