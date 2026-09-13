@@ -839,7 +839,7 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
-        elif opcode.startswith(("fxrstor", "fxsave", "xrstor", "xsave")) or any(
+        elif opcode.startswith(("emms", "fxrstor", "fxsave", "vzero", "xrstor", "xsave")) or any(
             token in opcode
             for token in (
                 "xmm",
