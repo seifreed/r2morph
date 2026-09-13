@@ -573,6 +573,27 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "opaque-predicates-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_mutation_opaque_predicates_helpers.py"
+        ],
+        "e2e_tests": [
+          "tests/integration/test_mutation_opaque_predicates_apply_real.py"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "code-virtualization": {
         "formats": [
           "ELF"
@@ -627,7 +648,7 @@
       "block-reordering": "experimental-corpus-selected",
       "dead-code-injection": "experimental-corpus-selected",
       "control-flow-flattening": "experimental-corpus-selected",
-      "opaque-predicates": "experimental",
+      "opaque-predicates": "opaque-predicates-instruction-catalogued",
       "code-virtualization": "code-virtualization",
       "anti-disassembly": "experimental",
       "data-flow-mutation": "data-flow-mutation-instruction-catalogued",
@@ -1006,10 +1027,11 @@
         "api-hashing-instruction-catalogued": 1,
         "code-virtualization": 1,
         "data-flow-mutation-instruction-catalogued": 1,
-        "experimental": 5,
+        "experimental": 4,
         "experimental-corpus-selected": 6,
         "function-outlining-instruction-catalogued": 1,
         "import-obfuscation-instruction-catalogued": 1,
+        "opaque-predicates-instruction-catalogued": 1,
         "short-jump-patching-instruction-catalogued": 1,
         "stack-strings-instruction-catalogued": 1,
         "string-obfuscation-instruction-catalogued": 1,
@@ -1044,10 +1066,11 @@
         "Eligible basic-block chunks with at least five bytes and no RIP-relative operands are copied to executable caves; the original chunk start is replaced with an x86/x86-64 rel32 JMP trampoline and remaining bytes are padded with NOPs.": 1,
         "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.": 1,
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
-        "Not exhaustively catalogued.": 5,
+        "Not exhaustively catalogued.": 4,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
+        "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
         "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
@@ -1059,20 +1082,22 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 14,
+        "tests/unit": 13,
         "tests/unit/test_api_hashing_record.py": 1,
         "tests/unit/test_code_virtualization_diagnostics.py": 1,
         "tests/unit/test_data_flow_mutation_helpers_contract.py": 1,
         "tests/unit/test_function_outlining_offset_range.py": 1,
         "tests/unit/test_morphing_evasion.py": 1,
+        "tests/unit/test_mutation_opaque_predicates_helpers.py": 1,
         "tests/unit/test_new_mutations.py": 2,
         "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
-        "tests/integration": 21,
+        "tests/integration": 20,
         "tests/integration/test_code_virtualization_exception_gate_real.py": 1,
         "tests/integration/test_code_virtualization_real.py": 1,
         "tests/integration/test_mutation_fuzzer_real.py": 1,
+        "tests/integration/test_mutation_opaque_predicates_apply_real.py": 1,
         "tests/integration/test_protection_maturity_baseline.py": 1,
         "tests/product_smoke": 3
       },
@@ -1136,7 +1161,6 @@
         "instructions_affected": [
           "anti-disassembly",
           "code-mobility",
-          "opaque-predicates",
           "polymorphic-engine",
           "self-modifying-code"
         ]
@@ -1184,7 +1208,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "polymorphic-engine": [
@@ -1323,7 +1346,6 @@
           "instructions_affected": [
             "anti-disassembly",
             "code-mobility",
-            "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code"
           ]
@@ -1371,7 +1393,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "polymorphic-engine": [
@@ -1507,7 +1528,6 @@
           "passes": [
             "anti-disassembly",
             "code-mobility",
-            "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code"
           ]
@@ -1546,13 +1566,13 @@
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 72,
-        "total_maturity_field_gaps": 53,
+        "total_maturity_blockers": 71,
+        "total_maturity_field_gaps": 52,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 5
+        "instructions_affected_gap_passes": 4
       },
       "differential_evidence_scope": {
         "platform_scope": {

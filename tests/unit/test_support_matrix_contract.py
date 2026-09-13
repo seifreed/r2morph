@@ -19,18 +19,19 @@ _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "api-hashing-instruction-catalogued": 1,
     "code-virtualization": 1,
     "data-flow-mutation-instruction-catalogued": 1,
-    "experimental": 5,
+    "experimental": 4,
     "experimental-corpus-selected": 6,
     "function-outlining-instruction-catalogued": 1,
     "import-obfuscation-instruction-catalogued": 1,
+    "opaque-predicates-instruction-catalogued": 1,
     "short-jump-patching-instruction-catalogued": 1,
     "stack-strings-instruction-catalogued": 1,
     "string-obfuscation-instruction-catalogued": 1,
     "tier-1-native": 3,
 }
 _EXPECTED_MATURITY_GAP_CATEGORIES = 5
-_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 53
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 72
+_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 52
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 71
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:
