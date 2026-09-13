@@ -75,6 +75,9 @@ Adversarial CodeVirtualization rows and pass summaries also retain bounded
 unsupported and partial virtualization capability/severity counts when
 diagnostics are present. A partial-only virtualization result is classified as
 an omitted pass with its diagnostic reason, not as a no-op.
+CodeVirtualization pass stats also expose unsupported and partial diagnostic
+severity totals directly, so release gates can fail on closed semantic gaps
+without expanding every diagnostic row.
 
 The differential contract is original versus transformed execution across nine
 seed-derived command-line inputs per sample: exit code, stdout, stderr, created

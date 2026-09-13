@@ -5,6 +5,8 @@ from typing import Any
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
+    _empty_result,
+    _field_counts,
     _function_has_unproven_unwind_metadata,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
@@ -98,6 +100,17 @@ def test_partial_virtualization_is_rejected_by_default() -> None:
 
 def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> None:
     expect(not CodeVirtualizationPass(config={"reject_partial_virtualization": False}).reject_partial_virtualization)
+
+
+def test_virtualization_result_exposes_diagnostic_severity_counts() -> None:
+    records = [{"severity": "error"}, {"severity": "warning"}, {"severity": "error"}, {"capability": "calls"}]
+    empty = _empty_result(None)
+
+    expect(
+        _field_counts(records, "severity") == {"error": 2, "warning": 1}
+        and empty["unsupported_function_severities"] == {}
+        and empty["partial_virtualization_severities"] == {}
+    )
 
 
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
