@@ -106,6 +106,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "external human review records signoff",
 )
 _RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
+_RELEASE_BLOCKER_ID_PATTERN = re.compile(r"\bRB-\d{3}\b")
 
 
 def _load_matrix() -> dict[str, object]:
@@ -619,7 +620,8 @@ def _check_documentation_claims() -> None:
 
 
 def _validate_release_blockers_text(blockers: str) -> None:
-    if any(blocker_id not in blockers for blocker_id in _RELEASE_BLOCKER_IDS):
+    blocker_ids = tuple(_RELEASE_BLOCKER_ID_PATTERN.findall(blockers))
+    if blocker_ids != _RELEASE_BLOCKER_IDS:
         raise ValueError("release blockers ledger is missing stable blocker IDs")
     for fragment in _RELEASE_BLOCKER_FRAGMENTS:
         if fragment not in blockers:

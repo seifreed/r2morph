@@ -446,6 +446,18 @@ def test_release_blockers_track_open_changes_md_gaps() -> None:
     expect(_check_release_blockers() is None)
 
 
+def test_release_contract_rejects_unknown_release_blocker_id() -> None:
+    blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
+
+    rejected = False
+    try:
+        _validate_release_blockers_text(blockers.replace("RB-007", "RB-999", 1))
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_unlinked_release_blocker() -> None:
     blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
 
