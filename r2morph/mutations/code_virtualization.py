@@ -787,7 +787,7 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
         elif opcode.startswith(("enter", "leave")):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
-        elif opcode.startswith(("cpuid", "rdtsc", "rdtscp", "xgetbv")):
+        elif opcode.startswith(("cpuid", "rdrand", "rdseed", "rdtsc", "rdtscp", "xgetbv")):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
         elif any(
             token in opcode
