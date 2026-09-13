@@ -846,6 +846,22 @@ def test_virtual_machine_function_instruction_reports_cpu_environment_capability
     expect(capability == "cpu_environment")
 
 
+def test_virtual_machine_read_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "vmread rax, rbx"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_virtual_machine_write_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "vmwrite rax, rbx"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_enclave_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "enclu"}
