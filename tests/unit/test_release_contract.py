@@ -1466,6 +1466,12 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "continuous_evidence_blockers" in differential
         and "unexpected continuous evidence blockers" in differential
         and "differential-corpus-by-pass" in differential
+        and "Run VM semantic regression smoke" in differential
+        and "test_memory_width_fixture_virtualization_preserves_exit_code" in differential
+        and "test_virtualized_callee_saved_fixture_preserves_registers" in differential
+        and "test_call_flags_stack_fixture_virtualization_preserves_exit_code" in differential
+        and "test_virtualized_elf_preserves_fs_relative_access" in differential
+        and "test_virtualized_threads_tls_and_signal_preserve_exit_code" in differential
         and "Run extended maturity pass smoke" in differential
         and "Validate extended maturity pass smoke" in differential
         and "EXTENDED_MATURITY_PASSES" in differential
