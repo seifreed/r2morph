@@ -63,6 +63,7 @@ ADVERSARIAL_TOOL_SLOTS = {
 }
 INDEPENDENT_REVIEW_CHECKS = {
     "adversarial_benchmark_evidence",
+    "adversarial_continuous_evidence_gate",
     "adversarial_corpus_evidence",
     "adversarial_signoff_blockers",
     "angr_binary_ninja_availability",

@@ -105,8 +105,9 @@ differential gap scope, the scheduled continuous-evidence differential gate, the
 native/performance/false-positive/decompiler/composition/instruction maturity
 gap scope, the memory/calls/ABI/unwind/TLS/thread/FP/SSA VM semantic gap scope,
 the VM fail-closed diagnostics contract, the pending human-adversarial VM
-resistance scope, the `angr`/Binary Ninja analyzer availability split, and the
-existing 159-sample virtualization corpus.
+resistance scope, the scheduled adversarial continuous-evidence gate, the
+`angr`/Binary Ninja analyzer availability split, and the existing 159-sample
+virtualization corpus.
 The same automated review verifies that unavailable analyzer slots, including
 Binary Ninja, remain release-signoff blockers instead of completed evidence.
 The target history extends the compiler-generated ELF regression outside that

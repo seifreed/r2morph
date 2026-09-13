@@ -30,6 +30,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
 
     expect(
         {
+            "adversarial_continuous_evidence_gate",
             "adversarial_signoff_blockers",
             "angr_binary_ninja_availability",
             "ida_corpus_evidence",

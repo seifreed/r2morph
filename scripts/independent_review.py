@@ -264,6 +264,24 @@ def _review_adversarial_signoff_blockers(root: Path) -> dict[str, object]:
     return _check("adversarial_signoff_blockers", passed, "unavailable analyzers block adversarial signoff")
 
 
+def _review_adversarial_continuous_evidence(root: Path) -> dict[str, object]:
+    workflow = (root / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    passed = all(
+        fragment in workflow
+        for fragment in (
+            "schedule:",
+            "require-tool-slots",
+            "incomplete_tool_coverage",
+            "adversarial_evidence_blockers",
+        )
+    )
+    return _check(
+        "adversarial_continuous_evidence_gate",
+        passed,
+        "scheduled adversarial benchmark gates comparable analyzer coverage blockers",
+    )
+
+
 def _review_binary_ninja_contract() -> dict[str, object]:
     passed = "binary-ninja" in _EXPECTED_TOOLS
     return _check("binary_ninja_benchmark_contract", passed, "binary-ninja is an expected analyzer slot")
@@ -494,6 +512,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_vm_resistance_adversarial_scope(root),
         _review_benchmark(root),
         _review_adversarial_signoff_blockers(root),
+        _review_adversarial_continuous_evidence(root),
         _review_binary_ninja_contract(),
         _review_angr_binary_ninja_availability(root),
         _review_corpus_benchmark(root),

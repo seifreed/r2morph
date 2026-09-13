@@ -66,6 +66,11 @@
       "status": "passed"
     },
     {
+      "detail": "scheduled adversarial benchmark gates comparable analyzer coverage blockers",
+      "name": "adversarial_continuous_evidence_gate",
+      "status": "passed"
+    },
+    {
       "detail": "binary-ninja is an expected analyzer slot",
       "name": "binary_ninja_benchmark_contract",
       "status": "passed"
