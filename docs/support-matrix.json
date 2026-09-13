@@ -1268,6 +1268,14 @@
         "threads",
         "fp-simd",
         "ssa-liveness"
+      ],
+      "vm_resistance_gap_scope": [
+        "human-adversarial-validation",
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection"
       ]
     },
     "cells": [

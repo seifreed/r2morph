@@ -39,6 +39,14 @@ _VM_SEMANTIC_GAP_SCOPE = (
     "fp-simd",
     "ssa-liveness",
 )
+_VM_RESISTANCE_GAP_SCOPE = (
+    "human-adversarial-validation",
+    "isa-opcode-diversity",
+    "handler-diversity",
+    "dispatcher-diversity",
+    "anti-tamper",
+    "progressive-bytecode-protection",
+)
 _NATIVE_EVIDENCE_PROFILE = "tier-1-native"
 FULL_EVIDENCE_PERCENT = 100.0
 
@@ -346,6 +354,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                 native_evidence_gap_passes,
             ),
             "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
+            "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
         },
         "cells": cells,
     }

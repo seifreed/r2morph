@@ -398,6 +398,23 @@ def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     )
 
 
+def test_support_matrix_names_vm_resistance_gap_scope() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        summary["vm_resistance_gap_scope"]
+        == [
+            "human-adversarial-validation",
+            "isa-opcode-diversity",
+            "handler-diversity",
+            "dispatcher-diversity",
+            "anti-tamper",
+            "progressive-bytecode-protection",
+        ]
+    )
+
+
 def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
