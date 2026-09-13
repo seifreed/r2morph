@@ -84,11 +84,11 @@ instructions-affected, decompiler-effectiveness, and compatibility/composition
 text by profile so unmeasured cost, ISA coverage, risk, analyzer effectiveness,
 and pass-composition gaps remain visible release gaps instead of being buried in
 each pass row.
-The current summary still reports 12 passes with no per-pass performance
+The current summary still reports 10 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement, 12 with no
 independent decompiler-effectiveness measurement, 12 without contractual
 composition support, and no remaining exhaustive affected-instruction
-catalogue gap: 48 total per-pass maturity field gaps across 4 maturity gap
+catalogue gap: 46 total per-pass maturity field gaps across 4 maturity gap
 categories. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
