@@ -176,6 +176,20 @@ def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     )
 
 
+def test_support_matrix_summarizes_test_evidence_profiles() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    unit_counts = summary["unit_test_evidence_counts"]
+    e2e_counts = summary["e2e_test_evidence_counts"]
+
+    expect(
+        sum(unit_counts.values()) == len(matrix["passes"])
+        and "tests/unit" in unit_counts
+        and sum(e2e_counts.values()) >= len(matrix["passes"])
+        and "tests/integration" in e2e_counts
+    )
+
+
 def test_release_contract_current_tree_is_valid() -> None:
     expect(main() == 0)
 

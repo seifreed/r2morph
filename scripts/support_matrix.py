@@ -18,6 +18,8 @@ _MATURITY_STRING_FIELDS = (
 _MATURITY_SEQUENCE_FIELDS = (
     ("formats", "maturity_format_counts"),
     ("architectures", "maturity_architecture_counts"),
+    ("unit_tests", "unit_test_evidence_counts"),
+    ("e2e_tests", "e2e_test_evidence_counts"),
 )
 
 
@@ -48,6 +50,8 @@ def _maturity_summary_counts(maturity: object) -> dict[str, dict[str, int]]:
         "instructions_affected_counts": {},
         "maturity_format_counts": {},
         "maturity_architecture_counts": {},
+        "unit_test_evidence_counts": {},
+        "e2e_test_evidence_counts": {},
     }
     if not isinstance(maturity, dict):
         return summaries

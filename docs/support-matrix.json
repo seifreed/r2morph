@@ -618,6 +618,18 @@
       },
       "maturity_architecture_counts": {
         "x86-64": 22
+      },
+      "unit_test_evidence_counts": {
+        "tests/unit": 21,
+        "tests/unit/test_code_virtualization_diagnostics.py": 1
+      },
+      "e2e_test_evidence_counts": {
+        "tests/integration": 21,
+        "tests/integration/test_code_virtualization_exception_gate_real.py": 1,
+        "tests/integration/test_code_virtualization_real.py": 1,
+        "tests/integration/test_mutation_fuzzer_real.py": 1,
+        "tests/integration/test_protection_maturity_baseline.py": 1,
+        "tests/product_smoke": 3
       }
     },
     "cells": [
