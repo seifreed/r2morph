@@ -357,6 +357,18 @@ def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
         raise ValueError("non-official targets must remain below official parity")
 
 
+def _check_vm_semantic_fixture_coverage(matrix: dict[str, object]) -> None:
+    coverage = matrix["matrix"]["summary"]["vm_semantic_fixture_coverage"]
+    if coverage != matrix["vm_semantics"]["fixture_coverage"]:
+        raise ValueError("vm semantic fixture coverage summary must match source evidence")
+    if not (ROOT / coverage["artifact"]).exists():
+        raise ValueError("vm semantic fixture coverage artifact is missing")
+    if coverage["fixture_count"] <= 0 or coverage["covered_capability_count"] != coverage["capability_count"]:
+        raise ValueError("vm semantic fixture coverage must cover every declared capability")
+    if coverage["unclassified_count"] != 0:
+        raise ValueError("vm semantic fixture coverage must not contain unclassified fixtures")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -395,6 +407,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     _check_differential_gap_evidence(matrix)
     _check_maturity_gap_evidence(matrix)
     _check_parity_gap_evidence(matrix)
+    _check_vm_semantic_fixture_coverage(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)
 

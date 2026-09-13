@@ -29,6 +29,7 @@ from scripts.check_release_contract import (
     _check_readme_vm_review_scope,
     _check_release_blockers,
     _check_vm_resistance_gap_evidence,
+    _check_vm_semantic_fixture_coverage,
     _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
     _validate_angr_runtime_available,
@@ -488,6 +489,20 @@ def test_support_matrix_names_vm_semantic_fixture_coverage() -> None:
         and "memory_addressing" in coverage["capabilities"]
         and "floating_point_and_simd" in coverage["capabilities"]
     )
+
+
+def test_release_contract_rejects_incomplete_vm_semantic_fixture_coverage() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["vm_semantic_fixture_coverage"]["covered_capability_count"] -= 1
+    matrix["vm_semantics"]["fixture_coverage"] = matrix["matrix"]["summary"]["vm_semantic_fixture_coverage"]
+
+    rejected = False
+    try:
+        _check_vm_semantic_fixture_coverage(matrix)
+    except ValueError as error:
+        rejected = "vm semantic fixture coverage" in str(error)
+
+    expect(rejected)
 
 
 def test_support_matrix_names_vm_semantic_gap_evidence_without_signoff() -> None:
