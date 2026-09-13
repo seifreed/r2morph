@@ -29,7 +29,6 @@ from r2morph.mutations.pattern_rules import (
     match_and_reg_0_all,
     match_dec_reg,
     match_inc_reg,
-    match_lea_reg_off,
     match_mov_reg_0_all,
     match_mov_reg_reg_reg64_reg16,
     match_push_pop_reg64_reg16,
@@ -211,16 +210,6 @@ sub_small_pool = MutationPatternPool(
     mutation_probability=70,
 )
 register_pattern_pool(sub_small_pool)
-
-lea_off_pool = MutationPatternPool(
-    name="lea_off",
-    match_rules=[match_lea_reg_off],
-    generators=[
-        (generator_mov_reg_reg, 1),
-    ],
-    mutation_probability=50,
-)
-register_pattern_pool(lea_off_pool)
 
 junk_enhanced_pool = MutationPatternPool(
     name="junk_enhanced",

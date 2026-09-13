@@ -44,6 +44,17 @@ def test_enumerate_substitutions_reports_per_match_edits_without_mutating():
     expect(instructions[0]["disasm"] == "mov eax, 0")
 
 
+def test_pattern_substitution_rejects_lea_memory_as_register_move() -> None:
+    instructions = [
+        {"addr": 0x1000, "mnemonic": "lea", "disasm": "lea rbx, [rsp - 0x10]", "size": 5},
+        {"addr": 0x1005, "mnemonic": "ret", "disasm": "ret", "size": 1},
+    ]
+
+    edits = PatternMatchIntegration().enumerate_substitutions(instructions)
+
+    expect(all(edit["pool"] != "lea_off" for edit in edits))
+
+
 def test_pattern_substitution_produces_valid_size_reducing_mutations(
     deterministic_pattern_subst_elf,
 ):
