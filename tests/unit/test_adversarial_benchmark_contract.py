@@ -265,6 +265,10 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["adversarial_evidence_blockers"]["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
         and summary["adversarial_evidence_blockers"]["unavailable_reasons_by_tool"]
         == {"ghidra": {"missing local executable": 1}}
+        and summary["adversarial_evidence_blocker_totals"]["blocker_categories"]
+        == len(summary["adversarial_evidence_blockers"])
+        and summary["adversarial_evidence_blocker_totals"]["tools_without_full_completion"] == _EXPECTED_TOOL_COUNT
+        and summary["adversarial_evidence_blocker_totals"]["incomplete_tool_coverage"] == _EXPECTED_TOOL_COUNT
     )
 
 

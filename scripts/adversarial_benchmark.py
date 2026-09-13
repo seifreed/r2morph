@@ -826,6 +826,9 @@ def _campaign_summary(
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
     }
     summary["adversarial_evidence_blockers"] = _adversarial_evidence_blockers(summary, pass_names)
+    summary["adversarial_evidence_blocker_totals"] = _adversarial_evidence_blocker_totals(
+        summary["adversarial_evidence_blockers"]
+    )
     return summary
 
 
@@ -855,6 +858,12 @@ def _adversarial_evidence_blockers(
         if isinstance(value, (list, dict)) and value:
             blockers[field] = value
     return blockers
+
+
+def _adversarial_evidence_blocker_totals(blockers: dict[str, object]) -> dict[str, int]:
+    totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
+    totals["blocker_categories"] = len(blockers)
+    return dict(sorted(totals.items()))
 
 
 def _pass_status_count(samples: list[dict[str, object]], status: str) -> int:

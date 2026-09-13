@@ -133,8 +133,10 @@ records completed-run coverage by analyzer tool so campaigns remain comparable
 when a licensed or local analyzer is missing. A compact
 `adversarial_evidence_blockers` map records missing pass rows, passes without
 applications, pass errors, incomplete tool coverage, unavailable analyzer
-runs with reasons, and non-completed analyzer runs; it must be empty before the
-adversarial benchmark can support release signoff.
+runs with reasons, and non-completed analyzer runs. Companion
+`adversarial_evidence_blocker_totals` counts keep the remaining signoff blockers
+visible without expanding every row; both must be empty before the adversarial
+benchmark can support release signoff.
 Single-fixture benchmark artifacts also expose `release_signoff_blockers` so
 unavailable analyzer slots cannot be mistaken for completed adversarial
 coverage.
