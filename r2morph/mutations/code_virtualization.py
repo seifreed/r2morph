@@ -912,6 +912,7 @@ class CodeVirtualizationPass(MutationPass):
             opcode_without_repeat.startswith(
                 (
                     "bnd",
+                    "bound",
                     "clac",
                     "cldemote",
                     "clflush",

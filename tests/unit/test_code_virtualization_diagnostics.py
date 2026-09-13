@@ -958,6 +958,14 @@ def test_bounds_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_legacy_bounds_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "bound eax, qword [rax]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_virtual_machine_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "vmcall"}
