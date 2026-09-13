@@ -29,6 +29,7 @@ from scripts.check_release_contract import (
     _validate_independent_review_artifact,
     _validate_independent_review_freshness,
     _validate_inventory,
+    _validate_release_blockers_text,
     _validate_vm_resistance_artifacts,
     main,
 )
@@ -443,6 +444,18 @@ def test_release_contract_documentation_claims_remain_current() -> None:
 
 def test_release_blockers_track_open_changes_md_gaps() -> None:
     expect(_check_release_blockers() is None)
+
+
+def test_release_contract_rejects_unlinked_release_blocker() -> None:
+    blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
+
+    rejected = False
+    try:
+        _validate_release_blockers_text(blockers.replace("Evidence map:", "Evidence:", 1))
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
 
 
 def test_release_contract_rejects_overstated_release_claims() -> None:

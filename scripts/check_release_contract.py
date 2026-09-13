@@ -105,6 +105,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "anti-tamper and progressive bytecode protection",
     "external human review records signoff",
 )
+_RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
 
 
 def _load_matrix() -> dict[str, object]:
@@ -617,11 +618,22 @@ def _check_documentation_claims() -> None:
         raise ValueError("compatibility corpus must retain the Binary Ninja availability-slot contract")
 
 
-def _check_release_blockers() -> None:
-    blockers = " ".join((ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8").split())
+def _validate_release_blockers_text(blockers: str) -> None:
+    if any(blocker_id not in blockers for blocker_id in _RELEASE_BLOCKER_IDS):
+        raise ValueError("release blockers ledger is missing stable blocker IDs")
     for fragment in _RELEASE_BLOCKER_FRAGMENTS:
         if fragment not in blockers:
             raise ValueError(f"release blockers ledger is missing: {fragment}")
+    for blocker_id in _RELEASE_BLOCKER_IDS:
+        _, tail = blockers.split(blocker_id, 1)
+        section = tail.split("RB-", 1)[0]
+        if "Evidence map:" not in section or not _MARKDOWN_LINK_PATTERN.search(section):
+            raise ValueError(f"release blocker is missing evidence links: {blocker_id}")
+
+
+def _check_release_blockers() -> None:
+    blockers = " ".join((ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8").split())
+    _validate_release_blockers_text(blockers)
 
 
 def _check_ci_contract() -> None:
