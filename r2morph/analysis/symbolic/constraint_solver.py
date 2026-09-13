@@ -9,6 +9,8 @@ import logging
 import time
 from typing import Any
 
+from r2morph.adapters.angr_import import import_angr_modules
+
 from . import constraint_solver_analysis as _constraint_solver_analysis
 from . import constraint_solver_models as _constraint_solver_models
 from . import constraint_solver_parsing as _constraint_solver_parsing
@@ -25,15 +27,10 @@ try:
 except ImportError:
     Z3_AVAILABLE = False
 
-try:
-    import angr as _angr_mod
-    import claripy as _claripy_mod
-
-    ANGR_AVAILABLE = True
-    _angr = _angr_mod
-    _claripy = _claripy_mod
-except (ImportError, DeprecationWarning):
-    ANGR_AVAILABLE = False
+_angr_import = import_angr_modules(claripy=True)
+ANGR_AVAILABLE = _angr_import.available
+_angr = _angr_import.angr
+_claripy = _angr_import.claripy
 
 z3 = _z3
 angr = _angr

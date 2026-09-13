@@ -19,17 +19,13 @@ if TYPE_CHECKING:
 
     ANGR_AVAILABLE = True
 else:
-    try:
-        import angr
-        from angr import Project
-        from angr.analyses import CFGFast
+    from r2morph.adapters.angr_import import import_angr_modules
 
-        ANGR_AVAILABLE = True
-    except (ImportError, DeprecationWarning):
-        ANGR_AVAILABLE = False
-        angr = None
-        Project = None
-        CFGFast = None
+    _angr_import = import_angr_modules(project=True, cfg_fast=True)
+    ANGR_AVAILABLE = _angr_import.available
+    angr = _angr_import.angr
+    Project = _angr_import.project
+    CFGFast = _angr_import.cfg_fast
 
 from r2morph.analysis.cfg import ControlFlowGraph
 from r2morph.core.binary import Binary

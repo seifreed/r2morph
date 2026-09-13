@@ -10,10 +10,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import angr
 else:
-    try:
-        import angr
-    except (ImportError, DeprecationWarning):
-        angr = None
+    from r2morph.adapters.angr_import import import_angr_modules
+
+    angr = import_angr_modules().angr
 
 from r2morph.analysis.symbolic.path_explorer_models import ExplorationResult, ExplorationStrategy
 from r2morph.analysis.symbolic.path_explorer_results import (

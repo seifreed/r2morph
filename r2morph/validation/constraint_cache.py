@@ -6,19 +6,15 @@ import logging
 import time
 from typing import Any
 
+from r2morph.adapters.angr_import import import_angr_modules
 from r2morph.validation.constraint_cache_models import ConstraintCacheEntry
 
 angr: Any
 claripy: Any
-try:
-    import angr
-    import claripy
-
-    ANGR_AVAILABLE = True
-except (ImportError, DeprecationWarning):
-    ANGR_AVAILABLE = False
-    angr = None
-    claripy = None
+_angr_import = import_angr_modules(claripy=True)
+ANGR_AVAILABLE = _angr_import.available
+angr = _angr_import.angr
+claripy = _angr_import.claripy
 
 logger = logging.getLogger(__name__)
 

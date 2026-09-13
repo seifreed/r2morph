@@ -5,16 +5,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from r2morph.adapters.angr_import import import_angr_modules
 from r2morph.analysis.cfg import ControlFlowGraph
 
 angr: Any
-try:
-    import angr
-
-    ANGR_AVAILABLE = True
-except (ImportError, DeprecationWarning):
-    ANGR_AVAILABLE = False
-    angr = None
+_angr_import = import_angr_modules()
+ANGR_AVAILABLE = _angr_import.available
+angr = _angr_import.angr
 
 logger = logging.getLogger(__name__)
 

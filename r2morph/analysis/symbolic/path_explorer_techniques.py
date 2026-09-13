@@ -9,11 +9,13 @@ if TYPE_CHECKING:
     import angr
     from angr.exploration_techniques import ExplorationTechnique
 else:
-    try:
-        import angr
-        from angr.exploration_techniques import ExplorationTechnique
-    except (ImportError, DeprecationWarning):
-        angr = None
+    from r2morph.adapters.angr_import import import_angr_modules
+
+    _angr_import = import_angr_modules(exploration_technique=True)
+    angr = _angr_import.angr
+    if _angr_import.exploration_technique is not None:
+        ExplorationTechnique = _angr_import.exploration_technique
+    else:
 
         class ExplorationTechnique:
             """Fallback ExplorationTechnique when angr is not installed."""

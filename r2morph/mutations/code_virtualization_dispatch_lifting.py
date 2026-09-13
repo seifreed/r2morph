@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_region import extract_region
 
 _MAX_DISPATCH_INSNS = 256
 _MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
+_COMPUTED_SWITCH_KINDS = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +82,16 @@ def block_ops(binary: Any, entry: int, by_addr: dict[int, dict[str, Any]], reach
     return [ops_by_addr[addr] for addr in sorted(ops_by_addr)]
 
 
+def _has_resolved_switch_marker(ops: list[dict[str, Any]]) -> bool:
+    for op in ops:
+        if op.get("type") not in _COMPUTED_SWITCH_KINDS:
+            continue
+        flags = op.get("flags")
+        if isinstance(flags, list) and any(str(flag).startswith("switch.") for flag in flags):
+            return True
+    return False
+
+
 def gather_cfg_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
     """Gather a complete function only when r2 resolved a switch edge set."""
     entry = func["addr"]
@@ -93,7 +104,8 @@ def gather_cfg_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | 
         return None
     reachable = reachable_blocks(by_addr, entry)
     if not any(isinstance(by_addr[addr].get("switch_op"), dict) for addr in reachable):
-        return None
+        fallback_ops = gather_dispatch_ops(binary, func)
+        return fallback_ops if fallback_ops is not None and _has_resolved_switch_marker(fallback_ops) else None
     ops = block_ops(binary, entry, by_addr, reachable)
     return ops or None
 

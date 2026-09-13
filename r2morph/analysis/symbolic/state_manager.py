@@ -10,6 +10,7 @@ import heapq
 import logging
 from typing import Any
 
+from r2morph.adapters.angr_import import import_angr_modules
 from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 from r2morph.analysis.symbolic.state_manager_policies import (
     merge_equivalent_states,
@@ -19,13 +20,9 @@ from r2morph.analysis.symbolic.state_manager_policies import (
 )
 
 _angr: Any = None
-try:
-    import angr as _angr_mod
-
-    ANGR_AVAILABLE = True
-    _angr = _angr_mod
-except (ImportError, DeprecationWarning):
-    ANGR_AVAILABLE = False
+_angr_import = import_angr_modules()
+ANGR_AVAILABLE = _angr_import.available
+_angr = _angr_import.angr
 
 angr = _angr
 

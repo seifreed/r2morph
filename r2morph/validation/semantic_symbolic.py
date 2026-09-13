@@ -6,23 +6,15 @@ import logging
 from importlib import import_module
 from typing import Any
 
+from r2morph.adapters.angr_import import import_angr_modules
 from r2morph.validation.semantic_models import ObservableComparison
 
 angr: Any
 claripy: Any
-try:
-    import claripy
-
-except (ImportError, DeprecationWarning):
-    claripy = None
-
-try:
-    import angr
-
-    ANGR_AVAILABLE = True
-except (ImportError, DeprecationWarning):
-    ANGR_AVAILABLE = False
-    angr = None
+_angr_import = import_angr_modules(claripy=True)
+ANGR_AVAILABLE = _angr_import.available
+angr = _angr_import.angr
+claripy = _angr_import.claripy
 
 logger = logging.getLogger(__name__)
 

@@ -110,6 +110,24 @@ def test_symbolic_names_are_part_of_the_lazy_public_api() -> None:
         raise AssertionError("lazy __getattr__ must reject unknown names")
 
 
+def test_optional_angr_import_boundary_handles_known_external_warning() -> None:
+    probe = (
+        "from r2morph.adapters.angr_import import import_angr_modules\n"
+        "stack = import_angr_modules(claripy=True, project=True, cfg_fast=True, exploration_technique=True)\n"
+        "assert stack.available, 'angr stack should import when installed'\n"
+    )
+    result = run_command(
+        [sys.executable, "-W", "error", "-c", probe],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    expect(
+        result.returncode == 0,
+        f"fresh-interpreter angr import probe failed\n" f"stdout:\n{result.stdout}\n" f"stderr:\n{result.stderr}",
+    )
+
+
 def test_benchmark_domain_classes_are_not_collected_by_pytest() -> None:
     """``TestSample`` / ``TestSeverity`` are domain types, not test classes.
 
