@@ -335,6 +335,28 @@ def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
                 raise ValueError(f"maturity gap evidence path is missing: {gap}.{evidence_path}")
 
 
+def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["parity_gap_evidence"]
+    blockers = summary["parity_evidence_blockers"]
+    preview_targets = evidence["preview_evidence_targets"]
+    zero_targets = evidence["zero_evidence_targets"]
+    parity_targets = sorted(preview_targets + zero_targets, key=lambda row: (row["format"], row["architecture"]))
+    if parity_targets != summary["non_official_gap_targets"]:
+        raise ValueError("parity gap evidence must cover every non-official target")
+    if blockers["parity_gap_scope"] != summary["parity_gap_scope"]:
+        raise ValueError("parity gap scope blockers must match summary")
+    if blockers["non_official_gap_targets"] != summary["non_official_gap_targets"]:
+        raise ValueError("parity target blockers must match summary")
+    totals = summary["parity_blocker_totals"]
+    if totals["non_official_gap_targets"] != len(summary["non_official_gap_targets"]):
+        raise ValueError("parity target blocker total must match summary")
+    if any(
+        row["evidence_percent"] >= summary["official_evidence_percent"] for row in blockers["non_official_gap_targets"]
+    ):
+        raise ValueError("non-official targets must remain below official parity")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -372,6 +394,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     _check_adversarial_benchmark_evidence(matrix)
     _check_differential_gap_evidence(matrix)
     _check_maturity_gap_evidence(matrix)
+    _check_parity_gap_evidence(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)
 
