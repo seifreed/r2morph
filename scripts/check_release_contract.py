@@ -68,6 +68,7 @@ _MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
 _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
     ROOT / "docs" / "compatibility-corpus.md",
+    ROOT / "docs" / "release-blockers.md",
 )
 _RELEASE_HONESTY_FILES = (
     ROOT / "README.md",
