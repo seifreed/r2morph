@@ -459,7 +459,7 @@
         ],
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample; selected passes are exercised by the compatibility corpus.",
         "invariants": "Structural validity and bounded runtime parity are measured by the compatibility corpus for selected passes.",
-        "instructions_affected": "Not exhaustively catalogued.",
+        "instructions_affected": "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.",
         "false_positive_risk": "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.",
         "unit_tests": [
           "tests/unit"
@@ -802,8 +802,9 @@
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       },
       "instructions_affected_counts": {
-        "Not exhaustively catalogued.": 18,
+        "Not exhaustively catalogued.": 12,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
+        "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
       },
       "maturity_format_counts": {
@@ -887,17 +888,11 @@
         "instructions_affected": [
           "anti-disassembly",
           "api-hashing",
-          "block-reordering",
           "code-mobility",
-          "constant-unfolding",
-          "control-flow-flattening",
           "data-flow-mutation",
-          "dead-code-injection",
           "function-outlining",
           "import-obfuscation",
-          "instruction-expansion",
           "opaque-predicates",
-          "pattern-substitution",
           "polymorphic-engine",
           "self-modifying-code",
           "short-jump-patching",
@@ -920,9 +915,6 @@
           "instructions_affected",
           "performance"
         ],
-        "block-reordering": [
-          "instructions_affected"
-        ],
         "code-mobility": [
           "compatibility",
           "decompiler_effectiveness",
@@ -930,21 +922,12 @@
           "instructions_affected",
           "performance"
         ],
-        "constant-unfolding": [
-          "instructions_affected"
-        ],
-        "control-flow-flattening": [
-          "instructions_affected"
-        ],
         "data-flow-mutation": [
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
           "instructions_affected",
           "performance"
-        ],
-        "dead-code-injection": [
-          "instructions_affected"
         ],
         "function-outlining": [
           "compatibility",
@@ -960,9 +943,6 @@
           "instructions_affected",
           "performance"
         ],
-        "instruction-expansion": [
-          "instructions_affected"
-        ],
         "nop": [
           "decompiler_effectiveness"
         ],
@@ -972,9 +952,6 @@
           "false_positive_risk",
           "instructions_affected",
           "performance"
-        ],
-        "pattern-substitution": [
-          "instructions_affected"
         ],
         "polymorphic-engine": [
           "compatibility",
@@ -1124,17 +1101,11 @@
           "instructions_affected": [
             "anti-disassembly",
             "api-hashing",
-            "block-reordering",
             "code-mobility",
-            "constant-unfolding",
-            "control-flow-flattening",
             "data-flow-mutation",
-            "dead-code-injection",
             "function-outlining",
             "import-obfuscation",
-            "instruction-expansion",
             "opaque-predicates",
-            "pattern-substitution",
             "polymorphic-engine",
             "self-modifying-code",
             "short-jump-patching",
@@ -1157,9 +1128,6 @@
             "instructions_affected",
             "performance"
           ],
-          "block-reordering": [
-            "instructions_affected"
-          ],
           "code-mobility": [
             "compatibility",
             "decompiler_effectiveness",
@@ -1167,21 +1135,12 @@
             "instructions_affected",
             "performance"
           ],
-          "constant-unfolding": [
-            "instructions_affected"
-          ],
-          "control-flow-flattening": [
-            "instructions_affected"
-          ],
           "data-flow-mutation": [
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
             "instructions_affected",
             "performance"
-          ],
-          "dead-code-injection": [
-            "instructions_affected"
           ],
           "function-outlining": [
             "compatibility",
@@ -1197,9 +1156,6 @@
             "instructions_affected",
             "performance"
           ],
-          "instruction-expansion": [
-            "instructions_affected"
-          ],
           "nop": [
             "decompiler_effectiveness"
           ],
@@ -1209,9 +1165,6 @@
             "false_positive_risk",
             "instructions_affected",
             "performance"
-          ],
-          "pattern-substitution": [
-            "instructions_affected"
           ],
           "polymorphic-engine": [
             "compatibility",
@@ -1259,14 +1212,14 @@
       "maturity_blocker_totals": {
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
-        "passes_with_maturity_field_gaps": 21,
-        "total_maturity_blockers": 88,
-        "total_maturity_field_gaps": 69,
+        "passes_with_maturity_field_gaps": 15,
+        "total_maturity_blockers": 82,
+        "total_maturity_field_gaps": 63,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 15,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 18
+        "instructions_affected_gap_passes": 12
       },
       "vm_semantic_gap_scope": [
         "memory",
