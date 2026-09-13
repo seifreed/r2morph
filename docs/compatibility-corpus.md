@@ -45,6 +45,12 @@ campaign triage.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.
+The repository-local single-fixture refresh at `736c7895` records this
+availability slot in
+[`protection-adversarial-benchmark.json`](protection-adversarial-benchmark.json)
+(`SHA-256 d73a447dd8ee846d63641f2f0fbc5110346e50fbf137d55cdd0d644238e7553f`):
+`angr`, Unicorn, radare2, objdump, and the custom analyzer completed, while
+Binary Ninja, IDA, Ghidra, and Triton are explicit local availability gaps.
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
 bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas
