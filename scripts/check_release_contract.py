@@ -538,6 +538,8 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
         raise ValueError("adversarial benchmark artifact must contain tools")
     if report.get("tool_summary") != _tool_summary([{"tools": tools}]):
         raise ValueError("adversarial benchmark artifact tool summary must match tool rows")
+    if report.get("release_signoff_blockers") != _adversarial_release_signoff_blockers(report):
+        raise ValueError("adversarial benchmark artifact must expose release signoff blockers")
     observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
     if observed != ADVERSARIAL_TOOL_SLOTS:
         raise ValueError("adversarial benchmark artifact must contain every analyzer slot")
@@ -553,6 +555,21 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
                 raise ValueError("unavailable analyzer rows must include a reason")
         else:
             raise ValueError("analyzer rows must be completed or unavailable")
+
+
+def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str, object]:
+    tool_summary = report.get("tool_summary")
+    if not isinstance(tool_summary, dict):
+        return {}
+    unavailable = {
+        tool: summary["unavailable_reasons"]
+        for tool, summary in tool_summary.items()
+        if isinstance(tool, str)
+        and isinstance(summary, dict)
+        and summary.get("unavailable", 0) > 0
+        and isinstance(summary.get("unavailable_reasons"), dict)
+    }
+    return {"unavailable_analyzers": unavailable} if unavailable else {}
 
 
 def _check_adversarial_benchmark_artifacts() -> None:

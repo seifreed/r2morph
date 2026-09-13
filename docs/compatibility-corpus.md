@@ -134,6 +134,9 @@ when a licensed or local analyzer is missing. A compact
 applications, pass errors, incomplete tool coverage, unavailable analyzer
 runs with reasons, and non-completed analyzer runs; it must be empty before the
 adversarial benchmark can support release signoff.
+Single-fixture benchmark artifacts also expose `release_signoff_blockers` so
+unavailable analyzer slots cannot be mistaken for completed adversarial
+coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and passes without applications fail the run.
 

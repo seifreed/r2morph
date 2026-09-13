@@ -13,6 +13,22 @@
     }
   ],
   "protected": "protected",
+  "release_signoff_blockers": {
+    "unavailable_analyzers": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 1
+      },
+      "ghidra": {
+        "executable 'ghidra' is unavailable": 1
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 1
+      },
+      "triton": {
+        "module 'triton' is unavailable": 1
+      }
+    }
+  },
   "schema_version": 3,
   "tool_summary": {
     "angr": {
