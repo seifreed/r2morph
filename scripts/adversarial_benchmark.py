@@ -652,6 +652,7 @@ def benchmark_pair(
         "original": original.name,
         "protected": protected_path.name,
         "tools": tools,
+        "tool_summary": _tool_summary([{"tools": tools}]),
     }
     if protected is None:
         report["passes"] = pass_rows

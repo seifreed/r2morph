@@ -10,10 +10,12 @@ import tomllib
 from pathlib import Path
 
 try:
+    from scripts.adversarial_benchmark import _tool_summary
     from scripts.independent_review import review as build_independent_review
     from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
     from scripts.support_matrix import build_matrix
 except ModuleNotFoundError:
+    from adversarial_benchmark import _tool_summary
     from independent_review import review as build_independent_review
     from protection_maturity_baseline import CORPUS_PASS_NAMES
     from support_matrix import build_matrix
@@ -462,6 +464,8 @@ def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
     tools = report.get("tools")
     if not isinstance(tools, list):
         raise ValueError("adversarial benchmark artifact must contain tools")
+    if report.get("tool_summary") != _tool_summary([{"tools": tools}]):
+        raise ValueError("adversarial benchmark artifact tool summary must match tool rows")
     observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
     if observed != ADVERSARIAL_TOOL_SLOTS:
         raise ValueError("adversarial benchmark artifact must contain every analyzer slot")

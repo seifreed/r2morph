@@ -14,6 +14,109 @@
   ],
   "protected": "protected",
   "schema_version": 3,
+  "tool_summary": {
+    "angr": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.1586650419048965,
+      "total_functions_delta": 62,
+      "unavailable": 0
+    },
+    "binary-ninja": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "module 'binaryninja' is unavailable": 1
+      }
+    },
+    "custom": {
+      "changed": 0,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 4,
+      "unavailable": 0
+    },
+    "ghidra": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "executable 'ghidra' is unavailable": 1
+      }
+    },
+    "ida-pro": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "executable 'idat' is unavailable": 1
+      }
+    },
+    "objdump": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_instruction_lines_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_instruction_lines_delta": 13,
+      "unavailable": 0
+    },
+    "radare2": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 4,
+      "unavailable": 0
+    },
+    "triton": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "module 'triton' is unavailable": 1
+      }
+    },
+    "unicorn": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.009680916089564562,
+      "unavailable": 0
+    }
+  },
   "tools": [
     {
       "changed": true,

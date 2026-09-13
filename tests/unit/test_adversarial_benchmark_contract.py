@@ -65,6 +65,22 @@ def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:
     )
 
 
+def test_adversarial_benchmark_pair_report_summarizes_tool_rows() -> None:
+    report = benchmark_pair(_FIXTURE, _FIXTURE)
+
+    expect(report["tool_summary"] == _tool_summary([{"tools": report["tools"]}]))
+
+
+def test_adversarial_benchmark_artifact_summary_matches_tool_rows() -> None:
+    report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["tool_summary"] == _tool_summary([{"tools": report["tools"]}])
+        and report["tool_summary"]["angr"]["completed"] == 1
+        and report["tool_summary"]["binary-ninja"]["unavailable"] == 1
+    )
+
+
 def test_adversarial_benchmark_report_records_tool_evidence_or_reason() -> None:
     report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
 
