@@ -87,7 +87,8 @@ pass-composition compatibility. Entries marked as not measured are deliberate
 release gaps, not implied support.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
-FP/SIMD, and SSA/liveness remain machine-readable VM blockers.
+FP/SIMD, and SSA/liveness remain machine-readable VM blockers. The companion
+`total_vm_semantic_blockers` count is currently 9 VM semantic blockers.
 
 The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
@@ -100,4 +101,5 @@ target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
 artifacts also carry `adversarial_validation.status` as
 `pending-human-adversarial-review`, with seed diversity recorded as the current
-evidence quality.
+evidence quality. The generated `total_vm_resistance_blockers` count is
+currently 6 VM resistance blockers.

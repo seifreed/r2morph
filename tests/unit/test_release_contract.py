@@ -412,6 +412,7 @@ def test_support_matrix_names_vm_semantic_gap_scope() -> None:
         summary["vm_semantic_gap_scope"] == expected
         and summary["vm_semantic_evidence_blockers"]["vm_semantic_gap_scope"] == expected
         and summary["vm_semantic_blocker_totals"]["vm_semantic_gap_scope"] == len(expected)
+        and summary["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] == len(expected)
     )
 
 
@@ -431,6 +432,7 @@ def test_support_matrix_names_vm_resistance_gap_scope() -> None:
         summary["vm_resistance_gap_scope"] == expected
         and summary["vm_resistance_evidence_blockers"]["vm_resistance_gap_scope"] == expected
         and summary["vm_resistance_blocker_totals"]["vm_resistance_gap_scope"] == len(expected)
+        and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(expected)
     )
 
 

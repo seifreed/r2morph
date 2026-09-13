@@ -1290,6 +1290,7 @@
         ]
       },
       "vm_semantic_blocker_totals": {
+        "total_vm_semantic_blockers": 9,
         "vm_semantic_gap_scope": 9
       },
       "vm_resistance_gap_scope": [
@@ -1311,6 +1312,7 @@
         ]
       },
       "vm_resistance_blocker_totals": {
+        "total_vm_resistance_blockers": 6,
         "vm_resistance_gap_scope": 6
       }
     },

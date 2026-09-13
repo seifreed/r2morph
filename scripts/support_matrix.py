@@ -188,7 +188,10 @@ def _vm_semantic_evidence_blockers() -> dict[str, object]:
 
 
 def _vm_semantic_blocker_totals() -> dict[str, int]:
-    return {"vm_semantic_gap_scope": len(_VM_SEMANTIC_GAP_SCOPE)}
+    return {
+        "total_vm_semantic_blockers": len(_VM_SEMANTIC_GAP_SCOPE),
+        "vm_semantic_gap_scope": len(_VM_SEMANTIC_GAP_SCOPE),
+    }
 
 
 def _vm_resistance_evidence_blockers() -> dict[str, object]:
@@ -196,7 +199,10 @@ def _vm_resistance_evidence_blockers() -> dict[str, object]:
 
 
 def _vm_resistance_blocker_totals() -> dict[str, int]:
-    return {"vm_resistance_gap_scope": len(_VM_RESISTANCE_GAP_SCOPE)}
+    return {
+        "total_vm_resistance_blockers": len(_VM_RESISTANCE_GAP_SCOPE),
+        "vm_resistance_gap_scope": len(_VM_RESISTANCE_GAP_SCOPE),
+    }
 
 
 def _coverage_percent(evidenced: int, total: int) -> float:

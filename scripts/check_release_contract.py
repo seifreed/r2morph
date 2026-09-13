@@ -379,6 +379,8 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         ),
         f"{summary['maturity_blocker_totals']['total_maturity_field_gaps']} total per-pass maturity field gaps",
         f"{summary['maturity_blocker_totals']['maturity_gap_categories']} maturity gap categories",
+        f"{summary['vm_semantic_blocker_totals']['total_vm_semantic_blockers']} VM semantic blockers",
+        f"{summary['vm_resistance_blocker_totals']['total_vm_resistance_blockers']} VM resistance blockers",
         f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
         f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
         f"{bytecode['all_handler_stride_unique_count']} handler stride values",
