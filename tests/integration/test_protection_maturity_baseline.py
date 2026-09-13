@@ -7,6 +7,7 @@ from pathlib import Path
 
 from r2morph.adapters.process import run_process
 from scripts.protection_maturity_baseline import (
+    _PASS_TYPES,
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
@@ -571,6 +572,14 @@ def test_render_result_counts_missing_static_metric_pairs() -> None:
 
 def test_parse_pass_names_expands_the_public_corpus_selection() -> None:
     expect(_parse_pass_names("all") == CORPUS_PASS_NAMES)
+
+
+def test_parse_pass_names_accepts_extended_passes_without_expanding_all() -> None:
+    selected = _parse_pass_names("AntiDisassembly,APIHashing,PolymorphicEngine")
+
+    expect(
+        selected == ("AntiDisassembly", "APIHashing", "PolymorphicEngine") and set(CORPUS_PASS_NAMES) < set(_PASS_TYPES)
+    )
 
 
 def test_baseline_script_runs_directly_from_the_repository(tmp_path: Path) -> None:

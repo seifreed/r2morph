@@ -23,15 +23,27 @@ from r2morph.mutations import (
     BlockReorderingPass,
     ConstantUnfoldingPass,
     ControlFlowFlatteningPass,
+    DataFlowMutationPass,
     DeadCodeInjectionPass,
     InstructionExpansionPass,
     InstructionSubstitutionPass,
     NopInsertionPass,
     RegisterSubstitutionPass,
 )
+from r2morph.mutations.anti_disassembly import AntiDisassemblyPass
+from r2morph.mutations.api_hashing import APIHashingPass
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.code_mobility import CodeMobilityPass
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.function_outlining import FunctionOutliningPass
+from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
+from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
+from r2morph.mutations.polymorphic_engine import PolymorphicEnginePass
+from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
+from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
+from r2morph.mutations.stack_strings import StackStringsPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.integration.elf_emulator import emulate_exit_code
 
 _ELF_MAGIC = b"\x7fELF"
@@ -69,28 +81,52 @@ CORPUS_PASS_NAMES = (
     "RegisterSubstitution",
 )
 _PASS_TYPES: dict[str, type[MutationPass]] = {
+    "AntiDisassembly": AntiDisassemblyPass,
+    "APIHashing": APIHashingPass,
     "BlockReordering": BlockReorderingPass,
+    "CodeMobility": CodeMobilityPass,
     "CodeVirtualization": CodeVirtualizationPass,
     "ConstantUnfolding": ConstantUnfoldingPass,
     "ControlFlowFlattening": ControlFlowFlatteningPass,
+    "DataFlowMutation": DataFlowMutationPass,
     "DeadCodeInjection": DeadCodeInjectionPass,
+    "FunctionOutlining": FunctionOutliningPass,
+    "ImportObfuscation": ImportTableObfuscationPass,
     "InstructionExpansion": InstructionExpansionPass,
     "InstructionSubstitution": InstructionSubstitutionPass,
     "NopInsertion": NopInsertionPass,
+    "OpaquePredicates": OpaquePredicatePass,
     "PatternSubstitution": PatternSubstitutionPass,
+    "PolymorphicEngine": PolymorphicEnginePass,
     "RegisterSubstitution": RegisterSubstitutionPass,
+    "SelfModifyingCode": SelfModifyingCodePass,
+    "ShortJumpPatching": ShortJumpPatchingPass,
+    "StackStrings": StackStringsPass,
+    "StringObfuscation": StringObfuscationPass,
 }
 _PASS_LABELS = {
+    "AntiDisassembly": "anti-disassembly",
+    "APIHashing": "api-hashing",
     "BlockReordering": "block-reordering",
+    "CodeMobility": "code-mobility",
     "CodeVirtualization": "code-virtualization",
     "ConstantUnfolding": "constant-unfolding",
     "ControlFlowFlattening": "control-flow-flattening",
+    "DataFlowMutation": "data-flow-mutation",
     "DeadCodeInjection": "dead-code-injection",
+    "FunctionOutlining": "function-outlining",
+    "ImportObfuscation": "import-obfuscation",
     "InstructionExpansion": "instruction-expansion",
     "InstructionSubstitution": "instruction-substitution",
     "NopInsertion": "nop-insertion",
+    "OpaquePredicates": "opaque-predicates",
     "PatternSubstitution": "pattern-substitution",
+    "PolymorphicEngine": "polymorphic-engine",
     "RegisterSubstitution": "register-substitution",
+    "SelfModifyingCode": "self-modifying-code",
+    "ShortJumpPatching": "short-jump-patching",
+    "StackStrings": "stack-strings",
+    "StringObfuscation": "string-obfuscation",
 }
 _COVERAGE_PERCENT_FIELDS = {
     "runtime_observable": "runtime_observable_coverage_percent",
@@ -806,7 +842,7 @@ def _parse_pass_names(value: str) -> tuple[str, ...]:
         return CORPUS_PASS_NAMES
     names = tuple(item.strip() for item in value.split(",") if item.strip())
     if not names or any(name not in _PASS_TYPES for name in names):
-        valid = ", ".join((*CORPUS_PASS_NAMES, "all"))
+        valid = ", ".join((*sorted(_PASS_TYPES), "all"))
         raise ValueError(f"unknown pass in {value!r}; choose from {valid}")
     if len(set(names)) != len(names):
         raise ValueError("--passes must not contain duplicates")

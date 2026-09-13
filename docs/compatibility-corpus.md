@@ -41,7 +41,9 @@ bounded matrix record per sample/pass pair and an aggregate result for each
 pass. The scheduled workflow fails when a selected pass does not apply to at
 least one fixture, so an unchanged output cannot count as evidence for that
 pass. Pass summaries retain bounded omission/error reasons for comparable
-campaign triage.
+campaign triage. The harness also accepts explicit non-default pass names for
+expanded campaigns; `all` remains the ten-pass public corpus selection until
+those additional passes have comparable applied-run evidence.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.
