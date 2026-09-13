@@ -46,6 +46,7 @@ _PREVIEW_BYTES = 32
 _FULL_COVERAGE_PERCENT = 100.0
 _COMPLETE_RUN_FIELD = 0
 _MISSING_RUN_FIELD = 1
+_DIFFERENTIAL_PLATFORM_SCOPE = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -806,16 +807,20 @@ def _parse_pass_names(value: str) -> tuple[str, ...]:
 
 def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
+    dataset: Path | None = None,
 ) -> dict[str, object]:
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
     summaries = {name: result["summary"] for name, result in rendered.items()}
+    campaign_summary = _multi_pass_campaign_summary(summaries)
+    campaign_summary["platform_scope"] = dict(_DIFFERENTIAL_PLATFORM_SCOPE)
+    campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
     return {
         "schema_version": 3,
         "measurement": "protection-maturity-corpus-by-pass",
         "pass_names": list(rendered),
         "passes": rendered,
         "summary": summaries,
-        "campaign_summary": _multi_pass_campaign_summary(summaries),
+        "campaign_summary": campaign_summary,
     }
 
 
@@ -1074,7 +1079,7 @@ def main() -> None:
         }
     report = _render_result(measurements[pass_names[0]], pass_names[0])
     if len(pass_names) > 1:
-        report = _render_multi_pass_result(measurements)
+        report = _render_multi_pass_result(measurements, args.dataset if args.all_fixtures else None)
     if args.require_applied:
         passes_without_mutations = [
             name

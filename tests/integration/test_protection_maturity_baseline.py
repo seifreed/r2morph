@@ -383,6 +383,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
 
     expect(
         report["campaign_summary"]["pass_count"] == _EXPECTED_MULTI_PASS_COUNT
+        and report["campaign_summary"]["platform_scope"] == {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+        and report["campaign_summary"]["corpus_scope"] == {"dataset": "explicit-fixtures"}
         and report["campaign_summary"]["expected_corpus_pass_count"] == _EXPECTED_CORPUS_PASS_COUNT
         and report["campaign_summary"]["covered_corpus_pass_count"] == _EXPECTED_MULTI_PASS_COUNT
         and report["campaign_summary"]["corpus_pass_coverage_percent"] == _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT

@@ -52,6 +52,10 @@ jobs:
 
           report = json.loads(Path("differential-corpus.json").read_text(encoding="utf-8"))
           summary = report["campaign_summary"]
+          if summary["platform_scope"] != {"os": "linux", "format": "ELF", "architecture": "x86-64"}:
+              raise SystemExit(f"unexpected platform scope: {summary['platform_scope']}")
+          if summary["corpus_scope"] != {"dataset": "fixtures/dataset"}:
+              raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
           if summary["missing_corpus_passes"]:
               raise SystemExit(f"missing corpus passes: {summary['missing_corpus_passes']}")
           if summary["total_complete_evidence_missing_runs"] != 0:
