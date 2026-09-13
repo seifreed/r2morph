@@ -184,6 +184,8 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     stability_counts = summary["stability_counts"]
     maturity_profile_counts = summary["maturity_profile_counts"]
     fragments = (
+        f"{summary['official_evidence_percent']}% official evidence",
+        f"{summary['non_official_evidence_percent']}% non-official evidence",
         f"{stability_counts['tier-1']} tier-1 passes",
         f"{stability_counts['experimental']} experimental passes",
         f"{maturity_profile_counts['tier-1-native']} tier-1-native profile passes",
