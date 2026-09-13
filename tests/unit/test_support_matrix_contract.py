@@ -13,6 +13,7 @@ _EXPECTED_EVIDENCED_CELLS = 29
 _EXPECTED_NOT_SUPPORTED_CELLS = 235
 _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 7
 _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 235
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 235
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "code-virtualization": 1,
@@ -51,12 +52,14 @@ def test_support_matrix_marks_unsupported_combinations_without_evidence() -> Non
 def test_support_matrix_summarizes_parity_gaps() -> None:
     document = json.loads(_MATRIX.read_text(encoding="utf-8"))
     summary = build_matrix(document)["summary"]
+    parity_totals = summary["parity_blocker_totals"]
 
     expect(
         summary["evidenced_cells"] == _EXPECTED_EVIDENCED_CELLS
         and summary["not_supported_cells"] == _EXPECTED_NOT_SUPPORTED_CELLS
         and summary["non_official_evidenced_cells"] == _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS
         and summary["non_official_not_supported_cells"] == _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS
+        and parity_totals["non_official_missing_evidence_cells"] == _EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS
         and summary["stability_counts"] == _EXPECTED_STABILITY_COUNTS
         and summary["maturity_profile_counts"] == _EXPECTED_MATURITY_PROFILE_COUNTS
     )

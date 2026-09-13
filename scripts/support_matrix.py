@@ -287,7 +287,9 @@ def _parity_blocker_totals(
         if isinstance(target.get("evidence_percent"), int | float)
         and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
     ]
+    missing_evidence_cells = sum(int(target["not_supported_cells"]) for target in incomplete_gap_targets)
     return {
+        "non_official_missing_evidence_cells": missing_evidence_cells,
         "non_official_gap_targets": len(incomplete_gap_targets),
         "parity_gap_architectures": len(gap_scope["architectures"]),
         "parity_gap_formats": len(gap_scope["formats"]),
