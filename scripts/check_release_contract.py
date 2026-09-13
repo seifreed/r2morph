@@ -246,6 +246,29 @@ def _check_readme_cross_platform_parity() -> None:
             raise ValueError(f"README cross-platform parity warning is missing: {fragment}")
 
 
+def _check_readme_differential_summary() -> None:
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    workflow = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    corpus = " ".join((ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
+    for fragment in ("--passes all", "--require-applied", "--require-complete-evidence"):
+        if fragment not in workflow or fragment not in readme:
+            raise ValueError(f"README differential summary is missing workflow flag: {fragment}")
+    for fragment in (
+        "nine seed-derived command-line inputs",
+        "exit code, stdout, stderr, created files, and declared observable effects",
+        "runtime, size, transform-duration, runtime-duration, and static analyzer evidence",
+    ):
+        if fragment not in corpus:
+            raise ValueError(f"compatibility corpus differential contract is missing: {fragment}")
+    for fragment in (
+        "nine seed-derived inputs",
+        "exit code, stdout, stderr, created files, and declared observable effects",
+        "runtime, output size, transform duration, runtime duration, and static analyzer evidence",
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README differential summary is missing: {fragment}")
+
+
 def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
@@ -618,6 +641,7 @@ def main() -> int:
         _check_readme_support_summary(matrix)
         _check_readme_pass_surface(matrix)
         _check_readme_cross_platform_parity()
+        _check_readme_differential_summary()
         _check_pass_maturity_gap_summary(matrix)
         _check_corpus_pass_selection_docs()
         _check_changelog(package_version)

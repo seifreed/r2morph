@@ -167,6 +167,12 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
+The scheduled differential corpus runs `--passes all`, `--require-applied`, and
+`--require-complete-evidence`; complete evidence covers runtime, output size,
+transform duration, runtime duration, and static analyzer evidence while
+comparing exit code, stdout, stderr, created files, and declared observable
+effects across nine seed-derived inputs.
+
 The current local adversarial analyzer fixture records
 5 completed analyzer slots and 4 unavailable analyzer slots with reasons in
 [`docs/protection-adversarial-angr-local-2026-09-13-13214f9.json`](docs/protection-adversarial-angr-local-2026-09-13-13214f9.json).
