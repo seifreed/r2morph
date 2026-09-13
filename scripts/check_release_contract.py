@@ -447,6 +447,22 @@ def _check_adversarial_benchmark_artifacts() -> None:
         _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
 
 
+def _check_readme_adversarial_summary() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    report_name = "protection-adversarial-angr-local-2026-09-13-13214f9.json"
+    report = json.loads((ROOT / "docs" / report_name).read_text(encoding="utf-8"))
+    tools = report["tools"]
+    completed = sum(1 for tool in tools if tool["status"] == "completed")
+    unavailable = sum(1 for tool in tools if tool["status"] == "unavailable")
+    for fragment in (
+        f"{completed} completed analyzer slots",
+        f"{unavailable} unavailable analyzer slots",
+        report_name,
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README adversarial summary is missing: {fragment}")
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -565,6 +581,7 @@ def main() -> int:
         _check_independent_review_artifact()
         _check_independent_review_packet_claims()
         _check_adversarial_benchmark_artifacts()
+        _check_readme_adversarial_summary()
         _check_documentation_links()
         _check_documentation_claims()
         _check_ci_contract()

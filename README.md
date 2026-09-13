@@ -164,6 +164,10 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
+The current local adversarial analyzer fixture records
+5 completed analyzer slots and 4 unavailable analyzer slots with reasons in
+[`docs/protection-adversarial-angr-local-2026-09-13-13214f9.json`](docs/protection-adversarial-angr-local-2026-09-13-13214f9.json).
+
 ---
 
 ## Quick Start
