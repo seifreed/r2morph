@@ -669,6 +669,98 @@
           "x86"
         ]
       },
+      "parity_evidence_blockers": {
+        "non_official_gap_targets": [
+          {
+            "format": "ELF",
+            "architecture": "AArch64",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "ELF",
+            "architecture": "ARM",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "ELF",
+            "architecture": "x86",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "Mach-O",
+            "architecture": "AArch64",
+            "evidenced_cells": 3,
+            "not_supported_cells": 19,
+            "evidence_percent": 13.64
+          },
+          {
+            "format": "Mach-O",
+            "architecture": "ARM",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "Mach-O",
+            "architecture": "x86",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "Mach-O",
+            "architecture": "x86-64",
+            "evidenced_cells": 1,
+            "not_supported_cells": 21,
+            "evidence_percent": 4.55
+          },
+          {
+            "format": "PE",
+            "architecture": "AArch64",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "PE",
+            "architecture": "ARM",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "PE",
+            "architecture": "x86",
+            "evidenced_cells": 0,
+            "not_supported_cells": 22,
+            "evidence_percent": 0.0
+          },
+          {
+            "format": "PE",
+            "architecture": "x86-64",
+            "evidenced_cells": 3,
+            "not_supported_cells": 19,
+            "evidence_percent": 13.64
+          }
+        ],
+        "parity_gap_scope": {
+          "formats": [
+            "Mach-O",
+            "PE"
+          ],
+          "architectures": [
+            "AArch64",
+            "ARM",
+            "x86"
+          ]
+        }
+      },
       "stability_counts": {
         "experimental": 19,
         "tier-1": 3

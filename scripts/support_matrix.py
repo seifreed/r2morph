@@ -39,6 +39,7 @@ _VM_SEMANTIC_GAP_SCOPE = (
     "fp-simd",
     "ssa-liveness",
 )
+FULL_EVIDENCE_PERCENT = 100.0
 
 
 def _add_count(counts: dict[str, int], value: str) -> None:
@@ -193,6 +194,24 @@ def _parity_gap_scope(
     }
 
 
+def _parity_evidence_blockers(
+    gap_targets: list[dict[str, object]],
+    gap_scope: dict[str, list[str]],
+) -> dict[str, object]:
+    blockers: dict[str, object] = {}
+    incomplete_targets = [
+        target
+        for target in gap_targets
+        if isinstance(target.get("evidence_percent"), int | float)
+        and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
+    ]
+    if incomplete_targets:
+        blockers["non_official_gap_targets"] = incomplete_targets
+    if gap_scope["formats"] or gap_scope["architectures"]:
+        blockers["parity_gap_scope"] = gap_scope
+    return blockers
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -257,6 +276,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     maturity_summaries = _maturity_summary_counts(document.get("maturity"))
     maturity_gap_passes = _maturity_gap_passes(document.get("maturity"))
     maturity_gaps_by_pass = _maturity_gaps_by_pass(document.get("maturity"))
+    non_official_gap_targets = _non_official_gap_targets(cells, official_format, official_architecture)
+    parity_gap_scope = _parity_gap_scope(formats, architectures, official_format, official_architecture)
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -273,8 +294,12 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
             "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
-            "non_official_gap_targets": _non_official_gap_targets(cells, official_format, official_architecture),
-            "parity_gap_scope": _parity_gap_scope(formats, architectures, official_format, official_architecture),
+            "non_official_gap_targets": non_official_gap_targets,
+            "parity_gap_scope": parity_gap_scope,
+            "parity_evidence_blockers": _parity_evidence_blockers(
+                non_official_gap_targets,
+                parity_gap_scope,
+            ),
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,

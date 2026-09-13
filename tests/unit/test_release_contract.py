@@ -422,6 +422,21 @@ def test_support_matrix_names_parity_gap_scope() -> None:
     )
 
 
+def test_support_matrix_names_parity_evidence_blockers() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    blockers = summary["parity_evidence_blockers"]
+
+    expect(
+        blockers["parity_gap_scope"] == summary["parity_gap_scope"]
+        and blockers["non_official_gap_targets"] == summary["non_official_gap_targets"]
+        and all(
+            target["evidence_percent"] < summary["official_evidence_percent"]
+            for target in blockers["non_official_gap_targets"]
+        )
+    )
+
+
 def test_release_contract_rejects_non_official_parity_claim() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["non_official_evidence_percent"] = matrix["matrix"]["summary"][

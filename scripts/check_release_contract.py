@@ -114,6 +114,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
     "vm_semantic_gap_scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
+    "parity_evidence_blockers",
     "Binary Ninja is an explicit slot",
     "adversarial_evidence_blockers",
     "anti-tamper and progressive bytecode protection",

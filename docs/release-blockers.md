@@ -30,7 +30,7 @@ review. It is not a feature roadmap and must not be read as a support claim.
   missing capability, and supported VM semantics cover the declared ISA scope.
 - RB-004: PE, Mach-O, ARM, and AArch64 remain preview or experimental and do not have
   parity with Linux ELF x86-64. Evidence map:
-  [support-matrix.json](support-matrix.json),
+  [support-matrix.json](support-matrix.json) `parity_evidence_blockers`,
   [pass-maturity.md](pass-maturity.md). Exit criteria: preview targets either
   reach equivalent evidence to Linux ELF x86-64 or remain explicitly
   non-official in the support matrix.
