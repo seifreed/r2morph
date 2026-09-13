@@ -111,7 +111,9 @@ jobs:
           python -W error -m pytest -q --no-cov --tb=short \
             --junitxml="$GITHUB_WORKSPACE/cross-format-differential.xml" \
             tests/integration/test_binary_rewriter_formats_real.py \
-            tests/integration/test_platform_deeper.py
+            tests/integration/test_platform_deeper.py \
+            tests/integration/test_mutation_passes_end_to_end_more2.py \
+            tests/integration/test_mutation_nop_insertion_arm64.py
 
       - name: Validate cross-format differential evidence
         run: |
@@ -133,6 +135,11 @@ jobs:
               "test_elf_handler_symbols_and_preserve",
               "test_pe_handler_checksum",
               "test_macho_handler_repair_and_codesign",
+              "test_multiple_mutation_passes_on_x86_binary",
+              "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
+              "test_nop_insertion_arm64_path",
+              "test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites",
+              "test_instruction_substitution_arm64_changes_real_instruction_encoding",
           }
           if not all(any(name.startswith(prefix) for name in names) for prefix in required):
               raise SystemExit(f"cross-format smoke coverage drift: {sorted(names)}")
@@ -144,7 +151,31 @@ jobs:
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
           python -W error -m pytest -q --no-cov --tb=short \
+            --junitxml="$GITHUB_WORKSPACE/composition-differential.xml" \
             tests/integration/test_polymorphic_engine_real.py
+
+      - name: Validate composition differential evidence
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          suite = ET.parse("composition-differential.xml").getroot()
+          cases = suite.findall(".//testcase")
+          if len(cases) < 3:
+              raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
+          if suite.findall(".//failure") or suite.findall(".//error"):
+              raise SystemExit("composition smoke contains failures or errors")
+          names = {case.attrib.get("name", "") for case in cases}
+          required = {
+              "test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code",
+              "test_composed_real_passes_preserve_exit_code[nop_then_substitution]",
+              "test_composed_real_passes_preserve_exit_code[constant_then_substitution]",
+          }
+          if not required.issubset(names):
+              raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")
+          Path("composition-differential.xml").stat()
+          PY
 
       - name: Run VM semantic regression smoke
         run: |
@@ -163,6 +194,7 @@ jobs:
             tests/integration/test_code_virtualization_fp_vex_nondestructive_real.py::test_virtualized_vex_nondestructive_packed_add_preserves_result \
             tests/integration/test_code_virtualization_simd_integer_real.py::test_simd_integer_fixture_virtualization_preserves_exit_code \
             tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function \
+            tests/integration/test_code_virtualization_generic_isa_real.py \
             tests/unit/test_code_virtualization_static_dataflow.py
 
       - name: Run parser and rewriter fuzz smoke
@@ -282,6 +314,13 @@ jobs:
         with:
           name: cross-format-differential
           path: cross-format-differential.xml
+
+      - name: Upload composition differential evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: composition-differential
+          path: composition-differential.xml
 
       - name: Upload extended maturity pass smoke
         uses: actions/upload-artifact@v7

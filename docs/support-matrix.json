@@ -467,7 +467,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "A real ELF x86-64 composition smoke records successful child-pass sequencing and exit-code parity; arbitrary pass combinations remain unsupported."
+        "compatibility": "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported."
       },
       "short-jump-patching-instruction-catalogued": {
         "formats": [
@@ -1138,7 +1138,7 @@
         "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.": 3
       },
       "compatibility_counts": {
-        "A real ELF x86-64 composition smoke records successful child-pass sequencing and exit-code parity; arbitrary pass combinations remain unsupported.": 1,
+        "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported.": 1,
         "Composition with other passes is not contractually supported.": 11,
         "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
         "Pass combinations are not exhaustively covered.": 3,
