@@ -1035,6 +1035,10 @@ def _check_ci_contract() -> None:
         '"tests/unit/test_performance_regression_metadata_contract.py"',
         '"tests/unit/test_performance_regression_comparison_contract.py"',
         '"tests/unit/test_performance_regression_storage_contract.py"',
+        '"tests/unit/test_pass_dependency_catalogs_contract.py"',
+        '"tests/unit/test_evasion_scorer_helpers_contract.py"',
+        '"tests/unit/test_enhanced_analyzer_reporting_contract.py"',
+        '"tests/unit/test_mutation_annotator_instruction_contract.py"',
     ):
         if fragment not in cross_platform_job:
             raise ValueError(f"cross-platform CI is missing installed-wheel contract: {fragment}")
