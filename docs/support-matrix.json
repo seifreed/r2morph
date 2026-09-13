@@ -426,6 +426,27 @@
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
+      "short-jump-patching-instruction-catalogued": {
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": [
+          "tests/unit/test_short_jump_patching.py"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
       "code-virtualization": {
         "formats": [
           "ELF"
@@ -484,7 +505,7 @@
       "code-virtualization": "code-virtualization",
       "anti-disassembly": "experimental",
       "data-flow-mutation": "experimental",
-      "short-jump-patching": "experimental",
+      "short-jump-patching": "short-jump-patching-instruction-catalogued",
       "constant-unfolding": "experimental-corpus-selected",
       "code-mobility": "experimental",
       "function-outlining": "experimental",
@@ -857,8 +878,9 @@
       },
       "maturity_profile_counts": {
         "code-virtualization": 1,
-        "experimental": 12,
+        "experimental": 11,
         "experimental-corpus-selected": 6,
+        "short-jump-patching-instruction-catalogued": 1,
         "tier-1-native": 3
       },
       "false_positive_risk_counts": {
@@ -886,9 +908,10 @@
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
       },
       "instructions_affected_counts": {
-        "Not exhaustively catalogued.": 12,
+        "Not exhaustively catalogued.": 11,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
+        "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
         "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
       },
       "maturity_format_counts": {
@@ -898,8 +921,9 @@
         "x86-64": 22
       },
       "unit_test_evidence_counts": {
-        "tests/unit": 21,
-        "tests/unit/test_code_virtualization_diagnostics.py": 1
+        "tests/unit": 20,
+        "tests/unit/test_code_virtualization_diagnostics.py": 1,
+        "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
         "tests/integration": 21,
@@ -976,7 +1000,6 @@
           "opaque-predicates",
           "polymorphic-engine",
           "self-modifying-code",
-          "short-jump-patching",
           "stack-strings",
           "string-obfuscation"
         ]
@@ -1049,7 +1072,6 @@
           "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk",
-          "instructions_affected",
           "performance"
         ],
         "stack-strings": [
@@ -1177,7 +1199,6 @@
             "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code",
-            "short-jump-patching",
             "stack-strings",
             "string-obfuscation"
           ]
@@ -1250,7 +1271,6 @@
             "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk",
-            "instructions_affected",
             "performance"
           ],
           "stack-strings": [
@@ -1375,7 +1395,6 @@
             "opaque-predicates",
             "polymorphic-engine",
             "self-modifying-code",
-            "short-jump-patching",
             "stack-strings",
             "string-obfuscation"
           ]
@@ -1414,13 +1433,13 @@
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 79,
-        "total_maturity_field_gaps": 60,
+        "total_maturity_blockers": 78,
+        "total_maturity_field_gaps": 59,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
         "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
-        "instructions_affected_gap_passes": 12
+        "instructions_affected_gap_passes": 11
       },
       "differential_evidence_scope": {
         "platform_scope": {
