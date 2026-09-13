@@ -22,6 +22,7 @@ REQUIRED_CI_JOBS = (
     "package-smoke",
 )
 MINIMUM_COVERAGE_PERCENT = 75
+FULL_EVIDENCE_PERCENT = 100.0
 _MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
 _DOCUMENTATION_LINK_FILES = (
     ROOT / "docs" / "independent-review-packet.md",
@@ -70,6 +71,11 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         profile = profiles[profile_name]
         if set(profile) != set(required_fields):
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
+    summary = matrix["matrix"]["summary"]
+    if summary["official_evidence_percent"] != FULL_EVIDENCE_PERCENT:
+        raise ValueError("official target must retain complete evidence")
+    if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
+        raise ValueError("non-official targets must not claim official-target parity")
 
 
 def _check_changelog(package_version: str) -> None:

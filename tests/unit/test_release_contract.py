@@ -5,7 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.check_release_contract import _check_changelog, _check_documentation_links, _validate_inventory, main
+from scripts.check_release_contract import (
+    _check_changelog,
+    _check_documentation_links,
+    _check_matrix,
+    _validate_inventory,
+    main,
+)
 from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
 from tests.utils.assertions import expect
 
@@ -249,6 +255,21 @@ def test_support_matrix_summarizes_official_target_cells() -> None:
         and summary["official_evidence_percent"] == _FULL_COVERAGE_PERCENT
         and summary["non_official_evidence_percent"] < summary["official_evidence_percent"]
     )
+
+
+def test_release_contract_rejects_non_official_parity_claim() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["non_official_evidence_percent"] = matrix["matrix"]["summary"][
+        "official_evidence_percent"
+    ]
+
+    rejected = False
+    try:
+        _check_matrix(matrix, matrix["release"])
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
 
 
 def test_support_matrix_summarizes_test_evidence_profiles() -> None:
