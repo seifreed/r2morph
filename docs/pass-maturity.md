@@ -44,7 +44,9 @@ The generated matrix summary records evidenced versus not-supported cells,
 including official and non-official targets, so the Linux ELF x86-64 baseline
 and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
 cell. It also records evidence percentages for official and non-official targets
-so preview coverage cannot look equivalent to the supported baseline. It also counts passes per declared
+so preview coverage cannot look equivalent to the supported baseline. The current
+matrix records 7 non-official evidenced cells and 235 non-official
+not-supported cells. It also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
 code-virtualization, and experimental coverage remain visible at release-gate
 level. It also summarizes the declared performance, false-positive-risk,
