@@ -1477,6 +1477,18 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_call_flags_stack_fixture_virtualization_preserves_exit_code" in differential
         and "test_virtualized_elf_preserves_fs_relative_access" in differential
         and "test_virtualized_threads_tls_and_signal_preserve_exit_code" in differential
+        and "Run parser and rewriter fuzz smoke" in differential
+        and "Validate parser and rewriter fuzz smoke" in differential
+        and "scripts/continuous_fuzz.py" in differential
+        and "--cases 64" in differential
+        and "--max-payload 512" in differential
+        and "differential-fuzz-smoke.json" in differential
+        and "binary_parsers" in differential
+        and "vm_dispatcher" in differential
+        and "relocations" in differential
+        and "binary_rewriter" in differential
+        and "Upload differential fuzz smoke" in differential
+        and "differential-fuzz-smoke" in differential
         and "Run extended maturity pass smoke" in differential
         and "Validate extended maturity pass smoke" in differential
         and "EXTENDED_MATURITY_PASSES" in differential

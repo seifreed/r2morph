@@ -111,6 +111,35 @@ jobs:
             tests/integration/test_code_virtualization_tls_real.py::test_virtualized_elf_preserves_fs_relative_access \
             tests/integration/test_code_virtualization_threads_signals_real.py::test_virtualized_threads_tls_and_signal_preserve_exit_code
 
+      - name: Run parser and rewriter fuzz smoke
+        run: |
+          wheel_root=/tmp/r2morph-differential-wheel-check
+          cd "$wheel_root"
+          python scripts/continuous_fuzz.py \
+            --cases 64 \
+            --seed 20260827 \
+            --max-payload 512 \
+            --output "$GITHUB_WORKSPACE/differential-fuzz-smoke.json"
+
+      - name: Validate parser and rewriter fuzz smoke
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("differential-fuzz-smoke.json").read_text(encoding="utf-8"))
+          expected_targets = {
+              "binary_parsers": 64,
+              "vm_dispatcher": 64,
+              "relocations": 64,
+              "binary_rewriter": 64,
+          }
+          if report["failure_count"] != 0:
+              raise SystemExit(f"fuzz smoke failures: {report['failures']}")
+          if report["target_runs"] != expected_targets:
+              raise SystemExit(f"unexpected fuzz target runs: {report['target_runs']}")
+          PY
+
       - name: Run extended maturity pass smoke
         env:
           EXTENDED_MATURITY_PASSES: >-
@@ -183,3 +212,9 @@ jobs:
         with:
           name: extended-maturity-passes
           path: extended-maturity-passes.json
+
+      - name: Upload differential fuzz smoke
+        uses: actions/upload-artifact@v7
+        with:
+          name: differential-fuzz-smoke
+          path: differential-fuzz-smoke.json
