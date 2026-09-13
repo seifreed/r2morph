@@ -57,6 +57,14 @@ def test_support_matrix_summarizes_parity_gaps() -> None:
     )
 
 
+def test_support_matrix_declares_virtualization_static_dataflow_gate() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    profile_name = document["maturity"]["pass_profiles"]["code-virtualization"]
+    preconditions = document["maturity"]["profiles"][profile_name]["preconditions"]
+
+    expect(all(term in preconditions for term in ("CFG", "SSA", "liveness")))
+
+
 def test_support_matrix_honors_explicit_evidence_cells() -> None:
     document = {
         "formats": {"PE": "preview"},

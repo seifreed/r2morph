@@ -433,7 +433,7 @@
         "architectures": [
           "x86-64"
         ],
-        "preconditions": "Whole-function semantics must be proven; unsupported capabilities are rejected before mutation.",
+        "preconditions": "Whole-function semantics plus CFG, SSA, and complete liveness coverage must be proven; unsupported capabilities are rejected before mutation.",
         "invariants": "VM output retains loader validity and must match emulator and bounded runtime observables.",
         "instructions_affected": "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.",
         "false_positive_risk": "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.",
