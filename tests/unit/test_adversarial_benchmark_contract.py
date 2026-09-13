@@ -140,6 +140,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["missing_tool_runs_by_tool"]["angr"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["missing_tool_runs_by_tool"]["custom"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["completed_tool_runs"] == 1
+        and summary["completed_tool_count"] == 1
+        and summary["completed_tools"] == ["binary-ninja"]
         and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["completed_tool_run_coverage_percent"] == _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT
         and summary["non_completed_tool_runs"] == _EXPECTED_NON_COMPLETED_TOOL_RUNS
@@ -147,10 +149,14 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["non_completed_tool_runs_by_tool"]["ida-pro"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["non_completed_tool_runs_by_tool"]["ghidra"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and summary["unavailable_tool_runs"] == 1
+        and summary["unavailable_tool_count"] == 1
+        and summary["unavailable_tools"] == ["ghidra"]
         and summary["unavailable_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
         and summary["unavailable_reasons_by_tool"] == {"ghidra": {"missing local executable": 1}}
         and summary["error_tool_runs"] == 1
+        and summary["error_tool_count"] == 1
+        and summary["error_tools"] == ["ida-pro"]
         and summary["error_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["error_tool_runs_by_tool"] == {"ida-pro": 1}
         and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
