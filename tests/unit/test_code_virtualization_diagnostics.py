@@ -574,6 +574,14 @@ def test_indirect_jump_opcode_reports_computed_control_flow_capability() -> None
     expect(capability == "computed_control_flow")
 
 
+def test_register_indirect_jump_opcode_reports_computed_control_flow_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "jmp rax"}
+    )
+
+    expect(capability == "computed_control_flow")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}

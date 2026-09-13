@@ -792,7 +792,11 @@ class CodeVirtualizationPass(MutationPass):
         if (
             kind in _COMPUTED_JUMP_TYPES
             or opcode.startswith(("jmpf", "ljmp"))
-            or (mnemonic in {"jmp", "jmpq"} and "[" in opcode)
+            or (
+                mnemonic in {"jmp", "jmpq"}
+                and len(mnemonic_parts) > 1
+                and ("[" in opcode or not mnemonic_parts[1].startswith(("0x", "$")))
+            )
         ):
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
