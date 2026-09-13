@@ -23,6 +23,7 @@ from scripts.check_release_contract import (
     _check_readme_support_summary,
     _check_readme_vm_resistance_summary,
     _check_readme_vm_review_scope,
+    _check_release_blockers,
     _forbidden_release_claims,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
@@ -438,6 +439,10 @@ def test_release_contract_documentation_links_exist() -> None:
 
 def test_release_contract_documentation_claims_remain_current() -> None:
     expect(_check_documentation_claims() is None)
+
+
+def test_release_blockers_track_open_changes_md_gaps() -> None:
+    expect(_check_release_blockers() is None)
 
 
 def test_release_contract_rejects_overstated_release_claims() -> None:

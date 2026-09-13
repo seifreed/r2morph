@@ -74,6 +74,7 @@ _RELEASE_HONESTY_FILES = (
     ROOT / "CHANGELOG.md",
     ROOT / "docs" / "independent-review-packet.md",
     ROOT / "docs" / "pass-maturity.md",
+    ROOT / "docs" / "release-blockers.md",
 )
 _FORBIDDEN_RELEASE_CLAIMS = (
     "production-ready",
@@ -93,6 +94,15 @@ _BANNED_BINARY_NINJA_OMISSION_PHRASES = (
     "Binary Ninja remains intentionally omitted",
     "Binary Ninja remains omitted by project decision",
     "Binary Ninja remains excluded by project decision",
+)
+_RELEASE_BLOCKER_FRAGMENTS = (
+    "Per-pass maturity remains incomplete",
+    "Differential corpus coverage remains incomplete",
+    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
+    "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
+    "Binary Ninja is an explicit slot",
+    "anti-tamper and progressive bytecode protection",
+    "external human review records signoff",
 )
 
 
@@ -606,6 +616,13 @@ def _check_documentation_claims() -> None:
         raise ValueError("compatibility corpus must retain the Binary Ninja availability-slot contract")
 
 
+def _check_release_blockers() -> None:
+    blockers = " ".join((ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8").split())
+    for fragment in _RELEASE_BLOCKER_FRAGMENTS:
+        if fragment not in blockers:
+            raise ValueError(f"release blockers ledger is missing: {fragment}")
+
+
 def _check_ci_contract() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     for job in REQUIRED_CI_JOBS:
@@ -728,6 +745,7 @@ def main() -> int:
         _check_readme_vm_resistance_summary()
         _check_documentation_links()
         _check_documentation_claims()
+        _check_release_blockers()
         _check_ci_contract()
         _check_release_workflow()
         _check_release_recovery_workflow()
