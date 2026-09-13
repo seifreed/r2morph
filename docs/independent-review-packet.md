@@ -231,6 +231,8 @@ the aggregate counters alone.
       varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths.
 - [ ] Confirm unsupported instructions fail closed and cannot silently produce
       a partial protected function.
+- [ ] Confirm unsupported-instruction diagnostics include instruction address,
+      mnemonic, type, size, bounded opcode preview, capability, and reason.
 - [ ] Review VM ISA/opcode diversification, dispatcher/handler alternatives,
       superinstructions, anti-tamper, and progressive bytecode protection.
 - [ ] Review the fuzz properties and failure handling for dispatcher,

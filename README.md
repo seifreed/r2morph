@@ -182,7 +182,9 @@ The VM review packet still has `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
 flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths
 remain explicit review scope, and unsupported instructions must fail closed
-instead of producing partial protected functions.
+instead of producing partial protected functions. Unsupported-instruction
+diagnostics must include instruction address, mnemonic, type, size, bounded
+opcode preview, capability, and reason.
 VM ISA/opcode diversification, dispatcher/handler alternatives,
 superinstructions, anti-tamper, and progressive bytecode protection remain
 explicit human-review scope before the virtualizer milestone can be marked

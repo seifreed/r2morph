@@ -449,6 +449,14 @@ def test_independent_review_packet_keeps_vm_resistance_checklist() -> None:
     expect(_check_independent_review_packet_claims() is None)
 
 
+def test_vm_unsupported_instruction_diagnostics_remain_precise() -> None:
+    readme = " ".join((_ROOT / "README.md").read_text(encoding="utf-8").split())
+    packet = " ".join((_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
+    fragment = "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason"
+
+    expect(fragment in readme and fragment in packet)
+
+
 def test_release_contract_rejects_missing_documentation_link(tmp_path: Path) -> None:
     document = tmp_path / "review.md"
     document.write_text("[missing](missing.json)", encoding="utf-8")

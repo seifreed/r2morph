@@ -458,6 +458,7 @@ def _check_independent_review_packet_claims() -> None:
         "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
         "SSA, and liveness",
         "unsupported instructions fail closed",
+        "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason",
         "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
         "and progressive bytecode protection",
         "fuzz properties and failure handling for dispatcher, relocations, and rewriting",
@@ -529,6 +530,7 @@ def _check_readme_vm_review_scope() -> None:
         "SSA, and liveness paths remain explicit review scope",
         "unsupported instructions must fail closed",
         "partial protected functions",
+        "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason",
         "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
         "and progressive bytecode protection",
         "human-review scope before the virtualizer milestone can be marked complete",
