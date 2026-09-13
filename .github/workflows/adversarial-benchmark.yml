@@ -95,6 +95,22 @@ jobs:
               for name, values in report["pass_summary"].items()
               if values["applied"] == 0
           ]
+          expected_blockers = {}
+          if missing_applications:
+              expected_blockers["passes_without_applied_runs"] = missing_applications
+          for field in (
+              "missing_passes",
+              "missing_pass_runs_by_pass",
+              "error_pass_runs_by_pass",
+              "incomplete_tool_coverage",
+              "non_completed_tool_runs_by_tool",
+          ):
+              if summary[field]:
+                  expected_blockers[field] = summary[field]
+          if summary["adversarial_evidence_blockers"] != expected_blockers:
+              raise SystemExit(
+                  f"adversarial evidence blockers drift: {summary['adversarial_evidence_blockers']}"
+              )
           if missing_applications:
               raise SystemExit(f"passes without applications: {missing_applications}")
           PY

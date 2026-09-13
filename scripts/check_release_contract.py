@@ -114,6 +114,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "vm_semantic_gap_scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "Binary Ninja is an explicit slot",
+    "adversarial_evidence_blockers",
     "anti-tamper and progressive bytecode protection",
     "external human review records signoff",
 )
@@ -761,6 +762,7 @@ def _check_corpus_workflows() -> None:
         "binary-ninja",
         "missing_pass_runs",
         "missing_tool_runs",
+        "adversarial_evidence_blockers",
         "incomplete_tool_coverage",
         "completed_tool_runs_by_tool",
         "unavailable_tool_runs_by_tool",

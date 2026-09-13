@@ -254,6 +254,10 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["error_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["error_tool_runs_by_tool"] == {"ida-pro": 1}
         and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
+        and summary["adversarial_evidence_blockers"]["passes_without_applied_runs"] == ["PatternSubstitution"]
+        and "missing_passes" not in summary["adversarial_evidence_blockers"]
+        and "incomplete_tool_coverage" in summary["adversarial_evidence_blockers"]
+        and "non_completed_tool_runs_by_tool" in summary["adversarial_evidence_blockers"]
     )
 
 

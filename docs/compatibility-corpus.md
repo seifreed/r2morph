@@ -128,7 +128,11 @@ The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
 records completed-run coverage by analyzer tool so campaigns remain comparable
-when a licensed or local analyzer is missing.
+when a licensed or local analyzer is missing. A compact
+`adversarial_evidence_blockers` map records missing pass rows, passes without
+applications, pass errors, incomplete tool coverage, and non-completed analyzer
+runs; it must be empty before the adversarial benchmark can support release
+signoff.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and passes without applications fail the run.
 

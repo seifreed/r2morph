@@ -37,9 +37,11 @@ review. It is not a feature roadmap and must not be read as a support claim.
   analyzers. Binary Ninja is an explicit slot, but unavailable environments are
   non-passing evidence rather than completion. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
-  [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml).
-  Exit criteria: every analyzer slot has completed or explicit unavailable rows
-  in scheduled comparable campaigns, including Binary Ninja.
+  [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
+  `adversarial_evidence_blockers`.
+  Exit criteria: every analyzer slot has completed comparable scheduled
+  campaign rows, including Binary Ninja; unavailable rows remain blockers with
+  reasons until completed.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
   Evidence map: [protection-handler-clustering.json](protection-handler-clustering.json),

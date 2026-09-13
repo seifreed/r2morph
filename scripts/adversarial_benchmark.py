@@ -762,7 +762,7 @@ def _campaign_summary(
         > 0
     }
     non_completed_tool_runs = expected_tool_runs - completed_tools
-    return {
+    summary: dict[str, object] = {
         "expected_pass_count": len(pass_names),
         "observed_pass_count": len(observed_passes),
         "missing_passes": sorted(set(pass_names) - observed_passes),
@@ -824,6 +824,33 @@ def _campaign_summary(
         "error_tool_runs_by_tool": error_tools_by_tool,
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
     }
+    summary["adversarial_evidence_blockers"] = _adversarial_evidence_blockers(summary, pass_names)
+    return summary
+
+
+def _adversarial_evidence_blockers(
+    summary: dict[str, object],
+    pass_names: tuple[str, ...],
+) -> dict[str, object]:
+    blockers: dict[str, object] = {}
+    applied_by_pass = summary.get("applied_pass_runs_by_pass")
+    if isinstance(applied_by_pass, dict):
+        passes_without_applied_runs = sorted(
+            pass_name for pass_name in pass_names if applied_by_pass.get(pass_name, 0) == 0
+        )
+        if passes_without_applied_runs:
+            blockers["passes_without_applied_runs"] = passes_without_applied_runs
+    for field in (
+        "missing_passes",
+        "missing_pass_runs_by_pass",
+        "error_pass_runs_by_pass",
+        "incomplete_tool_coverage",
+        "non_completed_tool_runs_by_tool",
+    ):
+        value = summary.get(field)
+        if isinstance(value, (list, dict)) and value:
+            blockers[field] = value
+    return blockers
 
 
 def _pass_status_count(samples: list[dict[str, object]], status: str) -> int:
