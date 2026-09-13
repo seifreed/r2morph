@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from scripts.protection_handler_clustering import measure
 from tests.utils.assertions import expect
 
+_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-handler-clustering.json"
 _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_NEAREST_COMPARISONS = 510
 _EXPECTED_ABOVE_THRESHOLD = 72
@@ -23,3 +27,9 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         and result["cross_seed_nearest_similarity_above_threshold_percent"] == _EXPECTED_ABOVE_THRESHOLD_PERCENT
         and not (result["cross_seed_nearest_similarity_mean"] <= 0.0)
     )
+
+
+def test_handler_clustering_report_matches_current_measurement() -> None:
+    report = json.loads(_REPORT.read_text(encoding="utf-8"))
+
+    expect(report == measure(20260820, 10))

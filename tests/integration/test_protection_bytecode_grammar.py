@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from scripts.protection_bytecode_grammar import measure
 from tests.utils.assertions import expect
 
+_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-bytecode-grammar.json"
 _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_SEED_COUNT = 10
 _EXPECTED_ALL_HANDLER_STRIDE_UNIQUE_COUNT = 12
@@ -23,3 +27,9 @@ def test_measure_bytecode_grammar_varies_same_operation_stride_across_seeds() ->
         and result["target_stride_unique_count"] == _EXPECTED_TARGET_STRIDE_UNIQUE_COUNT
         and result["target_stride_diverse"] is True
     )
+
+
+def test_bytecode_grammar_report_matches_current_measurement() -> None:
+    report = json.loads(_REPORT.read_text(encoding="utf-8"))
+
+    expect(report == measure(20260820, 10))
