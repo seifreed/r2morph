@@ -158,7 +158,8 @@ jobs:
             tests/integration/test_code_virtualization_internal_icall_real.py::test_virtualized_local_indirect_call_preserves_exit_code \
             tests/integration/test_code_virtualization_fp_vex_nondestructive_real.py::test_virtualized_vex_nondestructive_packed_add_preserves_result \
             tests/integration/test_code_virtualization_simd_integer_real.py::test_simd_integer_fixture_virtualization_preserves_exit_code \
-            tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function
+            tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function \
+            tests/unit/test_code_virtualization_static_dataflow.py
 
       - name: Run parser and rewriter fuzz smoke
         run: |

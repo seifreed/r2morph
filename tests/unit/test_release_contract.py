@@ -1506,6 +1506,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_virtualized_vex_nondestructive_packed_add_preserves_result" in differential
         and "test_simd_integer_fixture_virtualization_preserves_exit_code" in differential
         and "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function" in differential
+        and "tests/unit/test_code_virtualization_static_dataflow.py" in differential
         and "Run parser and rewriter fuzz smoke" in differential
         and "Validate parser and rewriter fuzz smoke" in differential
         and "scripts/continuous_fuzz.py" in differential

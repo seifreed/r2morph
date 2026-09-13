@@ -1230,6 +1230,7 @@ def _check_corpus_workflows() -> None:
         "test_virtualized_vex_nondestructive_packed_add_preserves_result",
         "test_simd_integer_fixture_virtualization_preserves_exit_code",
         "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
+        "tests/unit/test_code_virtualization_static_dataflow.py",
         "Run parser and rewriter fuzz smoke",
         "Validate parser and rewriter fuzz smoke",
         "scripts/continuous_fuzz.py",
