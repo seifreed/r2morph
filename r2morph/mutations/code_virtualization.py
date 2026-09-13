@@ -864,6 +864,7 @@ class CodeVirtualizationPass(MutationPass):
                 "outsd",
                 "outsw",
                 "prefetch",
+                "ptwrite",
                 "rdmsr",
                 "rdpid",
                 "rdpkru",
