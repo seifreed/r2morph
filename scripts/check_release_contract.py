@@ -236,6 +236,16 @@ def _check_readme_pass_surface(matrix: dict[str, object]) -> None:
             raise ValueError(f"README pass surface is missing: {row_prefix}")
 
 
+def _check_readme_cross_platform_parity() -> None:
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    for fragment in (
+        "PE, Mach-O, ARM, and AArch64 evidence does not imply parity with Linux ELF x86-64",
+        "equivalent CodeVirtualization support",
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README cross-platform parity warning is missing: {fragment}")
+
+
 def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
@@ -587,6 +597,7 @@ def main() -> int:
         _check_matrix(matrix, package_version)
         _check_readme_support_summary(matrix)
         _check_readme_pass_surface(matrix)
+        _check_readme_cross_platform_parity()
         _check_pass_maturity_gap_summary(matrix)
         _check_corpus_pass_selection_docs()
         _check_changelog(package_version)
