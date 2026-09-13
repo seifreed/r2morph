@@ -404,6 +404,14 @@ def test_mwait_instruction_reports_thread_synchronization_capability() -> None:
     expect(capability == "thread_synchronization")
 
 
+def test_user_wait_instruction_reports_thread_synchronization_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "umwait eax"}
+    )
+
+    expect(capability == "thread_synchronization")
+
+
 def test_transaction_instruction_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "cjmp", "opcode": "xbegin 0x401020"}
