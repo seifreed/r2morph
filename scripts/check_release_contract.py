@@ -10,9 +10,11 @@ import tomllib
 from pathlib import Path
 
 try:
+    from scripts.independent_review import review as build_independent_review
     from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
     from scripts.support_matrix import build_matrix
 except ModuleNotFoundError:
+    from independent_review import review as build_independent_review
     from protection_maturity_baseline import CORPUS_PASS_NAMES
     from support_matrix import build_matrix
 
@@ -323,9 +325,15 @@ def _validate_independent_review_artifact(report: dict[str, object]) -> None:
         raise ValueError("independent review artifact contains a failed check")
 
 
+def _validate_independent_review_freshness(report: dict[str, object]) -> None:
+    if report != build_independent_review(ROOT):
+        raise ValueError("independent review artifact must match the current review output")
+
+
 def _check_independent_review_artifact() -> None:
     report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
     _validate_independent_review_artifact(report)
+    _validate_independent_review_freshness(report)
 
 
 def _check_independent_review_packet_claims() -> None:

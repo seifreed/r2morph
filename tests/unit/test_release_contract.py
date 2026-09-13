@@ -11,6 +11,7 @@ from scripts.check_release_contract import (
     _check_corpus_workflows,
     _check_documentation_claims,
     _check_documentation_links,
+    _check_independent_review_artifact,
     _check_independent_review_packet_claims,
     _check_matrix,
     _check_pass_maturity_gap_summary,
@@ -18,6 +19,7 @@ from scripts.check_release_contract import (
     _check_readme_support_summary,
     _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
+    _validate_independent_review_freshness,
     _validate_inventory,
     _validate_vm_resistance_artifacts,
     main,
@@ -473,6 +475,7 @@ def test_release_contract_validates_independent_review_artifact() -> None:
     report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
 
     _validate_independent_review_artifact(report)
+    _check_independent_review_artifact()
 
 
 def test_release_contract_rejects_failed_independent_review_check() -> None:
@@ -482,6 +485,19 @@ def test_release_contract_rejects_failed_independent_review_check() -> None:
     rejected = False
     try:
         _validate_independent_review_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_stale_independent_review_artifact() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report["checks"][0]["detail"] = "stale detail"
+
+    rejected = False
+    try:
+        _validate_independent_review_freshness(report)
     except ValueError:
         rejected = True
 
