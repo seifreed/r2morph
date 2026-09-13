@@ -11,6 +11,7 @@ from scripts.check_release_contract import (
     _check_documentation_claims,
     _check_documentation_links,
     _check_matrix,
+    _validate_adversarial_benchmark_artifact,
     _validate_independent_review_artifact,
     _validate_inventory,
     _validate_vm_resistance_artifacts,
@@ -161,6 +162,21 @@ def test_local_adversarial_angr_evidence_completes_original_and_protected() -> N
         and angr["original"]["status"] == "completed"
         and angr["protected"]["status"] == "completed"
     )
+
+
+def test_release_contract_rejects_missing_binary_ninja_slot() -> None:
+    report = json.loads(
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+    )
+    report["tools"] = [row for row in report["tools"] if row["tool"] != "binary-ninja"]
+
+    rejected = False
+    try:
+        _validate_adversarial_benchmark_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
 
 
 def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> None:

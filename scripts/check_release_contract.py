@@ -32,6 +32,17 @@ TIER_1_MATURITY_PROFILE = "tier-1-native"
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 2
+ADVERSARIAL_TOOL_SLOTS = {
+    "angr",
+    "binary-ninja",
+    "custom",
+    "ghidra",
+    "ida-pro",
+    "objdump",
+    "radare2",
+    "triton",
+    "unicorn",
+}
 INDEPENDENT_REVIEW_CHECKS = {
     "adversarial_benchmark_evidence",
     "adversarial_corpus_evidence",
@@ -250,6 +261,23 @@ def _check_independent_review_artifact() -> None:
     _validate_independent_review_artifact(report)
 
 
+def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
+    tools = report.get("tools")
+    if not isinstance(tools, list):
+        raise ValueError("adversarial benchmark artifact must contain tools")
+    observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
+    if observed != ADVERSARIAL_TOOL_SLOTS:
+        raise ValueError("adversarial benchmark artifact must contain every analyzer slot")
+
+
+def _check_adversarial_benchmark_artifacts() -> None:
+    for path in (
+        ROOT / "docs" / "protection-adversarial-benchmark.json",
+        ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json",
+    ):
+        _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -362,6 +390,7 @@ def main() -> int:
         _check_inventory()
         _check_vm_resistance_artifacts()
         _check_independent_review_artifact()
+        _check_adversarial_benchmark_artifacts()
         _check_documentation_links()
         _check_documentation_claims()
         _check_ci_contract()
