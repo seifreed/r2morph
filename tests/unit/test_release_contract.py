@@ -1001,6 +1001,20 @@ def test_release_contract_rejects_vm_handler_similarity_regression() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_vm_handler_similarity_rate_regression() -> None:
+    handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    handler["cross_seed_nearest_similarity_above_threshold_percent"] = 100.0
+
+    rejected = False
+    try:
+        _validate_vm_resistance_artifacts(handler, bytecode)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_vm_bytecode_stride_regression() -> None:
     handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))

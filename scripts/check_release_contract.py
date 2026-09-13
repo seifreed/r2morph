@@ -39,6 +39,7 @@ PUBLIC_CLI_ALIASES = {"block", "expand", "nop", "register", "substitute"}
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 3
+MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT = 20.0
 VM_ADVERSARIAL_VALIDATION = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "seed-diversity-only",
@@ -496,6 +497,18 @@ def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict
         raise ValueError("handler clustering must not contain exact cross-seed matches")
     if handler.get("cross_seed_largest_normalised_cluster") != 1:
         raise ValueError("handler clustering must keep normalized clusters unique")
+    similarity_mean = handler.get("cross_seed_nearest_similarity_mean")
+    similarity_threshold = handler.get("similarity_threshold")
+    if not isinstance(similarity_mean, int | float) or not isinstance(similarity_threshold, int | float):
+        raise ValueError("handler clustering must record similarity mean and threshold")
+    if similarity_mean >= similarity_threshold:
+        raise ValueError("handler clustering mean similarity must remain below the configured threshold")
+    above_threshold_percent = handler.get("cross_seed_nearest_similarity_above_threshold_percent")
+    if (
+        not isinstance(above_threshold_percent, int | float)
+        or above_threshold_percent > MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT
+    ):
+        raise ValueError("handler clustering above-threshold similarity rate is too high")
     seeds = handler.get("seeds")
     if not isinstance(seeds, list) or any(
         not isinstance(seed, dict)
