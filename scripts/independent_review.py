@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from r2morph.platform.elf_handler_parsing import parse_elf_header
 from scripts.adversarial_benchmark import _EXPECTED_TOOLS
 from scripts.continuous_fuzz import run_campaign
+from scripts.protection_maturity_baseline import _DIFFERENTIAL_PLATFORM_GAP_SCOPE
 from scripts.support_matrix import build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
@@ -46,6 +47,17 @@ def _review_matrix(root: Path) -> dict[str, object]:
     matrix = build_matrix(document)
     passed = document.get("matrix") == matrix
     return _check("support_matrix_consistency", passed, f"{matrix['cell_count']} explicit cells")
+
+
+def _review_differential_platform_gap(root: Path) -> dict[str, object]:
+    path = root / "docs" / "support-matrix.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    matrix = document.get("matrix", {})
+    summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
+    blockers = summary.get("parity_evidence_blockers", {}) if isinstance(summary, dict) else {}
+    gap_scope = blockers.get("parity_gap_scope") if isinstance(blockers, dict) else None
+    passed = gap_scope == _DIFFERENTIAL_PLATFORM_GAP_SCOPE
+    return _check("differential_platform_gap_scope", passed, "PE/Mach-O and ARM/AArch64/x86 remain gaps")
 
 
 def _review_benchmark(root: Path) -> dict[str, object]:
@@ -263,6 +275,7 @@ def review(root: Path) -> dict[str, Any]:
     checks = [
         _review_virtualization(root),
         _review_matrix(root),
+        _review_differential_platform_gap(root),
         _review_benchmark(root),
         _review_binary_ninja_contract(),
         _review_corpus_benchmark(root),

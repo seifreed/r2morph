@@ -11,6 +11,11 @@
       "status": "passed"
     },
     {
+      "detail": "PE/Mach-O and ARM/AArch64/x86 remain gaps",
+      "name": "differential_platform_gap_scope",
+      "status": "passed"
+    },
+    {
       "detail": "5 completed, 4 unavailable",
       "name": "adversarial_benchmark_evidence",
       "status": "passed"
