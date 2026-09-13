@@ -775,7 +775,11 @@ class CodeVirtualizationPass(MutationPass):
         opcode = str(instruction.get("opcode", "")).lower()
         if kind in _COMPUTED_JUMP_TYPES:
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
-        elif "fs:" in opcode or "gs:" in opcode or opcode.startswith(("rdfsbase", "rdgsbase", "wrfsbase", "wrgsbase")):
+        elif (
+            "fs:" in opcode
+            or "gs:" in opcode
+            or opcode.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
+        ):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
         elif opcode.startswith(("mfence", "lfence", "sfence", "lock ")) or (
             opcode.startswith("xchg") and "[" in opcode

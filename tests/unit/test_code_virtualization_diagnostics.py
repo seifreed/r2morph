@@ -348,6 +348,14 @@ def test_tls_base_instruction_reports_thread_local_storage_capability() -> None:
     expect(capability == "thread_local_storage")
 
 
+def test_swapgs_instruction_reports_thread_local_storage_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "swapgs"}
+    )
+
+    expect(capability == "thread_local_storage")
+
+
 def test_locked_instruction_reports_thread_synchronization_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "lock", "opcode": "lock add qword [rax], 1"}
