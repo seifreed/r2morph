@@ -841,6 +841,8 @@ class CodeVirtualizationPass(MutationPass):
                 "cpuid",
                 "enqcmd",
                 "enqcmds",
+                "endbr32",
+                "endbr64",
                 "encls",
                 "enclu",
                 "enclv",
