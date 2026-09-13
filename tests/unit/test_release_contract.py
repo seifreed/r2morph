@@ -16,6 +16,7 @@ from scripts.check_release_contract import (
     main,
 )
 from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
+from scripts.support_matrix import build_matrix
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -278,6 +279,20 @@ def test_release_contract_rejects_non_official_parity_claim() -> None:
 def test_release_contract_rejects_stale_generated_support_matrix() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["cell_count"] += 1
+
+    rejected = False
+    try:
+        _check_matrix(matrix, matrix["release"])
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_tier_1_profile_drift() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["maturity"]["pass_profiles"]["nop"] = "experimental"
+    matrix["matrix"] = build_matrix(matrix)
 
     rejected = False
     try:

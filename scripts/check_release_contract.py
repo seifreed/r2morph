@@ -28,6 +28,7 @@ REQUIRED_CI_JOBS = (
 )
 MINIMUM_COVERAGE_PERCENT = 75
 FULL_EVIDENCE_PERCENT = 100.0
+TIER_1_MATURITY_PROFILE = "tier-1-native"
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 2
@@ -77,6 +78,13 @@ def _check_version() -> str:
     return package_version
 
 
+def _check_tier_1_maturity(matrix: dict[str, object], pass_profiles: dict[str, str]) -> None:
+    tier_1_passes = {entry["name"] for entry in matrix["passes"] if entry["stability"] == "tier-1"}
+    tier_1_profiles = {name for name, profile_name in pass_profiles.items() if profile_name == TIER_1_MATURITY_PROFILE}
+    if tier_1_profiles != tier_1_passes:
+        raise ValueError("tier-1 passes must exactly match the tier-1 maturity profile")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -89,7 +97,8 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
                 continue
             if not (ROOT / evidence).exists():
                 raise ValueError(f"missing evidence path: {evidence}")
-    if matrix["matrix"] != build_matrix(matrix):
+    generated_matrix = build_matrix(matrix)
+    if matrix["matrix"] != generated_matrix:
         raise ValueError("support matrix generated cells must be up to date")
     maturity = matrix["maturity"]
     profiles = maturity["profiles"]
@@ -102,6 +111,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         profile = profiles[profile_name]
         if set(profile) != set(required_fields):
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
+    _check_tier_1_maturity(matrix, pass_profiles)
     summary = matrix["matrix"]["summary"]
     if summary["official_evidence_percent"] != FULL_EVIDENCE_PERCENT:
         raise ValueError("official target must retain complete evidence")
