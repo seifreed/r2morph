@@ -120,6 +120,22 @@ def test_support_matrix_declares_virtualization_runtime_boundary_coverage() -> N
     )
 
 
+def test_support_matrix_limits_code_virtualization_to_official_target() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    entry = next(item for item in document["passes"] if item["name"] == "code-virtualization")
+    cells = [cell for cell in build_matrix(document)["cells"] if cell.get("pass") == "code-virtualization"]
+    official = [cell for cell in cells if cell["format"] == "ELF" and cell["architecture"] == "x86-64"]
+    non_official = [cell for cell in cells if cell not in official]
+
+    expect(
+        entry["formats"] == ["ELF"]
+        and entry["architectures"] == ["x86-64"]
+        and len(official) == 1
+        and official[0]["status"] == "evidenced"
+        and all(cell["status"] == "not-supported" and cell["evidence"] == [] for cell in non_official)
+    )
+
+
 def test_support_matrix_honors_explicit_evidence_cells() -> None:
     document = {
         "formats": {"PE": "preview"},
