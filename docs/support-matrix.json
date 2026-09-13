@@ -402,7 +402,7 @@
           "tests/integration"
         ],
         "performance": "Not recorded per pass in the public corpus.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.",
         "compatibility": "Pass combinations are not exhaustively covered."
       },
       "experimental": {
@@ -787,7 +787,8 @@
       "decompiler_effectiveness_counts": {
         "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.": 6,
         "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.": 1,
-        "Not independently measured.": 15
+        "Not independently measured.": 12,
+        "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.": 3
       },
       "compatibility_counts": {
         "Composition with other passes is not contractually supported.": 12,
@@ -861,15 +862,12 @@
           "data-flow-mutation",
           "function-outlining",
           "import-obfuscation",
-          "nop",
           "opaque-predicates",
           "polymorphic-engine",
-          "register",
           "self-modifying-code",
           "short-jump-patching",
           "stack-strings",
-          "string-obfuscation",
-          "substitute"
+          "string-obfuscation"
         ],
         "compatibility": [
           "anti-disassembly",
@@ -943,9 +941,6 @@
           "instructions_affected",
           "performance"
         ],
-        "nop": [
-          "decompiler_effectiveness"
-        ],
         "opaque-predicates": [
           "compatibility",
           "decompiler_effectiveness",
@@ -959,9 +954,6 @@
           "false_positive_risk",
           "instructions_affected",
           "performance"
-        ],
-        "register": [
-          "decompiler_effectiveness"
         ],
         "self-modifying-code": [
           "compatibility",
@@ -990,9 +982,6 @@
           "false_positive_risk",
           "instructions_affected",
           "performance"
-        ],
-        "substitute": [
-          "decompiler_effectiveness"
         ]
       },
       "native_evidence_gap_passes": [
@@ -1074,15 +1063,12 @@
             "data-flow-mutation",
             "function-outlining",
             "import-obfuscation",
-            "nop",
             "opaque-predicates",
             "polymorphic-engine",
-            "register",
             "self-modifying-code",
             "short-jump-patching",
             "stack-strings",
-            "string-obfuscation",
-            "substitute"
+            "string-obfuscation"
           ],
           "compatibility": [
             "anti-disassembly",
@@ -1156,9 +1142,6 @@
             "instructions_affected",
             "performance"
           ],
-          "nop": [
-            "decompiler_effectiveness"
-          ],
           "opaque-predicates": [
             "compatibility",
             "decompiler_effectiveness",
@@ -1172,9 +1155,6 @@
             "false_positive_risk",
             "instructions_affected",
             "performance"
-          ],
-          "register": [
-            "decompiler_effectiveness"
           ],
           "self-modifying-code": [
             "compatibility",
@@ -1203,21 +1183,18 @@
             "false_positive_risk",
             "instructions_affected",
             "performance"
-          ],
-          "substitute": [
-            "decompiler_effectiveness"
           ]
         }
       },
       "maturity_blocker_totals": {
         "maturity_gap_categories": 5,
         "native_evidence_gap_passes": 19,
-        "passes_with_maturity_field_gaps": 15,
-        "total_maturity_blockers": 82,
-        "total_maturity_field_gaps": 63,
+        "passes_with_maturity_field_gaps": 12,
+        "total_maturity_blockers": 79,
+        "total_maturity_field_gaps": 60,
         "performance_gap_passes": 12,
         "false_positive_risk_gap_passes": 12,
-        "decompiler_effectiveness_gap_passes": 15,
+        "decompiler_effectiveness_gap_passes": 12,
         "compatibility_gap_passes": 12,
         "instructions_affected_gap_passes": 12
       },

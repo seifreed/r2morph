@@ -64,10 +64,10 @@ text by profile so unmeasured cost, ISA coverage, risk, analyzer effectiveness,
 and pass-composition gaps remain visible release gaps instead of being buried in
 each pass row.
 The current summary still reports 12 passes with no per-pass performance
-measurement, 12 with no independent false-positive measurement, 15 with no
+measurement, 12 with no independent false-positive measurement, 12 with no
 independent decompiler-effectiveness measurement, 12 without contractual
 composition support, and 12 without an exhaustive affected-instruction
-catalogue: 63 total per-pass maturity field gaps across 5 maturity gap
+catalogue: 60 total per-pass maturity field gaps across 5 maturity gap
 categories. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
@@ -86,6 +86,12 @@ architectures, preconditions, invariants, affected instructions, false-positive
 risk, unit and end-to-end tests, performance, decompiler effectiveness, and
 pass-composition compatibility. Entries marked as not measured are deliberate
 release gaps, not implied support.
+The Tier 1 native profile now links a focused adversarial corpus summary for
+NopInsertion, InstructionSubstitution, and RegisterSubstitution:
+[`protection-adversarial-tier1-2026-09-13-400c2a48-summary.json`](protection-adversarial-tier1-2026-09-13-400c2a48-summary.json).
+That run completed `angr`, radare2, objdump, and the custom analyzer across all
+483 Tier 1 pass/sample rows, with Unicorn completing 463 rows. Binary Ninja,
+IDA, Ghidra, and Triton remain explicit unavailable-tool blockers.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. The companion

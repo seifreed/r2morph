@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "measurement": "tier-1-adversarial-corpus-summary",
+  "generated_at": "2026-09-13T14:16:00Z",
+  "source_commit": "400c2a48",
+  "command": "rtk python scripts/adversarial_benchmark.py --all --dataset fixtures/dataset --passes NopInsertion,InstructionSubstitution,RegisterSubstitution --output /tmp/r2morph-tier1-corpus-adversarial.json",
+  "dataset": "fixtures/dataset",
+  "pass_names": [
+    "NopInsertion",
+    "InstructionSubstitution",
+    "RegisterSubstitution"
+  ],
+  "pass_summary": {
+    "InstructionSubstitution": {
+      "samples": 161,
+      "applied": 31,
+      "no_op": 130,
+      "errors": 0,
+      "omitted": 0,
+      "mutations_applied": 36
+    },
+    "NopInsertion": {
+      "samples": 161,
+      "applied": 1,
+      "no_op": 160,
+      "errors": 0,
+      "omitted": 0,
+      "mutations_applied": 1
+    },
+    "RegisterSubstitution": {
+      "samples": 161,
+      "applied": 4,
+      "no_op": 157,
+      "errors": 0,
+      "omitted": 0,
+      "mutations_applied": 9
+    }
+  },
+  "summary": {
+    "expected_pass_runs": 483,
+    "observed_pass_runs": 483,
+    "missing_pass_runs": 0,
+    "applied_pass_runs_by_pass": {
+      "InstructionSubstitution": 31,
+      "NopInsertion": 1,
+      "RegisterSubstitution": 4
+    },
+    "completed_tool_runs_by_tool": {
+      "angr": 483,
+      "custom": 483,
+      "objdump": 483,
+      "radare2": 483,
+      "unicorn": 463
+    },
+    "completed_tool_run_coverage_by_tool": {
+      "angr": 100.0,
+      "custom": 100.0,
+      "objdump": 100.0,
+      "radare2": 100.0,
+      "unicorn": 95.86
+    },
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 483,
+      "ghidra": 483,
+      "ida-pro": 483,
+      "triton": 483
+    },
+    "error_tool_runs_by_tool": {
+      "unicorn": 20
+    },
+    "adversarial_evidence_blocker_totals": {
+      "blocker_categories": 5,
+      "incomplete_tool_coverage": 5,
+      "non_completed_tool_runs_by_tool": 5,
+      "tools_without_full_completion": 5,
+      "total_adversarial_evidence_blockers": 23,
+      "unavailable_reasons_by_tool": 4,
+      "unavailable_tool_runs_by_tool": 4
+    }
+  }
+}

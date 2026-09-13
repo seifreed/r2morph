@@ -108,7 +108,7 @@ targets (2.89% evidence). It currently classifies 3 passes as Tier 1 and
 19 passes as experimental.
 The same summary still records 12 passes with no per-pass performance
 measurement, 12 with no independent false-positive measurement,
-15 with no independent decompiler-effectiveness measurement,
+12 with no independent decompiler-effectiveness measurement,
 12 without contractual composition support, and
 12 without an exhaustive affected-instruction catalogue.
 The reproducible GCC/Clang corpus and its build manifest live in the public
