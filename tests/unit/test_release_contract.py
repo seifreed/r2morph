@@ -125,6 +125,18 @@ def test_compatibility_corpus_documents_differential_metrics() -> None:
     )
 
 
+def test_compatibility_corpus_documents_closed_virtualization_diagnostics() -> None:
+    contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
+
+    expect(
+        "Unsupported-virtualization diagnostics identify the function address, instruction address, "
+        "missing capability, reason, and severity" in contract
+        and "Partial-virtualization diagnostics are rendered with the same bounded capability" in contract
+        and "partial-only virtualization result is classified as an omitted pass with its diagnostic reason" in contract
+        and "Each unsupported-function diagnostic keeps the rejected instruction address, type, size" in contract
+    )
+
+
 def test_support_matrix_uses_corpus_selected_profile_for_measured_experimental_passes() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     maturity = matrix["maturity"]
