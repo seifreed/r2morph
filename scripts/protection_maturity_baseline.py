@@ -44,6 +44,8 @@ _ELF_IDENT_HEADER_BYTES = 20
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
 _FULL_COVERAGE_PERCENT = 100.0
+_COMPLETE_RUN_FIELD = 0
+_MISSING_RUN_FIELD = 1
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -80,6 +82,22 @@ _PASS_LABELS = {
     "NopInsertion": "nop-insertion",
     "PatternSubstitution": "pattern-substitution",
     "RegisterSubstitution": "register-substitution",
+}
+_COVERAGE_PERCENT_FIELDS = {
+    "runtime_observable": "runtime_observable_coverage_percent",
+    "output_size": "output_size_coverage_percent",
+    "transform_duration": "transform_duration_coverage_percent",
+    "runtime_duration": "runtime_duration_coverage_percent",
+    "static_metric": "static_metric_coverage_percent",
+    "complete_evidence": "complete_evidence_coverage_percent",
+}
+_METRIC_RUN_FIELDS = {
+    "runtime_observable": ("runtime_observable_complete_runs", "runtime_observable_missing_runs"),
+    "output_size": ("output_size_complete_runs", "output_size_missing_runs"),
+    "transform_duration": ("transform_duration_complete_runs", "transform_duration_missing_runs"),
+    "runtime_duration": ("runtime_duration_complete_runs", "runtime_duration_missing_runs"),
+    "static_metric": ("static_metric_complete_runs", "static_metric_missing_runs"),
+    "complete_evidence": ("complete_evidence_runs", "complete_evidence_missing_runs"),
 }
 
 
@@ -859,6 +877,8 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         "passes_with_omitted_runs": _passes_with_positive_runs(summaries, "omitted_runs"),
         "passes_with_error_runs": _passes_with_positive_runs(summaries, "error_runs"),
         "passes_with_incomplete_coverage": _passes_with_incomplete_coverage(summaries),
+        "metric_complete_runs": _metric_run_totals(summaries, _COMPLETE_RUN_FIELD),
+        "metric_missing_runs": _metric_run_totals(summaries, _MISSING_RUN_FIELD),
         "passes_with_semantic_failures": _passes_with_positive_runs(summaries, "semantic_failures"),
         "passes_with_runtime_observable_failures": _passes_with_positive_runs(
             summaries,
@@ -939,6 +959,10 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
     }
 
 
+def _metric_run_totals(summaries: dict[str, object], field_index: int) -> dict[str, int]:
+    return {name: _sum_summary_field(summaries, fields[field_index]) for name, fields in _METRIC_RUN_FIELDS.items()}
+
+
 def _passes_with_zero_runs(summaries: dict[str, object], field: str) -> list[str]:
     return sorted(name for name, summary in summaries.items() if isinstance(summary, dict) and summary.get(field) == 0)
 
@@ -963,16 +987,8 @@ def _reason_map_by_pass(summaries: dict[str, object], field: str) -> dict[str, d
 
 
 def _passes_with_incomplete_coverage(summaries: dict[str, object]) -> dict[str, list[str]]:
-    fields = {
-        "runtime_observable": "runtime_observable_coverage_percent",
-        "output_size": "output_size_coverage_percent",
-        "transform_duration": "transform_duration_coverage_percent",
-        "runtime_duration": "runtime_duration_coverage_percent",
-        "static_metric": "static_metric_coverage_percent",
-        "complete_evidence": "complete_evidence_coverage_percent",
-    }
     incomplete: dict[str, list[str]] = {}
-    for name, field in fields.items():
+    for name, field in _COVERAGE_PERCENT_FIELDS.items():
         passes = _passes_below_full_coverage(summaries, field)
         if passes:
             incomplete[name] = passes

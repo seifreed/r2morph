@@ -69,6 +69,14 @@ _EXPECTED_INCOMPLETE_COVERAGE = {
     "static_metric": ["PatternSubstitution"],
     "complete_evidence": ["PatternSubstitution"],
 }
+_EXPECTED_METRIC_RUN_TOTALS = {
+    "runtime_observable": 1,
+    "output_size": 1,
+    "transform_duration": 1,
+    "runtime_duration": 1,
+    "static_metric": 1,
+    "complete_evidence": 1,
+}
 _EXPECTED_OMISSION_REASONS_BY_PASS = {"PatternSubstitution": {"no eligible function was transformed": 1}}
 _EXPECTED_OMISSION_SEVERITIES_BY_PASS = {"PatternSubstitution": {"warning": 1}}
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
@@ -382,6 +390,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["passes_with_omitted_runs"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_error_runs"] == []
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
+        and report["campaign_summary"]["metric_complete_runs"] == _EXPECTED_METRIC_RUN_TOTALS
+        and report["campaign_summary"]["metric_missing_runs"] == _EXPECTED_METRIC_RUN_TOTALS
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_runtime_observable_failures"] == ["CodeVirtualization"]
         and report["campaign_summary"]["runtime_observable_failure_reasons_by_pass"]
