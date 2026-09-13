@@ -47,6 +47,42 @@ _VM_RESISTANCE_GAP_SCOPE = (
     "anti-tamper",
     "progressive-bytecode-protection",
 )
+_VM_RESISTANCE_GAP_EVIDENCE = {
+    "human-adversarial-validation": {
+        "status": "pending-human-adversarial-review",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": [
+            "docs/independent-review.json",
+            "docs/protection-bytecode-grammar.json",
+            "docs/protection-handler-clustering.json",
+        ],
+    },
+    "isa-opcode-diversity": {
+        "status": "seed-diversity-only-incomplete",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": ["docs/protection-bytecode-grammar.json"],
+    },
+    "handler-diversity": {
+        "status": "seed-diversity-only-incomplete",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": ["docs/protection-handler-clustering.json"],
+    },
+    "dispatcher-diversity": {
+        "status": "seed-diversity-only-incomplete",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": ["docs/protection-handler-clustering.json"],
+    },
+    "anti-tamper": {
+        "status": "seed-diversity-only-incomplete",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": ["docs/protection-maturity.md"],
+    },
+    "progressive-bytecode-protection": {
+        "status": "seed-diversity-only-incomplete",
+        "evidence_quality": "seed-diversity-only",
+        "evidence": ["docs/protection-bytecode-grammar.json"],
+    },
+}
 _NATIVE_EVIDENCE_PROFILE = "tier-1-native"
 FULL_EVIDENCE_PERCENT = 100.0
 
@@ -225,6 +261,10 @@ def _vm_semantic_blocker_totals(gap_scope: list[str]) -> dict[str, int]:
 
 def _vm_resistance_evidence_blockers() -> dict[str, object]:
     return {"vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE)}
+
+
+def _vm_resistance_gap_evidence() -> dict[str, object]:
+    return {gap: _VM_RESISTANCE_GAP_EVIDENCE[gap] for gap in _VM_RESISTANCE_GAP_SCOPE}
 
 
 def _vm_resistance_blocker_totals() -> dict[str, int]:
@@ -465,6 +505,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "vm_semantic_evidence_blockers": _vm_semantic_evidence_blockers(vm_semantic_gap_scope),
             "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(vm_semantic_gap_scope),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
+            "vm_resistance_gap_evidence": _vm_resistance_gap_evidence(),
             "vm_resistance_evidence_blockers": _vm_resistance_evidence_blockers(),
             "vm_resistance_blocker_totals": _vm_resistance_blocker_totals(),
         },

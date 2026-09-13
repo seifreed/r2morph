@@ -464,6 +464,27 @@ def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     )
 
 
+def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["vm_resistance_gap_evidence"]
+    gap_scope = summary["vm_resistance_gap_scope"]
+    evidence_paths = {
+        item
+        for row in evidence.values()
+        for item in row["evidence"]
+        if isinstance(item, str) and not item.startswith("http")
+    }
+
+    expect(
+        sorted(evidence) == sorted(gap_scope)
+        and all(row["evidence_quality"] == "seed-diversity-only" for row in evidence.values())
+        and all(row["status"] != "complete" for row in evidence.values())
+        and all((_ROOT / path).exists() for path in evidence_paths)
+        and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(gap_scope)
+    )
+
+
 def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

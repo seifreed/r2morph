@@ -1425,6 +1425,52 @@
         "anti-tamper",
         "progressive-bytecode-protection"
       ],
+      "vm_resistance_gap_evidence": {
+        "human-adversarial-validation": {
+          "status": "pending-human-adversarial-review",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/independent-review.json",
+            "docs/protection-bytecode-grammar.json",
+            "docs/protection-handler-clustering.json"
+          ]
+        },
+        "isa-opcode-diversity": {
+          "status": "seed-diversity-only-incomplete",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/protection-bytecode-grammar.json"
+          ]
+        },
+        "handler-diversity": {
+          "status": "seed-diversity-only-incomplete",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/protection-handler-clustering.json"
+          ]
+        },
+        "dispatcher-diversity": {
+          "status": "seed-diversity-only-incomplete",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/protection-handler-clustering.json"
+          ]
+        },
+        "anti-tamper": {
+          "status": "seed-diversity-only-incomplete",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/protection-maturity.md"
+          ]
+        },
+        "progressive-bytecode-protection": {
+          "status": "seed-diversity-only-incomplete",
+          "evidence_quality": "seed-diversity-only",
+          "evidence": [
+            "docs/protection-bytecode-grammar.json"
+          ]
+        }
+      },
       "vm_resistance_evidence_blockers": {
         "vm_resistance_gap_scope": [
           "human-adversarial-validation",
