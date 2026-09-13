@@ -22,6 +22,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_DIAGNOSTIC_OPCODE_CHARS = 96
 _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE = 5
+_EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS = 0x40100A
 
 
 class _SectionsBinary:
@@ -201,6 +202,23 @@ def test_unsupported_record_uses_mnemonic_when_instruction_text_is_absent() -> N
     )
 
     expect(record["instruction_mnemonic"] == "syscall" and record["instruction_opcode"] == "syscall")
+
+
+def test_unsupported_record_uses_offset_when_addr_is_absent() -> None:
+    record = CodeVirtualizationPass._unsupported_record(
+        {"addr": 0x401000},
+        {
+            "offset": _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS,
+            "type": "call",
+            "opcode": "call 0x401080",
+            "size": _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE,
+        },
+        "calls",
+        "call semantics were not proven",
+        "error",
+    )
+
+    expect(record["instruction_address"] == _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS)
 
 
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
