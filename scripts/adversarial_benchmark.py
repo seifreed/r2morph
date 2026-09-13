@@ -855,6 +855,7 @@ def _adversarial_evidence_blockers(
     for field in (
         "missing_passes",
         "missing_pass_runs_by_pass",
+        "missing_tool_runs_by_tool",
         "error_pass_runs_by_pass",
         "incomplete_tool_coverage",
         "non_completed_tool_runs_by_tool",
