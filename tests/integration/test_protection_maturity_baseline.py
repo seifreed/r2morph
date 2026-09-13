@@ -10,6 +10,7 @@ from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
     _ArtifactAccumulator,
+    _diagnostic_counts,
     _parse_pass_names,
     _render_multi_pass_result,
     _render_result,
@@ -511,6 +512,19 @@ def test_transformation_evidence_records_partial_virtualization_capability() -> 
             "reason": "floating_point: SIMD lane semantics not proven",
             "severity": "error",
         }
+    )
+
+
+def test_diagnostic_counts_groups_capabilities_and_severities() -> None:
+    diagnostics = [
+        {"capability": "memory", "severity": "error"},
+        {"capability": "memory", "severity": "warning"},
+        {"capability": "abi", "severity": "error"},
+    ]
+
+    expect(
+        _diagnostic_counts(diagnostics, "capability") == {"abi": 1, "memory": 2}
+        and _diagnostic_counts(diagnostics, "severity") == {"error": 2, "warning": 1}
     )
 
 

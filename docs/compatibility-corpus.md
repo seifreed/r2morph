@@ -69,6 +69,8 @@ function address, instruction address, missing capability, reason, and severity.
 Partial-virtualization diagnostics are rendered with the same bounded
 capability, reason, and severity contract instead of falling back to a generic
 omission.
+Protection maturity runs retain bounded unsupported and partial-virtualization
+capability/severity counts when the pass reports diagnostic records.
 Adversarial CodeVirtualization rows and pass summaries also retain bounded
 unsupported and partial virtualization capability/severity counts when
 diagnostics are present. A partial-only virtualization result is classified as

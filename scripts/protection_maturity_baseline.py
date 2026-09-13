@@ -375,6 +375,19 @@ def _transformation_evidence(
     }
 
 
+def _diagnostic_counts(records: object, field: str) -> dict[str, int]:
+    if not isinstance(records, list):
+        return {}
+    counts: dict[str, int] = {}
+    for record in records:
+        if not isinstance(record, Mapping):
+            continue
+        value = record.get(field)
+        if isinstance(value, str) and value:
+            counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def _measure_seed(fixture: Path, seed: int, output_dir: Path, pass_name: str) -> dict[str, object]:
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
@@ -414,6 +427,16 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path, pass_name: str) ->
                 "after": _safe_inspect(output),
             }
         )
+        for source, prefix in (
+            (stats.get("unsupported_functions"), "unsupported"),
+            (stats.get("partial_virtualization"), "partial_virtualization"),
+        ):
+            capabilities = _diagnostic_counts(source, "capability")
+            severities = _diagnostic_counts(source, "severity")
+            if capabilities:
+                run[f"{prefix}_capabilities"] = capabilities
+            if severities:
+                run[f"{prefix}_severities"] = severities
     else:
         run["error"] = error
     return run
