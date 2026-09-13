@@ -773,6 +773,13 @@ class CodeVirtualizationPass(MutationPass):
             return "provable_function_shape", "no supported virtualization shape was proven"
         kind = str(instruction.get("type", ""))
         opcode = str(instruction.get("opcode", "")).lower()
+        opcode_without_repeat = (
+            opcode.removeprefix("rep ")
+            .removeprefix("repe ")
+            .removeprefix("repne ")
+            .removeprefix("repz ")
+            .removeprefix("repnz ")
+        )
         if kind in _COMPUTED_JUMP_TYPES:
             capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
         elif (
@@ -848,105 +855,109 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
-        elif opcode.startswith(
-            (
-                "bnd",
-                "clac",
-                "cldemote",
-                "clflush",
-                "clflushopt",
-                "clwb",
-                "cli",
-                "cpuid",
-                "enqcmd",
-                "enqcmds",
-                "endbr32",
-                "endbr64",
-                "encls",
-                "enclu",
-                "enclv",
-                "getsec",
-                "hlt",
-                "in ",
-                "invd",
-                "invept",
-                "invlpg",
-                "invpcid",
-                "invvpid",
-                "insb",
-                "insd",
-                "insw",
-                "lar",
-                "lgdt",
-                "lidt",
-                "lmsw",
-                "lldt",
-                "lsl",
-                "ltr",
-                "movdir64b",
-                "movdiri",
-                "out ",
-                "outsb",
-                "outsd",
-                "outsw",
-                "pconfig",
-                "prefetch",
-                "ptwrite",
-                "rdmsr",
-                "rdpid",
-                "rdpkru",
-                "rdpmc",
-                "rdpru",
-                "rdrand",
-                "rdseed",
-                "rdtsc",
-                "rdtscp",
-                "rsm",
-                "serialize",
-                "sgdt",
-                "sidt",
-                "skinit",
-                "sldt",
-                "smsw",
-                "stac",
-                "sti",
-                "str",
-                "verr",
-                "verw",
-                "vmcall",
-                "vmclear",
-                "vmlaunch",
-                "vmload",
-                "vmmcall",
-                "vmptrld",
-                "vmptrst",
-                "vmresume",
-                "vmrun",
-                "vmsave",
-                "vmxon",
-                "vmxoff",
-                "wbnoinvd",
-                "wbinvd",
-                "xgetbv",
-                "xsetbv",
-                "wrmsr",
-                "wrpkru",
+        elif (
+            opcode.startswith(
+                (
+                    "bnd",
+                    "clac",
+                    "cldemote",
+                    "clflush",
+                    "clflushopt",
+                    "clwb",
+                    "cli",
+                    "cpuid",
+                    "enqcmd",
+                    "enqcmds",
+                    "endbr32",
+                    "endbr64",
+                    "encls",
+                    "enclu",
+                    "enclv",
+                    "getsec",
+                    "hlt",
+                    "in ",
+                    "invd",
+                    "invept",
+                    "invlpg",
+                    "invpcid",
+                    "invvpid",
+                    "insb",
+                    "insd",
+                    "insw",
+                    "lar",
+                    "lgdt",
+                    "lidt",
+                    "lmsw",
+                    "lldt",
+                    "lsl",
+                    "ltr",
+                    "movdir64b",
+                    "movdiri",
+                    "out ",
+                    "outsb",
+                    "outsd",
+                    "outsw",
+                    "pconfig",
+                    "prefetch",
+                    "ptwrite",
+                    "rdmsr",
+                    "rdpid",
+                    "rdpkru",
+                    "rdpmc",
+                    "rdpru",
+                    "rdrand",
+                    "rdseed",
+                    "rdtsc",
+                    "rdtscp",
+                    "rsm",
+                    "serialize",
+                    "sgdt",
+                    "sidt",
+                    "skinit",
+                    "sldt",
+                    "smsw",
+                    "stac",
+                    "sti",
+                    "str",
+                    "verr",
+                    "verw",
+                    "vmcall",
+                    "vmclear",
+                    "vmlaunch",
+                    "vmload",
+                    "vmmcall",
+                    "vmptrld",
+                    "vmptrst",
+                    "vmresume",
+                    "vmrun",
+                    "vmsave",
+                    "vmxon",
+                    "vmxoff",
+                    "wbnoinvd",
+                    "wbinvd",
+                    "xgetbv",
+                    "xsetbv",
+                    "wrmsr",
+                    "wrpkru",
+                )
             )
-        ) or any(
-            token in opcode
-            for token in (
-                " cr0",
-                " cr1",
-                " cr2",
-                " cr3",
-                " cr4",
-                " cr8",
-                " dr0",
-                " dr1",
-                " dr2",
-                " dr3",
-                " dr6",
-                " dr7",
+            or opcode_without_repeat.startswith(("insb", "insd", "insw", "outsb", "outsd", "outsw"))
+            or any(
+                token in opcode
+                for token in (
+                    " cr0",
+                    " cr1",
+                    " cr2",
+                    " cr3",
+                    " cr4",
+                    " cr8",
+                    " dr0",
+                    " dr1",
+                    " dr2",
+                    " dr3",
+                    " dr6",
+                    " dr7",
+                )
             )
         ):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
@@ -1025,14 +1036,7 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
-        elif (
-            opcode.removeprefix("rep ")
-            .removeprefix("repe ")
-            .removeprefix("repne ")
-            .removeprefix("repz ")
-            .removeprefix("repnz ")
-            .startswith(("cmps", "lods", "movs", "scas", "stos", "xlat"))
-        ):
+        elif opcode_without_repeat.startswith(("cmps", "lods", "movs", "scas", "stos", "xlat")):
             capability, reason = (
                 "memory_operands",
                 "implicit memory operand semantics were not proven for whole-function virtualization",
