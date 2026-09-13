@@ -1537,11 +1537,16 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         "Run cross-platform package smoke tests" in cross_platform_job
         and "Install build backend for cross-platform wheel smoke" in cross_platform_job
         and 'run: python -m pip install "build>=1.2.0"' in cross_platform_job
+        and "shell: bash" in cross_platform_job
         and "python -m build" in cross_platform_job
         and "python -m pip install --force-reinstall dist/*.whl" in cross_platform_job
+        and "import platform" in cross_platform_job
         and 'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")' in cross_platform_job
         and 'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")' in cross_platform_job
         and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in cross_platform_job
+        and "test_targets = [" in cross_platform_job
+        and "x64_assembler_targets = [" in cross_platform_job
+        and 'if platform.machine().lower() in {"amd64", "x86_64"}:' in cross_platform_job
         and '"tests/unit/test_circular_imports.py"' in cross_platform_job
         and '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"' in cross_platform_job
         and '"tests/unit/test_pe_handler_parsing_contract.py"' in cross_platform_job

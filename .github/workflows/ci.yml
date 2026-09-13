@@ -332,10 +332,12 @@ jobs:
 
       - name: Run cross-platform package smoke tests
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
+        shell: bash
         run: |
           python -m build
           python -m pip install --force-reinstall dist/*.whl
           python - <<'PY'
+          import platform
           import shutil
           import subprocess
           import sys
@@ -352,6 +354,45 @@ jobs:
               else:
                   shutil.copy2(source, target)
           subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"], cwd=wheel_root, check=True)
+          test_targets = [
+              "tests/unit/test_circular_imports.py",
+              "tests/unit/test_cli_basic_commands.py::test_cli_version_function",
+              "tests/unit/test_pe_handler_parsing_contract.py",
+              "tests/unit/test_pe_handler_struct_parse.py",
+              "tests/unit/test_macho_parse_basic.py",
+              "tests/unit/test_instruction_substitution_arm64_contract.py",
+              "tests/unit/test_package_data.py",
+              "tests/unit/test_support_matrix_contract.py",
+              "tests/unit/test_benchmark_metrics_contract.py",
+              "tests/unit/test_benchmark_runners_contract.py",
+              "tests/unit/test_benchmark_reporting_summary_contract.py",
+              "tests/unit/test_benchmark_reporting_breakdown_contract.py",
+              "tests/unit/test_benchmark_reporting_text_contract.py",
+              "tests/unit/test_benchmark_reporting_io_contract.py",
+              "tests/unit/test_benchmark_reporting_exports_contract.py",
+              "tests/unit/test_performance_regression_suite_contract.py",
+              "tests/unit/test_performance_regression_measurement_contract.py",
+              "tests/unit/test_performance_regression_execution_contract.py",
+              "tests/unit/test_performance_regression_models_contract.py",
+              "tests/unit/test_performance_regression_metadata_contract.py",
+              "tests/unit/test_performance_regression_comparison_contract.py",
+              "tests/unit/test_performance_regression_storage_contract.py",
+              "tests/unit/test_pass_dependency_catalogs_contract.py",
+              "tests/unit/test_evasion_scorer_helpers_contract.py",
+              "tests/unit/test_enhanced_analyzer_reporting_contract.py",
+              "tests/unit/test_mutation_annotator_instruction_contract.py",
+              "tests/unit/test_code_virtualization_memory_widths.py",
+              "tests/unit/test_code_virtualization_tls.py",
+              "tests/unit/test_code_virtualization_static_dataflow.py",
+              "tests/unit/test_code_virtualization_diagnostics.py",
+              "tests/unit/test_code_virtualization_fp_indexed_shapes.py",
+          ]
+          x64_assembler_targets = [
+              "tests/unit/test_code_virtualization_call_abi.py",
+              "tests/unit/test_code_virtualization_avx256.py",
+          ]
+          if platform.machine().lower() in {"amd64", "x86_64"}:
+              test_targets.extend(x64_assembler_targets)
           subprocess.run(
               [
                   sys.executable,
@@ -360,39 +401,7 @@ jobs:
                   "-m",
                   "pytest",
                   "-v",
-                  "tests/unit/test_circular_imports.py",
-                  "tests/unit/test_cli_basic_commands.py::test_cli_version_function",
-                  "tests/unit/test_pe_handler_parsing_contract.py",
-                  "tests/unit/test_pe_handler_struct_parse.py",
-                  "tests/unit/test_macho_parse_basic.py",
-                  "tests/unit/test_instruction_substitution_arm64_contract.py",
-                  "tests/unit/test_package_data.py",
-                  "tests/unit/test_support_matrix_contract.py",
-                  "tests/unit/test_benchmark_metrics_contract.py",
-                  "tests/unit/test_benchmark_runners_contract.py",
-                  "tests/unit/test_benchmark_reporting_summary_contract.py",
-                  "tests/unit/test_benchmark_reporting_breakdown_contract.py",
-                  "tests/unit/test_benchmark_reporting_text_contract.py",
-                  "tests/unit/test_benchmark_reporting_io_contract.py",
-                  "tests/unit/test_benchmark_reporting_exports_contract.py",
-                  "tests/unit/test_performance_regression_suite_contract.py",
-                  "tests/unit/test_performance_regression_measurement_contract.py",
-                  "tests/unit/test_performance_regression_execution_contract.py",
-                  "tests/unit/test_performance_regression_models_contract.py",
-                  "tests/unit/test_performance_regression_metadata_contract.py",
-                  "tests/unit/test_performance_regression_comparison_contract.py",
-                  "tests/unit/test_performance_regression_storage_contract.py",
-                  "tests/unit/test_pass_dependency_catalogs_contract.py",
-                  "tests/unit/test_evasion_scorer_helpers_contract.py",
-                  "tests/unit/test_enhanced_analyzer_reporting_contract.py",
-                  "tests/unit/test_mutation_annotator_instruction_contract.py",
-                  "tests/unit/test_code_virtualization_memory_widths.py",
-                  "tests/unit/test_code_virtualization_call_abi.py",
-                  "tests/unit/test_code_virtualization_tls.py",
-                  "tests/unit/test_code_virtualization_static_dataflow.py",
-                  "tests/unit/test_code_virtualization_diagnostics.py",
-                  "tests/unit/test_code_virtualization_fp_indexed_shapes.py",
-                  "tests/unit/test_code_virtualization_avx256.py",
+                  *test_targets,
                   "--no-cov",
                   "--tb=short",
               ],
