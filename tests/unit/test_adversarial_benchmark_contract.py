@@ -142,6 +142,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["completed_tool_runs"] == 1
         and summary["completed_tool_count"] == 1
         and summary["completed_tools"] == ["binary-ninja"]
+        and summary["completed_tool_runs_by_tool"] == {"binary-ninja": 1}
+        and summary["completed_tool_run_coverage_by_tool"] == {"binary-ninja": _EXPECTED_HALF_COVERAGE_PERCENT}
         and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["completed_tool_run_coverage_percent"] == _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT
         and summary["non_completed_tool_runs"] == _EXPECTED_NON_COMPLETED_TOOL_RUNS

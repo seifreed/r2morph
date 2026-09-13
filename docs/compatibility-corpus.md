@@ -100,7 +100,9 @@ pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
-environment-specific IDA, Ghidra, or Binary Ninja availability gaps.
+environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
+records completed-run coverage by analyzer tool so campaigns remain comparable
+when a licensed or local analyzer is missing.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

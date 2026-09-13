@@ -722,6 +722,7 @@ def _campaign_summary(
     completed_tool_names = _tools_with_status(samples, "completed")
     unavailable_tool_names = _tools_with_status(samples, "unavailable")
     error_tool_names = _tools_with_status(samples, "error")
+    completed_tools_by_tool = _tool_status_counts(samples, "completed")
     unavailable_tools_by_tool = _tool_status_counts(samples, "unavailable")
     error_tools_by_tool = _tool_status_counts(samples, "error")
     expected_pass_runs = fixture_count * len(pass_names)
@@ -778,6 +779,8 @@ def _campaign_summary(
         "completed_tool_runs": completed_tools,
         "completed_tool_count": len(completed_tool_names),
         "completed_tools": completed_tool_names,
+        "completed_tool_runs_by_tool": completed_tools_by_tool,
+        "completed_tool_run_coverage_by_tool": _tool_run_coverage_by_tool(completed_tools_by_tool, expected_pass_runs),
         "completed_tool_run_percent": _coverage_percent(completed_tools, observed_tool_runs),
         "completed_tool_run_coverage_percent": _coverage_percent(completed_tools, expected_tool_runs),
         "non_completed_tool_runs": non_completed_tool_runs,
@@ -849,6 +852,10 @@ def _tools_with_status(samples: list[dict[str, object]], status: str) -> list[st
             if isinstance(row, dict) and row.get("status") == status and isinstance(tool := row.get("tool"), str)
         }
     )
+
+
+def _tool_run_coverage_by_tool(counts: dict[str, int], expected_runs: int) -> dict[str, float]:
+    return {tool: _coverage_percent(count, expected_runs) for tool, count in sorted(counts.items())}
 
 
 def _tool_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:
