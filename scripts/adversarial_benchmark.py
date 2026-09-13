@@ -13,7 +13,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from importlib import import_module
 from pathlib import Path
 
@@ -980,7 +980,7 @@ def _tool_reason_map(samples: list[dict[str, object]], status: str) -> dict[str,
     return {tool: dict(sorted(counts.items())) for tool, counts in sorted(reasons.items())}
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("original", type=Path, nargs="?")
@@ -1003,7 +1003,7 @@ def main() -> None:
         action="store_true",
         help="fail when an expected analyzer slot is missing from a corpus benchmark",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.all_fixtures and args.protected:
         parser.error("--protected is valid only with one original binary")
     if args.require_tool_slots and not args.all_fixtures:
@@ -1015,7 +1015,7 @@ def main() -> None:
     report = (
         benchmark_corpus(args.dataset, pass_names)
         if args.all_fixtures
-        else benchmark_pair(args.original, args.protected)
+        else benchmark_pair(args.original, args.protected, pass_names)
     )
     if args.require_applied:
         passes_without_mutations = _passes_without_applications(report)

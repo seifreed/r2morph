@@ -17,9 +17,13 @@ from scripts.adversarial_benchmark import (
     benchmark_corpus,
     benchmark_pair,
 )
+from scripts.adversarial_benchmark import (
+    main as adversarial_main,
+)
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
+_NOP_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
 _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
 _SINGLE_FIXTURE_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-adversarial-benchmark.json"
 _COMPATIBILITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "compatibility-corpus.md"
@@ -170,6 +174,25 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
     )
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
+
+
+def test_adversarial_benchmark_cli_honors_single_fixture_pass_selection(tmp_path: Path) -> None:
+    output = tmp_path / "nop-adversarial.json"
+    adversarial_main(
+        [
+            str(_NOP_FIXTURE),
+            "--passes",
+            "NopInsertion",
+            "--output",
+            str(output),
+        ]
+    )
+    report = json.loads(output.read_text(encoding="utf-8"))
+
+    expect(
+        report.get("pass_names") == ["NopInsertion"]
+        and report.get("passes", [{}])[0].get("pass_name") == "NopInsertion",
+    )
 
 
 def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_rows() -> None:
