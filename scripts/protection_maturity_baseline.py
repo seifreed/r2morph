@@ -1016,6 +1016,7 @@ def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
     dataset: Path | None = None,
     corpus_families: list[str] | None = None,
+    generated_fixture_count: int = 0,
 ) -> dict[str, object]:
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
     summaries = {name: result["summary"] for name, result in rendered.items()}
@@ -1025,6 +1026,7 @@ def _render_multi_pass_result(
     campaign_summary["platform_gap_scope"] = dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE)
     campaign_summary["input_sources"] = input_sources
     campaign_summary["corpus_families"] = list(corpus_families or ["repository-fixtures"])
+    campaign_summary["generated_fixture_count"] = generated_fixture_count
     campaign_summary["corpus_gap_scope"] = _differential_corpus_gap_scope(
         input_sources,
         campaign_summary["corpus_families"],
@@ -1361,6 +1363,22 @@ def _complete_evidence_error(report: dict[str, object]) -> str | None:
     return "complete-evidence validation requires a maturity report summary"
 
 
+def _select_fixtures(
+    fixtures: list[Path],
+    generated_corpus: bool,
+    temp_dir: Path,
+) -> tuple[list[Path], list[str], int]:
+    selected = list(fixtures)
+    corpus_families = ["repository-fixtures"] if selected else []
+    generated_fixture_count = 0
+    if generated_corpus:
+        generated_fixtures = build_generated_corpus(temp_dir / "generated-corpus")
+        generated_fixture_count = len(generated_fixtures)
+        selected.extend(generated_fixtures)
+        corpus_families.append(_GENERATED_CORPUS_FAMILY)
+    return selected, corpus_families, generated_fixture_count
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
@@ -1408,13 +1426,14 @@ def main() -> None:
     seeds = range(args.first_seed, args.first_seed + args.count)
     runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
     with tempfile.TemporaryDirectory(prefix="r2morph-maturity-") as temp_dir:
-        corpus_families = ["repository-fixtures"] if fixtures else []
-        if args.generated_corpus:
-            try:
-                fixtures.extend(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
-            except RuntimeError as error:
-                parser.error(str(error))
-            corpus_families.append(_GENERATED_CORPUS_FAMILY)
+        try:
+            fixtures, corpus_families, generated_fixture_count = _select_fixtures(
+                fixtures,
+                args.generated_corpus,
+                Path(temp_dir),
+            )
+        except RuntimeError as error:
+            parser.error(str(error))
         if not fixtures:
             parser.error("no executable fixtures selected")
         measurements = {
@@ -1429,6 +1448,7 @@ def main() -> None:
             measurements,
             args.dataset if args.all_fixtures else None,
             corpus_families,
+            generated_fixture_count,
         )
     if args.require_applied:
         passes_without_mutations = [

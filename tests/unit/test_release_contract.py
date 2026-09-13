@@ -1180,6 +1180,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "corpus_gap_scope" in differential
         and "corpus_scope" in differential
         and "fixtures/dataset" in differential
+        and "generated_fixture_count" in differential
         and "missing_corpus_passes" in differential
         and "total_complete_evidence_missing_runs" in differential
         and "passes_with_incomplete_coverage" in differential

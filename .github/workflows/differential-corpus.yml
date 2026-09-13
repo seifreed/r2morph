@@ -62,6 +62,8 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
+          if summary["generated_fixture_count"] != 3:
+              raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
               raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")
           if summary["corpus_scope"] != {"dataset": "fixtures/dataset"}:

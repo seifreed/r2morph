@@ -64,6 +64,7 @@ _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
 _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = ("generated_branch", "generated_lookup", "generated_memory")
+_EXPECTED_GENERATED_FIXTURE_COUNT = len(_EXPECTED_GENERATED_CORPUS_SOURCES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
@@ -590,11 +591,13 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
             ]
         },
         corpus_families=["repository-fixtures", _GENERATED_CORPUS_FAMILY],
+        generated_fixture_count=_EXPECTED_GENERATED_FIXTURE_COUNT,
     )
 
     expect(
         report["campaign_summary"]["input_sources"] == ["default-argv", "generated-argv"]
         and report["campaign_summary"]["corpus_families"] == ["repository-fixtures", _GENERATED_CORPUS_FAMILY]
+        and report["campaign_summary"]["generated_fixture_count"] == _EXPECTED_GENERATED_FIXTURE_COUNT
         and report["campaign_summary"]["corpus_gap_scope"] == {"corpus_families": [], "input_sources": []}
         and report["campaign_summary"]["continuous_evidence_blockers"].get("corpus_gap_scope") is None
     )
