@@ -29,11 +29,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
           pip install -r requirements.txt
           python -m pip install --editable .
 
+      - name: Build and install package wheel
+        run: |
+          python -m build
+          python -m pip install --force-reinstall dist/*.whl
+
       - name: Run full differential corpus
         run: |
+          wheel_root=/tmp/r2morph-differential-wheel-check
+          rm -rf "$wheel_root"
+          mkdir -p "$wheel_root"
+          cp -R scripts tests fixtures "$wheel_root"/
+          cd "$wheel_root"
           python scripts/protection_maturity_baseline.py \
             --all \
             --dataset fixtures/dataset \
@@ -44,7 +55,7 @@ jobs:
             --generated-corpus \
             --first-seed 20260901 \
             --count 3 \
-            --output differential-corpus.json
+            --output "$GITHUB_WORKSPACE/differential-corpus.json"
 
       - name: Validate differential campaign summary
         run: |
@@ -97,13 +108,15 @@ jobs:
             PolymorphicEngine,SelfModifyingCode,ShortJumpPatching,
             StackStrings,StringObfuscation
         run: |
+          wheel_root=/tmp/r2morph-differential-wheel-check
+          cd "$wheel_root"
           python scripts/protection_maturity_baseline.py \
             --all \
             --dataset fixtures/dataset \
             --passes "$EXTENDED_MATURITY_PASSES" \
             --first-seed 20260901 \
             --count 1 \
-            --output extended-maturity-passes.json
+            --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
         run: |

@@ -29,18 +29,29 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
           pip install -r requirements.txt
           python -m pip install --editable .
 
+      - name: Build and install package wheel
+        run: |
+          python -m build
+          python -m pip install --force-reinstall dist/*.whl
+
       - name: Run benchmark
         run: |
+          wheel_root=/tmp/r2morph-adversarial-wheel-check
+          rm -rf "$wheel_root"
+          mkdir -p "$wheel_root"
+          cp -R scripts tests fixtures "$wheel_root"/
+          cd "$wheel_root"
           python scripts/adversarial_benchmark.py \
             --all \
             --dataset fixtures/dataset \
             --passes all \
             --require-applied \
             --require-tool-slots \
-            --output adversarial-benchmark.json
+            --output "$GITHUB_WORKSPACE/adversarial-benchmark.json"
 
       - name: Validate adversarial campaign summary
         run: |

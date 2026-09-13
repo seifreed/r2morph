@@ -1415,6 +1415,21 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "schedule:" in differential
         and "workflow_dispatch:" in differential
         and "cron:" in differential
+        and "Build and install package wheel" in adversarial
+        and "Build and install package wheel" in differential
+        and "python -m build" in adversarial
+        and "python -m build" in differential
+        and "python -m pip install --force-reinstall dist/*.whl" in adversarial
+        and "python -m pip install --force-reinstall dist/*.whl" in differential
+        and "wheel_root=/tmp/r2morph-adversarial-wheel-check" in adversarial
+        and "wheel_root=/tmp/r2morph-differential-wheel-check" in differential
+        and 'cp -R scripts tests fixtures "$wheel_root"/' in adversarial
+        and 'cp -R scripts tests fixtures "$wheel_root"/' in differential
+        and 'cd "$wheel_root"' in adversarial
+        and 'cd "$wheel_root"' in differential
+        and '--output "$GITHUB_WORKSPACE/adversarial-benchmark.json"' in adversarial
+        and '--output "$GITHUB_WORKSPACE/differential-corpus.json"' in differential
+        and '--output "$GITHUB_WORKSPACE/extended-maturity-passes.json"' in differential
         and "--passes all" in adversarial
         and "--require-tool-slots" in adversarial
         and "Validate adversarial campaign summary" in adversarial
