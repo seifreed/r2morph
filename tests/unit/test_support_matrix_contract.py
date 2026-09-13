@@ -29,6 +29,12 @@ def test_support_matrix_has_one_cell_per_declared_combination() -> None:
     expect(matrix["cell_count"] == expected_count and len(matrix["cells"]) == expected_count)
 
 
+def test_support_matrix_report_matches_current_declarations() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+
+    expect(document["matrix"] == build_matrix(document))
+
+
 def test_support_matrix_marks_unsupported_combinations_without_evidence() -> None:
     document = json.loads(_MATRIX.read_text(encoding="utf-8"))
     matrix = build_matrix(document)
