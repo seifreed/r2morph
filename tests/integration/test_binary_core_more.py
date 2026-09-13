@@ -102,6 +102,8 @@ def test_binary_assemble_preserves_extended_register_self_operations(tmp_path: P
         binary.analyze()
         expect(binary.assemble("xor r12d, r12d") == bytes.fromhex("4531e4"))
         expect(binary.assemble("sub r13d, r13d") == bytes.fromhex("4529ed"))
+        expect(binary.assemble("mov r8d, eax") == bytes.fromhex("4189c0"))
+        expect(binary.assemble("add r8d, eax") == bytes.fromhex("4101c0"))
 
 
 def test_binary_arch_info_and_reload(tmp_path: Path) -> None:

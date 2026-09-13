@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import re
 from functools import cache
+from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 _EXTENDED_REGISTER_ENCODING_START = 8
 _REGISTER_BITS_64 = 64
 _XMM_REGISTER_COUNT = 16
+_EXTENDED_REGISTER = re.compile(r"\br(?:[89]|1[0-5])(?:[bwd])?\b", re.IGNORECASE)
 _SELF_REGISTER_OPERATION = re.compile(r"(xor|sub)\s+([a-z][a-z0-9]*),\s*\2$", re.IGNORECASE)
 
 
@@ -119,8 +121,15 @@ class AssemblyService:
                 try:
                     assembled = bytes.fromhex(hex_str)
                     # rasm2 can omit the REX prefix for self-operations on
-                    # r8-r15; those bytes address the wrong legacy register.
-                    return self._assemble_self_register_operation_fallback(normalized_instruction) or assembled
+                    # r8-r15; use Keystone for the full extended-register form
+                    # so source and destination operands retain their REX bits.
+                    keystone_bytes = self._assemble_extended_register_fallback(
+                        binary,
+                        normalized_instruction,
+                        function_addr,
+                    )
+                    self_operation = self._assemble_self_register_operation_fallback(normalized_instruction)
+                    return keystone_bytes or self_operation or assembled
                 except ValueError as e:
                     logger.error(f"Failed to parse hex '{hex_str[:20]}...': {e}")
 
@@ -204,6 +213,28 @@ class AssemblyService:
             code &= 0x07
         opcode = 0x31 if mnemonic.lower() == "xor" else 0x29
         return bytes((rex, opcode, 0xC0 | (code << 3) | code))
+
+    @staticmethod
+    def _assemble_extended_register_fallback(
+        binary: Binary,
+        instruction: str,
+        function_addr: int | None,
+    ) -> bytes | None:
+        """Use Keystone when rasm2 mis-encodes an x86-64 extended register."""
+        if _EXTENDED_REGISTER.search(instruction) is None:
+            return None
+        try:
+            arch, bits = binary.get_arch_family()
+            if arch not in {"x86", "x86_64"} or bits != _REGISTER_BITS_64:
+                return None
+            keystone = import_module("keystone")
+            engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
+            encoded, _ = engine.asm(instruction, addr=function_addr or 0)
+            return bytes(encoded) if encoded else None
+        except Exception as error:
+            # Optional fallback failure must leave the existing r2 path intact.
+            logger.debug("Extended-register fallback failed for %r: %s", instruction, error)
+            return None
 
     def _assemble_movzx_movsx_fallback(self, instruction: str) -> bytes | None:
         """
