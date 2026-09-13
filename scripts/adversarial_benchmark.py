@@ -799,6 +799,16 @@ def _campaign_summary(
         "completed_tool_run_coverage_by_tool": _tool_run_coverage_by_tool(completed_tools_by_tool, expected_pass_runs),
         "completed_tool_run_percent": _coverage_percent(completed_tools, observed_tool_runs),
         "completed_tool_run_coverage_percent": _coverage_percent(completed_tools, expected_tool_runs),
+        "incomplete_tool_coverage": _incomplete_tool_coverage(
+            expected_tools,
+            expected_pass_runs,
+            {
+                "completed": completed_tools_by_tool,
+                "missing": missing_tool_runs_by_tool,
+                "unavailable": unavailable_tools_by_tool,
+                "error": error_tools_by_tool,
+            },
+        ),
         "non_completed_tool_runs": non_completed_tool_runs,
         "non_completed_tool_runs_by_tool": non_completed_tool_runs_by_tool,
         "unavailable_tool_runs": unavailable_tools,
@@ -872,6 +882,29 @@ def _tools_with_status(samples: list[dict[str, object]], status: str) -> list[st
 
 def _tool_run_coverage_by_tool(counts: dict[str, int], expected_runs: int) -> dict[str, float]:
     return {tool: _coverage_percent(count, expected_runs) for tool, count in sorted(counts.items())}
+
+
+def _incomplete_tool_coverage(
+    expected_tools: tuple[str, ...],
+    expected_runs: int,
+    counts_by_status: dict[str, dict[str, int]],
+) -> list[dict[str, object]]:
+    rows = []
+    for tool in expected_tools:
+        completed_runs = counts_by_status["completed"].get(tool, 0)
+        if completed_runs == expected_runs:
+            continue
+        rows.append(
+            {
+                "tool": tool,
+                "completed_runs": completed_runs,
+                "missing_runs": counts_by_status["missing"].get(tool, 0),
+                "unavailable_runs": counts_by_status["unavailable"].get(tool, 0),
+                "error_runs": counts_by_status["error"].get(tool, 0),
+                "completed_run_coverage_percent": _coverage_percent(completed_runs, expected_runs),
+            }
+        )
+    return rows
 
 
 def _tool_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:

@@ -67,7 +67,9 @@ campaign coverage, including the expected and observed analyzer names, coverage 
 applied/omitted/error pass rates, counts, and reasons, per-pass/per-tool run
 counts, plus completed/unavailable/error tool rates, counts, and reasons by
 analyzer, completed-tool coverage over expected pass/tool slots, and
-non-completed-tool gaps by analyzer.
+non-completed-tool gaps by analyzer. It also lists incomplete tool coverage
+rows with completed, missing, unavailable, and error run counts for each analyzer
+that lacks full comparable coverage.
 The real VM diversification regression builds the same fixture with four
 independent seeds, requiring identical emulated exit behavior and four distinct
 output digests. This covers the combined opcode, handler, dispatcher, checksum,

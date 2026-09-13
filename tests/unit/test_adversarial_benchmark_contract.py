@@ -207,6 +207,37 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["completed_tool_run_coverage_by_tool"] == {"binary-ninja": _EXPECTED_HALF_COVERAGE_PERCENT}
         and summary["completed_tool_run_percent"] == _EXPECTED_PARTIAL_TOOL_COVERAGE_PERCENT
         and summary["completed_tool_run_coverage_percent"] == _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT
+        and {
+            row["tool"]: row
+            for row in summary["incomplete_tool_coverage"]
+            if row["tool"] in {"angr", "binary-ninja", "ghidra"}
+        }
+        == {
+            "angr": {
+                "tool": "angr",
+                "completed_runs": 0,
+                "missing_runs": _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL,
+                "unavailable_runs": 0,
+                "error_runs": 0,
+                "completed_run_coverage_percent": _EXPECTED_EMPTY_COVERAGE_PERCENT,
+            },
+            "binary-ninja": {
+                "tool": "binary-ninja",
+                "completed_runs": 1,
+                "missing_runs": 1,
+                "unavailable_runs": 0,
+                "error_runs": 0,
+                "completed_run_coverage_percent": _EXPECTED_HALF_COVERAGE_PERCENT,
+            },
+            "ghidra": {
+                "tool": "ghidra",
+                "completed_runs": 0,
+                "missing_runs": 1,
+                "unavailable_runs": 1,
+                "error_runs": 0,
+                "completed_run_coverage_percent": _EXPECTED_EMPTY_COVERAGE_PERCENT,
+            },
+        }
         and summary["non_completed_tool_runs"] == _EXPECTED_NON_COMPLETED_TOOL_RUNS
         and summary["non_completed_tool_runs_by_tool"]["binary-ninja"] == 1
         and summary["non_completed_tool_runs_by_tool"]["ida-pro"] == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
