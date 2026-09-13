@@ -828,6 +828,7 @@ class CodeVirtualizationPass(MutationPass):
                 "prefetch",
                 "rdmsr",
                 "rdpid",
+                "rdpkru",
                 "rdpmc",
                 "rdpru",
                 "rdrand",
@@ -842,6 +843,7 @@ class CodeVirtualizationPass(MutationPass):
                 "xgetbv",
                 "xsetbv",
                 "wrmsr",
+                "wrpkru",
             )
         ) or any(
             token in opcode
