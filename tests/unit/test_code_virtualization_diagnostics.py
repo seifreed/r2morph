@@ -186,6 +186,23 @@ def test_unsupported_record_uses_disasm_when_opcode_is_absent() -> None:
     )
 
 
+def test_unsupported_record_uses_mnemonic_when_instruction_text_is_absent() -> None:
+    record = CodeVirtualizationPass._unsupported_record(
+        {"addr": 0x401000},
+        {
+            "addr": 0x401004,
+            "type": "syscall",
+            "mnemonic": "syscall",
+            "size": 2,
+        },
+        "signals_and_system_calls",
+        "system-call and interrupt semantics were not proven",
+        "error",
+    )
+
+    expect(record["instruction_mnemonic"] == "syscall" and record["instruction_opcode"] == "syscall")
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
@@ -617,6 +634,14 @@ def test_disasm_fallback_reports_computed_control_flow_capability() -> None:
     )
 
     expect(capability == "computed_control_flow")
+
+
+def test_mnemonic_fallback_reports_syscall_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "mnemonic": "syscall"}
+    )
+
+    expect(capability == "signals_and_system_calls")
 
 
 def test_far_jump_instruction_reports_computed_control_flow_capability() -> None:

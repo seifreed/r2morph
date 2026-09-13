@@ -777,7 +777,9 @@ class CodeVirtualizationPass(MutationPass):
         if instruction is None:
             return "provable_function_shape", "no supported virtualization shape was proven"
         kind = str(instruction.get("type", ""))
-        opcode = str(instruction.get("opcode") or instruction.get("disasm") or "").lower()
+        opcode = str(
+            instruction.get("opcode") or instruction.get("disasm") or instruction.get("mnemonic") or ""
+        ).lower()
         opcode_terms = opcode.replace(",", " ").replace("[", " ").replace("]", " ").split()
         opcode_without_repeat = (
             opcode.removeprefix("rep ")
@@ -1178,9 +1180,12 @@ class CodeVirtualizationPass(MutationPass):
     ) -> dict[str, Any]:
         """Build a stable, actionable record for a rejected function."""
         instruction_size = (instruction or {}).get("size", 0)
-        instruction_opcode = str((instruction or {}).get("opcode") or (instruction or {}).get("disasm") or "")[
-            :_MAX_DIAGNOSTIC_OPCODE_CHARS
-        ]
+        instruction_opcode = str(
+            (instruction or {}).get("opcode")
+            or (instruction or {}).get("disasm")
+            or (instruction or {}).get("mnemonic")
+            or ""
+        )[:_MAX_DIAGNOSTIC_OPCODE_CHARS]
         return {
             "function_address": int(func.get("addr", 0)),
             "instruction_address": int((instruction or {}).get("addr", func.get("addr", 0))),
