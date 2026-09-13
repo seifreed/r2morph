@@ -166,6 +166,20 @@ def _non_official_gap_targets(
     return sorted(rows, key=lambda target: (str(target["format"]), str(target["architecture"])))
 
 
+def _parity_gap_scope(
+    formats: tuple[str, ...],
+    architectures: tuple[str, ...],
+    official_format: object,
+    official_architecture: object,
+) -> dict[str, list[str]]:
+    return {
+        "formats": sorted(binary_format for binary_format in formats if binary_format != official_format),
+        "architectures": sorted(
+            architecture for architecture in architectures if architecture != official_architecture
+        ),
+    }
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -247,6 +261,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_not_supported_cells": non_official_not_supported,
             "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
             "non_official_gap_targets": _non_official_gap_targets(cells, official_format, official_architecture),
+            "parity_gap_scope": _parity_gap_scope(formats, architectures, official_format, official_architecture),
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,

@@ -658,6 +658,17 @@
           "evidence_percent": 13.64
         }
       ],
+      "parity_gap_scope": {
+        "formats": [
+          "Mach-O",
+          "PE"
+        ],
+        "architectures": [
+          "AArch64",
+          "ARM",
+          "x86"
+        ]
+      },
       "stability_counts": {
         "experimental": 19,
         "tier-1": 3

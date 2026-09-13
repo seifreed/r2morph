@@ -396,6 +396,19 @@ def test_support_matrix_names_non_official_parity_gaps() -> None:
     )
 
 
+def test_support_matrix_names_parity_gap_scope() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        summary["parity_gap_scope"]
+        == {
+            "formats": ["Mach-O", "PE"],
+            "architectures": ["AArch64", "ARM", "x86"],
+        }
+    )
+
+
 def test_release_contract_rejects_non_official_parity_claim() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["non_official_evidence_percent"] = matrix["matrix"]["summary"][

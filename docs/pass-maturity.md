@@ -71,13 +71,12 @@ catalogue. The generated matrix also names the affected passes in
 reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
 visible directly.
-Runtime support classification also exposes `parity_gap` and
-`parity_gap_scope` so reports can distinguish stable ELF x86-64 from
-format-level and architecture-level preview gaps. Maturity-profile summaries
-also count declared formats and architectures, making the current ELF x86-64
-scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity. They
-also count declared unit and end-to-end evidence paths so test coverage gaps are
-visible at release-gate level.
+The generated summary also exposes `parity_gap_scope`, naming Mach-O and PE as
+format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
+summaries also count declared formats and architectures, making the current ELF
+x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
+They also count declared unit and end-to-end evidence paths so test coverage
+gaps are visible at release-gate level.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive
