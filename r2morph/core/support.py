@@ -104,10 +104,21 @@ def classify_target_support(
         "architecture": normalized_arch,
         "tier": tier,
         "reason": reason,
+        "parity_gap": not stable,
+        "parity_gap_scope": _parity_gap_scope(normalized_format, normalized_arch),
         "stable_target": dict(PRODUCT_SUPPORT.notes.get("stable_target", {})),
         "secondary_cli_namespace": PRODUCT_SUPPORT.notes.get("secondary_cli_namespace"),
         "prolonged_experimental_areas": list(PRODUCT_SUPPORT.notes.get("prolonged_experimental_areas", [])),
     }
+
+
+def _parity_gap_scope(binary_format: str, architecture: str) -> list[str]:
+    gaps: list[str] = []
+    if binary_format not in PRODUCT_SUPPORT.stable_formats:
+        gaps.append("format")
+    if architecture not in PRODUCT_SUPPORT.stable_architectures:
+        gaps.append("architecture")
+    return gaps
 
 
 def is_stable_mutation(name: str) -> bool:

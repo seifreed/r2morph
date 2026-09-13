@@ -43,6 +43,9 @@ single fixture or a static disassembly result alone.
 The generated matrix summary records evidenced versus not-supported cells,
 including non-official targets, so PE, Mach-O, ARM, and AArch64 parity gaps are
 visible without expanding every cell.
+Runtime support classification also exposes `parity_gap` and
+`parity_gap_scope` so reports can distinguish stable ELF x86-64 from
+format-level and architecture-level preview gaps.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive

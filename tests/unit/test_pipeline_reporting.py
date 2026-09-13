@@ -212,11 +212,19 @@ def test_classify_target_support_reports_stable_and_prolonged_experimental():
     unknown = classify_target_support("flat", "mips")
 
     expect(stable["tier"] == "stable")
+    expect(stable["parity_gap"] is False)
+    expect(stable["parity_gap_scope"] == [])
     expect(compat["tier"] == "stable")
     expect(compat["architecture"] == "x86_64")
     expect(macho["tier"] == "prolonged-experimental")
+    expect(macho["parity_gap"] is True)
+    expect(macho["parity_gap_scope"] == ["format", "architecture"])
     expect(pe["tier"] == "prolonged-experimental")
+    expect(pe["parity_gap"] is True)
+    expect(pe["parity_gap_scope"] == ["format"])
     expect(unknown["tier"] == "unsupported")
+    expect(unknown["parity_gap"] is True)
+    expect(unknown["parity_gap_scope"] == ["format", "architecture"])
 
 
 def test_report_summaries_include_timings_and_diff_digest():
@@ -343,6 +351,8 @@ def test_engine_build_report_includes_gate_failure_summary():
             "architecture": "",
             "tier": "unsupported",
             "reason": "outside stable and prolonged experimental target sets",
+            "parity_gap": True,
+            "parity_gap_scope": ["format", "architecture"],
             "stable_target": {"format": "ELF", "architecture": "x86_64"},
             "secondary_cli_namespace": "experimental",
             "prolonged_experimental_areas": [
