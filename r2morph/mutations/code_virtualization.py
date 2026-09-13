@@ -880,6 +880,7 @@ class CodeVirtualizationPass(MutationPass):
         elif (
             (kind == "ret" and len(mnemonic_parts) > 1)
             or mnemonic in {"retf", "retfq", "lret", "lretq"}
+            or mnemonic in {"pop", "popq", "popl", "popw"}
             or opcode.startswith(
                 (
                     "cld",

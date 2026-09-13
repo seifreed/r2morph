@@ -772,6 +772,14 @@ def test_stack_flag_instruction_reports_stack_abi_capability() -> None:
     expect(capability == "stack_and_abi")
 
 
+def test_popq_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "popq rax"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
 def test_popcnt_instruction_is_not_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "popcnt eax, ebx"}
