@@ -38,7 +38,7 @@ TIER_1_MATURITY_PROFILE = "tier-1-native"
 PUBLIC_CLI_ALIASES = {"block", "expand", "nop", "register", "substitute"}
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
-MINIMUM_VM_VARIANT_COUNT = 2
+MINIMUM_VM_VARIANT_COUNT = 3
 VM_ADVERSARIAL_VALIDATION = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "seed-diversity-only",
