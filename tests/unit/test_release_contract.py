@@ -176,6 +176,16 @@ def test_support_matrix_summarizes_maturity_target_profiles() -> None:
     )
 
 
+def test_support_matrix_summarizes_official_target_cells() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        summary["official_evidenced_cells"] + summary["official_not_supported_cells"] == len(matrix["passes"])
+        and summary["official_evidenced_cells"] == len(matrix["passes"])
+    )
+
+
 def test_support_matrix_summarizes_test_evidence_profiles() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

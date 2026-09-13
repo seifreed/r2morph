@@ -41,8 +41,9 @@ The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
 single fixture or a static disassembly result alone.
 The generated matrix summary records evidenced versus not-supported cells,
-including non-official targets, so PE, Mach-O, ARM, and AArch64 parity gaps are
-visible without expanding every cell. It also counts passes per declared
+including official and non-official targets, so the Linux ELF x86-64 baseline
+and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
+cell. It also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
 code-virtualization, and experimental coverage remain visible at release-gate
 level. It also summarizes the declared performance, false-positive-risk,

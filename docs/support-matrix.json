@@ -573,6 +573,8 @@
     "summary": {
       "evidenced_cells": 29,
       "not_supported_cells": 235,
+      "official_evidenced_cells": 22,
+      "official_not_supported_cells": 0,
       "non_official_evidenced_cells": 7,
       "non_official_not_supported_cells": 235,
       "stability_counts": {

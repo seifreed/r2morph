@@ -102,6 +102,20 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                     }
                 )
     evidenced = sum(1 for cell in cells if cell["status"] == "evidenced")
+    official_evidenced = sum(
+        1
+        for cell in cells
+        if cell["status"] == "evidenced"
+        and cell["format"] == official_format
+        and cell["architecture"] == official_architecture
+    )
+    official_not_supported = sum(
+        1
+        for cell in cells
+        if cell["status"] == "not-supported"
+        and cell["format"] == official_format
+        and cell["architecture"] == official_architecture
+    )
     non_official_evidenced = sum(
         1
         for cell in cells
@@ -125,6 +139,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         "summary": {
             "evidenced_cells": evidenced,
             "not_supported_cells": len(cells) - evidenced,
+            "official_evidenced_cells": official_evidenced,
+            "official_not_supported_cells": official_not_supported,
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
             "stability_counts": dict(sorted(stability_counts.items())),
