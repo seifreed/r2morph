@@ -66,6 +66,7 @@ _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-06-cf44477.json"
+_CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-13-13214f9.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
 
 
@@ -216,6 +217,26 @@ def _review_adversarial_signoff_blockers(root: Path) -> dict[str, object]:
 def _review_binary_ninja_contract() -> dict[str, object]:
     passed = "binary-ninja" in _EXPECTED_TOOLS
     return _check("binary_ninja_benchmark_contract", passed, "binary-ninja is an expected analyzer slot")
+
+
+def _review_angr_binary_ninja_availability(root: Path) -> dict[str, object]:
+    benchmark = json.loads((root / "docs" / "protection-adversarial-benchmark.json").read_text(encoding="utf-8"))
+    local = json.loads((root / "docs" / _CURRENT_ANGR_LOCAL_REPORT).read_text(encoding="utf-8"))
+    rows = {row.get("tool"): row for row in benchmark.get("tools", []) if isinstance(row, dict)}
+    local_rows = {row.get("tool"): row for row in local.get("tools", []) if isinstance(row, dict)}
+    angr = local_rows.get("angr", {})
+    passed = (
+        rows.get("binary-ninja", {}).get("status") == "unavailable"
+        and rows.get("angr", {}).get("status") == "completed"
+        and angr.get("status") == "completed"
+        and angr.get("original", {}).get("status") == "completed"
+        and angr.get("protected", {}).get("status") == "completed"
+    )
+    return _check(
+        "angr_binary_ninja_availability",
+        passed,
+        "angr is measured; Binary Ninja remains an unavailable analyzer slot",
+    )
 
 
 def _review_corpus_benchmark(root: Path) -> dict[str, object]:
@@ -422,6 +443,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_benchmark(root),
         _review_adversarial_signoff_blockers(root),
         _review_binary_ninja_contract(),
+        _review_angr_binary_ninja_availability(root),
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
         _review_ida_corpus(root),

@@ -31,6 +31,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
     expect(
         {
             "adversarial_signoff_blockers",
+            "angr_binary_ninja_availability",
             "ida_corpus_evidence",
             "ida_current_summary_evidence",
             "binary_ninja_benchmark_contract",

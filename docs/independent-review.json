@@ -61,6 +61,11 @@
       "status": "passed"
     },
     {
+      "detail": "angr is measured; Binary Ninja remains an unavailable analyzer slot",
+      "name": "angr_binary_ninja_availability",
+      "status": "passed"
+    },
+    {
       "detail": "159 samples, 939 completed tool runs, 15 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
