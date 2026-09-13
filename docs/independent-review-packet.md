@@ -82,9 +82,10 @@ The current `a727f304` rerun preserves LSDA call-site mappings in VM unwind
 metadata. It records 159/159 CodeVirtualization applications, 171 virtualized
 functions, zero unsupported or partial virtualizations, 939 completed analyzer
 runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
-rows. Angr and Triton complete every original/protected pair. Binary Ninja is
-measured when its licensed API is present and otherwise recorded as
-unavailable. Human signoff remains `not-attested`.
+rows. Angr and Triton complete every original/protected pair. This raw rerun
+predates the Binary Ninja analyzer slot; the live benchmark contract now keeps
+that slot explicit when its licensed API is available or unavailable. Human
+signoff remains `not-attested`.
 The pushed CI workflow `34065194410` completed successfully across its Linux,
 macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
 lint, integration, and property/fuzz validation.
