@@ -480,6 +480,14 @@ def test_direction_flag_instruction_reports_stack_abi_capability() -> None:
     expect(capability == "stack_and_abi")
 
 
+def test_shadow_stack_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rstorssp qword [rax]"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
 def test_cpu_environment_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "rdtsc"}
