@@ -806,7 +806,10 @@ class CodeVirtualizationPass(MutationPass):
             (
                 "clui",
                 "int ",
+                "int1",
                 "int3",
+                "into",
+                "icebp",
                 "iret",
                 "senduipi",
                 "stui",
@@ -815,6 +818,8 @@ class CodeVirtualizationPass(MutationPass):
                 "sysret",
                 "sysexit",
                 "testui",
+                "ud0",
+                "ud1",
                 "ud2",
                 "uiret",
             )

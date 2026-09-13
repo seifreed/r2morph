@@ -466,6 +466,18 @@ def test_trap_instruction_reports_signals_and_system_calls_capability() -> None:
     expect(capability == "signals_and_system_calls")
 
 
+def test_overflow_trap_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "trap", "opcode": "into"})
+
+    expect(capability == "signals_and_system_calls")
+
+
+def test_undefined_instruction_reports_signals_and_system_calls_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "trap", "opcode": "ud1"})
+
+    expect(capability == "signals_and_system_calls")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
