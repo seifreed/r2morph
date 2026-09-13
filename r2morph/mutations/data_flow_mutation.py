@@ -11,7 +11,7 @@ import logging
 from typing import Any
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.core.constants import ARCH_BITS_64, MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.data_flow_mutation_helpers import (
     SAFE_INSTRUCTIONS as DATA_FLOW_SAFE_INSTRUCTIONS,
@@ -110,6 +110,13 @@ class DataFlowMutationPass(MutationPass):
         original_bytes = binary.read_bytes(address, size)
         replacement = disasm.lower().replace(original_register.lower(), substitute_register.lower())
         new_bytes = binary.assemble(replacement, function["addr"])
+        if (
+            function.get("bits", 0) == ARCH_BITS_64
+            and new_bytes
+            and len(new_bytes) == size + 1
+            and new_bytes[:1] == b"\x40"
+        ):
+            new_bytes = new_bytes[1:]
         if not new_bytes or len(new_bytes) > size or not binary.write_bytes(address, new_bytes):
             return False
         if len(new_bytes) < size and not binary.nop_fill(address + len(new_bytes), size - len(new_bytes)):

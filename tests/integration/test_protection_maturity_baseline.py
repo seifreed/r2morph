@@ -183,6 +183,17 @@ def test_measure_fixture_analyzes_functions_before_function_based_pass(tmp_path:
     expect(result["runs"][0]["transformation"]["status"] == "applied")
 
 
+def test_measure_fixture_records_data_flow_mutation_on_real_fixture(tmp_path: Path) -> None:
+    result = measure_fixture(
+        _NOP_FIXTURE,
+        range(20260820, 20260821),
+        tmp_path,
+        "DataFlowMutation",
+    )
+
+    expect(result["runs"][0]["transformation"]["status"] == "applied")
+
+
 def test_constant_unfolding_fixture_records_a_semantic_mutation(tmp_path: Path) -> None:
     result = measure_fixture(
         _CONSTANT_UNFOLD_FIXTURE,
