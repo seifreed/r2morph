@@ -1,4 +1,5 @@
 {
+  "all_handler_stride_unique_count": 12,
   "all_handler_stride_values": [
     1,
     2,
@@ -14,172 +15,172 @@
     12
   ],
   "first_seed": 20260820,
-  "mean_padding_bytes_per_handler": 1.0346774193548387,
+  "mean_padding_bytes_per_handler": 1.0145098039215685,
   "padding_histogram": {
-    "0": 791,
-    "1": 812,
-    "2": 877
+    "0": 852,
+    "1": 809,
+    "2": 889
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "seed_count": 10,
   "seeds": [
     {
-      "handler_count": 248,
-      "padding_bytes": 237,
+      "handler_count": 255,
+      "padding_bytes": 270,
       "padding_histogram": {
-        "0": 90,
-        "1": 79,
-        "2": 79
+        "0": 72,
+        "1": 96,
+        "2": 87
       },
       "seed": 20260820,
-      "target_handler_count": 3,
+      "target_handler_count": 2,
       "target_stride_values": [
         3
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 270,
+      "handler_count": 255,
+      "padding_bytes": 244,
       "padding_histogram": {
-        "0": 75,
-        "1": 76,
-        "2": 97
+        "0": 88,
+        "1": 90,
+        "2": 77
       },
       "seed": 20260821,
       "target_handler_count": 2,
       "target_stride_values": [
-        3,
-        4
+        5
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 252,
+      "handler_count": 255,
+      "padding_bytes": 268,
       "padding_histogram": {
-        "0": 77,
-        "1": 90,
-        "2": 81
+        "0": 88,
+        "1": 66,
+        "2": 101
       },
       "seed": 20260822,
       "target_handler_count": 1,
       "target_stride_values": [
-        5
+        4
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 254,
+      "handler_count": 255,
+      "padding_bytes": 260,
       "padding_histogram": {
-        "0": 77,
-        "1": 88,
-        "2": 83
+        "0": 85,
+        "1": 80,
+        "2": 90
       },
       "seed": 20260823,
       "target_handler_count": 1,
       "target_stride_values": [
-        4
+        3
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 253,
+      "handler_count": 255,
+      "padding_bytes": 270,
       "padding_histogram": {
-        "0": 81,
-        "1": 81,
-        "2": 86
+        "0": 80,
+        "1": 80,
+        "2": 95
       },
       "seed": 20260824,
-      "target_handler_count": 2,
+      "target_handler_count": 1,
       "target_stride_values": [
-        3,
-        5
+        3
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 258,
+      "handler_count": 255,
+      "padding_bytes": 240,
       "padding_histogram": {
-        "0": 79,
-        "1": 80,
-        "2": 89
+        "0": 94,
+        "1": 82,
+        "2": 79
       },
       "seed": 20260825,
       "target_handler_count": 1,
       "target_stride_values": [
-        3
+        4
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 256,
+      "handler_count": 255,
+      "padding_bytes": 259,
       "padding_histogram": {
-        "0": 79,
-        "1": 82,
-        "2": 87
+        "0": 85,
+        "1": 81,
+        "2": 89
       },
       "seed": 20260826,
-      "target_handler_count": 3,
+      "target_handler_count": 2,
       "target_stride_values": [
         3,
         4
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 261,
+      "handler_count": 255,
+      "padding_bytes": 259,
       "padding_histogram": {
-        "0": 84,
-        "1": 67,
-        "2": 97
+        "0": 88,
+        "1": 75,
+        "2": 92
       },
       "seed": 20260827,
       "target_handler_count": 1,
       "target_stride_values": [
-        3
+        4
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 266,
+      "handler_count": 255,
+      "padding_bytes": 265,
       "padding_histogram": {
-        "0": 72,
-        "1": 86,
-        "2": 90
+        "0": 85,
+        "1": 75,
+        "2": 95
       },
       "seed": 20260828,
-      "target_handler_count": 2,
+      "target_handler_count": 1,
       "target_stride_values": [
-        4,
-        5
+        4
       ]
     },
     {
-      "handler_count": 248,
-      "padding_bytes": 259,
+      "handler_count": 255,
+      "padding_bytes": 252,
       "padding_histogram": {
-        "0": 77,
-        "1": 83,
-        "2": 88
+        "0": 87,
+        "1": 84,
+        "2": 84
       },
       "seed": 20260829,
-      "target_handler_count": 2,
+      "target_handler_count": 1,
       "target_stride_values": [
-        4,
         5
       ]
     }
   ],
+  "seeds_with_target_handlers": 10,
+  "seeds_without_target_handlers": 0,
   "target_operation": {
     "is_immediate": false,
     "mnemonic": "mov",
     "width": 64
   },
-  "target_stride_mean": 3.7222222222222223,
+  "target_stride_diverse": true,
+  "target_stride_mean": 3.8461538461538463,
+  "target_stride_unique_count": 3,
   "target_stride_values": [
     3,
     4,
     5
   ],
-  "total_handlers": 2480,
-  "total_padding_bytes": 2566
+  "total_handlers": 2550,
+  "total_padding_bytes": 2587
 }
