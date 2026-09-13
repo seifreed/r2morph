@@ -24,6 +24,17 @@ _LABEL_PATTERN = re.compile(r"\b(?:h|opaque)_\d+\b")
 _NUMBER_PATTERN = re.compile(r"(?<![A-Za-z_])(?:0x[0-9A-Fa-f]+|\d+)(?![A-Za-z_])")
 _REGISTER_PATTERN = re.compile(r"\b(?:e?[abcd]x|e?[sd]i|e?bp|e?sp|r(?:[0-9]+|[abcd]x|[sd]i|bp|sp)[bwdq]?|xmm[0-9]+)\b")
 _SIMILARITY_THRESHOLD = 0.8
+_ADVERSARIAL_VALIDATION = {
+    "status": "pending-human-adversarial-review",
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection",
+    ],
+}
 
 
 def _handler_bodies(seed: int) -> list[str]:
@@ -99,6 +110,7 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
             above_threshold / len(nearest) * 100.0 if nearest else 0.0
         ),
         "similarity_threshold": _SIMILARITY_THRESHOLD,
+        "adversarial_validation": _ADVERSARIAL_VALIDATION,
     }
 
 

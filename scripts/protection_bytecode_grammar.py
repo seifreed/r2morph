@@ -22,6 +22,17 @@ _STRIDE_PATTERNS = (
     re.compile(r"lea rsi, \[rsi \+ (\d+)\]"),
 )
 _TARGET_OPERATION = ("mov", False, 64)
+_ADVERSARIAL_VALIDATION = {
+    "status": "pending-human-adversarial-review",
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection",
+    ],
+}
 
 
 def _handler_strides(seed: int) -> tuple[dict[int, tuple[str, bool, int]], dict[int, int], tuple[int, ...]]:
@@ -88,6 +99,7 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
         "target_stride_unique_count": target_stride_unique_count,
         "target_stride_diverse": target_stride_unique_count > 1,
         "target_stride_mean": sum(target_strides) / len(target_strides) if target_strides else 0.0,
+        "adversarial_validation": _ADVERSARIAL_VALIDATION,
     }
 
 

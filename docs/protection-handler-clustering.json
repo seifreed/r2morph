@@ -1,4 +1,15 @@
 {
+  "adversarial_validation": {
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
   "cross_seed_exact_normalised_match_rate": 0.0,
   "cross_seed_exact_normalised_matches": 0,
   "cross_seed_has_exact_normalised_matches": false,

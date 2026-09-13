@@ -91,4 +91,7 @@ are promoted into the public CLI surface.
 VM resistance artifacts currently cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity. These are resistance indicators, not human
-approval of anti-tamper or progressive bytecode protection.
+approval of anti-tamper or progressive bytecode protection. The generated
+artifacts also carry `adversarial_validation.status` as
+`pending-human-adversarial-review`, with seed diversity recorded as the current
+evidence quality.

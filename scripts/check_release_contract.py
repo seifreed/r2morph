@@ -39,6 +39,17 @@ PUBLIC_CLI_ALIASES = {"block", "expand", "nop", "register", "substitute"}
 VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 2
+VM_ADVERSARIAL_VALIDATION = {
+    "status": "pending-human-adversarial-review",
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection",
+    ],
+}
 ADVERSARIAL_TOOL_SLOTS = {
     "angr",
     "binary-ninja",
@@ -424,6 +435,10 @@ def _validate_bytecode_diversification(bytecode: dict[str, object]) -> None:
 def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict[str, object]) -> None:
     if handler.get("seed_count") != VM_RESISTANCE_SEED_COUNT or bytecode.get("seed_count") != VM_RESISTANCE_SEED_COUNT:
         raise ValueError("VM resistance artifacts must cover ten seeds")
+    if handler.get("adversarial_validation") != VM_ADVERSARIAL_VALIDATION:
+        raise ValueError("handler clustering artifact must preserve pending adversarial validation scope")
+    if bytecode.get("adversarial_validation") != VM_ADVERSARIAL_VALIDATION:
+        raise ValueError("bytecode grammar artifact must preserve pending adversarial validation scope")
     if handler.get("cross_seed_has_exact_normalised_matches") is not False:
         raise ValueError("handler clustering must not contain exact cross-seed matches")
     if handler.get("cross_seed_largest_normalised_cluster") != 1:

@@ -14,6 +14,7 @@ _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_SEED_COUNT = 10
 _EXPECTED_ALL_HANDLER_STRIDE_UNIQUE_COUNT = 12
 _EXPECTED_TARGET_STRIDE_UNIQUE_COUNT = 3
+_EXPECTED_ADVERSARIAL_STATUS = "pending-human-adversarial-review"
 
 
 def test_measure_bytecode_grammar_varies_same_operation_stride_across_seeds() -> None:
@@ -27,6 +28,8 @@ def test_measure_bytecode_grammar_varies_same_operation_stride_across_seeds() ->
         and result["target_stride_values"] == [3, 4, 5]
         and result["target_stride_unique_count"] == _EXPECTED_TARGET_STRIDE_UNIQUE_COUNT
         and result["target_stride_diverse"] is True
+        and result["adversarial_validation"]["status"] == _EXPECTED_ADVERSARIAL_STATUS
+        and result["adversarial_validation"]["evidence_quality"] == "seed-diversity-only"
     )
 
 

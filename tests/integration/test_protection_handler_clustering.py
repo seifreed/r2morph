@@ -14,6 +14,7 @@ _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_NEAREST_COMPARISONS = 510
 _EXPECTED_ABOVE_THRESHOLD = 72
 _EXPECTED_ABOVE_THRESHOLD_PERCENT = 14.117647058823529
+_EXPECTED_ADVERSARIAL_STATUS = "pending-human-adversarial-review"
 
 
 def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
@@ -26,6 +27,8 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         and result["cross_seed_nearest_similarity_comparisons"] == _EXPECTED_NEAREST_COMPARISONS
         and result["cross_seed_nearest_similarity_above_threshold"] == _EXPECTED_ABOVE_THRESHOLD
         and result["cross_seed_nearest_similarity_above_threshold_percent"] == _EXPECTED_ABOVE_THRESHOLD_PERCENT
+        and result["adversarial_validation"]["status"] == _EXPECTED_ADVERSARIAL_STATUS
+        and result["adversarial_validation"]["evidence_quality"] == "seed-diversity-only"
         and not (result["cross_seed_nearest_similarity_mean"] <= 0.0)
     )
 
