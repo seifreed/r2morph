@@ -156,6 +156,16 @@ def test_support_matrix_summarizes_performance_profiles() -> None:
     )
 
 
+def test_support_matrix_summarizes_instruction_coverage_profiles() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+
+    expect(
+        sum(summary["instructions_affected_counts"].values()) == len(matrix["passes"])
+        and any("Not exhaustively catalogued" in value for value in summary["instructions_affected_counts"])
+    )
+
+
 def test_release_contract_current_tree_is_valid() -> None:
     expect(main() == 0)
 

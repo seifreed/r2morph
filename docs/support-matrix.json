@@ -607,6 +607,11 @@
         "Not recorded per pass in the public corpus.": 3,
         "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.": 6,
         "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.": 1
+      },
+      "instructions_affected_counts": {
+        "Not exhaustively catalogued.": 18,
+        "Pass-specific x86-64 rules exercised by native fixtures.": 3,
+        "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1
       }
     },
     "cells": [
