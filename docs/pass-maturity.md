@@ -70,7 +70,8 @@ catalogue. The generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
-visible directly.
+visible directly. It also publishes `native_evidence_gap_passes`, listing every
+pass that has not reached the `tier-1-native` evidence profile.
 The generated summary also exposes `parity_gap_scope`, naming Mach-O and PE as
 format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
 summaries also count declared formats and architectures, making the current ELF

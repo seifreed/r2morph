@@ -39,6 +39,7 @@ _VM_SEMANTIC_GAP_SCOPE = (
     "fp-simd",
     "ssa-liveness",
 )
+_NATIVE_EVIDENCE_PROFILE = "tier-1-native"
 FULL_EVIDENCE_PERCENT = 100.0
 
 
@@ -130,11 +131,27 @@ def _maturity_gaps_by_pass(maturity: object) -> dict[str, list[str]]:
     return dict(sorted(gaps.items()))
 
 
+def _native_evidence_gap_passes(maturity: object) -> list[str]:
+    if not isinstance(maturity, dict):
+        return []
+    pass_profiles = maturity.get("pass_profiles")
+    if not isinstance(pass_profiles, dict):
+        return []
+    return sorted(
+        pass_name
+        for pass_name, profile_name in pass_profiles.items()
+        if isinstance(pass_name, str) and profile_name != _NATIVE_EVIDENCE_PROFILE
+    )
+
+
 def _maturity_evidence_blockers(
     maturity_gap_passes: dict[str, list[str]],
     maturity_gaps_by_pass: dict[str, list[str]],
+    native_evidence_gap_passes: list[str],
 ) -> dict[str, object]:
     blockers: dict[str, object] = {}
+    if native_evidence_gap_passes:
+        blockers["native_evidence_gap_passes"] = native_evidence_gap_passes
     missing_fields = {field: pass_names for field, pass_names in maturity_gap_passes.items() if pass_names}
     if missing_fields:
         blockers["missing_fields_by_field"] = missing_fields
@@ -276,6 +293,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     maturity_summaries = _maturity_summary_counts(document.get("maturity"))
     maturity_gap_passes = _maturity_gap_passes(document.get("maturity"))
     maturity_gaps_by_pass = _maturity_gaps_by_pass(document.get("maturity"))
+    native_evidence_gap_passes = _native_evidence_gap_passes(document.get("maturity"))
     non_official_gap_targets = _non_official_gap_targets(cells, official_format, official_architecture)
     parity_gap_scope = _parity_gap_scope(formats, architectures, official_format, official_architecture)
     return {
@@ -304,9 +322,11 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,
             "maturity_gaps_by_pass": maturity_gaps_by_pass,
+            "native_evidence_gap_passes": native_evidence_gap_passes,
             "maturity_evidence_blockers": _maturity_evidence_blockers(
                 maturity_gap_passes,
                 maturity_gaps_by_pass,
+                native_evidence_gap_passes,
             ),
             "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
         },

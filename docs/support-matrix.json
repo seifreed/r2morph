@@ -1011,7 +1011,49 @@
           "decompiler_effectiveness"
         ]
       },
+      "native_evidence_gap_passes": [
+        "anti-disassembly",
+        "api-hashing",
+        "block-reordering",
+        "code-mobility",
+        "code-virtualization",
+        "constant-unfolding",
+        "control-flow-flattening",
+        "data-flow-mutation",
+        "dead-code-injection",
+        "function-outlining",
+        "import-obfuscation",
+        "instruction-expansion",
+        "opaque-predicates",
+        "pattern-substitution",
+        "polymorphic-engine",
+        "self-modifying-code",
+        "short-jump-patching",
+        "stack-strings",
+        "string-obfuscation"
+      ],
       "maturity_evidence_blockers": {
+        "native_evidence_gap_passes": [
+          "anti-disassembly",
+          "api-hashing",
+          "block-reordering",
+          "code-mobility",
+          "code-virtualization",
+          "constant-unfolding",
+          "control-flow-flattening",
+          "data-flow-mutation",
+          "dead-code-injection",
+          "function-outlining",
+          "import-obfuscation",
+          "instruction-expansion",
+          "opaque-predicates",
+          "pattern-substitution",
+          "polymorphic-engine",
+          "self-modifying-code",
+          "short-jump-patching",
+          "stack-strings",
+          "string-obfuscation"
+        ],
         "missing_fields_by_field": {
           "performance": [
             "anti-disassembly",

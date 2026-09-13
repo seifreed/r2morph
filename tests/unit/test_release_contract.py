@@ -340,7 +340,8 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
     blockers = summary["maturity_evidence_blockers"]
 
     expect(
-        blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
+        blockers["native_evidence_gap_passes"] == summary["native_evidence_gap_passes"]
+        and blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
         and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
         and "performance" in blockers["missing_fields_by_field"]
         and "anti-disassembly" in blockers["missing_fields_by_pass"]
