@@ -10,6 +10,7 @@ from scripts.check_release_contract import (
     _check_corpus_workflows,
     _check_documentation_claims,
     _check_documentation_links,
+    _check_independent_review_packet_claims,
     _check_matrix,
     _check_readme_support_summary,
     _validate_adversarial_benchmark_artifact,
@@ -425,19 +426,7 @@ def test_independent_review_packet_lists_vm_resistance_reports() -> None:
 
 
 def test_independent_review_packet_keeps_vm_resistance_checklist() -> None:
-    packet = " ".join((_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
-
-    expect(
-        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness"
-        in packet
-        and "unsupported instructions fail closed" in packet
-        and (
-            "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
-            "and progressive bytecode protection"
-        )
-        in packet
-        and "fuzz properties and failure handling for dispatcher, relocations, and rewriting" in packet
-    )
+    expect(_check_independent_review_packet_claims() is None)
 
 
 def test_release_contract_rejects_missing_documentation_link(tmp_path: Path) -> None:

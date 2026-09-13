@@ -274,6 +274,20 @@ def _check_independent_review_artifact() -> None:
     _validate_independent_review_artifact(report)
 
 
+def _check_independent_review_packet_claims() -> None:
+    packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
+    for fragment in (
+        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
+        "SSA, and liveness",
+        "unsupported instructions fail closed",
+        "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
+        "and progressive bytecode protection",
+        "fuzz properties and failure handling for dispatcher, relocations, and rewriting",
+    ):
+        if fragment not in packet:
+            raise ValueError(f"independent review packet is missing: {fragment}")
+
+
 def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
     tools = report.get("tools")
     if not isinstance(tools, list):
@@ -404,6 +418,7 @@ def main() -> int:
         _check_inventory()
         _check_vm_resistance_artifacts()
         _check_independent_review_artifact()
+        _check_independent_review_packet_claims()
         _check_adversarial_benchmark_artifacts()
         _check_documentation_links()
         _check_documentation_claims()
