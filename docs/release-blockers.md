@@ -49,3 +49,15 @@ review. It is not a feature roadmap and must not be read as a support claim.
   Evidence map: [independent-review.json](independent-review.json),
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:
   external human review records signoff for the VM milestone.
+
+## Blocker index
+
+| ID | Area | Evidence |
+|---|---|---|
+| RB-001 | per-pass maturity | `support-matrix.json` `pass-maturity.md` |
+| RB-002 | differential evidence | `compatibility-corpus.md` `differential-corpus.yml` |
+| RB-003 | VM semantics | `support-matrix.json` `independent-review-packet.md` |
+| RB-004 | cross-platform parity | `support-matrix.json` `pass-maturity.md` |
+| RB-005 | adversarial benchmark | `compatibility-corpus.md` `adversarial-benchmark.yml` |
+| RB-006 | VM resistance | `protection-handler-clustering.json` `protection-bytecode-grammar.json` |
+| RB-007 | human VM signoff | `independent-review.json` `independent-review-packet.md` |

@@ -565,6 +565,18 @@ def test_release_contract_rejects_release_blocker_without_exit_criteria() -> Non
     expect(rejected)
 
 
+def test_release_contract_rejects_incomplete_release_blocker_index() -> None:
+    blockers = (_ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8")
+
+    rejected = False
+    try:
+        _validate_release_blockers_text(blockers.replace("| RB-006 | VM resistance |", "| RB-006 | VM hardening |", 1))
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_overstated_release_claims() -> None:
     claims = _forbidden_release_claims(
         "This is production-ready with full parity and ready to ship. " "VM milestone approved; anti-tamper approved."

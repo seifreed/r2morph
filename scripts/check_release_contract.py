@@ -117,6 +117,16 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "external human review records signoff",
 )
 _RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
+_RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT = 2
+_RELEASE_BLOCKER_INDEX_AREAS = {
+    "RB-001": "per-pass maturity",
+    "RB-002": "differential evidence",
+    "RB-003": "VM semantics",
+    "RB-004": "cross-platform parity",
+    "RB-005": "adversarial benchmark",
+    "RB-006": "VM resistance",
+    "RB-007": "human VM signoff",
+}
 _RELEASE_BLOCKER_ID_PATTERN = re.compile(r"\bRB-\d{3}\b")
 
 
@@ -636,8 +646,13 @@ def _check_documentation_claims() -> None:
 
 def _validate_release_blockers_text(blockers: str) -> None:
     blocker_ids = tuple(_RELEASE_BLOCKER_ID_PATTERN.findall(blockers))
-    if blocker_ids != _RELEASE_BLOCKER_IDS:
+    if blocker_ids[: len(_RELEASE_BLOCKER_IDS)] != _RELEASE_BLOCKER_IDS:
         raise ValueError("release blockers ledger is missing stable blocker IDs")
+    if (
+        blocker_ids.count("RB-001") != _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT
+        or blocker_ids.count("RB-007") != _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT
+    ):
+        raise ValueError("release blockers ledger must include prose and index entries")
     for fragment in _RELEASE_BLOCKER_FRAGMENTS:
         if fragment not in blockers:
             raise ValueError(f"release blockers ledger is missing: {fragment}")
@@ -648,6 +663,9 @@ def _validate_release_blockers_text(blockers: str) -> None:
             raise ValueError(f"release blocker is missing evidence links: {blocker_id}")
         if "Exit criteria:" not in section:
             raise ValueError(f"release blocker is missing exit criteria: {blocker_id}")
+    for blocker_id, area in _RELEASE_BLOCKER_INDEX_AREAS.items():
+        if f"| {blocker_id} | {area} |" not in blockers:
+            raise ValueError(f"release blocker index is missing: {blocker_id}")
 
 
 def _check_release_blockers() -> None:
