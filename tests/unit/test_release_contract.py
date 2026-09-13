@@ -515,6 +515,12 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
     )
 
 
+def test_ci_runs_generated_support_matrix_freshness_check() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    expect("python scripts/support_matrix.py --check docs/support-matrix.json" in workflow)
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 
