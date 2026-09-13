@@ -63,7 +63,7 @@ bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas
 per analyzer so campaigns remain comparable by tool. Their top-level summary
 also records expected versus observed pass/tool counts and run counts for
-campaign coverage, including coverage percentages, missing names, and
+campaign coverage, including the expected and observed analyzer names, coverage percentages, missing names, and
 applied/omitted/error pass rates, counts, and reasons, per-pass/per-tool run
 counts, plus completed/unavailable/error tool rates, counts, and reasons by
 analyzer, completed-tool coverage over expected pass/tool slots, and

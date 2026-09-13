@@ -782,6 +782,8 @@ def _campaign_summary(
         "error_pass_runs_by_pass": _pass_status_counts(samples, "error"),
         "error_reasons_by_pass": _pass_reason_map(samples, "error"),
         "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
+        "expected_tools": list(expected_tools),
+        "observed_tools": sorted(observed_tools),
         "expected_tool_count": len(expected_tools),
         "observed_tool_count": len(observed_tools),
         "missing_tools": sorted(set(expected_tools) - observed_tools),

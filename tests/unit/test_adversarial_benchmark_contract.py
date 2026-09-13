@@ -142,6 +142,8 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
         and report["summary"]["observed_pass_runs"] == 1
         and report["summary"]["missing_pass_runs"] == 0
         and report["summary"]["pass_run_coverage_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
+        and report["summary"]["expected_tools"] == [*_EXPECTED_TOOLS, "custom"]
+        and report["summary"]["observed_tools"] == sorted([*_EXPECTED_TOOLS, "custom"])
         and report["summary"]["expected_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["observed_tool_count"] == _EXPECTED_TOOL_COUNT
         and report["summary"]["expected_tool_runs"] == _EXPECTED_TOOL_COUNT
@@ -189,6 +191,8 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["error_pass_run_percent"] == _EXPECTED_EMPTY_COVERAGE_PERCENT
         and summary["error_pass_runs_by_pass"] == {}
         and summary["error_reasons_by_pass"] == {}
+        and summary["expected_tools"] == [*_EXPECTED_TOOLS, "custom"]
+        and summary["observed_tools"] == ["binary-ninja", "ghidra", "ida-pro"]
         and summary["expected_tool_runs"] == _EXPECTED_TWO_PASS_TOOL_RUNS
         and summary["observed_tool_runs"] == _EXPECTED_PARTIAL_TOOL_ROWS
         and summary["missing_tool_runs"] == _EXPECTED_TWO_PASS_TOOL_MISSING_RUNS
