@@ -612,6 +612,14 @@ def test_descriptor_table_instruction_reports_cpu_environment_capability() -> No
     expect(capability == "cpu_environment")
 
 
+def test_segment_access_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "lar eax, ax"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_page_invalidation_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "invpcid rax, [rsp]"}
