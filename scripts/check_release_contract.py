@@ -598,6 +598,9 @@ def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str
 def _blocker_totals(blockers: dict[str, object]) -> dict[str, int]:
     totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
     totals["blocker_categories"] = len(blockers)
+    totals["total_release_signoff_blockers"] = sum(
+        count for field, count in totals.items() if field != "blocker_categories"
+    )
     return dict(sorted(totals.items()))
 
 
@@ -816,6 +819,7 @@ def _check_corpus_workflows() -> None:
         "missing_pass_runs",
         "missing_tool_runs",
         "adversarial_evidence_blockers",
+        "total_adversarial_evidence_blockers",
         "incomplete_tool_coverage",
         "completed_tool_runs_by_tool",
         "unavailable_tool_runs_by_tool",

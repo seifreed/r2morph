@@ -83,6 +83,7 @@ def test_adversarial_benchmark_pair_report_summarizes_release_signoff_blockers()
         and isinstance(totals, dict)
         and totals["blocker_categories"] == len(blockers)
         and totals["unavailable_analyzers"] == len(unavailable)
+        and totals["total_release_signoff_blockers"] == len(unavailable)
     )
 
 
@@ -284,6 +285,12 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         == len(summary["adversarial_evidence_blockers"])
         and summary["adversarial_evidence_blocker_totals"]["tools_without_full_completion"] == _EXPECTED_TOOL_COUNT
         and summary["adversarial_evidence_blocker_totals"]["incomplete_tool_coverage"] == _EXPECTED_TOOL_COUNT
+        and summary["adversarial_evidence_blocker_totals"]["total_adversarial_evidence_blockers"]
+        == sum(
+            count
+            for field, count in summary["adversarial_evidence_blocker_totals"].items()
+            if field not in {"blocker_categories", "total_adversarial_evidence_blockers"}
+        )
     )
 
 
