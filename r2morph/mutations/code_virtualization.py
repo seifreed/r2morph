@@ -793,6 +793,22 @@ class CodeVirtualizationPass(MutationPass):
             capability, reason = "stack_and_abi", "stack frame and ABI semantics were not proven"
         elif opcode.startswith(
             ("cli", "cpuid", "hlt", "in ", "out ", "rdrand", "rdseed", "rdtsc", "rdtscp", "sti", "xgetbv")
+        ) or any(
+            token in opcode
+            for token in (
+                " cr0",
+                " cr1",
+                " cr2",
+                " cr3",
+                " cr4",
+                " cr8",
+                " dr0",
+                " dr1",
+                " dr2",
+                " dr3",
+                " dr6",
+                " dr7",
+            )
         ):
             capability, reason = "cpu_environment", "CPU environment semantics were not proven"
         elif opcode.startswith(("fxrstor", "fxsave", "xrstor", "xsave")) or any(
