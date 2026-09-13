@@ -92,6 +92,16 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
         "input_sources": ["generated-inputs"],
     },
 }
+_EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
+    "blocker_categories": len(_EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS),
+    "corpus_gap_scope": 2,
+    "missing_corpus_passes": len(_EXPECTED_MISSING_CORPUS_PASSES),
+    "passes_with_incomplete_coverage": len(_EXPECTED_INCOMPLETE_COVERAGE),
+    "passes_with_runtime_observable_failures": 1,
+    "passes_with_semantic_failures": 1,
+    "passes_without_applied_runs": 1,
+    "platform_gap_scope": 2,
+}
 _BASELINE_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "protection_maturity_baseline.py"
 
 
@@ -410,6 +420,8 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["passes_with_error_runs"] == []
         and report["campaign_summary"]["passes_with_incomplete_coverage"] == _EXPECTED_INCOMPLETE_COVERAGE
         and report["campaign_summary"]["continuous_evidence_blockers"] == _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS
+        and report["campaign_summary"]["continuous_evidence_blocker_totals"]
+        == _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS
         and report["campaign_summary"]["metric_complete_runs"] == _EXPECTED_METRIC_RUN_TOTALS
         and report["campaign_summary"]["metric_missing_runs"] == _EXPECTED_METRIC_RUN_TOTALS
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]

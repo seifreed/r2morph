@@ -825,6 +825,9 @@ def _render_multi_pass_result(
     campaign_summary["corpus_gap_scope"] = dict(_DIFFERENTIAL_CORPUS_GAP_SCOPE)
     campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
     campaign_summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(campaign_summary)
+    campaign_summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
+        campaign_summary["continuous_evidence_blockers"]
+    )
     return {
         "schema_version": 3,
         "measurement": "protection-maturity-corpus-by-pass",
@@ -974,6 +977,9 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
         **_sum_static_delta_fields(summaries),
     }
     summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(summary)
+    summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
+        summary["continuous_evidence_blockers"]
+    )
     return summary
 
 
@@ -993,6 +999,12 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
         if isinstance(value, (list, dict)) and value:
             blockers[field] = value
     return blockers
+
+
+def _continuous_evidence_blocker_totals(blockers: Mapping[str, object]) -> dict[str, int]:
+    totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
+    totals["blocker_categories"] = len(blockers)
+    return dict(sorted(totals.items()))
 
 
 def _metric_run_totals(summaries: dict[str, object], field_index: int) -> dict[str, int]:
