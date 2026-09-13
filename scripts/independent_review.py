@@ -27,6 +27,17 @@ _EXPECTED_MATURITY_BLOCKER_FIELDS = {
     "instructions_affected",
     "performance",
 }
+_EXPECTED_VM_ADVERSARIAL_VALIDATION = {
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection",
+    ],
+    "status": "pending-human-adversarial-review",
+}
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
@@ -91,6 +102,16 @@ def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
     summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
     passed = summary.get("vm_semantic_gap_scope") == list(_VM_SEMANTIC_GAP_SCOPE)
     return _check("vm_semantic_gap_scope", passed, "memory/calls/ABI/unwind/TLS/thread/FP/SSA gaps remain tracked")
+
+
+def _review_vm_resistance_adversarial_scope(root: Path) -> dict[str, object]:
+    handler = json.loads((root / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((root / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    passed = (
+        handler.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
+        and bytecode.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
+    )
+    return _check("vm_resistance_adversarial_scope", passed, "VM resistance remains pending human adversarial review")
 
 
 def _review_benchmark(root: Path) -> dict[str, object]:
@@ -311,6 +332,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_differential_platform_gap(root),
         _review_pass_maturity_gap_scope(root),
         _review_vm_semantic_gap_scope(root),
+        _review_vm_resistance_adversarial_scope(root),
         _review_benchmark(root),
         _review_binary_ninja_contract(),
         _review_corpus_benchmark(root),

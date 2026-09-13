@@ -76,6 +76,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "support_matrix_consistency",
     "virtualization_fixture_coverage",
     "virtualization_fixture_headers",
+    "vm_resistance_adversarial_scope",
     "vm_semantic_gap_scope",
 }
 _MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
