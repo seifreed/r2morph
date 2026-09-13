@@ -47,6 +47,10 @@ cell. It also records evidence percentages for official and non-official targets
 so preview coverage cannot look equivalent to the supported baseline. The
 current matrix records 100.0% official evidence, 2.89% non-official evidence,
 7 non-official evidenced cells, and 235 non-official not-supported cells. It
+also lists 11 non-official format/architecture targets in
+`non_official_gap_targets`; only Mach-O AArch64, Mach-O x86-64, and PE x86-64
+currently have any preview evidence, while ELF AArch64/ARM/x86, Mach-O ARM/x86,
+and PE AArch64/ARM/x86 remain at 0.0% evidence. It
 also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
 code-virtualization, and experimental coverage remain visible at release-gate

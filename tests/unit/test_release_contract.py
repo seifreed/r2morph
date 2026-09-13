@@ -338,6 +338,26 @@ def test_support_matrix_summarizes_official_target_cells() -> None:
     )
 
 
+def test_support_matrix_names_non_official_parity_gaps() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    official = matrix["official_target"]
+    gap_targets = summary["non_official_gap_targets"]
+    expected_targets = {
+        (binary_format, architecture)
+        for binary_format in matrix["formats"]
+        for architecture in matrix["architectures"]
+        if (binary_format, architecture) != (official["format"], official["architecture"])
+    }
+
+    expect(
+        {(row["format"], row["architecture"]) for row in gap_targets} == expected_targets
+        and sum(row["evidenced_cells"] for row in gap_targets) == summary["non_official_evidenced_cells"]
+        and sum(row["not_supported_cells"] for row in gap_targets) == summary["non_official_not_supported_cells"]
+        and all(row["evidence_percent"] < summary["official_evidence_percent"] for row in gap_targets)
+    )
+
+
 def test_release_contract_rejects_non_official_parity_claim() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["non_official_evidence_percent"] = matrix["matrix"]["summary"][

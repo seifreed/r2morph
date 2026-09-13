@@ -102,6 +102,37 @@ def _coverage_percent(evidenced: int, total: int) -> float:
     return round(evidenced / total * 100.0, 2)
 
 
+def _non_official_gap_targets(
+    cells: list[dict[str, Any]],
+    official_format: object,
+    official_architecture: object,
+) -> list[dict[str, object]]:
+    targets: dict[tuple[str, str], dict[str, object]] = {}
+    for cell in cells:
+        binary_format = cell["format"]
+        architecture = cell["architecture"]
+        if binary_format == official_format and architecture == official_architecture:
+            continue
+        key = (binary_format, architecture)
+        target = targets.setdefault(
+            key,
+            {
+                "format": binary_format,
+                "architecture": architecture,
+                "evidenced_cells": 0,
+                "not_supported_cells": 0,
+            },
+        )
+        field = "evidenced_cells" if cell["status"] == "evidenced" else "not_supported_cells"
+        target[field] = int(target[field]) + 1
+    rows = []
+    for target in targets.values():
+        total = int(target["evidenced_cells"]) + int(target["not_supported_cells"])
+        target["evidence_percent"] = _coverage_percent(int(target["evidenced_cells"]), total)
+        rows.append(target)
+    return sorted(rows, key=lambda target: (str(target["format"]), str(target["architecture"])))
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -181,6 +212,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
             "non_official_evidence_percent": _coverage_percent(non_official_evidenced, non_official_cell_count),
+            "non_official_gap_targets": _non_official_gap_targets(cells, official_format, official_architecture),
             "stability_counts": dict(sorted(stability_counts.items())),
             **{name: dict(sorted(counts.items())) for name, counts in maturity_summaries.items()},
             "maturity_gap_passes": maturity_gap_passes,
