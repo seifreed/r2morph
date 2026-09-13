@@ -1,8 +1,12 @@
 {
   "original": "elf_vm_fppackedidxnb_x86_64",
+  "pass_names": [
+    "CodeVirtualization"
+  ],
   "passes": [
     {
       "functions_virtualized": 1,
+      "partial_virtualization": 0,
       "pass_name": "CodeVirtualization",
       "status": "applied",
       "unsupported_functions": 0
@@ -46,29 +50,35 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.021820458001457155,
+        "duration_seconds": 0.017953749978914857,
         "functions": 2,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.5027857079985552,
-        "functions": 75,
+        "duration_seconds": 0.14071129192598164,
+        "functions": 64,
         "status": "completed"
       },
       "status": "completed",
       "tool": "angr"
     },
     {
+      "pass_name": "CodeVirtualization",
+      "reason": "module 'binaryninja' is unavailable",
+      "status": "unavailable",
+      "tool": "binary-ninja"
+    },
+    {
       "changed": true,
       "original": {
-        "duration_seconds": 0.0009309580200351775,
+        "duration_seconds": 0.00367283308878541,
         "exit_code": 6,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.00362866697832942,
+        "duration_seconds": 0.006008083000779152,
         "exit_code": 6,
         "status": "completed"
       },
@@ -76,43 +86,15 @@
       "tool": "unicorn"
     },
     {
-      "changed": true,
-      "original": {
-        "decoded_instructions": 8,
-        "duration_seconds": 0.000741249998100102,
-        "instruction_budget_exhausted": false,
-        "invalid_bytes": 0,
-        "semantically_supported_instructions": 8,
-        "status": "completed",
-        "symbolic_expressions": 33
-      },
       "pass_name": "CodeVirtualization",
-      "protected": {
-        "decoded_instructions": 7360,
-        "duration_seconds": 0.38037791597889736,
-        "instruction_budget_exhausted": false,
-        "invalid_bytes": 35,
-        "semantically_supported_instructions": 7324,
-        "status": "completed",
-        "symbolic_expressions": 53188
-      },
-      "status": "completed",
+      "reason": "module 'triton' is unavailable",
+      "status": "unavailable",
       "tool": "triton"
     },
     {
-      "changed": true,
-      "original": {
-        "duration_seconds": 1.475703792006243,
-        "functions": 1,
-        "status": "completed"
-      },
       "pass_name": "CodeVirtualization",
-      "protected": {
-        "duration_seconds": 1.4491392920026556,
-        "functions": 2,
-        "status": "completed"
-      },
-      "status": "completed",
+      "reason": "executable 'idat' is unavailable",
+      "status": "unavailable",
       "tool": "ida-pro"
     },
     {
