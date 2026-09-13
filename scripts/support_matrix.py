@@ -88,7 +88,6 @@ _ADVERSARIAL_INCOMPLETE_TOOLS = (
     "ghidra",
     "ida-pro",
     "triton",
-    "unicorn",
 )
 _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "memory",
@@ -410,7 +409,11 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
                     "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
                     "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
                 ],
-            }
+            },
+            "unicorn": {
+                "status": "completed",
+                "evidence": ["docs/protection-adversarial-benchmark.json"],
+            },
         },
         "unavailable_reference_tools": {
             "binary-ninja": {

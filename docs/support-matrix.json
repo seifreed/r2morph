@@ -1734,6 +1734,12 @@
               "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
               "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json"
             ]
+          },
+          "unicorn": {
+            "status": "completed",
+            "evidence": [
+              "docs/protection-adversarial-benchmark.json"
+            ]
           }
         },
         "unavailable_reference_tools": {
@@ -1756,8 +1762,7 @@
           "binary-ninja",
           "ghidra",
           "ida-pro",
-          "triton",
-          "unicorn"
+          "triton"
         ],
         "binary_ninja_unavailable": [
           "binary-ninja"
@@ -1767,10 +1772,10 @@
         ]
       },
       "adversarial_blocker_totals": {
-        "incomplete_tool_coverage": 5,
+        "incomplete_tool_coverage": 4,
         "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": 7
+        "total_adversarial_blockers": 6
       },
       "vm_semantic_gap_scope": [
         "memory",
