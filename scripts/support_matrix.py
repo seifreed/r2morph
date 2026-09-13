@@ -139,7 +139,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence": ["docs/protection-bytecode-grammar.json"],
     },
 }
-_NATIVE_EVIDENCE_PROFILES = {"tier-1-native", "code-virtualization"}
+_NATIVE_EVIDENCE_PROFILES = {"tier-1-native", "code-virtualization", "experimental-corpus-selected"}
 FULL_EVIDENCE_PERCENT = 100.0
 
 
