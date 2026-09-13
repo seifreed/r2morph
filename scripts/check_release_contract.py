@@ -178,6 +178,23 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         f"{summary['non_official_evidence_percent']}% evidence",
         f"{stability_counts['tier-1']} passes as Tier 1",
         f"{stability_counts['experimental']} passes as experimental",
+        f"{summary['performance_counts']['Not measured per pass.']} passes with no per-pass performance",
+        (
+            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
+            "false-positive measurement"
+        ),
+        (
+            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
+            "decompiler-effectiveness measurement"
+        ),
+        (
+            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
+            "without contractual composition support"
+        ),
+        (
+            f"{summary['instructions_affected_counts']['Not exhaustively catalogued.']} without an exhaustive "
+            "affected-instruction catalogue"
+        ),
     ):
         if fragment not in readme:
             raise ValueError(f"README support summary is missing: {fragment}")
