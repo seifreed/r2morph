@@ -46,6 +46,11 @@
       "status": "passed"
     },
     {
+      "detail": "unsupported virtualization keeps fail-closed diagnostics and strict-mode regression coverage",
+      "name": "vm_fail_closed_diagnostics_contract",
+      "status": "passed"
+    },
+    {
       "detail": "VM resistance remains pending human adversarial review",
       "name": "vm_resistance_adversarial_scope",
       "status": "passed"

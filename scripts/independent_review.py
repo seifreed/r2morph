@@ -193,6 +193,34 @@ def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
     return _check("vm_semantic_gap_scope", passed, "memory/calls/ABI/unwind/TLS/thread/FP/SSA gaps remain tracked")
 
 
+def _review_vm_fail_closed_diagnostics(root: Path) -> dict[str, object]:
+    implementation = (root / "r2morph" / "mutations" / "code_virtualization.py").read_text(encoding="utf-8")
+    regression = (root / "tests" / "integration" / "test_code_virtualization_diagnostics_real.py").read_text(
+        encoding="utf-8"
+    )
+    packet = (root / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+    passed = (
+        all(
+            fragment in implementation
+            for fragment in (
+                "instruction_address",
+                "instruction_mnemonic",
+                "instruction_opcode",
+                "instruction_size",
+                "capability",
+                "severity",
+            )
+        )
+        and '"reject_partial_virtualization": True' in regression
+        and "unsupported instructions fail closed" in packet
+    )
+    return _check(
+        "vm_fail_closed_diagnostics_contract",
+        passed,
+        "unsupported virtualization keeps fail-closed diagnostics and strict-mode regression coverage",
+    )
+
+
 def _review_vm_resistance_adversarial_scope(root: Path) -> dict[str, object]:
     handler = json.loads((root / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((root / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
@@ -462,6 +490,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_differential_continuous_evidence(root),
         _review_pass_maturity_gap_scope(root),
         _review_vm_semantic_gap_scope(root),
+        _review_vm_fail_closed_diagnostics(root),
         _review_vm_resistance_adversarial_scope(root),
         _review_benchmark(root),
         _review_adversarial_signoff_blockers(root),
