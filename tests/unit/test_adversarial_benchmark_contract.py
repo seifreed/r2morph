@@ -1,5 +1,6 @@
 """Regression contract for complete analyzer benchmark reporting."""
 
+import json
 from pathlib import Path
 
 from scripts.adversarial_benchmark import (
@@ -18,6 +19,7 @@ from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
 _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
+_SINGLE_FIXTURE_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-adversarial-benchmark.json"
 _EXPECTED_TOOL_COUNT = 9
 _EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 _EXPECTED_TOTAL_TOOL_DURATION_SECONDS = 1.25
@@ -44,6 +46,19 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
     expect(
         len(tools) == _EXPECTED_TOOL_COUNT
         and {item["tool"] for item in tools} >= {"radare2", "angr", "binary-ninja", "unicorn", "triton"}
+    )
+
+
+def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:
+    report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
+    tools = {item["tool"]: item["status"] for item in report["tools"]}
+
+    expect(
+        len(tools) == _EXPECTED_TOOL_COUNT
+        and {"radare2", "objdump", "angr", "binary-ninja", "unicorn", "triton", "ida-pro", "ghidra", "custom"}
+        == set(tools)
+        and tools["angr"] == "completed"
+        and tools["binary-ninja"] in {"unavailable", "completed"}
     )
 
 
