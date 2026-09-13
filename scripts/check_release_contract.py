@@ -40,6 +40,7 @@ VM_RESISTANCE_SEED_COUNT = 10
 VM_HANDLER_COUNT = 255
 MINIMUM_VM_VARIANT_COUNT = 3
 MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT = 20.0
+REQUIRED_VM_TARGET_STRIDE_VALUES = [3, 4, 5]
 VM_ADVERSARIAL_VALIDATION = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "seed-diversity-only",
@@ -472,6 +473,8 @@ def _validate_bytecode_diversification(bytecode: dict[str, object]) -> None:
         raise ValueError("bytecode grammar target handler stride must be diverse")
     if bytecode.get("target_stride_unique_count") != len(bytecode.get("target_stride_values", [])):
         raise ValueError("bytecode grammar target stride count must match stride values")
+    if bytecode.get("target_stride_values") != REQUIRED_VM_TARGET_STRIDE_VALUES:
+        raise ValueError("bytecode grammar target stride values changed")
     if bytecode.get("target_stride_unique_count", 0) < MINIMUM_VM_VARIANT_COUNT:
         raise ValueError("bytecode grammar target handlers must record multiple strides")
     seeds = bytecode.get("seeds")
