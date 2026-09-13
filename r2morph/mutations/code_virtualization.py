@@ -835,7 +835,7 @@ class CodeVirtualizationPass(MutationPass):
             )
         ):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
-        elif "call" in kind or opcode.startswith("call"):
+        elif "call" in kind or opcode.startswith(("call", "callf", "lcall")):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
         elif mnemonic in {"retf", "retfq", "lret", "lretq"} or opcode.startswith(
             (

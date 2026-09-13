@@ -503,6 +503,14 @@ def test_indirect_call_instruction_reports_call_capability() -> None:
     expect(capability == "calls")
 
 
+def test_far_call_instruction_reports_call_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "lcall 0x33:0x401000"}
+    )
+
+    expect(capability == "calls")
+
+
 def test_stack_frame_instruction_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "push", "opcode": "enter 0x20, 0x0"}
