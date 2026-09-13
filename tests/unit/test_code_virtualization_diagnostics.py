@@ -874,6 +874,22 @@ def test_privileged_instruction_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_global_interrupt_flag_clear_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "clgi"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_global_interrupt_flag_set_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "stgi"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_control_register_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "mov", "opcode": "mov rax, cr3"}
@@ -965,6 +981,14 @@ def test_data_segment_register_reports_cpu_environment_capability() -> None:
 def test_page_invalidation_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "invpcid rax, [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_address_space_page_invalidation_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "invlpga rax, ecx"}
     )
 
     expect(capability == "cpu_environment")
