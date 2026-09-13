@@ -98,6 +98,17 @@ class ResistanceMeasurement:
     execution_time: float
     resistance_score: float
 
+    @property
+    def evidence_status(self) -> str:
+        """Classify how strong this adversarial-resistance measurement is."""
+        if not self.angr_available:
+            return "unavailable"
+        if self.reached_terminal:
+            return "cracked"
+        if self.budget_exhausted:
+            return "lower_bound"
+        return "resisted"
+
 
 class SymbolicResistanceProbe:
     """A bounded symbolic adversary that scores a function's devirtualization resistance."""

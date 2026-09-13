@@ -586,6 +586,9 @@ resistance score. Instruction expansion remains reported separately, while the
 score uses indirect dispatches and distinct branch targets; on the real shift
 fixture the measured score is `2.0` native versus `2970.0` virtualized despite
 the VM's `17612` disassembled instructions.
+Symbolic resistance measurements also expose an `evidence_status` so a cracked
+original, unavailable backend, and budget-limited virtualized lower bound cannot
+be reported as the same strength of evidence.
 Commit `cb41797` applies the same generic index-mixed offset-table contract to
 engine and region dispatch plus bootstrap tables. The focused real suite passed
 `144` tests, the full suite passed `4867` tests with `21` skips, and the one-seed

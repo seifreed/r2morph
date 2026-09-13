@@ -67,7 +67,9 @@ def test_virtualization_raises_symbolic_resistance(tmp_path: Path) -> None:
     # The adversary cracks the original quickly but never terminates on the VM,
     # so virtualization strictly raises the resistance score.
     expect(not (original.reached_terminal is not True))
+    expect(original.evidence_status == "cracked")
     expect(not (virtualized.reached_terminal is not False))
+    expect(virtualized.evidence_status == "lower_bound")
     expect(not (virtualized.resistance_score <= original.resistance_score))
 
 
@@ -87,6 +89,7 @@ def test_budget_limited_virtualized_run_is_flagged_as_lower_bound(tmp_path: Path
     expect(not (virtualized.reached_terminal is not False))
     expect(virtualized.resistance_score == 1.0)
     expect(not (virtualized.budget_exhausted is not True), f"measurement={virtualized!r}")
+    expect(virtualized.evidence_status == "lower_bound")
 
 
 def test_cracked_original_run_reports_no_budget_exhaustion(tmp_path: Path) -> None:
@@ -101,3 +104,4 @@ def test_cracked_original_run_reports_no_budget_exhaustion(tmp_path: Path) -> No
     # flag stays False - the low score is proven, not a lower bound.
     expect(not (original.reached_terminal is not True))
     expect(not (original.budget_exhausted is not False))
+    expect(original.evidence_status == "cracked")
