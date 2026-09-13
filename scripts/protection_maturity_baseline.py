@@ -88,7 +88,7 @@ _GENERATED_CORPUS_SOURCES = {
 #include <stdint.h>
 
 __attribute__((noinline)) static int fold(int argc, char **argv) {
-    int acc = argc;
+    uint32_t acc = (uint32_t)argc;
     for (int i = 0; i < argc; ++i) {
         const unsigned char *p = (const unsigned char *)argv[i];
         while (*p) {
@@ -108,6 +108,7 @@ int main(int argc, char **argv) { return fold(argc, argv); }
 """,
     "generated_memory": r"""
 #include <stdint.h>
+#include <string.h>
 
 __attribute__((noinline)) static int mix(const uint8_t *data, int count) {
     uint32_t acc = 0x12345678u;
@@ -119,7 +120,7 @@ __attribute__((noinline)) static int mix(const uint8_t *data, int count) {
 }
 
 int main(int argc, char **argv) {
-    return argc > 1 ? mix((const uint8_t *)argv[1], 16) : mix((const uint8_t *)"r2morph", 7);
+    return argc > 1 ? mix((const uint8_t *)argv[1], (int)strlen(argv[1])) : mix((const uint8_t *)"r2morph", 7);
 }
 """,
 }
