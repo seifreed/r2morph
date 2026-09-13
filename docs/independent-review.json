@@ -16,6 +16,11 @@
       "status": "passed"
     },
     {
+      "detail": "memory/calls/ABI/unwind/TLS/thread/FP/SSA gaps remain tracked",
+      "name": "vm_semantic_gap_scope",
+      "status": "passed"
+    },
+    {
       "detail": "5 completed, 4 unavailable",
       "name": "adversarial_benchmark_evidence",
       "status": "passed"

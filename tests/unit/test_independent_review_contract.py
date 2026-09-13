@@ -36,6 +36,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
             "differential_platform_gap_scope",
             "ghidra_corpus_evidence",
             "parser_rewriter_fuzz_campaign",
+            "vm_semantic_gap_scope",
         }
         <= names
     )

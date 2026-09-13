@@ -15,7 +15,7 @@ from r2morph.platform.elf_handler_parsing import parse_elf_header
 from scripts.adversarial_benchmark import _EXPECTED_TOOLS
 from scripts.continuous_fuzz import run_campaign
 from scripts.protection_maturity_baseline import _DIFFERENTIAL_PLATFORM_GAP_SCOPE
-from scripts.support_matrix import build_matrix
+from scripts.support_matrix import _VM_SEMANTIC_GAP_SCOPE, build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
 _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
@@ -58,6 +58,15 @@ def _review_differential_platform_gap(root: Path) -> dict[str, object]:
     gap_scope = blockers.get("parity_gap_scope") if isinstance(blockers, dict) else None
     passed = gap_scope == _DIFFERENTIAL_PLATFORM_GAP_SCOPE
     return _check("differential_platform_gap_scope", passed, "PE/Mach-O and ARM/AArch64/x86 remain gaps")
+
+
+def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
+    path = root / "docs" / "support-matrix.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    matrix = document.get("matrix", {})
+    summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
+    passed = summary.get("vm_semantic_gap_scope") == list(_VM_SEMANTIC_GAP_SCOPE)
+    return _check("vm_semantic_gap_scope", passed, "memory/calls/ABI/unwind/TLS/thread/FP/SSA gaps remain tracked")
 
 
 def _review_benchmark(root: Path) -> dict[str, object]:
@@ -276,6 +285,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_differential_platform_gap(root),
+        _review_vm_semantic_gap_scope(root),
         _review_benchmark(root),
         _review_binary_ninja_contract(),
         _review_corpus_benchmark(root),
