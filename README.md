@@ -167,6 +167,11 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 The current local adversarial analyzer fixture records
 5 completed analyzer slots and 4 unavailable analyzer slots with reasons in
 [`docs/protection-adversarial-angr-local-2026-09-13-13214f9.json`](docs/protection-adversarial-angr-local-2026-09-13-13214f9.json).
+The VM review packet still has `human_signoff: not-attested`; memory,
+direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding,
+TLS/signals, SSA, and liveness paths remain explicit review scope, and
+unsupported instructions must fail closed instead of producing partial protected
+functions.
 
 ---
 

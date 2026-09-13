@@ -463,6 +463,20 @@ def _check_readme_adversarial_summary() -> None:
             raise ValueError(f"README adversarial summary is missing: {fragment}")
 
 
+def _check_readme_vm_review_scope() -> None:
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    review = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    for fragment in (
+        f"human_signoff: {review['human_signoff']}",
+        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
+        "SSA, and liveness paths remain explicit review scope",
+        "unsupported instructions must fail closed",
+        "partial protected functions",
+    ):
+        if fragment not in readme:
+            raise ValueError(f"README VM review scope is missing: {fragment}")
+
+
 def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
     for document in documents:
         for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
@@ -582,6 +596,7 @@ def main() -> int:
         _check_independent_review_packet_claims()
         _check_adversarial_benchmark_artifacts()
         _check_readme_adversarial_summary()
+        _check_readme_vm_review_scope()
         _check_documentation_links()
         _check_documentation_claims()
         _check_ci_contract()
