@@ -128,7 +128,13 @@ scope, the additional-corpus-family and generated-input gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
 counts, including `total_continuous_evidence_blockers`, that must be zero for
-the scheduled campaign to pass.
+the scheduled campaign to pass. The same workflow also emits an
+`extended-maturity-passes` smoke artifact for the non-default maturity passes:
+AntiDisassembly, APIHashing, CodeMobility, DataFlowMutation,
+FunctionOutlining, ImportObfuscation, OpaquePredicates, PolymorphicEngine,
+SelfModifyingCode, ShortJumpPatching, StackStrings, and StringObfuscation.
+That artifact is evidence triage only; it does not promote those passes until
+their applied-run and complete-evidence blockers are zero.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also

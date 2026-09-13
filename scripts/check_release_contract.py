@@ -868,6 +868,12 @@ def _check_corpus_workflows() -> None:
         "passes_with_incomplete_coverage",
         "continuous_evidence_blockers",
         "differential-corpus-by-pass",
+        "Run extended maturity pass smoke",
+        "Validate extended maturity pass smoke",
+        "EXTENDED_MATURITY_PASSES",
+        "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation",
+        "SelfModifyingCode,ShortJumpPatching",
+        "extended-maturity-passes",
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")

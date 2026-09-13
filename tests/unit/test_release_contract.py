@@ -1175,6 +1175,12 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "continuous_evidence_blockers" in differential
         and "total_continuous_evidence_blockers" in differential
         and "differential-corpus-by-pass" in differential
+        and "Run extended maturity pass smoke" in differential
+        and "Validate extended maturity pass smoke" in differential
+        and "EXTENDED_MATURITY_PASSES" in differential
+        and "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation" in differential
+        and "SelfModifyingCode,ShortJumpPatching" in differential
+        and "extended-maturity-passes" in differential
     )
 
 
