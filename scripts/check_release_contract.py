@@ -502,6 +502,7 @@ def _check_readme_adversarial_summary() -> None:
 
 def _check_readme_vm_review_scope() -> None:
     readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
     review = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
     for fragment in (
         f"human_signoff: {review['human_signoff']}",
@@ -509,9 +510,18 @@ def _check_readme_vm_review_scope() -> None:
         "SSA, and liveness paths remain explicit review scope",
         "unsupported instructions must fail closed",
         "partial protected functions",
+        "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
+        "and progressive bytecode protection",
+        "human-review scope before the virtualizer milestone can be marked complete",
     ):
         if fragment not in readme:
             raise ValueError(f"README VM review scope is missing: {fragment}")
+    for fragment in (
+        "VM ISA/opcode diversification, dispatcher/handler alternatives",
+        "superinstructions, anti-tamper, and progressive bytecode protection",
+    ):
+        if fragment not in packet:
+            raise ValueError(f"independent review packet VM scope is missing: {fragment}")
 
 
 def _check_readme_vm_resistance_summary() -> None:

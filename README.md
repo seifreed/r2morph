@@ -183,6 +183,10 @@ direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding,
 TLS/signals, SSA, and liveness paths remain explicit review scope, and
 unsupported instructions must fail closed instead of producing partial protected
 functions.
+VM ISA/opcode diversification, dispatcher/handler alternatives,
+superinstructions, anti-tamper, and progressive bytecode protection remain
+explicit human-review scope before the virtualizer milestone can be marked
+complete.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity recorded in
