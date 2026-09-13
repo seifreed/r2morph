@@ -104,6 +104,8 @@ jobs:
               "error_pass_runs_by_pass",
               "incomplete_tool_coverage",
               "non_completed_tool_runs_by_tool",
+              "unavailable_tool_runs_by_tool",
+              "unavailable_reasons_by_tool",
           ):
               if summary[field]:
                   expected_blockers[field] = summary[field]

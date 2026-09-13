@@ -772,6 +772,7 @@ def _check_corpus_workflows() -> None:
         "incomplete_tool_coverage",
         "completed_tool_runs_by_tool",
         "unavailable_tool_runs_by_tool",
+        "unavailable_reasons_by_tool",
         "incomplete tool coverage mismatch",
         "passes without applications",
     ):

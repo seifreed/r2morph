@@ -846,6 +846,8 @@ def _adversarial_evidence_blockers(
         "error_pass_runs_by_pass",
         "incomplete_tool_coverage",
         "non_completed_tool_runs_by_tool",
+        "unavailable_tool_runs_by_tool",
+        "unavailable_reasons_by_tool",
     ):
         value = summary.get(field)
         if isinstance(value, (list, dict)) and value:

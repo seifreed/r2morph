@@ -258,6 +258,9 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and "missing_passes" not in summary["adversarial_evidence_blockers"]
         and "incomplete_tool_coverage" in summary["adversarial_evidence_blockers"]
         and "non_completed_tool_runs_by_tool" in summary["adversarial_evidence_blockers"]
+        and summary["adversarial_evidence_blockers"]["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
+        and summary["adversarial_evidence_blockers"]["unavailable_reasons_by_tool"]
+        == {"ghidra": {"missing local executable": 1}}
     )
 
 

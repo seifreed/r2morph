@@ -906,6 +906,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "incomplete_tool_coverage" in adversarial
         and "completed_tool_runs_by_tool" in adversarial
         and "unavailable_tool_runs_by_tool" in adversarial
+        and "unavailable_reasons_by_tool" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
         and "--passes all" in differential
