@@ -761,6 +761,11 @@
           ]
         }
       },
+      "parity_blocker_totals": {
+        "non_official_gap_targets": 11,
+        "parity_gap_architectures": 3,
+        "parity_gap_formats": 2
+      },
       "stability_counts": {
         "experimental": 19,
         "tier-1": 3

@@ -478,10 +478,14 @@ def test_support_matrix_names_parity_evidence_blockers() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
     blockers = summary["parity_evidence_blockers"]
+    totals = summary["parity_blocker_totals"]
 
     expect(
         blockers["parity_gap_scope"] == summary["parity_gap_scope"]
         and blockers["non_official_gap_targets"] == summary["non_official_gap_targets"]
+        and totals["non_official_gap_targets"] == len(summary["non_official_gap_targets"])
+        and totals["parity_gap_formats"] == len(summary["parity_gap_scope"]["formats"])
+        and totals["parity_gap_architectures"] == len(summary["parity_gap_scope"]["architectures"])
         and all(
             target["evidence_percent"] < summary["official_evidence_percent"]
             for target in blockers["non_official_gap_targets"]

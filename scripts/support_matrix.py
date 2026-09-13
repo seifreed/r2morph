@@ -265,6 +265,24 @@ def _parity_evidence_blockers(
     return blockers
 
 
+def _parity_blocker_totals(
+    gap_targets: list[dict[str, object]],
+    gap_scope: dict[str, list[str]],
+) -> dict[str, int]:
+    return {
+        "non_official_gap_targets": len(
+            [
+                target
+                for target in gap_targets
+                if isinstance(target.get("evidence_percent"), int | float)
+                and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
+            ]
+        ),
+        "parity_gap_architectures": len(gap_scope["architectures"]),
+        "parity_gap_formats": len(gap_scope["formats"]),
+    }
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -351,6 +369,10 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "non_official_gap_targets": non_official_gap_targets,
             "parity_gap_scope": parity_gap_scope,
             "parity_evidence_blockers": _parity_evidence_blockers(
+                non_official_gap_targets,
+                parity_gap_scope,
+            ),
+            "parity_blocker_totals": _parity_blocker_totals(
                 non_official_gap_targets,
                 parity_gap_scope,
             ),
