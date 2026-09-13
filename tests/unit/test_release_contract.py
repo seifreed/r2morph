@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.check_release_contract import (
     _check_changelog,
+    _check_corpus_workflows,
     _check_documentation_claims,
     _check_documentation_links,
     _check_matrix,
@@ -575,6 +576,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--count 1" in differential
         and "differential-corpus-by-pass" in differential
     )
+
+
+def test_release_contract_validates_corpus_workflows() -> None:
+    expect(_check_corpus_workflows() is None)
 
 
 def test_ci_runs_generated_support_matrix_freshness_check() -> None:

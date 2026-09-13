@@ -342,6 +342,17 @@ def _check_release_recovery_workflow() -> None:
             raise ValueError(f"release recovery workflow is missing: {fragment}")
 
 
+def _check_corpus_workflows() -> None:
+    adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    for fragment in ("--passes all", "--require-tool-slots", "--require-applied"):
+        if fragment not in adversarial:
+            raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
+    for fragment in ("--passes all", "--require-complete-evidence", "--require-applied", "differential-corpus-by-pass"):
+        if fragment not in differential:
+            raise ValueError(f"differential corpus workflow is missing: {fragment}")
+
+
 def main() -> int:
     try:
         package_version = _check_version()
@@ -356,6 +367,7 @@ def main() -> int:
         _check_ci_contract()
         _check_release_workflow()
         _check_release_recovery_workflow()
+        _check_corpus_workflows()
     except (KeyError, TypeError, ValueError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
         print(f"release contract failed: {exc}", file=sys.stderr)
         return 1
