@@ -363,6 +363,21 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
     )
 
 
+def test_support_matrix_counts_maturity_blockers() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    totals = summary["maturity_blocker_totals"]
+
+    expect(
+        totals["native_evidence_gap_passes"] == len(summary["native_evidence_gap_passes"])
+        and totals["passes_with_maturity_field_gaps"] == len(summary["maturity_gaps_by_pass"])
+        and all(
+            totals[f"{field}_gap_passes"] == len(pass_names)
+            for field, pass_names in summary["maturity_gap_passes"].items()
+        )
+    )
+
+
 def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]

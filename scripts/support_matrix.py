@@ -160,6 +160,18 @@ def _maturity_evidence_blockers(
     return blockers
 
 
+def _maturity_blocker_totals(
+    maturity_gap_passes: dict[str, list[str]],
+    maturity_gaps_by_pass: dict[str, list[str]],
+    native_evidence_gap_passes: list[str],
+) -> dict[str, int]:
+    return {
+        "native_evidence_gap_passes": len(native_evidence_gap_passes),
+        "passes_with_maturity_field_gaps": len(maturity_gaps_by_pass),
+        **{f"{field}_gap_passes": len(pass_names) for field, pass_names in maturity_gap_passes.items()},
+    }
+
+
 def _coverage_percent(evidenced: int, total: int) -> float:
     if total == 0:
         return 0.0
@@ -324,6 +336,11 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "maturity_gaps_by_pass": maturity_gaps_by_pass,
             "native_evidence_gap_passes": native_evidence_gap_passes,
             "maturity_evidence_blockers": _maturity_evidence_blockers(
+                maturity_gap_passes,
+                maturity_gaps_by_pass,
+                native_evidence_gap_passes,
+            ),
+            "maturity_blocker_totals": _maturity_blocker_totals(
                 maturity_gap_passes,
                 maturity_gaps_by_pass,
                 native_evidence_gap_passes,
