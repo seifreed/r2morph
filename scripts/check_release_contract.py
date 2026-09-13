@@ -281,6 +281,33 @@ def _check_differential_gap_evidence(matrix: dict[str, object]) -> None:
                 raise ValueError(f"differential gap evidence path is missing: {gap}.{evidence_path}")
 
 
+def _check_adversarial_benchmark_evidence(matrix: dict[str, object]) -> None:
+    summary = matrix["matrix"]["summary"]
+    evidence = summary["adversarial_benchmark_evidence"]
+    if set(evidence["expected_tools"]) != ADVERSARIAL_TOOL_SLOTS:
+        raise ValueError("adversarial benchmark must declare every expected tool slot")
+    measured = evidence["measured_available_tools"]
+    unavailable = evidence["unavailable_reference_tools"]
+    blockers = summary["adversarial_evidence_blockers"]
+    if unavailable.get("binary-ninja", {}).get("status") != "unavailable":
+        raise ValueError("Binary Ninja must remain an explicit unavailable analyzer slot")
+    if blockers["binary_ninja_unavailable"] != ["binary-ninja"]:
+        raise ValueError("Binary Ninja unavailable blocker must remain explicit")
+    for tool, row in measured.items():
+        if row["status"] != "completed":
+            raise ValueError(f"adversarial benchmark measured tool is incomplete: {tool}")
+    evidence_paths = list(evidence["campaign_evidence"])
+    for section in (measured, unavailable):
+        evidence_paths.extend(path for row in section.values() for path in row["evidence"])
+    for evidence_path in evidence_paths:
+        if (
+            isinstance(evidence_path, str)
+            and not evidence_path.startswith("http")
+            and not (ROOT / evidence_path).exists()
+        ):
+            raise ValueError(f"adversarial benchmark evidence path is missing: {evidence_path}")
+
+
 def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     if matrix["release"] != package_version:
         raise ValueError("support matrix release must match package version")
@@ -315,6 +342,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
         raise ValueError("official target must retain complete evidence")
     if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
         raise ValueError("non-official targets must not claim official-target parity")
+    _check_adversarial_benchmark_evidence(matrix)
     _check_differential_gap_evidence(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)

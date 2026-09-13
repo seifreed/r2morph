@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from scripts.check_release_contract import (
+    _check_adversarial_benchmark_evidence,
     _check_changelog,
     _check_corpus_pass_selection_docs,
     _check_corpus_workflows,
@@ -635,6 +636,19 @@ def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
         and summary["adversarial_blocker_totals"]["total_adversarial_blockers"] == _EXPECTED_ADVERSARIAL_BLOCKERS
         and all((_ROOT / path).exists() for path in evidence_paths)
     )
+
+
+def test_release_contract_rejects_missing_binary_ninja_adversarial_slot() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["adversarial_benchmark_evidence"]["unavailable_reference_tools"].pop("binary-ninja")
+
+    rejected = False
+    try:
+        _check_adversarial_benchmark_evidence(matrix)
+    except ValueError as error:
+        rejected = "Binary Ninja" in str(error)
+
+    expect(rejected)
 
 
 def test_support_matrix_summarizes_maturity_target_profiles() -> None:
