@@ -797,7 +797,9 @@ class CodeVirtualizationPass(MutationPass):
             )
         ) or (opcode.startswith("xchg") and "[" in opcode):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
-        elif kind in ("swi", "syscall") or opcode.startswith(("syscall", "sysenter", "int ", "int3", "iret", "ud2")):
+        elif kind in ("swi", "syscall") or opcode.startswith(
+            ("syscall", "sysenter", "sysret", "sysexit", "int ", "int3", "iret", "ud2")
+        ):
             capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
         elif "call" in kind or opcode.startswith("call"):
             capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
