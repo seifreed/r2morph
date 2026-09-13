@@ -117,6 +117,9 @@ passes with semantic or runtime-observable failures, and records
 runtime-observable failure reasons, omission/error reasons, and severities by
 pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
+The scheduled differential workflow validates this campaign summary before
+uploading the artifact, including missing corpus passes and incomplete coverage
+groups.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also

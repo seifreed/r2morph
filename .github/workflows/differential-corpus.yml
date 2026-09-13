@@ -44,6 +44,22 @@ jobs:
             --count 3 \
             --output differential-corpus.json
 
+      - name: Validate differential campaign summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("differential-corpus.json").read_text(encoding="utf-8"))
+          summary = report["campaign_summary"]
+          if summary["missing_corpus_passes"]:
+              raise SystemExit(f"missing corpus passes: {summary['missing_corpus_passes']}")
+          if summary["total_complete_evidence_missing_runs"] != 0:
+              raise SystemExit("differential report has incomplete evidence")
+          if summary["passes_with_incomplete_coverage"]:
+              raise SystemExit(f"incomplete coverage: {summary['passes_with_incomplete_coverage']}")
+          PY
+
       - name: Upload per-pass differential report
         uses: actions/upload-artifact@v7
         with:

@@ -654,6 +654,10 @@ def _check_corpus_workflows() -> None:
         "--require-complete-evidence",
         "--require-applied",
         "--count 3",
+        "Validate differential campaign summary",
+        "missing_corpus_passes",
+        "total_complete_evidence_missing_runs",
+        "passes_with_incomplete_coverage",
         "differential-corpus-by-pass",
     ):
         if fragment not in differential:

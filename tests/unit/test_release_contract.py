@@ -627,6 +627,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--passes all" in differential
         and "--require-complete-evidence" in differential
         and "--count 3" in differential
+        and "Validate differential campaign summary" in differential
+        and "missing_corpus_passes" in differential
+        and "total_complete_evidence_missing_runs" in differential
+        and "passes_with_incomplete_coverage" in differential
         and "differential-corpus-by-pass" in differential
     )
 
