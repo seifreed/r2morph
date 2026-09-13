@@ -1026,6 +1026,22 @@ def test_address_space_page_invalidation_instruction_reports_cpu_environment_cap
     expect(capability == "cpu_environment")
 
 
+def test_protected_memory_validate_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "pvalidate rax, rcx, rdx"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_reverse_map_table_update_instruction_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rmpupdate [rax], rdx"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_machine_status_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "lmsw ax"}
