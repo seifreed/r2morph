@@ -221,6 +221,12 @@ def test_unsupported_record_uses_offset_when_addr_is_absent() -> None:
     expect(record["instruction_address"] == _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS)
 
 
+def test_unproven_function_shape_reports_ssa_liveness_capability() -> None:
+    capability, reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(None)
+
+    expect(capability == "ssa_liveness" and "liveness" in reason)
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 

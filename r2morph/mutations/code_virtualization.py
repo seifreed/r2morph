@@ -808,7 +808,7 @@ class CodeVirtualizationPass(MutationPass):
     def _unsupported_instruction_diagnostic(instruction: dict[str, Any] | None) -> tuple[str, str]:
         """Map a rejected instruction to a stable capability label and reason."""
         if instruction is None:
-            return "provable_function_shape", "no supported virtualization shape was proven"
+            return "ssa_liveness", "CFG, SSA, and liveness coverage were not proven"
         kind = str(instruction.get("type", ""))
         opcode = str(
             instruction.get("opcode") or instruction.get("disasm") or instruction.get("mnemonic") or ""
