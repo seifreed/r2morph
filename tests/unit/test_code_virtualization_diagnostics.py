@@ -590,6 +590,14 @@ def test_notrack_indirect_jump_opcode_reports_computed_control_flow_capability()
     expect(capability == "computed_control_flow")
 
 
+def test_bnd_indirect_jump_opcode_reports_computed_control_flow_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "bnd jmp qword [rax]"}
+    )
+
+    expect(capability == "computed_control_flow")
+
+
 def test_indirect_call_instruction_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "icall", "opcode": "qword [rax]"}
@@ -601,6 +609,14 @@ def test_indirect_call_instruction_reports_call_capability() -> None:
 def test_notrack_indirect_call_opcode_reports_call_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "notrack call qword [rax]"}
+    )
+
+    expect(capability == "calls")
+
+
+def test_bnd_indirect_call_opcode_reports_call_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "bnd call qword [rax]"}
     )
 
     expect(capability == "calls")
