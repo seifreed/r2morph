@@ -42,3 +42,29 @@ def test_binary_rewriter_rewrite_no_patches(tmp_path: Path):
     expect(output_path.exists())
     expect(not (result.integrity_checks.get("file_exists") is not True))
     expect(not (result.integrity_checks.get("valid_pe_header") is not True))
+
+
+@pytest.mark.parametrize(
+    "binary_path, expected_format",
+    [
+        (Path("fixtures/dataset/elf_x86_64"), BinaryFormat.ELF),
+        (Path("fixtures/dataset/pe_x86_64.exe"), BinaryFormat.PE),
+        (Path("fixtures/dataset/macho_arm64"), BinaryFormat.MACHO),
+    ],
+)
+def test_binary_rewriter_noop_preserves_real_format(
+    tmp_path: Path, binary_path: Path, expected_format: BinaryFormat
+) -> None:
+    output_path = tmp_path / f"rewritten_{binary_path.name}"
+
+    with Binary(binary_path) as bin_obj:
+        bin_obj.analyze("aa")
+        bin_obj.filepath = str(binary_path)
+        result = BinaryRewriter(bin_obj).rewrite_binary(str(output_path), patches=[], preserve_original=False)
+
+    expect(result.success)
+    with Binary(output_path) as rewritten:
+        rewritten.analyze("aa")
+        rewriter = BinaryRewriter(rewritten)
+        expect(rewriter._analyze_binary())
+        expect(rewriter.binary_format == expected_format)

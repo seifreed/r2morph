@@ -1481,6 +1481,15 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "continuous_evidence_blockers" in differential
         and "unexpected continuous evidence blockers" in differential
         and "differential-corpus-by-pass" in differential
+        and "Run cross-format differential smoke" in differential
+        and "test_binary_rewriter_formats_real.py" in differential
+        and "test_binary_rewriter_noop_preserves_real_format" in differential
+        and "test_platform_deeper.py" in differential
+        and "cross-format-differential.xml" in differential
+        and "Validate cross-format differential evidence" in differential
+        and "cross-format smoke coverage drift" in differential
+        and "Upload cross-format differential evidence" in differential
+        and "cross-format-differential" in differential
         and "Run VM semantic regression smoke" in differential
         and "test_memory_width_fixture_virtualization_preserves_exit_code" in differential
         and "test_virtualized_callee_saved_fixture_preserves_registers" in differential
