@@ -645,7 +645,13 @@ def _check_corpus_workflows() -> None:
     for fragment in ("--passes all", "--require-tool-slots", "--require-applied"):
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
-    for fragment in ("--passes all", "--require-complete-evidence", "--require-applied", "differential-corpus-by-pass"):
+    for fragment in (
+        "--passes all",
+        "--require-complete-evidence",
+        "--require-applied",
+        "--count 3",
+        "differential-corpus-by-pass",
+    ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
 

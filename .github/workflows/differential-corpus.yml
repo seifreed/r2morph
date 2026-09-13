@@ -41,7 +41,7 @@ jobs:
             --require-applied \
             --require-complete-evidence \
             --first-seed 20260901 \
-            --count 1 \
+            --count 3 \
             --output differential-corpus.json
 
       - name: Upload per-pass differential report
