@@ -354,6 +354,16 @@ def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
         raise ValueError("maturity field blockers must match summary")
     if blockers["missing_fields_by_pass"] != summary["maturity_gaps_by_pass"]:
         raise ValueError("maturity pass blockers must match summary")
+    totals = summary["maturity_blocker_totals"]
+    field_gap_total = sum(len(pass_names) for pass_names in summary["maturity_gap_passes"].values())
+    if (
+        totals["native_evidence_gap_passes"] != len(summary["native_evidence_gap_passes"])
+        or totals["passes_with_maturity_field_gaps"] != len(summary["maturity_gaps_by_pass"])
+        or totals["total_maturity_field_gaps"] != field_gap_total
+        or totals["maturity_gap_categories"] != len(summary["maturity_gap_passes"])
+        or totals["total_maturity_blockers"] != len(summary["native_evidence_gap_passes"]) + field_gap_total
+    ):
+        raise ValueError("maturity blocker totals must match declared gap scope")
     for gap, row in evidence.items():
         if not row["passes"]:
             raise ValueError(f"maturity gap evidence has no passes: {gap}")
@@ -384,6 +394,15 @@ def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
     totals = summary["parity_blocker_totals"]
     if totals["non_official_gap_targets"] != len(summary["non_official_gap_targets"]):
         raise ValueError("parity target blocker total must match summary")
+    parity_gap_formats = len(summary["parity_gap_scope"]["formats"])
+    parity_gap_architectures = len(summary["parity_gap_scope"]["architectures"])
+    if (
+        totals["parity_gap_formats"] != parity_gap_formats
+        or totals["parity_gap_architectures"] != parity_gap_architectures
+        or totals["total_parity_blockers"]
+        != totals["non_official_gap_targets"] + parity_gap_formats + parity_gap_architectures
+    ):
+        raise ValueError("parity blocker totals must match declared gap scope")
     if any(
         row["evidence_percent"] >= summary["official_evidence_percent"] for row in blockers["non_official_gap_targets"]
     ):

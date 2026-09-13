@@ -449,6 +449,19 @@ def test_release_contract_rejects_missing_maturity_gap_evidence() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_stale_maturity_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["maturity_blocker_totals"]["total_maturity_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_maturity_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "maturity blocker totals" in str(error)
+
+    expect(rejected)
+
+
 def test_support_matrix_counts_maturity_blockers() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
@@ -836,6 +849,19 @@ def test_release_contract_rejects_missing_parity_gap_evidence() -> None:
         _check_parity_gap_evidence(matrix)
     except ValueError as error:
         rejected = "parity gap evidence" in str(error)
+
+    expect(rejected)
+
+
+def test_release_contract_rejects_stale_parity_blocker_totals() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix["matrix"]["summary"]["parity_blocker_totals"]["total_parity_blockers"] += 1
+
+    rejected = False
+    try:
+        _check_parity_gap_evidence(matrix)
+    except ValueError as error:
+        rejected = "parity blocker totals" in str(error)
 
     expect(rejected)
 
