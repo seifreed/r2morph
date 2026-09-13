@@ -17,8 +17,12 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     official_format = official.get("format")
     official_architecture = official.get("architecture")
     cells: list[dict[str, Any]] = []
+    stability_counts: dict[str, int] = {}
     for mutation_pass in document.get("passes", []):
         name = mutation_pass["name"]
+        stability = mutation_pass.get("stability")
+        if isinstance(stability, str):
+            stability_counts[stability] = stability_counts.get(stability, 0) + 1
         supported_formats = set(mutation_pass.get("formats", []))
         supported_architectures = set(mutation_pass.get("architectures", []))
         evidence_cells = {(cell["format"], cell["architecture"]) for cell in mutation_pass.get("evidence_cells", [])}
@@ -68,6 +72,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "not_supported_cells": len(cells) - evidenced,
             "non_official_evidenced_cells": non_official_evidenced,
             "non_official_not_supported_cells": non_official_not_supported,
+            "stability_counts": dict(sorted(stability_counts.items())),
             "maturity_profile_counts": dict(sorted(maturity_profile_counts.items())),
         },
         "cells": cells,

@@ -575,6 +575,10 @@
       "not_supported_cells": 235,
       "non_official_evidenced_cells": 7,
       "non_official_not_supported_cells": 235,
+      "stability_counts": {
+        "experimental": 19,
+        "tier-1": 3
+      },
       "maturity_profile_counts": {
         "code-virtualization": 1,
         "experimental": 12,

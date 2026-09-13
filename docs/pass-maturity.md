@@ -42,9 +42,10 @@ The machine-readable format and evidence paths are in
 single fixture or a static disassembly result alone.
 The generated matrix summary records evidenced versus not-supported cells,
 including non-official targets, so PE, Mach-O, ARM, and AArch64 parity gaps are
-visible without expanding every cell. It also counts passes per maturity
-profile so Tier 1, corpus-selected, code-virtualization, and experimental
-coverage remain visible at release-gate level.
+visible without expanding every cell. It also counts passes per declared
+stability and maturity profile so Tier 1, corpus-selected,
+code-virtualization, and experimental coverage remain visible at release-gate
+level.
 Runtime support classification also exposes `parity_gap` and
 `parity_gap_scope` so reports can distinguish stable ELF x86-64 from
 format-level and architecture-level preview gaps.
