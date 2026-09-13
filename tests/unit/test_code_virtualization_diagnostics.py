@@ -1026,6 +1026,30 @@ def test_data_segment_register_reports_cpu_environment_capability() -> None:
     expect(capability == "cpu_environment")
 
 
+def test_load_ds_far_pointer_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "lds rax, [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_load_es_far_pointer_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "les rax, [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
+def test_load_ss_far_pointer_reports_cpu_environment_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "lss rax, [rsp]"}
+    )
+
+    expect(capability == "cpu_environment")
+
+
 def test_page_invalidation_instruction_reports_cpu_environment_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "other", "opcode": "invpcid rax, [rsp]"}
