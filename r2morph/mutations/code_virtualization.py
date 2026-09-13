@@ -781,7 +781,7 @@ class CodeVirtualizationPass(MutationPass):
             or opcode.startswith(("rdfsbase", "rdgsbase", "swapgs", "wrfsbase", "wrgsbase"))
         ):
             capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
-        elif opcode.startswith(("mfence", "lfence", "sfence", "lock ")) or (
+        elif opcode.startswith(("mfence", "lfence", "pause", "sfence", "lock ")) or (
             opcode.startswith("xchg") and "[" in opcode
         ):
             capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"

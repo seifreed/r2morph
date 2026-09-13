@@ -380,6 +380,14 @@ def test_memory_fence_reports_thread_synchronization_capability() -> None:
     expect(capability == "thread_synchronization")
 
 
+def test_pause_instruction_reports_thread_synchronization_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "pause"}
+    )
+
+    expect(capability == "thread_synchronization")
+
+
 def test_syscall_instruction_reports_signals_and_system_calls_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
         {"type": "syscall", "opcode": "syscall"}
