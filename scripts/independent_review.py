@@ -12,6 +12,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.platform.elf_handler_parsing import parse_elf_header
+from scripts.adversarial_benchmark import _EXPECTED_TOOLS
 from scripts.continuous_fuzz import run_campaign
 from scripts.support_matrix import build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
@@ -69,6 +70,11 @@ def _review_benchmark(root: Path) -> dict[str, object]:
     return _check(
         "adversarial_benchmark_evidence", passed, f"{len(completed)} completed, {len(unavailable)} unavailable"
     )
+
+
+def _review_binary_ninja_contract() -> dict[str, object]:
+    passed = "binary-ninja" in _EXPECTED_TOOLS
+    return _check("binary_ninja_benchmark_contract", passed, "binary-ninja is an expected analyzer slot")
 
 
 def _review_corpus_benchmark(root: Path) -> dict[str, object]:
@@ -266,6 +272,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_benchmark(root),
+        _review_binary_ninja_contract(),
         _review_corpus_benchmark(root),
         _review_ghidra_corpus(root),
         _review_ida_corpus(root),

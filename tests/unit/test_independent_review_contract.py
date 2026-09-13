@@ -28,6 +28,7 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
         {
             "ida_corpus_evidence",
             "ida_current_summary_evidence",
+            "binary_ninja_benchmark_contract",
             "ghidra_corpus_evidence",
             "parser_rewriter_fuzz_campaign",
         }

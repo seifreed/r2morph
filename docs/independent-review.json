@@ -16,6 +16,11 @@
       "status": "passed"
     },
     {
+      "detail": "binary-ninja is an expected analyzer slot",
+      "name": "binary_ninja_benchmark_contract",
+      "status": "passed"
+    },
+    {
       "detail": "159 samples, 939 completed tool runs, 15 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
