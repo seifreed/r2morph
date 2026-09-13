@@ -915,6 +915,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--count 3" in differential
         and "Validate differential campaign summary" in differential
         and "platform_scope" in differential
+        and "platform_gap_scope" in differential
         and "corpus_scope" in differential
         and "fixtures/dataset" in differential
         and "missing_corpus_passes" in differential

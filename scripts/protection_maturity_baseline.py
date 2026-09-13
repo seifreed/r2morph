@@ -47,6 +47,10 @@ _FULL_COVERAGE_PERCENT = 100.0
 _COMPLETE_RUN_FIELD = 0
 _MISSING_RUN_FIELD = 1
 _DIFFERENTIAL_PLATFORM_SCOPE = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+_DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
+    "formats": ["Mach-O", "PE"],
+    "architectures": ["AArch64", "ARM", "x86"],
+}
 DEFAULT_MUTATION_NAME = "CodeVirtualization"
 CORPUS_PASS_NAMES = (
     "BlockReordering",
@@ -813,7 +817,9 @@ def _render_multi_pass_result(
     summaries = {name: result["summary"] for name, result in rendered.items()}
     campaign_summary = _multi_pass_campaign_summary(summaries)
     campaign_summary["platform_scope"] = dict(_DIFFERENTIAL_PLATFORM_SCOPE)
+    campaign_summary["platform_gap_scope"] = dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE)
     campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
+    campaign_summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(campaign_summary)
     return {
         "schema_version": 3,
         "measurement": "protection-maturity-corpus-by-pass",
@@ -975,6 +981,7 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
         "passes_with_incomplete_coverage",
         "passes_with_semantic_failures",
         "passes_with_runtime_observable_failures",
+        "platform_gap_scope",
     ):
         value = summary.get(field)
         if isinstance(value, (list, dict)) and value:

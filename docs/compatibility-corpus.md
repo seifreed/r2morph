@@ -121,9 +121,10 @@ pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
 The scheduled differential workflow validates this campaign summary before
 uploading the artifact, including the Linux ELF x86-64 platform scope,
-`fixtures/dataset` corpus scope, missing corpus passes and incomplete coverage
-groups, plus a compact `continuous_evidence_blockers` map that must be empty
-for the scheduled campaign to pass.
+`fixtures/dataset` corpus scope, the PE/Mach-O and ARM/AArch64/x86 platform gap
+scope, missing corpus passes and incomplete coverage groups, plus a compact
+`continuous_evidence_blockers` map that must be empty for the scheduled
+campaign to pass.
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
