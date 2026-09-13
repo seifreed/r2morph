@@ -180,6 +180,14 @@ def _maturity_blocker_totals(
     }
 
 
+def _vm_semantic_evidence_blockers() -> dict[str, object]:
+    return {"vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE)}
+
+
+def _vm_semantic_blocker_totals() -> dict[str, int]:
+    return {"vm_semantic_gap_scope": len(_VM_SEMANTIC_GAP_SCOPE)}
+
+
 def _vm_resistance_evidence_blockers() -> dict[str, object]:
     return {"vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE)}
 
@@ -362,6 +370,8 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                 native_evidence_gap_passes,
             ),
             "vm_semantic_gap_scope": list(_VM_SEMANTIC_GAP_SCOPE),
+            "vm_semantic_evidence_blockers": _vm_semantic_evidence_blockers(),
+            "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
             "vm_resistance_evidence_blockers": _vm_resistance_evidence_blockers(),
             "vm_resistance_blocker_totals": _vm_resistance_blocker_totals(),

@@ -381,20 +381,22 @@ def test_support_matrix_counts_maturity_blockers() -> None:
 def test_support_matrix_names_vm_semantic_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
+    expected = [
+        "memory",
+        "direct-calls",
+        "indirect-calls",
+        "abi-varargs",
+        "unwinding-exceptions",
+        "tls-signals",
+        "threads",
+        "fp-simd",
+        "ssa-liveness",
+    ]
 
     expect(
-        summary["vm_semantic_gap_scope"]
-        == [
-            "memory",
-            "direct-calls",
-            "indirect-calls",
-            "abi-varargs",
-            "unwinding-exceptions",
-            "tls-signals",
-            "threads",
-            "fp-simd",
-            "ssa-liveness",
-        ]
+        summary["vm_semantic_gap_scope"] == expected
+        and summary["vm_semantic_evidence_blockers"]["vm_semantic_gap_scope"] == expected
+        and summary["vm_semantic_blocker_totals"]["vm_semantic_gap_scope"] == len(expected)
     )
 
 

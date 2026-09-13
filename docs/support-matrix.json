@@ -1269,6 +1269,22 @@
         "fp-simd",
         "ssa-liveness"
       ],
+      "vm_semantic_evidence_blockers": {
+        "vm_semantic_gap_scope": [
+          "memory",
+          "direct-calls",
+          "indirect-calls",
+          "abi-varargs",
+          "unwinding-exceptions",
+          "tls-signals",
+          "threads",
+          "fp-simd",
+          "ssa-liveness"
+        ]
+      },
+      "vm_semantic_blocker_totals": {
+        "vm_semantic_gap_scope": 9
+      },
       "vm_resistance_gap_scope": [
         "human-adversarial-validation",
         "isa-opcode-diversity",
