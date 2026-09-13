@@ -848,6 +848,22 @@ def test_shadow_stack_instruction_reports_stack_abi_capability() -> None:
     expect(capability == "stack_and_abi")
 
 
+def test_repeated_shadow_stack_instruction_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rep rstorssp qword [rax]"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
+def test_repeated_shadow_stack_save_reports_stack_abi_capability() -> None:
+    capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic(
+        {"type": "other", "opcode": "rep saveprevssp"}
+    )
+
+    expect(capability == "stack_and_abi")
+
+
 def test_far_return_reports_stack_abi_capability() -> None:
     capability, _reason = CodeVirtualizationPass._unsupported_instruction_diagnostic({"type": "ret", "opcode": "retfq"})
 
