@@ -127,6 +127,8 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "Differential corpus coverage remains incomplete",
     "continuous_evidence_blockers",
     "continuous_evidence_blocker_totals",
+    "extended_maturity_evidence_blockers",
+    "extended_maturity_evidence_blocker_totals",
     "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
     "vm_semantic_gap_scope",
     "vm_semantic_blocker_totals",

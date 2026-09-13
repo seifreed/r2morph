@@ -19,7 +19,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   platform coverage are still required. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [differential-corpus.yml](../.github/workflows/differential-corpus.yml)
-  `continuous_evidence_blockers` and `continuous_evidence_blocker_totals`.
+  `continuous_evidence_blockers`, `continuous_evidence_blocker_totals`,
+  `extended_maturity_evidence_blockers`, and
+  `extended_maturity_evidence_blocker_totals`.
   Exit criteria: all relevant passes have complete differential evidence across
   the supported corpus and declared platform matrix.
 - RB-003: VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals,
