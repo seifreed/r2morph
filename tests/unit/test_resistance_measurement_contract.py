@@ -34,3 +34,10 @@ def test_resistance_measurement_classifies_evidence_strength() -> None:
     expect(_measurement(reached_terminal=True).evidence_status == "cracked")
     expect(_measurement(budget_exhausted=True).evidence_status == "lower_bound")
     expect(_measurement().evidence_status == "resisted")
+
+
+def test_resistance_measurement_keeps_release_signoff_human_gated() -> None:
+    expect(_measurement(angr_available=False).release_signoff_status == "unavailable")
+    expect(_measurement(reached_terminal=True).release_signoff_status == "failed_adversarial_probe")
+    expect(_measurement(budget_exhausted=True).release_signoff_status == "pending_human_adversarial_review")
+    expect(_measurement().release_signoff_status == "pending_human_adversarial_review")

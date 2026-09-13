@@ -109,6 +109,15 @@ class ResistanceMeasurement:
             return "lower_bound"
         return "resisted"
 
+    @property
+    def release_signoff_status(self) -> str:
+        """Classify whether this automated measurement can support VM resistance signoff."""
+        if not self.angr_available:
+            return "unavailable"
+        if self.reached_terminal:
+            return "failed_adversarial_probe"
+        return "pending_human_adversarial_review"
+
 
 class SymbolicResistanceProbe:
     """A bounded symbolic adversary that scores a function's devirtualization resistance."""
