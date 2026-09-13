@@ -63,6 +63,15 @@ def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:
     )
 
 
+def test_adversarial_benchmark_report_records_tool_evidence_or_reason() -> None:
+    report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all("original" in item and "protected" in item for item in report["tools"] if item["status"] == "completed")
+        and all(item.get("reason") for item in report["tools"] if item["status"] == "unavailable")
+    )
+
+
 def test_adversarial_benchmark_docs_match_local_tool_availability() -> None:
     report = json.loads(_SINGLE_FIXTURE_REPORT.read_text(encoding="utf-8"))
     tools = {item["tool"]: item["status"] for item in report["tools"]}
