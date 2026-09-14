@@ -419,6 +419,11 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
+def _ordered_functions(binary: Any) -> list[dict[str, Any]]:
+    """Visit functions in stable image order before applying the budget."""
+    return sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
+
+
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
     """Apply code virtualization using the pass instance's transformation seams."""
     pass_instance._reset_random()
@@ -438,7 +443,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     unwind_section = _unwind_metadata_name(binary)
     exception_frames = _read_exception_frames(binary, unwind_section)
 
-    for func in binary.get_functions():
+    for func in _ordered_functions(binary):
         if virtualized >= pass_instance.max_functions:
             break
         function_address = func.get("addr")

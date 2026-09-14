@@ -4,6 +4,7 @@ from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.mutations.code_virtualization_apply import (
     _exceeds_function_size_budget,
+    _ordered_functions,
     _preflight_rejection_diagnostic,
     _static_dataflow_is_complete,
     _UnwindContext,
@@ -58,6 +59,14 @@ def test_static_dataflow_budget_rejects_oversized_function_before_cfg() -> None:
 
 def test_static_dataflow_budget_accepts_function_at_limit() -> None:
     expect(not _exceeds_function_size_budget({"size": 65536}, 65536))
+
+
+def test_ordered_functions_prioritize_lowest_image_address() -> None:
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int]]:
+            return [{"addr": 0x4000}, {"addr": 0x1000}, {"addr": 0x2000}]
+
+    expect([function["addr"] for function in _ordered_functions(FunctionSource())] == [0x1000, 0x2000, 0x4000])
 
 
 def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions() -> None:
