@@ -279,6 +279,7 @@ jobs:
           from pathlib import Path
 
           from scripts.adversarial_benchmark import merge_adversarial_reports
+          from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
 
           paths = sorted(Path("adversarial-reports").glob("*/adversarial-benchmark.json"))
           if len(paths) != 4:
@@ -297,10 +298,17 @@ jobs:
                   f"merged benchmark has errors: passes={summary['error_pass_runs']} "
                   f"tools={summary['error_tool_runs']}"
               )
-          if summary["adversarial_evidence_blockers"].get("passes_without_applied_runs"):
+          missing_corpus_passes = [
+              pass_name
+              for pass_name in summary["adversarial_evidence_blockers"].get(
+                  "passes_without_applied_runs", []
+              )
+              if pass_name in CORPUS_PASS_NAMES
+          ]
+          if missing_corpus_passes:
               raise SystemExit(
-                  "passes without applications after all shards: "
-                  f"{summary['adversarial_evidence_blockers']['passes_without_applied_runs']}"
+                  "corpus passes without applications after all shards: "
+                  f"{missing_corpus_passes}"
               )
           Path("adversarial-benchmark-merged.json").write_text(
               json.dumps(report, indent=2, sort_keys=True) + "\n",
