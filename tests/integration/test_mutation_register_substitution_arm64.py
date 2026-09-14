@@ -69,10 +69,11 @@ def test_register_substitution_arm64_preserves_generated_native_execution(tmp_pa
 
     expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
     mutated = run_command([binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0, f"ARM64 register substitution was not applied: {result}")
     expect(
-        result["mutations_applied"] > 0
-        and (mutated.returncode, mutated.stdout, mutated.stderr)
-        == (original.returncode, original.stdout, original.stderr)
-        == (0, "", ""),
-        "ARM64 register substitution changed generated native execution",
+        (mutated.returncode, mutated.stdout, mutated.stderr) == (original.returncode, original.stdout, original.stderr),
+        "ARM64 register substitution changed generated native execution: "
+        f"original={(original.returncode, original.stdout, original.stderr)!r}; "
+        f"mutated={(mutated.returncode, mutated.stdout, mutated.stderr)!r}; result={result!r}",
     )
+    expect((original.returncode, original.stdout, original.stderr) == (0, "", ""), f"unexpected baseline: {original}")
