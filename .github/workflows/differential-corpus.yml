@@ -113,7 +113,8 @@ jobs:
             tests/integration/test_binary_rewriter_formats_real.py \
             tests/integration/test_platform_deeper.py \
             tests/integration/test_mutation_passes_end_to_end_more2.py \
-            tests/integration/test_mutation_nop_insertion_arm64.py
+            tests/integration/test_mutation_nop_insertion_arm64.py \
+            tests/integration/test_code_virtualization_target_support_real.py
 
       - name: Validate cross-format differential evidence
         run: |
@@ -140,7 +141,9 @@ jobs:
               "test_nop_insertion_arm64_path",
               "test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites",
               "test_instruction_substitution_arm64_changes_real_instruction_encoding",
-          }
+              "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
+              "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
+            }
           if not all(any(name.startswith(prefix) for name in names) for prefix in required):
               raise SystemExit(f"cross-format smoke coverage drift: {sorted(names)}")
           Path("cross-format-differential.xml").stat()
