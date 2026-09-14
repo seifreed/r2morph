@@ -153,6 +153,13 @@ That artifact is evidence triage only and records `missing_extended_passes`,
 `total_extended_maturity_evidence_blockers` as the compact total; it fails on
 extended pass errors but does not promote those passes until their applied-run
 and complete-evidence blockers are zero.
+The same scheduled workflow now runs a native ARM64 macOS differential job on
+`macos-14`. It executes the Mach-O ARM64 NOP and register substitutions,
+PE integrity checks, format-preserving rewriter checks, and fail-closed
+virtualization target checks, then uploads
+`cross-platform-differential-macos-arm64`. This is additional native
+cross-platform evidence; it does not promote PE, Mach-O, ARM, or AArch64 to
+the official Linux ELF x86-64 support tier.
 
 The successful run [34790660315](https://github.com/seifreed/r2morph/actions/runs/34790660315)
 at commit `4ffa6647` is the current continuous-evidence record. Its official
