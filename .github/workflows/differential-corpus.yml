@@ -170,7 +170,7 @@ jobs:
 
           suite = ET.parse("composition-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 3:
+          if len(cases) < 7:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("composition smoke contains failures or errors")
@@ -179,6 +179,10 @@ jobs:
               "test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code",
               "test_composed_real_passes_preserve_exit_code[nop_then_substitution]",
               "test_composed_real_passes_preserve_exit_code[constant_then_substitution]",
+              "test_composed_real_passes_preserve_exit_code[nop_then_constant]",
+              "test_composed_real_passes_preserve_exit_code[constant_then_nop]",
+              "test_composed_real_passes_preserve_exit_code[substitution_then_nop]",
+              "test_composed_real_passes_preserve_exit_code[substitution_then_constant]",
           }
           if not required.issubset(names):
               raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")

@@ -35,7 +35,7 @@ The compatibility corpus selection currently covers `BlockReordering`,
 | Stack strings | Experimental | ELF x86-64 | String layout and ABI interactions need more corpus coverage | `README.md` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus; pattern coverage is intentionally narrow and composition evidence remains incomplete | `README.md`, `docs/compatibility-corpus.md` |
-| Polymorphic engine | Experimental | ELF x86-64 | A real ELF x86-64 composition matrix covers child-pass sequencing and exit-code parity on two fixtures; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
+| Polymorphic engine | Experimental | ELF x86-64 | A real ELF x86-64 composition matrix covers six child-pass orders across three fixtures; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
 
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a

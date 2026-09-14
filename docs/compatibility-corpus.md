@@ -168,7 +168,7 @@ Linux ELF x86-64 corpus recorded zero runtime-observable failures, zero semantic
 failures, and zero missing complete-evidence runs for all ten selected passes;
 the report SHA-256 is
 `8b0660a042bc1e33090f16ed25e9b33aefa52f9f07912508a1facd2a283ff207`. The same
-run executed 21 cross-format cases with no failures and a three-case real-pass
+run executed 21 cross-format cases with no failures and a six-order real-pass
 composition matrix with no failures. Six cross-format cases remain skipped on
 the Linux runner where native platform execution is unavailable, so this record
 does not close the declared PE/Mach-O or ARM/AArch64/x86 parity gaps.
