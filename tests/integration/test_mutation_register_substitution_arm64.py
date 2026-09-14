@@ -61,19 +61,22 @@ def test_register_substitution_arm64_preserves_generated_native_execution(tmp_pa
         pytest.skip("ARM64 Mach-O compiler output unavailable")
     original = run_command([binary_path], text=True, timeout=30)
 
+    pass_obj = RegisterSubstitutionPass({"probability": 1.0, "max_substitutions_per_function": 1, "seed": 1337})
     with Binary(binary_path, writable=True) as bin_obj:
         bin_obj.analyze()
-        result = RegisterSubstitutionPass(
-            {"probability": 1.0, "max_substitutions_per_function": 1, "seed": 1337}
-        ).apply(bin_obj)
+        result = pass_obj.apply(bin_obj)
 
     expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
     mutated = run_command([binary_path], text=True, timeout=30)
+    mutation_summary = [
+        (record.function_address, record.original_disasm, record.mutated_disasm) for record in pass_obj.get_records()
+    ]
     expect(result["mutations_applied"] > 0, f"ARM64 register substitution was not applied: {result}")
     expect(
         (mutated.returncode, mutated.stdout, mutated.stderr) == (original.returncode, original.stdout, original.stderr),
         "ARM64 register substitution changed generated native execution: "
         f"original={(original.returncode, original.stdout, original.stderr)!r}; "
-        f"mutated={(mutated.returncode, mutated.stdout, mutated.stderr)!r}; result={result!r}",
+        f"mutated={(mutated.returncode, mutated.stdout, mutated.stderr)!r}; result={result!r}; "
+        f"mutations={mutation_summary!r}",
     )
     expect((original.returncode, original.stdout, original.stderr) == (0, "", ""), f"unexpected baseline: {original}")
