@@ -17,6 +17,8 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
 from tests.utils.assertions import expect
+from tests.utils.platform_binaries import supports_native_elf_x86_64
+from tests.utils.process import run_command
 
 _EXPECTED_REGS_EAX_60 = 60
 
@@ -148,3 +150,47 @@ def test_reorder_preserves_function_byte_budget(tmp_path: Path) -> None:
         expect(end - start == func["size"], "reordering changed the function byte budget")
     finally:
         binary.close()
+
+
+def test_block_reordering_skips_rip_relative_variadic_function_without_corruption(tmp_path: Path) -> None:
+    if not supports_native_elf_x86_64() or not shutil.which("cc"):
+        pytest.skip("native Linux amd64 compiler and execution are required")
+
+    source = tmp_path / "rip_relative_variadic.c"
+    source.write_text(
+        "#include <stdarg.h>\n"
+        "__attribute__((noinline)) static double sum(int count, ...) {\n"
+        "    va_list values;\n"
+        "    va_start(values, count);\n"
+        "    double total = 0.0;\n"
+        "    for (int index = 0; index < count; ++index) total += va_arg(values, double);\n"
+        "    va_end(values);\n"
+        "    return total;\n"
+        "}\n"
+        "int main(void) { return (int)(sum(3, 1.0, 2.0, 3.0) * 10.0); }\n",
+        encoding="utf-8",
+    )
+    original = tmp_path / "rip_relative_variadic"
+    mutated = tmp_path / "rip_relative_variadic_mutated"
+    run_command(
+        [
+            "cc",
+            "-O0",
+            "-g",
+            "-fno-pie",
+            "-no-pie",
+            str(source),
+            "-o",
+            str(original),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    shutil.copyfile(original, mutated)
+    original_result = run_command([str(original)], capture_output=True)
+    with Binary(mutated, writable=True) as binary:
+        result = BlockReorderingPass(config={"probability": 1.0, "max_functions": 10, "seed": 20260914}).apply(binary)
+        binary.save()
+    mutated_result = run_command([str(mutated)], capture_output=True)
+
+    expect(mutated_result.returncode == original_result.returncode, f"reordering changed result: {result}")

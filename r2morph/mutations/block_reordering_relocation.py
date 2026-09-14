@@ -28,6 +28,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+import capstone
+
 logger = logging.getLogger(__name__)
 
 # A block stream item is either raw bytes copied verbatim, a control-transfer
@@ -44,6 +46,7 @@ _RELATIVE_TRANSFER_TYPES = frozenset({"jmp", "cjmp", "call"})
 # pinned at the function start, so at least two further blocks are needed to
 # produce a different order.
 _MIN_BLOCKS = 3
+_X86_64_BITS = 64
 
 _MAX_LAYOUT_ITERATIONS = 12
 
@@ -135,6 +138,7 @@ def _build_block_plans(
     """Decode every block and classify each instruction, or bail."""
     plans: dict[int, _BlockPlan] = {}
     next_addr = func_start
+    decoder = _pc_relative_decoder(binary)
     for index, block in enumerate(ordered):
         addr = block["addr"]
         size = block["size"]
@@ -146,19 +150,50 @@ def _build_block_plans(
         if not instructions:
             raise _BailOutError(f"no instructions for block 0x{addr:x}")
 
-        items = _classify_instructions(instructions)
+        items = _classify_instructions(instructions, decoder)
         fallthrough = _fallthrough_target(instructions, ordered, index)
         plans[addr] = _BlockPlan(addr, items, fallthrough)
 
     return plans
 
 
-def _classify_instructions(instructions: list[dict[str, Any]]) -> list[tuple[str, Any]]:
+def _pc_relative_decoder(binary: Any) -> Any | None:
+    """Build an x86-64 decoder used to reject non-relocatable memory operands."""
+    arch_info = binary.get_arch_info()
+    architecture = str(arch_info.get("arch", "")).lower()
+    if architecture not in {"x86", "x86_64", "amd64"} or int(arch_info.get("bits", 0)) != _X86_64_BITS:
+        return None
+    decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+    decoder.detail = True
+    return decoder
+
+
+def _has_pc_relative_memory_operand(instruction: dict[str, Any], decoder: Any | None) -> bool:
+    """Detect RIP-relative memory even when disassembly prints an absolute target."""
+    if decoder is None:
+        return False
+    raw = instruction.get("bytes")
+    address = instruction.get("addr")
+    if not raw or not isinstance(address, int):
+        raise _BailOutError("instruction lacks bytes or address for relocation analysis")
+    try:
+        decoded = next(decoder.disasm(bytes.fromhex(raw), address), None)
+    except (TypeError, ValueError):
+        raise _BailOutError("failed to decode instruction for relocation analysis") from None
+    if decoded is None:
+        raise _BailOutError("instruction could not be decoded for relocation analysis")
+    return any(
+        operand.type == capstone.x86.X86_OP_MEM and operand.mem.base == capstone.x86.X86_REG_RIP
+        for operand in decoded.operands
+    )
+
+
+def _classify_instructions(instructions: list[dict[str, Any]], decoder: Any | None = None) -> list[tuple[str, Any]]:
     """Turn raw instructions into copy-or-re-encode stream items, or bail."""
     items: list[tuple[str, Any]] = []
     for insn in instructions:
         disasm = insn.get("disasm", "")
-        if "rip" in disasm.lower():
+        if "rip" in disasm.lower() or _has_pc_relative_memory_operand(insn, decoder):
             raise _BailOutError("RIP-relative operand cannot be relocated")
 
         insn_type = insn.get("type", "")
