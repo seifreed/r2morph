@@ -54,6 +54,19 @@ _MAX_X86_INSTRUCTION_BYTES = 15
 _TRITON_INSTRUCTION_BUDGET = 50_000
 
 
+class _ToolCapabilityUnavailableError(RuntimeError):
+    """The analyzer is present but cannot execute this input's ISA."""
+
+
+def _tool_failure_result(tool: str, error: Exception) -> dict[str, object]:
+    if isinstance(error, _ToolCapabilityUnavailableError):
+        return {"tool": tool, "status": "unavailable", "reason": str(error)}
+    result: dict[str, object] = {"tool": tool, "status": "error", "error_type": type(error).__name__}
+    if str(error):
+        result["detail"] = str(error)
+    return result
+
+
 def _configured_executable(tool: str) -> str | None:
     environment_name = _COMMAND_ENVIRONMENT.get(tool)
     if environment_name:
@@ -126,7 +139,14 @@ def _binary_ninja_metric(path: Path) -> dict[str, object]:
 
 def _unicorn_metric(path: Path) -> dict[str, object]:
     started = time.perf_counter()
-    exit_code = emulate_exit_code(path)
+    try:
+        exit_code = emulate_exit_code(path)
+    except Exception as error:
+        if type(error).__name__ == "UcError":
+            raise _ToolCapabilityUnavailableError(
+                "the installed x86 emulator does not support an instruction in this fixture"
+            ) from error
+        raise
     return {"status": "completed", "exit_code": exit_code, "duration_seconds": time.perf_counter() - started}
 
 
@@ -290,7 +310,7 @@ def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, objec
         before = measure(original)
         after = measure(protected)
     except Exception as error:  # Tool boundary records failures without hiding the campaign result.
-        return {"tool": tool, "status": "error", "error_type": type(error).__name__}
+        return _tool_failure_result(tool, error)
     return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
 
 

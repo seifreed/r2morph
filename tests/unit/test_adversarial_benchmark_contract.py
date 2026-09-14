@@ -13,7 +13,9 @@ from scripts.adversarial_benchmark import (
     _pass_result,
     _pass_summary,
     _passes_without_applications,
+    _tool_failure_result,
     _tool_summary,
+    _ToolCapabilityUnavailableError,
     benchmark_corpus,
     benchmark_pair,
     merge_adversarial_reports,
@@ -55,6 +57,16 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
     expect(
         len(tools) == _EXPECTED_TOOL_COUNT
         and {item["tool"] for item in tools} >= {"radare2", "angr", "binary-ninja", "unicorn", "triton"}
+    )
+
+
+def test_adversarial_benchmark_separates_capability_gaps_from_adapter_errors() -> None:
+    unavailable = _tool_failure_result("unicorn", _ToolCapabilityUnavailableError("unsupported ISA"))
+    failed = _tool_failure_result("unicorn", ValueError("adapter failed"))
+
+    expect(
+        unavailable == {"tool": "unicorn", "status": "unavailable", "reason": "unsupported ISA"}
+        and failed == {"tool": "unicorn", "status": "error", "error_type": "ValueError", "detail": "adapter failed"}
     )
 
 

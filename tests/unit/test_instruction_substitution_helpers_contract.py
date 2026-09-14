@@ -85,3 +85,15 @@ def test_select_candidates_marks_live_flags_for_zeroing_before_branch() -> None:
     candidate = selected[0][1][0]
     expect(candidate["disasm"] == "xor eax, eax")
     expect(not (candidate["flags_live_after"] is not True))
+
+
+def test_x86_64_substitution_does_not_use_32_bit_stack_self_move() -> None:
+    equivalence_groups, pattern_to_group = init_substitution_rules()
+    _, equivalents, _ = get_equivalents(
+        {"disasm": "mov eax, eax"},
+        "x86",
+        pattern_to_group,
+        equivalence_groups,
+    )
+
+    expect("push eax; pop eax" not in equivalents)

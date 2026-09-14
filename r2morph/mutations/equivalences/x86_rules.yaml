@@ -35,7 +35,6 @@ equivalence_groups:
     description: "Ways to move a register to itself (NOPs)"
     instructions:
       - "mov {reg}, {reg}"
-      - "push {reg}; pop {reg}"
       - "xchg {reg}, {reg}"
     registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
 
