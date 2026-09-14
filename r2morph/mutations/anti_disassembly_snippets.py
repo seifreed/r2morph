@@ -218,6 +218,20 @@ TRAMPOLINE_X64 = [
     ),
 ]
 
+SAFE_PADDING_X64 = [
+    AntiDisasmSnippet(
+        asm="""
+jmp decoy_end
+db 0xE8, 0x00  ; linear disassembly sees the start of a call
+decoy_end:
+""",
+        bytes_hex="EB02E800",
+        size=4,
+        disasm_type=AntiDisasmType.OVERLAPPING,
+        description="Overlapping decoy over NOP padding with fall-through semantics",
+    ),
+]
+
 ALL_ANTI_DISASM_X64 = (
     OVERLAPPING_X64 + JUMP_MIDDLE_X64 + FALSE_BRANCH_X64 + SEH_BASED_X64 + POLYGLOT_X64_86 + TRAMPOLINE_X64
 )
@@ -273,6 +287,7 @@ __all__ = [
     "JUMP_MIDDLE_X64",
     "OVERLAPPING_X64",
     "POLYGLOT_X64_86",
+    "SAFE_PADDING_X64",
     "SEH_BASED_X64",
     "SEH_BASED_X86",
     "TRAMPOLINE_X64",

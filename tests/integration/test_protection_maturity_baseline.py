@@ -51,7 +51,6 @@ _PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
 _EXPECTED_PIE_EXIT_CODE = 73
 _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
-_EXPECTED_NOP_EXIT_CODE = 42
 _EXPECTED_SHORT_JUMP_EXIT_CODE = 7
 _FLAG_LIVE_FIXTURE = _DATASET / "elf_flag_live_x86_64"
 _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
@@ -224,7 +223,7 @@ def test_measure_fixture_supports_a_named_non_virtualization_pass(tmp_path: Path
     expect("nop-insertion" in result["runs"][0]["transformation"].values())
 
 
-def test_measure_fixture_analyzes_functions_before_function_based_pass(tmp_path: Path) -> None:
+def test_measure_fixture_omits_anti_disassembly_without_safe_code_cave(tmp_path: Path) -> None:
     result = measure_fixture(
         _FIXTURE,
         range(20260821, 20260822),
@@ -232,10 +231,17 @@ def test_measure_fixture_analyzes_functions_before_function_based_pass(tmp_path:
         "AntiDisassembly",
     )
 
-    expect(result["runs"][0]["transformation"]["status"] == "applied")
+    expect(
+        result["runs"][0]["transformation"]
+        == {
+            "pass_name": "anti-disassembly",
+            "status": "omitted",
+            "reason": "no eligible function was transformed",
+        }
+    )
 
 
-def test_measure_fixture_records_data_flow_mutation_on_real_fixture(tmp_path: Path) -> None:
+def test_measure_fixture_omits_data_flow_when_no_destination_is_dead(tmp_path: Path) -> None:
     result = measure_fixture(
         _NOP_FIXTURE,
         range(20260820, 20260821),
@@ -245,9 +251,12 @@ def test_measure_fixture_records_data_flow_mutation_on_real_fixture(tmp_path: Pa
     run = result["runs"][0]
 
     expect(
-        run["transformation"]["status"] == "applied"
-        and emulate_exit_code(_NOP_FIXTURE) == _EXPECTED_NOP_EXIT_CODE
-        and run["unicorn"]["exit_code"] == _EXPECTED_NOP_EXIT_CODE
+        run["transformation"]
+        == {
+            "pass_name": "data-flow-mutation",
+            "status": "omitted",
+            "reason": "no eligible function was transformed",
+        }
     )
 
 

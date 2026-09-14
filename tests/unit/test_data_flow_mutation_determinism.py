@@ -30,14 +30,12 @@ from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
 
 pass_obj = DataFlowMutationPass()
 instructions = [
-    {"addr": 0x1000, "disasm": "mov rax, rcx"},
-    {"addr": 0x1004, "disasm": "add rdx, rsi"},
-    {"addr": 0x1008, "disasm": "xor rdi, r8"},
+    {"addr": 0x1000, "next_addr": 0x1004, "disasm": "mov rax, rcx"},
+    {"addr": 0x1004, "next_addr": 0, "disasm": "add rdx, rsi"},
 ]
 live_in = {
     0x1000: {"rax", "rcx"},
     0x1004: {"rdx", "rsi"},
-    0x1008: {"rdi", "r8"},
 }
 candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
 print(json.dumps([(orig, subst) for _insn, orig, subst in candidates]))

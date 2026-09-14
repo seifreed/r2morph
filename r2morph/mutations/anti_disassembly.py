@@ -29,6 +29,7 @@ from r2morph.mutations.anti_disassembly_snippets import (
     JUMP_MIDDLE_X64,
     OVERLAPPING_X64,
     POLYGLOT_X64_86,
+    SAFE_PADDING_X64,
     SEH_BASED_X64,
     SEH_BASED_X86,
     TRAMPOLINE_X64,
@@ -39,6 +40,7 @@ from r2morph.mutations.anti_disassembly_snippets import (
     generate_sled_obfuscation,
 )
 from r2morph.mutations.base import MutationPass
+from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +91,43 @@ class AntiDisassemblyPass(MutationPass):
 
         return snippets
 
-    def _inject_snippet(self, binary: Any, addr: int, snippet: AntiDisasmSnippet) -> bool:
-        """Inject a snippet at the given address."""
+    def _inject_snippet(
+        self, binary: Any, snippet: AntiDisasmSnippet
+    ) -> tuple[int, bytes, bytes, AntiDisasmSnippet] | None:
+        """Write a decoy only into an executable code cave.
+
+        Overwriting a live basic block with a fixed snippet changes control
+        flow, registers, flags, or stack state. A cave keeps the original
+        execution path intact while still exposing the decoy bytes to static
+        analysis.
+        """
         try:
-            snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return bool(binary.write_bytes(addr, snippet_bytes))
+            candidates = [snippet]
+            if snippet not in SAFE_PADDING_X64:
+                candidates.extend(SAFE_PADDING_X64)
+            for candidate in candidates:
+                candidate_bytes = bytes.fromhex(candidate.bytes_hex)
+                injector = CodeCaveInjector(binary, min_cave_size=len(candidate_bytes))
+                caves = sorted(
+                    injector.find_executable_caves(len(candidate_bytes)),
+                    key=lambda cave: (cave.size, cave.address),
+                )
+                for cave in caves:
+                    allocation = injector.allocate_from_cave(cave, len(candidate_bytes), alignment=1)
+                    original_bytes = binary.read_bytes(allocation.address, len(candidate_bytes))
+                    is_zero_padding = original_bytes == b"\x00" * len(candidate_bytes)
+                    is_nop_padding = original_bytes == b"\x90" * len(candidate_bytes)
+                    if candidate in SAFE_PADDING_X64 and not is_nop_padding:
+                        continue
+                    if candidate not in SAFE_PADDING_X64 and not is_zero_padding:
+                        continue
+                    if binary.write_bytes(allocation.address, candidate_bytes):
+                        return allocation.address, original_bytes, candidate_bytes, candidate
+            logger.debug("No executable code cave can hold anti-disassembly decoy")
+            return None
         except Exception as e:
             logger.debug(f"Failed to inject snippet: {e}")
-            return False
+            return None
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -135,11 +166,10 @@ class AntiDisassemblyPass(MutationPass):
                 logger.debug(f"Failed to get blocks: {e}")
                 continue
 
-            for block in blocks:
+            for _block in blocks:
                 if random.random() > _BLOCK_INJECTION_PROBABILITY:
                     continue
 
-                block_addr = block.get("addr", 0)
                 snippet = random.choice(snippets)
 
                 mutation_checkpoint = self._create_mutation_checkpoint("anti_disasm")
@@ -147,20 +177,20 @@ class AntiDisassemblyPass(MutationPass):
                 if self._validation_manager is not None:
                     baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
 
-                original_bytes = binary.read_bytes(block_addr, len(snippet.bytes_hex) // 2)
-                if original_bytes and self._inject_snippet(binary, block_addr, snippet):
-                    mutated_bytes = binary.read_bytes(block_addr, len(snippet.bytes_hex) // 2)
+                injection = self._inject_snippet(binary, snippet)
+                if injection is not None:
+                    injection_addr, original_bytes, mutated_bytes, applied_snippet = injection
                     self._record_mutation(
                         function_address=func["addr"],
-                        start_address=block_addr,
-                        end_address=block_addr + len(snippet.bytes_hex) // 2 - 1,
+                        start_address=injection_addr,
+                        end_address=injection_addr + len(mutated_bytes) - 1,
                         original_bytes=original_bytes,
-                        mutated_bytes=mutated_bytes if mutated_bytes else bytes.fromhex(snippet.bytes_hex),
+                        mutated_bytes=mutated_bytes,
                         original_disasm="original_bytes",
-                        mutated_disasm=snippet.description,
+                        mutated_disasm=applied_snippet.description,
                         mutation_kind="anti_disassembly",
                         metadata={
-                            "disasm_type": snippet.disasm_type.value,
+                            "disasm_type": applied_snippet.disasm_type.value,
                             "structural_baseline": baseline,
                         },
                     )
@@ -173,10 +203,10 @@ class AntiDisassemblyPass(MutationPass):
                             self._rollback_mutation(binary, mutation_checkpoint)
                             continue
 
-                    injections_by_type[snippet.disasm_type] += 1
+                    injections_by_type[applied_snippet.disasm_type] += 1
                     injected_count += 1
 
-                logger.debug(f"Injected {snippet.disasm_type.value} at 0x{block.get('addr', 0):x}")
+                logger.debug(f"Injected {snippet.disasm_type.value} decoy")
 
         return {
             "total_injections": injected_count,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import r2morph.core.randomness as random
@@ -27,6 +28,34 @@ SAFE_INSTRUCTIONS = {
     "test",
     "cmp",
 }
+
+_CALLER_SAVED_REGISTERS = {
+    "x86_64": frozenset({"rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"}),
+    "x86": frozenset({"eax", "ecx", "edx"}),
+}
+_TWO_OPERANDS = 2
+_REGISTER_WIDTHS = {
+    **{register: 64 for register in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11")},
+    **{register: 32 for register in ("eax", "ebx", "ecx", "edx", "esi", "edi")},
+}
+_REGISTER_OPERAND = re.compile(r"^[a-z][a-z0-9]*$")
+
+
+def _split_register_instruction(disasm: str) -> tuple[str, str, str] | None:
+    """Return mnemonic and operands for a simple two-operand register write."""
+    parts = disasm.lower().split(maxsplit=1)
+    if len(parts) != _TWO_OPERANDS or parts[0] not in {"mov", "lea"}:
+        return None
+    operands = tuple(part.strip() for part in parts[1].split(","))
+    if len(operands) != _TWO_OPERANDS or not _REGISTER_OPERAND.fullmatch(operands[0]):
+        return None
+    if parts[0] == "mov" and "[" in operands[1]:
+        return None
+    return parts[0], operands[0], operands[1]
+
+
+def _same_register_width(first: str, second: str) -> bool:
+    return _REGISTER_WIDTHS.get(first) == _REGISTER_WIDTHS.get(second)
 
 
 def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, set[str]]:
@@ -122,42 +151,35 @@ def find_safe_substitution_candidates(
     live_in: dict[int, set[str]],
     arch: str,
 ) -> list[tuple[dict[str, Any], str, str]]:
-    """Find instructions where register substitution is safe."""
+    """Find register writes whose destination is dead after the instruction.
+
+    Replacing a source operand with a dead register changes the value flowing
+    through the instruction. Only ``mov`` and ``lea`` destinations are
+    considered because they do not modify flags, and the destination must be
+    dead on the next instruction's live-in set.
+    """
     candidates = []
 
-    caller_saved_64 = {
-        "rax",
-        "rcx",
-        "rdx",
-        "rsi",
-        "rdi",
-        "r8",
-        "r9",
-        "r10",
-        "r11",
-    }
-    caller_saved_32 = {"eax", "ecx", "edx"}
-
-    caller_saved = caller_saved_64 if arch == "x86_64" else caller_saved_32
-    all_regs = caller_saved.copy()
+    caller_saved = _CALLER_SAVED_REGISTERS.get(arch, frozenset())
 
     for insn in instructions:
         addr = insn.get("addr", 0)
         disasm = insn.get("disasm", "").lower()
-
-        mnemonic = disasm.split()[0] if disasm else ""
-        if mnemonic not in SAFE_INSTRUCTIONS:
+        parsed = _split_register_instruction(disasm)
+        next_addr = insn.get("next_addr", 0)
+        if parsed is None or not next_addr:
+            continue
+        _mnemonic, destination, source = parsed
+        live_after = live_in.get(next_addr, set())
+        live_before = live_in.get(addr, set())
+        if destination not in caller_saved or destination in live_after:
             continue
 
-        dead_regs = get_dead_registers(addr, live_in, all_regs)
-        if not dead_regs:
-            continue
-
-        for reg in sorted(caller_saved):
-            if reg in disasm and reg in live_in.get(addr, set()):
-                for dead_reg in sorted(dead_regs):
-                    candidates.append((insn, reg, dead_reg))
-                    break
+        dead_regs = sorted(caller_saved - live_before - {source, destination})
+        for dead_reg in dead_regs:
+            if _same_register_width(destination, dead_reg):
+                candidates.append((insn, destination, dead_reg))
+                break
 
     return candidates
 

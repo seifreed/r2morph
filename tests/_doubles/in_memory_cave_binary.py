@@ -17,16 +17,20 @@ _P8 = re.compile(r"p8\s+(\d+)\s+@\s+0x([0-9a-fA-F]+)")
 
 
 class _CaveR2:
+    def __init__(self, fill_byte: int) -> None:
+        self._fill_byte = fill_byte
+
     def cmd(self, command: str) -> str:
         match = _P8.search(command)
         if not match:
             return ""
-        return "00" * int(match.group(1))
+        return (bytes([self._fill_byte]) * int(match.group(1))).hex()
 
 
 class InMemoryCaveBinary:
-    def __init__(self) -> None:
-        self.r2 = _CaveR2()
+    def __init__(self, cave_byte: int = 0) -> None:
+        self._cave_byte = cave_byte
+        self.r2 = _CaveR2(cave_byte)
         self.writes: list[tuple[int, bytes]] = []
 
     def get_arch_info(self) -> dict[str, Any]:
@@ -38,3 +42,6 @@ class InMemoryCaveBinary:
     def write_bytes(self, addr: int, data: bytes) -> bool:
         self.writes.append((addr, bytes(data)))
         return True
+
+    def read_bytes(self, addr: int, size: int) -> bytes:
+        return bytes([self._cave_byte]) * size

@@ -31,3 +31,20 @@ def test_data_flow_mutation_helpers_cover_core_paths() -> None:
     dead_code = generate_dead_code_with_liveness({"rax", "rbx"}, 64, 4)
     expect(dead_code is not None)
     expect(not (len(dead_code) > _EXPECTED_LEN_DEAD_CODE_4))
+
+
+def test_candidates_rename_only_dead_register_destinations() -> None:
+    instructions = [
+        {"addr": 0x2000, "next_addr": 0x2004, "disasm": "mov rax, rcx"},
+        {"addr": 0x2004, "next_addr": 0, "disasm": "ret"},
+    ]
+    live_in = {0x2000: {"rax", "rcx"}, 0x2004: set()}
+
+    candidates = find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(
+        len(candidates) == 1
+        and candidates[0][0] is instructions[0]
+        and candidates[0][1] == "rax"
+        and candidates[0][2] not in {"rax", "rcx"}
+    )

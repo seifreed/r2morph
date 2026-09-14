@@ -21,15 +21,20 @@ import pytest
 
 from r2morph.mutations.anti_disassembly import (
     ALL_ANTI_DISASM_X64,
+    SAFE_PADDING_X64,
     SEH_BASED_X86,
     TRAMPOLINE_X64,
+    AntiDisassemblyPass,
 )
+from tests._doubles.in_memory_cave_binary import InMemoryCaveBinary
 from tests.utils.assertions import expect
+
+_EXPECTED_CODE_CAVE_ADDRESS = 0x1000
 
 
 def _all_declared_snippets() -> list:
     """All snippet tables that the pass selects from at runtime."""
-    return list(ALL_ANTI_DISASM_X64) + list(SEH_BASED_X86)
+    return list(ALL_ANTI_DISASM_X64) + list(SAFE_PADDING_X64) + list(SEH_BASED_X86)
 
 
 @pytest.mark.parametrize("snippet", _all_declared_snippets(), ids=lambda s: s.description[:60])
@@ -58,3 +63,26 @@ def test_trampoline_snippet_bytes_hex_specifically_parses() -> None:
     )
     # And it must actually parse:
     bytes.fromhex(trampoline.bytes_hex)
+
+
+def test_anti_disassembly_injects_decoy_into_code_cave() -> None:
+    binary = InMemoryCaveBinary()
+    pass_obj = AntiDisassemblyPass()
+
+    result = pass_obj._inject_snippet(binary, TRAMPOLINE_X64[0])
+
+    expect(result is not None)
+    expect(binary.writes[0][0] == _EXPECTED_CODE_CAVE_ADDRESS)
+
+
+def test_safe_padding_decoy_has_fall_through_encoding() -> None:
+    expect(bytes.fromhex(SAFE_PADDING_X64[0].bytes_hex) == b"\xeb\x02\xe8\x00")
+
+
+def test_anti_disassembly_falls_back_to_semantic_nop_padding() -> None:
+    binary = InMemoryCaveBinary(cave_byte=0x90)
+    pass_obj = AntiDisassemblyPass()
+
+    result = pass_obj._inject_snippet(binary, TRAMPOLINE_X64[0])
+
+    expect(result is not None and result[3] == SAFE_PADDING_X64[0])
