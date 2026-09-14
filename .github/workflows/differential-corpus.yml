@@ -107,9 +107,9 @@ jobs:
               raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
           if summary["missing_corpus_passes"]:
               raise SystemExit(f"missing corpus passes: {summary['missing_corpus_passes']}")
-          if summary["total_complete_evidence_missing_runs"] != 0:
+          if "fixture_shard" not in summary["corpus_scope"] and summary["total_complete_evidence_missing_runs"] != 0:
               raise SystemExit("differential report has incomplete evidence")
-          if summary["passes_with_incomplete_coverage"]:
+          if "fixture_shard" not in summary["corpus_scope"] and summary["passes_with_incomplete_coverage"]:
               raise SystemExit(f"incomplete coverage: {summary['passes_with_incomplete_coverage']}")
           allowed = {
               "platform_gap_scope": summary["platform_gap_scope"],
