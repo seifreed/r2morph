@@ -303,10 +303,10 @@ class OpaquePredicatePass(MutationPass):
             match = label_pattern.match(insn)
             assembly = insn
             if match:
-                target = labels.get(match.group("label"))
-                if target is None:
+                resolved_target = labels.get(match.group("label"))
+                if resolved_target is None:
                     return None
-                assembly = f"{match.group('mnemonic')} 0x{target:x}"
+                assembly = f"{match.group('mnemonic')} 0x{resolved_target:x}"
             insn_bytes = binary.assemble(assembly, current_addr)
             if insn_bytes is None:
                 return None
