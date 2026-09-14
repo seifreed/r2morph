@@ -56,6 +56,7 @@ _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
+_MAX_AFFECTED_INSTRUCTION_MNEMONICS = 256
 _FULL_COVERAGE_PERCENT = 100.0
 _COMPLETE_RUN_FIELD = 0
 _MISSING_RUN_FIELD = 1
@@ -586,7 +587,7 @@ def _transformation_evidence(
     pass_name: str = DEFAULT_MUTATION_NAME,
 ) -> dict[str, object]:
     """Describe whether the selected pass changed the fixture and why not."""
-    label = _PASS_LABELS[pass_name]
+    label = _PASS_LABELS.get(pass_name, pass_name)
     if status == "error":
         if isinstance(error, Mapping):
             reason = error.get("error") or error.get("error_type") or "transformation failed"
@@ -640,6 +641,44 @@ def _diagnostic_counts(records: object, field: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
+def _instruction_mnemonic(disassembly: object) -> str | None:
+    if not isinstance(disassembly, str):
+        return None
+    tokens = disassembly.strip().lower().split()
+    if not tokens:
+        return None
+    while tokens and tokens[0] in {"lock", "rep", "repe", "repne", "rex"}:
+        tokens.pop(0)
+    return tokens[0].rstrip(",") if tokens else None
+
+
+def _affected_instruction_evidence(records: object) -> dict[str, object]:
+    """Retain a bounded mnemonic catalogue from applied mutation records."""
+    if not isinstance(records, list):
+        return {
+            "affected_instruction_evidence_status": "missing",
+            "affected_instruction_mnemonics": [],
+            "affected_instruction_record_count": 0,
+        }
+    mnemonics: set[str] = set()
+    record_count = 0
+    for record in records:
+        disassembly = (
+            record.get("original_disasm") if isinstance(record, Mapping) else getattr(record, "original_disasm", None)
+        )
+        mnemonic = _instruction_mnemonic(disassembly)
+        if mnemonic is None:
+            continue
+        record_count += 1
+        if len(mnemonics) < _MAX_AFFECTED_INSTRUCTION_MNEMONICS:
+            mnemonics.add(mnemonic)
+    return {
+        "affected_instruction_evidence_status": "complete" if record_count else "missing",
+        "affected_instruction_mnemonics": sorted(mnemonics),
+        "affected_instruction_record_count": record_count,
+    }
+
+
 def _measure_seed(
     fixture: Path,
     seed: int,
@@ -650,6 +689,7 @@ def _measure_seed(
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
     started = time.perf_counter()
+    mutation_records: object = []
     try:
         binary = Binary(output, writable=True)
         binary.open()
@@ -657,6 +697,7 @@ def _measure_seed(
             binary.analyze("aa")
             mutation_pass = _build_mutation_pass(pass_name, seed)
             stats = mutation_pass.apply(binary)
+            mutation_records = mutation_pass.get_records()
             evidence = _transformation_evidence("passed", stats, pass_name=pass_name)
             if evidence["status"] == "applied" or mutation_pass.get_records():
                 binary.save()
@@ -682,6 +723,7 @@ def _measure_seed(
         "runtime_inputs": _runtime_input_artifacts(output, runtime_inputs),
         "unicorn": _semantic_artifacts(output),
     }
+    run.update(_affected_instruction_evidence(mutation_records))
     if status == "passed":
         run.update(
             {
@@ -1058,6 +1100,30 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
     error_reasons = _transformation_reason_counts(seed_runs, "error")
     omission_severities = _transformation_severity_counts(seed_runs, "omitted")
     error_severities = _transformation_severity_counts(seed_runs, "error")
+    affected_instruction_complete_runs = sum(
+        1
+        for _, run in seed_runs
+        if isinstance(transformation := run.get("transformation"), Mapping)
+        and transformation.get("status") == "applied"
+        and run.get("affected_instruction_evidence_status") == "complete"
+    )
+    affected_instruction_applied_runs = sum(
+        1
+        for _, run in seed_runs
+        if isinstance(transformation := run.get("transformation"), Mapping)
+        and transformation.get("status") == "applied"
+    )
+    affected_instruction_mnemonics = sorted(
+        {
+            mnemonic
+            for _, run in seed_runs
+            for mnemonic in run.get("affected_instruction_mnemonics", [])
+            if isinstance(mnemonic, str)
+        }
+    )
+    affected_instruction_record_count = sum(
+        value for _, run in seed_runs if isinstance(value := run.get("affected_instruction_record_count"), int)
+    )
     return {
         "schema_version": 2,
         "measurement": "protection-maturity-corpus",
@@ -1105,6 +1171,15 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "error_reasons": error_reasons,
             "omission_severities": omission_severities,
             "error_severities": error_severities,
+            "affected_instruction_applied_runs": affected_instruction_applied_runs,
+            "affected_instruction_complete_runs": affected_instruction_complete_runs,
+            "affected_instruction_missing_runs": affected_instruction_applied_runs - affected_instruction_complete_runs,
+            "affected_instruction_coverage_percent": _coverage_percent(
+                affected_instruction_complete_runs,
+                affected_instruction_applied_runs,
+            ),
+            "affected_instruction_mnemonics": affected_instruction_mnemonics,
+            "affected_instruction_record_count": affected_instruction_record_count,
             **static_metric_coverage,
             "static_metric_coverage_percent": _coverage_percent(
                 static_metric_coverage["static_metric_complete_runs"],
@@ -1355,6 +1430,27 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "behavioral_false_positive_observations",
         ),
+        "passes_with_missing_affected_instruction_evidence": _passes_with_positive_runs(
+            summaries,
+            "affected_instruction_missing_runs",
+        ),
+        "affected_instruction_complete_runs": _sum_summary_field(
+            summaries,
+            "affected_instruction_complete_runs",
+        ),
+        "affected_instruction_applied_runs": _sum_summary_field(
+            summaries,
+            "affected_instruction_applied_runs",
+        ),
+        "affected_instruction_missing_runs": _sum_summary_field(
+            summaries,
+            "affected_instruction_missing_runs",
+        ),
+        "affected_instruction_mnemonics_by_pass": {
+            name: summary["affected_instruction_mnemonics"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict) and isinstance(summary.get("affected_instruction_mnemonics"), list)
+        },
         "behavioral_false_positive_rate_percent_by_pass": {
             name: summary["behavioral_false_positive_rate_percent"]
             for name, summary in summaries.items()
@@ -1483,6 +1579,7 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
         "passes_with_runtime_observable_failures",
         "passes_with_behavioral_false_positives",
         "behavioral_validation_missing_observations_by_pass",
+        "passes_with_missing_affected_instruction_evidence",
         "platform_gap_scope",
         "corpus_gap_scope",
     ):

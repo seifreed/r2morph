@@ -406,6 +406,11 @@ jobs:
                   "missing behavioral validation observations: "
                   f"{report['campaign_summary']['behavioral_validation_missing_observations_by_pass']}"
               )
+          if report["campaign_summary"]["passes_with_missing_affected_instruction_evidence"]:
+              raise SystemExit(
+                  "missing affected-instruction evidence: "
+                  f"{report['campaign_summary']['passes_with_missing_affected_instruction_evidence']}"
+              )
           if any(
               value != 0
               for value in report["campaign_summary"]["behavioral_false_positive_rate_percent_by_pass"].values()
@@ -614,6 +619,11 @@ jobs:
               raise SystemExit(
                   "extended maturity missing observations after all shards: "
                   f"{maturity_summary['behavioral_validation_missing_observations_by_pass']}"
+              )
+          if maturity_summary["passes_with_missing_affected_instruction_evidence"]:
+              raise SystemExit(
+                  "extended maturity affected-instruction evidence is incomplete after all shards: "
+                  f"{maturity_summary['passes_with_missing_affected_instruction_evidence']}"
               )
           required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}
           missing_metrics = {

@@ -1540,6 +1540,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         in differential
         and "extended maturity performance metrics are incomplete" in differential
         and "extended maturity performance coverage is incomplete" in differential
+        and "passes_with_missing_affected_instruction_evidence" in differential
+        and "missing affected-instruction evidence" in differential
         and "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation" in differential
         and "SelfModifyingCode,ShortJumpPatching" in differential
         and "missing_extended_passes" in differential

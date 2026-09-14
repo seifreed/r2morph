@@ -18,6 +18,7 @@ from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
     EXTENDED_MATURITY_PASS_NAMES,
+    _affected_instruction_evidence,
     _ArtifactAccumulator,
     _behavioral_false_positive_metrics,
     _complete_evidence_error,
@@ -130,6 +131,7 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
     "passes_with_semantic_failures": ["PatternSubstitution"],
     "passes_with_runtime_observable_failures": ["CodeVirtualization"],
     "behavioral_validation_missing_observations_by_pass": {"CodeVirtualization": 1},
+    "passes_with_missing_affected_instruction_evidence": ["CodeVirtualization"],
     "platform_gap_scope": {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]},
     "corpus_gap_scope": {
         "corpus_families": ["additional-corpus-families"],
@@ -145,9 +147,10 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
     "passes_with_runtime_observable_failures": 1,
     "behavioral_validation_missing_observations_by_pass": 1,
     "passes_with_semantic_failures": 1,
+    "passes_with_missing_affected_instruction_evidence": 1,
     "passes_without_applied_runs": 1,
     "platform_gap_scope": 2,
-    "total_continuous_evidence_blockers": 28,
+    "total_continuous_evidence_blockers": 29,
 }
 _EXPECTED_EXTENDED_MATURITY_BLOCKERS = {"missing_extended_passes": _EXPECTED_MISSING_EXTENDED_PASSES}
 _EXPECTED_EXTENDED_MATURITY_BLOCKER_TOTALS = {
@@ -254,6 +257,12 @@ def test_omitted_pass_preserves_fixture_without_re_serializing(tmp_path: Path) -
 
     expect(run["transformation"]["status"] == "omitted")
     expect(run["output_sha256"] == sha256(_VEX_WORD_SHUFFLE_FIXTURE))
+
+
+def test_measure_seed_records_pass_construction_errors(tmp_path: Path) -> None:
+    run = _measure_seed(_FIXTURE, 20260902, tmp_path, "UnknownPass")
+
+    expect(run["status"] == "error" and run["transformation"]["status"] == "error")
 
 
 def test_measure_fixture_omits_data_flow_when_no_destination_is_dead(tmp_path: Path) -> None:
@@ -473,6 +482,29 @@ def test_behavioral_false_positive_metric_counts_applied_runtime_changes() -> No
     )
 
 
+def test_affected_instruction_evidence_catalogues_recorded_mnemonics() -> None:
+    evidence = _affected_instruction_evidence(
+        [
+            {"original_disasm": "lock add dword [rax], ecx"},
+            {"original_disasm": "rep movsb"},
+            {"original_disasm": ""},
+        ]
+    )
+
+    expect(
+        evidence
+        == {
+            "affected_instruction_evidence_status": "complete",
+            "affected_instruction_mnemonics": ["add", "movsb"],
+            "affected_instruction_record_count": 2,
+        }
+    )
+
+
+def test_affected_instruction_evidence_marks_missing_records() -> None:
+    expect(_affected_instruction_evidence([])["affected_instruction_evidence_status"] == "missing")
+
+
 def test_render_result_counts_missing_size_and_duration_pairs() -> None:
     report = _render_result(
         [
@@ -607,6 +639,7 @@ def test_render_multi_pass_result_summarizes_campaign_coverage() -> None:
         and report["campaign_summary"]["metric_missing_runs"] == _EXPECTED_METRIC_RUN_TOTALS
         and report["campaign_summary"]["passes_with_semantic_failures"] == ["PatternSubstitution"]
         and report["campaign_summary"]["passes_with_runtime_observable_failures"] == ["CodeVirtualization"]
+        and report["campaign_summary"]["passes_with_missing_affected_instruction_evidence"] == ["CodeVirtualization"]
         and report["campaign_summary"]["runtime_observable_failure_reasons_by_pass"]
         == {"CodeVirtualization": {"return_code": 1}}
         and report["campaign_summary"]["omission_reasons_by_pass"] == _EXPECTED_OMISSION_REASONS_BY_PASS

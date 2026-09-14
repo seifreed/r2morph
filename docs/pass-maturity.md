@@ -99,6 +99,10 @@ selected pass. It now also executes generated argv inputs and records
 `behavioral_false_positive_rate_percent` for every applied run. A non-zero
 rate or missing observation fails the scheduled evidence gate; this is the
 native-runtime oracle for behavioral false positives, not a static-risk claim.
+Applied mutation records now also contribute a bounded
+`affected_instruction_mnemonics` catalogue and record count per pass. An
+applied run without those records is a release-gate blocker, so an instruction
+family cannot appear covered only because a binary changed on disk.
 The current profile summary still reports `12 with no independent false-positive measurement`
 until the scheduled artifact is published, and also reports 12 with no
 independent decompiler-effectiveness measurement, 11 without contractual
