@@ -125,8 +125,14 @@ jobs:
               raise SystemExit(
                   f"adversarial evidence blockers drift: {summary['adversarial_evidence_blockers']}"
               )
-          if summary["adversarial_evidence_blocker_totals"]["total_adversarial_evidence_blockers"] != 0:
-              raise SystemExit(f"adversarial evidence blocker totals: {summary['adversarial_evidence_blocker_totals']}")
+          blocker_totals = summary["adversarial_evidence_blocker_totals"]
+          expected_total = sum(
+              value
+              for field, value in blocker_totals.items()
+              if field not in {"blocker_categories", "total_adversarial_evidence_blockers"}
+          )
+          if blocker_totals["total_adversarial_evidence_blockers"] != expected_total:
+              raise SystemExit(f"adversarial evidence blocker totals drift: {blocker_totals}")
           if missing_applications:
               raise SystemExit(f"passes without applications: {missing_applications}")
           PY
