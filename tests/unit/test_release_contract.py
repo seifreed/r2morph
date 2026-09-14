@@ -1509,6 +1509,13 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_simd_integer_fixture_virtualization_preserves_exit_code" in differential
         and "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function" in differential
         and "tests/unit/test_code_virtualization_static_dataflow.py" in differential
+        and '--junitxml="$GITHUB_WORKSPACE/vm-semantic-differential.xml"' in differential
+        and "Validate VM semantic differential evidence" in differential
+        and "VM semantic smoke ran too few cases" in differential
+        and "VM semantic smoke coverage drift" in differential
+        and "Upload VM semantic differential evidence" in differential
+        and "vm-semantic-differential.xml" in differential
+        and "vm-semantic-differential" in differential
         and "Run parser and rewriter fuzz smoke" in differential
         and "Validate parser and rewriter fuzz smoke" in differential
         and "scripts/continuous_fuzz.py" in differential

@@ -182,6 +182,7 @@ jobs:
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
           python -W error -m pytest -q --no-cov --tb=short \
+            --junitxml="$GITHUB_WORKSPACE/vm-semantic-differential.xml" \
             tests/integration/test_code_virtualization_memory_widths_real.py::test_memory_width_fixture_virtualization_preserves_exit_code \
             tests/integration/test_code_virtualization_call_callee_saved_real.py::test_virtualized_callee_saved_fixture_preserves_registers \
             tests/integration/test_code_virtualization_call_flags_stack_real.py::test_call_flags_stack_fixture_virtualization_preserves_exit_code \
@@ -196,6 +197,39 @@ jobs:
             tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function \
             tests/integration/test_code_virtualization_generic_isa_real.py \
             tests/unit/test_code_virtualization_static_dataflow.py
+
+      - name: Validate VM semantic differential evidence
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          suite = ET.parse("vm-semantic-differential.xml").getroot()
+          cases = suite.findall(".//testcase")
+          if len(cases) < 30:
+              raise SystemExit(f"VM semantic smoke ran too few cases: {len(cases)}")
+          if suite.findall(".//failure") or suite.findall(".//error"):
+              raise SystemExit("VM semantic smoke contains failures or errors")
+          names = "\n".join(case.attrib.get("name", "") for case in cases)
+          required = (
+              "test_memory_width_fixture_virtualization_preserves_exit_code",
+              "test_virtualized_callee_saved_fixture_preserves_registers",
+              "test_virtualized_elf_preserves_fs_relative_access",
+              "test_virtualized_threads_tls_and_signal_preserve_exit_code",
+              "test_virtualized_elf_preserves_integer_varargs_stack_abi",
+              "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi",
+              "test_virtualized_direct_call_to_separate_function_preserves_exit_code",
+              "test_virtualized_local_indirect_call_preserves_exit_code",
+              "test_virtualized_vex_nondestructive_packed_add_preserves_result",
+              "test_simd_integer_fixture_virtualization_preserves_exit_code",
+              "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
+              "test_static_dataflow",
+          )
+          missing = [name for name in required if name not in names]
+          if missing:
+              raise SystemExit(f"VM semantic smoke coverage drift: {missing}")
+          Path("vm-semantic-differential.xml").stat()
+          PY
 
       - name: Run parser and rewriter fuzz smoke
         run: |
@@ -314,6 +348,13 @@ jobs:
         with:
           name: cross-format-differential
           path: cross-format-differential.xml
+
+      - name: Upload VM semantic differential evidence
+        uses: actions/upload-artifact@v7
+        if: always() && hashFiles('vm-semantic-differential.xml') != ''
+        with:
+          name: vm-semantic-differential
+          path: vm-semantic-differential.xml
 
       - name: Upload composition differential evidence
         uses: actions/upload-artifact@v7
