@@ -47,6 +47,31 @@ logger = logging.getLogger(__name__)
 _BLOCK_INJECTION_PROBABILITY = 0.3
 
 
+def _cave_is_unreferenced(binary: Any, address: int, size: int) -> bool:
+    """Prove a zero-filled cave is outside known code and has no xrefs."""
+    get_functions = getattr(binary, "get_functions", None)
+    if callable(get_functions):
+        try:
+            for function in get_functions():
+                function_start = function.get("addr")
+                function_size = function.get("size")
+                if not isinstance(function_start, int) or not isinstance(function_size, int) or function_size <= 0:
+                    continue
+                if function_start < address + size and address < function_start + function_size:
+                    return False
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            return False
+
+    r2 = getattr(binary, "r2", None)
+    cmdj = getattr(r2, "cmdj", None)
+    if callable(cmdj):
+        try:
+            return not bool(cmdj(f"axtj @ 0x{address:x}"))
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            return False
+    return True
+
+
 class AntiDisassemblyPass(MutationPass):
     """
     Mutation pass that injects anti-disassembly techniques.
@@ -119,7 +144,10 @@ class AntiDisassemblyPass(MutationPass):
                     is_nop_padding = original_bytes == b"\x90" * len(candidate_bytes)
                     if candidate in SAFE_PADDING_X64 and not is_nop_padding:
                         continue
-                    if candidate not in SAFE_PADDING_X64 and not is_zero_padding:
+                    if candidate not in SAFE_PADDING_X64 and (
+                        not is_zero_padding
+                        or not _cave_is_unreferenced(binary, allocation.address, len(candidate_bytes))
+                    ):
                         continue
                     if binary.write_bytes(allocation.address, candidate_bytes):
                         return allocation.address, original_bytes, candidate_bytes, candidate

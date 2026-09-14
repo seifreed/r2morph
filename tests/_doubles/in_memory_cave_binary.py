@@ -28,8 +28,9 @@ class _CaveR2:
 
 
 class InMemoryCaveBinary:
-    def __init__(self, cave_byte: int = 0) -> None:
+    def __init__(self, cave_byte: int = 0, functions: list[dict[str, int]] | None = None) -> None:
         self._cave_byte = cave_byte
+        self._functions = functions or []
         self.r2 = _CaveR2(cave_byte)
         self.writes: list[tuple[int, bytes]] = []
 
@@ -45,3 +46,6 @@ class InMemoryCaveBinary:
 
     def read_bytes(self, addr: int, size: int) -> bytes:
         return bytes([self._cave_byte]) * size
+
+    def get_functions(self) -> list[dict[str, int]]:
+        return list(self._functions)
