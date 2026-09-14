@@ -53,6 +53,11 @@ _CALL_DEFINED_REGISTERS: dict[str, tuple[tuple[str, int], ...]] = {
     ),
     "cdecl_32": (("eax", 32), ("ecx", 32), ("edx", 32)),
 }
+_RETURN_REGISTERS: dict[str, tuple[tuple[str, int], ...]] = {
+    "sysv_amd64": (("rax", 64), ("rdx", 64)),
+    "win64": (("rax", 64),),
+    "cdecl_32": (("eax", 32), ("edx", 32)),
+}
 _ABI_ALIASES = {
     "x86_64_sysv": "sysv_amd64",
     "x86_64_windows": "win64",
@@ -71,6 +76,12 @@ def call_register_effects(
         _CALL_USED_REGISTERS.get(canonical_abi, _CALL_USED_REGISTERS[fallback]),
         _CALL_DEFINED_REGISTERS.get(canonical_abi, _CALL_DEFINED_REGISTERS[fallback]),
     )
+
+
+def return_register_effects(abi: str = "sysv_amd64") -> tuple[tuple[str, int], ...]:
+    """Return registers whose values are observable after a function return."""
+    canonical_abi = _ABI_ALIASES.get(abi, abi)
+    return _RETURN_REGISTERS.get(canonical_abi, _RETURN_REGISTERS["sysv_amd64"])
 
 
 def is_call_instruction(instruction: dict[str, Any]) -> bool:

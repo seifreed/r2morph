@@ -10,6 +10,7 @@ from r2morph.analysis.liveness import (
     LiveRange,
     Register,
 )
+from r2morph.analysis.ssa import SSAConverter
 from tests.utils.assertions import expect
 
 _EXPECTED_IL_ADDRESS_4096 = 0x1000
@@ -639,6 +640,12 @@ class TestLivenessAnalysis:
         names = {register.name for register in used}
 
         expect(names == {"rax"})
+
+    def test_ssa_return_uses_abi_registers(self):
+        """SSA keeps ABI return values observable at a ret instruction."""
+        used = SSAConverter()._extract_used_registers("ret")
+
+        expect({"rax", "rdx"} <= used)
 
     def test_to_dict(self):
         """Test to_dict method."""

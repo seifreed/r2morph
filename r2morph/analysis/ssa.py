@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.analysis.call_effects import call_register_effects
+from r2morph.analysis.call_effects import call_register_effects, return_register_effects
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
@@ -448,6 +448,8 @@ class SSAConverter:
         """Extract registers that are used (read from) in an instruction."""
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
+        if mnemonic == "ret":
+            return {register for register, _ in return_register_effects(self._abi)}
         if mnemonic == "call":
             call_used, _ = call_register_effects(self._abi)
             call_used_names = {register for register, _ in call_used}
