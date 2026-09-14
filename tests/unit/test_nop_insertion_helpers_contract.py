@@ -20,10 +20,11 @@ class _Binary:
         raise ValueError(addr)
 
     def assemble(self, insn: str, function_addr: int | None = None):
+        if insn.startswith("jmp "):
+            return b"\xeb\x01"
         if insn.startswith(("inc ", "push ", "pop ")):
             return b"\x40"
         table = {
-            "jmp 1": b"\xeb\x01",
             "inc eax": b"\x40",
             "push eax": b"\x50",
             "pop eax": b"\x58",
@@ -51,3 +52,11 @@ def test_x86_64_nop_candidates_accept_32_bit_self_moves() -> None:
     instruction = {"disasm": "mov eax, eax", "type": "mov"}
 
     expect(nop_helpers._is_redundant_instruction(instruction, "x86", 64))
+
+
+def test_dead_code_jump_targets_end_of_replaced_instruction() -> None:
+    binary = _Binary()
+
+    replacement = generate_jmp_dead_code(3, 64, binary, 0x1000)
+
+    expect(replacement == b"\xeb\x01\x90")

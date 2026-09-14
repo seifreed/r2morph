@@ -155,7 +155,7 @@ class NopInsertionPass(MutationPass):
         address = instruction.get("addr", 0)
         size = instruction.get("size", 0)
         if size in (3, 4, 5) and arch_family == "x86":
-            jump_bytes = self._generate_jmp_dead_code(size, bits, binary, function_address)
+            jump_bytes = self._generate_jmp_dead_code(size, bits, binary, address)
             if jump_bytes and binary.write_bytes(address, jump_bytes):
                 logger.info(f"Inserted jmp+dead code NOP ({size} bytes) at 0x{address:x}")
                 return "jmp+dead-code"

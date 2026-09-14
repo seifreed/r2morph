@@ -15,6 +15,10 @@ _X86_64_BITS = 64
 _SHORT_PATTERN_SIZE = 3
 _MEDIUM_PATTERN_SIZE = 4
 _LONG_PATTERN_SIZE = 5
+_SHORT_JUMP_OPCODE = 0xEB
+_SHORT_JUMP_SIZE = 2
+_SHORT_JUMP_MIN_DISPLACEMENT = -128
+_SHORT_JUMP_MAX_DISPLACEMENT = 127
 _BINARY_OPERAND_COUNT = 2
 _TERNARY_OPERAND_COUNT = 3
 
@@ -135,61 +139,22 @@ def _is_redundant_instruction(insn: dict[str, Any], arch_family: str, bits: int)
     return False
 
 
-def generate_jmp_dead_code(size: int, bits: int, binary: Any, function_addr: int | None = None) -> bytes | None:
-    """Generate jmp + dead code pattern."""
-    regs = REGISTERS_32BIT if bits == _X86_32_BITS else REGISTERS_64BIT
-
-    patterns = []
-    if size == _SHORT_PATTERN_SIZE and bits == _X86_32_BITS:
-        patterns = [
-            f"jmp 1; inc {random.choice(regs)}",
-            f"jmp 1; push {random.choice(regs)}",
-            f"jmp 1; pop {random.choice(regs)}",
-        ]
-    elif size == _MEDIUM_PATTERN_SIZE and bits == _X86_32_BITS:
-        patterns = [
-            f"jmp 2; inc {random.choice(regs)}; inc {random.choice(regs)}",
-            f"jmp 2; push {random.choice(regs)}; pop {random.choice(regs)}",
-            f"jmp 2; pop {random.choice(regs)}; push {random.choice(regs)}",
-        ]
-    elif size == _SHORT_PATTERN_SIZE and bits == _X86_64_BITS:
-        patterns = [
-            f"jmp 1; push {random.choice(regs)}",
-            f"jmp 1; pop {random.choice(regs)}",
-        ]
-    elif size == _MEDIUM_PATTERN_SIZE and bits == _X86_64_BITS:
-        patterns = [
-            f"jmp 2; pop {random.choice(regs)}; pop {random.choice(regs)}",
-            f"jmp 2; push {random.choice(regs)}; push {random.choice(regs)}",
-            f"jmp 2; push {random.choice(regs)}; pop {random.choice(regs)}",
-            f"jmp 2; pop {random.choice(regs)}; push {random.choice(regs)}",
-        ]
-    elif size == _LONG_PATTERN_SIZE and bits == _X86_64_BITS:
-        patterns = [
-            f"jmp 3; push {random.choice(regs)}; push {random.choice(regs)}",
-            f"jmp 3; pop {random.choice(regs)}; pop {random.choice(regs)}",
-        ]
-
-    if not patterns:
+def generate_jmp_dead_code(size: int, bits: int, binary: Any, instruction_addr: int | None = None) -> bytes | None:
+    """Generate a bounded jump over dead bytes at the replaced instruction."""
+    if bits not in {_X86_32_BITS, _X86_64_BITS} or size not in {
+        _SHORT_PATTERN_SIZE,
+        _MEDIUM_PATTERN_SIZE,
+        _LONG_PATTERN_SIZE,
+    }:
+        return None
+    if instruction_addr is None:
         return None
 
-    random.shuffle(patterns)
-    for pattern in patterns:
-        try:
-            instructions = [i.strip() for i in pattern.split(";")]
-            all_bytes = b""
-            for inst in instructions:
-                inst_bytes = binary.assemble(inst, function_addr)
-                if inst_bytes is None:
-                    break
-                all_bytes += inst_bytes
-            if all_bytes and len(all_bytes) == size:
-                return all_bytes
-        except (ValueError, OSError, BrokenPipeError) as e:
-            logger.debug(f"Failed to assemble jmp pattern '{pattern}': {e}")
-            continue
-
-    return None
+    displacement = size - _SHORT_JUMP_SIZE
+    if not _SHORT_JUMP_MIN_DISPLACEMENT <= displacement <= _SHORT_JUMP_MAX_DISPLACEMENT:
+        return None
+    jump_bytes = bytes((_SHORT_JUMP_OPCODE, displacement & 0xFF))
+    return jump_bytes + b"\x90" * (size - len(jump_bytes))
 
 
 def select_candidates(
