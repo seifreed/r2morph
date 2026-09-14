@@ -1693,7 +1693,7 @@ def main() -> None:
         ]
         if passes_without_mutations:
             parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))
-    if args.require_complete_evidence and (error := _complete_evidence_error(report)):
+    if args.require_complete_evidence and args.fixture_shard_count == 1 and (error := _complete_evidence_error(report)):
         parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:

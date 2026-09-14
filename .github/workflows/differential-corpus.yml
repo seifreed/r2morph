@@ -117,6 +117,8 @@ jobs:
           }
           if "fixture_shard" in summary["corpus_scope"]:
               allowed["passes_without_applied_runs"] = summary["passes_without_applied_runs"]
+              allowed["metric_missing_runs"] = summary["metric_missing_runs"]
+              allowed["passes_with_incomplete_coverage"] = summary["passes_with_incomplete_coverage"]
           unexpected = {
               key: value
               for key, value in summary["continuous_evidence_blockers"].items()
@@ -500,6 +502,23 @@ jobs:
               )
           if summary["passes_with_error_runs"]:
               raise SystemExit(f"pass errors after all shards: {summary['passes_with_error_runs']}")
+          if summary["passes_with_semantic_failures"]:
+              raise SystemExit(f"semantic failures after all shards: {summary['passes_with_semantic_failures']}")
+          if summary["passes_with_runtime_observable_failures"]:
+              raise SystemExit(
+                  "runtime observable failures after all shards: "
+                  f"{summary['passes_with_runtime_observable_failures']}"
+              )
+          if summary["passes_with_behavioral_false_positives"]:
+              raise SystemExit(
+                  "behavioral false positives after all shards: "
+                  f"{summary['passes_with_behavioral_false_positives']}"
+              )
+          if summary["behavioral_validation_missing_observations_by_pass"]:
+              raise SystemExit(
+                  "missing behavioral observations after all shards: "
+                  f"{summary['behavioral_validation_missing_observations_by_pass']}"
+              )
           if summary["total_complete_evidence_missing_runs"] != 0:
               raise SystemExit("merged differential report has incomplete evidence")
           if summary["passes_with_incomplete_coverage"]:
