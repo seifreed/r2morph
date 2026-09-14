@@ -13,6 +13,9 @@ def can_move_block(block: dict[str, Any]) -> tuple[bool, str]:
     if block.get("size", 0) < 1:
         return False, "block too small"
 
+    if block.get("jump") is not None or block.get("fail") is not None:
+        return False, "control transfer requires re-encoding"
+
     block_type = block.get("type", "")
     if block_type in ("data", "invalid"):
         return False, f"invalid block type: {block_type}"

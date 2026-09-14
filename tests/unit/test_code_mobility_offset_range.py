@@ -66,3 +66,16 @@ def test_relative_control_transfer_is_skipped_without_reencoding() -> None:
     result = CodeMobilityPass(CONFIG).apply(binary)
 
     expect(result["blocks_moved"] == 0)
+
+
+def test_block_control_transfer_metadata_is_skipped_without_reencoding() -> None:
+    binary = InMemoryMobilityBinary(
+        regions={0x1000: b"\xcc" * 64, 0x2000: b"\x90" * 128},
+        functions=FUNCS,
+        blocks=[{"addr": 0x1000, "size": 32, "type": "conditional", "jump": 0x1010, "fail": None}],
+        disasm=DISASM,
+        sections=[{"name": ".x", "vaddr": 0x2000, "vsize": 128, "perm": "r-x"}],
+    )
+    result = CodeMobilityPass(CONFIG).apply(binary)
+
+    expect(result["blocks_moved"] == 0)
