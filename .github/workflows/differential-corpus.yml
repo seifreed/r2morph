@@ -193,7 +193,7 @@ jobs:
 
           suite = ET.parse("composition-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 19:
+          if len(cases) < 31:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("composition smoke contains failures or errors")
@@ -218,6 +218,18 @@ jobs:
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[ShortJumpPatching]",
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[StackStrings]",
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[StringObfuscation]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[AntiDisassembly]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[APIHashing]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[CodeMobility]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[DataFlowMutation]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[FunctionOutlining]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[ImportObfuscation]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[OpaquePredicates]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[PolymorphicEngine]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[SelfModifyingCode]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[ShortJumpPatching]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[StackStrings]",
+              "test_extended_passes_compose_before_nop_without_corrupting_fixture[StringObfuscation]",
           }
           if not required.issubset(names):
               raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")

@@ -12,12 +12,12 @@ The compatibility corpus selection currently covers `BlockReordering`,
 `DeadCodeInjection`, `InstructionExpansion`, `InstructionSubstitution`,
 `NopInsertion`, `PatternSubstitution`, and `RegisterSubstitution`.
 
-The continuous composition smoke also exercises `NopInsertion` followed by
-each extended maturity pass on the real ELF x86-64 fixture, including the
-pass-ordering and runtime-preservation checks in
-`tests/integration/test_polymorphic_engine_real.py`. This closes a concrete
-composition evidence slice; arbitrary pass-order combinations remain outside
-the contract until they have equivalent real-fixture coverage.
+The continuous composition smoke exercises both `NopInsertion` followed by
+each extended maturity pass and each extended pass followed by `NopInsertion`
+on the real ELF x86-64 fixture. The pass-ordering and runtime-preservation
+checks live in `tests/integration/test_polymorphic_engine_real.py`. This closes
+the declared two-pass order matrix; arbitrary pass-order combinations remain
+outside the contract until they have equivalent real-fixture coverage.
 
 | Pass | Status | Target | Current limitation | Evidence |
 |---|---|---|---|---|

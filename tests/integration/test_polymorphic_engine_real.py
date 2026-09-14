@@ -168,3 +168,28 @@ def test_extended_passes_compose_after_nop_without_corrupting_fixture(
 
     expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
     expect(emulate_exit_code(mutated) == baseline_exit_code, result)
+
+
+@pytest.mark.parametrize(
+    "pass_name,pass_type",
+    _EXTENDED_COMPOSITION_PASSES,
+    ids=[name for name, _ in _EXTENDED_COMPOSITION_PASSES],
+)
+def test_extended_passes_compose_before_nop_without_corrupting_fixture(
+    pass_name: str,
+    pass_type: type,
+    tmp_path: Path,
+) -> None:
+    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
+    mutated = tmp_path / f"elf_{pass_name}_then_nop.composed"
+    baseline_exit_code = emulate_exit_code(fixture)
+
+    with MorphEngine(config={"seed": _SEED}) as engine:
+        engine.load_binary(fixture).analyze()
+        engine.add_mutation(pass_type(config={"probability": 1.0, "seed": _SEED}))
+        engine.add_mutation(NopInsertionPass(config={"probability": 1.0, "max_nops_per_function": 2, "seed": _SEED}))
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=_SEED))
+        engine.save(mutated)
+
+    expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
+    expect(emulate_exit_code(mutated) == baseline_exit_code, result)
