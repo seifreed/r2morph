@@ -1469,7 +1469,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--require-complete-evidence" in differential
         and "--generated-inputs" in differential
         and "--generated-corpus" in differential
-        and "--count 3" in differential
+        and "--count 1" in differential
+        and "--fixture-shard-count 4" in differential
+        and "--fixture-shard-index" in differential
         and "Validate differential campaign summary" in differential
         and "platform_scope" in differential
         and "platform_gap_scope" in differential

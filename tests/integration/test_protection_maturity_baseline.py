@@ -27,6 +27,7 @@ from scripts.protection_maturity_baseline import (
     _render_result,
     _runtime_artifacts,
     _runtime_observables_equal,
+    _select_fixture_shard,
     _semantic_run_matches,
     _transformation_evidence,
     discover_executables,
@@ -642,8 +643,10 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
             ]
         },
         corpus_families=["repository-fixtures", _GENERATED_CORPUS_FAMILY],
-        generated_fixture_count=_EXPECTED_GENERATED_FIXTURE_COUNT,
-        generated_fixture_names=[*_EXPECTED_GENERATED_CORPUS_SOURCES],
+        corpus_metadata={
+            "generated_fixture_count": _EXPECTED_GENERATED_FIXTURE_COUNT,
+            "generated_fixture_names": [*_EXPECTED_GENERATED_CORPUS_SOURCES],
+        },
     )
 
     expect(
@@ -1014,3 +1017,18 @@ def test_discover_executables_excludes_relocatable_objects() -> None:
     fixtures = discover_executables(_DATASET)
 
     expect(_DATASET / "elf_x86_64.o" not in fixtures)
+
+
+def test_fixture_shard_selection_is_deterministic_and_disjoint() -> None:
+    fixtures = [Path(f"fixture-{index}") for index in range(7)]
+    shards = [_select_fixture_shard(fixtures, index, 3) for index in range(3)]
+
+    expect(
+        shards
+        == [
+            [fixtures[0], fixtures[3], fixtures[6]],
+            [fixtures[1], fixtures[4]],
+            [fixtures[2], fixtures[5]],
+        ]
+        and sorted(path for shard in shards for path in shard) == fixtures
+    )

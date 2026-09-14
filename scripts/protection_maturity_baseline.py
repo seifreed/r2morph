@@ -1073,9 +1073,12 @@ def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
     dataset: Path | None = None,
     corpus_families: list[str] | None = None,
-    generated_fixture_count: int = 0,
-    generated_fixture_names: list[str] | None = None,
+    corpus_metadata: dict[str, object] | None = None,
 ) -> dict[str, object]:
+    metadata = corpus_metadata or {}
+    generated_fixture_count = metadata.get("generated_fixture_count", 0)
+    generated_fixture_names = metadata.get("generated_fixture_names", [])
+    fixture_shard = metadata.get("fixture_shard")
     rendered = {name: _render_result(fixtures, name) for name, fixtures in measurements.items()}
     summaries = {name: result["summary"] for name, result in rendered.items()}
     campaign_summary = _multi_pass_campaign_summary(summaries)
@@ -1091,6 +1094,8 @@ def _render_multi_pass_result(
         campaign_summary["corpus_families"],
     )
     campaign_summary["corpus_scope"] = {"dataset": dataset.as_posix() if dataset is not None else "explicit-fixtures"}
+    if isinstance(fixture_shard, dict):
+        campaign_summary["corpus_scope"]["fixture_shard"] = dict(fixture_shard)
     campaign_summary["continuous_evidence_blockers"] = _continuous_evidence_blockers(campaign_summary)
     campaign_summary["continuous_evidence_blocker_totals"] = _continuous_evidence_blocker_totals(
         campaign_summary["continuous_evidence_blockers"]
@@ -1459,6 +1464,31 @@ def _select_fixtures(
     return selected, corpus_families, generated_fixture_count, generated_fixture_names
 
 
+def _select_fixture_shard(fixtures: list[Path], index: int, count: int) -> list[Path]:
+    """Select a deterministic corpus partition for parallel scheduled jobs."""
+    if count < 1:
+        raise ValueError("fixture shard count must be positive")
+    if index < 0 or index >= count:
+        raise ValueError("fixture shard index must be within the shard count")
+    return fixtures[index::count]
+
+
+def _campaign_fixture_selection(args: argparse.Namespace) -> tuple[list[Path], dict[str, int] | None]:
+    if args.fixture_shard_count < 1:
+        raise ValueError("--fixture-shard-count must be positive")
+    if args.fixture_shard_index < 0 or args.fixture_shard_index >= args.fixture_shard_count:
+        raise ValueError("--fixture-shard-index must be within --fixture-shard-count")
+    if args.fixture_shard_count > 1 and not args.all_fixtures:
+        raise ValueError("fixture sharding requires --all")
+    fixtures = discover_executables(args.dataset) if args.all_fixtures else list(args.fixtures)
+    if args.fixture_shard_count == 1:
+        return fixtures, None
+    return (
+        _select_fixture_shard(fixtures, args.fixture_shard_index, args.fixture_shard_count),
+        {"index": args.fixture_shard_index, "count": args.fixture_shard_count},
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
@@ -1492,12 +1522,27 @@ def main() -> None:
         action="store_true",
         help="compile synthetic Linux ELF x86-64 fixtures and include them in the corpus",
     )
+    parser.add_argument(
+        "--fixture-shard-index",
+        type=int,
+        default=0,
+        help="zero-based corpus shard index for parallel campaigns",
+    )
+    parser.add_argument(
+        "--fixture-shard-count",
+        type=int,
+        default=1,
+        help="number of deterministic corpus shards for parallel campaigns",
+    )
     args = parser.parse_args()
     if args.count < 1:
         parser.error("--count must be positive")
     if args.all_fixtures and args.fixtures:
         parser.error("pass either --all or explicit fixture paths")
-    fixtures = discover_executables(args.dataset) if args.all_fixtures else list(args.fixtures)
+    try:
+        fixtures, fixture_shard = _campaign_fixture_selection(args)
+    except ValueError as error:
+        parser.error(str(error))
     try:
         pass_names = _parse_pass_names(args.passes)
     except ValueError as error:
@@ -1528,8 +1573,11 @@ def main() -> None:
             measurements,
             args.dataset if args.all_fixtures else None,
             corpus_families,
-            generated_fixture_count,
-            generated_fixture_names,
+            {
+                "generated_fixture_count": generated_fixture_count,
+                "generated_fixture_names": generated_fixture_names,
+                "fixture_shard": fixture_shard,
+            },
         )
     if args.require_applied:
         passes_without_mutations = [

@@ -133,7 +133,12 @@ runtime-observable failure reasons, omission/error reasons, and severities by
 pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
 The scheduled differential workflow validates this campaign summary before
-uploading the artifact, including the Linux ELF x86-64 platform scope,
+uploading the artifact. It runs four deterministic fixture shards across three
+seeds in parallel, so the full 161-fixture repository corpus and all selected
+passes remain covered without a monolithic job timing out. Each shard records
+its `fixture_shard` index and count in `corpus_scope`; shard reports are not
+merged into a false single-run success. Validation includes the Linux ELF
+x86-64 platform scope,
 `fixtures/dataset` corpus scope, generated corpus family coverage across branch,
 memory, and lookup-table fixtures compiled with GCC `-O0`, GCC `-O2`, GCC PIE
 `-O2`, and Clang `-O2`, generated argv input coverage,

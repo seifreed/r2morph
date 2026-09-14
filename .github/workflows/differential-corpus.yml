@@ -8,7 +8,12 @@ name: Differential Corpus By Pass
 jobs:
   differential-corpus:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture_shard: [0, 1, 2, 3]
+        seed: [20260901, 20260902, 20260903]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -39,6 +44,8 @@ jobs:
           python -m pip install --force-reinstall dist/*.whl
 
       - name: Run full differential corpus
+        env:
+          REPORT_NAME: differential-corpus-${{ matrix.fixture_shard }}-${{ matrix.seed }}.json
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           rm -rf "$wheel_root"
@@ -53,17 +60,23 @@ jobs:
             --require-complete-evidence \
             --generated-inputs \
             --generated-corpus \
-            --first-seed 20260901 \
-            --count 3 \
+            --first-seed "${{ matrix.seed }}" \
+            --count 1 \
+            --fixture-shard-index "${{ matrix.fixture_shard }}" \
+            --fixture-shard-count 4 \
             --output "$GITHUB_WORKSPACE/differential-corpus.json"
+          mv "$GITHUB_WORKSPACE/differential-corpus.json" "$GITHUB_WORKSPACE/$REPORT_NAME"
 
       - name: Validate differential campaign summary
+        env:
+          REPORT_NAME: differential-corpus-${{ matrix.fixture_shard }}-${{ matrix.seed }}.json
         run: |
           python - <<'PY'
           import json
+          import os
           from pathlib import Path
 
-          report = json.loads(Path("differential-corpus.json").read_text(encoding="utf-8"))
+          report = json.loads(Path(os.environ["REPORT_NAME"]).read_text(encoding="utf-8"))
           summary = report["campaign_summary"]
           if summary["platform_scope"] != {"os": "linux", "format": "ELF", "architecture": "x86-64"}:
               raise SystemExit(f"unexpected platform scope: {summary['platform_scope']}")
@@ -84,7 +97,13 @@ jobs:
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
               raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")
-          if summary["corpus_scope"] != {"dataset": "fixtures/dataset"}:
+          if summary["corpus_scope"] != {
+              "dataset": "fixtures/dataset",
+              "fixture_shard": {
+                  "index": int(os.environ["REPORT_NAME"].split("-")[2]),
+                  "count": 4,
+              },
+          }:
               raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
           if summary["missing_corpus_passes"]:
               raise SystemExit(f"missing corpus passes: {summary['missing_corpus_passes']}")
@@ -388,8 +407,8 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: differential-corpus-by-pass
-          path: differential-corpus.json
+          name: differential-corpus-by-pass-${{ matrix.fixture_shard }}-${{ matrix.seed }}
+          path: differential-corpus-${{ matrix.fixture_shard }}-${{ matrix.seed }}.json
 
       - name: Upload cross-format differential evidence
         uses: actions/upload-artifact@v7
