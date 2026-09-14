@@ -1544,6 +1544,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "Run public differential matrix" in differential
         and "Validate public differential matrix" in differential
         and "Run public static recovery benchmark" in differential
+        and "Select bounded public corpus matrix" in differential
+        and "public-corpus/build-selected" in differential
+        and '"O0", "non-pie", "symbols", "dynamic"' in differential
         and "public-compatibility-corpus" in differential
     )
 

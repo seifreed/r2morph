@@ -9,10 +9,13 @@ execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.
 
 The scheduled `public-compatibility-corpus` job checks out that immutable commit,
-builds its GCC/Clang matrix, transforms every built sample with the six selected
-passes, compares the original and transformed process observables, and runs the
-radare2 static-recovery benchmark. Its manifest, differential matrix, and
-benchmark report are uploaded as one bounded artifact. This is additional
+builds its full GCC/Clang matrix, then selects a deterministic bounded matrix
+with up to three variants per source/compiler: `O0` non-PIE with symbols,
+`O2` PIE stripped, and `O3` non-PIE static when the linker is available. It
+transforms every selected sample with the six selected passes, compares the
+original and transformed process observables, and runs the radare2
+static-recovery benchmark. The full and selected manifests, differential matrix,
+and benchmark report are uploaded as one bounded artifact. This is additional
 continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
 

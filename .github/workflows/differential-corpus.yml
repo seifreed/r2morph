@@ -391,10 +391,77 @@ jobs:
           print(f"public corpus built samples: {len(built)}")
           PY
 
+      - name: Select bounded public corpus matrix
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          build_root = Path("public-corpus/build")
+          selected_root = Path("public-corpus/build-selected")
+          selected_root.mkdir(parents=True, exist_ok=True)
+          manifest = json.loads((build_root / "manifest.json").read_text(encoding="utf-8"))
+          variants = (
+              ("O0", "non-pie", "symbols", "dynamic"),
+              ("O2", "pie", "stripped", "dynamic"),
+              ("O3", "non-pie", "symbols", "static"),
+          )
+
+          def source_name(record: dict[str, object]) -> str:
+              return str(record["id"]).split("-", 5)[1]
+
+          selected = []
+          for record in manifest["records"]:
+              if record.get("status") != "built":
+                  continue
+              key = (
+                  str(record["optimization"]),
+                  str(record["pie"]),
+                  str(record["symbols"]),
+                  str(record["link"]),
+              )
+              if key not in variants:
+                  continue
+              source = build_root / str(record["id"])
+              shutil.copy2(source, selected_root / source.name)
+              selected.append(record)
+
+          if not selected:
+              raise SystemExit("bounded public corpus selection is empty")
+          selected_manifest = {
+              "schema_version": manifest["schema_version"],
+              "target": manifest["target"],
+              "selection": {
+                  "variants": [
+                      {
+                          "optimization": optimization,
+                          "pie": pie,
+                          "symbols": symbols,
+                          "link": link,
+                      }
+                      for optimization, pie, symbols, link in variants
+                  ],
+                  "source_count": len({source_name(record) for record in selected}),
+                  "compiler_count": len({record["compiler"] for record in selected}),
+              },
+              "records": selected,
+          }
+          (selected_root / "manifest.json").write_text(
+              json.dumps(selected_manifest, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          if selected_manifest["selection"]["source_count"] < 36:
+              raise SystemExit("bounded public corpus selection lost a source family")
+          if selected_manifest["selection"]["compiler_count"] < 2:
+              raise SystemExit("bounded public corpus selection lost a compiler")
+          print(f"bounded public corpus samples: {len(selected)}")
+          PY
+
       - name: Run public differential matrix
         run: |
           python public-corpus/scripts/run_matrix.py \
-            --build public-corpus/build \
+            --build public-corpus/build-selected \
             --output public-corpus/results \
             --seed 20260914 \
             --workers 16 \
@@ -406,6 +473,9 @@ jobs:
           import json
           from pathlib import Path
 
+          manifest = json.loads(
+              Path("public-corpus/build-selected/manifest.json").read_text(encoding="utf-8")
+          )
           report = json.loads(Path("public-corpus/results/matrix.json").read_text(encoding="utf-8"))
           expected_passes = {
               "BlockReordering",
@@ -417,6 +487,8 @@ jobs:
           }
           if set(report["passes"]) != expected_passes:
               raise SystemExit(f"public corpus pass selection drift: {report['passes']}")
+          if report["built_samples"] != len(manifest["records"]):
+              raise SystemExit("public matrix does not cover the bounded selection")
           if report["built_samples"] == 0 or report["failed_samples"] != 0:
               raise SystemExit(f"public differential failures: {report['failed_samples']}")
           for pass_name, summary in report["pass_summary"].items():
@@ -432,7 +504,7 @@ jobs:
       - name: Run public static recovery benchmark
         run: |
           python public-corpus/scripts/tool_benchmark.py \
-            --build public-corpus/build \
+            --build public-corpus/build-selected \
             --matrix public-corpus/results/matrix.json \
             --output public-corpus/results/tools.json \
             --workers 8 \
@@ -462,5 +534,6 @@ jobs:
           path: |
             public-corpus/manifest.json
             public-corpus/build/manifest.json
+            public-corpus/build-selected/manifest.json
             public-corpus/results/matrix.json
             public-corpus/results/tools.json

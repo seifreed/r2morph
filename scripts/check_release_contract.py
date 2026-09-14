@@ -1264,7 +1264,12 @@ def _check_corpus_workflows() -> None:
         "Run public differential matrix",
         "Validate public differential matrix",
         "Run public static recovery benchmark",
-    ):
+        "Select bounded public corpus matrix",
+        "public-corpus/build-selected",
+        "O0",
+        "O2",
+        "O3",
+        ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
     for fragment in (
