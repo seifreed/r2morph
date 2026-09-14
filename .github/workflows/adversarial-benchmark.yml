@@ -43,7 +43,7 @@ jobs:
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           rm -rf "$wheel_root"
           mkdir -p "$wheel_root"
-          cp -R scripts tests fixtures "$wheel_root"/
+          cp -R scripts tests fixtures pyproject.toml "$wheel_root"/
           cd "$wheel_root"
           python scripts/adversarial_benchmark.py \
             --all \
@@ -140,6 +140,10 @@ jobs:
             --first-seed 20260820 \
             --count 10 \
             --output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"
+          python scripts/protection_bytecode_grammar.py \
+            --first-seed 20260820 \
+            --count 10 \
+            --output "$GITHUB_WORKSPACE/vm-resistance-bytecode-grammar.json"
           python -W error -m pytest -q --no-cov --tb=short \
             tests/integration/test_protection_bytecode_grammar.py \
             tests/integration/test_protection_handler_clustering.py \
@@ -152,6 +156,7 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("vm-resistance-seed-diversity.json").read_text(encoding="utf-8"))
+          grammar = json.loads(Path("vm-resistance-bytecode-grammar.json").read_text(encoding="utf-8"))
           if report["seed_count"] != 10:
               raise SystemExit(f"unexpected seed count: {report['seed_count']}")
           if report["adversarial_validation"]["status"] != "pending-human-adversarial-review":
@@ -162,6 +167,12 @@ jobs:
               raise SystemExit(f"unexpected largest cluster: {report['cross_seed_largest_normalised_cluster']}")
           if report["cross_seed_nearest_similarity_mean"] >= report["similarity_threshold"]:
               raise SystemExit("mean handler similarity reached the configured threshold")
+          if grammar["seed_count"] != 10 or grammar["seeds_without_target_handlers"] != 0:
+              raise SystemExit(f"incomplete target-handler grammar coverage: {grammar}")
+          if grammar["target_stride_unique_count"] < 2 or grammar["total_padding_bytes"] <= 0:
+              raise SystemExit(f"bytecode grammar lacks per-instance variation: {grammar}")
+          if grammar["adversarial_validation"]["status"] != "pending-human-adversarial-review":
+              raise SystemExit(f"unexpected grammar validation status: {grammar['adversarial_validation']}")
           PY
 
       - name: Upload benchmark report
@@ -175,3 +186,9 @@ jobs:
         with:
           name: vm-resistance-seed-diversity
           path: vm-resistance-seed-diversity.json
+
+      - name: Upload VM resistance bytecode grammar evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: vm-resistance-bytecode-grammar
+          path: vm-resistance-bytecode-grammar.json
