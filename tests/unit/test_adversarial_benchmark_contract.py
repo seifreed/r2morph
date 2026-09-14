@@ -183,6 +183,7 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
 
     expect(
         report["sample_count"] == 1
+        and report["corpus_scope"] == {"families": ["repository-fixtures"], "generated_fixture_count": 0}
         and report["summary"]["expected_pass_count"] == 1
         and report["summary"]["observed_pass_count"] == 1
         and report["summary"]["expected_pass_runs"] == 1

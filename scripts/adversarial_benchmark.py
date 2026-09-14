@@ -31,6 +31,7 @@ from scripts.protection_maturity_baseline import (
     _build_mutation_pass,
     _parse_pass_names,
     _select_fixture_shard,
+    build_generated_corpus,
     discover_executables,
 )
 from tests.integration.elf_emulator import emulate_exit_code
@@ -704,24 +705,42 @@ def benchmark_corpus(
     pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
     fixture_shard_index: int = 0,
     fixture_shard_count: int = 1,
+    generated_corpus: bool = False,
 ) -> dict[str, object]:
     """Run the pair benchmark for every supported executable in the corpus."""
     if fixture_shard_count < 1:
         raise ValueError("fixture shard count must be positive")
     if fixture_shard_index < 0 or fixture_shard_index >= fixture_shard_count:
         raise ValueError("fixture shard index must be within the shard count")
-    fixtures = discover_executables(dataset)
-    if fixture_shard_count > 1:
-        fixtures = _select_fixture_shard(fixtures, fixture_shard_index, fixture_shard_count)
-    if not fixtures:
-        raise ValueError(f"no supported executable fixtures found in {dataset}")
     if not pass_names:
         raise ValueError("at least one corpus pass is required")
-    samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
+    with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-corpus-") as temporary_directory:
+        effective_dataset = dataset
+        if generated_corpus:
+            effective_dataset = Path(temporary_directory) / dataset.name
+            effective_dataset.mkdir()
+            for fixture in discover_executables(dataset):
+                shutil.copy2(fixture, effective_dataset / fixture.name)
+            generated_fixtures = build_generated_corpus(Path(temporary_directory) / "generated-corpus")
+            for fixture in generated_fixtures:
+                shutil.copy2(fixture, effective_dataset / fixture.name)
+        fixtures = discover_executables(effective_dataset)
+        generated_fixture_count = len(fixtures) - len(discover_executables(dataset)) if generated_corpus else 0
+        if fixture_shard_count > 1:
+            fixtures = _select_fixture_shard(fixtures, fixture_shard_index, fixture_shard_count)
+        if not fixtures:
+            raise ValueError(f"no supported executable fixtures found in {dataset}")
+        samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
     return {
         "schema_version": 3,
         "measurement": "protection-adversarial-corpus",
         "corpus": dataset.name,
+        "corpus_scope": {
+            "families": (
+                ["repository-fixtures", "generated-elf-x86-64"] if generated_corpus else ["repository-fixtures"]
+            ),
+            "generated_fixture_count": generated_fixture_count,
+        },
         "pass_names": list(pass_names),
         "fixture_shard": {"index": fixture_shard_index, "count": fixture_shard_count},
         "sample_count": len(samples),
@@ -740,10 +759,15 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
     if not isinstance(first_pass_names, list) or not all(isinstance(name, str) for name in first_pass_names):
         raise ValueError("adversarial report is missing pass names")
     corpus = reports[0].get("corpus")
+    corpus_scope = reports[0].get("corpus_scope")
     samples: list[dict[str, object]] = []
     seen_samples: set[str] = set()
     for report in reports:
-        if report.get("corpus") != corpus or report.get("pass_names") != first_pass_names:
+        if (
+            report.get("corpus") != corpus
+            or report.get("pass_names") != first_pass_names
+            or report.get("corpus_scope") != corpus_scope
+        ):
             raise ValueError("adversarial reports do not share corpus and pass scope")
         report_samples = report.get("samples")
         if not isinstance(report_samples, list) or not all(isinstance(sample, dict) for sample in report_samples):
@@ -755,7 +779,7 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
             seen_samples.add(name)
         samples.extend(report_samples)
     pass_names = tuple(first_pass_names)
-    return {
+    merged: dict[str, object] = {
         "schema_version": 3,
         "measurement": "protection-adversarial-corpus",
         "corpus": corpus,
@@ -766,6 +790,9 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
         "tool_summary": _tool_summary(samples),
         "summary": _campaign_summary(samples, len(samples), pass_names),
     }
+    if corpus_scope is not None:
+        merged["corpus_scope"] = corpus_scope
+    return merged
 
 
 def _campaign_summary(
@@ -1064,6 +1091,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     selection.add_argument("original", type=Path, nargs="?")
     selection.add_argument("--all", action="store_true", dest="all_fixtures")
     parser.add_argument("--dataset", type=Path, default=Path("fixtures/dataset"))
+    parser.add_argument(
+        "--generated-corpus",
+        action="store_true",
+        help="compile synthetic Linux ELF x86-64 fixtures and include them in the corpus",
+    )
     parser.add_argument("--protected", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument(
@@ -1105,7 +1137,13 @@ def main(argv: Sequence[str] | None = None) -> None:
     except ValueError as error:
         parser.error(str(error))
     report = (
-        benchmark_corpus(args.dataset, pass_names, args.fixture_shard_index, args.fixture_shard_count)
+        benchmark_corpus(
+            args.dataset,
+            pass_names,
+            args.fixture_shard_index,
+            args.fixture_shard_count,
+            args.generated_corpus,
+        )
         if args.all_fixtures
         else benchmark_pair(args.original, args.protected, pass_names)
     )

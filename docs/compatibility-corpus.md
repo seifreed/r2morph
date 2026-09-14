@@ -203,8 +203,11 @@ so unavailable analyzer slots cannot be mistaken for completed adversarial
 coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and missing applications for the ten contractual
-corpus passes fail the run; extended-pass application gaps remain published as
-explicit evidence blockers.
+corpus passes fail the run. It includes the same twelve generated ELF
+x86-64 variants used by the differential campaign, records that scope in the
+merged report, and partitions generated fixtures together with repository
+fixtures. Extended-pass application gaps remain published as explicit evidence
+blockers.
 The campaign now runs as four deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
