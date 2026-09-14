@@ -333,3 +333,134 @@ jobs:
         with:
           name: differential-fuzz-smoke
           path: differential-fuzz-smoke.json
+
+  public-compatibility-corpus:
+    name: Public compatibility corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout r2morph
+        uses: actions/checkout@v5
+
+      - name: Checkout public corpus
+        uses: actions/checkout@v5
+        with:
+          repository: seifreed/r2morph-corpus
+          ref: 8bca169321a4ead73ccc9bdcd3437acc40cc4649
+          path: public-corpus
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
+      - name: Install dependencies and r2morph wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
+          pip install -r requirements.txt
+          python -m build
+          python -m pip install --force-reinstall dist/*.whl
+
+      - name: Build public compatibility corpus
+        run: |
+          python public-corpus/scripts/build_corpus.py \
+            --source-root public-corpus/sources \
+            --output public-corpus/build
+
+      - name: Validate public corpus manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("public-corpus/build/manifest.json").read_text(encoding="utf-8"))
+          if manifest["target"] != {"os": "linux", "format": "ELF", "architecture": "x86-64"}:
+              raise SystemExit(f"unexpected public corpus target: {manifest['target']}")
+          built = [row for row in manifest["records"] if row["status"] == "built"]
+          if not built:
+              raise SystemExit("public compatibility corpus produced no built samples")
+          print(f"public corpus built samples: {len(built)}")
+          PY
+
+      - name: Run public differential matrix
+        run: |
+          python public-corpus/scripts/run_matrix.py \
+            --build public-corpus/build \
+            --output public-corpus/results \
+            --seed 20260914 \
+            --workers 16 \
+            --report-only
+
+      - name: Validate public differential matrix
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("public-corpus/results/matrix.json").read_text(encoding="utf-8"))
+          expected_passes = {
+              "BlockReordering",
+              "CodeVirtualization",
+              "InstructionExpansion",
+              "InstructionSubstitution",
+              "NopInsertion",
+              "RegisterSubstitution",
+          }
+          if set(report["passes"]) != expected_passes:
+              raise SystemExit(f"public corpus pass selection drift: {report['passes']}")
+          if report["built_samples"] == 0 or report["failed_samples"] != 0:
+              raise SystemExit(f"public differential failures: {report['failed_samples']}")
+          for pass_name, summary in report["pass_summary"].items():
+              if summary["samples"] != report["built_samples"]:
+                  raise SystemExit(f"incomplete public pass coverage: {pass_name}")
+              if summary["differential_failed"] != 0 or summary["errors"] != 0:
+                  raise SystemExit(f"public differential evidence failed: {pass_name}")
+              if summary["applied"] == 0:
+                  raise SystemExit(f"public pass was never applied: {pass_name}")
+          print(f"public differential samples: {report['passed_samples']}")
+          PY
+
+      - name: Run public static recovery benchmark
+        run: |
+          python public-corpus/scripts/tool_benchmark.py \
+            --build public-corpus/build \
+            --matrix public-corpus/results/matrix.json \
+            --output public-corpus/results/tools.json \
+            --workers 8 \
+            --report-only
+
+      - name: Validate public static recovery benchmark
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("public-corpus/results/matrix.json").read_text(encoding="utf-8"))
+          benchmark = json.loads(Path("public-corpus/results/tools.json").read_text(encoding="utf-8"))
+          expected_measurements = sum(item["samples"] for item in report["pass_summary"].values())
+          if benchmark["status"] != "passed":
+              raise SystemExit("public static recovery benchmark did not pass")
+          if benchmark["measured_samples"] != expected_measurements:
+              raise SystemExit("public static recovery benchmark is incomplete")
+          print(f"public static recovery samples: {benchmark['measured_samples']}")
+          PY
+
+      - name: Upload public compatibility evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: public-compatibility-corpus
+          path: |
+            public-corpus/manifest.json
+            public-corpus/build/manifest.json
+            public-corpus/results/matrix.json
+            public-corpus/results/tools.json

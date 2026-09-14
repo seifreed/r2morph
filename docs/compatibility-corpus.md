@@ -3,10 +3,18 @@
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit
-[`078deac`](https://github.com/seifreed/r2morph-corpus/commit/078deac8bd72d37f2309ec61e5f3d84685459af4).
+[`8bca169`](https://github.com/seifreed/r2morph-corpus/commit/8bca169321a4ead73ccc9bdcd3437acc40cc4649).
 It contains source programs, the build matrix, SHA-256 manifests, differential
 execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.
+
+The scheduled `public-compatibility-corpus` job checks out that immutable commit,
+builds its GCC/Clang matrix, transforms every built sample with the six selected
+passes, compares the original and transformed process observables, and runs the
+radare2 static-recovery benchmark. Its manifest, differential matrix, and
+benchmark report are uploaded as one bounded artifact. This is additional
+continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
+or AArch64 parity.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static

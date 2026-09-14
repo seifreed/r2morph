@@ -1140,7 +1140,8 @@ def _check_corpus_workflows() -> None:
         "python -m build",
         "python -m pip install --force-reinstall dist/*.whl",
         "wheel_root=/tmp/r2morph-adversarial-wheel-check",
-        'cp -R scripts tests fixtures "$wheel_root"/',
+        "cp -R scripts tests fixtures",
+        'pyproject.toml "$wheel_root"/',
         'cd "$wheel_root"',
         '--output "$GITHUB_WORKSPACE/adversarial-benchmark.json"',
         "--passes all",
@@ -1186,7 +1187,8 @@ def _check_corpus_workflows() -> None:
         "python -m build",
         "python -m pip install --force-reinstall dist/*.whl",
         "wheel_root=/tmp/r2morph-differential-wheel-check",
-        'cp -R scripts tests fixtures "$wheel_root"/',
+        "cp -R scripts tests fixtures",
+        'pyproject.toml "$wheel_root"/',
         'cd "$wheel_root"',
         '--output "$GITHUB_WORKSPACE/differential-corpus.json"',
         '--output "$GITHUB_WORKSPACE/extended-maturity-passes.json"',
@@ -1255,6 +1257,13 @@ def _check_corpus_workflows() -> None:
         "total_extended_maturity_evidence_blockers",
         "extended maturity pass errors",
         "extended-maturity-passes",
+        "public-compatibility-corpus:",
+        "repository: seifreed/r2morph-corpus",
+        "8bca169321a4ead73ccc9bdcd3437acc40cc4649",
+        "Build public compatibility corpus",
+        "Run public differential matrix",
+        "Validate public differential matrix",
+        "Run public static recovery benchmark",
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
