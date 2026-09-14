@@ -93,16 +93,21 @@ class CaveFinder:
 
     def _instruction_ranges(self) -> tuple[tuple[int, int], ...] | None:
         """Return sorted executable instruction ranges for cave validation."""
+        get_functions = getattr(self.binary, "get_functions", None)
+        get_function_disasm = getattr(self.binary, "get_function_disasm", None)
+        if not callable(get_functions) or not callable(get_function_disasm):
+            return ()
         try:
             ranges: list[tuple[int, int]] = []
-            for function in self.binary.get_functions():
+            for function in get_functions():
                 function_address = function.get("offset", function.get("addr"))
                 if not isinstance(function_address, int):
                     continue
-                for instruction in self.binary.get_function_disasm(function_address):
+                for instruction in get_function_disasm(function_address):
                     address = instruction.get("addr", instruction.get("offset"))
                     size = instruction.get("size")
-                    if isinstance(address, int) and isinstance(size, int) and size > 0:
+                    mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
+                    if mnemonic != "nop" and isinstance(address, int) and isinstance(size, int) and size > 0:
                         ranges.append((address, address + size))
         except (BrokenPipeError, OSError, RuntimeError, ValueError) as error:
             logger.warning("Failed to disassemble executable ranges for cave validation: %s", error)
