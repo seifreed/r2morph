@@ -247,56 +247,92 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Assembly instructions
         """
-        reg = "rax" if bits == ARCH_BITS_64 else "eax"
+        if bits == ARCH_BITS_64:
+            flags_push = "pushfq"
+            flags_pop = "popfq"
+            scratch = "r11"
+            scratch32 = "r11d"
+        else:
+            flags_push = "pushfd"
+            flags_pop = "popfd"
+            scratch = "edx"
+            scratch32 = scratch
 
         if predicate_type == "always_true":
             predicates = [
                 [
-                    f"xor {reg}, {reg}",
-                    f"test {reg}, {reg}",
-                    "jz .real_code",
-                    ".real_code:",
-                ],
-                [
-                    f"mov {reg}, 0",
-                    f"test {reg}, {reg}",
-                    "jz .real_code",
-                    ".real_code:",
-                ],
-                [
-                    f"cmp {reg}, {reg}",
-                    "je .real_code",
-                    ".real_code:",
-                ],
-                [
-                    f"push {reg}",
-                    f"xor {reg}, {reg}",
-                    f"test {reg}, {reg}",
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
                     "jz .real_code",
                     "nop",
                     ".real_code:",
-                    f"pop {reg}",
+                    f"pop {scratch}",
+                    flags_pop,
+                ],
+                [
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
+                    "jz .real_code",
+                    "nop",
+                    ".real_code:",
+                    f"pop {scratch}",
+                    flags_pop,
+                ],
+                [
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
+                    "jz .real_code",
+                    "nop",
+                    ".real_code:",
+                    f"pop {scratch}",
+                    flags_pop,
+                ],
+                [
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
+                    "jz .real_code",
+                    "nop",
+                    ".real_code:",
+                    f"pop {scratch}",
+                    flags_pop,
                 ],
             ]
 
         else:
             predicates = [
                 [
-                    f"mov {reg}, 0",
-                    f"test {reg}, {reg}",
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
                     "jnz .fake_code",
                     "jmp .real_code",
                     ".fake_code:",
                     "nop",
                     ".real_code:",
+                    f"pop {scratch}",
+                    flags_pop,
                 ],
                 [
-                    f"cmp {reg}, {reg}",
+                    flags_push,
+                    f"push {scratch}",
+                    f"xor {scratch32}, {scratch32}",
+                    f"test {scratch32}, {scratch32}",
                     "jne .fake_code",
                     "jmp .real_code",
                     ".fake_code:",
                     "nop",
                     ".real_code:",
+                    f"pop {scratch}",
+                    flags_pop,
                 ],
             ]
 

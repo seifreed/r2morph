@@ -337,6 +337,11 @@ class TestImportTableObfuscationPass:
 
         expect(imports == [{"name": "malloc", "address": 0x401030, "type": "FUNC", "section": ""}])
 
+    def test_relative_jump_stub_uses_stub_address(self):
+        stub = ImportTableObfuscationPass()._generate_jump_stub_x86_64(_FormatBinary(), 0x401030, 0x401200)
+
+        expect(stub == b"\xe9\x2b\xfe\xff\xff")
+
 
 class TestConstantUnfoldingPass:
     """Tests for ConstantUnfoldingPass."""

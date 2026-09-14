@@ -20,6 +20,8 @@ from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 logger = logging.getLogger(__name__)
 
 _X86_CALL_OPCODE = 0xE8
+_X86_RELATIVE_JUMP_OPCODE = 0xE9
+_RELATIVE_JUMP_SIZE_BYTES = 5
 _RELATIVE_CALL_SIZE_BYTES = 5
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
@@ -202,7 +204,7 @@ class ImportTableObfuscationPass(MutationPass):
 
         return imports
 
-    def _generate_jump_stub_x86_64(self, binary: Any, target_addr: int) -> bytes | None:
+    def _generate_jump_stub_x86_64(self, binary: Any, target_addr: int, stub_addr: int) -> bytes | None:
         """
         Generate a jump stub for x86_64.
 
@@ -213,9 +215,12 @@ class ImportTableObfuscationPass(MutationPass):
         Returns:
             Assembled jump stub bytes or None
         """
-        stub = f"jmp 0x{target_addr:x}"
-        result = binary.assemble(stub, None)
-        return bytes(result) if result else None
+        del binary
+        relative = target_addr - (stub_addr + _RELATIVE_JUMP_SIZE_BYTES)
+        if relative < _SIGNED_32_MIN or relative > _SIGNED_32_MAX:
+            logger.debug("Import target is out of range for a relative jump stub")
+            return None
+        return bytes([_X86_RELATIVE_JUMP_OPCODE]) + relative.to_bytes(4, "little", signed=True)
 
     def _find_call_xrefs(self, binary: Any, plt_addr: int) -> list[dict[str, Any]]:
         """
@@ -296,6 +301,24 @@ class ImportTableObfuscationPass(MutationPass):
             return stub_address, cave_index
         return None, cave_index
 
+    def _prepare_import_stub(
+        self,
+        binary: Any,
+        target_address: int,
+        caves: list[CodeCave],
+        cave_index: int,
+    ) -> tuple[bytes | None, int | None, int, bool]:
+        if cave_index >= len(caves):
+            return None, None, cave_index, True
+        stub_address = caves[cave_index].address
+        stub_bytes = self._generate_jump_stub_x86_64(binary, target_address, stub_address)
+        if stub_bytes is None:
+            return None, None, cave_index, False
+        allocated_address, next_cave_index = self._allocate_stub(binary, caves, cave_index, stub_bytes)
+        if allocated_address is None:
+            return None, None, next_cave_index, True
+        return stub_bytes, allocated_address, next_cave_index, False
+
     def _obfuscate_import(
         self,
         binary: Any,
@@ -312,13 +335,14 @@ class ImportTableObfuscationPass(MutationPass):
         if not call_xrefs:
             logger.debug(f"No call xrefs for import {name} at 0x{plt_address:x}, skipping")
             return None, cave_index, False
-        stub_bytes = self._generate_jump_stub_x86_64(binary, plt_address)
-        if stub_bytes is None:
+        stub_bytes, stub_address, cave_index, caves_exhausted = self._prepare_import_stub(
+            binary, plt_address, caves, cave_index
+        )
+        if caves_exhausted:
+            return None, cave_index, True
+        if stub_bytes is None or stub_address is None:
             logger.debug(f"Failed to generate jump stub for {name}")
             return None, cave_index, False
-        stub_address, cave_index = self._allocate_stub(binary, caves, cave_index, stub_bytes)
-        if stub_address is None:
-            return None, cave_index, True
         patched = self._patch_call_sites(binary, call_xrefs, stub_address)
         if patched == 0:
             return None, cave_index, False
