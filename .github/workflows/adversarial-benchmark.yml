@@ -177,6 +177,43 @@ jobs:
               raise SystemExit(f"unexpected grammar validation status: {grammar['adversarial_validation']}")
           PY
 
+      - name: Run VM tamper and progressive protection smoke
+        if: always()
+        run: |
+          wheel_root=/tmp/r2morph-adversarial-wheel-check
+          cd "$wheel_root"
+          python -W error -m pytest -q --no-cov --tb=short \
+            --junitxml="$GITHUB_WORKSPACE/vm-resistance-adversarial.xml" \
+            tests/integration/test_code_virtualization_real.py::test_tampering_interpreter_byte_diverges_from_original \
+            tests/integration/test_code_virtualization_real.py::test_tampering_nested_interpreter_byte_diverges \
+            tests/integration/test_code_virtualization_real.py::test_nested_virtualization_grows_with_depth \
+            tests/integration/test_code_virtualization_diversification_real.py
+
+      - name: Validate VM tamper and progressive protection smoke
+        if: always()
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          report = Path("vm-resistance-adversarial.xml")
+          if not report.exists():
+              raise SystemExit("VM resistance smoke report is missing")
+          suite = ET.parse(report).getroot()
+          cases = suite.findall(".//testcase")
+          if len(cases) != 6:
+              raise SystemExit(f"unexpected VM resistance smoke case count: {len(cases)}")
+          if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
+              raise SystemExit("VM resistance smoke contains failed or skipped cases")
+          PY
+
+      - name: Upload VM tamper and progressive protection smoke
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vm-resistance-adversarial
+          path: vm-resistance-adversarial.xml
+
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7
         if: always()
