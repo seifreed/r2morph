@@ -89,6 +89,16 @@ _GENERATED_CORPUS_PROFILES = (
     ("gcc-pie-o2", "gcc", "-O2", "-fPIE", "-pie"),
     ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
 )
+_GENERATED_UNREACHABLE_PADDING = r"""
+__asm__(
+    ".section .text.r2morph_padding,\"ax\",@progbits\n"
+    ".balign 16\n"
+    ".rept 64\n"
+    "nop\n"
+    ".endr\n"
+    ".previous\n"
+);
+"""
 _GENERATED_CORPUS_SOURCES = {
     "generated_branch": r"""
 #include <stdint.h>
@@ -706,7 +716,7 @@ def build_generated_corpus(output_dir: Path) -> list[Path]:
     fixtures: list[Path] = []
     for name, source_text in _GENERATED_CORPUS_SOURCES.items():
         source = output_dir / f"{name}.c"
-        source.write_text(source_text, encoding="utf-8")
+        source.write_text(f"{_GENERATED_UNREACHABLE_PADDING}\n{source_text}", encoding="utf-8")
         for profile, compiler, optimization, *linker_flags in _GENERATED_CORPUS_PROFILES:
             if shutil.which(compiler) is None:
                 raise RuntimeError(f"required generated corpus compiler is unavailable: {compiler}")

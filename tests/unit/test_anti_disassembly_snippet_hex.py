@@ -100,3 +100,10 @@ def test_anti_disassembly_rejects_zero_cave_inside_offset_function() -> None:
     pass_obj = AntiDisassemblyPass()
 
     expect(pass_obj._inject_snippet(binary, TRAMPOLINE_X64[0]) is None)
+
+
+def test_anti_disassembly_rejects_zero_cave_without_fallthrough_proof() -> None:
+    binary = InMemoryCaveBinary(provide_xref_query=True)
+    pass_obj = AntiDisassemblyPass()
+
+    expect(pass_obj._inject_snippet(binary, TRAMPOLINE_X64[0]) is None)

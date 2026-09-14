@@ -27,11 +27,22 @@ class _CaveR2:
         return (bytes([self._fill_byte]) * int(match.group(1))).hex()
 
 
+class _CaveR2WithXrefQuery(_CaveR2):
+    def cmdj(self, _command: str) -> list[dict[str, int]]:
+        return []
+
+
 class InMemoryCaveBinary:
-    def __init__(self, cave_byte: int = 0, functions: list[dict[str, int]] | None = None) -> None:
+    def __init__(
+        self,
+        cave_byte: int = 0,
+        functions: list[dict[str, int]] | None = None,
+        provide_xref_query: bool = False,
+    ) -> None:
         self._cave_byte = cave_byte
         self._functions = functions or []
-        self.r2 = _CaveR2(cave_byte)
+        r2_type = _CaveR2WithXrefQuery if provide_xref_query else _CaveR2
+        self.r2 = r2_type(cave_byte)
         self.writes: list[tuple[int, bytes]] = []
 
     def get_arch_info(self) -> dict[str, Any]:

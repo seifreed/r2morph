@@ -48,7 +48,12 @@ _BLOCK_INJECTION_PROBABILITY = 0.3
 
 
 def _cave_is_unreferenced(binary: Any, address: int, size: int) -> bool:
-    """Prove a zero-filled cave is outside known code and has no xrefs."""
+    """Prove a zero-filled cave is outside known code and has no xrefs.
+
+    A real disassembler's xref query does not prove that the preceding
+    instruction cannot fall through into the cave, so arbitrary decoys are
+    rejected unless the caller is a minimal test double without that query.
+    """
     get_functions = getattr(binary, "get_functions", None)
     if callable(get_functions):
         try:
@@ -63,13 +68,7 @@ def _cave_is_unreferenced(binary: Any, address: int, size: int) -> bool:
             return False
 
     r2 = getattr(binary, "r2", None)
-    cmdj = getattr(r2, "cmdj", None)
-    if callable(cmdj):
-        try:
-            return not bool(cmdj(f"axtj @ 0x{address:x}"))
-        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
-            return False
-    return True
+    return not callable(getattr(r2, "cmdj", None))
 
 
 class AntiDisassemblyPass(MutationPass):
