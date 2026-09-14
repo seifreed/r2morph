@@ -24,6 +24,7 @@ from r2morph.core.binary import Binary
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.elf_structs import PT_LOAD
 from scripts.protection_maturity_baseline import (
+    _APPLIED_COUNT_FIELDS,
     CORPUS_PASS_NAMES,
     DEFAULT_MUTATION_NAME,
     EXTENDED_MATURITY_PASS_NAMES,
@@ -378,9 +379,10 @@ def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAM
     virtualized = stats.get("functions_virtualized", 0)
     unsupported = stats.get("unsupported_functions_total", 0)
     partial = stats.get("partial_virtualization_total", 0)
-    applied = virtualized
-    if not isinstance(applied, int) or applied == 0:
-        applied = stats.get("mutations_applied", 0)
+    applied = next(
+        (value for field in _APPLIED_COUNT_FIELDS if isinstance(value := stats.get(field), int) and value > 0),
+        0,
+    )
     if isinstance(applied, int) and applied > 0:
         status = "applied"
     elif (isinstance(unsupported, int) and unsupported > 0) or (isinstance(partial, int) and partial > 0):

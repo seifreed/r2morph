@@ -50,6 +50,7 @@ _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL = 2
 _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT = 5.56
 _EXPECTED_NON_COMPLETED_TOOL_RUNS = 17
 _EXPECTED_MERGED_SAMPLE_COUNT = 2
+_EXPECTED_GENERIC_MUTATION_COUNT = 2
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -504,6 +505,12 @@ def test_adversarial_benchmark_pass_result_preserves_unsupported_capability_coun
         and result["unsupported_severities"] == {"error": 2}
         and result["partial_virtualization_severities"] == {"warning": 1}
     )
+
+
+def test_adversarial_benchmark_pass_result_counts_generic_mutation_evidence() -> None:
+    result = _pass_result({"blocks_moved": _EXPECTED_GENERIC_MUTATION_COUNT}, "CodeMobility")
+
+    expect(result["status"] == "applied" and result["mutations_applied"] == _EXPECTED_GENERIC_MUTATION_COUNT)
 
 
 def test_adversarial_benchmark_pass_result_omits_partial_virtualization_without_unsupported_functions() -> None:

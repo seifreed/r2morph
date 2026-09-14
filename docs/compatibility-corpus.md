@@ -56,7 +56,11 @@ campaign triage. The public compatibility matrix remains the ten-pass corpus
 selection. The adversarial benchmark's `--passes all` selection now expands
 to all 22 declared corpus and extended maturity passes; the extended maturity
 smoke still supplies the per-pass runtime, size, duration, and static metric
-gate.
+gate. Its application classifier uses the same bounded generic mutation-counter
+contract as the maturity harness (`total_injections`, `total_patched`,
+`imports_hashed`, `blocks_moved`, `functions_outlined`, and string counters),
+so a pass cannot be reported as a no-op merely because it exposes a
+pass-specific counter.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.
