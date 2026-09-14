@@ -258,13 +258,19 @@ class FunctionOutliningPass(MutationPass):
     def _chunk_bytes(binary: Any, chunk: OutlinedChunk) -> tuple[int, int, str, bytes] | None:
         if not chunk.instructions:
             return None
-        if not instructions_are_relocatable(chunk.instructions):
+        relocatable_instructions: list[dict[str, Any]] = []
+        for instruction in chunk.instructions:
+            mnemonic = str(instruction.get("disasm", instruction.get("opcode", ""))).split(maxsplit=1)[0]
+            if mnemonic.lower().startswith("ret") or not instructions_are_relocatable([instruction]):
+                break
+            relocatable_instructions.append(instruction)
+        if not relocatable_instructions:
             return None
-        first_address = int(chunk.instructions[0].get("offset", chunk.original_address))
-        last_instruction = chunk.instructions[-1]
+        first_address = int(relocatable_instructions[0].get("offset", chunk.original_address))
+        last_instruction = relocatable_instructions[-1]
         last_address = int(last_instruction.get("offset", first_address))
         chunk_size = last_address + int(last_instruction.get("size", 1)) - first_address
-        disasm = "; ".join(str(instruction.get("disasm", "")) for instruction in chunk.instructions[:3])
+        disasm = "; ".join(str(instruction.get("disasm", "")) for instruction in relocatable_instructions[:3])
         if chunk_size < _RELATIVE_JUMP_SIZE_BYTES:
             return None
         original_bytes = binary.read_bytes(first_address, chunk_size)
