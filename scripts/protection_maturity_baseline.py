@@ -118,6 +118,9 @@ __asm__(
     "short_jump_probe:\n"
     "mov %edi, %ecx\n"
     "jrcxz 1f\n"
+    ".rept 8\n"
+    "nop\n"
+    ".endr\n"
     "mov $1, %eax\n"
     ".rept 3\n"
     "nop\n"
@@ -137,8 +140,9 @@ __asm__(
     "mov %edi, %eax\n"
     "add $1, %eax\n"
     "imul $3, %eax, %eax\n"
+    ".rept 8\n"
     "nop\n"
-    "nop\n"
+    ".endr\n"
     "ret\n"
     ".size self_modify_probe, .-self_modify_probe\n"
 );
@@ -214,6 +218,34 @@ __attribute__((noinline)) static int lookup_mix(int argc) {
 #include <string.h>
 
 static const char extended_anchor[] = "r2morph extended maturity corpus anchor";
+__attribute__((used, section(".rodata"))) static const char unreferenced_anchor[] =
+    "generic unreferenced maturity string anchor";
+
+__attribute__((noinline)) static int opaque_probe(int value) {
+    volatile int state = value;
+    if ((state & 1) != 0) {
+        state += 3;
+        state ^= 0x55;
+        state += 7;
+    } else {
+        state -= 2;
+        state ^= 0xaa;
+        state -= 5;
+    }
+    return state;
+}
+
+__asm__(
+    ".text\n"
+    ".globl data_flow_probe\n"
+    ".type data_flow_probe,@function\n"
+    "data_flow_probe:\n"
+    "mov $7, %r10d\n"
+    "mov %edi, %eax\n"
+    "add $1, %eax\n"
+    "ret\n"
+    ".size data_flow_probe, .-data_flow_probe\n"
+);
 
 __attribute__((noinline)) static int straight_line(int value) {
     uint32_t state = (uint32_t)value + 0x13579bdfu;
@@ -243,6 +275,7 @@ int main(int argc, char **argv) {
     }
     memcpy(copy, input, length + 1);
     int result = straight_line((int)length) + branch_and_memory(copy, (int)length);
+    result += opaque_probe((int)length) + data_flow_probe((int)length);
     free(copy);
     return (result + (int)strlen(extended_anchor)) & 127;
 }
