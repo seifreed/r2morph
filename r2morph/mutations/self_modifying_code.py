@@ -135,6 +135,9 @@ class SelfModifyingCodePass(MutationPass):
 
     def _find_encryptable_functions(self, binary: Any) -> list[dict[str, Any]]:
         """Find functions suitable for encryption."""
+        if not self._is_position_fixed_image(binary):
+            logger.debug("Skipping self-modifying code: image addresses are not position-fixed")
+            return []
         encryptable = []
         functions = binary.get_functions()
 
@@ -145,7 +148,7 @@ class SelfModifyingCodePass(MutationPass):
             flags = func.get("flags", [])
             if "sym.main" in flags or "entry" in str(flags):
                 continue
-            if not self._has_straight_line_body(binary, func.get("addr", 0)):
+            if not self._has_straight_line_body(binary, func.get("addr", 0), func.get("size", 0)):
                 logger.debug("Skipping function at 0x%x: unsupported control-flow body", func.get("addr", 0))
                 continue
 
@@ -154,21 +157,48 @@ class SelfModifyingCodePass(MutationPass):
         return encryptable
 
     @staticmethod
-    def _has_straight_line_body(binary: Any, function_address: int) -> bool:
-        """Require a body whose control-flow and PC-relative edges stay unchanged."""
+    def _is_position_fixed_image(binary: Any) -> bool:
+        """Require load-time addresses to match the addresses embedded in the stub."""
+        try:
+            image_info = binary.r2.cmdj("ij") or {}
+        except (AttributeError, OSError, RuntimeError, ValueError):
+            return False
+        core_info = image_info.get("core", {})
+        image_type = str(core_info.get("type", "")).upper()
+        return "DYN" not in image_type and "PIE" not in image_type
+
+    @staticmethod
+    def _has_straight_line_body(binary: Any, function_address: int, function_size: int | None = None) -> bool:
+        """Require a contiguous body ending in one return instruction."""
         try:
             instructions = binary.get_function_disasm(function_address)
         except (AttributeError, OSError, RuntimeError, ValueError):
             return False
         if not instructions:
             return False
+        cursor = function_address
+        saw_return = False
+        valid = True
         for instruction in instructions:
+            address = instruction.get("offset", instruction.get("addr"))
+            size = instruction.get("size")
+            if not isinstance(address, int) or not isinstance(size, int) or size < 1 or address != cursor:
+                valid = False
+                break
             mnemonic = str(instruction.get("disasm", "")).lower().split(maxsplit=1)[0]
+            if saw_return:
+                valid = False
+                break
             if mnemonic.startswith(("j", "call")) or mnemonic in {"loop", "loope", "loopne", "syscall", "sysenter"}:
-                return False
+                valid = False
+                break
             if "rip" in str(instruction.get("disasm", "")).lower():
-                return False
-        return True
+                valid = False
+                break
+            cursor += size
+            if mnemonic.startswith("ret"):
+                saw_return = True
+        return valid and saw_return and (function_size is None or cursor == function_address + function_size)
 
     @staticmethod
     def _entry_patch_is_instruction_aligned(binary: Any, function_address: int) -> bool:

@@ -13,8 +13,16 @@ import re
 from typing import Any
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import ARCH_BITS_64, OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
+from r2morph.core.constants import (
+    ARCH_BITS_64,
+    OPAQUE_PREDICATE_MIN_FUNCTION_SIZE,
+    SIGNED_32_MAX,
+    SIGNED_32_MIN,
+    X86_RELATIVE_BRANCH_SIZE_BYTES,
+)
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.relocation_safety import instructions_are_relocatable
+from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
 
@@ -99,12 +107,17 @@ class OpaquePredicatePass(MutationPass):
             return 0
 
         num_predicates = min(self.max_predicates, len(basic_blocks) // 2)
+        arch_info = binary.get_arch_info()
+        if str(arch_info.get("arch", "")).lower() not in {"x86", "x86_64", "amd64"}:
+            logger.debug("Skipping opaque predicates: rel32 relocation is only implemented for x86")
+            return 0
 
         mutation_checkpoint = self._create_mutation_checkpoint("opaque_predicate")
         baseline = {}
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
 
+        injector = CodeCaveInjector(binary)
         for _ in range(num_predicates):
             if random.random() > self.probability:
                 continue
@@ -123,33 +136,28 @@ class OpaquePredicatePass(MutationPass):
                 ]
             )
 
-            assembled = self._assemble_predicate(binary, self._generate_predicate(binary, predicate_type), bb_addr)
-            if assembled and len(assembled) <= bb_size:
-                orig_bytes_hex = ""
-                if binary.r2:
-                    orig_bytes_hex = binary.r2.cmd(f"p8 {len(assembled)} @ 0x{bb_addr:x}") or ""
-                orig_bytes = b""
-                if orig_bytes_hex.strip():
-                    try:
-                        orig_bytes = bytes.fromhex(orig_bytes_hex.strip())
-                    except ValueError:
-                        logger.debug(f"Invalid hex in original bytes: {orig_bytes_hex[:20]}...")
-                        orig_bytes = b""
-
-                if binary.write_bytes(bb_addr, assembled):
-                    self._record_mutation(
-                        function_address=func_addr,
-                        start_address=bb_addr,
-                        end_address=bb_addr + len(assembled) - 1,
-                        original_bytes=orig_bytes,
-                        mutated_bytes=assembled,
-                        original_disasm=f"block at 0x{bb_addr:x}",
-                        mutated_disasm=f"opaque {predicate_type} predicate",
-                        mutation_kind="opaque_predicate",
-                        metadata={"predicate_type": predicate_type, "structural_baseline": baseline},
-                    )
-                    mutations += 1
-                    logger.debug(f"Inserted {predicate_type} predicate at 0x{bb_addr:x}")
+            predicate = self._generate_predicate(binary, predicate_type)
+            relocation = self._relocate_predicate(binary, injector, bb_addr, bb_size, predicate)
+            if relocation is None:
+                continue
+            cave_address, original_bytes, mutated_bytes = relocation
+            self._record_mutation(
+                function_address=func_addr,
+                start_address=bb_addr,
+                end_address=bb_addr + len(original_bytes) - 1,
+                original_bytes=original_bytes,
+                mutated_bytes=mutated_bytes,
+                original_disasm=f"block prefix at 0x{bb_addr:x}",
+                mutated_disasm=f"opaque {predicate_type} predicate",
+                mutation_kind="opaque_predicate",
+                metadata={
+                    "cave_address": cave_address,
+                    "predicate_type": predicate_type,
+                    "structural_baseline": baseline,
+                },
+            )
+            mutations += 1
+            logger.debug("Inserted %s predicate at 0x%x via cave 0x%x", predicate_type, bb_addr, cave_address)
 
         if mutations > 0 and self._validation_manager is not None and mutation_checkpoint is not None and self._records:
             outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
@@ -158,6 +166,99 @@ class OpaquePredicatePass(MutationPass):
                 return 0
 
         return mutations
+
+    @staticmethod
+    def _relocatable_prefix(binary: Any, address: int, block_size: int) -> tuple[bytes, int] | None:
+        """Return a contiguous, branch-free prefix large enough for a trampoline."""
+        try:
+            instructions = binary.r2.cmdj(f"pdj {block_size} @ {address}") or []
+        except (AttributeError, OSError, RuntimeError, ValueError):
+            return None
+        prefix: list[dict[str, Any]] = []
+        prefix_size = 0
+        for instruction in instructions:
+            offset = instruction.get("offset", instruction.get("addr"))
+            size = instruction.get("size")
+            if not isinstance(offset, int) or not isinstance(size, int) or size < 1:
+                return None
+            if offset != address + prefix_size or prefix_size + size > block_size:
+                break
+            mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
+            if mnemonic.startswith("ret") or not instructions_are_relocatable([instruction]):
+                break
+            prefix.append(instruction)
+            prefix_size += size
+            if prefix_size >= X86_RELATIVE_BRANCH_SIZE_BYTES:
+                original_bytes = binary.read_bytes(address, prefix_size)
+                if len(original_bytes) == prefix_size:
+                    return bytes(original_bytes), prefix_size
+                return None
+        return None
+
+    @staticmethod
+    def _relative_jump(target: int, source: int) -> bytes | None:
+        """Encode an x86 rel32 jump from ``source`` to ``target``."""
+        offset = target - (source + X86_RELATIVE_BRANCH_SIZE_BYTES)
+        if not SIGNED_32_MIN <= offset <= SIGNED_32_MAX:
+            return None
+        return b"\xe9" + offset.to_bytes(4, "little", signed=True)
+
+    def _prepare_predicate_relocation(
+        self,
+        binary: Any,
+        injector: CodeCaveInjector,
+        block_address: int,
+        block_size: int,
+        predicate: list[str],
+    ) -> tuple[int, int, bytes, bytes, bytes] | None:
+        """Build the cave payload and original trampoline without writing bytes."""
+        result: tuple[int, int, bytes, bytes, bytes] | None = None
+        prefix_data = self._relocatable_prefix(binary, block_address, block_size)
+        if prefix_data is not None:
+            original_bytes, prefix_size = prefix_data
+            probe = self._assemble_predicate(binary, predicate, block_address)
+            if probe is not None:
+                needed = len(probe) + prefix_size + X86_RELATIVE_BRANCH_SIZE_BYTES
+                cave = injector.find_cave_for_code(needed, require_executable=True)
+                if cave is not None:
+                    allocation = injector.allocate_from_cave(cave, needed, alignment=1)
+                    predicate_bytes = self._assemble_predicate(binary, predicate, allocation.address)
+                    return_jump = self._relative_jump(
+                        block_address + prefix_size,
+                        allocation.address + len(predicate_bytes or b"") + prefix_size,
+                    )
+                    trampoline = self._relative_jump(allocation.address, block_address)
+                    if (
+                        predicate_bytes is not None
+                        and len(predicate_bytes) == len(probe)
+                        and return_jump is not None
+                        and trampoline is not None
+                    ):
+                        payload = predicate_bytes + original_bytes + return_jump
+                        rewritten = trampoline + b"\x90" * (prefix_size - X86_RELATIVE_BRANCH_SIZE_BYTES)
+                        result = allocation.address, needed, payload, rewritten, original_bytes
+        return result
+
+    def _relocate_predicate(
+        self,
+        binary: Any,
+        injector: CodeCaveInjector,
+        block_address: int,
+        block_size: int,
+        predicate: list[str],
+    ) -> tuple[int, bytes, bytes] | None:
+        """Relocate a safe block prefix so predicate injection preserves execution."""
+        plan = self._prepare_predicate_relocation(binary, injector, block_address, block_size, predicate)
+        if plan is None:
+            return None
+        cave_address, needed, payload, rewritten, original_bytes = plan
+        cave_bytes = binary.read_bytes(cave_address, needed)
+        if not binary.write_bytes(cave_address, payload):
+            return None
+        if binary.write_bytes(block_address, rewritten):
+            return cave_address, original_bytes, rewritten
+        binary.write_bytes(cave_address, cave_bytes)
+        return None
 
     def _assemble_predicate(self, binary: Any, instructions: list[str], addr: int) -> bytes | None:
         """

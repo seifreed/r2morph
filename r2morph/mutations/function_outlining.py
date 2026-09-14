@@ -259,11 +259,19 @@ class FunctionOutliningPass(MutationPass):
         if not chunk.instructions:
             return None
         relocatable_instructions: list[dict[str, Any]] = []
+        next_address: int | None = None
         for instruction in chunk.instructions:
             mnemonic = str(instruction.get("disasm", instruction.get("opcode", ""))).split(maxsplit=1)[0]
             if mnemonic.lower().startswith("ret") or not instructions_are_relocatable([instruction]):
                 break
+            address = instruction.get("offset", instruction.get("addr"))
+            size = instruction.get("size")
+            if not isinstance(address, int) or not isinstance(size, int) or size < 1:
+                break
+            if next_address is not None and address != next_address:
+                break
             relocatable_instructions.append(instruction)
+            next_address = address + size
         if not relocatable_instructions:
             return None
         first_address = int(relocatable_instructions[0].get("offset", chunk.original_address))
@@ -316,6 +324,7 @@ class FunctionOutliningPass(MutationPass):
         cave_address, cave_index = self._allocate_cave(caves, cave_index, needed)
         if cave_address is None:
             return False, cave_index
+        cave_bytes = binary.read_bytes(cave_address, needed)
         return_jump = self._relative_jump(first_address + chunk_size, cave_address + needed)
         if return_jump is None:
             logger.debug(f"Return offset out of range for chunk at 0x{first_address:x}")
@@ -328,6 +337,7 @@ class FunctionOutliningPass(MutationPass):
         rewritten = trampoline + b"\x90" * (chunk_size - _RELATIVE_JUMP_SIZE_BYTES)
         if not binary.write_bytes(first_address, rewritten):
             logger.warning("Trampoline write failed at 0x%x; chunk not outlined, skipping record", first_address)
+            binary.write_bytes(cave_address, cave_bytes)
             return False, cave_index
         self._record_mutation(
             function_address=function_address,

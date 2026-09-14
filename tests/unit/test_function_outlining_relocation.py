@@ -35,3 +35,16 @@ def test_chunk_bytes_excludes_branch_from_relocated_size() -> None:
     data = FunctionOutliningPass._chunk_bytes(_ChunkBinary(), _chunk_with_branch_terminator())
 
     expect(data is not None and data[1] == _LINEAR_PREFIX_SIZE)
+
+
+def test_chunk_bytes_rejects_noncontiguous_instruction_stream() -> None:
+    chunk = OutlinedChunk(
+        1,
+        _CHUNK_ADDRESS,
+        [
+            {"offset": _CHUNK_ADDRESS, "size": 2, "disasm": "mov eax, ebx"},
+            {"offset": 0x1003, "size": 3, "disasm": "add eax, 1"},
+        ],
+    )
+
+    expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)

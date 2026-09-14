@@ -38,6 +38,16 @@ class _DisassemblyBinary:
         return self.disassembly
 
 
+class _ImageBinary(_DisassemblyBinary):
+    def __init__(self, image_type: str, disassembly: list[dict[str, object]]) -> None:
+        super().__init__(disassembly)
+        self.r2 = self
+        self.image_type = image_type
+
+    def cmdj(self, _command: str) -> dict[str, object]:
+        return {"core": {"type": self.image_type}}
+
+
 _INT32_MAX = 2147483647
 
 
@@ -94,3 +104,19 @@ def test_straight_line_body_rejects_calls_and_rip_relative_access() -> None:
 
     expect(not pass_obj._has_straight_line_body(call_body, 0x1000))
     expect(not pass_obj._has_straight_line_body(rip_body, 0x1000))
+
+
+def test_straight_line_body_requires_contiguous_return_terminated_function() -> None:
+    body = _DisassemblyBinary(
+        [
+            {"offset": 0x1000, "size": 5, "disasm": "push rbp"},
+            {"offset": 0x1005, "size": 1, "disasm": "ret"},
+        ]
+    )
+    expect(SelfModifyingCodePass()._has_straight_line_body(body, 0x1000, 6))
+
+
+def test_position_fixed_image_rejects_dynamic_image() -> None:
+    binary = _ImageBinary("DYN (Position-Independent executable)", [])
+
+    expect(not SelfModifyingCodePass()._is_position_fixed_image(binary))
