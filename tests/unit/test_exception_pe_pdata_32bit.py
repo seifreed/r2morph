@@ -41,9 +41,10 @@ def test_pe_pdata_32bit_packed_entries_parsed_with_correct_extent() -> None:
         pdata_declared_size=len(pdata),
         pdata_bytes=pdata,
     )
-    frames = ExceptionInfoReader(binary).read_exception_frames()
+    reader = ExceptionInfoReader(binary)
+    frames = reader.read_exception_frames()
 
-    expect(set(frames) == {4096, 8192})
+    expect(set(frames) == {4096, 8192} and reader.read_error is None)
     # FunctionLength is in 2-byte units: 0x10 -> 32 bytes, 0x08 -> 16.
     expect(frames[4096].function_end == 4096 + 16 * 2)
     expect(frames[8192].function_end == 8192 + 8 * 2)
@@ -61,6 +62,7 @@ def test_pe_pdata_32bit_truncated_section_does_not_crash() -> None:
         pdata_declared_size=24,
         pdata_bytes=pdata,
     )
-    frames = ExceptionInfoReader(binary).read_exception_frames()
+    reader = ExceptionInfoReader(binary)
+    frames = reader.read_exception_frames()
 
-    expect(set(frames) == {4096, 8192})
+    expect(set(frames) == {4096, 8192} and reader.read_error == "PE .pdata section is truncated")

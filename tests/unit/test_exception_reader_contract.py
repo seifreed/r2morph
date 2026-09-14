@@ -162,6 +162,12 @@ class _InMemoryMachoCompactUnwindBinary:
         return header + common_encodings + index + page
 
 
+class _InMemoryMalformedMachoCompactUnwindBinary(_InMemoryMachoCompactUnwindBinary):
+    def __init__(self) -> None:
+        super().__init__(_MACHO_REGULAR_PAGE_KIND)
+        self._unwind = b"\x00" * 16
+
+
 def _packed_entry(begin: int, function_length_units: int) -> bytes:
     second = 0x1 | ((function_length_units & 0x7FF) << 2)
     return struct.pack("<II", begin, second)
@@ -258,3 +264,12 @@ def test_virtualization_unwind_gate_rejects_malformed_elf_metadata() -> None:
     frames, read_error = _read_exception_frames(_InMemoryMalformedElfExceptionBinary(), ".eh_frame")
 
     expect(frames == {} and read_error == "ELF .eh_frame contains an invalid entry length")
+
+
+def test_virtualization_unwind_gate_rejects_malformed_macho_metadata() -> None:
+    frames, read_error = _read_exception_frames(
+        _InMemoryMalformedMachoCompactUnwindBinary(),
+        "__unwind_info",
+    )
+
+    expect(frames == {} and read_error == "Mach-O __unwind_info contains no valid function entries")

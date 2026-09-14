@@ -504,7 +504,8 @@ class ExceptionInfoReader:
             pdata_addr = _section_int(pdata_section, "addr", "virtual_address")
             pdata_size = _section_int(pdata_section, "size", "virtual_size")
 
-            if pdata_addr == 0 or pdata_size == 0:
+            if pdata_addr <= 0 or pdata_size <= 0:
+                self._mark_read_error("PE .pdata section has invalid bounds")
                 return
 
             entry_size = _PE_32_EXCEPTION_ENTRY_SIZE_BYTES if bits == _BITS_32 else _PE_64_EXCEPTION_ENTRY_SIZE_BYTES
@@ -513,7 +514,10 @@ class ExceptionInfoReader:
 
             data = self.binary.read_bytes(pdata_addr, pdata_size)
             if not data:
+                self._mark_read_error("PE .pdata section could not be read")
                 return
+            if len(data) < pdata_size:
+                self._mark_read_error("PE .pdata section is truncated")
 
             for index in range(num_entries):
                 entry_offset = index * entry_size
@@ -523,8 +527,9 @@ class ExceptionInfoReader:
                 if frame is not None:
                     self._frames[frame.function_start] = frame
 
-        except Exception as e:
-            logger.debug(f"Failed to read PE exception data: {e}")
+        except (AttributeError, OSError, RuntimeError, struct.error, TypeError, ValueError) as exc:
+            self._mark_read_error("PE exception metadata could not be read")
+            logger.debug("Failed to read PE exception data: %s", exc)
 
     def _read_macho_unwind_info(self) -> None:
         """Read exception frames from Mach-O __unwind_info section."""
@@ -535,48 +540,64 @@ class ExceptionInfoReader:
                 None,
             )
             if eh_frame_section is not None:
-                eh_frame_addr = _section_int(eh_frame_section, "addr", "virtual_address")
-                eh_frame_size = _section_int(eh_frame_section, "size", "virtual_size")
-                if eh_frame_addr and eh_frame_size:
-                    eh_frame_data = self.binary.read_bytes(
-                        eh_frame_addr,
-                        min(eh_frame_size, _MAX_EXCEPTION_SECTION_BYTES),
-                    )
-                    if eh_frame_data:
-                        self._parse_eh_frame(eh_frame_data, eh_frame_addr)
+                self._read_macho_eh_frame(eh_frame_section)
 
-            unwind_section = None
-            for section in sections:
-                name = section.get("name", "")
-                if "__unwind_info" in name:
-                    unwind_section = section
-                    break
+            unwind_section = next(
+                (section for section in sections if "__unwind_info" in section.get("name", "")),
+                None,
+            )
 
             if not unwind_section:
                 logger.debug("No Mach-O __unwind_info section found")
                 return
+            self._read_macho_compact_unwind(unwind_section, sections)
+        except (AttributeError, OSError, RuntimeError, struct.error, TypeError, ValueError) as exc:
+            self._mark_read_error("Mach-O unwind metadata could not be read")
+            logger.debug("Failed to read Mach-O unwind info: %s", exc)
 
-            unwind_addr = _section_int(unwind_section, "addr", "virtual_address")
-            unwind_size = _section_int(unwind_section, "size", "virtual_size")
+    def _read_macho_eh_frame(self, section: dict[str, Any]) -> None:
+        """Read the optional DWARF exception frames from one Mach-O section."""
+        address = _section_int(section, "addr", "virtual_address")
+        size = _section_int(section, "size", "virtual_size")
+        if address <= 0 or size <= 0:
+            self._mark_read_error("Mach-O __eh_frame section has invalid bounds")
+            return
+        read_size = min(size, _MAX_EXCEPTION_SECTION_BYTES)
+        data = self.binary.read_bytes(address, read_size)
+        if not data:
+            self._mark_read_error("Mach-O __eh_frame section could not be read")
+            return
+        if len(data) < read_size:
+            self._mark_read_error("Mach-O __eh_frame section is truncated")
+            return
+        self._parse_eh_frame(data, address)
 
-            if unwind_addr == 0 or unwind_size == 0:
-                return
-
-            data = self.binary.read_bytes(unwind_addr, min(unwind_size, _MAX_EXCEPTION_SECTION_BYTES))
-            if not data or len(data) < _MACHO_UNWIND_HEADER_SIZE_BYTES:
-                return
-
-            if self._frames is not None:
-                parse_macho_compact_unwind(data, sections, self._frames, macho_image_base(self.binary.get_arch_info()))
-
-        except (OSError, struct.error) as e:
-            logger.debug("Failed to read Mach-O unwind info: %s", e)
+    def _read_macho_compact_unwind(self, section: dict[str, Any], sections: list[dict[str, Any]]) -> None:
+        """Read and validate one Mach-O compact-unwind section."""
+        address = _section_int(section, "addr", "virtual_address")
+        size = _section_int(section, "size", "virtual_size")
+        if address <= 0 or size <= 0:
+            self._mark_read_error("Mach-O __unwind_info section has invalid bounds")
+            return
+        read_size = min(size, _MAX_EXCEPTION_SECTION_BYTES)
+        data = self.binary.read_bytes(address, read_size)
+        if not data or len(data) < _MACHO_UNWIND_HEADER_SIZE_BYTES:
+            self._mark_read_error("Mach-O __unwind_info section is truncated")
+            return
+        if self._frames is None:
+            return
+        frame_count = len(self._frames)
+        parse_macho_compact_unwind(data, sections, self._frames, macho_image_base(self.binary.get_arch_info()))
+        if len(self._frames) == frame_count:
+            self._mark_read_error("Mach-O __unwind_info contains no valid function entries")
 
     def _get_sections(self) -> list[dict[str, Any]]:
         """Get sections from the binary."""
         try:
             return self.binary.get_sections()
-        except Exception:
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            self._mark_read_error("exception metadata sections could not be read")
+            logger.debug("Failed to read exception metadata sections: %s", exc)
             return []
 
     def _pointer_size(self) -> int:
