@@ -87,6 +87,22 @@ jobs:
               raise SystemExit(f"missing pass runs: {summary['missing_pass_runs_by_pass']}")
           if summary["missing_tool_runs"] != 0:
               raise SystemExit(f"missing tool runs: {summary['missing_tool_runs_by_tool']}")
+          effectiveness = summary["analyzer_effectiveness_by_pass"]
+          expected_passes = set(report["pass_names"])
+          if set(effectiveness) != expected_passes:
+              raise SystemExit(
+                  "analyzer effectiveness pass coverage drift: "
+                  f"expected={sorted(expected_passes)} observed={sorted(effectiveness)}"
+              )
+          for pass_name, tools in effectiveness.items():
+              if set(tools) != set(expected_tools):
+                  raise SystemExit(
+                      f"analyzer effectiveness tool coverage drift for {pass_name}: {sorted(tools)}"
+                  )
+              if any(row["runs"] != report["sample_count"] for row in tools.values()):
+                  raise SystemExit(f"analyzer effectiveness run coverage drift for {pass_name}: {tools}")
+              if "decompiler" not in tools["radare2"]:
+                  raise SystemExit(f"radare2 decompiler evidence is missing for {pass_name}")
           incomplete_by_tool = {
               row["tool"]: row
               for row in summary["incomplete_tool_coverage"]
@@ -305,6 +321,17 @@ jobs:
                   f"merged benchmark has errors: passes={summary['error_pass_runs']} "
                   f"tools={summary['error_tool_runs']}"
               )
+          effectiveness = summary["analyzer_effectiveness_by_pass"]
+          expected_tools = set(summary["expected_tools"])
+          for pass_name, tools in effectiveness.items():
+              if set(tools) != expected_tools:
+                  raise SystemExit(
+                      f"merged analyzer effectiveness tool coverage drift for {pass_name}: {sorted(tools)}"
+                  )
+              if any(row["runs"] != report["sample_count"] for row in tools.values()):
+                  raise SystemExit(f"merged analyzer effectiveness run coverage drift for {pass_name}")
+              if "decompiler" not in tools["radare2"]:
+                  raise SystemExit(f"merged radare2 decompiler evidence is missing for {pass_name}")
           missing_corpus_passes = [
               pass_name
               for pass_name in summary["adversarial_evidence_blockers"].get(

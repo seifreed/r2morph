@@ -16,6 +16,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from importlib import import_module
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -660,6 +661,100 @@ def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, objec
     return dict(sorted(summary.items()))
 
 
+def _decompiler_observations(row: dict[str, object]) -> dict[str, int]:
+    """Extract comparable pseudocode observations from an analyzer pair."""
+    original = row.get("original")
+    protected = row.get("protected")
+    if not isinstance(original, dict) or not isinstance(protected, dict):
+        return {}
+    original_status = original.get("decompiler_status")
+    protected_status = protected.get("decompiler_status")
+    observed = int(isinstance(original_status, str) or isinstance(protected_status, str))
+    if not observed:
+        return {}
+    completed_pairs = int(original_status == "completed" and protected_status == "completed")
+    result = {
+        "observed_pairs": 1,
+        "completed_pairs": completed_pairs,
+        "missing_pairs": 1 - completed_pairs,
+    }
+    for field in ("decompiler_entrypoints", "decompiler_lines", "decompiler_bytes"):
+        original_value = original.get(field)
+        protected_value = protected.get(field)
+        if not isinstance(original_value, int | float) or not isinstance(protected_value, int | float):
+            continue
+        result[f"original_{field}"] = int(original_value)
+        result[f"protected_{field}"] = int(protected_value)
+        result[f"delta_{field}"] = int(protected_value - original_value)
+    return result
+
+
+def _new_effectiveness_tool_summary() -> dict[str, Any]:
+    return {
+        "runs": 0,
+        "completed": 0,
+        "unavailable": 0,
+        "errors": 0,
+        "changed": 0,
+        "metric_deltas": {},
+        "metric_pair_counts": {},
+    }
+
+
+def _accumulate_effectiveness_tool(tool_summary: dict[str, Any], row: dict[str, object]) -> None:
+    tool_summary["runs"] += 1
+    status = row.get("status")
+    if status == "completed":
+        tool_summary["completed"] += 1
+        tool_summary["changed"] += int(row.get("changed") is True)
+        for key, value in _tool_metric_deltas(row).items():
+            tool_summary["metric_deltas"][key] = tool_summary["metric_deltas"].get(key, 0) + value
+        for key, value in _tool_metric_pair_counts(row).items():
+            tool_summary["metric_pair_counts"][key] = tool_summary["metric_pair_counts"].get(key, 0) + value
+    elif status == "unavailable":
+        tool_summary["unavailable"] += 1
+    else:
+        tool_summary["errors"] += 1
+    observations = _decompiler_observations(row)
+    if observations:
+        decompiler = tool_summary.setdefault("decompiler", {})
+        for key, value in observations.items():
+            decompiler[key] = decompiler.get(key, 0) + value
+
+
+def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
+    tool_summary["completion_percent"] = _coverage_percent(tool_summary["completed"], tool_summary["runs"])
+    decompiler = tool_summary.get("decompiler")
+    if isinstance(decompiler, dict):
+        decompiler["completion_percent"] = _coverage_percent(
+            decompiler["completed_pairs"],
+            decompiler["observed_pairs"],
+        )
+
+
+def _analyzer_effectiveness_by_pass(samples: list[dict[str, object]]) -> dict[str, dict[str, dict[str, Any]]]:
+    """Aggregate analyzer and decompiler evidence without hiding unavailable slots."""
+    summary: dict[str, dict[str, dict[str, Any]]] = {}
+    for sample in samples:
+        rows = sample.get("tools", [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            pass_name = row.get("pass_name")
+            tool = row.get("tool")
+            if not isinstance(pass_name, str) or not isinstance(tool, str):
+                continue
+            pass_summary = summary.setdefault(pass_name, {})
+            tool_summary = pass_summary.setdefault(tool, _new_effectiveness_tool_summary())
+            _accumulate_effectiveness_tool(tool_summary, row)
+    for pass_summary in summary.values():
+        for tool_summary in pass_summary.values():
+            _finalize_effectiveness_tool_summary(tool_summary)
+    return {name: dict(sorted(values.items())) for name, values in sorted(summary.items())}
+
+
 def _coverage_percent(observed: int, expected: int) -> float:
     if expected == 0:
         return 0.0
@@ -992,6 +1087,7 @@ def _campaign_summary(
         "error_tool_run_percent": _coverage_percent(error_tools, observed_tool_runs),
         "error_tool_runs_by_tool": error_tools_by_tool,
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
+        "analyzer_effectiveness_by_pass": _analyzer_effectiveness_by_pass(samples),
     }
     summary["adversarial_evidence_blockers"] = _adversarial_evidence_blockers(summary, pass_names)
     summary["adversarial_evidence_blocker_totals"] = _blocker_totals(

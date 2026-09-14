@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
+    _analyzer_effectiveness_by_pass,
     _campaign_summary,
     _measure_tool,
     _missing_tool_slot_error,
@@ -51,6 +52,9 @@ _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT = 5.56
 _EXPECTED_NON_COMPLETED_TOOL_RUNS = 17
 _EXPECTED_MERGED_SAMPLE_COUNT = 2
 _EXPECTED_GENERIC_MUTATION_COUNT = 2
+_EXPECTED_DECOMPILER_COMPLETION_PERCENT = 100.0
+_EXPECTED_DECOMPILER_LINE_DELTA = 3
+_EXPECTED_FUNCTION_COUNT_DELTA = 1
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -100,6 +104,54 @@ def test_adversarial_benchmark_pair_report_summarizes_tool_rows() -> None:
     report = benchmark_pair(_FIXTURE, _FIXTURE)
 
     expect(report["tool_summary"] == _tool_summary([{"tools": report["tools"]}]))
+
+
+def test_adversarial_benchmark_summarizes_analyzer_effectiveness_by_pass() -> None:
+    samples = [
+        {
+            "tools": [
+                {
+                    "pass_name": "NopInsertion",
+                    "tool": "radare2",
+                    "status": "completed",
+                    "changed": True,
+                    "original": {
+                        "decompiler_status": "completed",
+                        "decompiler_entrypoints": 1,
+                        "decompiler_lines": 12,
+                        "decompiler_bytes": 240,
+                        "functions": 3,
+                    },
+                    "protected": {
+                        "decompiler_status": "completed",
+                        "decompiler_entrypoints": 1,
+                        "decompiler_lines": 15,
+                        "decompiler_bytes": 300,
+                        "functions": 4,
+                    },
+                },
+                {
+                    "pass_name": "NopInsertion",
+                    "tool": "binary-ninja",
+                    "status": "unavailable",
+                    "reason": "module unavailable",
+                },
+            ]
+        }
+    ]
+
+    summary = _campaign_summary(samples, 1, ("NopInsertion",))
+    effectiveness = summary["analyzer_effectiveness_by_pass"]
+
+    expect(
+        effectiveness == _analyzer_effectiveness_by_pass(samples)
+        and effectiveness["NopInsertion"]["radare2"]["completion_percent"] == _EXPECTED_DECOMPILER_COMPLETION_PERCENT
+        and effectiveness["NopInsertion"]["radare2"]["decompiler"]["delta_decompiler_lines"]
+        == _EXPECTED_DECOMPILER_LINE_DELTA
+        and effectiveness["NopInsertion"]["radare2"]["metric_deltas"]["total_functions_delta"]
+        == _EXPECTED_FUNCTION_COUNT_DELTA
+        and effectiveness["NopInsertion"]["binary-ninja"]["unavailable"] == 1
+    )
 
 
 def test_adversarial_benchmark_pair_report_summarizes_release_signoff_blockers() -> None:
