@@ -247,6 +247,8 @@ __asm__(
     ".size data_flow_probe, .-data_flow_probe\n"
 );
 
+extern int data_flow_probe(int value);
+
 __attribute__((noinline)) static int straight_line(int value) {
     uint32_t state = (uint32_t)value + 0x13579bdfu;
     state ^= 0xa5a5a5a5u;
