@@ -264,7 +264,9 @@ class FunctionOutliningPass(MutationPass):
             mnemonic = str(instruction.get("disasm", instruction.get("opcode", ""))).split(maxsplit=1)[0]
             if mnemonic.lower().startswith("ret") or not instructions_are_relocatable([instruction]):
                 break
-            address = instruction.get("offset", instruction.get("addr"))
+            address = instruction.get("offset")
+            if not isinstance(address, int):
+                address = instruction.get("addr")
             size = instruction.get("size")
             if not isinstance(address, int) or not isinstance(size, int) or size < 1:
                 break
@@ -274,9 +276,15 @@ class FunctionOutliningPass(MutationPass):
             next_address = address + size
         if not relocatable_instructions:
             return None
-        first_address = int(relocatable_instructions[0].get("offset", chunk.original_address))
+        first_address = relocatable_instructions[0].get("offset")
+        if not isinstance(first_address, int):
+            first_address = relocatable_instructions[0].get("addr", chunk.original_address)
         last_instruction = relocatable_instructions[-1]
-        last_address = int(last_instruction.get("offset", first_address))
+        last_address = last_instruction.get("offset")
+        if not isinstance(last_address, int):
+            last_address = last_instruction.get("addr", first_address)
+        first_address = int(first_address)
+        last_address = int(last_address)
         chunk_size = last_address + int(last_instruction.get("size", 1)) - first_address
         disasm = "; ".join(str(instruction.get("disasm", "")) for instruction in relocatable_instructions[:3])
         if chunk_size < _RELATIVE_JUMP_SIZE_BYTES:

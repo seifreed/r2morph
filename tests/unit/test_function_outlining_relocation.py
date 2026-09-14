@@ -7,12 +7,20 @@ from tests.utils.assertions import expect
 
 _CHUNK_ADDRESS = 0x1000
 _LINEAR_PREFIX_SIZE = 5
+_LINEAR_ADDR_STREAM_SIZE = 9
 
 
 class _ChunkBinary:
     def read_bytes(self, address: int, size: int) -> bytes:
         if address == _CHUNK_ADDRESS and size == _LINEAR_PREFIX_SIZE:
             return b"\x89\xd8\x83\xc0\x01"
+        return b""
+
+
+class _AddressChunkBinary:
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _CHUNK_ADDRESS and size == _LINEAR_ADDR_STREAM_SIZE:
+            return b"\x89\xd8\x83\xc0\x01\x83\xc0\x02"
         return b""
 
 
@@ -35,6 +43,21 @@ def test_chunk_bytes_excludes_branch_from_relocated_size() -> None:
     data = FunctionOutliningPass._chunk_bytes(_ChunkBinary(), _chunk_with_branch_terminator())
 
     expect(data is not None and data[1] == _LINEAR_PREFIX_SIZE)
+
+
+def test_chunk_bytes_uses_addr_when_radare2_omits_offset() -> None:
+    chunk = OutlinedChunk(
+        1,
+        _CHUNK_ADDRESS,
+        [
+            {"addr": _CHUNK_ADDRESS, "size": 4, "disasm": "mov eax, ebx"},
+            {"addr": 0x1004, "size": 5, "disasm": "add eax, 2"},
+        ],
+    )
+
+    data = FunctionOutliningPass._chunk_bytes(_AddressChunkBinary(), chunk)
+
+    expect(data is not None and data[1] == _LINEAR_ADDR_STREAM_SIZE)
 
 
 def test_chunk_bytes_rejects_noncontiguous_instruction_stream() -> None:
