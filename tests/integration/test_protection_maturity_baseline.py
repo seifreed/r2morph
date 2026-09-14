@@ -11,6 +11,7 @@ from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_FAMILY,
+    _GENERATED_CORPUS_PROFILES,
     _GENERATED_CORPUS_SOURCES,
     _GENERATED_RUNTIME_INPUTS,
     _PASS_TYPES,
@@ -66,7 +67,7 @@ _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
 _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = ("generated_branch", "generated_lookup", "generated_memory")
-_EXPECTED_GENERATED_FIXTURE_COUNT = len(_EXPECTED_GENERATED_CORPUS_SOURCES)
+_EXPECTED_GENERATED_FIXTURE_COUNT = len(_EXPECTED_GENERATED_CORPUS_SOURCES) * len(_GENERATED_CORPUS_PROFILES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
@@ -625,6 +626,18 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
 
 def test_generated_corpus_includes_branch_memory_and_lookup_shapes() -> None:
     expect(tuple(sorted(_GENERATED_CORPUS_SOURCES)) == _EXPECTED_GENERATED_CORPUS_SOURCES)
+
+
+def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
+    expect(
+        tuple(profile[0] for profile in _GENERATED_CORPUS_PROFILES)
+        == (
+            "gcc-o0",
+            "gcc-o2",
+            "gcc-pie-o2",
+            "clang-o2",
+        )
+    )
 
 
 def test_complete_evidence_gate_accepts_full_single_pass_report() -> None:

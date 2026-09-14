@@ -21,7 +21,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          sudo apt-get install -y git build-essential clang pkg-config wget cmake binutils
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
@@ -73,9 +73,14 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if summary["generated_fixture_count"] != 3:
+          if summary["generated_fixture_count"] != 12:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
-          if summary["generated_fixture_names"] != ["generated_branch", "generated_lookup", "generated_memory"]:
+          expected_generated = sorted(
+              f"{source}_{profile}"
+              for source in ("generated_branch", "generated_lookup", "generated_memory")
+              for profile in ("gcc-o0", "gcc-o2", "gcc-pie-o2", "clang-o2")
+          )
+          if summary["generated_fixture_names"] != expected_generated:
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
               raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")

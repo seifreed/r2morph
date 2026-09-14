@@ -83,6 +83,12 @@ _GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
 _DEFAULT_INPUT_SOURCE = "default-argv"
 _GENERATED_INPUT_SOURCE = "generated-argv"
 _GENERATED_CORPUS_FAMILY = "generated-elf-x86-64"
+_GENERATED_CORPUS_PROFILES = (
+    ("gcc-o0", "gcc", "-O0", "-fno-pie", "-no-pie"),
+    ("gcc-o2", "gcc", "-O2", "-fno-pie", "-no-pie"),
+    ("gcc-pie-o2", "gcc", "-O2", "-fPIE", "-pie"),
+    ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
+)
 _GENERATED_CORPUS_SOURCES = {
     "generated_branch": r"""
 #include <stdint.h>
@@ -692,29 +698,35 @@ def discover_executables(dataset: Path) -> list[Path]:
 
 
 def build_generated_corpus(output_dir: Path) -> list[Path]:
-    """Build synthetic Linux ELF x86-64 fixtures for the differential corpus."""
+    """Build compiler and relocation variants of synthetic ELF x86-64 fixtures."""
+    if not sys.platform.startswith("linux"):
+        raise RuntimeError("generated ELF corpus requires a Linux x86-64 toolchain")
     output_dir.mkdir(parents=True, exist_ok=True)
-    fixtures = []
+    fixtures: list[Path] = []
     for name, source_text in _GENERATED_CORPUS_SOURCES.items():
         source = output_dir / f"{name}.c"
-        binary = output_dir / name
         source.write_text(source_text, encoding="utf-8")
-        command = [
-            "gcc",
-            "-O2",
-            "-fno-pie",
-            "-no-pie",
-            "-fno-unwind-tables",
-            "-fno-asynchronous-unwind-tables",
-            "-fno-stack-protector",
-            source.as_posix(),
-            "-o",
-            binary.as_posix(),
-        ]
-        result = run_process(command, timeout=30)
-        if result.returncode != 0:
-            raise RuntimeError(f"failed to compile generated corpus fixture {name}: {result.stderr_text.strip()}")
-        fixtures.append(binary)
+        for profile, compiler, optimization, *linker_flags in _GENERATED_CORPUS_PROFILES:
+            if shutil.which(compiler) is None:
+                raise RuntimeError(f"required generated corpus compiler is unavailable: {compiler}")
+            binary = output_dir / f"{name}_{profile}"
+            command = [
+                compiler,
+                optimization,
+                *linker_flags,
+                "-fno-unwind-tables",
+                "-fno-asynchronous-unwind-tables",
+                "-fno-stack-protector",
+                source.as_posix(),
+                "-o",
+                binary.as_posix(),
+            ]
+            result = run_process(command, timeout=30)
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"failed to compile generated corpus fixture {binary.name}: {result.stderr_text.strip()}"
+                )
+            fixtures.append(binary)
     executables = discover_executables(output_dir)
     if len(executables) != len(fixtures):
         raise RuntimeError("generated corpus did not produce ELF x86-64 executable fixtures")
