@@ -169,6 +169,14 @@ class BinaryReader:
         sections = self._r2.cmdj("iSj") or []
         return sections
 
+    def get_xrefs_to(self, address: int) -> list[dict[str, Any]]:
+        """Get references targeting an address."""
+        if self._r2 is None:
+            raise RuntimeError("Binary not opened. Call open() first.")
+
+        references = self._r2.cmdj(f"axtj @ 0x{address:x}") or []
+        return references if isinstance(references, list) else []
+
     def get_arch_info(self, info: dict[str, Any]) -> dict[str, Any]:
         """
         Get architecture information from the binary.

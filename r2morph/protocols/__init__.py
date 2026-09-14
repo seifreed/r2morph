@@ -135,6 +135,10 @@ class BinaryReaderProtocol(Protocol):
         """Get sections from the binary."""
         ...
 
+    def get_xrefs_to(self, address: int) -> list[dict[str, Any]]:
+        """Get references targeting an address."""
+        ...
+
     def get_arch_info(self) -> dict[str, Any]:
         """Get architecture information from the binary."""
         ...

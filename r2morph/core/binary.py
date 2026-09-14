@@ -206,6 +206,12 @@ class Binary:
             raise RuntimeError("Binary not opened. Call open() first.")
         return self.reader.get_sections()
 
+    def get_xrefs_to(self, address: int) -> list[dict[str, Any]]:
+        """Get references targeting an address."""
+        if not self.r2:
+            raise RuntimeError("Binary not opened. Call open() first.")
+        return self.reader.get_xrefs_to(address)
+
     def read_bytes(self, address: int, size: int) -> bytes:
         """Read bytes from the binary at a virtual address."""
         if not self.r2:

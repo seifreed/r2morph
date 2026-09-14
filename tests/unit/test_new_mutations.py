@@ -3,6 +3,7 @@ Tests for new mutation passes: DataFlow, StringObfuscation, ImportObfuscation,
 ConstantUnfolding, and ParallelExecutor.
 """
 
+from r2morph.core.reader import BinaryReader
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
 from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
@@ -96,8 +97,21 @@ class _ImportR2:
         return []
 
 
+class _XrefReader:
+    def cmdj(self, command: str) -> list[dict[str, object]]:
+        if command == "axtj @ 0x4000":
+            return [{"from": 0x1000}]
+        return []
+
+
 class _ImportBinary:
     r2 = _ImportR2()
+
+
+def test_binary_reader_get_xrefs_to_returns_target_references() -> None:
+    references = BinaryReader(_XrefReader()).get_xrefs_to(0x4000)
+
+    expect(references == [{"from": 0x1000}])
 
 
 class TestDataFlowMutationPass:
