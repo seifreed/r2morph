@@ -26,6 +26,8 @@ from r2morph.analysis.liveness_models import (
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 
 _INSTRUCTION_PART_COUNT = 2
+_X86_32_BIT_SIZE = 32
+_X86_64_BIT_SIZE = 64
 _READ_MODIFY_WRITE_MNEMONICS = frozenset(
     {
         "adc",
@@ -147,9 +149,20 @@ class LivenessAnalysis:
             defined.update(regs_def)
         return defined
 
+    @staticmethod
+    def _definition_kills_use(definition: Register, use: Register) -> bool:
+        """Return whether an x86 definition covers a later register use."""
+        if definition.name == use.name:
+            return True
+        if definition.aliases().isdisjoint(use.aliases()):
+            return False
+        if definition.size >= use.size:
+            return True
+        return definition.size == _X86_32_BIT_SIZE and use.size == _X86_64_BIT_SIZE
+
     def _register_in_set(self, reg: Register, reg_set: set[Register]) -> bool:
-        """Check if a register is in a set (by name)."""
-        return any(r.name == reg.name for r in reg_set)
+        """Check whether a definition set covers a register use."""
+        return any(self._definition_kills_use(defined, reg) for defined in reg_set)
 
     def _compute_instruction_liveness(self) -> None:
         """Compute liveness at instruction level."""
@@ -176,12 +189,11 @@ class LivenessAnalysis:
                 insn_live.defined = defined
                 insn_live.used = used
 
-                for reg in defined:
-                    to_remove = set()
-                    for live_reg in current_live:
-                        if live_reg.name == reg.name:
-                            to_remove.add(live_reg)
-                    current_live -= to_remove
+                current_live = {
+                    live_reg
+                    for live_reg in current_live
+                    if not any(self._definition_kills_use(reg, live_reg) for reg in defined)
+                }
 
                 for reg in used:
                     if not self._register_in_set(reg, current_live):
@@ -375,7 +387,7 @@ class LivenessAnalysis:
         """
         if address in self._instruction_liveness:
             live_before = self._instruction_liveness[address].live_before
-            return any(r.name == register.name for r in live_before)
+            return any(not register.aliases().isdisjoint(r.aliases()) for r in live_before)
 
         return False
 

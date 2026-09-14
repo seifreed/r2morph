@@ -578,6 +578,24 @@ class TestLivenessAnalysis:
 
         expect({register.name for register in used} == {"ebx"})
 
+    def test_x86_32_bit_definition_kills_64_bit_alias(self):
+        """An x86-64 32-bit write defines the complete parent register."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = Register("eax", 32)
+        use = Register("rax", 64)
+
+        expect(analyzer._definition_kills_use(defined, use))
+
+    def test_x86_partial_definition_preserves_wider_alias(self):
+        """A narrow sub-register write does not define the parent register."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        defined = Register("al", 8)
+        use = Register("rax", 64)
+
+        expect(not analyzer._definition_kills_use(defined, use))
+
     def test_sysv_call_uses_rax_for_variadic_vector_count(self):
         """SysV calls consume al/rax for the variadic vector-argument count."""
         analyzer = LivenessAnalysis(create_simple_cfg())
