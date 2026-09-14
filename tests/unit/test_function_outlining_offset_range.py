@@ -60,3 +60,21 @@ def test_in_range_cave_still_outlines_chunk() -> None:
 
     expect(result["chunks_relocated"] == 1)
     expect(len(p.get_records()) == 1)
+
+
+def test_relative_control_transfer_is_skipped_without_reencoding() -> None:
+    pdj = dict(PDJ)
+    pdj[0x1008] = [
+        {"offset": 0x1008, "size": 5, "disasm": "jne 0x1010", "type": "cjmp", "jump": 0x1010},
+        {"offset": 0x100D, "size": 3, "disasm": "nop"},
+    ]
+    binary = InMemoryOutliningBinary(
+        regions={0x1000: b"\xcc" * 16, 0x2000: b"\x90" * 128},
+        functions=FUNCS,
+        blocks=BLOCKS,
+        pdj=pdj,
+        sections=[{"name": ".x", "vaddr": 0x2000, "vsize": 128, "perm": "r-x"}],
+    )
+    result = FunctionOutliningPass(CONFIG).apply(binary)
+
+    expect(result["chunks_relocated"] == 0)

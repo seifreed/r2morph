@@ -53,3 +53,16 @@ def test_in_range_cave_still_moves_block() -> None:
 
     expect(result["blocks_moved"] == 1)
     expect(len(p.get_records()) == 1)
+
+
+def test_relative_control_transfer_is_skipped_without_reencoding() -> None:
+    binary = InMemoryMobilityBinary(
+        regions={0x1000: b"\xcc" * 64, 0x2000: b"\x90" * 128},
+        functions=FUNCS,
+        blocks=BLOCKS,
+        disasm=[{"disasm": "jne 0x1010", "type": "cjmp", "jump": 0x1010}],
+        sections=[{"name": ".x", "vaddr": 0x2000, "vsize": 128, "perm": "r-x"}],
+    )
+    result = CodeMobilityPass(CONFIG).apply(binary)
+
+    expect(result["blocks_moved"] == 0)

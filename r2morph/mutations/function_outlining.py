@@ -56,6 +56,7 @@ from typing import Any
 import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.relocation_safety import instructions_are_relocatable
 from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 logger = logging.getLogger(__name__)
@@ -257,12 +258,14 @@ class FunctionOutliningPass(MutationPass):
     def _chunk_bytes(binary: Any, chunk: OutlinedChunk) -> tuple[int, int, str, bytes] | None:
         if not chunk.instructions:
             return None
+        if not instructions_are_relocatable(chunk.instructions):
+            return None
         first_address = int(chunk.instructions[0].get("offset", chunk.original_address))
         last_instruction = chunk.instructions[-1]
         last_address = int(last_instruction.get("offset", first_address))
         chunk_size = last_address + int(last_instruction.get("size", 1)) - first_address
         disasm = "; ".join(str(instruction.get("disasm", "")) for instruction in chunk.instructions[:3])
-        if chunk_size < _RELATIVE_JUMP_SIZE_BYTES or "[rip" in disasm:
+        if chunk_size < _RELATIVE_JUMP_SIZE_BYTES:
             return None
         original_bytes = binary.read_bytes(first_address, chunk_size)
         if not original_bytes or len(original_bytes) < _RELATIVE_JUMP_SIZE_BYTES:

@@ -65,6 +65,7 @@ from r2morph.mutations.code_mobility_models import (
     calculate_section_offsets,
     estimate_size_with_jumps,
 )
+from r2morph.mutations.relocation_safety import instructions_are_relocatable
 from r2morph.relocations.cave_finder import CaveFinder
 
 logger = logging.getLogger(__name__)
@@ -187,6 +188,26 @@ class CodeMobilityPass(MutationPass):
     def _interleave_blocks(self, blocks: list[MobileBlock], seed: int | None = None) -> list[MobileBlock]:
         return interleave_blocks(blocks, preserve_order=self.preserve_order, seed=seed)
 
+    @staticmethod
+    def _relocatable_block_disasm(binary: Any, block: MobileBlock) -> str | None:
+        disasm = binary.get_function_disasm(block.original_address) or []
+        block_end = block.original_address + block.size
+        block_disasm = [
+            instruction
+            for instruction in disasm
+            if isinstance(instruction.get("offset", instruction.get("addr")), int)
+            and block.original_address <= instruction.get("offset", instruction.get("addr")) < block_end
+        ]
+        has_addresses = any(
+            isinstance(instruction.get("offset", instruction.get("addr")), int) for instruction in disasm
+        )
+        if not block_disasm and has_addresses:
+            return None
+        instructions = block_disasm or disasm
+        if not instructions_are_relocatable(instructions):
+            return None
+        return "; ".join(str(instruction.get("disasm", "")) for instruction in instructions[:3])
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply code mobility transformation.
@@ -222,9 +243,8 @@ class CodeMobilityPass(MutationPass):
             if not original_bytes or len(original_bytes) < _RELATIVE_JUMP_SIZE_BYTES:
                 continue
 
-            disasm = binary.get_function_disasm(block.original_address)
-            disasm_text = "; ".join(str(i.get("disasm", "")) for i in (disasm or [])[:3])
-            if "[rip" in disasm_text:
+            disasm_text = self._relocatable_block_disasm(binary, block)
+            if disasm_text is None:
                 continue
 
             needed = block.size + _RELATIVE_JUMP_SIZE_BYTES
