@@ -53,9 +53,12 @@ review. It is not a feature roadmap and must not be read as a support claim.
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
   Evidence map: [protection-handler-clustering.json](protection-handler-clustering.json),
   [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
-  `adversarial_validation` and `vm_resistance_blocker_totals`. Exit criteria:
-  adversarial review validates VM diversity, anti-tamper, and progressive
-  bytecode protection instead of treating seed diversity as signoff.
+  `adversarial_validation` and `vm_resistance_blocker_totals`, plus the automated
+  tamper/progressive smoke in
+  [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml).
+  Exit criteria: adversarial review validates VM diversity, anti-tamper, and
+  progressive bytecode protection instead of treating seed diversity or the
+  automated smoke as signoff.
 - RB-007: The VM milestone remains blocked until external human review records signoff.
   Evidence map: [independent-review.json](independent-review.json)
   `human_signoff` and `release_decision`,

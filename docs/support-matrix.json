@@ -1838,7 +1838,10 @@
           "evidence": [
             "docs/independent-review.json",
             "docs/protection-bytecode-grammar.json",
-            "docs/protection-handler-clustering.json"
+            "docs/protection-handler-clustering.json",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py",
+            "tests/integration/test_code_virtualization_diversification_real.py"
           ]
         },
         "isa-opcode-diversity": {
@@ -1866,14 +1869,19 @@
           "status": "seed-diversity-only-incomplete",
           "evidence_quality": "seed-diversity-only",
           "evidence": [
-            "docs/protection-maturity.md"
+            "docs/protection-maturity.md",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py"
           ]
         },
         "progressive-bytecode-protection": {
           "status": "seed-diversity-only-incomplete",
           "evidence_quality": "seed-diversity-only",
           "evidence": [
-            "docs/protection-bytecode-grammar.json"
+            "docs/protection-bytecode-grammar.json",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py",
+            "tests/integration/test_code_virtualization_diversification_real.py"
           ]
         }
       },

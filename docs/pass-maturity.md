@@ -136,5 +136,9 @@ target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
 artifacts also carry `adversarial_validation.status` as
 `pending-human-adversarial-review`, with seed diversity recorded as the current
-evidence quality. The generated `total_vm_resistance_blockers` count is
+evidence quality. The scheduled adversarial workflow additionally runs six real
+tamper/progressive protection tests and publishes JUnit evidence, including
+single-level tamper, nested tamper, nested growth, and diversified-build
+checks. This strengthens automated evidence but does not replace the pending
+human/adversarial review. The generated `total_vm_resistance_blockers` count is
 currently 6 VM resistance blockers.

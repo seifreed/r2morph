@@ -111,6 +111,9 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/independent-review.json",
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py",
+            "tests/integration/test_code_virtualization_diversification_real.py",
         ],
     },
     "isa-opcode-diversity": {
@@ -131,12 +134,21 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
     "anti-tamper": {
         "status": "seed-diversity-only-incomplete",
         "evidence_quality": "seed-diversity-only",
-        "evidence": ["docs/protection-maturity.md"],
+        "evidence": [
+            "docs/protection-maturity.md",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py",
+        ],
     },
     "progressive-bytecode-protection": {
         "status": "seed-diversity-only-incomplete",
         "evidence_quality": "seed-diversity-only",
-        "evidence": ["docs/protection-bytecode-grammar.json"],
+        "evidence": [
+            "docs/protection-bytecode-grammar.json",
+            ".github/workflows/adversarial-benchmark.yml",
+            "tests/integration/test_code_virtualization_real.py",
+            "tests/integration/test_code_virtualization_diversification_real.py",
+        ],
     },
 }
 _NATIVE_EVIDENCE_PROFILES = {"tier-1-native", "code-virtualization", "experimental-corpus-selected"}
