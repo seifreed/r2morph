@@ -62,6 +62,18 @@ def test_opaque_predicate_rejects_rip_relative_memory_operand():
     expect(has_pc_relative_memory is True)
 
 
+def test_opaque_predicate_rejects_non_relative_memory_operand():
+    instruction = {
+        "addr": 0x1000,
+        "bytes": "488b45f8",
+        "disasm": "mov rax, [rbp - 8]",
+    }
+
+    has_memory = OpaquePredicatePass._has_memory_operand(instruction)
+
+    expect(has_memory is True)
+
+
 def test_opaque_predicate_apply_real_binary(tmp_path: Path):
     binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():

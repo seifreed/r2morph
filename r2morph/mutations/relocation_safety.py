@@ -46,6 +46,23 @@ def has_pc_relative_memory_operand(instruction: dict[str, Any]) -> bool | None:
     )
 
 
+def has_memory_operand(instruction: dict[str, Any]) -> bool | None:
+    """Return whether an x86-64 instruction accesses memory."""
+    raw_bytes = instruction.get("bytes")
+    address = instruction.get("addr", instruction.get("offset"))
+    if not isinstance(raw_bytes, str) or not isinstance(address, int):
+        return None
+    try:
+        decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+        decoder.detail = True
+        decoded = next(decoder.disasm(bytes.fromhex(raw_bytes), address), None)
+    except (capstone.CsError, TypeError, ValueError):
+        return None
+    if decoded is None:
+        return None
+    return any(operand.type == capstone.x86.X86_OP_MEM for operand in decoded.operands)
+
+
 def instructions_are_relocatable(instructions: list[dict[str, Any]]) -> bool:
     """Return whether instructions can be copied without changing addresses."""
     for instruction in instructions:
@@ -67,4 +84,4 @@ def instructions_are_relocatable(instructions: list[dict[str, Any]]) -> bool:
     return True
 
 
-__all__ = ["has_pc_relative_memory_operand", "instructions_are_relocatable"]
+__all__ = ["has_memory_operand", "has_pc_relative_memory_operand", "instructions_are_relocatable"]

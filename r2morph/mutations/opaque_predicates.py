@@ -22,6 +22,7 @@ from r2morph.core.constants import (
 )
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.relocation_safety import (
+    has_memory_operand,
     has_pc_relative_memory_operand,
     instructions_are_relocatable,
 )
@@ -176,6 +177,11 @@ class OpaquePredicatePass(MutationPass):
         return has_pc_relative_memory_operand(instruction)
 
     @staticmethod
+    def _has_memory_operand(instruction: dict[str, Any]) -> bool | None:
+        """Return whether an x86 instruction accesses memory."""
+        return has_memory_operand(instruction)
+
+    @staticmethod
     def _relocatable_prefix(binary: Any, address: int, block_size: int) -> tuple[bytes, int] | None:
         """Return a contiguous, branch-free prefix large enough for a trampoline."""
         try:
@@ -193,10 +199,12 @@ class OpaquePredicatePass(MutationPass):
                 break
             mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
             pc_relative = OpaquePredicatePass._has_pc_relative_memory_operand(instruction)
+            memory_operand = has_memory_operand(instruction)
             if (
                 mnemonic.startswith("ret")
                 or not instructions_are_relocatable([instruction])
                 or pc_relative is not False
+                or memory_operand is not False
             ):
                 break
             prefix.append(instruction)
