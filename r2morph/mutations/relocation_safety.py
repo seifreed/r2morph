@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import capstone
+
 _NON_RELOCATABLE_TYPES = frozenset(
     {
         "call",
@@ -24,6 +26,26 @@ _NON_RELOCATABLE_MNEMONICS = frozenset({"call", "loop", "syscall", "sysret", "ir
 _RETURN_MNEMONICS = frozenset({"ret", "retn", "retf", "retq"})
 
 
+def has_pc_relative_memory_operand(instruction: dict[str, Any]) -> bool | None:
+    """Return whether an x86-64 instruction addresses memory through RIP."""
+    raw_bytes = instruction.get("bytes")
+    address = instruction.get("addr", instruction.get("offset"))
+    if not isinstance(raw_bytes, str) or not isinstance(address, int):
+        return None
+    try:
+        decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+        decoder.detail = True
+        decoded = next(decoder.disasm(bytes.fromhex(raw_bytes), address), None)
+    except (capstone.CsError, TypeError, ValueError):
+        return None
+    if decoded is None:
+        return None
+    return any(
+        operand.type == capstone.x86.X86_OP_MEM and operand.mem.base == capstone.x86.X86_REG_RIP
+        for operand in decoded.operands
+    )
+
+
 def instructions_are_relocatable(instructions: list[dict[str, Any]]) -> bool:
     """Return whether instructions can be copied without changing addresses."""
     for instruction in instructions:
@@ -40,7 +62,9 @@ def instructions_are_relocatable(instructions: list[dict[str, Any]]) -> bool:
             return False
         if "rip" in str(instruction.get("disasm", "")).lower():
             return False
+        if has_pc_relative_memory_operand(instruction) is True:
+            return False
     return True
 
 
-__all__ = ["instructions_are_relocatable"]
+__all__ = ["has_pc_relative_memory_operand", "instructions_are_relocatable"]

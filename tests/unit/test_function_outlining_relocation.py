@@ -48,3 +48,20 @@ def test_chunk_bytes_rejects_noncontiguous_instruction_stream() -> None:
     )
 
     expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)
+
+
+def test_chunk_bytes_rejects_pc_relative_memory_instruction() -> None:
+    chunk = OutlinedChunk(
+        1,
+        _CHUNK_ADDRESS,
+        [
+            {
+                "offset": _CHUNK_ADDRESS,
+                "size": 7,
+                "bytes": "488d0534120000",
+                "disasm": "lea rax, [0x223b]",
+            }
+        ],
+    )
+
+    expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)
