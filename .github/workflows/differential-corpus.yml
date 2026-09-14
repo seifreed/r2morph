@@ -302,6 +302,8 @@ jobs:
             --passes "$EXTENDED_MATURITY_PASSES" \
             --first-seed 20260901 \
             --count 1 \
+            --generated-inputs \
+            --generated-corpus \
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
@@ -341,10 +343,30 @@ jobs:
               "extended_maturity_evidence_blocker_totals"
           ]:
               raise SystemExit("extended maturity blocker totals are missing total_extended_maturity_evidence_blockers")
+          if report["campaign_summary"]["passes_without_extended_applied_runs"]:
+              raise SystemExit(
+                  "extended maturity passes without applied evidence: "
+                  f"{report['campaign_summary']['passes_without_extended_applied_runs']}"
+              )
           if report["campaign_summary"]["extended_passes_with_error_runs"]:
               raise SystemExit(
                   f"extended maturity pass errors: {report['campaign_summary']['extended_passes_with_error_runs']}"
               )
+          if report["campaign_summary"]["passes_with_behavioral_false_positives"]:
+              raise SystemExit(
+                  "behavioral false positives: "
+                  f"{report['campaign_summary']['passes_with_behavioral_false_positives']}"
+              )
+          if report["campaign_summary"]["behavioral_validation_missing_observations_by_pass"]:
+              raise SystemExit(
+                  "missing behavioral validation observations: "
+                  f"{report['campaign_summary']['behavioral_validation_missing_observations_by_pass']}"
+              )
+          if any(
+              value != 0
+              for value in report["campaign_summary"]["behavioral_false_positive_rate_percent_by_pass"].values()
+          ):
+              raise SystemExit("extended maturity false-positive rate is non-zero")
           required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}
           missing_metrics = {
               name: count

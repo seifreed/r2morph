@@ -19,6 +19,7 @@ from scripts.protection_maturity_baseline import (
     CORPUS_PASS_NAMES,
     EXTENDED_MATURITY_PASS_NAMES,
     _ArtifactAccumulator,
+    _behavioral_false_positive_metrics,
     _complete_evidence_error,
     _diagnostic_counts,
     _parse_pass_names,
@@ -119,6 +120,7 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKERS = {
     "passes_with_incomplete_coverage": _EXPECTED_INCOMPLETE_COVERAGE,
     "passes_with_semantic_failures": ["PatternSubstitution"],
     "passes_with_runtime_observable_failures": ["CodeVirtualization"],
+    "behavioral_validation_missing_observations_by_pass": {"CodeVirtualization": 1},
     "platform_gap_scope": {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]},
     "corpus_gap_scope": {
         "corpus_families": ["additional-corpus-families"],
@@ -132,10 +134,11 @@ _EXPECTED_CONTINUOUS_EVIDENCE_BLOCKER_TOTALS = {
     "missing_corpus_passes": len(_EXPECTED_MISSING_CORPUS_PASSES),
     "passes_with_incomplete_coverage": len(_EXPECTED_INCOMPLETE_COVERAGE),
     "passes_with_runtime_observable_failures": 1,
+    "behavioral_validation_missing_observations_by_pass": 1,
     "passes_with_semantic_failures": 1,
     "passes_without_applied_runs": 1,
     "platform_gap_scope": 2,
-    "total_continuous_evidence_blockers": 27,
+    "total_continuous_evidence_blockers": 28,
 }
 _EXPECTED_EXTENDED_MATURITY_BLOCKERS = {"missing_extended_passes": _EXPECTED_MISSING_EXTENDED_PASSES}
 _EXPECTED_EXTENDED_MATURITY_BLOCKER_TOTALS = {
@@ -409,6 +412,32 @@ def test_render_result_summarizes_size_runtime_and_observables() -> None:
         and report["summary"]["error_reasons"] == {}
         and report["summary"]["omission_severities"] == {"warning": 1}
         and report["summary"]["error_severities"] == {}
+    )
+
+
+def test_behavioral_false_positive_metric_counts_applied_runtime_changes() -> None:
+    runtime = {
+        "status": "completed",
+        "return_code": 0,
+        "stdout": {"sha256": "a", "size": 0},
+        "stderr": {"sha256": "b", "size": 0},
+        "created_files": {},
+    }
+    changed = {**runtime, "return_code": 1}
+    metrics = _behavioral_false_positive_metrics(
+        [
+            (
+                {"baseline_runtime_inputs": [runtime, runtime]},
+                {"transformation": {"status": "applied"}, "runtime_inputs": [runtime, changed]},
+            )
+        ]
+    )
+
+    expect(
+        metrics["behavioral_validation_observations"] == 2
+        and metrics["behavioral_false_positive_observations"] == 1
+        and metrics["behavioral_validation_missing_observations"] == 0
+        and metrics["behavioral_false_positive_rate_percent"] == 50.0
     )
 
 

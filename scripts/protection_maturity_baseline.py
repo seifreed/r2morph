@@ -800,6 +800,44 @@ def _runtime_observable_failure_reasons(
     return dict(sorted(reasons.items()))
 
 
+def _behavioral_false_positive_metrics(
+    seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
+) -> dict[str, int | float]:
+    """Measure applied mutations that change a native runtime observable."""
+    complete_observations = 0
+    false_positive_observations = 0
+    missing_observations = 0
+    for fixture, run in seed_runs:
+        transformation = run.get("transformation")
+        if not isinstance(transformation, Mapping) or transformation.get("status") != "applied":
+            continue
+        baseline_inputs = fixture.get("baseline_runtime_inputs")
+        run_inputs = run.get("runtime_inputs")
+        if not isinstance(baseline_inputs, list) or not isinstance(run_inputs, list):
+            missing_observations += 1
+            continue
+        if len(baseline_inputs) != len(run_inputs) or not baseline_inputs:
+            missing_observations += 1
+            continue
+        for baseline, actual in zip(baseline_inputs, run_inputs, strict=True):
+            if not isinstance(baseline, Mapping) or not isinstance(actual, Mapping):
+                missing_observations += 1
+                continue
+            if baseline.get("status") != "completed" or actual.get("status") != "completed":
+                missing_observations += 1
+                continue
+            complete_observations += 1
+            if not _runtime_observables_equal(baseline, actual):
+                false_positive_observations += 1
+    rate = round(false_positive_observations / complete_observations * 100.0, 2) if complete_observations else 0.0
+    return {
+        "behavioral_validation_observations": complete_observations,
+        "behavioral_false_positive_observations": false_positive_observations,
+        "behavioral_validation_missing_observations": missing_observations,
+        "behavioral_false_positive_rate_percent": rate,
+    }
+
+
 def _numeric_metric_coverage(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
     summary_prefix: str,
@@ -933,6 +971,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
     )
     runtime_observable_passes = sum(1 for _, run in seed_runs if run.get("runtime_observable_equal") is True)
     runtime_observable_failures = sum(1 for _, run in seed_runs if run.get("runtime_observable_equal") is False)
+    behavioral_false_positive_metrics = _behavioral_false_positive_metrics(seed_runs)
     output_size_deltas = tuple(
         run["output_size"] - fixture["baseline_size"]
         for fixture, run in seed_runs
@@ -973,6 +1012,7 @@ def _render_result(fixtures: list[dict[str, object]], pass_name: str = DEFAULT_M
             "runtime_observable_passes": runtime_observable_passes,
             "runtime_observable_failures": runtime_observable_failures,
             "runtime_observable_failure_reasons": runtime_observable_failure_reasons,
+            **behavioral_false_positive_metrics,
             **runtime_observable_coverage,
             "runtime_observable_coverage_percent": _coverage_percent(
                 runtime_observable_coverage["runtime_observable_complete_runs"],
@@ -1168,6 +1208,23 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "runtime_observable_failures",
         ),
+        "passes_with_behavioral_false_positives": _passes_with_positive_runs(
+            summaries,
+            "behavioral_false_positive_observations",
+        ),
+        "behavioral_false_positive_rate_percent_by_pass": {
+            name: summary["behavioral_false_positive_rate_percent"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict)
+            and isinstance(summary.get("behavioral_false_positive_rate_percent"), int | float)
+        },
+        "behavioral_validation_missing_observations_by_pass": {
+            name: summary["behavioral_validation_missing_observations"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict)
+            and isinstance(summary.get("behavioral_validation_missing_observations"), int)
+            and summary["behavioral_validation_missing_observations"] > 0
+        },
         "runtime_observable_failure_reasons_by_pass": _reason_map_by_pass(
             summaries,
             "runtime_observable_failure_reasons",
@@ -1281,6 +1338,8 @@ def _continuous_evidence_blockers(summary: Mapping[str, object]) -> dict[str, ob
         "passes_with_incomplete_coverage",
         "passes_with_semantic_failures",
         "passes_with_runtime_observable_failures",
+        "passes_with_behavioral_false_positives",
+        "behavioral_validation_missing_observations_by_pass",
         "platform_gap_scope",
         "corpus_gap_scope",
     ):
