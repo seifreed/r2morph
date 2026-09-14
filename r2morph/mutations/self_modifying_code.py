@@ -145,10 +145,30 @@ class SelfModifyingCodePass(MutationPass):
             flags = func.get("flags", [])
             if "sym.main" in flags or "entry" in str(flags):
                 continue
+            if not self._has_straight_line_body(binary, func.get("addr", 0)):
+                logger.debug("Skipping function at 0x%x: unsupported control-flow body", func.get("addr", 0))
+                continue
 
             encryptable.append(func)
 
         return encryptable
+
+    @staticmethod
+    def _has_straight_line_body(binary: Any, function_address: int) -> bool:
+        """Require a body whose control-flow and PC-relative edges stay unchanged."""
+        try:
+            instructions = binary.get_function_disasm(function_address)
+        except (AttributeError, OSError, RuntimeError, ValueError):
+            return False
+        if not instructions:
+            return False
+        for instruction in instructions:
+            mnemonic = str(instruction.get("disasm", "")).lower().split(maxsplit=1)[0]
+            if mnemonic.startswith(("j", "call")) or mnemonic in {"loop", "loope", "loopne", "syscall", "sysenter"}:
+                return False
+            if "rip" in str(instruction.get("disasm", "")).lower():
+                return False
+        return True
 
     @staticmethod
     def _entry_patch_is_instruction_aligned(binary: Any, function_address: int) -> bool:

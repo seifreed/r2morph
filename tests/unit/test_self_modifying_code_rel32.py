@@ -28,6 +28,16 @@ _EXPECTED_STUB_5_233 = 0xE9
 
 
 _PROLOGUE = b"\x90\x90\x90\x90\x90"
+
+
+class _DisassemblyBinary:
+    def __init__(self, disassembly: list[dict[str, object]]) -> None:
+        self.disassembly = disassembly
+
+    def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+        return self.disassembly
+
+
 _INT32_MAX = 2147483647
 
 
@@ -74,3 +84,13 @@ def test_build_xor_decrypt_stub_preserves_sysv_entry_registers() -> None:
     expect(stub is not None)
     expect(stub[:9] == b"\x50\x51\x52\x57\x56\x41\x50\x41\x51")
     expect(b"\x41\x5b\x41\x5a\x41\x59\x41\x58\x5e\x5f\x5a\x59\x58" in stub)
+
+
+def test_straight_line_body_rejects_calls_and_rip_relative_access() -> None:
+    pass_obj = SelfModifyingCodePass()
+
+    call_body = _DisassemblyBinary([{"disasm": "call 0x2000"}])
+    rip_body = _DisassemblyBinary([{"disasm": "mov rax, [rip + 0x10]"}])
+
+    expect(not pass_obj._has_straight_line_body(call_body, 0x1000))
+    expect(not pass_obj._has_straight_line_body(rip_body, 0x1000))

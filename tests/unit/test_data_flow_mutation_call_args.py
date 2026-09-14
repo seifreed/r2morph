@@ -113,3 +113,20 @@ def test_partial_register_use_keeps_parent_destination_live() -> None:
     candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
 
     expect(not candidates, f"partial-register use must block substitution: {candidates!r}")
+
+
+def test_branch_targets_keep_register_live_across_cfg_join() -> None:
+    """A value used by either branch must not be treated as a dead destination."""
+    pass_obj = DataFlowMutationPass()
+    instructions = [
+        {"addr": 0x1000, "next_addr": 0x1007, "disasm": "mov rdi, 1"},
+        {"addr": 0x1007, "next_addr": 0x1009, "disasm": "test eax, eax"},
+        {"addr": 0x1009, "type": "cjmp", "jump": 0x1010, "fail": 0x100B, "disasm": "jne 0x1010"},
+        {"addr": 0x100B, "type": "jmp", "jump": 0x1010, "disasm": "jmp 0x1010"},
+        {"addr": 0x1010, "next_addr": 0, "disasm": "syscall"},
+    ]
+
+    live_in = pass_obj._analyze_function_liveness(instructions)
+    candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(not any(original == "rdi" for _insn, original, _replacement in candidates))

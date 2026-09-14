@@ -68,6 +68,33 @@ def _remove_killed_registers(live: set[str], defined: set[str]) -> set[str]:
     }
 
 
+def _successors(instruction: dict[str, Any], ordered_addresses: list[int]) -> tuple[int, ...]:
+    """Return CFG successors, falling back to the supplied linear edge."""
+    address = instruction.get("addr", 0)
+    next_address = instruction.get("next_addr", 0)
+    position = ordered_addresses.index(address) if address in ordered_addresses else -1
+    linear_successor = (
+        next_address
+        if isinstance(next_address, int) and next_address
+        else ordered_addresses[position + 1] if position >= 0 and position + 1 < len(ordered_addresses) else 0
+    )
+    instruction_type = instruction.get("type", "")
+    mnemonic = str(instruction.get("disasm", "")).lower().split(maxsplit=1)[0]
+    jump = instruction.get("jump")
+    fail = instruction.get("fail")
+    if instruction_type == "jmp" or mnemonic == "jmp":
+        return (jump,) if isinstance(jump, int) and jump else ()
+    if instruction_type == "cjmp" or mnemonic.startswith("j"):
+        return tuple(
+            target
+            for target in (jump, fail, linear_successor)
+            if isinstance(target, int) and target and target not in (address,)
+        )
+    if mnemonic.startswith(("ret", "ud", "hlt", "int")):
+        return ()
+    return (linear_successor,) if linear_successor else ()
+
+
 def _split_register_instruction(disasm: str) -> tuple[str, str, str] | None:
     """Return mnemonic and operands for a simple two-operand register write."""
     parts = disasm.lower().split(maxsplit=1)
@@ -86,7 +113,7 @@ def _same_register_width(first: str, second: str) -> bool:
 
 
 def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, set[str]]:
-    """Perform a simple backward liveness analysis over instruction dicts."""
+    """Perform a CFG-aware backward liveness analysis over instruction dicts."""
     live_in: dict[int, set[str]] = {}
     live_out: dict[int, set[str]] = {}
 
@@ -98,7 +125,10 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
     read_modify_write = {"add", "and", "dec", "inc", "neg", "not", "or", "sub", "xor"}
     write_only = {"lea", "mov", "pop"}
 
-    for insn in reversed(instructions):
+    ordered_addresses = [insn.get("addr", 0) for insn in instructions if isinstance(insn.get("addr"), int)]
+    use_def: dict[int, tuple[set[str], set[str]]] = {}
+    successors: dict[int, tuple[int, ...]] = {}
+    for insn in instructions:
         addr = insn.get("addr", 0)
         disasm = insn.get("disasm", "").lower()
 
@@ -124,11 +154,22 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
                 else:
                     used.add(part)
 
-        next_addr = insn.get("next_addr", 0)
-        succ_live = live_in.get(next_addr, set()) if next_addr else set()
+        if isinstance(addr, int):
+            use_def[addr] = (used, defined)
+            successors[addr] = _successors(insn, ordered_addresses)
 
-        live_out[addr] = succ_live.copy()
-        live_in[addr] = (used | _remove_killed_registers(succ_live, defined)) & x86_regs
+    changed = True
+    while changed:
+        changed = False
+        for addr in reversed(ordered_addresses):
+            used, defined = use_def[addr]
+            successor_live = {register for successor in successors[addr] for register in live_in.get(successor, set())}
+            next_live_out = successor_live & x86_regs
+            next_live_in = (used | _remove_killed_registers(next_live_out, defined)) & x86_regs
+            if live_out.get(addr) != next_live_out or live_in.get(addr) != next_live_in:
+                live_out[addr] = next_live_out
+                live_in[addr] = next_live_in
+                changed = True
 
     return live_in
 
