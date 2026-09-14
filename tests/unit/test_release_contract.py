@@ -1652,6 +1652,9 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         "runs-on: windows-latest" in windows_job
         and "test_platform_deeper.py -k pe_handler_checksum" in windows_job
         and "windows-format-differential.xml" in windows_job
+        and 'SelectNodes("//testcase")' in windows_job
+        and 'SelectNodes("//failure")' in windows_job
+        and 'SelectNodes("//skipped")' in windows_job
         and "cross-platform-differential-windows-pe" in windows_job
     )
 

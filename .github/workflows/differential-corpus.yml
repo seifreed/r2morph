@@ -795,12 +795,12 @@ jobs:
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
-          $cases = @($suite.testsuite.testcase)
+          $cases = @($suite.SelectNodes("//testcase"))
           if ($cases.Count -lt 1) { throw "Windows PE smoke ran no cases" }
-          if (@($suite.testsuite.testcase.failure).Count -gt 0 -or @($suite.testsuite.testcase.error).Count -gt 0) {
+          if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
-          if (@($suite.testsuite.testcase.skipped).Count -gt 0) { throw "Windows PE smoke contains skipped cases" }
+          if ($suite.SelectNodes("//skipped").Count -gt 0) { throw "Windows PE smoke contains skipped cases" }
 
       - name: Upload Windows PE differential evidence
         uses: actions/upload-artifact@v7
