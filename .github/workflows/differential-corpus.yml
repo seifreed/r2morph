@@ -560,7 +560,7 @@ jobs:
 
           validate_junit_reports("cross-format-reports", 10)
           validate_junit_reports("vm-semantic-reports", 55)
-          validate_junit_reports("composition-reports", 19)
+          validate_junit_reports("composition-reports", 31)
 
           expected_fuzz_targets = {
               "binary_parsers": 64,
