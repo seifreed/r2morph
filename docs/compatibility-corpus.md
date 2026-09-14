@@ -197,6 +197,16 @@ so unavailable analyzer slots cannot be mistaken for completed adversarial
 coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and passes without applications fail the run.
+The campaign now runs as four deterministic fixture shards. Each shard retains
+all analyzer slots, while the aggregate job merges the four reports, rejects
+overlapping samples, and applies the application and row-completeness gates to
+the full corpus. This keeps the evidence continuous without treating a
+per-shard omission as a corpus-wide pass.
+
+The scheduled differential workflow uses the same four-shard model across
+three seeds. Generated ELF fixtures are partitioned with repository fixtures,
+and the aggregate artifact rechecks that all twelve generated variants and all
+pass/fixture/seed rows are present before publishing the campaign evidence.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

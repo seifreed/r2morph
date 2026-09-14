@@ -48,7 +48,10 @@ review. It is not a feature roadmap and must not be read as a support claim.
   `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
   Exit criteria: every analyzer slot has completed comparable scheduled
   campaign rows, including Binary Ninja; unavailable rows remain blockers with
-  reasons until completed.
+  reasons until completed. The campaign is partitioned into four deterministic
+  fixture shards and merged before the corpus-wide gate runs; this addresses
+  campaign sustainability but does not close the Binary Ninja availability
+  blocker.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
   Evidence map: [protection-handler-clustering.json](protection-handler-clustering.json),
