@@ -186,6 +186,16 @@ class ExceptionInfoReader:
         self._frames: dict[int, ExceptionFrame] | None = None
         self._cies: dict[int, _CieInfo] = {}
         self._lsda_templates: dict[int, LsdaTemplate | None] = {}
+        self._read_error: str | None = None
+
+    @property
+    def read_error(self) -> str | None:
+        """Return a bounded diagnostic when unwind metadata could not be parsed."""
+        return self._read_error
+
+    def _mark_read_error(self, reason: str) -> None:
+        if self._read_error is None:
+            self._read_error = reason
 
     def read_exception_frames(self) -> dict[int, ExceptionFrame]:
         if self._frames is not None:
@@ -223,16 +233,22 @@ class ExceptionInfoReader:
             eh_frame_addr = _section_int(eh_frame_section, "addr", "virtual_address")
             eh_frame_size = _section_int(eh_frame_section, "size", "virtual_size")
 
-            if eh_frame_addr == 0 or eh_frame_size == 0:
+            if eh_frame_addr <= 0 or eh_frame_size <= 0:
+                self._mark_read_error("ELF .eh_frame section has invalid bounds")
                 return
 
             data = self.binary.read_bytes(eh_frame_addr, eh_frame_size)
             if not data:
+                self._mark_read_error("ELF .eh_frame section could not be read")
+                return
+            if len(data) < eh_frame_size:
+                self._mark_read_error("ELF .eh_frame section is truncated")
                 return
 
             self._parse_eh_frame(data, eh_frame_addr)
 
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            self._mark_read_error("ELF .eh_frame section could not be read")
             logger.debug("Failed to read ELF eh_frame: %s", exc)
 
     def _parse_eh_frame(self, data: bytes, base_addr: int) -> None:
@@ -241,42 +257,61 @@ class ExceptionInfoReader:
         while offset + 4 <= len(data):
             try:
                 entry_start = offset
-                length = struct.unpack_from("<I", data, offset)[0]
-                if length == 0:
+                layout = self._read_eh_frame_entry_layout(data, offset)
+                if layout is None:
                     break
-                if length == _EXTENDED_EH_FRAME_LENGTH:
-                    if offset + _DWARF64_LENGTH_FIELD_BYTES > len(data):
-                        break
-                    length = struct.unpack_from("<Q", data, offset + _EH_FRAME_LENGTH_FIELD_BYTES)[0]
-                    length_field_bytes = _DWARF64_LENGTH_FIELD_BYTES
-                    cie_id_bytes = _DWARF64_CIE_ID_BYTES
-                else:
-                    length_field_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
-                    cie_id_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
-                entry_end = offset + length_field_bytes + length
-                if entry_end > len(data) or length < cie_id_bytes:
+                entry_end, length_field_bytes, cie_id_bytes, cie_id = layout
+                if entry_end == 0:
                     break
                 content_start = offset + length_field_bytes
-                cie_id = int.from_bytes(data[content_start : content_start + cie_id_bytes], "little")
 
                 if cie_id == 0:
                     cie = self._parse_cie(data, content_start, cie_id_bytes, entry_end, base_addr)
                     if cie is not None:
                         self._cies[entry_start] = cie
+                    else:
+                        self._mark_read_error("ELF .eh_frame contains an invalid CIE")
                 else:
                     cie_start = content_start - cie_id
-                    self._parse_fde(
+                    cie = self._cies.get(cie_start)
+                    if cie is None:
+                        self._mark_read_error("ELF .eh_frame FDE references an unavailable CIE")
+                    elif not self._parse_fde(
                         data,
                         (entry_start, length_field_bytes),
                         entry_end,
                         base_addr,
-                        self._cies.get(cie_start),
-                    )
+                        cie,
+                    ):
+                        self._mark_read_error("ELF .eh_frame contains an invalid FDE")
                 offset = entry_end
 
             except (IndexError, struct.error, ValueError) as exc:
+                self._mark_read_error("ELF .eh_frame contains an invalid entry")
                 logger.debug("Failed to parse eh_frame entry at offset %d: %s", offset, exc)
                 break
+
+    def _read_eh_frame_entry_layout(self, data: bytes, offset: int) -> tuple[int, int, int, int] | None:
+        """Return bounded entry layout, or mark a malformed length and stop."""
+        length = struct.unpack_from("<I", data, offset)[0]
+        if length == 0:
+            return 0, 0, 0, 0
+        if length == _EXTENDED_EH_FRAME_LENGTH:
+            if offset + _DWARF64_LENGTH_FIELD_BYTES > len(data):
+                self._mark_read_error("ELF .eh_frame has a truncated DWARF64 length")
+                return None
+            length = struct.unpack_from("<Q", data, offset + _EH_FRAME_LENGTH_FIELD_BYTES)[0]
+            length_field_bytes = _DWARF64_LENGTH_FIELD_BYTES
+            cie_id_bytes = _DWARF64_CIE_ID_BYTES
+        else:
+            length_field_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
+            cie_id_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
+        if length < cie_id_bytes or offset + length_field_bytes + length > len(data):
+            self._mark_read_error("ELF .eh_frame contains an invalid entry length")
+            return None
+        content_start = offset + length_field_bytes
+        cie_id = int.from_bytes(data[content_start : content_start + cie_id_bytes], "little")
+        return offset + length_field_bytes + length, length_field_bytes, cie_id_bytes, cie_id
 
     def _parse_cie(
         self,
@@ -386,7 +421,7 @@ class ExceptionInfoReader:
         entry_end: int,
         base_addr: int,
         cie: _CieInfo | None,
-    ) -> None:
+    ) -> bool:
         """Parse an FDE, including its augmentation pointer to an ELF LSDA."""
         pointer_size = self._pointer_size()
         cie_info = cie or _CieInfo()
@@ -403,7 +438,7 @@ class ExceptionInfoReader:
             _EncodedPointerContext(entry_end, pointer_size, base_addr + cursor),
         )
         if initial is None:
-            return
+            return False
         pc_begin, cursor = initial
         range_encoding = cie_info.pointer_encoding & 0x0F
         pc_range_result = _read_encoded_pointer(
@@ -413,17 +448,17 @@ class ExceptionInfoReader:
             _EncodedPointerContext(entry_end, pointer_size, base_addr + cursor),
         )
         if pc_range_result is None:
-            return
+            return False
         pc_range, cursor = pc_range_result
         lsda_address: int | None = None
         if cie_info.has_z_augmentation:
             augmentation_length = _read_uleb128(data, cursor, entry_end)
             if augmentation_length is None:
-                return
+                return False
             cursor = augmentation_length[1]
             augmentation_data_end = cursor + augmentation_length[0]
             if augmentation_data_end > entry_end:
-                return
+                return False
             if cie_info.lsda_encoding != _DW_EH_PE_OMIT and cursor < augmentation_data_end:
                 lsda_result = _read_encoded_pointer(
                     data,
@@ -434,7 +469,7 @@ class ExceptionInfoReader:
                 if lsda_result is not None:
                     lsda_address = self._normalize_section_address(lsda_result[0])
         if pc_begin <= 0 or pc_range <= 0 or self._frames is None:
-            return
+            return False
         frame = ExceptionFrame(
             function_start=pc_begin,
             function_end=pc_begin + pc_range,
@@ -444,6 +479,7 @@ class ExceptionInfoReader:
         if lsda_address is not None:
             self._parse_lsda(frame, lsda_address)
         self._frames[pc_begin] = frame
+        return True
 
     def _read_pe_exception_data(self) -> None:
         """Read exception frames from PE .pdata and .xdata sections."""

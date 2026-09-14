@@ -36,6 +36,7 @@ class _UnwindContext:
 
     unproven: bool
     frame: Any | None
+    reason: str | None = None
 
 
 def _normalise_loader_format(raw_format: object) -> str:
@@ -170,15 +171,17 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     return None
 
 
-def _read_exception_frames(binary: Any, unwind_section: str | None) -> dict[int, Any] | None:
-    """Parse unwind frames for every format recognized by the reader."""
+def _read_exception_frames(binary: Any, unwind_section: str | None) -> tuple[dict[int, Any] | None, str | None]:
+    """Parse unwind frames and preserve parser failures for fail-closed preflight."""
     if unwind_section is None or unwind_section == "unavailable":
-        return None
+        return None, None
     try:
-        return ExceptionInfoReader(binary).read_exception_frames()
+        reader = ExceptionInfoReader(binary)
+        frames = reader.read_exception_frames()
+        return frames, reader.read_error
     except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError) as exc:
         logger.debug("Failed to read exception frames: %s", exc)
-        return None
+        return None, f"failed to read {unwind_section} metadata"
 
 
 def _transform_unsupported_function(
@@ -256,7 +259,10 @@ def _transform_dispatch_function(
 
 def _preflight_rejection_diagnostic(unwind: _UnwindContext) -> tuple[str, str]:
     if unwind.unproven:
-        return "exceptions_and_unwinding", "unwind metadata could not be mapped to a complete function frame"
+        return (
+            "exceptions_and_unwinding",
+            unwind.reason or "unwind metadata could not be mapped to a complete function frame",
+        )
     return "ssa_liveness", "CFG, liveness, and SSA coverage was not proven for the function"
 
 
@@ -441,7 +447,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     unsupported_total = partial_total = 0
     executable_ranges = _executable_ranges(binary)
     unwind_section = _unwind_metadata_name(binary)
-    exception_frames = _read_exception_frames(binary, unwind_section)
+    exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 
     for func in _ordered_functions(binary):
         if virtualized >= pass_instance.max_functions:
@@ -497,8 +503,10 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     unwind_section,
                     int(func["addr"]),
                     exception_frames,
-                ),
+                )
+                or unwind_read_error is not None,
                 _exception_frame_for_function(int(func["addr"]), exception_frames),
+                unwind_read_error,
             ),
         )
         skipped += outcome["skipped"]

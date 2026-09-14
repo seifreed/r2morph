@@ -80,3 +80,11 @@ def test_incomplete_static_dataflow_reports_ssa_liveness_capability() -> None:
     capability, reason = _preflight_rejection_diagnostic(_UnwindContext(unproven=False, frame=None))
 
     expect(capability == "ssa_liveness" and "SSA" in reason and "liveness" in reason)
+
+
+def test_unwind_parse_error_preserves_precise_rejection_reason() -> None:
+    capability, reason = _preflight_rejection_diagnostic(
+        _UnwindContext(unproven=True, frame=None, reason="ELF .eh_frame contains an invalid entry length")
+    )
+
+    expect(capability == "exceptions_and_unwinding" and reason == "ELF .eh_frame contains an invalid entry length")

@@ -112,6 +112,12 @@ class _InMemoryDwarf64ExceptionBinary(_InMemoryElfExceptionBinary):
         self._eh_frame = self._build_dwarf64_eh_frame()
 
 
+class _InMemoryMalformedElfExceptionBinary(_InMemoryElfExceptionBinary):
+    def __init__(self) -> None:
+        super().__init__()
+        self._eh_frame = struct.pack("<I", len(self._eh_frame) + 16) + self._eh_frame[4:]
+
+
 class _InMemoryMachoExceptionBinary(_InMemoryElfExceptionBinary):
     def get_arch_info(self) -> dict[str, int | str]:
         return {"format": "Mach-O-64", "bits": 64}
@@ -240,9 +246,15 @@ def test_exception_reader_parses_macho_compressed_compact_unwind_function() -> N
 
 
 def test_virtualization_unwind_gate_reads_macho_compact_unwind_frames() -> None:
-    frames = _read_exception_frames(
+    frames, read_error = _read_exception_frames(
         _InMemoryMachoCompactUnwindBinary(_MACHO_REGULAR_PAGE_KIND),
         "__unwind_info",
     )
 
-    expect(frames is not None and _FUNCTION_ADDRESS in frames)
+    expect(read_error is None and frames is not None and _FUNCTION_ADDRESS in frames)
+
+
+def test_virtualization_unwind_gate_rejects_malformed_elf_metadata() -> None:
+    frames, read_error = _read_exception_frames(_InMemoryMalformedElfExceptionBinary(), ".eh_frame")
+
+    expect(frames == {} and read_error == "ELF .eh_frame contains an invalid entry length")
