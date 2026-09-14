@@ -26,6 +26,8 @@ _EXPECTED_LEN_INSTRUCTIONS_2 = 2
 _EXPECTED_LEN_INSTRUCTIONS_3 = 3
 _EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2 = 2
 _EXPECTED_LIVE_IN_4096 = 0x1000
+_EXPECTED_SECTION_ADDRESS = 0x4000
+_EXPECTED_SECTION_SIZE = 6
 _EXPECTED_P_MAX_IMPORTS_50 = 50
 _EXPECTED_P_MAX_MUTATIONS_10 = 10
 _EXPECTED_P_MAX_MUTATIONS_5 = 5
@@ -54,6 +56,32 @@ class _Binary:
 
     def assemble(self, _instruction: str) -> bytes:
         return self.assembled
+
+
+class _SectionBinary:
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _EXPECTED_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
+            return b"hello\x00"
+        return b""
+
+
+class _InstructionBinary:
+    def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+        return [
+            {"offset": 0x1000, "size": 3, "disasm": "mov rdi, rsi"},
+            {"offset": 0x1003, "size": 1, "disasm": "ret"},
+        ]
+
+
+class _ImportR2:
+    def cmdj(self, command: str) -> list[dict[str, object]]:
+        if command == "iij":
+            return [{"name": "malloc", "plt": 0x401030, "type": "FUNC"}]
+        return []
+
+
+class _ImportBinary:
+    r2 = _ImportR2()
 
 
 class TestDataFlowMutationPass:
@@ -121,6 +149,11 @@ class TestDataFlowMutationPass:
         expect(not (p._is_register_safe_to_use("rax", 0x1000, live_in, caller_saved)))
         expect(not (p._is_register_safe_to_use("rbx", 0x1000, live_in, caller_saved)))
 
+    def test_analyze_candidates_normalizes_offset_and_next_address(self):
+        candidates = DataFlowMutationPass()._analyze_candidates(_InstructionBinary(), {"addr": 0x1000}, "x86_64")
+
+        expect(candidates is not None and candidates[0][0]["addr"] == _EXPECTED_LIVE_IN_4096)
+
 
 class TestStringObfuscationPass:
     """Tests for StringObfuscationPass."""
@@ -134,6 +167,14 @@ class TestStringObfuscationPass:
         expect(p.max_strings == _EXPECTED_P_MAX_STRINGS_10)
         expect(p.encoding == "random")
         expect(p.min_length == _EXPECTED_P_MIN_LENGTH_4)
+
+    def test_find_strings_uses_virtual_section_fields(self):
+        strings = StringObfuscationPass()._find_strings(
+            _SectionBinary(),
+            {"name": ".rodata", "vaddr": _EXPECTED_SECTION_ADDRESS, "vsize": _EXPECTED_SECTION_SIZE},
+        )
+
+        expect(strings[0]["content"] == "hello")
 
     def test_encodings_list(self):
         """Test available encodings."""
@@ -225,6 +266,11 @@ class TestImportTableObfuscationPass:
         imports = p._get_imports_elf(_Binary())
 
         expect(imports == [])
+
+    def test_get_imports_elf_prefers_plt_import_entries(self):
+        imports = ImportTableObfuscationPass()._get_imports_elf(_ImportBinary())
+
+        expect(imports == [{"name": "malloc", "address": 0x401030, "type": "FUNC", "section": ""}])
 
 
 class TestConstantUnfoldingPass:

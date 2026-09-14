@@ -82,6 +82,25 @@ class ImportTableObfuscationPass(MutationPass):
             return self._get_imports_pe(binary)
         return []
 
+    @staticmethod
+    def _normalise_import_entries(
+        entries: list[dict[str, Any]], address_keys: tuple[str, ...], default_type: str
+    ) -> list[dict[str, Any]]:
+        imports = []
+        for entry in entries:
+            name = entry.get("name", "")
+            address = next((entry.get(key, 0) for key in address_keys if entry.get(key, 0)), 0)
+            if name and address:
+                imports.append(
+                    {
+                        "name": name,
+                        "address": address,
+                        "type": entry.get("type", default_type),
+                        "section": entry.get("section", ""),
+                    }
+                )
+        return imports
+
     def _get_imports_elf(self, binary: Any) -> list[dict[str, Any]]:
         """
         Get imports from ELF binary using relocations.
@@ -98,19 +117,12 @@ class ImportTableObfuscationPass(MutationPass):
             r2 = binary.r2
             if r2 is None:
                 return imports
+            import_info = r2.cmdj("iij") or []
+            imports = self._normalise_import_entries(import_info, ("plt", "vaddr", "addr"), "import")
+            if imports:
+                return imports
             relocs = r2.cmdj("irj") or []
-            for reloc in relocs:
-                name = reloc.get("name", "")
-                addr = reloc.get("addr", 0)
-                if name and addr:
-                    imports.append(
-                        {
-                            "name": name,
-                            "address": addr,
-                            "type": reloc.get("type", "unknown"),
-                            "section": reloc.get("section", ""),
-                        }
-                    )
+            imports = self._normalise_import_entries(relocs, ("addr",), "unknown")
         except Exception as e:
             logger.debug(f"Failed to get ELF relocations: {e}")
 

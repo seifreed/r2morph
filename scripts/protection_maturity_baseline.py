@@ -93,7 +93,7 @@ _GENERATED_UNREACHABLE_PADDING = r"""
 __asm__(
     ".section .text.r2morph_padding,\"ax\",@progbits\n"
     ".balign 16\n"
-    ".rept 64\n"
+    ".rept 512\n"
     "nop\n"
     ".endr\n"
     ".previous\n"
@@ -102,6 +102,48 @@ __asm__(
 _GENERATED_CORPUS_SOURCES = {
     "generated_branch": r"""
 #include <stdint.h>
+#include <stdlib.h>
+
+__attribute__((noinline)) static int call_probe(int value) {
+    void *buffer = malloc((size_t)(value & 15) + 1);
+    free(buffer);
+    return value + 1;
+}
+
+__asm__(
+    ".text\n"
+    ".globl short_jump_probe\n"
+    ".type short_jump_probe,@function\n"
+    "short_jump_probe:\n"
+    "mov %edi, %ecx\n"
+    "jrcxz 1f\n"
+    "mov $1, %eax\n"
+    ".rept 3\n"
+    "nop\n"
+    ".endr\n"
+    "ret\n"
+    "1:\n"
+    "xor %eax, %eax\n"
+    "ret\n"
+    ".size short_jump_probe, .-short_jump_probe\n"
+);
+
+__asm__(
+    ".text\n"
+    ".globl self_modify_probe\n"
+    ".type self_modify_probe,@function\n"
+    "self_modify_probe:\n"
+    "mov %edi, %eax\n"
+    "add $1, %eax\n"
+    "imul $3, %eax, %eax\n"
+    "nop\n"
+    "nop\n"
+    "ret\n"
+    ".size self_modify_probe, .-self_modify_probe\n"
+);
+
+extern int short_jump_probe(int value);
+extern int self_modify_probe(int value);
 
 __attribute__((noinline)) static int fold(int argc, char **argv) {
     uint32_t acc = (uint32_t)argc;
@@ -112,6 +154,9 @@ __attribute__((noinline)) static int fold(int argc, char **argv) {
             ++p;
         }
     }
+    acc += (uint32_t)call_probe((int)acc);
+    acc += (uint32_t)short_jump_probe((int)acc);
+    acc += (uint32_t)self_modify_probe((int)acc);
     switch (acc & 3) {
     case 0: return acc & 127;
     case 1: return (acc + 7) & 127;

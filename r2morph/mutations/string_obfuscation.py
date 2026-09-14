@@ -75,8 +75,8 @@ class StringObfuscationPass(MutationPass):
             List of string dictionaries with addr, size, and content
         """
         strings: list[dict[str, Any]] = []
-        addr = section.get("addr", 0)
-        size = section.get("size", 0)
+        addr = section.get("addr", section.get("vaddr", 0))
+        size = section.get("size", section.get("vsize", 0))
 
         if size == 0:
             return strings

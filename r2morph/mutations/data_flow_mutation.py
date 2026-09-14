@@ -85,10 +85,22 @@ class DataFlowMutationPass(MutationPass):
         self, binary: Any, function: dict[str, Any], arch: str
     ) -> list[tuple[dict[str, Any], str, str]] | None:
         try:
-            instructions = binary.get_function_disasm(function["addr"])
+            raw_instructions = binary.get_function_disasm(function["addr"])
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
             logger.debug(f"Failed to get disasm for {function.get('name')}: {error}")
             return None
+        instructions = []
+        for index, raw_instruction in enumerate(raw_instructions):
+            instruction = dict(raw_instruction)
+            address = instruction.get("addr", instruction.get("offset"))
+            if not isinstance(address, int):
+                continue
+            instruction["addr"] = address
+            if not isinstance(instruction.get("next_addr"), int):
+                next_instruction = raw_instructions[index + 1] if index + 1 < len(raw_instructions) else None
+                next_address = next_instruction.get("addr", next_instruction.get("offset")) if next_instruction else 0
+                instruction["next_addr"] = next_address if isinstance(next_address, int) else 0
+            instructions.append(instruction)
         live_in = self._analyze_function_liveness(instructions) if self.use_liveness else {}
         return self._find_safe_substitution_candidates(instructions, live_in, arch)
 
