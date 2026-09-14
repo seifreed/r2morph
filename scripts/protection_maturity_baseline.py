@@ -245,6 +245,7 @@ _METRIC_RUN_FIELDS = {
     "complete_evidence": ("complete_evidence_runs", "complete_evidence_missing_runs"),
 }
 _APPLIED_COUNT_FIELDS = (
+    "mutations_applied",
     "functions_virtualized",
     "mutations_applied",
     "total_injections",

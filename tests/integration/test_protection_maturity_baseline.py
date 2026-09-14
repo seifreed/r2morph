@@ -865,6 +865,12 @@ def test_transformation_evidence_accepts_short_jump_patch_counter() -> None:
     expect(evidence == {"pass_name": "short-jump-patching", "status": "applied", "total_patched": 1})
 
 
+def test_transformation_evidence_accepts_generic_mutation_counter() -> None:
+    evidence = _transformation_evidence("passed", {"mutations_applied": 1}, None, "ImportObfuscation")
+
+    expect(evidence == {"pass_name": "import-obfuscation", "status": "applied", "mutations_applied": 1})
+
+
 def test_diagnostic_counts_groups_capabilities_and_severities() -> None:
     diagnostics = [
         {"capability": "memory", "severity": "error"},
