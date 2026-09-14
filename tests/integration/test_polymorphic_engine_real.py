@@ -11,13 +11,38 @@ from r2morph import MorphEngine
 from r2morph.core.binary import Binary
 from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations import ConstantUnfoldingPass, InstructionSubstitutionPass, NopInsertionPass
+from r2morph.mutations.anti_disassembly import AntiDisassemblyPass
+from r2morph.mutations.api_hashing import APIHashingPass
+from r2morph.mutations.code_mobility import CodeMobilityPass
+from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
+from r2morph.mutations.function_outlining import FunctionOutliningPass
+from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
+from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.polymorphic_engine import PolymorphicEnginePass
+from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
+from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
+from r2morph.mutations.stack_strings import StackStringsPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
 _SEED = 20260913
 _EXPECTED_COMPOSED_PASSES = 2
+_EXTENDED_COMPOSITION_PASSES = (
+    ("AntiDisassembly", AntiDisassemblyPass),
+    ("APIHashing", APIHashingPass),
+    ("CodeMobility", CodeMobilityPass),
+    ("DataFlowMutation", DataFlowMutationPass),
+    ("FunctionOutlining", FunctionOutliningPass),
+    ("ImportObfuscation", ImportTableObfuscationPass),
+    ("OpaquePredicates", OpaquePredicatePass),
+    ("PolymorphicEngine", PolymorphicEnginePass),
+    ("SelfModifyingCode", SelfModifyingCodePass),
+    ("ShortJumpPatching", ShortJumpPatchingPass),
+    ("StackStrings", StackStringsPass),
+    ("StringObfuscation", StringObfuscationPass),
+)
 
 
 def _build_composition_pass(name: str, seed: int):
@@ -117,4 +142,29 @@ def test_composed_real_passes_preserve_exit_code(
         expect(second_result["status"] == "applied", result)
     else:
         expect(second_result.get("mutations_applied") == 0, result)
+    expect(emulate_exit_code(mutated) == baseline_exit_code, result)
+
+
+@pytest.mark.parametrize(
+    "pass_name,pass_type",
+    _EXTENDED_COMPOSITION_PASSES,
+    ids=[name for name, _ in _EXTENDED_COMPOSITION_PASSES],
+)
+def test_extended_passes_compose_after_nop_without_corrupting_fixture(
+    pass_name: str,
+    pass_type: type,
+    tmp_path: Path,
+) -> None:
+    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
+    mutated = tmp_path / f"elf_nop_{pass_name}.composed"
+    baseline_exit_code = emulate_exit_code(fixture)
+
+    with MorphEngine(config={"seed": _SEED}) as engine:
+        engine.load_binary(fixture).analyze()
+        engine.add_mutation(NopInsertionPass(config={"probability": 1.0, "max_nops_per_function": 2, "seed": _SEED}))
+        engine.add_mutation(pass_type(config={"probability": 1.0, "seed": _SEED}))
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=_SEED))
+        engine.save(mutated)
+
+    expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
     expect(emulate_exit_code(mutated) == baseline_exit_code, result)

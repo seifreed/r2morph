@@ -193,7 +193,7 @@ jobs:
 
           suite = ET.parse("composition-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 7:
+          if len(cases) < 19:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("composition smoke contains failures or errors")
@@ -206,6 +206,18 @@ jobs:
               "test_composed_real_passes_preserve_exit_code[constant_then_nop]",
               "test_composed_real_passes_preserve_exit_code[substitution_then_nop]",
               "test_composed_real_passes_preserve_exit_code[substitution_then_constant]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[AntiDisassembly]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[APIHashing]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[CodeMobility]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[DataFlowMutation]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[FunctionOutlining]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[ImportObfuscation]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[OpaquePredicates]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[PolymorphicEngine]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[SelfModifyingCode]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[ShortJumpPatching]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[StackStrings]",
+              "test_extended_passes_compose_after_nop_without_corrupting_fixture[StringObfuscation]",
           }
           if not required.issubset(names):
               raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")
@@ -535,7 +547,7 @@ jobs:
 
           validate_junit_reports("cross-format-reports", 10)
           validate_junit_reports("vm-semantic-reports", 55)
-          validate_junit_reports("composition-reports", 7)
+          validate_junit_reports("composition-reports", 19)
 
           expected_fuzz_targets = {
               "binary_parsers": 64,
