@@ -132,6 +132,7 @@ jobs:
           PY
 
       - name: Run VM resistance seed-diversity smoke
+        if: always()
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cp -R docs "$wheel_root"/
@@ -150,6 +151,7 @@ jobs:
             tests/unit/test_resistance_measurement_contract.py
 
       - name: Validate VM resistance seed-diversity evidence
+        if: always()
         run: |
           python - <<'PY'
           import json
