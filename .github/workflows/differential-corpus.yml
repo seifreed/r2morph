@@ -473,6 +473,41 @@ jobs:
           path: differential-reports
           merge-multiple: false
 
+      - name: Download secondary evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cross-format-differential-*
+          path: cross-format-reports
+          merge-multiple: false
+
+      - name: Download VM semantic evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vm-semantic-differential-*
+          path: vm-semantic-reports
+          merge-multiple: false
+
+      - name: Download composition evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: composition-differential-*
+          path: composition-reports
+          merge-multiple: false
+
+      - name: Download extended maturity evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: extended-maturity-passes-*
+          path: extended-maturity-reports
+          merge-multiple: false
+
+      - name: Download fuzz evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: differential-fuzz-smoke-*
+          path: fuzz-reports
+          merge-multiple: false
+
       - name: Merge and validate campaign evidence
         run: |
           python - <<'PY'
@@ -480,6 +515,69 @@ jobs:
           from pathlib import Path
 
           from scripts.protection_maturity_baseline import merge_maturity_reports
+
+          expected_shards = 12
+
+          def require_files(pattern: str, expected: int) -> list[Path]:
+              paths = sorted(Path(pattern.split("/*")[0]).glob("*/*"))
+              if len(paths) != expected:
+                  raise SystemExit(f"expected {expected} evidence files for {pattern}, found {len(paths)}")
+              return paths
+
+          def validate_junit_reports(pattern: str, minimum_cases: int, allow_skipped: bool = False) -> None:
+              import xml.etree.ElementTree as ET
+
+              for path in require_files(pattern, expected_shards):
+                  suite = ET.parse(path).getroot()
+                  if len(suite.findall(".//testcase")) < minimum_cases:
+                      raise SystemExit(f"evidence file has too few cases: {path}")
+                  if suite.findall(".//failure") or suite.findall(".//error"):
+                      raise SystemExit(f"evidence file has failures or errors: {path}")
+                  if not allow_skipped and suite.findall(".//skipped"):
+                      raise SystemExit(f"evidence file has skipped cases: {path}")
+
+          validate_junit_reports("cross-format-reports", 10)
+          validate_junit_reports("vm-semantic-reports", 55)
+          validate_junit_reports("composition-reports", 7)
+
+          expected_fuzz_targets = {
+              "binary_parsers": 64,
+              "vm_dispatcher": 64,
+              "relocations": 64,
+              "binary_rewriter": 64,
+          }
+          for path in require_files("fuzz-reports", expected_shards):
+              fuzz_report = json.loads(path.read_text(encoding="utf-8"))
+              if fuzz_report["failure_count"] != 0 or fuzz_report["target_runs"] != expected_fuzz_targets:
+                  raise SystemExit(f"fuzz evidence failed: {path}")
+
+          expected_extended_passes = {
+              "AntiDisassembly",
+              "APIHashing",
+              "CodeMobility",
+              "DataFlowMutation",
+              "FunctionOutlining",
+              "ImportObfuscation",
+              "OpaquePredicates",
+              "PolymorphicEngine",
+              "SelfModifyingCode",
+              "ShortJumpPatching",
+              "StackStrings",
+              "StringObfuscation",
+          }
+          for path in require_files("extended-maturity-reports", expected_shards):
+              maturity_report = json.loads(path.read_text(encoding="utf-8"))
+              maturity_summary = maturity_report["campaign_summary"]
+              if set(maturity_report["pass_names"]) != expected_extended_passes:
+                  raise SystemExit(f"extended maturity pass coverage drift: {path}")
+              if maturity_summary["passes_without_extended_applied_runs"]:
+                  raise SystemExit(f"extended maturity pass has no applied run: {path}")
+              if maturity_summary["extended_passes_with_error_runs"]:
+                  raise SystemExit(f"extended maturity pass has errors: {path}")
+              if maturity_summary["passes_with_behavioral_false_positives"]:
+                  raise SystemExit(f"extended maturity pass has false positives: {path}")
+              if maturity_summary["behavioral_validation_missing_observations_by_pass"]:
+                  raise SystemExit(f"extended maturity pass has missing observations: {path}")
 
           paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
           if len(paths) != 12:
