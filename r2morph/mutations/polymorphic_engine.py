@@ -434,11 +434,14 @@ class PolymorphicEnginePass(MutationPass):
             stats[f"{name}_count"] = len(mutations)
 
         stats.update(result.final_stats)
+        actual_mutation_count = len(self._records)
+        failed_transition_count = sum(1 for mutation in result.mutations_applied if not mutation.success)
         stats.update(
             {
-                "mutations_applied": len(result.mutations_applied),
-                "successful_mutations": sum(1 for m in result.mutations_applied if m.success),
-                "failed_mutations": sum(1 for m in result.mutations_applied if not m.success),
+                "transitions_applied": result.iterations,
+                "mutations_applied": actual_mutation_count,
+                "successful_mutations": actual_mutation_count,
+                "failed_mutations": failed_transition_count,
             }
         )
 

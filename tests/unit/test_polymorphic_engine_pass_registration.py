@@ -84,16 +84,15 @@ def test_disabled_mutation_is_not_registered_either() -> None:
     )
 
 
-def test_apply_attempts_the_first_transition_with_default_config() -> None:
+def test_apply_reports_dispatch_without_false_mutation_count() -> None:
     """End-to-end: with default config and a minimal Binary stand-in,
     ``apply`` must actually try to invoke the first transition's
     mutation. Pre-fix every iteration broke BEFORE invocation with
     ``"Mutation 'InstructionSubstitution' not registered"`` -- the
-    counters stayed at zero. Post-fix the mutation is dispatched
-    (``mutations_applied >= 1``); whether the dispatched mutation
-    completes against this minimal stand-in is out of scope -- the
-    contract this test pins is "the dispatcher reaches the mutation
-    object", not "the mutation tolerates an empty binary"."""
+    counters stayed at zero. The mutation is now dispatched, while this
+    minimal stand-in produces no records. The contract this test pins is
+    "the dispatcher reaches the mutation object" without counting a
+    transition as an applied mutation."""
 
     class _BinaryStandIn:
         """Bare-minimum Binary protocol surface so the engine can call
@@ -124,8 +123,13 @@ def test_apply_attempts_the_first_transition_with_default_config() -> None:
         f"transition -- mutations are likely unregistered; result={result!r}",
     )
     expect(
-        not (result["mutations_applied"] <= 0),
-        "PolymorphicEnginePass.apply() never reached the mutation " f"dispatcher; result={result!r}",
+        result["transitions_applied"] == result["iterations"],
+        f"transition count is not exposed consistently; result={result!r}",
+    )
+    expect(
+        result["mutations_applied"] == 0,
+        "PolymorphicEnginePass.apply() counted a transition without a "
+        f"MutationRecord as a mutation; result={result!r}",
     )
 
 
