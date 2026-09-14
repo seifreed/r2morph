@@ -57,6 +57,10 @@ class CaveFinder:
         logger.info(f"Searching for code caves (min size: {self.min_size})")
 
         self.caves = []
+        instruction_ranges = self._instruction_ranges()
+        if instruction_ranges is None:
+            logger.warning("Unable to validate executable instruction boundaries; refusing code caves")
+            return self.caves
 
         sections = self.binary.get_sections()
 
@@ -71,7 +75,13 @@ class CaveFinder:
 
             logger.debug(f"Scanning section {section_name} for caves")
 
-            caves = self._find_caves_in_range(section_addr, section_size, section_name, is_executable=True)
+            caves = self._find_caves_in_range(
+                section_addr,
+                section_size,
+                section_name,
+                is_executable=True,
+                instruction_ranges=instruction_ranges,
+            )
 
             self.caves.extend(caves)
 
@@ -81,8 +91,31 @@ class CaveFinder:
         logger.info(f"Found {len(self.caves)} code caves")
         return self.caves
 
+    def _instruction_ranges(self) -> tuple[tuple[int, int], ...] | None:
+        """Return sorted executable instruction ranges for cave validation."""
+        try:
+            ranges: list[tuple[int, int]] = []
+            for function in self.binary.get_functions():
+                function_address = function.get("offset", function.get("addr"))
+                if not isinstance(function_address, int):
+                    continue
+                for instruction in self.binary.get_function_disasm(function_address):
+                    address = instruction.get("addr", instruction.get("offset"))
+                    size = instruction.get("size")
+                    if isinstance(address, int) and isinstance(size, int) and size > 0:
+                        ranges.append((address, address + size))
+        except (BrokenPipeError, OSError, RuntimeError, ValueError) as error:
+            logger.warning("Failed to disassemble executable ranges for cave validation: %s", error)
+            return None
+        return tuple(sorted(set(ranges)))
+
     def _find_caves_in_range(
-        self, start_addr: int, size: int, section_name: str, is_executable: bool
+        self,
+        start_addr: int,
+        size: int,
+        section_name: str,
+        is_executable: bool,
+        instruction_ranges: tuple[tuple[int, int], ...] = (),
     ) -> list[CodeCave]:
         """
         Find caves in a specific address range.
@@ -147,7 +180,19 @@ class CaveFinder:
             )
             caves.append(cave)
 
-        return caves
+        return [cave for cave in caves if not self._overlaps_instruction(cave, instruction_ranges)]
+
+    @staticmethod
+    def _overlaps_instruction(cave: CodeCave, instruction_ranges: tuple[tuple[int, int], ...]) -> bool:
+        """Reject byte runs that begin or end inside an executable instruction."""
+        cave_end = cave.address + cave.size
+        for instruction_start, instruction_end in instruction_ranges:
+            if instruction_end <= cave.address:
+                continue
+            if instruction_start >= cave_end:
+                break
+            return True
+        return False
 
     def find_cave_for_size(self, needed_size: int) -> CodeCave | None:
         """

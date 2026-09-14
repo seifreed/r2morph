@@ -75,6 +75,21 @@ class TestCaveFinderReal:
                 expect(isinstance(cave, CodeCave))
                 expect(not (cave.size < _EXPECTED_CAVE_SIZE_32))
 
+    def test_find_caves_avoids_instruction_interior_bytes(self):
+        fixture = Path("fixtures/dataset/elf_cff_flagdead_x86_64")
+        if not fixture.exists():
+            pytest.skip("ELF control-flow fixture not available")
+
+        with Binary(fixture) as binary:
+            binary.analyze()
+            caves = CaveFinder(binary, min_size=5).find_caves()
+
+        instruction_start = 0x100A
+        instruction_end = 0x100F
+        expect(
+            not any(cave.address < instruction_end and cave.address + cave.size > instruction_start for cave in caves)
+        )
+
     def test_find_caves_with_min_size(self, ls_elf):
         """Test finding caves with minimum size."""
         if not ls_elf.exists():
