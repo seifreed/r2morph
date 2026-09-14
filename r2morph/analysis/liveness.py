@@ -13,6 +13,7 @@ import re
 from collections import deque
 from typing import Any
 
+from r2morph.analysis.abi_models import ABI_SPECS
 from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dataflow_models import Register
@@ -58,6 +59,11 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
     }
 )
 _READ_BOTH_OPERANDS_MNEMONICS = _READ_MODIFY_WRITE_MNEMONICS | {"cmp", "test"}
+_ABI_SPEC_ALIASES = {
+    "sysv_amd64": "x86_64_sysv",
+    "win64": "x86_64_windows",
+    "cdecl_32": "x86_32_linux",
+}
 logger = logging.getLogger(__name__)
 
 
@@ -278,6 +284,17 @@ class LivenessAnalysis:
 
         mnemonic = insn.get("type", "").lower()
         if mnemonic in ("jmp", "nop"):
+            return used
+
+        opcode = disasm.split(None, 1)[0]
+        if opcode == "ret":
+            abi_spec = ABI_SPECS.get(_ABI_SPEC_ALIASES.get(self._abi, self._abi))
+            if abi_spec is not None:
+                used.update(
+                    Register(register, _X86_REGISTER_BIT_SIZES[register])
+                    for register in abi_spec.return_regs
+                    if register in _X86_REGISTER_BIT_SIZES
+                )
             return used
 
         # call instructions implicitly use argument registers per ABI

@@ -622,6 +622,24 @@ class TestLivenessAnalysis:
 
         expect({"xmm0", "xmm15", "ymm0", "ymm15"} <= names)
 
+    def test_return_uses_sysv_abi_registers(self):
+        """A return keeps the SysV scalar result registers live."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "ret", "disasm": "ret"})
+        names = {register.name for register in used}
+
+        expect({"rax", "rdx"} <= names)
+
+    def test_return_uses_windows_abi_register(self):
+        """Windows x64 returns scalar results through RAX only."""
+        analyzer = LivenessAnalysis(create_simple_cfg(), abi="win64")
+
+        used = analyzer._extract_registers_used({"type": "ret", "disasm": "ret"})
+        names = {register.name for register in used}
+
+        expect(names == {"rax"})
+
     def test_to_dict(self):
         """Test to_dict method."""
         cfg = create_sequential_cfg()
