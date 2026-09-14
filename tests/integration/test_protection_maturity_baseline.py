@@ -22,6 +22,7 @@ from scripts.protection_maturity_baseline import (
     _behavioral_false_positive_metrics,
     _complete_evidence_error,
     _diagnostic_counts,
+    _measure_seed,
     _parse_pass_names,
     _render_multi_pass_result,
     _render_result,
@@ -34,6 +35,7 @@ from scripts.protection_maturity_baseline import (
     discover_executables,
     measure_fixture,
     merge_maturity_reports,
+    sha256,
 )
 from tests.conftest import _compile_elf_x86_64_binary
 from tests.integration.elf_emulator import emulate_exit_code
@@ -48,6 +50,7 @@ _NOP_FIXTURE = _DATASET / "elf_nop_x86_64"
 _PIE_FIXTURE = _DATASET / "elf_vm_pie_x86_64"
 _VARARGS_FIXTURE = _DATASET / "elf_vm_varargs_x86_64"
 _PACKED_INDEXED_FIXTURE = _DATASET / "elf_vm_fppackedidxnb_x86_64"
+_VEX_WORD_SHUFFLE_FIXTURE = _DATASET / "elf_vm_vex_word_shuffle_x86_64"
 _EXPECTED_PIE_EXIT_CODE = 73
 _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
@@ -239,6 +242,18 @@ def test_measure_fixture_omits_anti_disassembly_without_safe_code_cave(tmp_path:
             "reason": "no eligible function was transformed",
         }
     )
+
+
+def test_omitted_pass_preserves_fixture_without_re_serializing(tmp_path: Path) -> None:
+    run = _measure_seed(
+        _VEX_WORD_SHUFFLE_FIXTURE,
+        20260901,
+        tmp_path,
+        "SelfModifyingCode",
+    )
+
+    expect(run["transformation"]["status"] == "omitted")
+    expect(run["output_sha256"] == sha256(_VEX_WORD_SHUFFLE_FIXTURE))
 
 
 def test_measure_fixture_omits_data_flow_when_no_destination_is_dead(tmp_path: Path) -> None:

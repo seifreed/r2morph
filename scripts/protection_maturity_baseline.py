@@ -263,6 +263,8 @@ _APPLIED_COUNT_FIELDS = (
     "imports_hashed",
     "blocks_moved",
     "functions_outlined",
+    "functions_encrypted",
+    "chunks_relocated",
     "strings_transformed",
     "strings_obfuscated",
 )
@@ -608,8 +610,11 @@ def _measure_seed(
         binary.open()
         try:
             binary.analyze("aa")
-            stats = _build_mutation_pass(pass_name, seed).apply(binary)
-            binary.save()
+            mutation_pass = _build_mutation_pass(pass_name, seed)
+            stats = mutation_pass.apply(binary)
+            evidence = _transformation_evidence("passed", stats, pass_name=pass_name)
+            if evidence["status"] == "applied" or mutation_pass.get_records():
+                binary.save()
         finally:
             binary.close()
         status = "passed"

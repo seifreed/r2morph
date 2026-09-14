@@ -150,6 +150,36 @@ class SelfModifyingCodePass(MutationPass):
 
         return encryptable
 
+    @staticmethod
+    def _entry_patch_is_instruction_aligned(binary: Any, function_address: int) -> bool:
+        """Require the five-byte entry trampoline to end on an instruction boundary."""
+        try:
+            instructions = binary.get_function_disasm(function_address)
+        except (AttributeError, OSError, RuntimeError, ValueError):
+            return False
+        if not instructions:
+            return False
+
+        cursor = function_address
+        patch_end = function_address + _RELATIVE_JUMP_SIZE_BYTES
+        for instruction in instructions:
+            address = instruction.get("offset", instruction.get("addr"))
+            size = instruction.get("size")
+            if not isinstance(address, int) or not isinstance(size, int) or address != cursor or size < 1:
+                return False
+            cursor += size
+            if cursor == patch_end:
+                return True
+            if cursor > patch_end:
+                return False
+        return False
+
+    @classmethod
+    def _can_encrypt_function(cls, binary: Any, function_address: int, function_size: int) -> bool:
+        return function_size >= _MIN_ENCRYPTABLE_FUNCTION_SIZE_BYTES and cls._entry_patch_is_instruction_aligned(
+            binary, function_address
+        )
+
     def _build_xor_decrypt_stub(
         self,
         cave_addr: int,
@@ -312,7 +342,8 @@ class SelfModifyingCodePass(MutationPass):
             func_addr = func.get("addr", 0)
             func_size = func.get("size", 0)
 
-            if func_size < _MIN_ENCRYPTABLE_FUNCTION_SIZE_BYTES:
+            if not self._can_encrypt_function(binary, func_addr, func_size):
+                logger.debug("Skipping function at 0x%x: entry patch precondition is unproven", func_addr)
                 continue
 
             key = self._generate_key(size=1)
