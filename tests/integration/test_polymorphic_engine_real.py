@@ -26,7 +26,7 @@ from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
-_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
+_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
 _SEED = 20260913
 _EXPECTED_COMPOSED_PASSES = 2
 _EXTENDED_COMPOSITION_PASSES = (
@@ -73,6 +73,8 @@ def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(t
         and result["mutations_applied"] == result["successful_mutations"]
         and result["failed_mutations"] == 0
         and emulate_exit_code(mutated) == baseline_exit_code,
+        f"result={result!r}, baseline_exit_code={baseline_exit_code}, "
+        f"mutated_exit_code={emulate_exit_code(mutated)}",
     )
 
 
