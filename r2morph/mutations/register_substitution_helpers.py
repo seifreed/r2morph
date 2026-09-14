@@ -589,6 +589,11 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
         | implicit_operand_pins(instructions)
         | memory_operand_pins(instructions)
     )
+    if arch == "arm64" and any(_transfer_abi(insn.get("disasm", "").lower()) is not None for insn in instructions):
+        # Keep the complete AAPCS argument bank stable around calls. Static
+        # disassembly cannot prove that a caller-saved argument is dead across
+        # every indirect or compiler-generated transfer.
+        abi_regs |= _CALL_INPUT_REGISTERS_ARM
     if arch == "x64":
         abi_regs |= _function_live_in_registers(instructions)
     abi_bases = {_CANONICAL_REGISTER.get(register, register) for register in abi_regs}

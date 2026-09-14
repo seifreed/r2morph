@@ -83,6 +83,19 @@ def test_find_substitution_candidates_with_arm64_call_excludes_argument_register
     expect("x0" not in sources)
 
 
+def test_find_substitution_candidates_with_arm64_call_uses_non_argument_target() -> None:
+    instructions = [
+        {"disasm": "add w8, w0, 2"},
+        {"disasm": "bl sym.transform"},
+        {"disasm": "mov w0, w8"},
+        {"disasm": "ret"},
+    ]
+
+    candidates = find_substitution_candidates(instructions, "arm64")
+
+    expect(("w8", "w10") in candidates)
+
+
 def test_find_substitution_candidates_with_x64_call_excludes_argument_register() -> None:
     """rdi carries the first integer argument into a `call`; it must not be renamed."""
     with_call = [
