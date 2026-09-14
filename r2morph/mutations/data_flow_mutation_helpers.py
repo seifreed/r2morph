@@ -96,6 +96,9 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
         if "call" in disasm:
             used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
             defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
+        if disasm.startswith("syscall"):
+            used.update(["rax", "eax", "rdi", "rsi", "rdx", "r10", "r8", "r9"])
+            defined.update(["rax", "eax"])
 
         parts = disasm.replace(",", " ").replace("[", " [ ").replace("]", " ] ").split()
 

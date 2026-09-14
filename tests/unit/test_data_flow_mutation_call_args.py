@@ -81,3 +81,20 @@ def test_call_argument_register_never_used_as_substitute_target() -> None:
         "rdi holds the upcoming call argument; the candidate search must not "
         f"propose it as a substitute: {rdi_targets!r}",
     )
+
+
+def test_syscall_number_register_stays_live_until_syscall() -> None:
+    """The Linux x86-64 syscall ABI consumes eax/rax at the syscall site."""
+    pass_obj = DataFlowMutationPass()
+    instructions = [
+        {"addr": 0x1000, "next_addr": 0x1005, "disasm": "mov eax, 60"},
+        {"addr": 0x1005, "next_addr": 0, "disasm": "syscall"},
+    ]
+
+    live_in = pass_obj._analyze_function_liveness(instructions)
+    candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(
+        not candidates,
+        f"syscall number must not be rewritten before syscall: {candidates!r}",
+    )
