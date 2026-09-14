@@ -123,6 +123,11 @@ That run completed `angr`, radare2, objdump, and the custom analyzer across all
 remains an explicit unavailable-tool blocker; IDA, Ghidra, and Triton have
 separate corpus evidence, but the full comparable campaign scope remains a
 release blocker.
+The subsequent four-shard 22-pass campaign `34840471846` completed 3,542 pass
+rows and 31,878 analyzer rows with no pass or analyzer errors. It provides
+continuous applied-run and analyzer metrics for the declared corpus while
+retaining explicit gaps for ten passes without an applied fixture, 140 Unicorn
+ISA-capability rows, and unavailable Binary Ninja, IDA Pro, and Ghidra slots.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. SSA/liveness

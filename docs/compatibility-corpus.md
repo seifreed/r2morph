@@ -198,12 +198,22 @@ Single-fixture benchmark artifacts also expose `release_signoff_blockers` and
 so unavailable analyzer slots cannot be mistaken for completed adversarial
 coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
-so missing pass/tool rows and passes without applications fail the run.
+so missing pass/tool rows and missing applications for the ten contractual
+corpus passes fail the run; extended-pass application gaps remain published as
+explicit evidence blockers.
 The campaign now runs as four deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
 the full corpus. This keeps the evidence continuous without treating a
 per-shard omission as a corpus-wide pass.
+The authoritative 22-pass run `34840471846` completed all 3,542 pass rows and
+31,878 analyzer rows with zero missing or error rows. `angr`, radare2, objdump,
+Triton, and the custom analyzer completed their rows; Unicorn completed 3,402
+rows and reported 140 explicit ISA-capability gaps. Binary Ninja, IDA Pro, and
+Ghidra remained unavailable for all rows, and ten extended passes had no
+applied fixture in this corpus. The merged report SHA-256 is
+`aa70b786c77300f2a8bfba21fee1c39e5ad694190c25037b7619d79313c6ce89`; these
+unavailable, no-application, and partial-ISA rows remain release blockers.
 
 The scheduled differential workflow uses the same four-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,
