@@ -24,7 +24,9 @@ from r2morph.core.binary import Binary
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.elf_structs import PT_LOAD
 from scripts.protection_maturity_baseline import (
+    CORPUS_PASS_NAMES,
     DEFAULT_MUTATION_NAME,
+    EXTENDED_MATURITY_PASS_NAMES,
     _build_mutation_pass,
     _parse_pass_names,
     _select_fixture_shard,
@@ -52,6 +54,7 @@ _IDA_RESULT_SUFFIX = ".function-count"
 _PF_EXECUTE = 1
 _MAX_X86_INSTRUCTION_BYTES = 15
 _TRITON_INSTRUCTION_BUDGET = 50_000
+_ADVERSARIAL_ALL_PASS_NAMES = tuple(dict.fromkeys((*CORPUS_PASS_NAMES, *EXTENDED_MATURITY_PASS_NAMES)))
 
 
 class _ToolCapabilityUnavailableError(RuntimeError):
@@ -65,6 +68,12 @@ def _tool_failure_result(tool: str, error: Exception) -> dict[str, object]:
     if str(error):
         result["detail"] = str(error)
     return result
+
+
+def _parse_adversarial_pass_names(value: str) -> tuple[str, ...]:
+    if value.strip().lower() == "all":
+        return _ADVERSARIAL_ALL_PASS_NAMES
+    return _parse_pass_names(value)
 
 
 def _configured_executable(tool: str) -> str | None:
@@ -1090,7 +1099,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.fixture_shard_count > 1 and not args.all_fixtures:
         parser.error("fixture sharding requires --all")
     try:
-        pass_names = _parse_pass_names(args.passes)
+        pass_names = _parse_adversarial_pass_names(args.passes)
     except ValueError as error:
         parser.error(str(error))
     report = (

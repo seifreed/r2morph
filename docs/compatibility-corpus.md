@@ -52,9 +52,11 @@ bounded matrix record per sample/pass pair and an aggregate result for each
 pass. The scheduled workflow fails when a selected pass does not apply to at
 least one fixture, so an unchanged output cannot count as evidence for that
 pass. Pass summaries retain bounded omission/error reasons for comparable
-campaign triage. The harness also accepts explicit non-default pass names for
-expanded campaigns; `all` remains the ten-pass public corpus selection until
-those additional passes have comparable applied-run evidence.
+campaign triage. The public compatibility matrix remains the ten-pass corpus
+selection. The adversarial benchmark's `--passes all` selection now expands
+to all 22 declared corpus and extended maturity passes; the extended maturity
+smoke still supplies the per-pass runtime, size, duration, and static metric
+gate.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
 reported as unavailable rather than omitted.

@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 
 from scripts.adversarial_benchmark import (
+    _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
     _campaign_summary,
     _measure_tool,
     _missing_tool_slot_error,
+    _parse_adversarial_pass_names,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     _pass_result,
@@ -57,6 +59,16 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
     expect(
         len(tools) == _EXPECTED_TOOL_COUNT
         and {item["tool"] for item in tools} >= {"radare2", "angr", "binary-ninja", "unicorn", "triton"}
+    )
+
+
+def test_adversarial_all_pass_selection_covers_extended_maturity_passes() -> None:
+    selected = _parse_adversarial_pass_names("all")
+
+    expect(
+        len(selected) == len(_ADVERSARIAL_ALL_PASS_NAMES)
+        and "AntiDisassembly" in selected
+        and "StringObfuscation" in selected
     )
 
 
