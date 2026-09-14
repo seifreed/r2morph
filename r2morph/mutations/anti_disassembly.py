@@ -53,10 +53,10 @@ def _cave_is_unreferenced(binary: Any, address: int, size: int) -> bool:
     if callable(get_functions):
         try:
             for function in get_functions():
-                function_start = function.get("addr")
+                function_start = function.get("addr", function.get("offset"))
                 function_size = function.get("size")
                 if not isinstance(function_start, int) or not isinstance(function_size, int) or function_size <= 0:
-                    continue
+                    return False
                 if function_start < address + size and address < function_start + function_size:
                     return False
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
