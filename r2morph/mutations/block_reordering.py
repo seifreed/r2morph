@@ -66,6 +66,33 @@ class BlockReorderingPass(MutationPass):
     def _calculate_jump_cost(self, original_order: list[int], new_order: list[int]) -> int:
         return calculate_jump_cost(original_order, new_order)
 
+    def _representative_instruction(
+        self, binary: Any, blocks: list[dict[str, Any]]
+    ) -> tuple[int, int, bytes, str] | None:
+        """Capture one instruction for the relocation evidence record."""
+        evidence = None
+        if blocks:
+            first_block = min(blocks, key=lambda block: int(block["addr"]))
+            instructions = binary.r2.cmdj(f"pdbj @ 0x{int(first_block['addr']):x}")
+            if isinstance(instructions, list) and instructions and isinstance(instruction := instructions[0], dict):
+                address = instruction.get("addr")
+                size = instruction.get("size")
+                disassembly = instruction.get("disasm")
+                raw_bytes = instruction.get("bytes")
+                if (
+                    isinstance(address, int)
+                    and isinstance(size, int)
+                    and size > 0
+                    and isinstance(disassembly, str)
+                    and bool(disassembly)
+                    and isinstance(raw_bytes, str)
+                ):
+                    try:
+                        evidence = address, size, bytes.fromhex(raw_bytes), disassembly
+                    except ValueError:
+                        evidence = None
+        return evidence
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply block reordering mutations to the binary.
@@ -110,10 +137,25 @@ class BlockReorderingPass(MutationPass):
             if random.random() > self.probability:
                 continue
 
+            evidence = self._representative_instruction(binary, blocks)
             blocks_reordered = reorder_function_blocks(binary, func, blocks, random)
             if blocks_reordered:
                 functions_mutated += 1
                 total_blocks_reordered += blocks_reordered
+                if evidence is not None:
+                    address, size, original_bytes, disassembly = evidence
+                    mutated_bytes = binary.read_bytes(address, size)
+                    self._record_mutation(
+                        function_address=int(func["addr"]),
+                        start_address=address,
+                        end_address=address + size - 1,
+                        original_bytes=original_bytes,
+                        mutated_bytes=mutated_bytes or original_bytes,
+                        original_disasm=disassembly,
+                        mutated_disasm=disassembly,
+                        mutation_kind="basic_block_reordering",
+                        metadata={"blocks_reordered": blocks_reordered},
+                    )
 
         logger.info(
             f"Block reordering complete: {functions_mutated} functions reordered, "

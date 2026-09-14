@@ -229,12 +229,16 @@ class PolymorphicEngine:
             logger.info(f"Iteration {iteration}: Applying {mutation_name}")
 
             try:
-                mutation_stats = mutation.apply(binary)
+                mutation_stats = mutation.run(binary)
+                recorded_mutations = mutation_stats.get("mutations")
+                has_recorded_mutations = isinstance(recorded_mutations, list) and bool(recorded_mutations)
+                has_numeric_mutations = any(
+                    isinstance(mutation_stats.get(field), int) and mutation_stats[field] > 0
+                    for field in ("mutations_applied", "functions_mutated")
+                )
 
                 if not mutation_stats or (
-                    isinstance(mutation_stats, dict)
-                    and mutation_stats.get("mutations", 0) == 0
-                    and mutation_stats.get("functions_mutated", 0) == 0
+                    isinstance(mutation_stats, dict) and not has_recorded_mutations and not has_numeric_mutations
                 ):
                     consecutive_empty += 1
                     if consecutive_empty >= max_consecutive_empty:
@@ -251,6 +255,7 @@ class PolymorphicEngine:
                     state_after=transition.to_state,
                     success=True,
                     stats=mutation_stats,
+                    records=list(mutation.get_records()),
                 )
                 mutations_applied.append(mutation_result)
 
@@ -399,9 +404,18 @@ class PolymorphicEnginePass(MutationPass):
             Statistics from engine run
         """
         self._reset_random()
+        self._records.clear()
         logger.info("Starting polymorphic engine")
 
         result = self.engine.run(binary, max_iterations=self.max_iterations)
+
+        seen_records: set[int] = set()
+        for mutation_result in result.mutations_applied:
+            for record in mutation_result.records:
+                record_id = id(record)
+                if record_id not in seen_records:
+                    self._records.append(record)
+                    seen_records.add(record_id)
 
         mutations_by_name: dict[str, list[MutationResult]] = {}
         for m in result.mutations_applied:

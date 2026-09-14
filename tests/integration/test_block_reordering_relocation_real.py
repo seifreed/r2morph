@@ -152,6 +152,22 @@ def test_reorder_preserves_function_byte_budget(tmp_path: Path) -> None:
         binary.close()
 
 
+def test_reorder_records_affected_instruction_evidence(tmp_path: Path) -> None:
+    if not _JUMPCHAIN.exists():
+        pytest.skip("jump-chain fixture not available")
+    temp = tmp_path / "recorded-reorder"
+    shutil.copy(_JUMPCHAIN, temp)
+    pass_obj = BlockReorderingPass(config={"probability": 1.0, "seed": 0, "max_functions": 2})
+    with Binary(temp, writable=True) as binary:
+        binary.analyze()
+        result = pass_obj.apply(binary)
+
+    expect(
+        not (result["functions_mutated"] > 0) or len(pass_obj.get_records()) > 0,
+        f"reordering evidence missing: result={result!r}",
+    )
+
+
 def test_block_reordering_skips_rip_relative_variadic_function_without_corruption(tmp_path: Path) -> None:
     if not supports_native_elf_x86_64() or not shutil.which("cc"):
         pytest.skip("native Linux amd64 compiler and execution are required")

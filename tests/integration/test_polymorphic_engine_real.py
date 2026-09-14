@@ -61,17 +61,18 @@ def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(t
     mutated = tmp_path / "elf_vm_arith_polymorphic"
     shutil.copyfile(_FIXTURE, mutated)
     baseline_exit_code = emulate_exit_code(_FIXTURE)
+    polymorphic_pass = PolymorphicEnginePass(config={"seed": _SEED, "max_iterations": 10})
 
     with Binary(mutated, writable=True) as binary:
         binary.analyze("aa")
-        result = PolymorphicEnginePass(config={"seed": _SEED, "max_iterations": 10}).apply(binary)
+        result = polymorphic_pass.apply(binary)
         binary.save()
 
     expect(
         result["mutations_applied"] > 0
         and result["mutations_applied"] == result["successful_mutations"]
         and result["failed_mutations"] == 0
-        and emulate_exit_code(mutated) == baseline_exit_code
+        and emulate_exit_code(mutated) == baseline_exit_code,
     )
 
 

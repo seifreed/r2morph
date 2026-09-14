@@ -22,7 +22,9 @@ inspects the engine state ``_setup_engine`` built.
 
 from __future__ import annotations
 
-from r2morph.mutations.polymorphic_engine import PolymorphicEnginePass
+from r2morph.mutations.base import MutationPass
+from r2morph.mutations.polymorphic_engine import PolymorphicEngine, PolymorphicEnginePass
+from r2morph.mutations.polymorphic_engine_models import EngineState
 from tests.utils.assertions import expect
 
 
@@ -125,3 +127,31 @@ def test_apply_attempts_the_first_transition_with_default_config() -> None:
         not (result["mutations_applied"] <= 0),
         "PolymorphicEnginePass.apply() never reached the mutation " f"dispatcher; result={result!r}",
     )
+
+
+class _RecordingPass(MutationPass):
+    def __init__(self) -> None:
+        super().__init__(name="RecordingPass")
+
+    def apply(self, binary: object) -> dict[str, object]:
+        self._record_mutation(
+            function_address=None,
+            start_address=0x1000,
+            end_address=0x1001,
+            original_bytes=b"\x90",
+            mutated_bytes=b"\x91",
+            original_disasm="nop",
+            mutated_disasm="xchg eax, ecx",
+            mutation_kind="test_substitution",
+        )
+        return {"mutations_applied": 1}
+
+
+def test_engine_result_preserves_child_mutation_records() -> None:
+    engine = PolymorphicEngine(seed=20260914)
+    engine.add_mutation("RecordingPass", _RecordingPass())
+    engine.add_transition(EngineState.INIT, EngineState.FINAL, "RecordingPass")
+
+    result = engine.run(object(), max_iterations=1)
+
+    expect(len(result.mutations_applied[0].records) == 1)

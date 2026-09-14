@@ -46,6 +46,7 @@ class MutationResult:
     success: bool
     stats: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+    records: list[Any] = field(default_factory=list)
 
 
 @dataclass
