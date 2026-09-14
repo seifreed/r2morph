@@ -146,8 +146,8 @@ its `fixture_shard` index and count in `corpus_scope`; shard reports are not
 merged into a false single-run success. Validation includes the Linux ELF
 x86-64 platform scope,
 `fixtures/dataset` corpus scope, generated corpus family coverage across branch,
-memory, and lookup-table fixtures compiled with GCC `-O0`, GCC `-O2`, GCC PIE
-`-O2`, and Clang `-O2`, generated argv input coverage,
+extended, memory, and lookup-table fixtures compiled with GCC `-O0`, GCC `-O2`,
+GCC PIE `-O2`, and Clang `-O2`, generated argv input coverage,
 the PE/Mach-O and ARM/AArch64/x86 platform gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`

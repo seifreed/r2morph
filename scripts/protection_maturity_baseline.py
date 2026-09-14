@@ -203,9 +203,48 @@ __attribute__((noinline)) static int lookup_mix(int argc) {
     return (int)(acc & 127u);
 }
 
+    int main(int argc, char **argv) {
+        (void)argv;
+        return lookup_mix(argc);
+    }
+""",
+    "generated_extended": r"""
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+static const char extended_anchor[] = "r2morph extended maturity corpus anchor";
+
+__attribute__((noinline)) static int straight_line(int value) {
+    uint32_t state = (uint32_t)value + 0x13579bdfu;
+    state ^= 0xa5a5a5a5u;
+    state = (state << 7) | (state >> 25);
+    state += 0x2468ace0u;
+    state ^= state >> 11;
+    state = (state << 3) | (state >> 29);
+    return (int)(state & 127u);
+}
+
+__attribute__((noinline)) static int branch_and_memory(const char *input, int count) {
+    uint32_t state = (uint32_t)count;
+    for (int index = 0; index < count; ++index) {
+        state ^= (uint32_t)(unsigned char)input[index] << ((index & 3) * 8);
+        state = state * 33u + (uint32_t)index;
+    }
+    return (int)(state & 127u);
+}
+
 int main(int argc, char **argv) {
-    (void)argv;
-    return lookup_mix(argc);
+    const char *input = argc > 1 ? argv[1] : extended_anchor;
+    size_t length = strlen(input);
+    char *copy = malloc(length + 1);
+    if (copy == NULL) {
+        return 127;
+    }
+    memcpy(copy, input, length + 1);
+    int result = straight_line((int)length) + branch_and_memory(copy, (int)length);
+    free(copy);
+    return (result + (int)strlen(extended_anchor)) & 127;
 }
 """,
 }
