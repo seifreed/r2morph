@@ -12,6 +12,7 @@ from typing import Any
 from r2morph.core.constants import ARCH_BITS_64
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.register_substitution_helpers import (
+    _has_unbased_memory_operand,
     count_register_uses,
     find_substitution_candidates,
     get_register_class,
@@ -143,7 +144,7 @@ class RegisterSubstitutionPass(MutationPass):
 
     def _substituted_disasm(self, instruction: dict[str, Any], original: str, substitute: str) -> str | None:
         disasm = str(instruction.get("disasm", "")).lower()
-        if original not in disasm:
+        if original not in disasm or _has_unbased_memory_operand(disasm):
             return None
         mnemonic = disasm.split()[0] if disasm else ""
         if mnemonic in _UNSAFE_MNEMONICS:

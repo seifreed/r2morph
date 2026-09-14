@@ -46,3 +46,6 @@ def test_register_substitution_helpers():
     # LEA substitution safety
     expect(not (pass_obj._is_safe_lea_substitution("lea rax, [rbx + rcx*4]", "rax", "r10") is not True))
     expect(not (pass_obj._is_safe_lea_substitution("lea rax, [rbx + rcx*4]", "rbx", "r10") is not False))
+
+    # Absolute-looking memory operands may be RIP-relative in x86-64 encoding.
+    expect(pass_obj._substituted_disasm({"disasm": "mov rax, qword [0x402010]"}, "rax", "r10") is None)

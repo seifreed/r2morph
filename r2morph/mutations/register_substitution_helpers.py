@@ -362,6 +362,12 @@ def _register_bases(instructions: list[dict[str, Any]]) -> set[str]:
     return bases
 
 
+def _has_unbased_memory_operand(disasm: str) -> bool:
+    """Reject memory operands whose PC-relative base may be hidden by the disassembler."""
+    operands = re.findall(r"\[([^]]*)\]", disasm)
+    return any(not _register_tokens(operand) for operand in operands)
+
+
 def _register_size(register: str) -> int:
     if register.startswith("w") and register[1:].isdigit():
         return ARCH_BITS_32
