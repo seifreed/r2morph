@@ -354,7 +354,7 @@ jobs:
             --all \
             --dataset fixtures/dataset \
             --passes "$EXTENDED_MATURITY_PASSES" \
-            --first-seed 20260901 \
+            --first-seed "${{ matrix.seed }}" \
             --count 1 \
             --generated-inputs \
             --generated-corpus \
