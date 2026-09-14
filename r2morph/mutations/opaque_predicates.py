@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import r2morph.core.randomness as random
@@ -170,21 +171,48 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Assembled bytes or None on failure
         """
-        assembled = b""
-        current_addr = addr
+        label_pattern = re.compile(r"^(?P<mnemonic>j[a-z]+)\s+\.(?P<label>[A-Za-z_][A-Za-z0-9_]*)$")
+        sizes: dict[int, int] = {}
+        labels: dict[str, int] = {}
 
+        for _ in range(3):
+            labels = {}
+            current_addr = addr
+            for index, insn in enumerate(instructions):
+                label = insn.removesuffix(":")
+                if insn.startswith("."):
+                    labels[label[1:]] = current_addr
+                    continue
+                match = label_pattern.match(insn)
+                assembly = insn
+                if match:
+                    target = labels.get(match.group("label"), current_addr + sizes.get(index, 2))
+                    assembly = f"{match.group('mnemonic')} 0x{target:x}"
+                insn_bytes = binary.assemble(assembly, current_addr)
+                if insn_bytes is None:
+                    return None
+                sizes[index] = len(insn_bytes)
+                current_addr += len(insn_bytes)
+
+        assembled = bytearray()
+        current_addr = addr
         for insn in instructions:
             if insn.startswith("."):
                 continue
-
-            insn_bytes = binary.assemble(insn, current_addr)
+            match = label_pattern.match(insn)
+            assembly = insn
+            if match:
+                target = labels.get(match.group("label"))
+                if target is None:
+                    return None
+                assembly = f"{match.group('mnemonic')} 0x{target:x}"
+            insn_bytes = binary.assemble(assembly, current_addr)
             if insn_bytes is None:
                 return None
-
-            assembled += insn_bytes
+            assembled.extend(insn_bytes)
             current_addr += len(insn_bytes)
 
-        return assembled if assembled else None
+        return bytes(assembled) if assembled else None
 
     def _generate_predicate(self, binary: Any, predicate_type: str) -> list[str]:
         """

@@ -64,15 +64,32 @@ class ImportTableObfuscationPass(MutationPass):
 
     def _get_binary_format(self, binary: Any) -> str:
         """Detect binary format (ELF, PE, etc.)."""
-        arch_info = binary.get_arch_info()
-        bin_type = str(arch_info.get("type", "")).upper()
-        if "ELF" in bin_type:
-            return "ELF"
-        elif "PE" in bin_type or "COFF" in bin_type:
-            return "PE"
-        elif "MACH" in bin_type:
-            return "Mach-O"
-        return bin_type
+        candidates: list[object] = []
+        try:
+            arch_info = binary.get_arch_info()
+        except (AttributeError, RuntimeError, TypeError):
+            arch_info = {}
+        if isinstance(arch_info, dict):
+            candidates.extend(arch_info.get(key) for key in ("format", "type", "machine"))
+
+        info = getattr(binary, "info", {})
+        if isinstance(info, dict):
+            core_info = info.get("core")
+            bin_info = info.get("bin")
+            if isinstance(core_info, dict):
+                candidates.append(core_info.get("format"))
+            if isinstance(bin_info, dict):
+                candidates.extend(bin_info.get(key) for key in ("class", "bintype", "type"))
+
+        for candidate in candidates:
+            value = str(candidate or "").upper()
+            if "ELF" in value:
+                return "ELF"
+            if "PE" in value or "COFF" in value:
+                return "PE"
+            if "MACH" in value:
+                return "Mach-O"
+        return ""
 
     def _get_imports(self, binary: Any, binary_format: str) -> list[dict[str, Any]]:
         """Get imports based on binary format."""

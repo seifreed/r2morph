@@ -3,6 +3,8 @@ Tests for new mutation passes: DataFlow, StringObfuscation, ImportObfuscation,
 ConstantUnfolding, and ParallelExecutor.
 """
 
+from typing import ClassVar
+
 from r2morph.core.reader import BinaryReader
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
@@ -114,6 +116,13 @@ class _XrefReader:
 
 class _ImportBinary:
     r2 = _ImportR2()
+
+
+class _FormatBinary:
+    info: ClassVar[dict[str, dict[str, str]]] = {"bin": {"class": "ELF64"}}
+
+    def get_arch_info(self) -> dict[str, object]:
+        return {"format": "ELF64", "arch": "x86_64", "bits": 64}
 
 
 def test_binary_reader_get_xrefs_to_returns_target_references() -> None:
@@ -309,6 +318,11 @@ class TestImportTableObfuscationPass:
         expect(not ("ELF" not in support.formats))
         expect(not ("PE" not in support.formats))
         expect(support.stability == "experimental")
+
+    def test_get_binary_format_uses_loader_format(self):
+        binary_format = ImportTableObfuscationPass()._get_binary_format(_FormatBinary())
+
+        expect(binary_format == "ELF")
 
     def test_get_imports_elf_empty(self):
         """Test ELF import extraction with empty result."""

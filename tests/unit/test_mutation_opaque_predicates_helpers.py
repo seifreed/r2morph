@@ -7,6 +7,15 @@ from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from tests.utils.assertions import expect
 
 
+class _PredicateAssembler:
+    def __init__(self) -> None:
+        self.instructions: list[str] = []
+
+    def assemble(self, instruction: str, _address: int | None = None) -> bytes:
+        self.instructions.append(instruction)
+        return b"\x74\x00" if instruction.startswith(("jz ", "jnz ", "je ", "jne ")) else b"\x90"
+
+
 def test_opaque_predicate_generators():
     pass_obj = OpaquePredicatePass()
     x86_pred = pass_obj._generate_x86_predicate("always_true", 64)
@@ -16,6 +25,20 @@ def test_opaque_predicate_generators():
     expect(isinstance(arm_pred, list))
     expect(x86_pred)
     expect(arm_pred)
+
+
+def test_opaque_predicate_assembles_local_labels_as_absolute_targets():
+    assembler = _PredicateAssembler()
+    pass_obj = OpaquePredicatePass()
+
+    assembled = pass_obj._assemble_predicate(
+        assembler,
+        ["xor rax, rax", "test rax, rax", "jz .real_code", ".real_code:"],
+        0x1000,
+    )
+
+    expect(assembled == b"\x90\x90\x74\x00")
+    expect(all(".real_code" not in instruction for instruction in assembler.instructions))
 
 
 def test_opaque_predicate_apply_real_binary(tmp_path: Path):
