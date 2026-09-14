@@ -1417,6 +1417,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "workflow_dispatch:" in differential
         and "cron:" in differential
         and "Build and install package wheel" in adversarial
+        and "sudo apt-get install -y git build-essential clang" in adversarial
         and "Build and install package wheel" in differential
         and "python -m build" in adversarial
         and "python -m build" in differential
@@ -1434,6 +1435,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and '--output "$GITHUB_WORKSPACE/differential-corpus.json"' in differential
         and '--output "$GITHUB_WORKSPACE/extended-maturity-passes.json"' in differential
         and "--passes all" in adversarial
+        and "--generated-corpus" in adversarial
         and "--require-tool-slots" in adversarial
         and "Validate adversarial campaign summary" in adversarial
         and "expected_tools" in adversarial
@@ -1448,6 +1450,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "completed_tool_runs_by_tool" in adversarial
         and "unavailable_tool_runs_by_tool" in adversarial
         and "unavailable_reasons_by_tool" in adversarial
+        and "generated_fixture_count" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
         and "Run VM resistance seed-diversity smoke" in adversarial
