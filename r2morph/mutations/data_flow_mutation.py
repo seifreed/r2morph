@@ -102,8 +102,21 @@ class DataFlowMutationPass(MutationPass):
                 next_address = next_instruction.get("addr", next_instruction.get("offset")) if next_instruction else 0
                 instruction["next_addr"] = next_address if isinstance(next_address, int) else 0
             instructions.append(instruction)
+        if any(self._has_external_abi_boundary(instruction) for instruction in instructions):
+            return []
         live_in = self._analyze_function_liveness(instructions) if self.use_liveness else {}
         return self._find_safe_substitution_candidates(instructions, live_in, arch)
+
+    @staticmethod
+    def _has_external_abi_boundary(instruction: dict[str, Any]) -> bool:
+        """Reject functions whose call ABI is outside this pass's proof model."""
+        instruction_type = str(instruction.get("type", "")).lower()
+        mnemonic = str(instruction.get("disasm", "")).lower().split(maxsplit=1)[0]
+        return instruction_type in {"call", "rcall", "ucall", "icall", "syscall", "swi"} or mnemonic in {
+            "call",
+            "syscall",
+            "sysenter",
+        }
 
     def _apply_substitution(
         self,

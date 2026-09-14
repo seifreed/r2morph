@@ -83,6 +83,14 @@ def test_call_argument_register_never_used_as_substitute_target() -> None:
     )
 
 
+def test_call_instruction_is_external_abi_boundary() -> None:
+    """A function with an external ABI boundary stays untouched by this pass."""
+    pass_obj = DataFlowMutationPass()
+    call_instruction = {"addr": 0x2004, "next_addr": 0, "disasm": "call external"}
+
+    expect(pass_obj._has_external_abi_boundary(call_instruction))
+
+
 def test_syscall_number_register_stays_live_until_syscall() -> None:
     """The Linux x86-64 syscall ABI consumes eax/rax at the syscall site."""
     pass_obj = DataFlowMutationPass()
