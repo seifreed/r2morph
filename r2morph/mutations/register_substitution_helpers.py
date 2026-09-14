@@ -783,6 +783,13 @@ def select_candidates(
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
             continue
+        if arch == "arm64" and any(
+            instruction.get("disasm", "").lower().split()[:1] in (["bl"], ["blr"], ["blx"])
+            for instruction in instructions
+        ):
+            # ARM64 call-preserving substitution needs interprocedural ABI
+            # liveness; skip the function until that proof is available.
+            continue
         candidates = find_substitution_candidates(instructions, arch)
         if not candidates:
             continue
