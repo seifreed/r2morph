@@ -16,6 +16,7 @@ from scripts.adversarial_benchmark import (
     _tool_summary,
     benchmark_corpus,
     benchmark_pair,
+    merge_adversarial_reports,
 )
 from scripts.adversarial_benchmark import (
     main as adversarial_main,
@@ -44,6 +45,7 @@ _EXPECTED_TWO_PASS_TOOL_COVERAGE_PERCENT = 16.67
 _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL = 2
 _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT = 5.56
 _EXPECTED_NON_COMPLETED_TOOL_RUNS = 17
+_EXPECTED_MERGED_SAMPLE_COUNT = 2
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -174,6 +176,40 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
     )
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
+
+
+def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:
+    reports = [
+        {
+            "corpus": "dataset",
+            "pass_names": ["CodeVirtualization"],
+            "samples": [
+                {
+                    "original": "fixture-a",
+                    "passes": [{"pass_name": "CodeVirtualization", "status": "applied"}],
+                    "tools": [],
+                }
+            ],
+        },
+        {
+            "corpus": "dataset",
+            "pass_names": ["CodeVirtualization"],
+            "samples": [
+                {
+                    "original": "fixture-b",
+                    "passes": [{"pass_name": "CodeVirtualization", "status": "applied"}],
+                    "tools": [],
+                }
+            ],
+        },
+    ]
+
+    merged = merge_adversarial_reports(reports)
+
+    expect(
+        merged["sample_count"] == _EXPECTED_MERGED_SAMPLE_COUNT
+        and merged["summary"]["expected_pass_runs"] == _EXPECTED_MERGED_SAMPLE_COUNT
+    )
 
 
 def test_adversarial_benchmark_cli_honors_single_fixture_pass_selection(tmp_path: Path) -> None:

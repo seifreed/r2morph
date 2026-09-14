@@ -27,6 +27,7 @@ from scripts.protection_maturity_baseline import (
     DEFAULT_MUTATION_NAME,
     _build_mutation_pass,
     _parse_pass_names,
+    _select_fixture_shard,
     discover_executables,
 )
 from tests.integration.elf_emulator import emulate_exit_code
@@ -670,9 +671,17 @@ def benchmark_pair(
 def benchmark_corpus(
     dataset: Path,
     pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
+    fixture_shard_index: int = 0,
+    fixture_shard_count: int = 1,
 ) -> dict[str, object]:
     """Run the pair benchmark for every supported executable in the corpus."""
+    if fixture_shard_count < 1:
+        raise ValueError("fixture shard count must be positive")
+    if fixture_shard_index < 0 or fixture_shard_index >= fixture_shard_count:
+        raise ValueError("fixture shard index must be within the shard count")
     fixtures = discover_executables(dataset)
+    if fixture_shard_count > 1:
+        fixtures = _select_fixture_shard(fixtures, fixture_shard_index, fixture_shard_count)
     if not fixtures:
         raise ValueError(f"no supported executable fixtures found in {dataset}")
     if not pass_names:
@@ -682,11 +691,49 @@ def benchmark_corpus(
         "schema_version": 3,
         "measurement": "protection-adversarial-corpus",
         "corpus": dataset.name,
+        "pass_names": list(pass_names),
+        "fixture_shard": {"index": fixture_shard_index, "count": fixture_shard_count},
         "sample_count": len(samples),
         "samples": samples,
         "pass_summary": _pass_summary(samples),
         "tool_summary": _tool_summary(samples),
         "summary": _campaign_summary(samples, len(fixtures), pass_names),
+    }
+
+
+def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, object]:
+    """Merge disjoint adversarial corpus reports before evaluating campaign gates."""
+    if not reports:
+        raise ValueError("at least one adversarial report is required")
+    first_pass_names = reports[0].get("pass_names")
+    if not isinstance(first_pass_names, list) or not all(isinstance(name, str) for name in first_pass_names):
+        raise ValueError("adversarial report is missing pass names")
+    corpus = reports[0].get("corpus")
+    samples: list[dict[str, object]] = []
+    seen_samples: set[str] = set()
+    for report in reports:
+        if report.get("corpus") != corpus or report.get("pass_names") != first_pass_names:
+            raise ValueError("adversarial reports do not share corpus and pass scope")
+        report_samples = report.get("samples")
+        if not isinstance(report_samples, list) or not all(isinstance(sample, dict) for sample in report_samples):
+            raise ValueError("adversarial report has invalid samples")
+        for sample in report_samples:
+            name = sample.get("original")
+            if not isinstance(name, str) or name in seen_samples:
+                raise ValueError(f"adversarial reports overlap sample: {name}")
+            seen_samples.add(name)
+        samples.extend(report_samples)
+    pass_names = tuple(first_pass_names)
+    return {
+        "schema_version": 3,
+        "measurement": "protection-adversarial-corpus",
+        "corpus": corpus,
+        "pass_names": first_pass_names,
+        "sample_count": len(samples),
+        "samples": samples,
+        "pass_summary": _pass_summary(samples),
+        "tool_summary": _tool_summary(samples),
+        "summary": _campaign_summary(samples, len(samples), pass_names),
     }
 
 
@@ -1003,21 +1050,35 @@ def main(argv: Sequence[str] | None = None) -> None:
         action="store_true",
         help="fail when an expected analyzer slot is missing from a corpus benchmark",
     )
+    parser.add_argument(
+        "--fixture-shard-index",
+        type=int,
+        default=0,
+        help="zero-based corpus shard index for parallel campaigns",
+    )
+    parser.add_argument(
+        "--fixture-shard-count",
+        type=int,
+        default=1,
+        help="number of deterministic corpus shards for parallel campaigns",
+    )
     args = parser.parse_args(argv)
     if args.all_fixtures and args.protected:
         parser.error("--protected is valid only with one original binary")
     if args.require_tool_slots and not args.all_fixtures:
         parser.error("--require-tool-slots requires --all")
+    if args.fixture_shard_count > 1 and not args.all_fixtures:
+        parser.error("fixture sharding requires --all")
     try:
         pass_names = _parse_pass_names(args.passes)
     except ValueError as error:
         parser.error(str(error))
     report = (
-        benchmark_corpus(args.dataset, pass_names)
+        benchmark_corpus(args.dataset, pass_names, args.fixture_shard_index, args.fixture_shard_count)
         if args.all_fixtures
         else benchmark_pair(args.original, args.protected, pass_names)
     )
-    if args.require_applied:
+    if args.require_applied and args.fixture_shard_count == 1:
         passes_without_mutations = _passes_without_applications(report)
         if passes_without_mutations:
             parser.error("selected passes did not apply to any fixture: " + ", ".join(passes_without_mutations))

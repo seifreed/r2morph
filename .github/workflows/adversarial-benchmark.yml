@@ -8,7 +8,11 @@ name: Adversarial Analysis Benchmark
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture_shard: [0, 1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -51,6 +55,8 @@ jobs:
             --passes all \
             --require-applied \
             --require-tool-slots \
+            --fixture-shard-index "${{ matrix.fixture_shard }}" \
+            --fixture-shard-count 4 \
             --output "$GITHUB_WORKSPACE/adversarial-benchmark.json"
 
       - name: Validate adversarial campaign summary
@@ -133,8 +139,6 @@ jobs:
           )
           if blocker_totals["total_adversarial_evidence_blockers"] != expected_total:
               raise SystemExit(f"adversarial evidence blocker totals drift: {blocker_totals}")
-          if missing_applications:
-              raise SystemExit(f"passes without applications: {missing_applications}")
           PY
 
       - name: Run VM resistance seed-diversity smoke
@@ -217,26 +221,95 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-adversarial
+          name: vm-resistance-adversarial-${{ matrix.fixture_shard }}
           path: vm-resistance-adversarial.xml
 
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: adversarial-benchmark
+          name: adversarial-benchmark-${{ matrix.fixture_shard }}
           path: adversarial-benchmark.json
 
       - name: Upload VM resistance seed-diversity evidence
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-seed-diversity
+          name: vm-resistance-seed-diversity-${{ matrix.fixture_shard }}
           path: vm-resistance-seed-diversity.json
 
       - name: Upload VM resistance bytecode grammar evidence
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-bytecode-grammar
+          name: vm-resistance-bytecode-grammar-${{ matrix.fixture_shard }}
           path: vm-resistance-bytecode-grammar.json
+
+  aggregate-benchmark:
+    name: Aggregate adversarial benchmark evidence
+    if: ${{ always() }}
+    needs: benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install package dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Download shard reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: adversarial-benchmark-*
+          path: adversarial-reports
+          merge-multiple: false
+
+      - name: Merge and validate benchmark evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts.adversarial_benchmark import merge_adversarial_reports
+
+          paths = sorted(Path("adversarial-reports").glob("*/adversarial-benchmark.json"))
+          if len(paths) != 4:
+              raise SystemExit(f"expected 4 adversarial shard reports, found {len(paths)}")
+          report = merge_adversarial_reports(
+              [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+          )
+          summary = report["summary"]
+          if summary["missing_pass_runs"] or summary["missing_tool_runs"]:
+              raise SystemExit(
+                  f"merged benchmark has missing rows: passes={summary['missing_pass_runs']} "
+                  f"tools={summary['missing_tool_runs']}"
+              )
+          if summary["error_pass_runs"] or summary["error_tool_runs"]:
+              raise SystemExit(
+                  f"merged benchmark has errors: passes={summary['error_pass_runs']} "
+                  f"tools={summary['error_tool_runs']}"
+              )
+          if summary["adversarial_evidence_blockers"].get("passes_without_applied_runs"):
+              raise SystemExit(
+                  "passes without applications after all shards: "
+                  f"{summary['adversarial_evidence_blockers']['passes_without_applied_runs']}"
+              )
+          Path("adversarial-benchmark-merged.json").write_text(
+              json.dumps(report, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload merged benchmark evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: adversarial-benchmark-merged
+          path: adversarial-benchmark-merged.json
