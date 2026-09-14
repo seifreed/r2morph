@@ -156,6 +156,13 @@ jobs:
               raise SystemExit(f"cross-format smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
+          unexpected_skips = [
+              node.text or ""
+              for node in suite.findall(".//skipped")
+              if "Mach-O arm64 execution requires macOS" not in (node.text or "")
+          ]
+          if unexpected_skips:
+              raise SystemExit(f"cross-format smoke contains unexpected skips: {unexpected_skips}")
           names = {case.attrib.get("name", "") for case in cases}
           required = {
               "test_binary_rewriter_analyze_binary_formats",
@@ -551,7 +558,12 @@ jobs:
                   raise SystemExit(f"expected {expected} evidence files for {pattern}, found {len(paths)}")
               return paths
 
-          def validate_junit_reports(pattern: str, minimum_cases: int, allow_skipped: bool = False) -> None:
+          def validate_junit_reports(
+              pattern: str,
+              minimum_cases: int,
+              allow_skipped: bool = False,
+              allowed_skip_text: str | None = None,
+          ) -> None:
               import xml.etree.ElementTree as ET
 
               for path in require_files(pattern, expected_shards):
@@ -560,10 +572,24 @@ jobs:
                       raise SystemExit(f"evidence file has too few cases: {path}")
                   if suite.findall(".//failure") or suite.findall(".//error"):
                       raise SystemExit(f"evidence file has failures or errors: {path}")
-                  if not allow_skipped and suite.findall(".//skipped"):
+                  skipped = suite.findall(".//skipped")
+                  if not allow_skipped and skipped:
                       raise SystemExit(f"evidence file has skipped cases: {path}")
+                  if allowed_skip_text is not None:
+                      unexpected = [
+                          node.text or ""
+                          for node in skipped
+                          if allowed_skip_text not in (node.text or "")
+                      ]
+                      if unexpected:
+                          raise SystemExit(f"evidence file has unexpected skipped cases: {path}: {unexpected}")
 
-          validate_junit_reports("cross-format-reports", 10)
+          validate_junit_reports(
+              "cross-format-reports",
+              10,
+              allow_skipped=True,
+              allowed_skip_text="Mach-O arm64 execution requires macOS",
+          )
           validate_junit_reports("vm-semantic-reports", 55)
           validate_junit_reports("composition-reports", 31)
 
