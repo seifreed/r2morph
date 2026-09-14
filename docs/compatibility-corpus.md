@@ -142,6 +142,18 @@ That artifact is evidence triage only and records `missing_extended_passes`,
 `total_extended_maturity_evidence_blockers` as the compact total; it fails on
 extended pass errors but does not promote those passes until their applied-run
 and complete-evidence blockers are zero.
+
+The successful run [34790660315](https://github.com/seifreed/r2morph/actions/runs/34790660315)
+at commit `4ffa6647` is the current continuous-evidence record. Its official
+Linux ELF x86-64 corpus recorded zero runtime-observable failures, zero semantic
+failures, and zero missing complete-evidence runs for all ten selected passes;
+the report SHA-256 is
+`8b0660a042bc1e33090f16ed25e9b33aefa52f9f07912508a1facd2a283ff207`. The same
+run executed 21 cross-format cases with no failures and a three-case real-pass
+composition matrix with no failures. Six cross-format cases remain skipped on
+the Linux runner where native platform execution is unavailable, so this record
+does not close the declared PE/Mach-O or ARM/AArch64/x86 parity gaps.
+
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
