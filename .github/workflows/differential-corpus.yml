@@ -208,7 +208,13 @@ jobs:
             tests/integration/test_code_virtualization_simd_integer_real.py::test_simd_integer_fixture_virtualization_preserves_exit_code \
             tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function \
             tests/integration/test_code_virtualization_generic_isa_real.py \
-            tests/unit/test_code_virtualization_static_dataflow.py
+            tests/unit/test_code_virtualization_static_dataflow.py \
+            tests/integration/test_code_virtualization_memory_widths_real.py \
+            tests/integration/test_code_virtualization_tls_widths_real.py \
+            tests/integration/test_code_virtualization_call_abi_real.py \
+            tests/integration/test_code_virtualization_fp_compare_memory_real.py \
+            tests/integration/test_code_virtualization_simd_move_real.py \
+            tests/integration/test_code_virtualization_threads_signals_real.py
 
       - name: Validate VM semantic differential evidence
         run: |
@@ -218,7 +224,7 @@ jobs:
 
           suite = ET.parse("vm-semantic-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 30:
+          if len(cases) < 55:
               raise SystemExit(f"VM semantic smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("VM semantic smoke contains failures or errors")
@@ -236,6 +242,14 @@ jobs:
               "test_simd_integer_fixture_virtualization_preserves_exit_code",
               "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
               "test_static_dataflow",
+              "test_virtualized_byte_word_memory_arithmetic_preserves_result",
+              "test_virtualized_no_base_indexed_memory_arithmetic_preserves_result",
+              "test_tls_byte_and_word_virtualization_preserves_exit_code",
+              "test_virtualized_elf_preserves_vector_call_abi",
+              "test_virtualized_elf_preserves_incoming_stack_argument",
+              "test_fpcmp_memory_fixture_virtualization_preserves_exit_code",
+              "test_simd_move_fixture_virtualization_preserves_both_qwords",
+              "test_virtualized_async_signal_inside_vm_preserves_exit_code",
           )
           missing = [name for name in required if name not in names]
           if missing:
