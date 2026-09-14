@@ -333,12 +333,10 @@ class SSAConverter:
         """Rename variables in a block using DFS traversal.
 
         An explicit stack replaces the interpreter call stack so deep
-        control-flow graphs (routine in real, often obfuscated binaries)
-        no longer raise RecursionError. The simulation is mechanically
-        equivalent to the recursive DFS: the per-path `visited` set is
-        still added on entry and discarded once a block's successors are
-        exhausted, so blocks reachable by multiple acyclic paths are
-        reprocessed in exactly the same order and multiplicity as before.
+        control-flow graphs no longer raise RecursionError. Each block is
+        renamed once; phi functions represent values merged at shared
+        successors, so reprocessing a diamond once per incoming path only
+        increases cost and corrupts version ordering.
         """
         root_block = self._enter_block(ssa_blocks, block_addr, visited)
         if root_block is None:
@@ -354,7 +352,6 @@ class SSAConverter:
                 if child is not None:
                     stack.append(_RenameFrame(succ_addr, list(child.successors)))
             else:
-                visited.discard(frame.block_addr)
                 stack.pop()
 
     def _enter_block(
@@ -366,10 +363,9 @@ class SSAConverter:
         """Mirror the entry of the recursive _rename_in_block().
 
         Returns the block to descend into, or None when the recursive
-        version would have returned immediately. As before, a block whose
-        SSABlock is missing is added to `visited` but never discarded
-        (the recursion returned before its discard), and an
-        already-on-path block is skipped without reprocessing.
+        version would have returned immediately. A block whose SSABlock is
+        missing remains marked visited, and an already-visited block is
+        skipped without reprocessing.
         """
         if block_addr in visited:
             return None

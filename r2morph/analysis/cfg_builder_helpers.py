@@ -49,13 +49,22 @@ def populate_cfg_blocks(
     cfg: ControlFlowGraph, binary: Binary, function_address: int, r2_blocks: list[dict[str, Any]]
 ) -> None:
     """Build CFG blocks from radare2 block metadata."""
+    try:
+        function_instructions = binary.get_function_disasm(function_address)
+    except (ValueError, OSError, BrokenPipeError, RuntimeError) as exc:
+        logger.debug(f"Could not get instructions for function at 0x{function_address:x}: {exc}")
+        function_instructions = []
     for r2_block in r2_blocks:
         addr = r2_block.get("addr", 0)
         size = r2_block.get("size", 0)
         block = BasicBlock(
             address=addr,
             size=size,
-            instructions=collect_block_instructions(binary, function_address, addr, size),
+            instructions=[
+                instruction
+                for instruction in function_instructions
+                if addr <= instruction.get("offset", 0) < addr + size
+            ],
             successors=[],
             predecessors=[],
             block_type=classify_block_type(r2_block),

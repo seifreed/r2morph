@@ -28,7 +28,7 @@ from typing import Any, cast
 import r2morph.core.randomness as random
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.base import MutationPass
-from r2morph.mutations.code_virtualization_apply import apply_code_virtualization
+from r2morph.mutations.code_virtualization_apply import _DEFAULT_MAX_FUNCTION_SIZE, apply_code_virtualization
 from r2morph.mutations.code_virtualization_dispatch_lifting import (
     RegionOptions,
     block_ops,
@@ -579,6 +579,8 @@ class CodeVirtualizationPass(MutationPass):
           peelable register-op run exists, single-layer otherwise)
         - reject_partial_virtualization: Reject a function when only a
           straight-line region can be proven (default: True)
+        - max_function_size: Maximum native function size sent to static
+          virtualization preflight (default: 65536 bytes)
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -587,6 +589,9 @@ class CodeVirtualizationPass(MutationPass):
         self.max_functions = self.config.get("max_functions", 5)
         self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
         self.reject_partial_virtualization = self.config.get("reject_partial_virtualization", True)
+        self.max_function_size = self.config.get("max_function_size", _DEFAULT_MAX_FUNCTION_SIZE)
+        if not isinstance(self.max_function_size, int) or self.max_function_size < 1:
+            raise ValueError("max_function_size must be a positive integer")
         # Dispatch-shaped functions are inferred automatically; an explicit False
         # remains available for debugging and regression reproduction.
         self.virtualize_dispatch = self.config.get("virtualize_dispatch", True)

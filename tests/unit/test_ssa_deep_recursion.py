@@ -11,9 +11,8 @@ construction.
 
 These tests drive the public ``convert_to_ssa`` API only (no mocks, no
 monkeypatch). Before the iterative rewrite the deep-CFG cases raised
-``RecursionError``; afterwards they complete and the behavior on small
-graphs (including the path-sensitive reprocessing of blocks reachable by
-multiple acyclic paths) is unchanged.
+``RecursionError``; afterwards they complete and shared blocks are visited
+once, with phi-functions handling their merged predecessors.
 """
 
 from r2morph.analysis.ssa import SSAConverter
@@ -51,9 +50,7 @@ def test_ssa_deep_linear_cfg_no_recursion_error() -> None:
 
 
 def test_ssa_deep_cyclic_cfg_no_recursion_error() -> None:
-    """Deep chain that loops back to the entry. The per-path `visited`
-    set breaks the cycle; the traversal must terminate without
-    RecursionError and still produce every SSA block."""
+    """Deep chain that loops back to the entry still terminates."""
     blocks = _linear_blocks(DEEP)
     addrs = sorted(blocks)
     last, first = addrs[-1], addrs[0]
@@ -80,9 +77,8 @@ def test_ssa_linear_small_preserved() -> None:
 
 def test_ssa_diamond_shared_block_reachable() -> None:
     """Behavior-preservation: a diamond (entry -> b, entry -> c, b -> d,
-    c -> d). The shared block d is reprocessed once per acyclic path by
-    the original path-sensitive DFS; the rewrite must still return all
-    four blocks and not raise."""
+    c -> d). The shared block is visited once and the result still contains
+    all four blocks."""
     entry, b, c, d = BASE, BASE + 0x10, BASE + 0x20, BASE + 0x30
     blocks: dict[int, dict[str, object]] = {
         entry: {"instructions": [{"offset": entry, "disasm": "mov eax, 1"}], "predecessors": [], "successors": [b, c]},

@@ -27,6 +27,7 @@ _UNWIND_SECTION_NAMES = frozenset(
         "__unwind_info",
     }
 )
+_DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +120,27 @@ def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
 
 def _address_in_ranges(address: object, ranges: Iterable[tuple[int, int]]) -> bool:
     return isinstance(address, int) and any(start <= address < start + size for start, size in ranges)
+
+
+def _exceeds_function_size_budget(function: dict[str, Any], maximum_size: int) -> bool:
+    size = function.get("size")
+    return isinstance(size, int) and size > maximum_size
+
+
+def _skip_oversized_function(
+    pass_instance: Any,
+    function: dict[str, Any],
+    unsupported: list[dict[str, Any]],
+    skipped: int,
+    unsupported_total: int,
+) -> tuple[int, int]:
+    pass_instance._record_diagnostic(
+        unsupported,
+        function,
+        None,
+        ("error", "analysis_budget", "function exceeds the configured static-analysis size budget"),
+    )
+    return skipped + 1, unsupported_total + 1
 
 
 def _unwind_metadata_name(binary: Any) -> str | None:
@@ -425,6 +447,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         if _address_in_ranges(function_address, covered_ranges):
             continue
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+            continue
+        if _exceeds_function_size_budget(func, pass_instance.max_function_size):
+            skipped, unsupported_total = _skip_oversized_function(
+                pass_instance, func, unsupported, skipped, unsupported_total
+            )
             continue
         if unwind_section == "unavailable":
             skipped += 1

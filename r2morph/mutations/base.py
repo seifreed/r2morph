@@ -329,7 +329,13 @@ class MutationPass(ABC):
         """Analyze the binary if it has not been analyzed yet."""
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+            if "analysis_level" not in self.config:
+                binary.analyze()
+                return
+            level = self.config["analysis_level"]
+            if not isinstance(level, str) or not level:
+                raise ValueError("analysis_level must be a non-empty string")
+            binary.analyze(level)
 
     def _create_mutation_checkpoint(self, label: str) -> str | None:
         """Create a checkpoint for a single mutation when enabled."""

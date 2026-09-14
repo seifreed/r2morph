@@ -177,7 +177,7 @@ class Binary:
     def reload(self) -> None:
         reload_binary(self)
 
-    def analyze(self, level: str = "aaa") -> Binary:
+    def analyze(self, level: str = "aa") -> Binary:
         return analyze_binary(self, level)
 
     # Delegated read methods to BinaryReader

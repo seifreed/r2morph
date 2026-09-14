@@ -11,7 +11,7 @@ from r2morph.analysis.cfg_builder_helpers import (
 from r2morph.analysis.cfg_models import BasicBlock, BlockType, ControlFlowGraph, EdgeType
 from tests.utils.assertions import expect
 
-_EXPECTED_BINARY_DISASM_CALLS_2 = 2
+_EXPECTED_BINARY_DISASM_CALLS_1 = 1
 _EXPECTED_CFG_FUNCTION_ADDRESS_4096 = 0x1000
 
 
@@ -39,7 +39,7 @@ def test_cfg_builder_helpers_contract() -> None:
     populate_cfg_blocks(cfg, binary, 0x1000, r2_blocks)
     populate_cfg_edges(cfg, r2_blocks)
 
-    expect(binary.disasm_calls == _EXPECTED_BINARY_DISASM_CALLS_2)
+    expect(binary.disasm_calls == _EXPECTED_BINARY_DISASM_CALLS_1)
     expect(cfg.get_block(4096).block_type == BlockType.CONDITIONAL)
     expect(cfg.get_block(4112).block_type == BlockType.CALL)
     expect(not ((0x1000, 0x1008) not in cfg.edges))
