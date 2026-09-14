@@ -29,6 +29,7 @@ _EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2 = 2
 _EXPECTED_LIVE_IN_4096 = 0x1000
 _EXPECTED_SECTION_ADDRESS = 0x4000
 _EXPECTED_SECTION_SIZE = 6
+_UNTERMINATED_DATA_SIZE = 11
 _EXPECTED_P_MAX_IMPORTS_50 = 50
 _EXPECTED_P_MAX_MUTATIONS_10 = 10
 _EXPECTED_P_MAX_MUTATIONS_5 = 5
@@ -68,8 +69,8 @@ class _SectionBinary:
 
 class _UnterminatedDataBinary:
     def read_bytes(self, address: int, size: int) -> bytes:
-        if address == _EXPECTED_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
-            return b"binary"
+        if address == _EXPECTED_SECTION_ADDRESS and size == _UNTERMINATED_DATA_SIZE:
+            return b"binary\x01data\x02"
         return b""
 
 
@@ -216,7 +217,7 @@ class TestStringObfuscationPass:
     def test_find_strings_ignores_unterminated_binary_data(self):
         strings = StringObfuscationPass()._find_strings(
             _UnterminatedDataBinary(),
-            {"name": ".rodata", "vaddr": _EXPECTED_SECTION_ADDRESS, "vsize": _EXPECTED_SECTION_SIZE},
+            {"name": ".rodata", "vaddr": _EXPECTED_SECTION_ADDRESS, "vsize": _UNTERMINATED_DATA_SIZE},
         )
 
         expect(strings == [])
