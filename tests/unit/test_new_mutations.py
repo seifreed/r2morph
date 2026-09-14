@@ -65,6 +65,22 @@ class _SectionBinary:
         return b""
 
 
+class _ReferencedStringBinary:
+    def is_analyzed(self) -> bool:
+        return True
+
+    def get_sections(self) -> list[dict[str, object]]:
+        return [{"name": ".rodata", "addr": _EXPECTED_SECTION_ADDRESS, "size": _EXPECTED_SECTION_SIZE}]
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _EXPECTED_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
+            return b"hello\x00"
+        return b""
+
+    def get_xrefs_to(self, _address: int) -> list[dict[str, object]]:
+        return [{"from": 0x1000}]
+
+
 class _InstructionBinary:
     def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
         return [
@@ -175,6 +191,11 @@ class TestStringObfuscationPass:
         )
 
         expect(strings[0]["content"] == "hello")
+
+    def test_apply_skips_referenced_strings_to_preserve_runtime_semantics(self):
+        result = StringObfuscationPass({"probability": 1.0}).apply(_ReferencedStringBinary())
+
+        expect(result["strings_obfuscated"] == 0)
 
     def test_encodings_list(self):
         """Test available encodings."""

@@ -664,6 +664,8 @@ def _measure_seed(
             binary.close()
         status = "passed"
         error: dict[str, object] = {}
+        if evidence["status"] != "applied" and not mutation_pass.get_records():
+            shutil.copyfile(fixture, output)
     except Exception as error_value:  # Measurement boundary records per-fixture failures.
         stats = {}
         status = "error"

@@ -192,11 +192,11 @@ class SelfModifyingCodePass(MutationPass):
         Build a raw x86_64 XOR decryption stub.
 
         The stub performs the following at runtime:
-        1. Save registers (rbx, rcx, rsi)
+        1. Save caller-saved registers before using the syscall scratch set
         2. mprotect the target page to RWX
         3. Restore the original 5-byte prologue at func_addr
         4. XOR-decrypt func_addr+5 through func_addr+func_size
-        5. Restore registers
+        5. Restore the caller-saved register set
         6. Jump to func_addr (now fully decrypted)
 
         Args:
@@ -220,10 +220,17 @@ class SelfModifyingCodePass(MutationPass):
 
         stub = bytearray()
 
-        # --- Save registers ---
-        stub += b"\x53"  # push rbx
+        # Preserve the complete caller-saved input set while the decryptor
+        # prepares and performs the mprotect syscall.
+        stub += b"\x50"  # push rax
         stub += b"\x51"  # push rcx
+        stub += b"\x52"  # push rdx
+        stub += b"\x57"  # push rdi
         stub += b"\x56"  # push rsi
+        stub += b"\x41\x50"  # push r8
+        stub += b"\x41\x51"  # push r9
+        stub += b"\x41\x52"  # push r10
+        stub += b"\x41\x53"  # push r11
 
         # --- mprotect syscall: make target page RWX ---
         # mov rdi, page_addr (movabs rdi, imm64)
@@ -266,10 +273,17 @@ class SelfModifyingCodePass(MutationPass):
             loop_body += b"\x75" + struct.pack("b", jnz_offset)
             stub += loop_body
 
-        # --- Restore registers ---
+        # Restore the entry register state before transferring control. The
+        # original function must observe the same ABI inputs as before.
+        stub += b"\x41\x5b"  # pop r11
+        stub += b"\x41\x5a"  # pop r10
+        stub += b"\x41\x59"  # pop r9
+        stub += b"\x41\x58"  # pop r8
         stub += b"\x5e"  # pop rsi
+        stub += b"\x5f"  # pop rdi
+        stub += b"\x5a"  # pop rdx
         stub += b"\x59"  # pop rcx
-        stub += b"\x5b"  # pop rbx
+        stub += b"\x58"  # pop rax
 
         # --- Jump to original function (now decrypted) ---
         jmp_target = func_addr

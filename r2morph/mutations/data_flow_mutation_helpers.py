@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.dataflow_models import Register
 from r2morph.core.constants import ARCH_BITS_64
 
 SAFE_INSTRUCTIONS = {
@@ -34,11 +35,37 @@ _CALLER_SAVED_REGISTERS = {
     "x86": frozenset({"eax", "ecx", "edx"}),
 }
 _TWO_OPERANDS = 2
+_X86_32_BITS = 32
+_X86_64_BITS = ARCH_BITS_64
 _REGISTER_WIDTHS = {
     **{register: 64 for register in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11")},
     **{register: 32 for register in ("eax", "ebx", "ecx", "edx", "esi", "edi")},
 }
 _REGISTER_OPERAND = re.compile(r"^[a-z][a-z0-9]*$")
+
+
+def _register_aliases(register: str) -> set[str]:
+    return {alias.name for alias in Register(register).aliases()}
+
+
+def _definition_kills_use(definition: str, use: str) -> bool:
+    definition_register = Register(definition)
+    use_register = Register(use)
+    if _register_aliases(definition).isdisjoint(_register_aliases(use)):
+        return False
+    return definition_register.size >= use_register.size or (
+        definition_register.size == _X86_32_BITS and use_register.size == _X86_64_BITS
+    )
+
+
+def _register_is_live(register: str, live: set[str]) -> bool:
+    return any(not _register_aliases(register).isdisjoint(_register_aliases(current)) for current in live)
+
+
+def _remove_killed_registers(live: set[str], defined: set[str]) -> set[str]:
+    return {
+        register for register in live if not any(_definition_kills_use(definition, register) for definition in defined)
+    }
 
 
 def _split_register_instruction(disasm: str) -> tuple[str, str, str] | None:
@@ -64,27 +91,12 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
     live_out: dict[int, set[str]] = {}
 
     x86_regs = {
-        "rax",
-        "rbx",
-        "rcx",
-        "rdx",
-        "rsi",
-        "rdi",
-        "r8",
-        "r9",
-        "r10",
-        "r11",
-        "r12",
-        "r13",
-        "r14",
-        "r15",
-        "eax",
-        "ebx",
-        "ecx",
-        "edx",
-        "esi",
-        "edi",
+        alias.name
+        for register in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11")
+        for alias in Register(register).aliases()
     }
+    read_modify_write = {"add", "and", "dec", "inc", "neg", "not", "or", "sub", "xor"}
+    write_only = {"lea", "mov", "pop"}
 
     for insn in reversed(instructions):
         addr = insn.get("addr", 0)
@@ -104,19 +116,10 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
 
         for i, part in enumerate(parts):
             if part in x86_regs:
-                if i > 0 and parts[i - 1] in (
-                    "mov",
-                    "lea",
-                    "xor",
-                    "and",
-                    "or",
-                    "add",
-                    "sub",
-                    "shl",
-                    "shr",
-                    "not",
-                    "neg",
-                ):
+                if i > 0 and parts[i - 1] in read_modify_write:
+                    used.add(part)
+                    defined.add(part)
+                elif i > 0 and parts[i - 1] in write_only:
                     defined.add(part)
                 else:
                     used.add(part)
@@ -125,7 +128,7 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
         succ_live = live_in.get(next_addr, set()) if next_addr else set()
 
         live_out[addr] = succ_live.copy()
-        live_in[addr] = (used | (succ_live - defined)) & x86_regs
+        live_in[addr] = (used | _remove_killed_registers(succ_live, defined)) & x86_regs
 
     return live_in
 
@@ -175,10 +178,16 @@ def find_safe_substitution_candidates(
         _mnemonic, destination, source = parsed
         live_after = live_in.get(next_addr, set())
         live_before = live_in.get(addr, set())
-        if destination not in caller_saved or destination in live_after:
+        if destination not in caller_saved or _register_is_live(destination, live_after):
             continue
 
-        dead_regs = sorted(caller_saved - live_before - {source, destination})
+        dead_regs = sorted(
+            register
+            for register in caller_saved
+            if not _register_is_live(register, live_before)
+            and register not in {source, destination}
+            and not _register_aliases(register) & _register_aliases(source)
+        )
         for dead_reg in dead_regs:
             if _same_register_width(destination, dead_reg):
                 candidates.append((insn, destination, dead_reg))

@@ -272,6 +272,7 @@ def test_measure_fixture_omits_data_flow_when_no_destination_is_dead(tmp_path: P
             "status": "omitted",
             "reason": "no eligible function was transformed",
         }
+        and run["output_sha256"] == sha256(_NOP_FIXTURE)
     )
 
 

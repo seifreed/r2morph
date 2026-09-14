@@ -184,14 +184,15 @@ class StringObfuscationPass(MutationPass):
             return data, 0
 
     @staticmethod
-    def _warn_referenced_string(binary: Any, address: int) -> None:
-        references = binary.get_xrefs_to(address)
-        if references:
-            logger.warning(
-                f"String at 0x{address:x} has {len(references)} code references - "
-                "callers may need a decode stub. Use the runtime stack-string pass "
-                "for runtime strings."
-            )
+    def _is_unreferenced(binary: Any, address: int) -> bool:
+        try:
+            references = binary.get_xrefs_to(address)
+            if references:
+                logger.info("Skipping referenced string at 0x%x", address)
+            return not references
+        except (AttributeError, OSError, RuntimeError, ValueError) as error:
+            logger.warning("Cannot prove string at 0x%x is unreferenced: %s", address, error)
+            return False
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -232,6 +233,7 @@ class StringObfuscationPass(MutationPass):
 
         for section in data_sections:
             strings = self._find_strings(binary, section)
+            strings = [string for string in strings if self._is_unreferenced(binary, string["addr"])]
 
             if not strings:
                 continue
@@ -266,8 +268,6 @@ class StringObfuscationPass(MutationPass):
 
                     if not binary.write_bytes(addr, encoded_bytes):
                         continue
-
-                    self._warn_referenced_string(binary, addr)
 
                     record = self._record_mutation(
                         function_address=None,

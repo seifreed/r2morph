@@ -60,3 +60,17 @@ def test_build_xor_decrypt_stub_near_target_builds_valid_jmp() -> None:
     expect(-_INT32_MAX - 1 <= rel <= _INT32_MAX)
     # rel32 is relative to the address after the 5-byte jmp.
     expect(rel == func_addr - (cave_addr + len(stub)))
+
+
+def test_build_xor_decrypt_stub_preserves_sysv_entry_registers() -> None:
+    stub = SelfModifyingCodePass()._build_xor_decrypt_stub(
+        cave_addr=0x1200,
+        func_addr=0x1000,
+        func_size=64,
+        key_byte=0xAB,
+        saved_prologue=_PROLOGUE,
+    )
+
+    expect(stub is not None)
+    expect(stub[:9] == b"\x50\x51\x52\x57\x56\x41\x50\x41\x51")
+    expect(b"\x41\x5b\x41\x5a\x41\x59\x41\x58\x5e\x5f\x5a\x59\x58" in stub)

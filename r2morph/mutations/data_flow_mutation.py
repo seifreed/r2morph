@@ -177,8 +177,9 @@ class DataFlowMutationPass(MutationPass):
         self._ensure_analyzed(binary)
 
         arch_info = binary.get_arch_info()
-        arch = arch_info.get("arch", "unknown")
-        arch_info.get("bits", 64)
+        raw_arch = arch_info.get("arch", "unknown")
+        bits = arch_info.get("bits", 64)
+        arch = "x86_64" if raw_arch in {"x86", "x64"} and bits == ARCH_BITS_64 else raw_arch
 
         if arch not in ["x86", "x86_64"]:
             logger.warning(f"Data flow mutation only supports x86 architectures, got: {arch}")
