@@ -1644,6 +1644,18 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
     )
 
 
+def test_differential_workflow_keeps_windows_pe_evidence() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
+
+    expect(
+        "runs-on: windows-latest" in windows_job
+        and "test_platform_deeper.py -k pe_handler_checksum" in windows_job
+        and "windows-format-differential.xml" in windows_job
+        and "cross-platform-differential-windows-pe" in windows_job
+    )
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 
