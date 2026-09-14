@@ -371,6 +371,7 @@ class PolymorphicEnginePass(MutationPass):
         setup_default_engine(
             self.engine,
             EngineSetupConfig(
+                seed=self.seed,
                 enable_substitution=self.enable_substitution,
                 enable_pattern_substitution=self.enable_pattern_substitution,
                 enable_dead_code=self.enable_dead_code,
