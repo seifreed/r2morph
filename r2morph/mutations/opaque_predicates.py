@@ -12,6 +12,8 @@ import logging
 import re
 from typing import Any
 
+import capstone
+
 import r2morph.core.randomness as random
 from r2morph.core.constants import (
     ARCH_BITS_64,
@@ -168,6 +170,26 @@ class OpaquePredicatePass(MutationPass):
         return mutations
 
     @staticmethod
+    def _has_pc_relative_memory_operand(instruction: dict[str, Any]) -> bool | None:
+        """Return whether an x86 instruction uses RIP-relative memory."""
+        raw_bytes = instruction.get("bytes")
+        address = instruction.get("addr", instruction.get("offset"))
+        if not isinstance(raw_bytes, str) or not isinstance(address, int):
+            return None
+        try:
+            decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+            decoder.detail = True
+            decoded = next(decoder.disasm(bytes.fromhex(raw_bytes), address), None)
+        except (capstone.CsError, TypeError, ValueError):
+            return None
+        if decoded is None:
+            return None
+        return any(
+            operand.type == capstone.x86.X86_OP_MEM and operand.mem.base == capstone.x86.X86_REG_RIP
+            for operand in decoded.operands
+        )
+
+    @staticmethod
     def _relocatable_prefix(binary: Any, address: int, block_size: int) -> tuple[bytes, int] | None:
         """Return a contiguous, branch-free prefix large enough for a trampoline."""
         try:
@@ -184,7 +206,12 @@ class OpaquePredicatePass(MutationPass):
             if offset != address + prefix_size or prefix_size + size > block_size:
                 break
             mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
-            if mnemonic.startswith("ret") or not instructions_are_relocatable([instruction]):
+            pc_relative = OpaquePredicatePass._has_pc_relative_memory_operand(instruction)
+            if (
+                mnemonic.startswith("ret")
+                or not instructions_are_relocatable([instruction])
+                or pc_relative is not False
+            ):
                 break
             prefix.append(instruction)
             prefix_size += size

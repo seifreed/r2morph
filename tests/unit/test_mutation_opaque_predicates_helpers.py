@@ -50,6 +50,18 @@ def test_opaque_predicate_assembles_local_labels_as_absolute_targets():
     expect(all(".real_code" not in instruction for instruction in assembler.instructions))
 
 
+def test_opaque_predicate_rejects_rip_relative_memory_operand():
+    instruction = {
+        "addr": 0x1000,
+        "bytes": "488d0534120000",
+        "disasm": "lea rax, [0x223b]",
+    }
+
+    has_pc_relative_memory = OpaquePredicatePass._has_pc_relative_memory_operand(instruction)
+
+    expect(has_pc_relative_memory is True)
+
+
 def test_opaque_predicate_apply_real_binary(tmp_path: Path):
     binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
