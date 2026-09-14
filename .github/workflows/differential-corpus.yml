@@ -1060,3 +1060,61 @@ jobs:
             public-corpus/build-selected/manifest.json
             public-corpus/results/matrix.json
             public-corpus/results/tools.json
+
+  elf-arm64-native:
+    name: Native ELF ARM64 differential
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Run native ELF ARM64 differential
+        run: |
+          pytest -W error -q --no-cov --tb=short \
+            --junitxml=elf-arm64-native.xml \
+            tests/integration/test_elf_arm64_native.py
+
+      - name: Validate native ELF ARM64 evidence
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          suite = ET.parse("elf-arm64-native.xml").getroot()
+          cases = suite.findall(".//testcase")
+          if len(cases) != 1:
+              raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
+          if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
+              raise SystemExit("native ELF ARM64 evidence is incomplete")
+          if not any(
+              case.attrib.get("name", "").startswith("test_elf_arm64_nop_insertion_preserves_native_exit_code")
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 test name is missing")
+          PY
+
+      - name: Upload native ELF ARM64 evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: elf-arm64-native
+          path: elf-arm64-native.xml
