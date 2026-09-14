@@ -63,6 +63,9 @@ _EXPECTED_TRANSFORM_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_RUNTIME_DURATION_COMPLETE_RUNS = 2
 _EXPECTED_STATIC_COMPLETE_RUNS = 2
 _EXPECTED_COMPLETE_EVIDENCE_RUNS = 2
+_EXPECTED_BEHAVIORAL_VALIDATION_OBSERVATIONS = 2
+_EXPECTED_BEHAVIORAL_FALSE_POSITIVE_OBSERVATIONS = 1
+_EXPECTED_BEHAVIORAL_FALSE_POSITIVE_RATE = 50.0
 _EXPECTED_FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
@@ -434,10 +437,10 @@ def test_behavioral_false_positive_metric_counts_applied_runtime_changes() -> No
     )
 
     expect(
-        metrics["behavioral_validation_observations"] == 2
-        and metrics["behavioral_false_positive_observations"] == 1
+        metrics["behavioral_validation_observations"] == _EXPECTED_BEHAVIORAL_VALIDATION_OBSERVATIONS
+        and metrics["behavioral_false_positive_observations"] == _EXPECTED_BEHAVIORAL_FALSE_POSITIVE_OBSERVATIONS
         and metrics["behavioral_validation_missing_observations"] == 0
-        and metrics["behavioral_false_positive_rate_percent"] == 50.0
+        and metrics["behavioral_false_positive_rate_percent"] == _EXPECTED_BEHAVIORAL_FALSE_POSITIVE_RATE
     )
 
 
