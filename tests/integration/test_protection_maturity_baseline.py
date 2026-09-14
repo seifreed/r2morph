@@ -929,6 +929,12 @@ def test_transformation_evidence_accepts_generic_mutation_counter() -> None:
     expect(evidence == {"pass_name": "import-obfuscation", "status": "applied", "mutations_applied": 1})
 
 
+def test_transformation_evidence_does_not_count_stack_string_preview_as_mutation() -> None:
+    evidence = _transformation_evidence("passed", {"strings_transformed": 1}, None, "StackStrings")
+
+    expect(evidence["status"] == "omitted")
+
+
 def test_diagnostic_counts_groups_capabilities_and_severities() -> None:
     diagnostics = [
         {"capability": "memory", "severity": "error"},

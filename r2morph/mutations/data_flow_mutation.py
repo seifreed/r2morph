@@ -20,6 +20,7 @@ from r2morph.mutations.data_flow_mutation_helpers import (
     analyze_function_liveness,
     find_safe_substitution_candidates,
     is_register_safe_to_use,
+    substitute_destination_register,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,7 +121,9 @@ class DataFlowMutationPass(MutationPass):
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, function["addr"])
         original_bytes = binary.read_bytes(address, size)
-        replacement = disasm.lower().replace(original_register.lower(), substitute_register.lower())
+        replacement = substitute_destination_register(disasm, original_register, substitute_register)
+        if replacement is None:
+            return False
         new_bytes = binary.assemble(replacement, function["addr"])
         if (
             function.get("bits", 0) == ARCH_BITS_64

@@ -311,7 +311,6 @@ _APPLIED_COUNT_FIELDS = (
     "functions_outlined",
     "functions_encrypted",
     "chunks_relocated",
-    "strings_transformed",
     "strings_obfuscated",
 )
 

@@ -389,9 +389,14 @@ class FunctionOutliningPass(MutationPass):
                 entry_chunk=chunks[0].chunk_id if chunks else 0,
             )
 
+            relocated_for_function = 0
             for chunk in chunks[1:]:
                 relocated, cave_idx = self._relocate_chunk(binary, func_addr, chunk, caves, cave_idx)
                 chunks_relocated += int(relocated)
+                relocated_for_function += int(relocated)
+
+            if relocated_for_function == 0:
+                continue
 
             outlined_functions.append(outlined_func)
             total_chunks += len(chunks)

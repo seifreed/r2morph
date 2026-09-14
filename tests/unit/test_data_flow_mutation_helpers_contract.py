@@ -5,6 +5,7 @@ from r2morph.mutations.data_flow_mutation_helpers import (
     generate_dead_code_with_liveness,
     get_dead_registers,
     is_register_safe_to_use,
+    substitute_destination_register,
 )
 from tests.utils.assertions import expect
 
@@ -48,3 +49,9 @@ def test_candidates_rename_only_dead_register_destinations() -> None:
         and candidates[0][1] == "rax"
         and candidates[0][2] not in {"rax", "rcx"}
     )
+
+
+def test_substitute_destination_register_preserves_address_operand() -> None:
+    replacement = substitute_destination_register("lea rdi, [rdi + 8]", "rdi", "r8")
+
+    expect(replacement == "lea r8, [rdi + 8]")

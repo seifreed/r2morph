@@ -108,6 +108,21 @@ def _split_register_instruction(disasm: str) -> tuple[str, str, str] | None:
     return parts[0], operands[0], operands[1]
 
 
+def substitute_destination_register(disasm: str, original: str, substitute: str) -> str | None:
+    """Replace only an instruction's destination register.
+
+    Replacing every textual occurrence also rewrites address operands such as
+    ``lea rdi, [rdi + 8]`` and changes the instruction's meaning.
+    """
+    parts = disasm.split(maxsplit=1)
+    if len(parts) != _TWO_OPERANDS:
+        return None
+    operands = parts[1].split(",", 1)
+    if len(operands) != _TWO_OPERANDS or operands[0].strip().lower() != original.lower():
+        return None
+    return f"{parts[0]} {substitute},{operands[1]}"
+
+
 def _same_register_width(first: str, second: str) -> bool:
     return _REGISTER_WIDTHS.get(first) == _REGISTER_WIDTHS.get(second)
 
@@ -279,4 +294,5 @@ __all__ = [
     "generate_dead_code_with_liveness",
     "get_dead_registers",
     "is_register_safe_to_use",
+    "substitute_destination_register",
 ]
