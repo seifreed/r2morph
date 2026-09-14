@@ -187,6 +187,7 @@ def test_block_reordering_skips_rip_relative_variadic_function_without_corruptio
         capture_output=True,
     )
     shutil.copyfile(original, mutated)
+    shutil.copymode(original, mutated)
     original_result = run_command([str(original)], capture_output=True)
     with Binary(mutated, writable=True) as binary:
         result = BlockReorderingPass(config={"probability": 1.0, "max_functions": 10, "seed": 20260914}).apply(binary)
