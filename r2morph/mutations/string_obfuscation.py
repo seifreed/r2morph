@@ -122,16 +122,6 @@ class StringObfuscationPass(MutationPass):
                 current_string = bytearray()
                 current_start = i + 1
 
-        if len(current_string) >= self.min_length:
-            strings.append(
-                {
-                    "addr": addr + current_start,
-                    "size": len(current_string),
-                    "content": bytes(current_string).decode("ascii", errors="ignore"),
-                    "offset_in_section": current_start,
-                }
-            )
-
         return strings
 
     def _xor_encode(self, data: bytes, key: int) -> bytes:

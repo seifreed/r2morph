@@ -66,6 +66,13 @@ class _SectionBinary:
         return b""
 
 
+class _UnterminatedDataBinary:
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _EXPECTED_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
+            return b"binary"
+        return b""
+
+
 class _ReferencedStringBinary:
     def is_analyzed(self) -> bool:
         return True
@@ -205,6 +212,14 @@ class TestStringObfuscationPass:
         )
 
         expect(strings[0]["content"] == "hello")
+
+    def test_find_strings_ignores_unterminated_binary_data(self):
+        strings = StringObfuscationPass()._find_strings(
+            _UnterminatedDataBinary(),
+            {"name": ".rodata", "vaddr": _EXPECTED_SECTION_ADDRESS, "vsize": _EXPECTED_SECTION_SIZE},
+        )
+
+        expect(strings == [])
 
     def test_apply_skips_referenced_strings_to_preserve_runtime_semantics(self):
         result = StringObfuscationPass({"probability": 1.0}).apply(_ReferencedStringBinary())

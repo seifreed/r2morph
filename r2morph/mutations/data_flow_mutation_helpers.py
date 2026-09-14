@@ -112,6 +112,27 @@ def _same_register_width(first: str, second: str) -> bool:
     return _REGISTER_WIDTHS.get(first) == _REGISTER_WIDTHS.get(second)
 
 
+def _implicit_register_effects(disasm: str) -> tuple[set[str], set[str]]:
+    used: set[str] = set()
+    defined: set[str] = set()
+    if "call" in disasm:
+        used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
+        defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
+    if disasm.startswith("syscall"):
+        used.update(["rax", "eax", "rdi", "rsi", "rdx", "r10", "r8", "r9"])
+        defined.update(["rax", "eax"])
+    if disasm.startswith("ret"):
+        used.update(["rax", "eax"])
+    if "cmpxchg" in disasm:
+        used.add("rax")
+    memory = re.search(r"\[([^]]+)\]", disasm)
+    if memory:
+        for register in _REGISTER_WIDTHS:
+            if re.search(rf"(?<![a-z0-9]){re.escape(register)}(?![a-z0-9])", memory.group(1)):
+                used.add(register)
+    return used, defined
+
+
 def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, set[str]]:
     """Perform a CFG-aware backward liveness analysis over instruction dicts."""
     live_in: dict[int, set[str]] = {}
@@ -132,15 +153,7 @@ def analyze_function_liveness(instructions: list[dict[str, Any]]) -> dict[int, s
         addr = insn.get("addr", 0)
         disasm = insn.get("disasm", "").lower()
 
-        used = set()
-        defined = set()
-
-        if "call" in disasm:
-            used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
-            defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
-        if disasm.startswith("syscall"):
-            used.update(["rax", "eax", "rdi", "rsi", "rdx", "r10", "r8", "r9"])
-            defined.update(["rax", "eax"])
+        used, defined = _implicit_register_effects(disasm)
 
         parts = disasm.replace(",", " ").replace("[", " [ ").replace("]", " ] ").split()
 

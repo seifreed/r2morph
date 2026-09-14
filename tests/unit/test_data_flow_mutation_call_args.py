@@ -115,6 +115,36 @@ def test_partial_register_use_keeps_parent_destination_live() -> None:
     expect(not candidates, f"partial-register use must block substitution: {candidates!r}")
 
 
+def test_return_register_stays_live_until_ret() -> None:
+    """The ABI return register is observable even without an internal use."""
+    pass_obj = DataFlowMutationPass()
+    instructions = [
+        {"addr": 0x1000, "next_addr": 0x1005, "disasm": "mov eax, 42"},
+        {"addr": 0x1005, "next_addr": 0, "disasm": "ret"},
+    ]
+
+    live_in = pass_obj._analyze_function_liveness(instructions)
+    candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(not candidates, f"return value must not be rewritten before ret: {candidates!r}")
+
+
+def test_atomic_memory_and_accumulator_registers_stay_live() -> None:
+    """Implicit cmpxchg and scaled memory operands are part of the data flow."""
+    pass_obj = DataFlowMutationPass()
+    instructions = [
+        {"addr": 0x1000, "next_addr": 0x1007, "disasm": "mov rax, 7"},
+        {"addr": 0x1007, "next_addr": 0x100E, "disasm": "mov rdx, 1"},
+        {"addr": 0x100E, "next_addr": 0, "disasm": "cmpxchg qword [rbx + rdx*8], rcx"},
+    ]
+
+    live_in = pass_obj._analyze_function_liveness(instructions)
+
+    candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(not candidates)
+
+
 def test_branch_targets_keep_register_live_across_cfg_join() -> None:
     """A value used by either branch must not be treated as a dead destination."""
     pass_obj = DataFlowMutationPass()
