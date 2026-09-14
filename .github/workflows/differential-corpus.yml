@@ -327,6 +327,8 @@ jobs:
             --count 1 \
             --generated-inputs \
             --generated-corpus \
+            --fixture-shard-index "${{ matrix.fixture_shard }}" \
+            --fixture-shard-count 4 \
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
@@ -366,11 +368,6 @@ jobs:
               "extended_maturity_evidence_blocker_totals"
           ]:
               raise SystemExit("extended maturity blocker totals are missing total_extended_maturity_evidence_blockers")
-          if report["campaign_summary"]["passes_without_extended_applied_runs"]:
-              raise SystemExit(
-                  "extended maturity passes without applied evidence: "
-                  f"{report['campaign_summary']['passes_without_extended_applied_runs']}"
-              )
           if report["campaign_summary"]["extended_passes_with_error_runs"]:
               raise SystemExit(
                   f"extended maturity pass errors: {report['campaign_summary']['extended_passes_with_error_runs']}"
@@ -565,19 +562,49 @@ jobs:
               "StackStrings",
               "StringObfuscation",
           }
-          for path in require_files("extended-maturity-reports", expected_shards):
-              maturity_report = json.loads(path.read_text(encoding="utf-8"))
-              maturity_summary = maturity_report["campaign_summary"]
+          extended_reports = [
+              json.loads(path.read_text(encoding="utf-8"))
+              for path in require_files("extended-maturity-reports", expected_shards)
+          ]
+          for maturity_report in extended_reports:
               if set(maturity_report["pass_names"]) != expected_extended_passes:
-                  raise SystemExit(f"extended maturity pass coverage drift: {path}")
-              if maturity_summary["passes_without_extended_applied_runs"]:
-                  raise SystemExit(f"extended maturity pass has no applied run: {path}")
-              if maturity_summary["extended_passes_with_error_runs"]:
-                  raise SystemExit(f"extended maturity pass has errors: {path}")
-              if maturity_summary["passes_with_behavioral_false_positives"]:
-                  raise SystemExit(f"extended maturity pass has false positives: {path}")
-              if maturity_summary["behavioral_validation_missing_observations_by_pass"]:
-                  raise SystemExit(f"extended maturity pass has missing observations: {path}")
+                  raise SystemExit("extended maturity pass coverage drift")
+          merged_extended = merge_maturity_reports(extended_reports)
+          maturity_summary = merged_extended["campaign_summary"]
+          if maturity_summary["passes_without_extended_applied_runs"]:
+              raise SystemExit(
+                  "extended maturity passes without applied evidence after all shards: "
+                  f"{maturity_summary['passes_without_extended_applied_runs']}"
+              )
+          if maturity_summary["extended_passes_with_error_runs"]:
+              raise SystemExit(
+                  f"extended maturity pass errors after all shards: {maturity_summary['extended_passes_with_error_runs']}"
+              )
+          if maturity_summary["passes_with_behavioral_false_positives"]:
+              raise SystemExit(
+                  "extended maturity false positives after all shards: "
+                  f"{maturity_summary['passes_with_behavioral_false_positives']}"
+              )
+          if maturity_summary["behavioral_validation_missing_observations_by_pass"]:
+              raise SystemExit(
+                  "extended maturity missing observations after all shards: "
+                  f"{maturity_summary['behavioral_validation_missing_observations_by_pass']}"
+              )
+          required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}
+          missing_metrics = {
+              name: count
+              for name, count in maturity_summary["metric_missing_runs"].items()
+              if name in required_metrics and count != 0
+          }
+          if missing_metrics:
+              raise SystemExit(f"extended maturity performance metrics are incomplete: {missing_metrics}")
+          incomplete_metrics = {
+              name: passes
+              for name, passes in maturity_summary["passes_with_incomplete_coverage"].items()
+              if name in required_metrics and passes
+          }
+          if incomplete_metrics:
+              raise SystemExit(f"extended maturity performance coverage is incomplete: {incomplete_metrics}")
 
           paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
           if len(paths) != 12:
