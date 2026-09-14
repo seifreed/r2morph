@@ -95,7 +95,7 @@ class ShortJumpPatchingPass(MutationPass):
             return []
 
     def _assemble_patch(
-        self, binary: Any, function_address: int, instruction: dict[str, Any]
+        self, binary: Any, instruction_address: int, instruction: dict[str, Any]
     ) -> tuple[bytes, str, str, str] | None:
         mnemonic = self._instruction_mnemonic(instruction)
         replacement = self._get_replacement(mnemonic)
@@ -108,7 +108,7 @@ class ShortJumpPatchingPass(MutationPass):
             return None
         target = f"0x{operand:x}" if isinstance(operand, int) else operand
         prefix, jump = replacement
-        assembled = binary.assemble(f"{prefix}\n{jump} {target}", function_addr=function_address)
+        assembled = binary.assemble(f"{prefix}\n{jump} {target}", function_addr=instruction_address)
         if not assembled:
             logger.debug(f"Failed to assemble replacement at 0x{instruction.get('addr', 0):x}")
             return None
@@ -234,7 +234,7 @@ class ShortJumpPatchingPass(MutationPass):
                         or insn.get("size", 0) == 0
                     ):
                         continue
-                    patch = self._assemble_patch(binary, func.get("addr", 0), insn)
+                    patch = self._assemble_patch(binary, insn.get("addr", 0), insn)
                     if patch is None or not self._write_patch(binary, func.get("addr", 0), insn, patch):
                         continue
                     patches_in_func += 1

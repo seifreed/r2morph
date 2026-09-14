@@ -115,7 +115,10 @@ class AssemblyService:
             normalized_instruction = self._normalize_assembly_syntax(resolved_instruction)
 
             # Try standard radare2 assembler first
-            result = binary.r2.cmd(f"pa {normalized_instruction}")
+            assembly_command = f'"pa {normalized_instruction}"'
+            if function_addr is not None:
+                assembly_command += f" @ {function_addr}"
+            result = binary.r2.cmd(assembly_command)
             hex_str = result.strip()
             if hex_str:
                 try:

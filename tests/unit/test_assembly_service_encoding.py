@@ -45,3 +45,15 @@ def test_assembly_service_symbolic_resolution():
         assembler = AssemblyService()
         resolved = assembler._resolve_symbolic_vars(bin_obj, "mov eax, [var_10h]")
         expect(not ("[rsp + 0x10]" not in resolved))
+
+
+def test_assembly_service_encodes_relative_branch_from_requested_address():
+    binary_path = Path("fixtures/dataset/elf_x86_64")
+    source_address = 0x1000
+    target_address = 0x1008
+    with Binary(binary_path) as bin_obj:
+        encoded = AssemblyService().assemble(bin_obj, f"jne 0x{target_address:x}", source_address)
+
+    expect(encoded is not None)
+    displacement = int.from_bytes(encoded[1:], byteorder="little", signed=True)
+    expect(source_address + len(encoded) + displacement == target_address)
