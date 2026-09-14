@@ -173,6 +173,18 @@ def test_adversarial_benchmark_runs_triton_when_available() -> None:
     )
 
 
+def test_adversarial_benchmark_reports_radare2_decompiler_recovery() -> None:
+    result = _measure_tool("radare2", _FIXTURE, _FIXTURE)
+
+    expect(
+        result["status"] == "completed"
+        and result["original"]["decompiler_status"] == "completed"
+        and result["protected"]["decompiler_status"] == "completed"
+        and result["original"]["decompiler_entrypoints"] > 0
+        and result["protected"]["decompiler_lines"] > 0
+    )
+
+
 def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Path) -> None:
     dataset = tmp_path / "dataset"
     dataset.mkdir()

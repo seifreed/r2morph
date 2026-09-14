@@ -51,6 +51,7 @@ _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _IDA_SCRIPT = Path(__file__).with_name("ida") / "count_functions.py"
 _IDA_RESULT_SUFFIX = ".function-count"
 _PF_EXECUTE = 1
@@ -104,11 +105,66 @@ def _radare2_metric(path: Path) -> dict[str, object]:
         functions = json.loads(result.stdout_text)
     except (OSError, ProcessTimeoutError, json.JSONDecodeError) as error:
         return {"status": "error", "detail": type(error).__name__}
-    return {
+    metric: dict[str, object] = {
         "status": "completed",
         "return_code": result.returncode,
         "functions": len(functions) if isinstance(functions, list) else 0,
     }
+    function_address = next(
+        (
+            function.get("offset", function.get("addr"))
+            for function in functions
+            if isinstance(function, dict) and isinstance(function.get("offset", function.get("addr")), int)
+        ),
+        None,
+    )
+    if function_address is None:
+        metric.update(
+            {
+                "decompiler_status": "unavailable",
+                "decompiler_reason": "no recovered function entrypoint",
+                "decompiler_entrypoints": 0,
+                "decompiler_lines": 0,
+                "decompiler_bytes": 0,
+            }
+        )
+        return metric
+    try:
+        decompiler_result = run_process(
+            [
+                executable,
+                "-q0",
+                "-e",
+                "scr.color=false",
+                "-c",
+                f"aa;pdc @ {function_address};q",
+                str(path),
+            ],
+            timeout=_COMMAND_TIMEOUT_SECONDS,
+        )
+        decompiler_text = _ANSI_ESCAPE.sub("", decompiler_result.stdout_text)
+        decompiler_lines = [line for line in decompiler_text.splitlines() if line.strip()]
+        metric.update(
+            {
+                "decompiler_status": "completed" if decompiler_lines else "unavailable",
+                "decompiler_entrypoints": int(bool(decompiler_lines)),
+                "decompiler_lines": len(decompiler_lines),
+                "decompiler_bytes": len(decompiler_text.encode("utf-8")),
+            }
+        )
+        if not decompiler_lines:
+            metric["decompiler_reason"] = "decompiler returned no pseudocode"
+    except (OSError, ProcessTimeoutError) as error:
+        metric.update(
+            {
+                "decompiler_status": "error",
+                "decompiler_reason": type(error).__name__,
+                "decompiler_entrypoints": 0,
+                "decompiler_lines": 0,
+                "decompiler_bytes": 0,
+            }
+        )
+    return metric
 
 
 def _objdump_metric(path: Path) -> dict[str, object]:
