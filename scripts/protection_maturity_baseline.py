@@ -1110,6 +1110,81 @@ def _render_multi_pass_result(
     }
 
 
+def _report_campaign_metadata(report: Mapping[str, object]) -> tuple[set[str], set[str], Path | None]:
+    families: set[str] = set()
+    generated_fixture_names: set[str] = set()
+    dataset: Path | None = None
+    campaign_summary = report.get("campaign_summary")
+    if not isinstance(campaign_summary, Mapping):
+        return families, generated_fixture_names, dataset
+    family_values = campaign_summary.get("corpus_families")
+    if isinstance(family_values, list):
+        families.update(value for value in family_values if isinstance(value, str))
+    generated_values = campaign_summary.get("generated_fixture_names")
+    if isinstance(generated_values, list):
+        generated_fixture_names.update(value for value in generated_values if isinstance(value, str))
+    scope = campaign_summary.get("corpus_scope")
+    if isinstance(scope, Mapping) and isinstance(value := scope.get("dataset"), str):
+        dataset = Path(value)
+    return families, generated_fixture_names, dataset
+
+
+def _report_pass_fixtures(
+    pass_name: str,
+    pass_report: object,
+    seen_fixture_runs: set[tuple[str, str, tuple[str, ...]]],
+) -> list[dict[str, object]]:
+    if not isinstance(pass_report, Mapping):
+        raise ValueError(f"maturity report is missing pass result: {pass_name}")
+    fixtures = pass_report.get("fixtures")
+    if not isinstance(fixtures, list) or not all(isinstance(fixture, dict) for fixture in fixtures):
+        raise ValueError(f"maturity report has invalid fixtures for pass: {pass_name}")
+    for fixture in fixtures:
+        sample = fixture.get("sample")
+        seeds = fixture.get("seeds")
+        if not isinstance(sample, str) or not isinstance(seeds, list):
+            continue
+        fixture_key = (pass_name, sample, tuple(str(seed) for seed in seeds))
+        if fixture_key in seen_fixture_runs:
+            raise ValueError(f"maturity reports overlap fixture runs: {sample}")
+        seen_fixture_runs.add(fixture_key)
+    return fixtures
+
+
+def merge_maturity_reports(reports: list[Mapping[str, object]]) -> dict[str, object]:
+    """Merge disjoint corpus reports before evaluating campaign-wide gates."""
+    if not reports:
+        raise ValueError("at least one maturity report is required")
+    first_passes = reports[0].get("passes")
+    if not isinstance(first_passes, Mapping):
+        raise ValueError("maturity report is missing pass results")
+    pass_names = tuple(str(name) for name in first_passes)
+    measurements: dict[str, list[dict[str, object]]] = {name: [] for name in pass_names}
+    corpus_families: set[str] = set()
+    generated_fixture_names: set[str] = set()
+    seen_fixture_runs: set[tuple[str, str, tuple[str, ...]]] = set()
+    dataset: Path | None = None
+    for report in reports:
+        passes = report.get("passes")
+        if not isinstance(passes, Mapping) or tuple(str(name) for name in passes) != pass_names:
+            raise ValueError("maturity reports do not contain the same pass set")
+        families, generated, report_dataset = _report_campaign_metadata(report)
+        corpus_families.update(families)
+        generated_fixture_names.update(generated)
+        dataset = report_dataset or dataset
+        for pass_name in pass_names:
+            measurements[pass_name].extend(_report_pass_fixtures(pass_name, passes.get(pass_name), seen_fixture_runs))
+    return _render_multi_pass_result(
+        measurements,
+        dataset,
+        sorted(corpus_families),
+        {
+            "generated_fixture_count": len(generated_fixture_names),
+            "generated_fixture_names": sorted(generated_fixture_names),
+        },
+    )
+
+
 def _runtime_input_sources(measurements: dict[str, list[dict[str, object]]]) -> list[str]:
     generated = any(
         isinstance(inputs := fixture.get("baseline_runtime_inputs"), list) and len(inputs) > 1
@@ -1483,10 +1558,37 @@ def _campaign_fixture_selection(args: argparse.Namespace) -> tuple[list[Path], d
     fixtures = discover_executables(args.dataset) if args.all_fixtures else list(args.fixtures)
     if args.fixture_shard_count == 1:
         return fixtures, None
-    return (
-        _select_fixture_shard(fixtures, args.fixture_shard_index, args.fixture_shard_count),
-        {"index": args.fixture_shard_index, "count": args.fixture_shard_count},
-    )
+    return fixtures, {"index": args.fixture_shard_index, "count": args.fixture_shard_count}
+
+
+def _apply_fixture_shard(fixtures: list[Path], fixture_shard: dict[str, int] | None) -> list[Path]:
+    if fixture_shard is None:
+        return fixtures
+    return _select_fixture_shard(fixtures, fixture_shard["index"], fixture_shard["count"])
+
+
+def _selected_generated_fixture_names(
+    fixtures: list[Path], generated_fixture_names: list[str], fixture_shard: dict[str, int] | None
+) -> tuple[list[str], int]:
+    if fixture_shard is None:
+        return generated_fixture_names, len(generated_fixture_names)
+    selected_names = {path.name for path in fixtures}
+    names = sorted(name for name in generated_fixture_names if name in selected_names)
+    return names, len(names)
+
+
+def _measure_campaign(
+    fixtures: list[Path],
+    pass_names: tuple[str, ...],
+    args: argparse.Namespace,
+    output_root: Path,
+) -> dict[str, list[dict[str, object]]]:
+    seeds = range(args.first_seed, args.first_seed + args.count)
+    runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
+    return {
+        pass_name: [measure_fixture(fixture, seeds, output_root, pass_name, runtime_inputs) for fixture in fixtures]
+        for pass_name in pass_names
+    }
 
 
 def main() -> None:
@@ -1505,7 +1607,7 @@ def main() -> None:
     parser.add_argument(
         "--require-applied",
         action="store_true",
-        help="fail when a selected pass does not apply to any fixture",
+        help="fail when a selected pass does not apply; sharded campaigns defer this to aggregation",
     )
     parser.add_argument(
         "--require-complete-evidence",
@@ -1548,8 +1650,6 @@ def main() -> None:
     except ValueError as error:
         parser.error(str(error))
 
-    seeds = range(args.first_seed, args.first_seed + args.count)
-    runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
     with tempfile.TemporaryDirectory(prefix="r2morph-maturity-") as temp_dir:
         try:
             fixtures, corpus_families, generated_fixture_count, generated_fixture_names = _select_fixtures(
@@ -1561,12 +1661,18 @@ def main() -> None:
             parser.error(str(error))
         if not fixtures:
             parser.error("no executable fixtures selected")
-        measurements = {
-            pass_name: [
-                measure_fixture(fixture, seeds, Path(temp_dir), pass_name, runtime_inputs) for fixture in fixtures
-            ]
-            for pass_name in pass_names
-        }
+        fixtures = _apply_fixture_shard(fixtures, fixture_shard)
+        generated_fixture_names, generated_fixture_count = _selected_generated_fixture_names(
+            fixtures,
+            generated_fixture_names,
+            fixture_shard,
+        )
+        measurements = _measure_campaign(
+            fixtures,
+            pass_names,
+            args,
+            Path(temp_dir),
+        )
     report = _render_result(measurements[pass_names[0]], pass_names[0])
     if len(pass_names) > 1:
         report = _render_multi_pass_result(
@@ -1579,7 +1685,7 @@ def main() -> None:
                 "fixture_shard": fixture_shard,
             },
         )
-    if args.require_applied:
+    if args.require_applied and args.fixture_shard_count == 1:
         passes_without_mutations = [
             name
             for name, fixtures_for_pass in measurements.items()

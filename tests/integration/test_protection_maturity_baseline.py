@@ -28,10 +28,12 @@ from scripts.protection_maturity_baseline import (
     _runtime_artifacts,
     _runtime_observables_equal,
     _select_fixture_shard,
+    _selected_generated_fixture_names,
     _semantic_run_matches,
     _transformation_evidence,
     discover_executables,
     measure_fixture,
+    merge_maturity_reports,
 )
 from tests.conftest import _compile_elf_x86_64_binary
 from tests.integration.elf_emulator import emulate_exit_code
@@ -72,6 +74,7 @@ _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
 _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = ("generated_branch", "generated_lookup", "generated_memory")
+_EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
 _EXPECTED_GENERATED_FIXTURE_COUNT = len(_EXPECTED_GENERATED_CORPUS_SOURCES) * len(_GENERATED_CORPUS_PROFILES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
@@ -1032,3 +1035,38 @@ def test_fixture_shard_selection_is_deterministic_and_disjoint() -> None:
         ]
         and sorted(path for shard in shards for path in shard) == fixtures
     )
+
+
+def test_merge_maturity_reports_rechecks_application_across_shards() -> None:
+    first_fixture = {"all_semantic_equal": True, "runs": []}
+    second_fixture = {"all_semantic_equal": True, "runs": []}
+    first = _render_multi_pass_result(
+        {"CodeVirtualization": [first_fixture]},
+        Path("fixtures/dataset"),
+        ["repository-fixtures"],
+        {"generated_fixture_names": ["generated_branch_gcc-o0"]},
+    )
+    second = _render_multi_pass_result(
+        {"CodeVirtualization": [second_fixture]},
+        Path("fixtures/dataset"),
+        ["repository-fixtures"],
+        {"generated_fixture_names": ["generated_lookup_gcc-o0"]},
+    )
+
+    merged = merge_maturity_reports([first, second])
+
+    expect(
+        len(merged["passes"]["CodeVirtualization"]["fixtures"]) == _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT
+        and merged["campaign_summary"]["generated_fixture_count"] == _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT
+        and merged["campaign_summary"]["corpus_scope"] == {"dataset": "fixtures/dataset"}
+    )
+
+
+def test_generated_fixture_metadata_follows_fixture_shard() -> None:
+    fixtures = [Path("repository-0"), Path("repository-1"), Path("generated-a"), Path("generated-b")]
+    generated = ["generated-a", "generated-b"]
+    shard = _select_fixture_shard(fixtures, 1, 2)
+
+    names, count = _selected_generated_fixture_names(shard, generated, {"index": 1, "count": 2})
+
+    expect(names == ["generated-b"] and count == 1)

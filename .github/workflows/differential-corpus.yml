@@ -86,14 +86,14 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if summary["generated_fixture_count"] != 12:
+          if summary["generated_fixture_count"] != 3:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_branch", "generated_lookup", "generated_memory")
               for profile in ("gcc-o0", "gcc-o2", "gcc-pie-o2", "clang-o2")
           )
-          if summary["generated_fixture_names"] != expected_generated:
+          if not set(summary["generated_fixture_names"]).issubset(expected_generated):
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
               raise SystemExit(f"unexpected corpus gap scope: {summary['corpus_gap_scope']}")
@@ -115,6 +115,8 @@ jobs:
               "platform_gap_scope": summary["platform_gap_scope"],
               "corpus_gap_scope": summary["corpus_gap_scope"],
           }
+          if "fixture_shard" in summary["corpus_scope"]:
+              allowed["passes_without_applied_runs"] = summary["passes_without_applied_runs"]
           unexpected = {
               key: value
               for key, value in summary["continuous_evidence_blockers"].items()
@@ -413,34 +415,106 @@ jobs:
       - name: Upload cross-format differential evidence
         uses: actions/upload-artifact@v7
         with:
-          name: cross-format-differential
+          name: cross-format-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}
           path: cross-format-differential.xml
 
       - name: Upload VM semantic differential evidence
         uses: actions/upload-artifact@v7
         if: always() && hashFiles('vm-semantic-differential.xml') != ''
         with:
-          name: vm-semantic-differential
+          name: vm-semantic-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}
           path: vm-semantic-differential.xml
 
       - name: Upload composition differential evidence
         uses: actions/upload-artifact@v7
         if: always() && hashFiles('composition-differential.xml') != ''
         with:
-          name: composition-differential
+          name: composition-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}
           path: composition-differential.xml
 
       - name: Upload extended maturity pass smoke
         uses: actions/upload-artifact@v7
         with:
-          name: extended-maturity-passes
+          name: extended-maturity-passes-${{ matrix.fixture_shard }}-${{ matrix.seed }}
           path: extended-maturity-passes.json
 
       - name: Upload differential fuzz smoke
         uses: actions/upload-artifact@v7
         with:
-          name: differential-fuzz-smoke
+          name: differential-fuzz-smoke-${{ matrix.fixture_shard }}-${{ matrix.seed }}
           path: differential-fuzz-smoke.json
+
+  aggregate-differential-corpus:
+    name: Aggregate differential corpus evidence
+    if: ${{ always() }}
+    needs: differential-corpus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install package dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Download shard reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: differential-corpus-by-pass-*
+          path: differential-reports
+          merge-multiple: false
+
+      - name: Merge and validate campaign evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts.protection_maturity_baseline import merge_maturity_reports
+
+          paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
+          if len(paths) != 12:
+              raise SystemExit(f"expected 12 shard reports, found {len(paths)}")
+          report = merge_maturity_reports(
+              [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+          )
+          summary = report["campaign_summary"]
+          expected_generated = sorted(
+              f"{source}_{profile}"
+              for source in ("generated_branch", "generated_lookup", "generated_memory")
+              for profile in ("gcc-o0", "gcc-o2", "gcc-pie-o2", "clang-o2")
+          )
+          if summary["generated_fixture_count"] != 12 or summary["generated_fixture_names"] != expected_generated:
+              raise SystemExit("merged generated corpus coverage is incomplete")
+          if summary["passes_without_applied_runs"]:
+              raise SystemExit(
+                  "passes without applied evidence after all shards: "
+                  f"{summary['passes_without_applied_runs']}"
+              )
+          if summary["passes_with_error_runs"]:
+              raise SystemExit(f"pass errors after all shards: {summary['passes_with_error_runs']}")
+          if summary["total_complete_evidence_missing_runs"] != 0:
+              raise SystemExit("merged differential report has incomplete evidence")
+          if summary["passes_with_incomplete_coverage"]:
+              raise SystemExit(f"merged differential coverage is incomplete: {summary['passes_with_incomplete_coverage']}")
+          Path("differential-corpus-merged.json").write_text(
+              json.dumps(report, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload merged differential evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: differential-corpus-merged
+          path: differential-corpus-merged.json
 
   cross-platform-differential:
     name: Cross-platform differential (macOS ARM64)
