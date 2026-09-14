@@ -49,7 +49,6 @@ _EXPECTED_VARARGS_EXIT_CODE = 69
 _EXPECTED_NOP_EXIT_CODE = 42
 _EXPECTED_SHORT_JUMP_EXIT_CODE = 7
 _FLAG_LIVE_FIXTURE = _DATASET / "elf_flag_live_x86_64"
-_FLAG_LIVE_MOV_RSI_ADDRESS = 0x1008
 _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
 _EXPECTED_MAX_SIZE_DELTA_BYTES = 25
 _EXPECTED_MIN_SIZE_DELTA_BYTES = -5
@@ -172,8 +171,15 @@ def test_constant_unfolding_keeps_flag_neutral_instruction_before_branch(tmp_pat
     mutated.write_bytes(_FLAG_LIVE_FIXTURE.read_bytes())
     with Binary(mutated, writable=True) as binary:
         binary.analyze()
+        function = binary.get_functions()[0]
+        instruction = next(
+            instruction
+            for instruction in binary.get_function_disasm(int(function["addr"]))
+            if instruction.get("disasm", "").lower() == "mov rsi, 0"
+        )
+        original_bytes = binary.read_bytes(int(instruction["addr"]), int(instruction["size"]))
         ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260901}).apply(binary)
-        expect(binary.read_bytes(_FLAG_LIVE_MOV_RSI_ADDRESS, 7) == bytes.fromhex("48c7c600000000"))
+        expect(binary.read_bytes(int(instruction["addr"]), int(instruction["size"])) == original_bytes)
 
 
 def test_register_substitution_preserves_varargs_indirect_call_target(tmp_path: Path) -> None:

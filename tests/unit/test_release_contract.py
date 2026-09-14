@@ -1426,8 +1426,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "wheel_root=/tmp/r2morph-differential-wheel-check" in differential
         and "cp -R scripts tests fixtures" in adversarial
         and "cp -R scripts tests fixtures" in differential
-        and "pyproject.toml \"$wheel_root\"/" in adversarial
-        and "pyproject.toml \"$wheel_root\"/" in differential
+        and 'pyproject.toml "$wheel_root"/' in adversarial
+        and 'pyproject.toml "$wheel_root"/' in differential
         and 'cd "$wheel_root"' in adversarial
         and 'cd "$wheel_root"' in differential
         and '--output "$GITHUB_WORKSPACE/adversarial-benchmark.json"' in adversarial
