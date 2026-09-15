@@ -334,6 +334,21 @@ def test_adversarial_benchmark_cli_honors_single_fixture_pass_selection(tmp_path
     )
 
 
+def test_adversarial_benchmark_output_file_suppresses_report_echo(tmp_path: Path, capsys) -> None:
+    output = tmp_path / "nop-adversarial.json"
+    adversarial_main(
+        [
+            str(_NOP_FIXTURE),
+            "--passes",
+            "NopInsertion",
+            "--output",
+            str(output),
+        ]
+    )
+
+    expect(capsys.readouterr().out == "")
+
+
 def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_rows() -> None:
     summary = _campaign_summary(
         [

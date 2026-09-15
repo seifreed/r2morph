@@ -1321,7 +1321,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")
-    print(rendered, end="")
+    else:
+        print(rendered, end="")
 
 
 if __name__ == "__main__":
