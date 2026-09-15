@@ -57,6 +57,8 @@ _VEX128_OPCODE_INSERT = 0x18
 _VEX_OPCODE_XOR = 0xEF
 _VEX_MAP_0F38 = 2
 _VEX128_VPMULDQ_OPCODE = 0x28
+_VEX128_VPMULUDQ_OPCODE = 0x15
+_VEX128_VPMULUDQ_2BYTE_OPCODE = 0xF4
 _VEX128_UNPACK_ELEMENT_BITS = {
     0x60: (8, False),
     0x61: (16, False),
@@ -74,6 +76,7 @@ _VEX128_SPECIAL_OPCODES = {
     0x05: (16, True, False),
     0x06: (32, True, False),
     0x07: (16, True, True),
+    _VEX128_VPMULUDQ_OPCODE: (32, False, False),
     0x28: (32, False, False),
 }
 _VEX_3_BYTE_PREFIX = 0xC4
@@ -244,25 +247,47 @@ def _emulate_vex128_unpack(mu: Any, instruction: bytes) -> int | None:
     return length
 
 
-def _emulate_vex128_special(mu: Any, instruction: bytes) -> int | None:
-    if len(instruction) < _VEX128_THREE_BYTE_INSTRUCTION_LENGTH or instruction[0] != _VEX_3_BYTE_PREFIX:
+def _decode_vex128_special(
+    instruction: bytes,
+) -> tuple[bytes, int, int, int, bool, bool] | None:
+    if len(instruction) < _VEX128_REGISTER_INSTRUCTION_LENGTH:
         return None
-    prefix = instruction[:3]
-    if prefix[1] & 0x1F != _VEX_MAP_0F38 or prefix[2] & 0x04:
+    operation: tuple[int, bool, bool] | None
+    if instruction[0] == _VEX_2_BYTE_PREFIX:
+        prefix = instruction[:2]
+        opcode = instruction[2]
+        modrm_offset = 3
+        operation = (32, False, False)
+        valid = not prefix[1] & 0x04 and opcode == _VEX128_VPMULUDQ_2BYTE_OPCODE
+    elif instruction[0] == _VEX_3_BYTE_PREFIX and len(instruction) >= _VEX128_THREE_BYTE_INSTRUCTION_LENGTH:
+        prefix = instruction[:3]
+        opcode = instruction[3]
+        modrm_offset = 4
+        operation = _VEX128_SPECIAL_OPCODES.get(opcode)
+        valid = prefix[1] & 0x1F == _VEX_MAP_0F38 and not prefix[2] & 0x04 and operation is not None
+        if operation is None:
+            operation = (0, False, False)
+    else:
         return None
-    opcode = instruction[3]
-    operation = _VEX128_SPECIAL_OPCODES.get(opcode)
-    if operation is None:
+    if not valid:
         return None
     element_bits, subtract, saturating = operation
-    modrm = instruction[4]
+    return prefix, opcode, modrm_offset, element_bits, subtract, saturating
+
+
+def _emulate_vex128_special(mu: Any, instruction: bytes) -> int | None:
+    encoding = _decode_vex128_special(instruction)
+    if encoding is None:
+        return None
+    prefix, opcode, modrm_offset, element_bits, subtract, saturating = encoding
+    modrm = instruction[modrm_offset]
     destination = ((modrm >> 3) & 0x07) | (((~prefix[1] >> 7) & 1) << 3)
-    source_one = (~prefix[2] >> 3) & 0x0F
+    source_one = (~prefix[-1] >> 3) & 0x0F
     source_one_value = _read_vector_register(mu, "XMM", source_one)
     if modrm & 0xC0 == _VEX_MODRM_REGISTER:
         source_two = (modrm & 0x07) | (((~prefix[1] >> 5) & 1) << 3)
         source_two_value = _read_vector_register(mu, "XMM", source_two)
-        length = 5
+        length = modrm_offset + 1
     else:
         operand = _memory_operand(mu, prefix, modrm, instruction)
         if operand is None:
@@ -270,35 +295,10 @@ def _emulate_vex128_special(mu: Any, instruction: bytes) -> int | None:
         address, length = operand
         source_two_value = int.from_bytes(mu.mem_read(address, 16), "little")
 
-    if opcode == _VEX128_VPMULDQ_OPCODE:
-        result = 0
-        for output_index, source_index in enumerate((0, 2)):
-            left = _signed_lane(source_one_value, source_index, 32)
-            right = _signed_lane(source_two_value, source_index, 32)
-            value = left * right
-            result |= (value & ((1 << 64) - 1)) << (output_index * 64)
-        _write_vector_register(mu, "YMM", destination, result)
-        return length
-
-    lane_count = 128 // element_bits
-    result = 0
-    for source_value, output_offset in ((source_one_value, 0), (source_two_value, lane_count // 2)):
-        for pair_index in range(lane_count // 2):
-            left = (
-                _signed_lane(source_value, pair_index * 2, element_bits)
-                if saturating
-                else _lane(source_value, pair_index * 2, element_bits)
-            )
-            right = (
-                _signed_lane(source_value, pair_index * 2 + 1, element_bits)
-                if saturating
-                else _lane(source_value, pair_index * 2 + 1, element_bits)
-            )
-            value = left - right if subtract else left + right
-            if saturating:
-                value = max(-(1 << (element_bits - 1)), min((1 << (element_bits - 1)) - 1, value))
-            lane = output_offset + pair_index
-            result |= (value & ((1 << element_bits) - 1)) << (lane * element_bits)
+    if opcode in {_VEX128_VPMULDQ_OPCODE, _VEX128_VPMULUDQ_OPCODE, _VEX128_VPMULUDQ_2BYTE_OPCODE}:
+        result = _vex128_multiply_result(opcode, source_one_value, source_two_value)
+    else:
+        result = _vex128_horizontal_result(element_bits, subtract, saturating, source_one_value, source_two_value)
     _write_vector_register(mu, "YMM", destination, result)
     return length
 
@@ -311,6 +311,39 @@ def _signed_lane(value: int, index: int, bits: int) -> int:
     lane = _lane(value, index, bits)
     sign = 1 << (bits - 1)
     return lane - (1 << bits) if lane & sign else lane
+
+
+def _vex128_multiply_result(opcode: int, source_one: int, source_two: int) -> int:
+    result = 0
+    signed = opcode == _VEX128_VPMULDQ_OPCODE
+    for output_index, source_index in enumerate((0, 2)):
+        lane_reader = _signed_lane if signed else _lane
+        left = lane_reader(source_one, source_index, 32)
+        right = lane_reader(source_two, source_index, 32)
+        result |= (left * right & ((1 << 64) - 1)) << (output_index * 64)
+    return result
+
+
+def _vex128_horizontal_result(
+    element_bits: int,
+    subtract: bool,
+    saturating: bool,
+    source_one: int,
+    source_two: int,
+) -> int:
+    lane_count = 128 // element_bits
+    result = 0
+    for source_value, output_offset in ((source_one, 0), (source_two, lane_count // 2)):
+        for pair_index in range(lane_count // 2):
+            lane_reader = _signed_lane if saturating else _lane
+            left = lane_reader(source_value, pair_index * 2, element_bits)
+            right = lane_reader(source_value, pair_index * 2 + 1, element_bits)
+            value = left - right if subtract else left + right
+            if saturating:
+                value = max(-(1 << (element_bits - 1)), min((1 << (element_bits - 1)) - 1, value))
+            lane = output_offset + pair_index
+            result |= (value & ((1 << element_bits) - 1)) << (lane * element_bits)
+    return result
 
 
 def _decode_three_byte_vex_registers(prefix: bytes, modrm: int) -> tuple[int, int, int]:
