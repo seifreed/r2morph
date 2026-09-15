@@ -272,22 +272,61 @@ def build_evidence(
     }
 
 
+def merge_decompiler_evidence(base_evidence: Mapping[str, Any], adversarial: Mapping[str, Any]) -> dict[str, Any]:
+    """Attach a completed adversarial analyzer campaign to existing evidence."""
+    merged = json.loads(json.dumps(base_evidence))
+    passes = merged.get("passes")
+    if not isinstance(passes, dict):
+        raise ValueError("base maturity evidence is missing passes")
+    for pass_name, evidence in passes.items():
+        if not isinstance(pass_name, str) or not isinstance(evidence, dict):
+            raise ValueError("base maturity evidence has an invalid pass row")
+        evidence["decompiler"] = _decompiler_evidence(pass_name, adversarial)
+    blockers = {
+        field: sorted(
+            pass_name
+            for pass_name, evidence in passes.items()
+            if isinstance(evidence.get(field), Mapping) and evidence[field].get("status") not in complete
+        )
+        for field, complete in (
+            ("performance", {"complete"}),
+            ("behavioral_false_positive", {"measured"}),
+            ("affected_instructions", {"measured"}),
+            ("composition", {"complete"}),
+            ("decompiler", {"comparable"}),
+        )
+    }
+    summary = merged.get("summary")
+    if not isinstance(summary, dict):
+        raise ValueError("base maturity evidence is missing summary")
+    summary["blockers"] = {field: values for field, values in blockers.items() if values}
+    summary["blocker_totals"] = {field: len(values) for field, values in blockers.items()}
+    summary["adversarial_evidence_attached"] = True
+    return merged
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--differential", type=Path, required=True)
     parser.add_argument("--extended", type=Path, required=True)
     parser.add_argument("--composition-dir", type=Path, required=True)
     parser.add_argument("--adversarial", type=Path)
+    parser.add_argument("--base-evidence", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    composition_paths = sorted(args.composition_dir.rglob("*.xml"))
     adversarial = _read_json(args.adversarial) if args.adversarial else None
-    evidence = build_evidence(
-        _read_json(args.differential),
-        _read_json(args.extended),
-        read_composition_evidence(composition_paths),
-        adversarial,
-    )
+    if args.base_evidence:
+        if adversarial is None:
+            raise ValueError("--base-evidence requires --adversarial")
+        evidence = merge_decompiler_evidence(_read_json(args.base_evidence), adversarial)
+    else:
+        composition_paths = sorted(args.composition_dir.rglob("*.xml"))
+        evidence = build_evidence(
+            _read_json(args.differential),
+            _read_json(args.extended),
+            read_composition_evidence(composition_paths),
+            adversarial,
+        )
     args.output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 

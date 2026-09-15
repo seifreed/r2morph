@@ -332,6 +332,16 @@ jobs:
           path: adversarial-reports
           merge-multiple: false
 
+      - name: Download upstream maturity evidence
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: maturity-evidence-merged-*
+          path: upstream-maturity
+          merge-multiple: false
+
       - name: Merge and validate benchmark evidence
         run: |
           python - <<'PY'
@@ -393,8 +403,26 @@ jobs:
           )
           PY
 
+      - name: Attach decompiler evidence to maturity report
+        if: github.event_name == 'workflow_run'
+        run: |
+          base_evidence=$(find upstream-maturity -name maturity-evidence-merged.json -print -quit)
+          if [ -z "$base_evidence" ]; then
+            echo "upstream maturity evidence is missing" >&2
+            exit 1
+          fi
+          python scripts/maturity_evidence.py \
+            --differential "$base_evidence" \
+            --extended "$base_evidence" \
+            --composition-dir . \
+            --base-evidence "$base_evidence" \
+            --adversarial adversarial-benchmark-merged.json \
+            --output maturity-evidence-with-adversarial.json
+
       - name: Upload merged benchmark evidence
         uses: actions/upload-artifact@v7
         with:
           name: adversarial-benchmark-merged-${{ github.run_id }}-${{ github.run_attempt }}
-          path: adversarial-benchmark-merged.json
+          path: |
+            adversarial-benchmark-merged.json
+            maturity-evidence-with-adversarial.json

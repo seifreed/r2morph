@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.maturity_evidence import build_evidence, read_composition_evidence
+from scripts.maturity_evidence import build_evidence, merge_decompiler_evidence, read_composition_evidence
 from tests.utils.assertions import expect
 
 _EXPECTED_DECOMPILER_BLOCKERS = 2
@@ -110,4 +110,48 @@ def test_differential_workflow_publishes_maturity_evidence() -> None:
     expect(
         "scripts/maturity_evidence.py" in workflow.read_text(encoding="utf-8")
         and "maturity-evidence-merged.json" in workflow.read_text(encoding="utf-8")
+    )
+
+
+def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "adversarial-benchmark.yml"
+    content = workflow.read_text(encoding="utf-8")
+
+    expect(
+        "run-id: ${{ github.event.workflow_run.id }}" in content
+        and "--base-evidence" in content
+        and "maturity-evidence-with-adversarial.json" in content
+    )
+
+
+def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
+    base = {
+        "passes": {
+            "NopInsertion": {
+                "performance": {"status": "complete"},
+                "behavioral_false_positive": {"status": "measured"},
+                "affected_instructions": {"status": "measured"},
+                "composition": {"status": "complete"},
+                "decompiler": {"status": "pending"},
+            }
+        },
+        "summary": {"blockers": {"decompiler": ["NopInsertion"]}, "blocker_totals": {"decompiler": 1}},
+    }
+    adversarial = {
+        "summary": {
+            "analyzer_effectiveness_by_pass": {
+                "NopInsertion": {
+                    "radare2": {"completion_percent": 100.0},
+                    "objdump": {"completion_percent": 100.0},
+                }
+            }
+        }
+    }
+
+    evidence = merge_decompiler_evidence(base, adversarial)
+
+    expect(
+        evidence["passes"]["NopInsertion"]["decompiler"]["status"] == "comparable"
+        and evidence["summary"]["blocker_totals"]["decompiler"] == 0
+        and evidence["summary"]["adversarial_evidence_attached"] is True
     )
