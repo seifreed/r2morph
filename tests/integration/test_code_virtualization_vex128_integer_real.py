@@ -16,8 +16,10 @@ from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_integer_x86_64"
 _PHADDD_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_phaddd_x86_64"
+_SAT_SUB_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_sat_sub_x86_64"
 _EXPECTED_EXIT_CODE = 10
 _PHADDD_EXPECTED_EXIT_CODE = 42
+_SAT_SUB_EXPECTED_EXIT_CODE = 125
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 10
 
 
@@ -56,8 +58,22 @@ def test_vex128_integer_fixture_virtualization_preserves_result(tmp_path: Path) 
     )
 
 
+def test_vex128_integer_fixture_emulator_preserves_result(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated_vex128_integer_emulated"
+    _mutate_fixture(_FIXTURE, mutated)
+
+    expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
 def test_vphaddd_fixture_original_returns_expected_code() -> None:
     expect(emulate_exit_code(_PHADDD_FIXTURE) == _PHADDD_EXPECTED_EXIT_CODE)
+
+
+def test_vex128_sat_sub_fixture_emulator_preserves_result(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated_vex128_sat_sub_emulated"
+    _mutate_fixture(_SAT_SUB_FIXTURE, mutated)
+
+    expect(emulate_exit_code(mutated) == _SAT_SUB_EXPECTED_EXIT_CODE)
 
 
 def test_vphaddd_fixture_virtualization_preserves_result(tmp_path: Path) -> None:

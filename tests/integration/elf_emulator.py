@@ -52,6 +52,21 @@ _STACK_TOP = _STACK_BASE + _STACK_SIZE // 2
 # while still terminating a true infinite loop near-instantly.
 _INSTRUCTION_CAP = 2_000_000
 _TRACE_EVENT_CAP = 256
+_VEX128_OPCODE_EXTRACT = 0x19
+_VEX128_OPCODE_INSERT = 0x18
+_VEX_OPCODE_XOR = 0xEF
+_VEX_3_BYTE_PREFIX = 0xC4
+_VEX_2_BYTE_PREFIX = 0xC5
+_VEX_MAP_0F = 0x02
+_VEX_MAP_0F3A = 0x03
+_VEX_MODRM_REGISTER = 0xC0
+_MODRM_REGISTER_MODE = 3
+_SIB_INDEX_NONE = 4
+_SIB_BASE_DISP32 = 5
+_DISPLACEMENT_BYTE_SIZE = 1
+_DISPLACEMENT_DWORD_SIZE = 4
+_VEX_XMM_LANE_BITS = 128
+_VEX_XMM_LANE_MASK = (1 << _VEX_XMM_LANE_BITS) - 1
 
 
 def _map_pages(mu: Any, mapped: set[int], start: int, length: int) -> None:
@@ -78,6 +93,185 @@ def _load_segments(mu: Any, raw: bytes, load_bias: int) -> set[int]:
     return mapped
 
 
+def _vector_register_id(prefix: str, index: int) -> int:
+    return int(getattr(_x86_const, f"UC_X86_REG_{prefix}{index}"))
+
+
+def _read_vector_register(mu: Any, prefix: str, index: int) -> int:
+    return int(mu.reg_read(_vector_register_id(prefix, index)))
+
+
+def _write_vector_register(mu: Any, prefix: str, index: int, value: int) -> None:
+    mu.reg_write(_vector_register_id(prefix, index), value)
+
+
+def _general_register_id(index: int) -> int:
+    names = (
+        "RAX",
+        "RCX",
+        "RDX",
+        "RBX",
+        "RSP",
+        "RBP",
+        "RSI",
+        "RDI",
+        "R8",
+        "R9",
+        "R10",
+        "R11",
+        "R12",
+        "R13",
+        "R14",
+        "R15",
+    )
+    return int(getattr(_x86_const, f"UC_X86_REG_{names[index]}"))
+
+
+def _memory_operand(mu: Any, prefix: bytes, modrm: int, instruction: bytes) -> tuple[int, int] | None:
+    mod = modrm >> 6
+    if mod == _MODRM_REGISTER_MODE:
+        return None
+    cursor = 5
+    rm = modrm & 0x07
+    index_extension = ((~prefix[1] >> 6) & 1) << 3
+    base_extension = ((~prefix[1] >> 5) & 1) << 3
+    if rm == _SIB_INDEX_NONE:
+        sib = instruction[cursor]
+        cursor += 1
+        scale = 1 << (sib >> 6)
+        index = (sib >> 3) & 0x07
+        base = sib & 0x07
+        index_value = (
+            0 if index == _SIB_INDEX_NONE else int(mu.reg_read(_general_register_id(index | index_extension))) * scale
+        )
+        if mod == 0 and base == _SIB_BASE_DISP32:
+            base_value = 0
+            displacement_size = _DISPLACEMENT_DWORD_SIZE
+        else:
+            base_value = int(mu.reg_read(_general_register_id(base | base_extension)))
+            displacement_size = _DISPLACEMENT_BYTE_SIZE if mod == 1 else _DISPLACEMENT_DWORD_SIZE
+    elif mod == 0 and rm == _SIB_BASE_DISP32:
+        base_value = 0
+        index_value = 0
+        displacement_size = _DISPLACEMENT_DWORD_SIZE
+    else:
+        base_value = int(mu.reg_read(_general_register_id(rm | base_extension)))
+        index_value = 0
+        displacement_size = _DISPLACEMENT_BYTE_SIZE if mod == 1 else _DISPLACEMENT_DWORD_SIZE
+    displacement = int.from_bytes(instruction[cursor : cursor + displacement_size], "little", signed=True)
+    return base_value + index_value + displacement, cursor + displacement_size
+
+
+def _decode_three_byte_vex_registers(prefix: bytes, modrm: int) -> tuple[int, int, int]:
+    vex_source = (~prefix[2] >> 3) & 0x0F
+    destination = ((modrm >> 3) & 0x07) | (((~prefix[1] >> 7) & 1) << 3)
+    source = (modrm & 0x07) | (((~prefix[1] >> 5) & 1) << 3)
+    return destination, source, vex_source
+
+
+def _emulate_vex128_extract(mu: Any, instruction: bytes) -> int | None:
+    if not (
+        instruction[0] == _VEX_3_BYTE_PREFIX
+        and instruction[1] & 0x1F == _VEX_MAP_0F3A
+        and instruction[3] == _VEX128_OPCODE_EXTRACT
+        and instruction[4] & 0xC0 == _VEX_MODRM_REGISTER
+    ):
+        return None
+    destination, source, _ = _decode_three_byte_vex_registers(instruction[:4], instruction[4])
+    lane = instruction[5] & 1
+    value = _read_vector_register(mu, "YMM", source) >> (lane * _VEX_XMM_LANE_BITS)
+    _write_vector_register(mu, "XMM", destination, value & _VEX_XMM_LANE_MASK)
+    return 6
+
+
+def _emulate_vex128_insert(mu: Any, instruction: bytes) -> int | None:
+    if (
+        instruction[0] == _VEX_3_BYTE_PREFIX
+        and instruction[1] & 0x1F == _VEX_MAP_0F3A
+        and instruction[3] == _VEX128_OPCODE_INSERT
+        and instruction[4] & 0xC0 == _VEX_MODRM_REGISTER
+    ):
+        destination, source, vex_source = _decode_three_byte_vex_registers(instruction[:4], instruction[4])
+        lane = instruction[5] & 1
+        inserted = _read_vector_register(mu, "XMM", source) & _VEX_XMM_LANE_MASK
+        original = _read_vector_register(mu, "YMM", vex_source)
+        value = (
+            (original & _VEX_XMM_LANE_MASK) | (inserted << _VEX_XMM_LANE_BITS)
+            if lane
+            else inserted | (original & ~_VEX_XMM_LANE_MASK)
+        )
+        _write_vector_register(mu, "YMM", destination, value)
+        return 6
+    if (
+        instruction[0] == _VEX_3_BYTE_PREFIX
+        and instruction[1] & 0x1F == _VEX_MAP_0F3A
+        and instruction[3] == _VEX128_OPCODE_INSERT
+    ):
+        destination, _, vex_source = _decode_three_byte_vex_registers(instruction[:4], instruction[4])
+        modrm = instruction[4]
+        operand = _memory_operand(mu, instruction[:4], modrm, instruction)
+        if operand is None:
+            return None
+        address_operand, immediate_offset = operand
+        lane = instruction[immediate_offset] & 1
+        inserted = int.from_bytes(mu.mem_read(address_operand, 16), "little")
+        original = _read_vector_register(mu, "YMM", vex_source)
+        value = (
+            (original & _VEX_XMM_LANE_MASK) | (inserted << _VEX_XMM_LANE_BITS)
+            if lane
+            else inserted | (original & ~_VEX_XMM_LANE_MASK)
+        )
+        _write_vector_register(mu, "YMM", destination, value)
+        return immediate_offset + 1
+    return None
+
+
+def _emulate_vpxor(mu: Any, instruction: bytes) -> int | None:
+    if (
+        instruction[0] == _VEX_2_BYTE_PREFIX
+        and instruction[2] == _VEX_OPCODE_XOR
+        and instruction[3] & 0xC0 == _VEX_MODRM_REGISTER
+    ):
+        destination = (instruction[3] >> 3) & 0x07
+        source = instruction[3] & 0x07
+        vex_source = (~instruction[1] >> 3) & 0x0F
+        value = _read_vector_register(mu, "YMM", vex_source) ^ _read_vector_register(mu, "YMM", source)
+        _write_vector_register(mu, "YMM", destination, value)
+        return 4
+    if (
+        instruction[0] == _VEX_3_BYTE_PREFIX
+        and instruction[1] & 0x1F == _VEX_MAP_0F
+        and instruction[3] == _VEX_OPCODE_XOR
+        and instruction[4] & 0xC0 == _VEX_MODRM_REGISTER
+    ):
+        destination, source, vex_source = _decode_three_byte_vex_registers(instruction[:4], instruction[4])
+        value = _read_vector_register(mu, "YMM", vex_source) ^ _read_vector_register(mu, "YMM", source)
+        _write_vector_register(mu, "YMM", destination, value)
+        return 5
+    return None
+
+
+def _emulate_unsupported_avx_instruction(mu: Any, address: int) -> int | None:
+    """Emulate the YMM state bridges absent from the installed Unicorn build."""
+    instruction = bytes(mu.mem_read(address, 15))
+    length = _emulate_vex128_extract(mu, instruction)
+    if length is not None:
+        return length
+    length = _emulate_vex128_insert(mu, instruction)
+    if length is not None:
+        return length
+    return _emulate_vpxor(mu, instruction)
+
+
+def _unsupported_avx_hook(mu: Any, _user_data: Any) -> bool:
+    address = int(mu.reg_read(_x86_const.UC_X86_REG_RIP))
+    length = _emulate_unsupported_avx_instruction(mu, address)
+    if length is None:
+        return False
+    mu.reg_write(_x86_const.UC_X86_REG_RIP, address + length)
+    return True
+
+
 def emulate_exit_code(path: Path, *, load_bias: int = 0) -> int | None:
     """Load an ELF64's PT_LOADs at ``load_bias`` and run from the entrypoint to the exit syscall."""
     raw = path.read_bytes()
@@ -87,6 +281,7 @@ def emulate_exit_code(path: Path, *, load_bias: int = 0) -> int | None:
     mapped = _load_segments(mu, raw, load_bias)
     _map_pages(mu, mapped, _STACK_BASE, _STACK_SIZE)
     mu.reg_write(_x86_const.UC_X86_REG_RSP, _STACK_TOP)
+    mu.hook_add(_unicorn.UC_HOOK_INSN_INVALID, _unsupported_avx_hook)
 
     state = _TraceState()
     mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state, mapped), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
@@ -234,6 +429,7 @@ def trace_execution(path: Path, *, load_bias: int = 0) -> dict[str, object]:
     mapped = _load_segments(mu, raw, load_bias)
     _map_pages(mu, mapped, _STACK_BASE, _STACK_SIZE)
     mu.reg_write(_x86_const.UC_X86_REG_RSP, _STACK_TOP)
+    mu.hook_add(_unicorn.UC_HOOK_INSN_INVALID, _unsupported_avx_hook)
     mu.hook_add(_unicorn.UC_HOOK_CODE, _code_hook(state, _register_ids()))
     mu.hook_add(_unicorn.UC_HOOK_MEM_FETCH_UNMAPPED, _fetch_fault_hook(state))
     mu.hook_add(_unicorn.UC_HOOK_MEM_READ, _read_hook(state, executable_ranges))
