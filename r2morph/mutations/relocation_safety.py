@@ -79,8 +79,10 @@ def instructions_are_relocatable(instructions: list[dict[str, Any]]) -> bool:
             return False
         if "rip" in str(instruction.get("disasm", "")).lower():
             return False
-        if has_pc_relative_memory_operand(instruction) is True:
-            return False
+        if "bytes" in instruction:
+            pc_relative = has_pc_relative_memory_operand(instruction)
+            if pc_relative is True or pc_relative is None:
+                return False
     return True
 
 

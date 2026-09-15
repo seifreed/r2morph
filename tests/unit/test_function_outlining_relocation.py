@@ -88,3 +88,20 @@ def test_chunk_bytes_rejects_pc_relative_memory_instruction() -> None:
     )
 
     expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)
+
+
+def test_chunk_bytes_rejects_memory_instruction_without_decodable_bytes() -> None:
+    chunk = OutlinedChunk(
+        1,
+        _CHUNK_ADDRESS,
+        [
+            {
+                "offset": _CHUNK_ADDRESS,
+                "size": 7,
+                "bytes": "not-hex",
+                "disasm": "lea rax, [rcx + rdx]",
+            }
+        ],
+    )
+
+    expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)
