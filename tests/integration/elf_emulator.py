@@ -51,6 +51,8 @@ _STACK_TOP = _STACK_BASE + _STACK_SIZE // 2
 # on the order of 10^4-10^5 instructions, so 2_000_000 leaves ample headroom
 # while still terminating a true infinite loop near-instantly.
 _INSTRUCTION_CAP = 2_000_000
+_TRACE_TIME_CAP_SECONDS = 30.0
+_TRACE_EMULATION_SLICE_MICROSECONDS = 1_000_000
 _TRACE_EVENT_CAP = 256
 _VEX128_OPCODE_EXTRACT = 0x19
 _VEX128_OPCODE_INSERT = 0x18
@@ -545,6 +547,7 @@ class _TraceState:
     pending_restore_address: int | None = None
     pending_restore_end: int | None = None
     pending_restore_bytes: bytes | None = None
+    deadline: float | None = None
 
 
 _REGISTER_NAMES = (
@@ -574,6 +577,9 @@ def _register_ids() -> dict[str, int]:
 def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
     def on_code(uc: Any, address: int, _size: int, _user_data: object) -> None:
         state.instruction_count += 1
+        if state.deadline is not None and state.instruction_count % 1024 == 0 and time.perf_counter() >= state.deadline:
+            uc.emu_stop()
+            return
         state.last_address = address
         if len(state.register_samples) < _TRACE_EVENT_CAP:
             state.register_samples.append({name: uc.reg_read(identifier) for name, identifier in register_ids.items()})
@@ -672,12 +678,22 @@ def _run_trace(
     mu: Any, entry: int, state: _TraceState, executable_ranges: tuple[tuple[int, int], ...]
 ) -> dict[str, object]:
     started = time.perf_counter()
+    state.deadline = started + _TRACE_TIME_CAP_SECONDS
     status = "completed"
     error: str | None = None
     try:
+        mu.reg_write(_x86_const.UC_X86_REG_RIP, entry)
         while "code" not in state.captured and state.instruction_count < _INSTRUCTION_CAP:
             current = int(mu.reg_read(_x86_const.UC_X86_REG_RIP))
-            mu.emu_start(current, 0, count=_INSTRUCTION_CAP - state.instruction_count)
+            mu.emu_start(
+                current,
+                0,
+                timeout=_TRACE_EMULATION_SLICE_MICROSECONDS,
+                count=_INSTRUCTION_CAP - state.instruction_count,
+            )
+            if state.deadline is not None and time.perf_counter() >= state.deadline:
+                status = "time_cap"
+                break
         if "code" not in state.captured and state.instruction_count >= _INSTRUCTION_CAP:
             status = "instruction_cap"
     except _unicorn.UcError as exc:
