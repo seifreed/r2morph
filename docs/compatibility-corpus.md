@@ -207,7 +207,10 @@ so unavailable analyzer slots cannot be mistaken for completed adversarial
 coverage.
 The scheduled adversarial workflow validates the campaign summary before upload
 so missing pass/tool rows and missing applications for the ten contractual
-corpus passes fail the run. It includes the same twelve generated ELF
+corpus passes fail the run. It also starts automatically after a successful
+`Differential Corpus By Pass` run and checks out that run's exact `head_sha`,
+so analyzer evidence is refreshed for the same source revision rather than
+drifting behind the differential campaign. It includes the same twelve generated ELF
 x86-64 variants used by the differential campaign, records that scope in the
 merged report, and partitions generated fixtures together with repository
 fixtures. Extended-pass application gaps remain published as explicit evidence
