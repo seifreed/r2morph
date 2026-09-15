@@ -906,7 +906,7 @@ def test_baseline_script_runs_directly_from_the_repository(tmp_path: Path) -> No
         [sys.executable, str(_BASELINE_SCRIPT), str(_FIXTURE), "--count", "1", "--output", str(output)]
     )
 
-    expect(result.returncode == 0 and output.is_file())
+    expect(result.returncode == 0 and output.is_file() and result.stdout == b"")
 
 
 def test_baseline_script_rejects_a_selected_pass_without_mutations(tmp_path: Path) -> None:

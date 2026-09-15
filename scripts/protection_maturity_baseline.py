@@ -1881,6 +1881,13 @@ def _measure_campaign(
     }
 
 
+def _emit_report(rendered: str, output: Path | None) -> None:
+    if output:
+        output.write_text(rendered)
+        return
+    print(rendered, end="")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
@@ -1986,9 +1993,7 @@ def main() -> None:
     if args.require_complete_evidence and args.fixture_shard_count == 1 and (error := _complete_evidence_error(report)):
         parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
-    if args.output:
-        args.output.write_text(rendered)
-    print(rendered, end="")
+    _emit_report(rendered, args.output)
 
 
 if __name__ == "__main__":
