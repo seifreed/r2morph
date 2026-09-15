@@ -29,12 +29,12 @@ contract until they have equivalent real-fixture coverage.
 | NOP insertion | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O x86-64/AArch64 preview | Preview targets require real structural validation and checksum/signature handling; no official cross-platform contract | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
 | Instruction substitution | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O AArch64 preview | Rule coverage is ISA-specific; preview evidence covers one real PE fixture and direct 12-bit ARM64 move-immediate substitutions | `tests/product_smoke`, `tests/integration`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutation_passes_end_to_end_more2.py` |
 | Register substitution | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O AArch64 preview | Requires proven liveness and ABI preservation; non-ELF targets remain experimental | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_register_substitution_arm64.py` |
-| Instruction expansion | Experimental | ELF x86-64 | Selected by the compatibility corpus; wider replacements still need cross-platform evidence and analyzer-effectiveness results | `README.md`, `docs/compatibility-corpus.md` |
-| Block reordering | Experimental | ELF x86-64 | Selected by the compatibility corpus; complex indirect control flow is rejected | `tests/integration`, `docs/compatibility-corpus.md` |
-| Dead code injection | Experimental | ELF x86-64 | Selected by the compatibility corpus; placement depends on available safe regions and analyzer-effectiveness evidence remains incomplete | `tests/integration/test_dead_code_injection_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
-| Control-flow flattening | Experimental | ELF x86-64 | Selected by the compatibility corpus; cross-tool decompiler benchmark and composition evidence remain incomplete | `tests/integration/test_control_flow_flattening_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
+| Instruction expansion | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; wider replacements still need cross-platform evidence and analyzer-effectiveness results | `README.md`, `docs/compatibility-corpus.md` |
+| Block reordering | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; complex indirect control flow is rejected | `tests/integration`, `docs/compatibility-corpus.md` |
+| Dead code injection | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; placement depends on available safe regions and analyzer-effectiveness evidence remains incomplete | `tests/integration/test_dead_code_injection_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
+| Control-flow flattening | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; cross-tool decompiler evidence remains incomplete | `tests/integration/test_control_flow_flattening_flag_safe_real.py`, `tests/integration/test_protection_maturity_baseline.py`, `docs/compatibility-corpus.md` |
 | Opaque predicates | Experimental | ELF x86-64 | Predicate families are not exhaustive | `README.md` |
-| Code virtualization | Experimental | ELF x86-64 | Selected by the compatibility corpus; unsupported functions are rejected or conservatively unchanged with diagnostics | `docs/protection-maturity.md`, `docs/compatibility-corpus.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
+| Code virtualization | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; unsupported functions are rejected or conservatively unchanged with diagnostics | `docs/protection-maturity.md`, `docs/compatibility-corpus.md`, `tests/integration/test_code_virtualization_generic_isa_real.py` |
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |
@@ -46,8 +46,8 @@ contract until they have equivalent real-fixture coverage.
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
 | Stack strings | Experimental | ELF x86-64 | Current apply path is preview-only; runtime string-reference rewriting is not implemented | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
-| Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus; pattern coverage is intentionally narrow and composition evidence remains incomplete | `README.md`, `docs/compatibility-corpus.md` |
-| Polymorphic engine | Experimental | ELF x86-64 | A real ELF x86-64 composition matrix covers six child-pass orders across three fixtures; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
+| Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; pattern coverage is intentionally narrow | `README.md`, `docs/compatibility-corpus.md` |
+| Polymorphic engine | Experimental | ELF x86-64 | The current real ELF x86-64 smoke covers 39 cases and 30 directional pairs; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
 
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
@@ -127,11 +127,15 @@ decompiler-effectiveness measurement, 11 without contractual composition
 support, and 35 total per-pass maturity field gaps across 3 maturity gap
 categories, with no remaining exhaustive affected-instruction catalogue gap in
 the static profiles. The current
-scheduled artifact records ten passes without independent semantic
+last archived scheduled artifact records ten passes without independent semantic
 false-positive observations, eight without contractual composition support,
 22 without comparable decompiler evidence, and one without an applied
 affected-instruction catalogue: 41 per-pass evidence blockers across four
 measured categories. Performance coverage is complete in that artifact. The
+current tracked composition smoke adds applied evidence for seven of those
+eight composition gaps, leaving only `StackStrings` preview-only; the next
+scheduled aggregate must confirm that reduction before the archived totals are
+replaced. The
 generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
@@ -168,8 +172,9 @@ pending completion. The merged maturity artifact
 records zero performance-field gaps, ten passes without independent semantic
 false-positive observations, eight without contractual composition coverage,
 22 without comparable decompiler evidence, and `StackStrings` without an
-applied instruction catalogue. These remain release gaps rather than support
-claims.
+applied instruction catalogue. The current follow-up smoke has applied
+composition evidence for seven of those eight gaps; these remain release gaps
+until the scheduled aggregate publishes the updated artifact.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. SSA/liveness
