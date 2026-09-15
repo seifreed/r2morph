@@ -1,5 +1,9 @@
 name: Differential Corpus By Pass
 
+concurrency:
+  group: differential-corpus-${{ github.ref }}
+  cancel-in-progress: false
+
 "on":
   schedule:
     - cron: "17 4 * * 1"
@@ -204,6 +208,8 @@ jobs:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("composition smoke contains failures or errors")
+          if len(cases) != 32:
+              raise SystemExit(f"composition smoke case count drifted: {len(cases)}")
           names = {case.attrib.get("name", "") for case in cases}
           required = {
               "test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code",
@@ -240,6 +246,23 @@ jobs:
           }
           if not required.issubset(names):
               raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")
+          directional_pairs = {
+              "NopInsertion->InstructionSubstitution",
+              "InstructionSubstitution->NopInsertion",
+              "NopInsertion->ConstantUnfolding",
+              "ConstantUnfolding->NopInsertion",
+              "ConstantUnfolding->InstructionSubstitution",
+              "InstructionSubstitution->ConstantUnfolding",
+          }
+          for name in required:
+              if "after_nop" in name:
+                  parameter = name.rsplit("[", 1)[-1].rstrip("]")
+                  directional_pairs.add(f"NopInsertion->{parameter}")
+              elif "before_nop" in name:
+                  parameter = name.rsplit("[", 1)[-1].rstrip("]")
+                  directional_pairs.add(f"{parameter}->NopInsertion")
+          if len(directional_pairs) != 30:
+              raise SystemExit(f"composition directional matrix drift: {sorted(directional_pairs)}")
           Path("composition-differential.xml").stat()
           PY
 
@@ -257,10 +280,10 @@ jobs:
             tests/integration/test_code_virtualization_call_abi_real.py::test_virtualized_elf_preserves_integer_varargs_stack_abi \
             tests/integration/test_code_virtualization_call_abi_real.py::test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi \
             tests/integration/test_code_virtualization_internal_icall_real.py::test_virtualized_direct_call_to_separate_function_preserves_exit_code \
-            tests/integration/test_code_virtualization_internal_icall_real.py::test_virtualized_local_indirect_call_preserves_exit_code \
+            tests/integration/test_code_virtualization_internal_icall_real.py \
             tests/integration/test_code_virtualization_fp_vex_nondestructive_real.py::test_virtualized_vex_nondestructive_packed_add_preserves_result \
             tests/integration/test_code_virtualization_simd_integer_real.py::test_simd_integer_fixture_virtualization_preserves_exit_code \
-            tests/integration/test_code_virtualization_exception_gate_real.py::test_code_virtualization_preserves_exception_from_call_inside_virtualized_function \
+            tests/integration/test_code_virtualization_exception_gate_real.py \
             tests/integration/test_code_virtualization_generic_isa_real.py \
             tests/unit/test_code_virtualization_static_dataflow.py \
             tests/integration/test_code_virtualization_memory_widths_real.py \
@@ -292,9 +315,12 @@ jobs:
               "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi",
               "test_virtualized_direct_call_to_separate_function_preserves_exit_code",
               "test_virtualized_local_indirect_call_preserves_exit_code",
+              "test_virtualized_memory_indirect_call_preserves_external_result",
+              "test_virtualized_memory_indirect_call_with_stack_arguments_preserves_exit_code",
               "test_virtualized_vex_nondestructive_packed_add_preserves_result",
               "test_simd_integer_fixture_virtualization_preserves_exit_code",
               "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
+              "test_code_virtualization_propagates_exception_through_virtualized_native_call",
               "test_static_dataflow",
               "test_virtualized_byte_word_memory_arithmetic_preserves_result",
               "test_virtualized_no_base_indexed_memory_arithmetic_preserves_result",
@@ -408,6 +434,11 @@ jobs:
                   "behavioral false positives: "
                   f"{report['campaign_summary']['passes_with_behavioral_false_positives']}"
               )
+          if report["campaign_summary"]["passes_with_independent_semantic_false_positives"]:
+              raise SystemExit(
+                  "independent semantic false positives: "
+                  f"{report['campaign_summary']['passes_with_independent_semantic_false_positives']}"
+              )
           if report["campaign_summary"]["behavioral_validation_missing_observations_by_pass"]:
               raise SystemExit(
                   "missing behavioral validation observations: "
@@ -423,6 +454,18 @@ jobs:
               for value in report["campaign_summary"]["behavioral_false_positive_rate_percent_by_pass"].values()
           ):
               raise SystemExit("extended maturity false-positive rate is non-zero")
+          if any(
+              value != 0
+              for value in report["campaign_summary"][
+                  "independent_semantic_false_positive_rate_percent_by_pass"
+              ].values()
+          ):
+              raise SystemExit("extended maturity independent semantic false-positive rate is non-zero")
+          if report["campaign_summary"]["independent_semantic_missing_observations_by_pass"]:
+              raise SystemExit(
+                  "extended maturity independent semantic observations are incomplete: "
+                  f"{report['campaign_summary']['independent_semantic_missing_observations_by_pass']}"
+              )
           required_metrics = {"output_size", "runtime_duration", "static_metric", "transform_duration"}
           missing_metrics = {
               name: count
@@ -591,7 +634,7 @@ jobs:
               allowed_skip_text="Mach-O arm64 execution requires macOS",
           )
           validate_junit_reports("vm-semantic-reports", 55)
-          validate_junit_reports("composition-reports", 31)
+          validate_junit_reports("composition-reports", 32)
 
           expected_fuzz_targets = {
               "binary_parsers": 64,
@@ -642,6 +685,11 @@ jobs:
               raise SystemExit(
                   "extended maturity false positives after all shards: "
                   f"{maturity_summary['passes_with_behavioral_false_positives']}"
+              )
+          if maturity_summary["passes_with_independent_semantic_false_positives"]:
+              raise SystemExit(
+                  "extended maturity independent semantic false positives after all shards: "
+                  f"{maturity_summary['passes_with_independent_semantic_false_positives']}"
               )
           if maturity_summary["behavioral_validation_missing_observations_by_pass"]:
               raise SystemExit(
@@ -706,11 +754,26 @@ jobs:
                   "behavioral false positives after all shards: "
                   f"{summary['passes_with_behavioral_false_positives']}"
               )
+          if summary["passes_with_independent_semantic_false_positives"]:
+              raise SystemExit(
+                  "independent semantic false positives after all shards: "
+                  f"{summary['passes_with_independent_semantic_false_positives']}"
+              )
           if summary["behavioral_validation_missing_observations_by_pass"]:
               raise SystemExit(
                   "missing behavioral observations after all shards: "
                   f"{summary['behavioral_validation_missing_observations_by_pass']}"
               )
+          if summary["independent_semantic_missing_observations_by_pass"]:
+              raise SystemExit(
+                  "missing independent semantic observations after all shards: "
+                  f"{summary['independent_semantic_missing_observations_by_pass']}"
+              )
+          if any(
+              value != 0
+              for value in summary["independent_semantic_false_positive_rate_percent_by_pass"].values()
+          ):
+              raise SystemExit("independent semantic false-positive rate is non-zero")
           if summary["total_complete_evidence_missing_runs"] != 0:
               raise SystemExit("merged differential report has incomplete evidence")
           if summary["passes_with_incomplete_coverage"]:
@@ -1138,7 +1201,7 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 1:
+          if len(cases) != 2:
               raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
@@ -1147,6 +1210,13 @@ jobs:
               for case in cases
           ):
               raise SystemExit("native ELF ARM64 test name is missing")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm64_instruction_substitution_preserves_native_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 substitution test name is missing")
           PY
 
       - name: Upload native ELF ARM64 evidence

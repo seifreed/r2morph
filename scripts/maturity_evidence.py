@@ -32,6 +32,9 @@ _SIMPLE_COMPOSITION_LABELS = {
     "substitution": "InstructionSubstitution",
     "constant": "ConstantUnfolding",
 }
+_SIMPLE_COMPOSITION_PAIR_RE = re.compile(
+    r"\[(?P<first>nop|constant|substitution)_then_(?P<second>nop|constant|substitution)\]"
+)
 _PERFORMANCE_FIELDS = (
     "output_size_coverage_percent",
     "transform_duration_coverage_percent",
@@ -77,12 +80,36 @@ def _composition_passes(test_name: str) -> set[str]:
     return {pass_name for token, pass_name in _SIMPLE_COMPOSITION_LABELS.items() if token in lowered}
 
 
+def _composition_pairs(test_name: str) -> set[tuple[str, str]]:
+    """Extract directional pass pairs from the real-fixture test names."""
+    simple_match = _SIMPLE_COMPOSITION_PAIR_RE.search(test_name)
+    if simple_match is not None:
+        first = _SIMPLE_COMPOSITION_LABELS[simple_match.group("first")]
+        second = _SIMPLE_COMPOSITION_LABELS[simple_match.group("second")]
+        return {(first, second)}
+
+    lowered = test_name.lower()
+    parameters = _COMPOSITION_PARAMETER_RE.findall(test_name)
+    if not parameters:
+        return set()
+    parameter = parameters[-1].lower()
+    extended = _COMPOSITION_PARAMETER_MAP.get(parameter)
+    if extended is None or "nop" not in lowered:
+        return set()
+    if "after_nop" in lowered:
+        return {("NopInsertion", extended)}
+    if "before_nop" in lowered:
+        return {(extended, "NopInsertion")}
+    return set()
+
+
 def read_composition_evidence(paths: Iterable[Path]) -> dict[str, Any]:
     """Merge composition JUnit reports while retaining test-level counts."""
     reports = tuple(paths)
     if not reports:
         raise ValueError("at least one composition report is required")
     pass_counts: dict[str, int] = {}
+    pair_counts: dict[str, int] = {}
     case_count = failure_count = error_count = skipped_count = 0
     for path in reports:
         root = defusedxml.ElementTree.parse(path).getroot()
@@ -94,6 +121,9 @@ def read_composition_evidence(paths: Iterable[Path]) -> dict[str, Any]:
         for case in cases:
             for pass_name in _composition_passes(case.attrib.get("name", "")):
                 pass_counts[pass_name] = pass_counts.get(pass_name, 0) + 1
+            for first, second in _composition_pairs(case.attrib.get("name", "")):
+                pair = f"{first}->{second}"
+                pair_counts[pair] = pair_counts.get(pair, 0) + 1
     return {
         "report_count": len(reports),
         "case_count": case_count,
@@ -101,6 +131,8 @@ def read_composition_evidence(paths: Iterable[Path]) -> dict[str, Any]:
         "error_count": error_count,
         "skipped_count": skipped_count,
         "pass_case_counts": dict(sorted(pass_counts.items())),
+        "pair_case_counts": dict(sorted(pair_counts.items())),
+        "directional_pair_count": len(pair_counts),
     }
 
 
@@ -114,13 +146,31 @@ def _behavioral_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
     applied = summary.get("applied_runs", 0)
     missing = summary.get("behavioral_validation_missing_observations", 0)
     rate = summary.get("behavioral_false_positive_rate_percent")
-    complete = isinstance(applied, int) and applied > 0 and missing == 0 and isinstance(rate, int | float)
+    independent = summary.get("independent_semantic_observations", 0)
+    independent_missing = summary.get("independent_semantic_missing_observations", 0)
+    independent_rate = summary.get("independent_semantic_false_positive_rate_percent")
+    complete = (
+        isinstance(applied, int)
+        and applied > 0
+        and missing == 0
+        and isinstance(rate, int | float)
+        and isinstance(independent, int)
+        and independent > 0
+        and independent_missing == 0
+        and isinstance(independent_rate, int | float)
+    )
     return {
         "status": "measured" if complete else "incomplete",
         "observations": summary.get("behavioral_validation_observations", 0),
         "false_positive_observations": summary.get("behavioral_false_positive_observations", 0),
         "false_positive_rate_percent": rate,
         "missing_observations": missing,
+        "independent_semantic_observations": independent,
+        "independent_semantic_false_positive_observations": summary.get(
+            "independent_semantic_false_positive_observations", 0
+        ),
+        "independent_semantic_false_positive_rate_percent": independent_rate,
+        "independent_semantic_missing_observations": independent_missing,
     }
 
 
@@ -150,7 +200,13 @@ def _composition_status(pass_name: str, summary: Mapping[str, Any], composition:
         and applied > 0
     )
     status = "complete" if complete else "preview-only" if applied == 0 else "incomplete"
-    return {"status": status, "case_count": count}
+    return {
+        "status": status,
+        "case_count": count,
+        "directional_pair_count": sum(
+            value for pair, value in composition.get("pair_case_counts", {}).items() if pass_name in pair.split("->")
+        ),
+    }
 
 
 def _decompiler_evidence(

@@ -510,8 +510,15 @@ def test_behavioral_false_positive_metric_counts_applied_runtime_changes() -> No
     metrics = _behavioral_false_positive_metrics(
         [
             (
-                {"baseline_runtime_inputs": [runtime, runtime]},
-                {"transformation": {"status": "applied"}, "runtime_inputs": [runtime, changed]},
+                {
+                    "baseline_runtime_inputs": [runtime, runtime],
+                    "baseline_unicorn": {"status": "completed", "exit_code": 0},
+                },
+                {
+                    "transformation": {"status": "applied"},
+                    "runtime_inputs": [runtime, changed],
+                    "unicorn": {"status": "completed", "exit_code": 1},
+                },
             )
         ]
     )
@@ -521,6 +528,10 @@ def test_behavioral_false_positive_metric_counts_applied_runtime_changes() -> No
         and metrics["behavioral_false_positive_observations"] == _EXPECTED_BEHAVIORAL_FALSE_POSITIVE_OBSERVATIONS
         and metrics["behavioral_validation_missing_observations"] == 0
         and metrics["behavioral_false_positive_rate_percent"] == _EXPECTED_BEHAVIORAL_FALSE_POSITIVE_RATE
+        and metrics["independent_semantic_observations"] == 1
+        and metrics["independent_semantic_false_positive_observations"] == 1
+        and metrics["independent_semantic_missing_observations"] == 0
+        and metrics["independent_semantic_false_positive_rate_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
     )
 
 

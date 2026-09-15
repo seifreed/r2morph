@@ -983,10 +983,13 @@ def _runtime_observable_failure_reasons(
 def _behavioral_false_positive_metrics(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
 ) -> dict[str, int | float]:
-    """Measure applied mutations that change a native runtime observable."""
+    """Measure applied mutations against native and independent VM observables."""
     complete_observations = 0
     false_positive_observations = 0
     missing_observations = 0
+    independent_observations = 0
+    independent_false_positive_observations = 0
+    independent_missing_observations = 0
     for fixture, run in seed_runs:
         transformation = run.get("transformation")
         if not isinstance(transformation, Mapping) or transformation.get("status") != "applied":
@@ -1009,12 +1012,31 @@ def _behavioral_false_positive_metrics(
             complete_observations += 1
             if not _runtime_observables_equal(baseline, actual):
                 false_positive_observations += 1
+        baseline_unicorn = fixture.get("baseline_unicorn")
+        actual_unicorn = run.get("unicorn")
+        if not isinstance(baseline_unicorn, Mapping) or baseline_unicorn.get("status") != "completed":
+            continue
+        if not isinstance(actual_unicorn, Mapping) or actual_unicorn.get("status") != "completed":
+            independent_missing_observations += 1
+            continue
+        independent_observations += 1
+        if baseline_unicorn.get("exit_code") != actual_unicorn.get("exit_code"):
+            independent_false_positive_observations += 1
     rate = round(false_positive_observations / complete_observations * 100.0, 2) if complete_observations else 0.0
+    independent_rate = (
+        round(independent_false_positive_observations / independent_observations * 100.0, 2)
+        if independent_observations
+        else 0.0
+    )
     return {
         "behavioral_validation_observations": complete_observations,
         "behavioral_false_positive_observations": false_positive_observations,
         "behavioral_validation_missing_observations": missing_observations,
         "behavioral_false_positive_rate_percent": rate,
+        "independent_semantic_observations": independent_observations,
+        "independent_semantic_false_positive_observations": independent_false_positive_observations,
+        "independent_semantic_missing_observations": independent_missing_observations,
+        "independent_semantic_false_positive_rate_percent": independent_rate,
     }
 
 
@@ -1505,6 +1527,10 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             summaries,
             "behavioral_false_positive_observations",
         ),
+        "passes_with_independent_semantic_false_positives": _passes_with_positive_runs(
+            summaries,
+            "independent_semantic_false_positive_observations",
+        ),
         "passes_with_missing_affected_instruction_evidence": _passes_with_positive_runs(
             summaries,
             "affected_instruction_missing_runs",
@@ -1538,6 +1564,24 @@ def _multi_pass_campaign_summary(summaries: dict[str, object]) -> dict[str, obje
             if isinstance(summary, dict)
             and isinstance(summary.get("behavioral_validation_missing_observations"), int)
             and summary["behavioral_validation_missing_observations"] > 0
+        },
+        "independent_semantic_observations_by_pass": {
+            name: summary["independent_semantic_observations"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict) and isinstance(summary.get("independent_semantic_observations"), int)
+        },
+        "independent_semantic_missing_observations_by_pass": {
+            name: summary["independent_semantic_missing_observations"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict)
+            and isinstance(summary.get("independent_semantic_missing_observations"), int)
+            and summary["independent_semantic_missing_observations"] > 0
+        },
+        "independent_semantic_false_positive_rate_percent_by_pass": {
+            name: summary["independent_semantic_false_positive_rate_percent"]
+            for name, summary in summaries.items()
+            if isinstance(summary, dict)
+            and isinstance(summary.get("independent_semantic_false_positive_rate_percent"), int | float)
         },
         "runtime_observable_failure_reasons_by_pass": _reason_map_by_pass(
             summaries,

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
@@ -18,7 +19,7 @@ def _build_arm64_elf(tmp_path: Path) -> Path:
     source.write_text(
         "__attribute__((noinline)) int transform(int value) {\n"
         "    volatile int cell = value;\n"
-        '    __asm__ volatile("mov w8, w8" ::: "w8");\n'
+        '    __asm__ volatile("mov w8, #0" ::: "w8");\n'
         "    return cell + 5;\n"
         "}\n"
         "int main(void) { return transform(37) == 42 ? 0 : 1; }\n"
@@ -50,4 +51,27 @@ def test_elf_arm64_nop_insertion_preserves_native_exit_code(tmp_path: Path) -> N
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (0, "", ""),
         "native ELF ARM64 NOP insertion changed execution",
+    )
+
+
+def test_elf_arm64_instruction_substitution_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"aarch64", "arm64"}:
+        pytest.skip("native ELF ARM64 execution requires a Linux ARM64 runner")
+
+    binary_path = _build_arm64_elf(tmp_path)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = InstructionSubstitutionPass(
+            config={"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(binary)
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (0, "", ""),
+        "native ELF ARM64 instruction substitution changed execution",
     )

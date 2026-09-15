@@ -6,6 +6,7 @@ from scripts.maturity_evidence import build_evidence, read_composition_evidence
 from tests.utils.assertions import expect
 
 _EXPECTED_DECOMPILER_BLOCKERS = 2
+_EXPECTED_DIRECTIONAL_PAIR_COUNT = 3
 
 
 def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str, object]:
@@ -15,6 +16,10 @@ def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str
         "behavioral_false_positive_observations": 0,
         "behavioral_validation_missing_observations": incomplete_observations,
         "behavioral_false_positive_rate_percent": 0.0,
+        "independent_semantic_observations": applied_runs,
+        "independent_semantic_false_positive_observations": 0,
+        "independent_semantic_missing_observations": incomplete_observations,
+        "independent_semantic_false_positive_rate_percent": 0.0,
         "affected_instruction_applied_runs": applied_runs,
         "affected_instruction_missing_runs": 0,
         "affected_instruction_mnemonics": ["mov"] if applied_runs else [],
@@ -50,8 +55,22 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
     expect(
         evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "complete"
         and evidence["passes"]["StackStrings"]["composition"]["status"] == "preview-only"
+        and composition_evidence["directional_pair_count"] == _EXPECTED_DIRECTIONAL_PAIR_COUNT
         and evidence["summary"]["blocker_totals"]["decompiler"] == _EXPECTED_DECOMPILER_BLOCKERS
     )
+
+
+def test_composition_evidence_keeps_simple_pair_direction(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        "<testsuite><testcase name='test_composed_real_passes_preserve_exit_code[nop_then_constant]'/>"
+        "<testcase name='test_composed_real_passes_preserve_exit_code[constant_then_nop]'/></testsuite>",
+        encoding="utf-8",
+    )
+
+    evidence = read_composition_evidence((composition,))
+
+    expect(evidence["pair_case_counts"] == {"ConstantUnfolding->NopInsertion": 1, "NopInsertion->ConstantUnfolding": 1})
 
 
 def test_maturity_evidence_marks_missing_behavioral_observation_as_incomplete(tmp_path: Path) -> None:
@@ -64,6 +83,22 @@ def test_maturity_evidence_marks_missing_behavioral_observation_as_incomplete(tm
         "pass_names": ["NopInsertion"],
         "summary": {"NopInsertion": _summary(1, incomplete_observations=1)},
     }
+    evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
+
+    expect(evidence["passes"]["NopInsertion"]["behavioral_false_positive"]["status"] == "incomplete")
+
+
+def test_maturity_evidence_requires_independent_semantic_observation(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        "<testsuite><testcase name='test_composed_real_passes_preserve_exit_code[nop_then_substitution]'/></testsuite>",
+        encoding="utf-8",
+    )
+    summary = _summary(1)
+    summary["independent_semantic_observations"] = 0
+    summary["independent_semantic_missing_observations"] = 1
+    report = {"pass_names": ["NopInsertion"], "summary": {"NopInsertion": summary}}
+
     evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
 
     expect(evidence["passes"]["NopInsertion"]["behavioral_false_positive"]["status"] == "incomplete")

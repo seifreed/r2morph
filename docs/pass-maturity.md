@@ -12,12 +12,14 @@ The compatibility corpus selection currently covers `BlockReordering`,
 `DeadCodeInjection`, `InstructionExpansion`, `InstructionSubstitution`,
 `NopInsertion`, `PatternSubstitution`, and `RegisterSubstitution`.
 
-The continuous composition smoke exercises both `NopInsertion` followed by
-each extended maturity pass and each extended pass followed by `NopInsertion`
-on the real ELF x86-64 fixture. The pass-ordering and runtime-preservation
-checks live in `tests/integration/test_polymorphic_engine_real.py`. This closes
-the declared two-pass order matrix; arbitrary pass-order combinations remain
-outside the contract until they have equivalent real-fixture coverage.
+The continuous composition smoke exercises six directional pairs among
+`NopInsertion`, `InstructionSubstitution`, and `ConstantUnfolding`, plus both
+orders of `NopInsertion` with each of the twelve extended maturity passes. The
+workflow requires all 30 directional pairs and all 32 real-fixture test cases.
+The pass-ordering and runtime-preservation checks live in
+`tests/integration/test_polymorphic_engine_real.py`. This closes the declared
+two-pass order matrix; arbitrary pass-order combinations remain outside the
+contract until they have equivalent real-fixture coverage.
 
 | Pass | Status | Target | Current limitation | Evidence |
 |---|---|---|---|---|
@@ -97,7 +99,9 @@ selected pass. It now also executes generated argv inputs and records
 `behavioral_validation_observations`,
 `behavioral_false_positive_observations`, and
 `behavioral_false_positive_rate_percent` for every applied run. A non-zero
-rate or missing observation fails the scheduled evidence gate; this is the
+rate or missing observation fails the scheduled evidence gate. The same gate
+also compares every applicable applied run against the independent Unicorn
+exit-code oracle and rejects missing or divergent oracle observations; this is the
 native-runtime oracle for behavioral false positives, not a static-risk claim.
 Applied mutation records now also contribute a bounded
 `affected_instruction_mnemonics` catalogue and record count per pass. An
