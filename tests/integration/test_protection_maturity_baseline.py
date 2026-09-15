@@ -79,6 +79,7 @@ _EXPECTED_MULTI_PASS_COUNT = 2
 _EXPECTED_CORPUS_PASS_COUNT = len(CORPUS_PASS_NAMES)
 _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = (
+    "generated_abi",
     "generated_branch",
     "generated_extended",
     "generated_lookup",

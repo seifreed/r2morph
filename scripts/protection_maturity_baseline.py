@@ -194,6 +194,38 @@ int main(int argc, char **argv) {
     return argc > 1 ? mix((const uint8_t *)argv[1], (int)strlen(argv[1])) : mix((const uint8_t *)"r2morph", 7);
 }
 """,
+    "generated_abi": r"""
+#include <stdarg.h>
+#include <stdint.h>
+
+static _Thread_local uint64_t thread_value;
+
+__attribute__((noinline)) static long sum_stack(
+    long first, long second, long third, long fourth,
+    long fifth, long sixth, long seventh, long eighth
+) {
+    return first + second + third + fourth + fifth + sixth + seventh + eighth;
+}
+
+__attribute__((noinline)) static long sum_varargs(int count, ...) {
+    va_list values;
+    va_start(values, count);
+    long total = 0;
+    for (int index = 0; index < count; ++index) {
+        total += va_arg(values, long);
+    }
+    va_end(values);
+    return total;
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    thread_value = (uint64_t)argc + 5u;
+    long total = sum_stack(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+    total += sum_varargs(5, 1L, 2L, 3L, 4L, 5L);
+    return (int)((total + (long)thread_value) & 127L);
+}
+""",
     "generated_lookup": r"""
 #include <stdint.h>
 
