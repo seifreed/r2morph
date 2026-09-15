@@ -667,7 +667,8 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         and summary["differential_evidence_blockers"]["corpus_gap_scope"]
         == {"corpus_families": [], "input_sources": []}
         and summary["differential_blocker_totals"]["total_differential_blockers"] == _EXPECTED_DIFFERENTIAL_BLOCKERS
-        and sorted(evidence) == ["corpus_gap_scope", "platform_gap_scope", "platform_scope"]
+        and sorted(evidence)
+        == ["corpus_gap_scope", "platform_gap_scope", "platform_scope", "preview_smoke_scope"]
         and all(row["status"] != "complete" for row in evidence.values())
         and all((_ROOT / path).exists() for path in evidence_paths)
     )

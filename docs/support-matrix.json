@@ -1585,6 +1585,16 @@
             "docs/protection-maturity-corpus.json"
           ]
         },
+        "preview_smoke_scope": {
+          "status": "preview-smoke-only",
+          "evidence_quality": "cross-platform-differential-smoke",
+          "evidence": [
+            ".github/workflows/differential-corpus.yml",
+            "tests/integration/test_mutation_nop_insertion_arm64.py",
+            "tests/integration/test_platform_deeper.py",
+            "tests/integration/test_elf_arm64_native.py"
+          ]
+        },
         "platform_gap_scope": {
           "status": "platform-parity-incomplete",
           "evidence_quality": "declared-gap-scope",

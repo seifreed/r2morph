@@ -398,6 +398,11 @@ def _differential_gap_evidence() -> dict[str, object]:
             "evidence_quality": "scheduled-corpus-gate",
             "evidence": [workflow, contract, "docs/protection-maturity-corpus.json"],
         },
+        "preview_smoke_scope": {
+            "status": "preview-smoke-only",
+            "evidence_quality": "cross-platform-differential-smoke",
+            "evidence": list(_DIFFERENTIAL_PREVIEW_SMOKE_SCOPE["evidence"]),
+        },
         "platform_gap_scope": {
             "status": "platform-parity-incomplete",
             "evidence_quality": "declared-gap-scope",
