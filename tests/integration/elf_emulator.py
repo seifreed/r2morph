@@ -55,6 +55,8 @@ _TRACE_EVENT_CAP = 256
 _VEX128_OPCODE_EXTRACT = 0x19
 _VEX128_OPCODE_INSERT = 0x18
 _VEX_OPCODE_XOR = 0xEF
+_VEX_MAP_0F38 = 2
+_VEX128_VPMULDQ_OPCODE = 0x28
 _VEX128_UNPACK_ELEMENT_BITS = {
     0x60: (8, False),
     0x61: (16, False),
@@ -65,6 +67,15 @@ _VEX128_UNPACK_ELEMENT_BITS = {
     0x6A: (32, True),
     0x6D: (64, True),
 }
+_VEX128_SPECIAL_OPCODES = {
+    0x01: (16, False, False),
+    0x02: (32, False, False),
+    0x03: (16, False, True),
+    0x05: (16, True, False),
+    0x06: (32, True, False),
+    0x07: (16, True, True),
+    0x28: (32, False, False),
+}
 _VEX_3_BYTE_PREFIX = 0xC4
 _VEX_2_BYTE_PREFIX = 0xC5
 _VEX_MAP_0F = 0x02
@@ -73,6 +84,7 @@ _VEX_MODRM_REGISTER = 0xC0
 _MODRM_REGISTER_MODE = 3
 _SIB_INDEX_NONE = 4
 _SIB_BASE_DISP32 = 5
+_RIP_RELATIVE_RM = 5
 _DISPLACEMENT_BYTE_SIZE = 1
 _DISPLACEMENT_DWORD_SIZE = 4
 _VEX128_REGISTER_INSTRUCTION_LENGTH = 4
@@ -162,8 +174,8 @@ def _memory_operand(mu: Any, prefix: bytes, modrm: int, instruction: bytes) -> t
         else:
             base_value = int(mu.reg_read(_general_register_id(base | base_extension)))
             displacement_size = _DISPLACEMENT_BYTE_SIZE if mod == 1 else _DISPLACEMENT_DWORD_SIZE
-    elif mod == 0 and rm == _SIB_BASE_DISP32:
-        base_value = 0
+    elif mod == 0 and rm == _RIP_RELATIVE_RM:
+        base_value = int(mu.reg_read(_x86_const.UC_X86_REG_RIP)) + cursor + _DISPLACEMENT_DWORD_SIZE
         index_value = 0
         displacement_size = _DISPLACEMENT_DWORD_SIZE
     else:
@@ -230,6 +242,75 @@ def _emulate_vex128_unpack(mu: Any, instruction: bytes) -> int | None:
         result |= ((source >> (source_index * element_bits)) & element_mask) << (output_index * element_bits)
     _write_vector_register(mu, "YMM", destination, result)
     return length
+
+
+def _emulate_vex128_special(mu: Any, instruction: bytes) -> int | None:
+    if len(instruction) < _VEX128_THREE_BYTE_INSTRUCTION_LENGTH or instruction[0] != _VEX_3_BYTE_PREFIX:
+        return None
+    prefix = instruction[:3]
+    if prefix[1] & 0x1F != _VEX_MAP_0F38 or prefix[2] & 0x04:
+        return None
+    opcode = instruction[3]
+    operation = _VEX128_SPECIAL_OPCODES.get(opcode)
+    if operation is None:
+        return None
+    element_bits, subtract, saturating = operation
+    modrm = instruction[4]
+    destination = ((modrm >> 3) & 0x07) | (((~prefix[1] >> 7) & 1) << 3)
+    source_one = (~prefix[2] >> 3) & 0x0F
+    source_one_value = _read_vector_register(mu, "XMM", source_one)
+    if modrm & 0xC0 == _VEX_MODRM_REGISTER:
+        source_two = (modrm & 0x07) | (((~prefix[1] >> 5) & 1) << 3)
+        source_two_value = _read_vector_register(mu, "XMM", source_two)
+        length = 5
+    else:
+        operand = _memory_operand(mu, prefix, modrm, instruction)
+        if operand is None:
+            return None
+        address, length = operand
+        source_two_value = int.from_bytes(mu.mem_read(address, 16), "little")
+
+    if opcode == _VEX128_VPMULDQ_OPCODE:
+        result = 0
+        for output_index, source_index in enumerate((0, 2)):
+            left = _signed_lane(source_one_value, source_index, 32)
+            right = _signed_lane(source_two_value, source_index, 32)
+            value = left * right
+            result |= (value & ((1 << 64) - 1)) << (output_index * 64)
+        _write_vector_register(mu, "YMM", destination, result)
+        return length
+
+    lane_count = 128 // element_bits
+    result = 0
+    for source_value, output_offset in ((source_one_value, 0), (source_two_value, lane_count // 2)):
+        for pair_index in range(lane_count // 2):
+            left = (
+                _signed_lane(source_value, pair_index * 2, element_bits)
+                if saturating
+                else _lane(source_value, pair_index * 2, element_bits)
+            )
+            right = (
+                _signed_lane(source_value, pair_index * 2 + 1, element_bits)
+                if saturating
+                else _lane(source_value, pair_index * 2 + 1, element_bits)
+            )
+            value = left - right if subtract else left + right
+            if saturating:
+                value = max(-(1 << (element_bits - 1)), min((1 << (element_bits - 1)) - 1, value))
+            lane = output_offset + pair_index
+            result |= (value & ((1 << element_bits) - 1)) << (lane * element_bits)
+    _write_vector_register(mu, "YMM", destination, result)
+    return length
+
+
+def _lane(value: int, index: int, bits: int) -> int:
+    return (value >> (index * bits)) & ((1 << bits) - 1)
+
+
+def _signed_lane(value: int, index: int, bits: int) -> int:
+    lane = _lane(value, index, bits)
+    sign = 1 << (bits - 1)
+    return lane - (1 << bits) if lane & sign else lane
 
 
 def _decode_three_byte_vex_registers(prefix: bytes, modrm: int) -> tuple[int, int, int]:
@@ -345,6 +426,8 @@ def _patch_vex128_unpack(mu: Any, address: int, state: _TraceState) -> bool:
         return False
     instruction = bytes(mu.mem_read(address, 15))
     length = _emulate_vex128_unpack(mu, instruction)
+    if length is None:
+        length = _emulate_vex128_special(mu, instruction)
     if length is None:
         return False
     state.pending_restore_address = address
