@@ -118,7 +118,13 @@ def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
     content = workflow.read_text(encoding="utf-8")
 
     expect(
-        "run-id: ${{ github.event.workflow_run.id }}" in content
+        "differential_run_id:" in content
+        and "inputs.differential_run_id != ''" in content
+        and (
+            "run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || "
+            "inputs.differential_run_id }}"
+        )
+        in content
         and "--base-evidence" in content
         and "maturity-evidence-with-adversarial.json" in content
     )

@@ -4,6 +4,11 @@ name: Adversarial Analysis Benchmark
   schedule:
     - cron: "47 3 * * 1"
   workflow_dispatch:
+    inputs:
+      differential_run_id:
+        description: "Successful Differential Corpus By Pass run whose maturity artifact should be attached"
+        required: false
+        type: string
   workflow_run:
     workflows: ["Differential Corpus By Pass"]
     types: [completed]
@@ -333,11 +338,11 @@ jobs:
           merge-multiple: false
 
       - name: Download upstream maturity evidence
-        if: github.event_name == 'workflow_run'
+        if: ${{ github.event_name == 'workflow_run' || inputs.differential_run_id != '' }}
         uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.differential_run_id }}
           pattern: maturity-evidence-merged-*
           path: upstream-maturity
           merge-multiple: false
@@ -404,7 +409,7 @@ jobs:
           PY
 
       - name: Attach decompiler evidence to maturity report
-        if: github.event_name == 'workflow_run'
+        if: ${{ github.event_name == 'workflow_run' || inputs.differential_run_id != '' }}
         run: |
           base_evidence=$(find upstream-maturity -name maturity-evidence-merged.json -print -quit)
           if [ -z "$base_evidence" ]; then
