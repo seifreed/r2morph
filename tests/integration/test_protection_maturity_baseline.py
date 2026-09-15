@@ -13,6 +13,7 @@ from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_FAMILY,
     _GENERATED_CORPUS_PROFILES,
     _GENERATED_CORPUS_SOURCES,
+    _GENERATED_CPP_CORPUS_PROFILES,
     _GENERATED_RUNTIME_INPUTS,
     _PASS_TYPES,
     _PREVIEW_BYTES,
@@ -81,12 +82,15 @@ _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_abi",
     "generated_branch",
+    "generated_cpp",
     "generated_extended",
     "generated_lookup",
     "generated_memory",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
-_EXPECTED_GENERATED_FIXTURE_COUNT = len(_EXPECTED_GENERATED_CORPUS_SOURCES) * len(_GENERATED_CORPUS_PROFILES)
+_EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 1) * len(
+    _GENERATED_CORPUS_PROFILES
+) + len(_GENERATED_CPP_CORPUS_PROFILES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
@@ -818,6 +822,10 @@ def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
             "clang-o2",
         )
     )
+
+
+def test_generated_corpus_declares_cpp_compiler_variants() -> None:
+    expect(tuple(profile[0] for profile in _GENERATED_CPP_CORPUS_PROFILES) == ("gxx-o2", "clangxx-o2"))
 
 
 def test_complete_evidence_gate_accepts_full_single_pass_report() -> None:

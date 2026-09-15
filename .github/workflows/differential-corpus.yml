@@ -90,13 +90,15 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if not 0 < summary["generated_fixture_count"] <= 50:
+          if not 0 < summary["generated_fixture_count"] <= 52:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_abi", "generated_branch", "generated_extended", "generated_lookup", "generated_memory")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2")
           )
+          expected_generated += ["generated_cpp_gxx-o2", "generated_cpp_clangxx-o2"]
+          expected_generated.sort()
           if not set(summary["generated_fixture_names"]).issubset(expected_generated):
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
           if summary["corpus_gap_scope"] != {"corpus_families": [], "input_sources": []}:
@@ -740,7 +742,9 @@ jobs:
               for source in ("generated_abi", "generated_branch", "generated_extended", "generated_lookup", "generated_memory")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2")
           )
-          if summary["generated_fixture_count"] != 50 or summary["generated_fixture_names"] != expected_generated:
+          expected_generated += ["generated_cpp_gxx-o2", "generated_cpp_clangxx-o2"]
+          expected_generated.sort()
+          if summary["generated_fixture_count"] != 52 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")
           if summary["passes_without_applied_runs"]:
               raise SystemExit(

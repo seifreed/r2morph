@@ -97,6 +97,10 @@ _GENERATED_CORPUS_PROFILES = (
     ("clang-o0", "clang", "-O0", "-fno-pie", "-no-pie"),
     ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
 )
+_GENERATED_CPP_CORPUS_PROFILES = (
+    ("gxx-o2", "g++", "-O2", "-fno-pie", "-no-pie"),
+    ("clangxx-o2", "clang++", "-O2", "-fno-pie", "-no-pie"),
+)
 _GENERATED_UNREACHABLE_PADDING = r"""
 __asm__(
     ".section .text.r2morph_padding,\"ax\",@progbits\n"
@@ -321,6 +325,39 @@ int main(int argc, char **argv) {
     result += opaque_probe((int)length) + data_flow_probe((int)length);
     free(copy);
     return (result + (int)strlen(extended_anchor)) & 127;
+}
+""",
+    "generated_cpp": r"""
+#include <cstdint>
+
+template <typename T>
+static T mix_value(T value, T salt) {
+    return (value ^ salt) + static_cast<T>(value << 3);
+}
+
+class Probe {
+public:
+    virtual ~Probe() = default;
+    virtual int run(int value) const = 0;
+};
+
+class DerivedProbe final : public Probe {
+public:
+    int run(int value) const override {
+        const std::uint32_t mixed = mix_value<std::uint32_t>(
+            static_cast<std::uint32_t>(value), 0x13579bdfu);
+        return static_cast<int>((mixed ^ (mixed >> 11)) & 127u);
+    }
+};
+
+static int dispatch(const Probe& probe, int value) {
+    return probe.run(value) ^ 0x2d;
+}
+
+int main(int argc, char** argv) {
+    (void)argv;
+    const DerivedProbe probe;
+    return (dispatch(probe, argc) + dispatch(probe, argc + 1)) & 127;
 }
 """,
 }
@@ -942,9 +979,11 @@ def build_generated_corpus(output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     fixtures: list[Path] = []
     for name, source_text in _GENERATED_CORPUS_SOURCES.items():
-        source = output_dir / f"{name}.c"
+        cpp_source = name == "generated_cpp"
+        source = output_dir / f"{name}{'.cpp' if cpp_source else '.c'}"
         source.write_text(f"{_GENERATED_UNREACHABLE_PADDING}\n{source_text}", encoding="utf-8")
-        for profile, compiler, optimization, *linker_flags in _GENERATED_CORPUS_PROFILES:
+        profiles = _GENERATED_CPP_CORPUS_PROFILES if cpp_source else _GENERATED_CORPUS_PROFILES
+        for profile, compiler, optimization, *linker_flags in profiles:
             if shutil.which(compiler) is None:
                 raise RuntimeError(f"required generated corpus compiler is unavailable: {compiler}")
             binary = output_dir / f"{name}_{profile}"
