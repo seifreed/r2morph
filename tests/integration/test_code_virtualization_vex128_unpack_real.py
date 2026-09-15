@@ -10,6 +10,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -33,3 +34,7 @@ def test_vex128_unpack_fixture_virtualization_preserves_result(tmp_path: Path) -
             f"virtualized unpack fixture returned {result.returncode}, expected {_EXPECTED_EXIT_CODE}; "
             f"stdout={result.stdout!r}, stderr={result.stderr!r}",
         )
+
+
+def test_vex128_unpack_fixture_emulator_preserves_result() -> None:
+    expect(emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE, "VEX.128 unpack emulator result diverged")

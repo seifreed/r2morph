@@ -55,6 +55,16 @@ _TRACE_EVENT_CAP = 256
 _VEX128_OPCODE_EXTRACT = 0x19
 _VEX128_OPCODE_INSERT = 0x18
 _VEX_OPCODE_XOR = 0xEF
+_VEX128_UNPACK_ELEMENT_BITS = {
+    0x60: (8, False),
+    0x61: (16, False),
+    0x62: (32, False),
+    0x6C: (64, False),
+    0x68: (8, True),
+    0x69: (16, True),
+    0x6A: (32, True),
+    0x6D: (64, True),
+}
 _VEX_3_BYTE_PREFIX = 0xC4
 _VEX_2_BYTE_PREFIX = 0xC5
 _VEX_MAP_0F = 0x02
@@ -65,6 +75,8 @@ _SIB_INDEX_NONE = 4
 _SIB_BASE_DISP32 = 5
 _DISPLACEMENT_BYTE_SIZE = 1
 _DISPLACEMENT_DWORD_SIZE = 4
+_VEX128_REGISTER_INSTRUCTION_LENGTH = 4
+_VEX128_THREE_BYTE_INSTRUCTION_LENGTH = 5
 _VEX_XMM_LANE_BITS = 128
 _VEX_XMM_LANE_MASK = (1 << _VEX_XMM_LANE_BITS) - 1
 
@@ -131,7 +143,7 @@ def _memory_operand(mu: Any, prefix: bytes, modrm: int, instruction: bytes) -> t
     mod = modrm >> 6
     if mod == _MODRM_REGISTER_MODE:
         return None
-    cursor = 5
+    cursor = 5 if prefix[0] == _VEX_3_BYTE_PREFIX else 4
     rm = modrm & 0x07
     index_extension = ((~prefix[1] >> 6) & 1) << 3
     base_extension = ((~prefix[1] >> 5) & 1) << 3
@@ -160,6 +172,64 @@ def _memory_operand(mu: Any, prefix: bytes, modrm: int, instruction: bytes) -> t
         displacement_size = _DISPLACEMENT_BYTE_SIZE if mod == 1 else _DISPLACEMENT_DWORD_SIZE
     displacement = int.from_bytes(instruction[cursor : cursor + displacement_size], "little", signed=True)
     return base_value + index_value + displacement, cursor + displacement_size
+
+
+def _vex128_unpack_operands(
+    instruction: bytes,
+) -> tuple[int, int, int, int, int] | None:
+    if instruction[0] == _VEX_2_BYTE_PREFIX and len(instruction) >= _VEX128_REGISTER_INSTRUCTION_LENGTH:
+        prefix = instruction[:2]
+        opcode_offset = 2
+        modrm_offset = 3
+        if prefix[1] & 0x04:
+            return None
+    elif instruction[0] == _VEX_3_BYTE_PREFIX and len(instruction) >= _VEX128_THREE_BYTE_INSTRUCTION_LENGTH:
+        prefix = instruction[:3]
+        opcode_offset = 3
+        modrm_offset = 4
+        if prefix[1] & 0x1F != 1 or prefix[2] & 0x04:
+            return None
+    else:
+        return None
+    opcode = instruction[opcode_offset]
+    operation = _VEX128_UNPACK_ELEMENT_BITS.get(opcode)
+    modrm = instruction[modrm_offset]
+    if operation is None:
+        return None
+    destination = ((modrm >> 3) & 0x07) | (((~prefix[1] >> 7) & 1) << 3)
+    source_one = (~prefix[-1] >> 3) & 0x0F
+    source_two = (modrm & 0x07) | (((~prefix[1] >> 5) & 1) << 3)
+    return destination, source_one, source_two, opcode, modrm_offset
+
+
+def _emulate_vex128_unpack(mu: Any, instruction: bytes) -> int | None:
+    operands = _vex128_unpack_operands(instruction)
+    if operands is None:
+        return None
+    destination, source_one, source_two, opcode, modrm_offset = operands
+    element_bits, high_half = _VEX128_UNPACK_ELEMENT_BITS[opcode]
+    source_one_value = _read_vector_register(mu, "XMM", source_one)
+    modrm = instruction[modrm_offset]
+    if modrm & 0xC0 == _VEX_MODRM_REGISTER:
+        source_two_value = _read_vector_register(mu, "XMM", source_two)
+        length = modrm_offset + 1
+    else:
+        operand = _memory_operand(mu, instruction[:modrm_offset], modrm, instruction)
+        if operand is None:
+            return None
+        address, length = operand
+        source_two_value = int.from_bytes(mu.mem_read(address, 16), "little")
+
+    elements_per_source = 128 // element_bits
+    start = elements_per_source // 2 if high_half else 0
+    element_mask = (1 << element_bits) - 1
+    result = 0
+    for output_index in range(elements_per_source):
+        source = source_one_value if output_index % 2 == 0 else source_two_value
+        source_index = start + output_index // 2
+        result |= ((source >> (source_index * element_bits)) & element_mask) << (output_index * element_bits)
+    _write_vector_register(mu, "YMM", destination, result)
+    return length
 
 
 def _decode_three_byte_vex_registers(prefix: bytes, modrm: int) -> tuple[int, int, int]:
@@ -263,6 +333,39 @@ def _emulate_unsupported_avx_instruction(mu: Any, address: int) -> int | None:
     return _emulate_vpxor(mu, instruction)
 
 
+def _patch_vex128_unpack(mu: Any, address: int, state: _TraceState) -> bool:
+    if state.pending_restore_end is not None and address >= state.pending_restore_end:
+        if state.pending_restore_address is None or state.pending_restore_bytes is None:
+            raise RuntimeError("VEX.128 restore state is incomplete")
+        mu.mem_write(state.pending_restore_address, state.pending_restore_bytes)
+        state.pending_restore_address = None
+        state.pending_restore_end = None
+        state.pending_restore_bytes = None
+    if state.pending_restore_end is not None:
+        return False
+    instruction = bytes(mu.mem_read(address, 15))
+    length = _emulate_vex128_unpack(mu, instruction)
+    if length is None:
+        return False
+    state.pending_restore_address = address
+    state.pending_restore_end = address + length
+    state.pending_restore_bytes = instruction[:length]
+    mu.mem_write(address, b"\x90" * length)
+    mu.ctl_remove_cache(address, address + length)
+    mu.reg_write(_x86_const.UC_X86_REG_RIP, address + length)
+    mu.emu_stop()
+    return True
+
+
+def _manual_vex128_unpack_hook(mu: Any, address: int, _size: int, user_data: Any) -> None:
+    state = user_data
+    state.instruction_count += 1
+    if state.instruction_count >= _INSTRUCTION_CAP:
+        mu.emu_stop()
+        return
+    _patch_vex128_unpack(mu, address, state)
+
+
 def _unsupported_avx_hook(mu: Any, _user_data: Any) -> bool:
     address = int(mu.reg_read(_x86_const.UC_X86_REG_RIP))
     length = _emulate_unsupported_avx_instruction(mu, address)
@@ -281,11 +384,17 @@ def emulate_exit_code(path: Path, *, load_bias: int = 0) -> int | None:
     mapped = _load_segments(mu, raw, load_bias)
     _map_pages(mu, mapped, _STACK_BASE, _STACK_SIZE)
     mu.reg_write(_x86_const.UC_X86_REG_RSP, _STACK_TOP)
-    mu.hook_add(_unicorn.UC_HOOK_INSN_INVALID, _unsupported_avx_hook)
-
     state = _TraceState()
+    mu.hook_add(_unicorn.UC_HOOK_INSN_INVALID, _unsupported_avx_hook)
+    mu.hook_add(_unicorn.UC_HOOK_CODE, _manual_vex128_unpack_hook, state)
     mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state, mapped), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
-    mu.emu_start(entry, 0, count=_INSTRUCTION_CAP)
+    current = entry
+    while "code" not in state.captured and state.instruction_count < _INSTRUCTION_CAP:
+        mu.emu_start(current, 0, count=_INSTRUCTION_CAP - state.instruction_count)
+        next_address = int(mu.reg_read(_x86_const.UC_X86_REG_RIP))
+        if next_address == current:
+            break
+        current = next_address
     return state.captured.get("code")
 
 
@@ -317,6 +426,9 @@ class _TraceState:
     register_samples: list[dict[str, int]] = field(default_factory=list)
     executable_reads: list[dict[str, object]] = field(default_factory=list)
     captured: dict[str, int] = field(default_factory=dict)
+    pending_restore_address: int | None = None
+    pending_restore_end: int | None = None
+    pending_restore_bytes: bytes | None = None
 
 
 _REGISTER_NAMES = (
@@ -349,7 +461,10 @@ def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
         state.last_address = address
         if len(state.register_samples) < _TRACE_EVENT_CAP:
             state.register_samples.append({name: uc.reg_read(identifier) for name, identifier in register_ids.items()})
-        opcode = bytes(uc.mem_read(address, 2))
+        if _patch_vex128_unpack(uc, address, state):
+            return
+        instruction = bytes(uc.mem_read(address, 15))
+        opcode = instruction[:2]
         if (
             len(opcode) == _EXPECTED_LEN_OPCODE_2
             and opcode[0] == _EXPECTED_OPCODE_0_255
@@ -444,7 +559,9 @@ def _run_trace(
     status = "completed"
     error: str | None = None
     try:
-        mu.emu_start(entry, 0, count=_INSTRUCTION_CAP)
+        while "code" not in state.captured and state.instruction_count < _INSTRUCTION_CAP:
+            current = int(mu.reg_read(_x86_const.UC_X86_REG_RIP))
+            mu.emu_start(current, 0, count=_INSTRUCTION_CAP - state.instruction_count)
         if "code" not in state.captured and state.instruction_count >= _INSTRUCTION_CAP:
             status = "instruction_cap"
     except _unicorn.UcError as exc:
