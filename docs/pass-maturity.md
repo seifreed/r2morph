@@ -103,6 +103,10 @@ Applied mutation records now also contribute a bounded
 `affected_instruction_mnemonics` catalogue and record count per pass. An
 applied run without those records is a release-gate blocker, so an instruction
 family cannot appear covered only because a binary changed on disk.
+The aggregate job now persists these per-pass results as
+`extended-maturity-merged.json` alongside the differential corpus artifact,
+so the evidence is retained as a reviewable campaign output rather than only
+being checked transiently inside a runner.
 The current profile summary still reports `12 with no independent false-positive measurement`
 until the scheduled artifact is published, and also reports 12 with no
 independent decompiler-effectiveness measurement, 11 without contractual

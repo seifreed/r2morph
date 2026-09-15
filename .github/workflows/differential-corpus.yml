@@ -668,6 +668,10 @@ jobs:
           }
           if incomplete_metrics:
               raise SystemExit(f"extended maturity performance coverage is incomplete: {incomplete_metrics}")
+          Path("extended-maturity-merged.json").write_text(
+              json.dumps(merged_extended, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
 
           paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
           if len(paths) != 12:
@@ -721,7 +725,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: differential-corpus-merged
-          path: differential-corpus-merged.json
+          path: |
+            differential-corpus-merged.json
+            extended-maturity-merged.json
 
   cross-platform-differential:
     name: Cross-platform differential (macOS ARM64)

@@ -1278,6 +1278,7 @@ def _check_corpus_workflows() -> None:
         "total_extended_maturity_evidence_blockers",
         "extended maturity pass errors",
         "extended-maturity-passes",
+        "extended-maturity-merged.json",
         "cross-platform-differential:",
         "Cross-platform differential (macOS ARM64)",
         "runs-on: macos-14",

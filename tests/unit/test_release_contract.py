@@ -1558,6 +1558,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "total_extended_maturity_evidence_blockers" in differential
         and "extended maturity pass errors" in differential
         and "extended-maturity-passes" in differential
+        and "extended-maturity-merged.json" in differential
         and "public-compatibility-corpus:" in differential
         and "repository: seifreed/r2morph-corpus" in differential
         and "8bca169321a4ead73ccc9bdcd3437acc40cc4649" in differential
