@@ -41,6 +41,9 @@ def test_platform_aggregate_checks_out_repository_before_summary() -> None:
     workflow = Path(".github/workflows/differential-corpus.yml").read_text(encoding="utf-8")
     aggregate = workflow.split("  aggregate-platform-differential:", maxsplit=1)[1]
     checkout_index = aggregate.index("uses: actions/checkout@v5")
+    setup_index = aggregate.index("uses: actions/setup-python@v6")
+    dependency_index = aggregate.index('python -m pip install "defusedxml>=0.7.1"')
     script_index = aggregate.index("python scripts/platform_evidence.py")
 
     expect(checkout_index < script_index)
+    expect(setup_index < dependency_index < script_index)
