@@ -162,7 +162,7 @@ class StackStringsPass(MutationPass):
         logger.info("Applying stack strings transformation")
 
         all_strings = []
-        transformed_count = 0
+        previewed_count = 0
         skipped_count = 0
 
         try:
@@ -193,15 +193,18 @@ class StackStringsPass(MutationPass):
             arch = "x64" if arch_info.get("arch") in ("x86_64", "x64", "amd64") else "x86"
             _asm_code, _junk_used = self._generate_stack_string_asm(string_data, arch)
 
-            transformed_count += 1
-            logger.debug(f"Transformed string at 0x{string_info['address']:x}")
+            previewed_count += 1
+            logger.debug("Generated stack-string preview at 0x%x", string_info["address"])
 
         return {
             "strings_found": len(all_strings),
-            "strings_transformed": transformed_count,
+            "strings_transformed": 0,
+            "strings_previewed": previewed_count,
             "strings_skipped": skipped_count,
             "encoding_used": self.encoding,
             "junk_interleaved": self.interleave_junk,
+            "transformation_status": "preview-only",
+            "transformation_reason": "runtime string-reference rewriting is not implemented",
         }
 
     def preview_string(self, string: str, arch: str = "x64") -> str:

@@ -78,6 +78,24 @@ def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(t
     )
 
 
+def test_stack_strings_apply_remains_preview_only_without_rewriting_binary(tmp_path: Path) -> None:
+    mutated = tmp_path / "elf_nop_stack_strings"
+    shutil.copyfile(_FIXTURE, mutated)
+    original_bytes = mutated.read_bytes()
+
+    with Binary(mutated, writable=True) as binary:
+        binary.analyze("aa")
+        result = StackStringsPass(config={"probability": 1.0, "seed": _SEED}).apply(binary)
+        binary.save()
+
+    expect(
+        result["strings_transformed"] == 0
+        and result["transformation_status"] == "preview-only"
+        and result["strings_previewed"] >= 0
+        and mutated.read_bytes() == original_bytes
+    )
+
+
 @pytest.mark.parametrize(
     "case",
     (
