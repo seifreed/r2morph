@@ -1485,7 +1485,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "scripts/vm_resistance_adversarial.py" in adversarial
         and "test_vm_resistance_adversarial.py" in adversarial
         and '--output "$GITHUB_WORKSPACE/vm-resistance-adversarial.json"' in adversarial
-        and "if len(cases) != 8:" in adversarial
+        and "if len(cases) != 9:" in adversarial
         and "automated VM resistance evidence is missing" in adversarial
         and "dispatcher_unique_count" in adversarial
         and "tamper_diverged" in adversarial

@@ -1,3 +1,4 @@
+import platform
 import shutil
 from pathlib import Path
 
@@ -10,6 +11,11 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.platform.pe_handler import PEHandler
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
+
+pytestmark = pytest.mark.skipif(
+    platform.system() == "Darwin" and platform.machine().lower() in {"arm64", "aarch64"},
+    reason="the available PE runtime is x86_64-only on this ARM64 host",
+)
 
 
 def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) -> None:

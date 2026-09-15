@@ -24,7 +24,11 @@ from r2morph.core.engine_run import EngineRunOptions
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
-pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
+_ARM64_MACOS = platform.system() == "Darwin" and platform.machine().lower() in {"arm64", "aarch64"}
+pytestmark = pytest.mark.skipif(
+    os.environ.get("SKIP_REAL_BINARY_TESTS") == "1" or _ARM64_MACOS,
+    reason="system universal binaries are emitted as x86_64 by the current Mach-O mutation path",
+)
 
 REAL_BINARY_TEST_SEED = 1337
 _REAL_BINARY_TIMEOUT_SECONDS = 60
