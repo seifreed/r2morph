@@ -757,10 +757,19 @@ def _affected_instruction_evidence(records: object) -> dict[str, object]:
             record.get("original_disasm") if isinstance(record, Mapping) else getattr(record, "original_disasm", None)
         )
         mnemonic = _instruction_mnemonic(disassembly)
-        if mnemonic is None:
+        metadata = record.get("metadata") if isinstance(record, Mapping) else getattr(record, "metadata", None)
+        metadata_mnemonics = metadata.get("affected_instruction_mnemonics") if isinstance(metadata, Mapping) else None
+        recorded_mnemonics = (
+            {item.lower() for item in metadata_mnemonics if isinstance(item, str) and item}
+            if isinstance(metadata_mnemonics, list)
+            else set()
+        )
+        if mnemonic is None and not recorded_mnemonics:
             continue
         record_count += 1
         if len(mnemonics) < _MAX_AFFECTED_INSTRUCTION_MNEMONICS:
+            mnemonics.update(recorded_mnemonics)
+        if mnemonic is not None and len(mnemonics) < _MAX_AFFECTED_INSTRUCTION_MNEMONICS:
             mnemonics.add(mnemonic)
     return {
         "affected_instruction_evidence_status": "complete" if record_count else "missing",

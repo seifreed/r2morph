@@ -682,7 +682,13 @@ class CodeVirtualizationPass(MutationPass):
             original_disasm=f"; {len(run.ops)} instructions",
             mutated_disasm=f"; trampoline -> VM ({len(build.blob)} bytes)",
             mutation_kind="code_virtualization",
-            metadata={"instructions_count": len(run.ops), "bytecode_size": len(build.blob)},
+            metadata={
+                "instructions_count": len(run.ops),
+                "affected_instruction_mnemonics": sorted(
+                    {mnemonic for op in run.ops if isinstance(mnemonic := getattr(op, "mnemonic", None), str)}
+                ),
+                "bytecode_size": len(build.blob),
+            },
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None
@@ -1431,7 +1437,13 @@ class CodeVirtualizationPass(MutationPass):
             original_disasm=f"; {instruction_count} instructions (control-flow region)",
             mutated_disasm=f"; trampoline -> VM ({len(blob)} bytes)",
             mutation_kind="code_virtualization",
-            metadata={"instructions_count": instruction_count, "bytecode_size": len(blob)},
+            metadata={
+                "instructions_count": instruction_count,
+                "affected_instruction_mnemonics": sorted(
+                    {str(item[0]) for item in region.instructions if item and isinstance(item[0], str)}
+                ),
+                "bytecode_size": len(blob),
+            },
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None

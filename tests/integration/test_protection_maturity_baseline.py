@@ -567,6 +567,21 @@ def test_affected_instruction_evidence_marks_missing_records() -> None:
     expect(_affected_instruction_evidence([])["affected_instruction_evidence_status"] == "missing")
 
 
+def test_affected_instruction_evidence_includes_recorded_metadata_mnemonics() -> None:
+    evidence = _affected_instruction_evidence(
+        [{"metadata": {"affected_instruction_mnemonics": ["add", "callmem", "add"]}}]
+    )
+
+    expect(
+        evidence
+        == {
+            "affected_instruction_evidence_status": "complete",
+            "affected_instruction_mnemonics": ["add", "callmem"],
+            "affected_instruction_record_count": 1,
+        }
+    )
+
+
 def test_render_result_counts_missing_size_and_duration_pairs() -> None:
     report = _render_result(
         [
