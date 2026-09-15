@@ -49,6 +49,7 @@ jobs:
           mkdir -p "$wheel_root"
           cp -R scripts tests fixtures pyproject.toml "$wheel_root"/
           cd "$wheel_root"
+          export PYTHONPATH="$wheel_root${PYTHONPATH:+:$PYTHONPATH}"
           python scripts/adversarial_benchmark.py \
             --all \
             --dataset fixtures/dataset \
@@ -164,6 +165,7 @@ jobs:
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cp -R docs "$wheel_root"/
           cd "$wheel_root"
+          export PYTHONPATH="$wheel_root${PYTHONPATH:+:$PYTHONPATH}"
           python scripts/protection_handler_clustering.py \
             --first-seed 20260820 \
             --count 10 \
@@ -209,6 +211,7 @@ jobs:
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cd "$wheel_root"
+          export PYTHONPATH="$wheel_root${PYTHONPATH:+:$PYTHONPATH}"
           python scripts/vm_resistance_adversarial.py \
             --fixture fixtures/dataset/elf_vm_shift_x86_64 \
             --first-seed 20260820 \
