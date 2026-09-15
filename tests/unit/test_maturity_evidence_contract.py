@@ -121,6 +121,7 @@ def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
         "differential_run_id:" in content
         and "inputs.differential_run_id != ''" in content
         and "pattern: differential-corpus-merged-*" in content
+        and "--count 10" in content
         and (
             "run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || "
             "inputs.differential_run_id }}"
