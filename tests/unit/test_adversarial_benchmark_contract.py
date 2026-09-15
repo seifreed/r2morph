@@ -16,6 +16,7 @@ from scripts.adversarial_benchmark import (
     _pass_result,
     _pass_summary,
     _passes_without_applications,
+    _protected_copy,
     _tool_failure_result,
     _tool_summary,
     _ToolCapabilityUnavailableError,
@@ -29,6 +30,7 @@ from scripts.adversarial_benchmark import (
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
+_ANALYSIS_REQUIRED_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_cff_flaglive_x86_64"
 _NOP_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
 _PATTERN_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_multiret_jccdiamond_x86_64"
 _SINGLE_FIXTURE_REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-adversarial-benchmark.json"
@@ -104,6 +106,12 @@ def test_adversarial_benchmark_pair_report_summarizes_tool_rows() -> None:
     report = benchmark_pair(_FIXTURE, _FIXTURE)
 
     expect(report["tool_summary"] == _tool_summary([{"tools": report["tools"]}]))
+
+
+def test_adversarial_protected_copy_analyzes_before_pass_application(tmp_path: Path) -> None:
+    _protected, pass_result = _protected_copy(_ANALYSIS_REQUIRED_FIXTURE, tmp_path, "AntiDisassembly")
+
+    expect(pass_result["status"] == "applied" and pass_result["mutations_applied"] > 0)
 
 
 def test_adversarial_benchmark_summarizes_analyzer_effectiveness_by_pass() -> None:

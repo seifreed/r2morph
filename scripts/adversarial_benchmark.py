@@ -388,6 +388,10 @@ def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Pa
     binary = Binary(protected, writable=True)
     binary.open()
     try:
+        # Several passes consume function, block, import, and code-cave
+        # metadata. The benchmark must exercise the same analyzed input path
+        # as the production pipeline before classifying a pass as no-op.
+        binary.analyze("aa")
         stats = _build_mutation_pass(pass_name, 20260827).apply(binary)
         binary.save()
     finally:
