@@ -220,14 +220,21 @@ all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
 the full corpus. This keeps the evidence continuous without treating a
 per-shard omission as a corpus-wide pass.
-The authoritative 22-pass run `34840471846` completed all 3,542 pass rows and
-31,878 analyzer rows with zero missing or error rows. `angr`, radare2, objdump,
-Triton, and the custom analyzer completed their rows; Unicorn completed 3,402
-rows and reported 140 explicit ISA-capability gaps. Binary Ninja, IDA Pro, and
-Ghidra remained unavailable for all rows, and ten extended passes had no
-applied fixture in this corpus. The merged report SHA-256 is
-`aa70b786c77300f2a8bfba21fee1c39e5ad694190c25037b7619d79313c6ce89`; these
-unavailable, no-application, and partial-ISA rows remain release blockers.
+The current four-shard 22-pass aggregate
+[`34999771865`](https://github.com/seifreed/r2morph/actions/runs/34999771865)
+completed 6,372 pass rows with zero missing or error rows across the repository
+and generated ELF x86-64 fixtures. All output-size, duration, static-metric,
+runtime-observable, and semantic fields were complete. The merged maturity
+evidence retains ten independent false-positive gaps, eight composition gaps,
+22 decompiler gaps, and one pass without an applied instruction catalogue;
+these are release blockers, not implied support.
+
+The companion adversarial aggregate
+[`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
+completed all four shards and aggregate validation without transformation or
+analyzer errors. Binary Ninja, IDA Pro, and Ghidra remained unavailable, while
+132 Unicorn rows reported explicit ISA-capability gaps. The unavailable and
+partial-ISA rows remain release blockers.
 
 The scheduled differential workflow uses the same four-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,

@@ -149,11 +149,16 @@ That run completed `angr`, radare2, objdump, and the custom analyzer across all
 remains an explicit unavailable-tool blocker; IDA, Ghidra, and Triton have
 separate corpus evidence, but the full comparable campaign scope remains a
 release blocker.
-The subsequent four-shard 22-pass campaign `34840471846` completed 3,542 pass
-rows and 31,878 analyzer rows with no pass or analyzer errors. It provides
-continuous applied-run and analyzer metrics for the declared corpus while
-retaining explicit gaps for ten passes without an applied fixture, 140 Unicorn
-ISA-capability rows, and unavailable Binary Ninja, IDA Pro, and Ghidra slots.
+The aggregate jobs of the current four-shard 22-pass campaign
+[`34999771865`](https://github.com/seifreed/r2morph/actions/runs/34999771865)
+completed 6,372 pass runs with no transformation, semantic, or runtime-observable
+errors. It provides continuous output-size, duration, static-metric, and
+behavioral evidence for all 22 declared passes. The merged maturity artifact
+records zero performance-field gaps, ten passes without independent semantic
+false-positive observations, eight without contractual composition coverage,
+22 without comparable decompiler evidence, and `StackStrings` without an
+applied instruction catalogue. These remain release gaps rather than support
+claims.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. SSA/liveness
@@ -161,6 +166,13 @@ preflight coverage is backed by the static dataflow, def-use, and liveness
 regression contracts, including the installed-wheel smoke in the scheduled
 differential campaign. The companion `total_vm_semantic_blockers` count is currently 9 VM semantic
 blockers.
+
+The companion adversarial aggregate
+[`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
+completed its four shards and aggregate validation without pass or analyzer
+errors. Binary Ninja, IDA Pro, and Ghidra remained unavailable, and 132 Unicorn
+rows lacked the required ISA capability; those rows remain explicit analyzer
+coverage blockers.
 
 The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
