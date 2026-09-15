@@ -1087,7 +1087,7 @@ jobs:
             --build public-corpus/build-selected \
             --output public-corpus/results \
             --seed 20260914 \
-            --workers 16 \
+            --workers 4 \
             --report-only
 
       - name: Validate public differential matrix
