@@ -50,6 +50,7 @@ def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
 
     expect(
         report["fixture_count"] == _EXPECTED_CORPUS_FIXTURE_COUNT
+        and report["automated_validation"]["status"] == "completed"
         and report["semantic_parity"] is True
         and report["cross_fixture_distinct_artifacts"] is True
         and report["all_tamper_probes_diverged"] is True

@@ -223,6 +223,16 @@ def measure_corpus(
             for layer in ("single_layer", "nested")
         ),
         "progressive_growth_observed": all(report["progressive_bytecode"]["growth_observed"] for report in reports),
+        "automated_validation": {
+            "status": "completed",
+            "evidence_quality": "automated-adversarial-smoke",
+            "checks": [
+                "semantic-parity-across-fixtures-and-seeds",
+                "cross-fixture-artifact-diversity",
+                "single-and-nested-anti-tamper",
+                "progressive-bytecode-growth",
+            ],
+        },
         "human_adversarial_review": _HUMAN_REVIEW,
     }
 
