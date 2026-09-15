@@ -35,3 +35,12 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
         and report["platforms"]["windows-pe"]["status"] == "incomplete"
         and report["summary"]["incomplete_platforms"] == ["windows-pe"]
     )
+
+
+def test_platform_aggregate_checks_out_repository_before_summary() -> None:
+    workflow = Path(".github/workflows/differential-corpus.yml").read_text(encoding="utf-8")
+    aggregate = workflow.split("  aggregate-platform-differential:", maxsplit=1)[1]
+    checkout_index = aggregate.index("uses: actions/checkout@v5")
+    script_index = aggregate.index("python scripts/platform_evidence.py")
+
+    expect(checkout_index < script_index)

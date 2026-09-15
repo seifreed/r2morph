@@ -1165,6 +1165,9 @@ jobs:
       - elf-arm64-native
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout r2morph
+        uses: actions/checkout@v5
+
       - name: Download macOS ARM64 evidence
         uses: actions/download-artifact@v8
         with:
