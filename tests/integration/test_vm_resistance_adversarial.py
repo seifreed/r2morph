@@ -3,12 +3,14 @@
 from pathlib import Path
 from typing import cast
 
-from scripts.vm_resistance_adversarial import measure
+from scripts.vm_resistance_adversarial import measure, measure_corpus
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_shift_x86_64"
 _EXPECTED_SEED_COUNT = 4
 _EXPECTED_TAMPER_PROBE_COUNT = 8
+_EXPECTED_CORPUS_FIXTURE_COUNT = 2
+_CORPUS_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_bigimm_x86_64"
 
 
 def test_vm_resistance_measurement_records_automated_adversarial_contract() -> None:
@@ -40,4 +42,17 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and progressive["depth_1_exit_code"] == progressive["baseline_exit_code"]
         and progressive["depth_2_exit_code"] == progressive["baseline_exit_code"]
         and human_review["status"] == "pending-human-adversarial-review"
+    )
+
+
+def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
+    report = measure_corpus((_FIXTURE, _CORPUS_FIXTURE), first_seed=20260915, count=2)
+
+    expect(
+        report["fixture_count"] == _EXPECTED_CORPUS_FIXTURE_COUNT
+        and report["semantic_parity"] is True
+        and report["cross_fixture_distinct_artifacts"] is True
+        and report["all_tamper_probes_diverged"] is True
+        and report["progressive_growth_observed"] is True
+        and report["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
     )

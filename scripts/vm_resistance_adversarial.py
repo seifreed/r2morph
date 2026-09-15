@@ -12,6 +12,7 @@ import hashlib
 import json
 import shutil
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from r2morph.core import randomness
@@ -152,12 +153,14 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
         nested_tamper = _tamper_probe(source, workdir, first_seed, depth=2)
         shallow = workdir / "depth-1"
         deep = workdir / "depth-2"
-        _virtualize_fixture(source, shallow, first_seed, depth=1)
-        _virtualize_fixture(source, deep, first_seed, depth=2)
+        shallow_stats = _virtualize_fixture(source, shallow, first_seed, depth=1)
+        deep_stats = _virtualize_fixture(source, deep, first_seed, depth=2)
         progressive = {
             "depth_1_bytes": shallow.stat().st_size,
             "depth_2_bytes": deep.stat().st_size,
-            "growth_observed": deep.stat().st_size > shallow.stat().st_size,
+            "depth_1_bytecode_bytes": shallow_stats.get("total_bytecode_bytes", 0),
+            "depth_2_bytecode_bytes": deep_stats.get("total_bytecode_bytes", 0),
+            "growth_observed": deep_stats.get("total_bytecode_bytes", 0) > shallow_stats.get("total_bytecode_bytes", 0),
             "depth_1_exit_code": emulate_exit_code(shallow),
             "depth_2_exit_code": emulate_exit_code(deep),
             "baseline_exit_code": campaign["baseline_exit_code"],
@@ -193,14 +196,49 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
     }
 
 
+def measure_corpus(
+    sources: Sequence[Path],
+    first_seed: int = _DEFAULT_SEED,
+    count: int = _DEFAULT_COUNT,
+) -> dict[str, object]:
+    """Measure resistance invariants across several real VM fixture shapes."""
+    if not sources:
+        raise ValueError("at least one VM fixture is required")
+    reports = [measure(source, first_seed, count) for source in sources]
+    seed_builds = [
+        build for report in reports for build in report["seed_campaign"]["builds"] if isinstance(build, dict)
+    ]
+    artifact_hashes = [build["sha256"] for build in seed_builds]
+    return {
+        "schema_version": 1,
+        "fixture_count": len(reports),
+        "fixtures": reports,
+        "first_seed": first_seed,
+        "seed_count": count,
+        "cross_fixture_distinct_artifacts": len(set(artifact_hashes)) == len(artifact_hashes),
+        "semantic_parity": all(report["seed_campaign"]["semantic_parity"] for report in reports),
+        "all_tamper_probes_diverged": all(
+            report["anti_tamper"][layer]["all_tamper_probes_diverged"]
+            for report in reports
+            for layer in ("single_layer", "nested")
+        ),
+        "progressive_growth_observed": all(report["progressive_bytecode"]["growth_observed"] for report in reports),
+        "human_adversarial_review": _HUMAN_REVIEW,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fixture", type=Path, required=True)
+    parser.add_argument("--fixture", type=Path, action="append", required=True)
     parser.add_argument("--first-seed", type=int, default=_DEFAULT_SEED)
     parser.add_argument("--count", type=int, default=_DEFAULT_COUNT)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    result = measure(args.fixture, args.first_seed, args.count)
+    result = (
+        measure(args.fixture[0], args.first_seed, args.count)
+        if len(args.fixture) == 1
+        else measure_corpus(args.fixture, args.first_seed, args.count)
+    )
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")
