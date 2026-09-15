@@ -1,3 +1,4 @@
+from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.instruction_substitution_helpers import (
     equivalent_flags_written,
     flags_live_after,
@@ -11,6 +12,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_ADDR_4096 = 0x1000
 _EXPECTED_ADDR_8192 = 0x2000
+_EXPECTED_TOTAL_FUNCTIONS = 2
 
 
 class _Binary:
@@ -31,6 +33,27 @@ class _FlagBinary:
             {"disasm": "xor eax, eax"},
             {"disasm": "je 0x1100"},
         ]
+
+
+class _FunctionBudgetBinary:
+    def __init__(self) -> None:
+        self.requested_addresses: list[int] = []
+
+    def is_analyzed(self) -> bool:
+        return True
+
+    def get_arch_family(self) -> tuple[str, int]:
+        return ("x86", 64)
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return [
+            {"name": "first", "offset": 0x1000, "size": 64},
+            {"name": "second", "offset": 0x2000, "size": 64},
+        ]
+
+    def get_function_disasm(self, addr: int) -> list[dict[str, object]]:
+        self.requested_addresses.append(addr)
+        return []
 
 
 def test_instruction_substitution_helpers_cover_the_core_paths() -> None:
@@ -97,3 +120,13 @@ def test_x86_64_substitution_does_not_use_32_bit_stack_self_move() -> None:
     )
 
     expect("push eax; pop eax" not in equivalents)
+
+
+def test_instruction_substitution_applies_function_budget_before_disassembly() -> None:
+    binary = _FunctionBudgetBinary()
+
+    result = InstructionSubstitutionPass({"max_functions": 1}).apply(binary)
+
+    expect(result["total_functions"] == _EXPECTED_TOTAL_FUNCTIONS)
+    expect(result["functions_processed"] == 1)
+    expect(binary.requested_addresses == [0x1000])

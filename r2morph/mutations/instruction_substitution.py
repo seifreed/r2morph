@@ -32,6 +32,8 @@ from r2morph.mutations.instruction_substitution_helpers import (
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_MAX_FUNCTIONS = 1000
+
 
 @dataclass(frozen=True)
 class _SubstitutionChoice:
@@ -58,6 +60,7 @@ class InstructionSubstitutionPass(MutationPass):
 
     Config options:
         - max_substitutions_per_function: Maximum substitutions per function
+        - max_functions: Maximum functions processed per run (default: 1000)
         - probability: Probability of substituting a candidate instruction
         - force_different: Force mutations to be different from original (r2morph-style)
         - strict_size: Only apply mutations if size matches exactly (no NOP padding)
@@ -72,6 +75,9 @@ class InstructionSubstitutionPass(MutationPass):
         """
         super().__init__(name="InstructionSubstitution", config=config)
         self.max_substitutions = self.config.get("max_substitutions_per_function", 10)
+        self.max_functions = self.config.get("max_functions", _DEFAULT_MAX_FUNCTIONS)
+        if not isinstance(self.max_functions, int) or self.max_functions < 1:
+            raise ValueError("max_functions must be a positive integer")
         self.probability = self.config.get("probability", 0.7)
         self.force_different = self.config.get("force_different", False)
         self.strict_size = self.config.get("strict_size", False)
@@ -268,13 +274,14 @@ class InstructionSubstitutionPass(MutationPass):
             }
 
         functions = binary.get_functions()
+        functions_to_process = functions[: self.max_functions]
         mutations_applied = 0
         functions_mutated = 0
         candidates_found = 0
 
         logger.info(f"Instruction substitution: processing {len(functions)} functions")
 
-        for func, func_candidates in self._select_candidates(binary, functions, arch_family):
+        for func, func_candidates in self._select_candidates(binary, functions_to_process, arch_family):
             func_mutations = 0
             for insn in func_candidates:
                 original_pattern, equivalents, group_idx = self._get_equivalents(insn, arch_family)
@@ -317,6 +324,8 @@ class InstructionSubstitutionPass(MutationPass):
             "functions_mutated": functions_mutated,
             "candidates_found": candidates_found,
             "total_functions": len(functions),
+            "functions_processed": len(functions_to_process),
+            "max_functions": self.max_functions,
             "force_different": self.force_different,
             "strict_size": self.strict_size,
         }
