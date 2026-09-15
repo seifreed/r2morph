@@ -1178,6 +1178,13 @@ def _check_corpus_workflows() -> None:
         "test_protection_bytecode_grammar.py",
         "test_protection_handler_clustering.py",
         "test_resistance_measurement_contract.py",
+        "scripts/vm_resistance_adversarial.py",
+        "test_vm_resistance_adversarial.py",
+        '--output "$GITHUB_WORKSPACE/vm-resistance-adversarial.json"',
+        "automated VM resistance evidence is missing",
+        "dispatcher_unique_count",
+        "tamper_diverged",
+        "growth_observed",
         "Upload VM resistance seed-diversity evidence",
         "vm-resistance-seed-diversity",
     ):
@@ -1289,6 +1296,13 @@ def _check_corpus_workflows() -> None:
         "O0",
         "O2",
         "O3",
+        "aggregate-platform-differential:",
+        "Aggregate platform differential evidence",
+        "cross-platform-differential-macos-arm64",
+        "cross-platform-differential-windows-pe",
+        "elf-arm64-native",
+        "differential-platform-aggregate",
+        "Validate aggregated platform evidence",
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")

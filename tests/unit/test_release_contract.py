@@ -1466,6 +1466,13 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_protection_bytecode_grammar.py" in adversarial
         and "test_protection_handler_clustering.py" in adversarial
         and "test_resistance_measurement_contract.py" in adversarial
+        and "scripts/vm_resistance_adversarial.py" in adversarial
+        and "test_vm_resistance_adversarial.py" in adversarial
+        and '--output "$GITHUB_WORKSPACE/vm-resistance-adversarial.json"' in adversarial
+        and "automated VM resistance evidence is missing" in adversarial
+        and "dispatcher_unique_count" in adversarial
+        and "tamper_diverged" in adversarial
+        and "growth_observed" in adversarial
         and "Upload VM resistance seed-diversity evidence" in adversarial
         and "vm-resistance-seed-diversity" in adversarial
         and "--passes all" in differential
@@ -1562,6 +1569,13 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "public-corpus/build-selected" in differential
         and '"O0", "non-pie", "symbols", "dynamic"' in differential
         and "public-compatibility-corpus" in differential
+        and "aggregate-platform-differential:" in differential
+        and "Aggregate platform differential evidence" in differential
+        and "cross-platform-differential-macos-arm64" in differential
+        and "cross-platform-differential-windows-pe" in differential
+        and "elf-arm64-native" in differential
+        and "differential-platform-aggregate" in differential
+        and "Validate aggregated platform evidence" in differential
     )
 
 

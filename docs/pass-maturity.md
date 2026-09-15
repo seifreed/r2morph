@@ -164,3 +164,9 @@ single-level tamper, nested tamper, nested growth, and diversified-build
 checks. This strengthens automated evidence but does not replace the pending
 human/adversarial review. The generated `total_vm_resistance_blockers` count is
 currently 6 VM resistance blockers.
+The same workflow now publishes `vm-resistance-adversarial.json`, a bounded
+four-seed report that joins semantic parity, distinct artifact hashes,
+dispatcher/handler/stride diversity, single- and nested-layer tamper
+divergence, and progressive blob growth. Its `human_adversarial_review` field
+remains pending by contract, so the report is continuous automated evidence
+rather than a human signoff.

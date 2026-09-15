@@ -209,17 +209,24 @@ jobs:
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cd "$wheel_root"
+          python scripts/vm_resistance_adversarial.py \
+            --fixture fixtures/dataset/elf_vm_shift_x86_64 \
+            --first-seed 20260820 \
+            --count 4 \
+            --output "$GITHUB_WORKSPACE/vm-resistance-adversarial.json"
           python -W error -m pytest -q --no-cov --tb=short \
             --junitxml="$GITHUB_WORKSPACE/vm-resistance-adversarial.xml" \
             tests/integration/test_code_virtualization_real.py::test_tampering_interpreter_byte_diverges_from_original \
             tests/integration/test_code_virtualization_real.py::test_tampering_nested_interpreter_byte_diverges \
             tests/integration/test_code_virtualization_real.py::test_nested_virtualization_grows_with_depth \
-            tests/integration/test_code_virtualization_diversification_real.py
+            tests/integration/test_code_virtualization_diversification_real.py \
+            tests/integration/test_vm_resistance_adversarial.py
 
       - name: Validate VM tamper and progressive protection smoke
         if: always()
         run: |
           python - <<'PY'
+          import json
           import xml.etree.ElementTree as ET
           from pathlib import Path
 
@@ -228,10 +235,30 @@ jobs:
               raise SystemExit("VM resistance smoke report is missing")
           suite = ET.parse(report).getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 6:
+          if len(cases) != 7:
               raise SystemExit(f"unexpected VM resistance smoke case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("VM resistance smoke contains failed or skipped cases")
+
+          evidence = Path("vm-resistance-adversarial.json")
+          if not evidence.exists():
+              raise SystemExit("automated VM resistance evidence is missing")
+          report = json.loads(evidence.read_text(encoding="utf-8"))
+          if report["automated_validation"]["status"] != "completed":
+              raise SystemExit("automated VM resistance validation did not complete")
+          campaign = report["seed_campaign"]
+          if not campaign["semantic_parity"] or not campaign["distinct_artifacts"]:
+              raise SystemExit("VM seed campaign lost semantic parity or artifact diversity")
+          if report["opcode_and_dispatcher_diversity"]["dispatcher_unique_count"] != report["seed_count"]:
+              raise SystemExit("VM dispatcher diversity did not vary across seeds")
+          if not report["anti_tamper"]["single_layer"]["tamper_diverged"]:
+              raise SystemExit("single-layer VM tamper probe did not diverge")
+          if not report["anti_tamper"]["nested"]["tamper_diverged"]:
+              raise SystemExit("nested VM tamper probe did not diverge")
+          if not report["progressive_bytecode"]["growth_observed"]:
+              raise SystemExit("progressive VM bytecode growth was not observed")
+          if report["human_adversarial_review"]["status"] != "pending-human-adversarial-review":
+              raise SystemExit("automated evidence must not imply human adversarial signoff")
           PY
 
       - name: Upload VM tamper and progressive protection smoke
@@ -239,7 +266,9 @@ jobs:
         if: always()
         with:
           name: vm-resistance-adversarial-${{ matrix.fixture_shard }}
-          path: vm-resistance-adversarial.xml
+          path: |
+            vm-resistance-adversarial.xml
+            vm-resistance-adversarial.json
 
       - name: Upload benchmark report
         uses: actions/upload-artifact@v7

@@ -112,24 +112,30 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
             ".github/workflows/adversarial-benchmark.yml",
+            "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_code_virtualization_real.py",
             "tests/integration/test_code_virtualization_diversification_real.py",
+            "tests/integration/test_vm_resistance_adversarial.py",
         ],
     },
     "isa-opcode-diversity": {
         "status": "seed-diversity-only-incomplete",
         "evidence_quality": "seed-diversity-only",
-        "evidence": ["docs/protection-bytecode-grammar.json"],
+        "evidence": [
+            "docs/protection-bytecode-grammar.json",
+            "scripts/vm_resistance_adversarial.py",
+            "tests/integration/test_vm_resistance_adversarial.py",
+        ],
     },
     "handler-diversity": {
         "status": "seed-diversity-only-incomplete",
         "evidence_quality": "seed-diversity-only",
-        "evidence": ["docs/protection-handler-clustering.json"],
+        "evidence": ["docs/protection-handler-clustering.json", "scripts/vm_resistance_adversarial.py"],
     },
     "dispatcher-diversity": {
         "status": "seed-diversity-only-incomplete",
         "evidence_quality": "seed-diversity-only",
-        "evidence": ["docs/protection-handler-clustering.json"],
+        "evidence": ["docs/protection-handler-clustering.json", "scripts/vm_resistance_adversarial.py"],
     },
     "anti-tamper": {
         "status": "seed-diversity-only-incomplete",
@@ -138,6 +144,8 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/protection-maturity.md",
             ".github/workflows/adversarial-benchmark.yml",
             "tests/integration/test_code_virtualization_real.py",
+            "scripts/vm_resistance_adversarial.py",
+            "tests/integration/test_vm_resistance_adversarial.py",
         ],
     },
     "progressive-bytecode-protection": {
@@ -148,6 +156,8 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             ".github/workflows/adversarial-benchmark.yml",
             "tests/integration/test_code_virtualization_real.py",
             "tests/integration/test_code_virtualization_diversification_real.py",
+            "scripts/vm_resistance_adversarial.py",
+            "tests/integration/test_vm_resistance_adversarial.py",
         ],
     },
 }

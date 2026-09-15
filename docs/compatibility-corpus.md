@@ -18,6 +18,10 @@ static-recovery benchmark. The full and selected manifests, differential matrix,
 and benchmark report are uploaded as one bounded artifact. This is additional
 continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
+The differential workflow also aggregates the independent PE, Mach-O ARM64,
+and native ELF ARM64 JUnit artifacts into
+`differential-platform-aggregate`. The aggregate is a completeness gate for
+those preview targets; it does not promote them to official parity.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static

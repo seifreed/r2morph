@@ -1120,3 +1120,62 @@ jobs:
         with:
           name: elf-arm64-native
           path: elf-arm64-native.xml
+
+  aggregate-platform-differential:
+    name: Aggregate platform differential evidence
+    if: ${{ always() }}
+    needs:
+      - cross-platform-differential
+      - cross-platform-format-windows
+      - elf-arm64-native
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download macOS ARM64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: cross-platform-differential-macos-arm64
+          path: platform-evidence/macos-arm64
+
+      - name: Download Windows PE evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: cross-platform-differential-windows-pe
+          path: platform-evidence/windows-pe
+
+      - name: Download ELF ARM64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: elf-arm64-native
+          path: platform-evidence/elf-arm64
+
+      - name: Validate aggregated platform evidence
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          expected = {
+              "macos-arm64": "test_nop_insertion_arm64_preserves_native_output",
+              "windows-pe": "test_pe_handler_checksum",
+              "elf-arm64": "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+          }
+          root = Path("platform-evidence")
+          for platform, required_name in expected.items():
+              reports = sorted((root / platform).glob("*.xml"))
+              if len(reports) != 1:
+                  raise SystemExit(f"expected one {platform} report, found {reports}")
+              suite = ET.parse(reports[0]).getroot()
+              cases = suite.findall(".//testcase")
+              if not cases:
+                  raise SystemExit(f"{platform} report has no test cases")
+              if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
+                  raise SystemExit(f"{platform} report contains incomplete evidence")
+              if not any(required_name in case.attrib.get("name", "") for case in cases):
+                  raise SystemExit(f"{platform} report is missing {required_name}")
+          PY
+
+      - name: Upload aggregated platform evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: differential-platform-aggregate
+          path: platform-evidence
