@@ -3,14 +3,19 @@
 from pathlib import Path
 from typing import cast
 
-from scripts.vm_resistance_adversarial import measure, measure_corpus
+from scripts.vm_resistance_adversarial import _DEFAULT_COUNT, measure, measure_corpus
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_shift_x86_64"
 _EXPECTED_SEED_COUNT = 4
+_EXPECTED_DEFAULT_SEED_COUNT = 10
 _EXPECTED_TAMPER_PROBE_COUNT = 8
 _EXPECTED_CORPUS_FIXTURE_COUNT = 2
 _CORPUS_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_bigimm_x86_64"
+
+
+def test_vm_resistance_default_campaign_matches_release_contract() -> None:
+    expect(_DEFAULT_COUNT == _EXPECTED_DEFAULT_SEED_COUNT)
 
 
 def test_vm_resistance_measurement_records_automated_adversarial_contract() -> None:

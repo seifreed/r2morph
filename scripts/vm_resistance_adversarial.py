@@ -25,7 +25,7 @@ from scripts.protection_handler_clustering import measure as measure_handlers
 from tests.integration.elf_emulator import emulate_exit_code
 
 _DEFAULT_SEED = 20260915
-_DEFAULT_COUNT = 4
+_DEFAULT_COUNT = 10
 _MIN_SEEDS = 2
 _MAX_SEEDS = 32
 _VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
