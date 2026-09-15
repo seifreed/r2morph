@@ -87,8 +87,12 @@ _GENERATED_INPUT_SOURCE = "generated-argv"
 _GENERATED_CORPUS_FAMILY = "generated-elf-x86-64"
 _GENERATED_CORPUS_PROFILES = (
     ("gcc-o0", "gcc", "-O0", "-fno-pie", "-no-pie"),
+    ("gcc-o1", "gcc", "-O1", "-fno-pie", "-no-pie"),
     ("gcc-o2", "gcc", "-O2", "-fno-pie", "-no-pie"),
+    ("gcc-o3", "gcc", "-O3", "-fno-pie", "-no-pie"),
+    ("gcc-os", "gcc", "-Os", "-fno-pie", "-no-pie"),
     ("gcc-pie-o2", "gcc", "-O2", "-fPIE", "-pie"),
+    ("clang-o0", "clang", "-O0", "-fno-pie", "-no-pie"),
     ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
 )
 _GENERATED_UNREACHABLE_PADDING = r"""

@@ -95,7 +95,7 @@ jobs:
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_branch", "generated_extended", "generated_lookup", "generated_memory")
-              for profile in ("gcc-o0", "gcc-o2", "gcc-pie-o2", "clang-o2")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "clang-o0", "clang-o2")
           )
           if not set(summary["generated_fixture_names"]).issubset(expected_generated):
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
@@ -738,7 +738,7 @@ jobs:
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_branch", "generated_extended", "generated_lookup", "generated_memory")
-              for profile in ("gcc-o0", "gcc-o2", "gcc-pie-o2", "clang-o2")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "clang-o0", "clang-o2")
           )
           if summary["generated_fixture_count"] != 16 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")

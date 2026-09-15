@@ -791,8 +791,12 @@ def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
         tuple(profile[0] for profile in _GENERATED_CORPUS_PROFILES)
         == (
             "gcc-o0",
+            "gcc-o1",
             "gcc-o2",
+            "gcc-o3",
+            "gcc-os",
             "gcc-pie-o2",
+            "clang-o0",
             "clang-o2",
         )
     )
