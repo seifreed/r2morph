@@ -315,7 +315,23 @@ jobs:
 
       - name: Install radare2 (Windows)
         if: runner.os == 'Windows'
-        run: choco install radare2 -y --no-progress
+        shell: pwsh
+        run: |
+          $version = "6.2.0"
+          $archiveName = "radare2-$version-w64.zip"
+          $archive = Join-Path $env:RUNNER_TEMP $archiveName
+          $url = "https://github.com/radareorg/radare2/releases/download/$version/$archiveName"
+          $expectedSha256 = "adb1ffd158066ea41316fa33b6d23b362aa9258df800721f7d15a42eefdd9202"
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $actualSha256 = (Get-FileHash -Algorithm SHA256 -Path $archive).Hash.ToLowerInvariant()
+          if ($actualSha256 -ne $expectedSha256) {
+            throw "radare2 archive checksum mismatch: expected $expectedSha256, got $actualSha256"
+          }
+          $destination = Join-Path $env:RUNNER_TEMP "radare2-$version"
+          Expand-Archive -Path $archive -DestinationPath $destination -Force
+          $bin = Join-Path $destination "radare2-$version-w64\bin"
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $bin "r2.bat") -v
 
       - name: Install Python dependencies
         run: |

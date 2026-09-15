@@ -1598,7 +1598,11 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         "Run cross-platform package smoke tests" in cross_platform_job
         and "Install build backend for cross-platform wheel smoke" in cross_platform_job
         and "Install radare2 (Windows)" in cross_platform_job
-        and "choco install radare2 -y --no-progress" in cross_platform_job
+        and '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"' in cross_platform_job
+        and '"adb1ffd158066ea41316fa33b6d23b362aa9258df800721f7d15a42eefdd9202"' in cross_platform_job
+        and "Get-FileHash -Algorithm SHA256" in cross_platform_job
+        and "Expand-Archive -Path $archive -DestinationPath $destination -Force" in cross_platform_job
+        and "$env:GITHUB_PATH" in cross_platform_job
         and 'run: python -m pip install "build>=1.2.0"' in cross_platform_job
         and "shell: bash" in cross_platform_job
         and "python -m build" in cross_platform_job
