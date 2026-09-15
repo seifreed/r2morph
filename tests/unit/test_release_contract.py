@@ -650,6 +650,18 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
     expect(
         summary["differential_evidence_scope"]["platform_scope"]
         == {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+        and summary["differential_evidence_scope"]["preview_smoke_scope"]
+        == {
+            "formats": ["Mach-O", "PE"],
+            "architectures": ["AArch64"],
+            "evidence": [
+                ".github/workflows/differential-corpus.yml",
+                "tests/integration/test_mutation_nop_insertion_arm64.py",
+                "tests/integration/test_platform_deeper.py",
+                "tests/integration/test_elf_arm64_native.py",
+            ],
+            "status": "preview-smoke-only",
+        }
         and summary["differential_evidence_blockers"]["platform_gap_scope"]
         == {"formats": ["Mach-O", "PE"], "architectures": ["AArch64", "ARM", "x86"]}
         and summary["differential_evidence_blockers"]["corpus_gap_scope"]

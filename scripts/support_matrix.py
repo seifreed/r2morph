@@ -68,6 +68,17 @@ _DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
     "formats": ["Mach-O", "PE"],
     "architectures": ["AArch64", "ARM", "x86"],
 }
+_DIFFERENTIAL_PREVIEW_SMOKE_SCOPE = {
+    "formats": ["Mach-O", "PE"],
+    "architectures": ["AArch64"],
+    "evidence": [
+        ".github/workflows/differential-corpus.yml",
+        "tests/integration/test_mutation_nop_insertion_arm64.py",
+        "tests/integration/test_platform_deeper.py",
+        "tests/integration/test_elf_arm64_native.py",
+    ],
+    "status": "preview-smoke-only",
+}
 _DIFFERENTIAL_CORPUS_GAP_SCOPE = {
     "corpus_families": [],
     "input_sources": [],
@@ -372,6 +383,7 @@ def _vm_resistance_blocker_totals() -> dict[str, int]:
 def _differential_evidence_scope() -> dict[str, object]:
     return {
         "platform_scope": dict(_DIFFERENTIAL_PLATFORM_SCOPE),
+        "preview_smoke_scope": dict(_DIFFERENTIAL_PREVIEW_SMOKE_SCOPE),
         "platform_gap_scope": dict(_DIFFERENTIAL_PLATFORM_GAP_SCOPE),
         "corpus_gap_scope": dict(_DIFFERENTIAL_CORPUS_GAP_SCOPE),
     }
