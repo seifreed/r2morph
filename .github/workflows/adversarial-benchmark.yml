@@ -343,7 +343,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.differential_run_id }}
-          pattern: maturity-evidence-merged-*
+          pattern: differential-corpus-merged-*
           path: upstream-maturity
           merge-multiple: false
 
