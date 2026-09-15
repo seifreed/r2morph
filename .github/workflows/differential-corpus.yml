@@ -1209,8 +1209,16 @@ jobs:
                   raise SystemExit(f"{platform} report is missing {required_name}")
           PY
 
+      - name: Build platform evidence summary
+        run: |
+          python scripts/platform_evidence.py \
+            --root platform-evidence \
+            --output platform-evidence-summary.json
+
       - name: Upload aggregated platform evidence
         uses: actions/upload-artifact@v7
         with:
           name: differential-platform-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
-          path: platform-evidence
+          path: |
+            platform-evidence
+            platform-evidence-summary.json
