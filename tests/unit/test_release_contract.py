@@ -1692,6 +1692,16 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
     )
 
 
+def test_evidence_workflow_artifacts_are_rerun_safe() -> None:
+    differential_workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    adversarial_workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+
+    expect(
+        "${{ github.run_id }}-${{ github.run_attempt }}" in differential_workflow
+        and "${{ github.run_id }}-${{ github.run_attempt }}" in adversarial_workflow
+    )
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 

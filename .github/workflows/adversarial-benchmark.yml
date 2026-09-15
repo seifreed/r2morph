@@ -268,7 +268,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-adversarial-${{ matrix.fixture_shard }}
+          name: vm-resistance-adversarial-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             vm-resistance-adversarial.xml
             vm-resistance-adversarial.json
@@ -277,21 +277,21 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: adversarial-benchmark-${{ matrix.fixture_shard }}
+          name: adversarial-benchmark-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: adversarial-benchmark.json
 
       - name: Upload VM resistance seed-diversity evidence
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-seed-diversity-${{ matrix.fixture_shard }}
+          name: vm-resistance-seed-diversity-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-resistance-seed-diversity.json
 
       - name: Upload VM resistance bytecode grammar evidence
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-resistance-bytecode-grammar-${{ matrix.fixture_shard }}
+          name: vm-resistance-bytecode-grammar-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-resistance-bytecode-grammar.json
 
   aggregate-benchmark:
@@ -385,5 +385,5 @@ jobs:
       - name: Upload merged benchmark evidence
         uses: actions/upload-artifact@v7
         with:
-          name: adversarial-benchmark-merged
+          name: adversarial-benchmark-merged-${{ github.run_id }}-${{ github.run_attempt }}
           path: adversarial-benchmark-merged.json
