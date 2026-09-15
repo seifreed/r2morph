@@ -35,6 +35,7 @@ from r2morph.mutations.nop_insertion_helpers import (
     generate_jmp_dead_code,
     init_nop_equivalents,
     is_safe_self_redundancy,
+    safe_x86_nop_equivalents,
     select_candidates,
 )
 
@@ -160,7 +161,11 @@ class NopInsertionPass(MutationPass):
                 logger.info(f"Inserted jmp+dead code NOP ({size} bytes) at 0x{address:x}")
                 return "jmp+dead-code"
 
-        equivalents = self.NOP_EQUIVALENTS.get(arch_family, [])
+        equivalents = (
+            list(safe_x86_nop_equivalents(instruction.get("disasm", "")))
+            if arch_family == "x86"
+            else self.NOP_EQUIVALENTS.get(arch_family, [])
+        )
         random.shuffle(equivalents)
         for equivalent in equivalents:
             nop_bytes = binary.assemble(equivalent, function_address)

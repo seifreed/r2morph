@@ -115,6 +115,22 @@ def _is_x86_redundant(disasm: str, bits: int) -> bool:
     return source == destination and is_safe_self_redundancy(destination, operand_bits)
 
 
+def safe_x86_nop_equivalents(disasm: str) -> tuple[str, ...]:
+    """Return self-equivalents that preserve the candidate's register state."""
+    operands = _binary_operands(disasm.lower())
+    if operands is None:
+        return ()
+    destination, source = operands
+    operand_bits = _X86_32_BITS if destination.startswith("e") else _X86_64_BITS
+    if source.strip("[]") != destination or not is_safe_self_redundancy(destination, operand_bits):
+        return ()
+    return (
+        f"xchg {destination}, {destination}",
+        f"lea {destination}, [{destination}]",
+        f"mov {destination}, {destination}",
+    )
+
+
 def _is_arm_redundant(disasm: str) -> bool:
     if disasm == "nop":
         return True
@@ -194,5 +210,6 @@ __all__ = [
     "generate_jmp_dead_code",
     "init_nop_equivalents",
     "is_safe_self_redundancy",
+    "safe_x86_nop_equivalents",
     "select_candidates",
 ]

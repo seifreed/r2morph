@@ -3,6 +3,7 @@ from r2morph.mutations.nop_insertion_helpers import (
     generate_jmp_dead_code,
     init_nop_equivalents,
     is_safe_self_redundancy,
+    safe_x86_nop_equivalents,
     select_candidates,
 )
 from tests.utils.assertions import expect
@@ -60,3 +61,10 @@ def test_dead_code_jump_targets_end_of_replaced_instruction() -> None:
     replacement = generate_jmp_dead_code(3, 64, binary, 0x1000)
 
     expect(replacement == b"\xeb\x01\x90")
+
+
+def test_x86_creative_nops_preserve_candidate_register() -> None:
+    replacements = safe_x86_nop_equivalents("mov edx, edx")
+
+    expect(replacements)
+    expect(all("edx" in replacement for replacement in replacements))
