@@ -16,6 +16,7 @@ from tests._doubles.in_memory_outlining_binary import InMemoryOutliningBinary
 from tests.utils.assertions import expect
 
 CONFIG = {"probability": 1.0, "min_chunks": 2, "max_chunks": 2}
+EXPECTED_RELOCATED_CHUNKS_AFTER_OVERLAP = 2
 FUNCS = [{"addr": 0x1000, "size": 64}]
 BLOCKS = [{"addr": 0x1000, "size": 8}, {"addr": 0x1008, "size": 8}]
 PDJ = {
@@ -78,3 +79,30 @@ def test_relative_control_transfer_is_skipped_without_reencoding() -> None:
     result = FunctionOutliningPass(CONFIG).apply(binary)
 
     expect(result["chunks_relocated"] == 0)
+
+
+def test_overlapping_block_ranges_are_not_relocated_twice() -> None:
+    blocks = [
+        {"addr": 0x1000, "size": 8},
+        {"addr": 0x1008, "size": 8},
+        {"addr": 0x100C, "size": 8},
+        {"addr": 0x1014, "size": 8},
+    ]
+    pdj = {
+        address: [
+            {"offset": address, "size": 4, "disasm": "mov eax, ebx"},
+            {"offset": address + 4, "size": 4, "disasm": "nop"},
+        ]
+        for address in (0x1000, 0x1008, 0x100C, 0x1014)
+    }
+    binary = InMemoryOutliningBinary(
+        regions={0x1000: b"\x90" * 64, 0x2000: b"\x90" * 256},
+        functions=FUNCS,
+        blocks=blocks,
+        pdj=pdj,
+        sections=[{"name": ".x", "vaddr": 0x2000, "vsize": 256, "perm": "r-x"}],
+    )
+
+    result = FunctionOutliningPass({"probability": 1.0, "min_chunks": 4, "max_chunks": 4}).apply(binary)
+
+    expect(result["chunks_relocated"] == EXPECTED_RELOCATED_CHUNKS_AFTER_OVERLAP)

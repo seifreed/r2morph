@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.mutations.function_outlining import FunctionOutliningPass, OutlinedChunk
+from r2morph.relocations.cave_finder import CodeCave
 from tests.utils.assertions import expect
 
 _CHUNK_ADDRESS = 0x1000
@@ -105,3 +106,17 @@ def test_chunk_bytes_rejects_memory_instruction_without_decodable_bytes() -> Non
     )
 
     expect(FunctionOutliningPass._chunk_bytes(_ChunkBinary(), chunk) is None)
+
+
+def test_relocate_chunk_rejects_internal_branch_target() -> None:
+    chunk = OutlinedChunk(
+        1,
+        _CHUNK_ADDRESS,
+        [{"offset": _CHUNK_ADDRESS, "size": 5, "disasm": "mov eax, ebx"}],
+        branch_targets=(_CHUNK_ADDRESS + 2,),
+    )
+    caves = [CodeCave(0x2000, 32, ".x", True)]
+
+    relocated, _ = FunctionOutliningPass()._relocate_chunk(_ChunkBinary(), 0, chunk, caves, 0)
+
+    expect(not relocated)

@@ -77,6 +77,7 @@ class OutlinedChunk:
     jump_target: int | None = None
     fallthrough_target: int | None = None
     section: str = ""
+    branch_targets: tuple[int, ...] = ()
 
     def to_asm(self) -> str:
         """Convert chunk to assembly string."""
@@ -145,6 +146,7 @@ class FunctionOutliningPass(MutationPass):
         self.max_chunks = self.config.get("max_chunks", 8)
         self.section_name = self.config.get("section_name", ".outlined")
         self.interleave_functions = self.config.get("interleave_functions", True)
+        self._relocated_ranges: list[tuple[int, int]] = []
         self.set_support(
             formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "x86", "arm64"),
@@ -192,6 +194,16 @@ class FunctionOutliningPass(MutationPass):
         chunks = []
         chunk_id = random.randint(0x1000, 0xFFFF)
         current_idx = 0
+        branch_targets = tuple(
+            sorted(
+                {
+                    target
+                    for block in blocks
+                    for target in (block.get("jump"), block.get("fail"))
+                    if isinstance(target, int)
+                }
+            )
+        )
 
         for i in range(num_chunks):
             end_idx = min(current_idx + chunk_size, len(blocks))
@@ -247,6 +259,7 @@ class FunctionOutliningPass(MutationPass):
                 instructions=instructions,
                 jump_target=jump_target,
                 fallthrough_target=fallthrough_target,
+                branch_targets=branch_targets,
             )
             chunks.append(chunk)
 
@@ -328,36 +341,46 @@ class FunctionOutliningPass(MutationPass):
         if chunk_data is None:
             return False, cave_index
         first_address, chunk_size, disasm, original_bytes = chunk_data
+        chunk_end = first_address + chunk_size
+        has_internal_branch_target = any(first_address < target < chunk_end for target in chunk.branch_targets)
+        overlaps_relocated_range = any(
+            first_address < existing_end and existing_start < chunk_end
+            for existing_start, existing_end in self._relocated_ranges
+        )
+        if has_internal_branch_target or overlaps_relocated_range:
+            logger.debug("Skipping unsafe outlined chunk at 0x%x", first_address)
+            return False, cave_index
         needed = chunk_size + _RELATIVE_JUMP_SIZE_BYTES
         cave_address, cave_index = self._allocate_cave(caves, cave_index, needed)
         if cave_address is None:
             return False, cave_index
         cave_bytes = binary.read_bytes(cave_address, needed)
         return_jump = self._relative_jump(first_address + chunk_size, cave_address + needed)
+        trampoline = self._relative_jump(cave_address, first_address + _RELATIVE_JUMP_SIZE_BYTES)
         if return_jump is None:
             logger.debug(f"Return offset out of range for chunk at 0x{first_address:x}")
-        if return_jump is None or not binary.write_bytes(cave_address, original_bytes + return_jump):
-            return False, cave_index
-        trampoline = self._relative_jump(cave_address, first_address + _RELATIVE_JUMP_SIZE_BYTES)
         if trampoline is None:
             logger.debug(f"Trampoline offset out of range for chunk at 0x{first_address:x}")
+        if return_jump is None or trampoline is None:
             return False, cave_index
-        rewritten = trampoline + b"\x90" * (chunk_size - _RELATIVE_JUMP_SIZE_BYTES)
-        if not binary.write_bytes(first_address, rewritten):
+        if binary.write_bytes(cave_address, original_bytes + return_jump):
+            rewritten = trampoline + b"\x90" * (chunk_size - _RELATIVE_JUMP_SIZE_BYTES)
+            if binary.write_bytes(first_address, rewritten):
+                self._record_mutation(
+                    function_address=function_address,
+                    start_address=first_address,
+                    end_address=first_address + chunk_size,
+                    original_bytes=original_bytes,
+                    mutated_bytes=rewritten,
+                    original_disasm=disasm,
+                    mutated_disasm=f"jmp 0x{cave_address:x} (outlined chunk)",
+                    mutation_kind="function_outlining",
+                )
+                self._relocated_ranges.append((first_address, chunk_end))
+                return True, cave_index
             logger.warning("Trampoline write failed at 0x%x; chunk not outlined, skipping record", first_address)
             binary.write_bytes(cave_address, cave_bytes)
-            return False, cave_index
-        self._record_mutation(
-            function_address=function_address,
-            start_address=first_address,
-            end_address=first_address + chunk_size,
-            original_bytes=original_bytes,
-            mutated_bytes=rewritten,
-            original_disasm=disasm,
-            mutated_disasm=f"jmp 0x{cave_address:x} (outlined chunk)",
-            mutation_kind="function_outlining",
-        )
-        return True, cave_index
+        return False, cave_index
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -377,6 +400,7 @@ class FunctionOutliningPass(MutationPass):
 
         caves = CaveFinder(binary).find_caves()
         cave_idx = 0
+        self._relocated_ranges = []
 
         if self._session is not None:
             self._create_mutation_checkpoint("function_outlining")
@@ -415,7 +439,13 @@ class FunctionOutliningPass(MutationPass):
 
             relocated_for_function = 0
             for chunk in chunks[1:]:
-                relocated, cave_idx = self._relocate_chunk(binary, func_addr, chunk, caves, cave_idx)
+                relocated, cave_idx = self._relocate_chunk(
+                    binary,
+                    func_addr,
+                    chunk,
+                    caves,
+                    cave_idx,
+                )
                 chunks_relocated += int(relocated)
                 relocated_for_function += int(relocated)
 
