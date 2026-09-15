@@ -13,9 +13,12 @@ The compatibility corpus selection currently covers `BlockReordering`,
 `NopInsertion`, `PatternSubstitution`, and `RegisterSubstitution`.
 
 The continuous composition smoke exercises six directional pairs among
-`NopInsertion`, `InstructionSubstitution`, and `ConstantUnfolding`, plus both
-orders of `NopInsertion` with each of the twelve extended maturity passes. The
-workflow requires all 30 directional pairs and all 32 real-fixture test cases.
+`NopInsertion`, `InstructionSubstitution`, and `ConstantUnfolding`, both orders
+of `NopInsertion` with each of the twelve extended maturity passes, and seven
+applied core-pass compositions on dedicated fixtures. The workflow requires
+all 30 directional pairs and all 39 real-fixture test cases. `StackStrings`
+remains explicitly preview-only because its apply path does not rewrite the
+binary.
 The pass-ordering and runtime-preservation checks live in
 `tests/integration/test_polymorphic_engine_real.py`. This closes the declared
 two-pass order matrix; arbitrary pass-order combinations remain outside the
@@ -118,7 +121,12 @@ instructions, composition, and analyzer evidence is complete, partial,
 preview-only, or pending. This artifact is a reporting contract: a passing
 workflow does not promote partial analyzer coverage or a preview-only pass to
 official support.
-The static profile summary remains a declared-gap view, while the current
+The static profile summary remains a declared-gap view: it still reports 12
+with no independent false-positive measurement, 12 with no independent
+decompiler-effectiveness measurement, 11 without contractual composition
+support, and 35 total per-pass maturity field gaps across 3 maturity gap
+categories, with no remaining exhaustive affected-instruction catalogue gap in
+the static profiles. The current
 scheduled artifact records ten passes without independent semantic
 false-positive observations, eight without contractual composition support,
 22 without comparable decompiler evidence, and one without an applied
