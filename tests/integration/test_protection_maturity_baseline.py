@@ -55,6 +55,7 @@ _VEX_WORD_SHUFFLE_FIXTURE = _DATASET / "elf_vm_vex_word_shuffle_x86_64"
 _EXPECTED_PIE_EXIT_CODE = 73
 _EXPECTED_PACKED_INDEXED_EXIT_CODE = 6
 _EXPECTED_VARARGS_EXIT_CODE = 69
+_EXPECTED_DATA_FLOW_EXIT_CODE = 14
 _EXPECTED_SHORT_JUMP_EXIT_CODE = 7
 _FLAG_LIVE_FIXTURE = _DATASET / "elf_flag_live_x86_64"
 _EXPECTED_TOTAL_SIZE_DELTA_BYTES = 20
@@ -109,6 +110,25 @@ done:
     mov edi, 7
     mov eax, 60
     syscall
+"""
+_DATA_FLOW_SOURCE = """
+.global _start
+.text
+_start:
+    mov $7, %edi
+    call data_flow_probe
+    mov %eax, %edi
+    mov $60, %eax
+    syscall
+.type data_flow_probe,@function
+data_flow_probe:
+    mov %rdi, %rcx
+    mov %rdi, %rax
+    add $3, %rax
+    mov %rax, %rdx
+    add $4, %rax
+    ret
+.size data_flow_probe, .-data_flow_probe
 """
 _EXPECTED_INCOMPLETE_COVERAGE = {
     "runtime_observable": ["PatternSubstitution"],
@@ -287,6 +307,23 @@ def test_measure_fixture_omits_data_flow_when_no_destination_is_dead(tmp_path: P
             "reason": "no eligible function was transformed",
         }
         and run["output_sha256"] == sha256(_NOP_FIXTURE)
+    )
+
+
+def test_measure_fixture_applies_data_flow_on_dead_register_fixture(tmp_path: Path) -> None:
+    executable = _compile_elf_x86_64_binary(tmp_path, "data_flow", _DATA_FLOW_SOURCE)
+    result = measure_fixture(
+        executable,
+        range(20260901, 20260902),
+        tmp_path,
+        "DataFlowMutation",
+    )
+    run = result["runs"][0]
+
+    expect(
+        run["transformation"]["status"] == "applied"
+        and run["mutations_applied"] > 0
+        and run["unicorn"]["exit_code"] == _EXPECTED_DATA_FLOW_EXIT_CODE
     )
 
 

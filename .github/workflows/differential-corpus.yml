@@ -627,7 +627,7 @@ jobs:
                   raise SystemExit("extended maturity pass coverage drift")
           merged_extended = merge_maturity_reports(extended_reports)
           maturity_summary = merged_extended["campaign_summary"]
-          expected_unapplied_extended_passes = {"DataFlowMutation", "StackStrings"}
+          expected_unapplied_extended_passes = {"StackStrings"}
           observed_unapplied_extended_passes = set(maturity_summary["passes_without_extended_applied_runs"])
           if observed_unapplied_extended_passes != expected_unapplied_extended_passes:
               raise SystemExit(

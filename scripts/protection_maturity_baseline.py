@@ -240,8 +240,11 @@ __asm__(
     ".globl data_flow_probe\n"
     ".type data_flow_probe,@function\n"
     "data_flow_probe:\n"
-    "mov %edi, %eax\n"
-    "mov $0, %eax\n"
+    "mov %rdi, %rcx\n"
+    "mov %rdi, %rax\n"
+    "add $3, %rax\n"
+    "mov %rax, %rdx\n"
+    "add $4, %rax\n"
     "ret\n"
     ".size data_flow_probe, .-data_flow_probe\n"
 );
