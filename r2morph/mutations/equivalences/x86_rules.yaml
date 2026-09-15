@@ -10,7 +10,6 @@ equivalence_groups:
       - "mov {reg}, 0"
       - "xor {reg}, {reg}"
       - "sub {reg}, {reg}"
-      - "push 0; pop {reg}"
     registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
 
   # Zero register patterns - 64-bit
@@ -43,7 +42,6 @@ equivalence_groups:
     description: "Ways to move a 64-bit register to itself (NOPs)"
     instructions:
       - "mov {reg}, {reg}"
-      - "push {reg}; pop {reg}"
       - "xchg {reg}, {reg}"
     registers: ["rax", "rbx", "rcx", "rdx"]
 
@@ -52,7 +50,6 @@ equivalence_groups:
     description: "Ways to load 1 into a 32-bit register"
     instructions:
       - "mov {reg}, 1"
-      - "push 1; pop {reg}"
       - "xor {reg}, {reg}; inc {reg}"
     registers: ["eax", "ebx", "ecx", "edx"]
 
@@ -118,22 +115,6 @@ equivalence_groups:
     instructions:
       - "sub {reg}, 1"
       - "dec {reg}"
-    registers: ["rax", "rbx", "rcx", "rdx"]
-
-  # Push/pop NOP equivalence - 32-bit
-  - name: "push_pop_nop_32bit"
-    description: "Push/pop same register is effectively a NOP"
-    instructions:
-      - "push {reg}; pop {reg}"
-      - "nop"
-    registers: ["eax", "ebx", "ecx", "edx"]
-
-  # Push/pop NOP equivalence - 64-bit
-  - name: "push_pop_nop_64bit"
-    description: "Push/pop same register is effectively a NOP"
-    instructions:
-      - "push {reg}; pop {reg}"
-      - "nop"
     registers: ["rax", "rbx", "rcx", "rdx"]
 
   # NOP equivalences (non-templated)

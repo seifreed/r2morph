@@ -122,6 +122,18 @@ def test_x86_64_substitution_does_not_use_32_bit_stack_self_move() -> None:
     expect("push eax; pop eax" not in equivalents)
 
 
+def test_x86_equivalence_rules_exclude_stack_side_effects() -> None:
+    equivalence_groups, _ = init_substitution_rules()
+    stack_effects = [
+        instruction
+        for group in equivalence_groups["x86"]
+        for instruction in group
+        if instruction.startswith(("push ", "pop "))
+    ]
+
+    expect(not stack_effects)
+
+
 def test_instruction_substitution_applies_function_budget_before_disassembly() -> None:
     binary = _FunctionBudgetBinary()
 

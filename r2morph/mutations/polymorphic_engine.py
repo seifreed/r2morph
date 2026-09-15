@@ -309,6 +309,7 @@ class PolymorphicEnginePass(MutationPass):
 
     Config options:
         - seed: Random seed (default: None)
+        - force_different: Force substitutions to change the instruction (default: False)
         - max_iterations: Maximum iterations (default: 10)
         - enable_substitution: Enable instruction substitution (default: True)
         - enable_pattern_substitution: Enable pattern-pool substitution (default: True)
@@ -325,6 +326,7 @@ class PolymorphicEnginePass(MutationPass):
         super().__init__(name="PolymorphicEngine", config=config)
 
         self.seed = self.config.get("seed", None)
+        self.force_different = self.config.get("force_different", False)
         self.max_iterations = self.config.get("max_iterations", 10)
 
         self.enable_substitution = self.config.get("enable_substitution", True)
@@ -372,6 +374,7 @@ class PolymorphicEnginePass(MutationPass):
             self.engine,
             EngineSetupConfig(
                 seed=self.seed,
+                force_different=self.force_different,
                 enable_substitution=self.enable_substitution,
                 enable_pattern_substitution=self.enable_pattern_substitution,
                 enable_dead_code=self.enable_dead_code,

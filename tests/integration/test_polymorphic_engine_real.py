@@ -103,7 +103,12 @@ def _build_composition_pass(name: str, seed: int):
         return ConstantUnfoldingPass(config={"probability": 1.0, "max_unfolds_per_function": 5, "seed": seed})
     if name == "substitution":
         return InstructionSubstitutionPass(
-            config={"probability": 1.0, "max_substitutions_per_function": 2, "seed": seed}
+            config={
+                "probability": 1.0,
+                "max_substitutions_per_function": 2,
+                "force_different": True,
+                "seed": seed,
+            }
         )
     raise ValueError(f"unsupported composition pass: {name}")
 
@@ -112,7 +117,7 @@ def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(t
     mutated = tmp_path / "elf_vm_arith_polymorphic"
     shutil.copyfile(_FIXTURE, mutated)
     baseline_exit_code = emulate_exit_code(_FIXTURE)
-    polymorphic_pass = PolymorphicEnginePass(config={"seed": _SEED, "max_iterations": 10})
+    polymorphic_pass = PolymorphicEnginePass(config={"seed": _SEED, "force_different": True, "max_iterations": 10})
 
     with Binary(mutated, writable=True) as binary:
         binary.analyze("aa")
@@ -174,7 +179,7 @@ def test_stack_strings_apply_remains_preview_only_without_rewriting_binary(tmp_p
             id="constant_then_nop",
         ),
         pytest.param(
-            ("elf_vm_arith_x86_64", "substitution", "InstructionSubstitution", "nop", "NopInsertion", 20260917),
+            ("elf_vm_arith_x86_64", "substitution", "InstructionSubstitution", "nop", "NopInsertion", 20260919),
             id="substitution_then_nop",
         ),
         pytest.param(
@@ -184,7 +189,7 @@ def test_stack_strings_apply_remains_preview_only_without_rewriting_binary(tmp_p
                 "InstructionSubstitution",
                 "constant",
                 "ConstantUnfolding",
-                20260918,
+                20260921,
             ),
             id="substitution_then_constant",
         ),

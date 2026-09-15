@@ -21,6 +21,7 @@ from r2morph.mutations.string_obfuscation import StringObfuscationPass
 @dataclass(frozen=True)
 class EngineSetupConfig:
     seed: int | None = None
+    force_different: bool = False
     enable_substitution: bool = True
     enable_pattern_substitution: bool = True
     enable_dead_code: bool = True
@@ -78,7 +79,7 @@ def setup_default_engine(engine: Any, config: EngineSetupConfig | None = None) -
     """Register the default mutation pipeline on an engine."""
     config = config or EngineSetupConfig()
     state = EngineState.INIT
-    child_config = None if config.seed is None else {"seed": config.seed}
+    child_config = None if config.seed is None else {"seed": config.seed, "force_different": config.force_different}
 
     for stage in _ENGINE_STAGES:
         if not getattr(config, stage.option):
