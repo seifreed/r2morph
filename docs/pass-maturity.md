@@ -107,6 +107,13 @@ The aggregate job now persists these per-pass results as
 `extended-maturity-merged.json` alongside the differential corpus artifact,
 so the evidence is retained as a reviewable campaign output rather than only
 being checked transiently inside a runner.
+The same aggregate job now publishes `maturity-evidence-merged.json`. It joins
+the differential and extended-pass summaries with the composition JUnit shards
+and records, per pass, whether performance, behavioral validation, affected
+instructions, composition, and analyzer evidence is complete, partial,
+preview-only, or pending. This artifact is a reporting contract: a passing
+workflow does not promote partial analyzer coverage or a preview-only pass to
+official support.
 The current profile summary still reports `12 with no independent false-positive measurement`
 until the scheduled artifact is published, and also reports 12 with no
 independent decompiler-effectiveness measurement, 11 without contractual
