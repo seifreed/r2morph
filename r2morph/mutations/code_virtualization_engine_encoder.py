@@ -59,6 +59,10 @@ EngineOp = (
 )
 
 
+class UnsupportedVirtualizationError(ValueError):
+    """Raised when an operation has no exact bytecode contract."""
+
+
 class _BytecodeEncoder:
     def __init__(self, scheme: VMScheme, checksum: int, bytecode_base: int) -> None:
         self.scheme = scheme
@@ -121,7 +125,7 @@ class _BytecodeEncoder:
                 "dst": bytes([op.dst_index]),
                 "src1": bytes([op.src1_index]),
                 "src2": bytes([op.src2_index]),
-                "op": bytes([_FP_SCALAR_VEX_OPERATIONS.index(op.mnemonic)]),
+                "op": bytes([self._operation_index(_FP_SCALAR_VEX_OPERATIONS, op.mnemonic, "scalar VEX FP")]),
             }
             order = [*triple_permuted_fields("dst", "src1", "src2", self.field_perm), ("op", 1)]
             self._emit_fields(position, order, fields)
@@ -131,7 +135,7 @@ class _BytecodeEncoder:
                 fields = {
                     "dst": bytes([op.dst_index]),
                     "src": bytes([op.src_index]),
-                    "op": bytes([_FP_PACKED_ARITH_OPERATIONS.index(op.mnemonic)]),
+                    "op": bytes([self._operation_index(_FP_PACKED_ARITH_OPERATIONS, op.mnemonic, "packed FP")]),
                 }
                 order = [*pair_permuted_fields("dst", "src", self.field_perm), ("op", 1)]
             else:
@@ -140,7 +144,7 @@ class _BytecodeEncoder:
                     "dst": bytes([op.dst_index]),
                     "src1": bytes([op.src1_index]),
                     "src2": bytes([op.src_index]),
-                    "op": bytes([_FP_PACKED_VEX_OPERATIONS.index(op.mnemonic)]),
+                    "op": bytes([self._operation_index(_FP_PACKED_VEX_OPERATIONS, op.mnemonic, "packed VEX FP")]),
                 }
                 order = [*triple_permuted_fields("dst", "src1", "src2", self.field_perm), ("op", 1)]
             self._emit_fields(position, order, fields)
@@ -149,7 +153,9 @@ class _BytecodeEncoder:
             fields = {
                 "dst": bytes([op.dst_index]),
                 "immediate": bytes([op.immediate]),
-                "op": bytes([_FP_PACKED_IMMEDIATE_OPERATIONS.index(op.mnemonic)]),
+                "op": bytes(
+                    [self._operation_index(_FP_PACKED_IMMEDIATE_OPERATIONS, op.mnemonic, "packed immediate FP")]
+                ),
             }
             self._emit_fields(
                 position,
@@ -272,7 +278,20 @@ class _BytecodeEncoder:
         )
 
     def _opcode(self, kind: str, width: int, immediate: bool = False) -> int:
-        return self._emit_opcode(self.pick(self.scheme.dup[(kind, immediate, width)]))
+        key = (kind, immediate, width)
+        variants = self.scheme.dup.get(key)
+        if not variants:
+            raise UnsupportedVirtualizationError(
+                f"no VM opcode contract for kind={kind!r}, immediate={immediate}, width={width}"
+            )
+        return self._emit_opcode(self.pick(variants))
+
+    @staticmethod
+    def _operation_index(operations: tuple[str, ...], operation: str, category: str) -> int:
+        try:
+            return operations.index(operation)
+        except ValueError as exc:
+            raise UnsupportedVirtualizationError(f"no VM operation contract for {category}: {operation!r}") from exc
 
     def _rip_fields(self, register: int, disp: int, *, permute_register: bool = False) -> dict[str, bytes]:
         reg = self.slot_of[register] if permute_register else register

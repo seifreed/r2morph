@@ -21,6 +21,7 @@ from r2morph.mutations.code_virtualization_engine_codegen import (
     encode_bytecode,
 )
 from r2morph.mutations.code_virtualization_engine_common import VMScheme
+from r2morph.mutations.code_virtualization_engine_encoder import UnsupportedVirtualizationError
 from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpArithMemOp,
     VirtualizedFpArithOp,
@@ -119,7 +120,7 @@ def build_vm_blob(
     bytecode_base = cave_vaddr + len(data)
     try:
         bytecode = encode_bytecode(ops, scheme, checksum, bytecode_base)
-    except struct.error:
-        logger.debug("rip-relative target out of 32-bit range; leaving run native")
+    except (struct.error, UnsupportedVirtualizationError) as exc:
+        logger.debug("VM operation cannot be encoded; leaving run native: %s", exc)
         return None
     return bytes(data) + bytecode
