@@ -118,12 +118,13 @@ instructions, composition, and analyzer evidence is complete, partial,
 preview-only, or pending. This artifact is a reporting contract: a passing
 workflow does not promote partial analyzer coverage or a preview-only pass to
 official support.
-The current profile summary still reports `12 with no independent false-positive measurement`
-until the scheduled artifact is published, and also reports 12 with no
-independent decompiler-effectiveness measurement, 11 without contractual
-composition support, and no remaining exhaustive affected-instruction
-catalogue gap: 35 total per-pass maturity field gaps across 3 maturity gap
-categories. The generated matrix also names the affected passes in
+The static profile summary remains a declared-gap view, while the current
+scheduled artifact records ten passes without independent semantic
+false-positive observations, eight without contractual composition support,
+22 without comparable decompiler evidence, and one without an applied
+affected-instruction catalogue: 41 per-pass evidence blockers across four
+measured categories. Performance coverage is complete in that artifact. The
+generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
