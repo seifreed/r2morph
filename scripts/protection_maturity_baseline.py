@@ -92,6 +92,8 @@ _GENERATED_CORPUS_PROFILES = (
     ("gcc-o3", "gcc", "-O3", "-fno-pie", "-no-pie"),
     ("gcc-os", "gcc", "-Os", "-fno-pie", "-no-pie"),
     ("gcc-pie-o2", "gcc", "-O2", "-fPIE", "-pie"),
+    ("gcc-static-o2", "gcc", "-O2", "-fno-pie", "-no-pie", "-static"),
+    ("gcc-stripped-o2", "gcc", "-O2", "-fno-pie", "-no-pie", "-s"),
     ("clang-o0", "clang", "-O0", "-fno-pie", "-no-pie"),
     ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
 )

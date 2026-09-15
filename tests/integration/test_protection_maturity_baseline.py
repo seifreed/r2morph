@@ -812,6 +812,8 @@ def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
             "gcc-o3",
             "gcc-os",
             "gcc-pie-o2",
+            "gcc-static-o2",
+            "gcc-stripped-o2",
             "clang-o0",
             "clang-o2",
         )

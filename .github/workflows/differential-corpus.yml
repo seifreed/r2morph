@@ -90,12 +90,12 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if summary["generated_fixture_count"] != 10:
+          if not 0 < summary["generated_fixture_count"] <= 50:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_abi", "generated_branch", "generated_extended", "generated_lookup", "generated_memory")
-              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "clang-o0", "clang-o2")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2")
           )
           if not set(summary["generated_fixture_names"]).issubset(expected_generated):
               raise SystemExit(f"unexpected generated fixture names: {summary['generated_fixture_names']}")
@@ -738,9 +738,9 @@ jobs:
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_abi", "generated_branch", "generated_extended", "generated_lookup", "generated_memory")
-              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "clang-o0", "clang-o2")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2")
           )
-          if summary["generated_fixture_count"] != 40 or summary["generated_fixture_names"] != expected_generated:
+          if summary["generated_fixture_count"] != 50 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")
           if summary["passes_without_applied_runs"]:
               raise SystemExit(
