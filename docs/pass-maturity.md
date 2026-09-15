@@ -150,10 +150,12 @@ remains an explicit unavailable-tool blocker; IDA, Ghidra, and Triton have
 separate corpus evidence, but the full comparable campaign scope remains a
 release blocker.
 The aggregate jobs of the current four-shard 22-pass campaign
-[`34999771865`](https://github.com/seifreed/r2morph/actions/runs/34999771865)
-completed 6,372 pass runs with no transformation, semantic, or runtime-observable
-errors. It provides continuous output-size, duration, static-metric, and
-behavioral evidence for all 22 declared passes. The merged maturity artifact
+[`35021131440`](https://github.com/seifreed/r2morph/actions/runs/35021131440)
+completed 11,682 pass runs (5,310 core and 6,372 extended) with no
+transformation, semantic, or runtime-observable errors. It provides continuous
+output-size, duration, static-metric, and behavioral evidence for all 22 declared
+passes. The separate public compatibility-corpus job in that run is still
+pending completion. The merged maturity artifact
 records zero performance-field gaps, ten passes without independent semantic
 false-positive observations, eight without contractual composition coverage,
 22 without comparable decompiler evidence, and `StackStrings` without an
@@ -192,7 +194,7 @@ checks. This strengthens automated evidence but does not replace the pending
 human/adversarial review. The generated `total_vm_resistance_blockers` count is
 currently 6 VM resistance blockers.
 The same workflow now publishes `vm-resistance-adversarial.json`, a bounded
-four-seed report that joins semantic parity, distinct artifact hashes,
+ten-seed report that joins semantic parity, distinct artifact hashes,
 dispatcher/handler/stride diversity, single- and nested-layer tamper
 divergence, and progressive blob growth. Its `human_adversarial_review` field
 remains pending by contract, so the report is continuous automated evidence

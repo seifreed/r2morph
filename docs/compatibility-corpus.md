@@ -221,10 +221,12 @@ overlapping samples, and applies the application and row-completeness gates to
 the full corpus. This keeps the evidence continuous without treating a
 per-shard omission as a corpus-wide pass.
 The current four-shard 22-pass aggregate
-[`34999771865`](https://github.com/seifreed/r2morph/actions/runs/34999771865)
-completed 6,372 pass rows with zero missing or error rows across the repository
-and generated ELF x86-64 fixtures. All output-size, duration, static-metric,
-runtime-observable, and semantic fields were complete. The merged maturity
+[`35021131440`](https://github.com/seifreed/r2morph/actions/runs/35021131440)
+completed 11,682 pass rows (5,310 core and 6,372 extended) with zero missing or
+error rows across the repository and generated ELF x86-64 fixtures. All
+output-size, duration, static-metric, runtime-observable, and semantic fields
+were complete. The separate public compatibility-corpus job in that run is
+still pending completion. The merged maturity
 evidence retains ten independent false-positive gaps, eight composition gaps,
 22 decompiler gaps, and one pass without an applied instruction catalogue;
 these are release blockers, not implied support.
