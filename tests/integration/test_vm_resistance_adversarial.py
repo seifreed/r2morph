@@ -8,6 +8,7 @@ from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_shift_x86_64"
 _EXPECTED_SEED_COUNT = 4
+_EXPECTED_TAMPER_PROBE_COUNT = 8
 
 
 def test_vm_resistance_measurement_records_automated_adversarial_contract() -> None:
@@ -32,6 +33,9 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and grammar_report["target_stride_diverse"] is True
         and single_layer["tamper_diverged"] is True
         and nested["tamper_diverged"] is True
+        and single_layer["all_tamper_probes_diverged"] is True
+        and nested["all_tamper_probes_diverged"] is True
+        and single_layer["tamper_probe_count"] == nested["tamper_probe_count"] == _EXPECTED_TAMPER_PROBE_COUNT
         and progressive["growth_observed"] is True
         and progressive["depth_1_exit_code"] == progressive["baseline_exit_code"]
         and progressive["depth_2_exit_code"] == progressive["baseline_exit_code"]

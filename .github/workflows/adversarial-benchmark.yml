@@ -255,9 +255,13 @@ jobs:
           if report["opcode_and_dispatcher_diversity"]["dispatcher_unique_count"] != report["seed_count"]:
               raise SystemExit("VM dispatcher diversity did not vary across seeds")
           if not report["anti_tamper"]["single_layer"]["tamper_diverged"]:
-              raise SystemExit("single-layer VM tamper probe did not diverge")
+            raise SystemExit("single-layer VM tamper probe did not diverge")
           if not report["anti_tamper"]["nested"]["tamper_diverged"]:
-              raise SystemExit("nested VM tamper probe did not diverge")
+            raise SystemExit("nested VM tamper probe did not diverge")
+          if not report["anti_tamper"]["single_layer"]["all_tamper_probes_diverged"]:
+            raise SystemExit("single-layer VM tamper matrix did not diverge at every probe")
+          if not report["anti_tamper"]["nested"]["all_tamper_probes_diverged"]:
+            raise SystemExit("nested VM tamper matrix did not diverge at every probe")
           if not report["progressive_bytecode"]["growth_observed"]:
               raise SystemExit("progressive VM bytecode growth was not observed")
           if report["human_adversarial_review"]["status"] != "pending-human-adversarial-review":

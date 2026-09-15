@@ -28,6 +28,7 @@ _DEFAULT_COUNT = 4
 _MIN_SEEDS = 2
 _MAX_SEEDS = 32
 _VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
+_TAMPER_OFFSETS = (0x10, 0x18, 0x20, 0x28, 0x30, 0x40, 0x50, 0x60)
 _HUMAN_REVIEW = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "automated-adversarial-smoke",
@@ -91,26 +92,41 @@ def _seed_campaign(source: Path, workdir: Path, first_seed: int, count: int) -> 
 
 def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = None) -> dict[str, object]:
     protected = workdir / ("nested-protected" if depth is not None else "protected")
-    tampered = workdir / ("nested-tampered" if depth is not None else "tampered")
+    tampered_prefix = "nested-tampered" if depth is not None else "tampered"
     stats = _virtualize_fixture(source, protected, seed, depth)
     original_exit = emulate_exit_code(protected)
     data = bytearray(protected.read_bytes())
     vm_entry = _find_vm_entry(bytes(data))
-    if vm_entry < 0 or vm_entry + 0x10 >= len(data):
+    if vm_entry < 0 or any(vm_entry + offset >= len(data) for offset in _TAMPER_OFFSETS):
         raise ValueError("virtualized fixture does not expose a bounded VM entry")
-    data[vm_entry + 0x10] ^= 0xFF
-    tampered.write_bytes(data)
-    try:
-        tampered_exit: int | None = emulate_exit_code(tampered)
-    except Exception:  # A tamper-triggered emulator fault is itself divergence.
-        tampered_exit = None
+    probes: list[dict[str, object]] = []
+    for offset in _TAMPER_OFFSETS:
+        tampered = workdir / f"{tampered_prefix}-{offset:x}"
+        candidate = bytearray(data)
+        candidate[vm_entry + offset] ^= 0xFF
+        tampered.write_bytes(candidate)
+        try:
+            tampered_exit: int | None = emulate_exit_code(tampered)
+        except Exception:  # A tamper-triggered emulator fault is itself divergence.
+            tampered_exit = None
+        probes.append(
+            {
+                "offset": offset,
+                "tampered_exit_code": tampered_exit,
+                "diverged": tampered_exit != original_exit,
+            }
+        )
+    first_probe = probes[0]
     return {
         "seed": seed,
         "depth": depth or 1,
         "functions_virtualized": stats.get("functions_virtualized", 0),
         "original_exit_code": original_exit,
-        "tampered_exit_code": tampered_exit,
-        "tamper_diverged": tampered_exit != original_exit,
+        "tampered_exit_code": first_probe["tampered_exit_code"],
+        "tamper_diverged": first_probe["diverged"],
+        "tamper_probe_count": len(probes),
+        "tamper_probes": probes,
+        "all_tamper_probes_diverged": all(probe["diverged"] for probe in probes),
     }
 
 
