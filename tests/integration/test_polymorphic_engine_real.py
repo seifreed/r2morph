@@ -13,12 +13,19 @@ from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations import ConstantUnfoldingPass, InstructionSubstitutionPass, NopInsertionPass
 from r2morph.mutations.anti_disassembly import AntiDisassemblyPass
 from r2morph.mutations.api_hashing import APIHashingPass
+from r2morph.mutations.block_reordering import BlockReorderingPass
 from r2morph.mutations.code_mobility import CodeMobilityPass
+from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
+from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.mutations.function_outlining import FunctionOutliningPass
 from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
 from r2morph.mutations.polymorphic_engine import PolymorphicEnginePass
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from r2morph.mutations.stack_strings import StackStringsPass
@@ -42,6 +49,50 @@ _EXTENDED_COMPOSITION_PASSES = (
     ("ShortJumpPatching", ShortJumpPatchingPass),
     ("StackStrings", StackStringsPass),
     ("StringObfuscation", StringObfuscationPass),
+)
+_CORE_COMPOSITION_CASES = (
+    ("BlockReordering", "elf_jumpchain_x86_64", BlockReorderingPass, {"max_functions": 10}, "before_nop", _SEED),
+    ("CodeVirtualization", "elf_vm_arith_x86_64", CodeVirtualizationPass, {"max_functions": 2}, "before_nop", _SEED),
+    (
+        "ControlFlowFlattening",
+        "elf_cff_flagdead_x86_64",
+        ControlFlowFlatteningPass,
+        {"max_functions_to_flatten": 2},
+        "before_nop",
+        _SEED,
+    ),
+    (
+        "DeadCodeInjection",
+        "elf_cff_flagdead_x86_64",
+        DeadCodeInjectionPass,
+        {"max_injections_per_function": 2},
+        "before_nop",
+        _SEED,
+    ),
+    (
+        "InstructionExpansion",
+        "elf_vm_shift_x86_64",
+        InstructionExpansionPass,
+        {"max_expansions_per_function": 2},
+        "before_nop",
+        _SEED,
+    ),
+    (
+        "PatternSubstitution",
+        "elf_vm_call_x86_64",
+        PatternSubstitutionPass,
+        {"max_substitutions_per_function": 2},
+        "after_nop",
+        20260920,
+    ),
+    (
+        "RegisterSubstitution",
+        "elf_vm_redzone_x86_64",
+        RegisterSubstitutionPass,
+        {"max_substitutions_per_function": 2},
+        "before_nop",
+        _SEED,
+    ),
 )
 
 
@@ -213,4 +264,38 @@ def test_extended_passes_compose_before_nop_without_corrupting_fixture(
         engine.save(mutated)
 
     expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
+    expect(emulate_exit_code(mutated) == baseline_exit_code, result)
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CORE_COMPOSITION_CASES,
+    ids=[name for name, _, _, _, _, _ in _CORE_COMPOSITION_CASES],
+)
+def test_core_passes_compose_with_nop_and_preserve_exit_code(
+    case: tuple[str, str, type, dict[str, int], str, int],
+    tmp_path: Path,
+) -> None:
+    pass_name, fixture_name, pass_type, pass_options, order, seed = case
+    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / fixture_name
+    mutated = tmp_path / f"{fixture_name}_{pass_name}.composed"
+    baseline_exit_code = emulate_exit_code(fixture)
+    pass_config = {"probability": 1.0, "seed": seed, **pass_options}
+    nop = NopInsertionPass(config={"probability": 1.0, "max_nops_per_function": 2, "seed": seed})
+    selected = pass_type(config=pass_config)
+
+    with MorphEngine(config={"seed": seed}) as engine:
+        engine.load_binary(fixture).analyze()
+        if order == "after_nop":
+            engine.add_mutation(nop)
+            engine.add_mutation(selected)
+        else:
+            engine.add_mutation(selected)
+            engine.add_mutation(nop)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=seed))
+        engine.save(mutated)
+
+    selected_result = result["pass_results"].get(pass_name, {})
+    expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
+    expect(selected_result.get("status") == "applied", result)
     expect(emulate_exit_code(mutated) == baseline_exit_code, result)

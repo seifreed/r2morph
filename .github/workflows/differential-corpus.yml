@@ -204,11 +204,11 @@ jobs:
 
           suite = ET.parse("composition-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 31:
+          if len(cases) < 38:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("composition smoke contains failures or errors")
-          if len(cases) != 32:
+          if len(cases) != 39:
               raise SystemExit(f"composition smoke case count drifted: {len(cases)}")
           names = {case.attrib.get("name", "") for case in cases}
           required = {
@@ -219,6 +219,13 @@ jobs:
               "test_composed_real_passes_preserve_exit_code[constant_then_nop]",
               "test_composed_real_passes_preserve_exit_code[substitution_then_nop]",
               "test_composed_real_passes_preserve_exit_code[substitution_then_constant]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[BlockReordering]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[CodeVirtualization]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[ControlFlowFlattening]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[DeadCodeInjection]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[InstructionExpansion]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[PatternSubstitution]",
+              "test_core_passes_compose_with_nop_and_preserve_exit_code[RegisterSubstitution]",
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[AntiDisassembly]",
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[APIHashing]",
               "test_extended_passes_compose_after_nop_without_corrupting_fixture[CodeMobility]",
@@ -634,7 +641,7 @@ jobs:
               allowed_skip_text="Mach-O arm64 execution requires macOS",
           )
           validate_junit_reports("vm-semantic-reports", 55)
-          validate_junit_reports("composition-reports", 32)
+          validate_junit_reports("composition-reports", 39)
 
           expected_fuzz_targets = {
               "binary_parsers": 64,
