@@ -8,6 +8,7 @@ from scripts.adversarial_benchmark import (
     _EXPECTED_TOOLS,
     _analyzer_effectiveness_by_pass,
     _campaign_summary,
+    _is_binary_ninja_license_error,
     _measure_tool,
     _missing_tool_slot_error,
     _parse_adversarial_pass_names,
@@ -87,6 +88,10 @@ def test_adversarial_benchmark_separates_capability_gaps_from_adapter_errors() -
         unavailable == {"tool": "unicorn", "status": "unavailable", "reason": "unsupported ISA"}
         and failed == {"tool": "unicorn", "status": "error", "error_type": "ValueError", "detail": "adapter failed"}
     )
+
+
+def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:
+    expect(_is_binary_ninja_license_error(RuntimeError("License is not valid")))
 
 
 def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:

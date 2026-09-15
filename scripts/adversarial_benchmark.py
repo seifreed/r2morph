@@ -180,6 +180,10 @@ def _objdump_metric(path: Path) -> dict[str, object]:
     return {"status": "completed", "return_code": completed.returncode, "instruction_lines": count}
 
 
+def _is_binary_ninja_license_error(error: RuntimeError) -> bool:
+    return "license" in str(error).lower()
+
+
 def _angr_metric(path: Path) -> dict[str, object]:
     angr = import_module("angr")
     started = time.perf_counter()
@@ -195,9 +199,14 @@ def _angr_metric(path: Path) -> dict[str, object]:
 def _binary_ninja_metric(path: Path) -> dict[str, object]:
     binaryninja = import_module("binaryninja")
     started = time.perf_counter()
-    with binaryninja.load(str(path), update_analysis=False) as view:
-        view.update_analysis_and_wait()
-        functions = len(view.functions)
+    try:
+        with binaryninja.load(str(path), update_analysis=False) as view:
+            view.update_analysis_and_wait()
+            functions = len(view.functions)
+    except RuntimeError as error:
+        if _is_binary_ninja_license_error(error):
+            raise _ToolCapabilityUnavailableError("analyzer license is unavailable") from error
+        raise
     return {
         "status": "completed",
         "functions": functions,
