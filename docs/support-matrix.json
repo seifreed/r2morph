@@ -499,13 +499,13 @@
         ],
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
-        "instructions_affected": "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.",
+        "instructions_affected": "Preview-only generation targets printable static strings in named sections with x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions; runtime string-reference rewriting is not implemented.",
         "false_positive_risk": "Not independently measured.",
         "unit_tests": [
           "tests/unit/test_morphing_evasion.py"
         ],
         "e2e_tests": [
-          "tests/integration"
+          "tests/integration/test_polymorphic_engine_real.py"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
@@ -1159,8 +1159,8 @@
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
+        "Preview-only generation targets printable static strings in named sections with x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions; runtime string-reference rewriting is not implemented.": 1,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
-        "Printable static string bytes in named sections are replaced by x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions.": 1,
         "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.": 1,
@@ -1191,12 +1191,12 @@
         "tests/unit/test_short_jump_patching.py": 1
       },
       "e2e_test_evidence_counts": {
-        "tests/integration": 19,
+        "tests/integration": 18,
         "tests/integration/test_code_virtualization_exception_gate_real.py": 1,
         "tests/integration/test_code_virtualization_real.py": 1,
         "tests/integration/test_mutation_fuzzer_real.py": 1,
         "tests/integration/test_mutation_opaque_predicates_apply_real.py": 1,
-        "tests/integration/test_polymorphic_engine_real.py": 1,
+        "tests/integration/test_polymorphic_engine_real.py": 2,
         "tests/integration/test_protection_maturity_baseline.py": 1,
         "tests/product_smoke": 3
       },

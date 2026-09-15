@@ -39,7 +39,7 @@ outside the contract until they have equivalent real-fixture coverage.
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
 | Import obfuscation | Experimental | ELF x86-64 | Format-specific import handling | `README.md` |
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
-| Stack strings | Experimental | ELF x86-64 | String layout and ABI interactions need more corpus coverage | `README.md` |
+| Stack strings | Experimental | ELF x86-64 | Current apply path is preview-only; runtime string-reference rewriting is not implemented | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus; pattern coverage is intentionally narrow and composition evidence remains incomplete | `README.md`, `docs/compatibility-corpus.md` |
 | Polymorphic engine | Experimental | ELF x86-64 | A real ELF x86-64 composition matrix covers six child-pass orders across three fixtures; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
