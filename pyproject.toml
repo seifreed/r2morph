@@ -45,6 +45,7 @@ dependencies = [
     "rich>=13.0.0",
     "typer>=0.9.0",
     "pyyaml>=6.0.0",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]

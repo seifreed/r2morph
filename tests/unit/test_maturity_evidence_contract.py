@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from scripts.maturity_evidence import build_evidence, read_composition_evidence
+from tests.utils.assertions import expect
+
+_EXPECTED_DECOMPILER_BLOCKERS = 2
+
+
+def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str, object]:
+    return {
+        "applied_runs": applied_runs,
+        "behavioral_validation_observations": applied_runs,
+        "behavioral_false_positive_observations": 0,
+        "behavioral_validation_missing_observations": incomplete_observations,
+        "behavioral_false_positive_rate_percent": 0.0,
+        "affected_instruction_applied_runs": applied_runs,
+        "affected_instruction_missing_runs": 0,
+        "affected_instruction_mnemonics": ["mov"] if applied_runs else [],
+        "affected_instruction_record_count": applied_runs,
+        "output_size_coverage_percent": 100.0,
+        "transform_duration_coverage_percent": 100.0,
+        "runtime_duration_coverage_percent": 100.0,
+        "static_metric_coverage_percent": 100.0,
+    }
+
+
+def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        """<?xml version='1.0'?><testsuite tests='3'>
+        <testcase name='test_extended_passes_compose_after_nop_without_corrupting_fixture[AntiDisassembly]'/>
+        <testcase name='test_extended_passes_compose_before_nop_without_corrupting_fixture[AntiDisassembly]'/>
+        <testcase name='test_extended_passes_compose_after_nop_without_corrupting_fixture[StackStrings]'/>
+        </testsuite>""",
+        encoding="utf-8",
+    )
+    composition_evidence = read_composition_evidence((composition,))
+    differential = {
+        "pass_names": ["AntiDisassembly", "StackStrings"],
+        "summary": {
+            "AntiDisassembly": _summary(2),
+            "StackStrings": _summary(0),
+        },
+    }
+    extended = {"pass_names": [], "summary": {}}
+    evidence = build_evidence(differential, extended, composition_evidence)
+
+    expect(
+        evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "complete"
+        and evidence["passes"]["StackStrings"]["composition"]["status"] == "preview-only"
+        and evidence["summary"]["blocker_totals"]["decompiler"] == _EXPECTED_DECOMPILER_BLOCKERS
+    )
+
+
+def test_maturity_evidence_marks_missing_behavioral_observation_as_incomplete(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        "<testsuite><testcase name='test_composed_real_passes_preserve_exit_code[nop_then_substitution]'/></testsuite>",
+        encoding="utf-8",
+    )
+    report = {
+        "pass_names": ["NopInsertion"],
+        "summary": {"NopInsertion": _summary(1, incomplete_observations=1)},
+    }
+    evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
+
+    expect(evidence["passes"]["NopInsertion"]["behavioral_false_positive"]["status"] == "incomplete")
+
+
+def test_differential_workflow_publishes_maturity_evidence() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
+
+    expect(
+        "scripts/maturity_evidence.py" in workflow.read_text(encoding="utf-8")
+        and "maturity-evidence-merged.json" in workflow.read_text(encoding="utf-8")
+    )

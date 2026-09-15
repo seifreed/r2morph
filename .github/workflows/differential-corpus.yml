@@ -719,6 +719,34 @@ jobs:
               json.dumps(report, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
+
+      - name: Build per-pass maturity evidence document
+        run: |
+          python scripts/maturity_evidence.py \
+            --differential differential-corpus-merged.json \
+            --extended extended-maturity-merged.json \
+            --composition-dir composition-reports \
+            --output maturity-evidence-merged.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("maturity-evidence-merged.json").read_text(encoding="utf-8"))
+          expected = set(report["pass_names"])
+          if set(report["passes"]) != expected:
+              raise SystemExit("per-pass maturity evidence is missing pass rows")
+          required_fields = {
+              "performance",
+              "behavioral_false_positive",
+              "affected_instructions",
+              "composition",
+              "decompiler",
+          }
+          for pass_name, evidence in report["passes"].items():
+              if set(evidence) != required_fields:
+                  raise SystemExit(f"per-pass maturity evidence fields drift for {pass_name}")
+          if report["summary"]["blocker_totals"]["performance"]:
+              raise SystemExit("per-pass maturity evidence has incomplete performance rows")
           PY
 
       - name: Upload merged differential evidence
@@ -728,6 +756,7 @@ jobs:
           path: |
             differential-corpus-merged.json
             extended-maturity-merged.json
+            maturity-evidence-merged.json
 
   cross-platform-differential:
     name: Cross-platform differential (macOS ARM64)
