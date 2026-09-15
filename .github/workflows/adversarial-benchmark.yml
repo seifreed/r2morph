@@ -306,7 +306,7 @@ jobs:
 
   aggregate-benchmark:
     name: Aggregate adversarial benchmark evidence
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') }}
     needs: benchmark
     runs-on: ubuntu-latest
     steps:

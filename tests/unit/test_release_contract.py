@@ -1431,6 +1431,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and 'workflows: ["Differential Corpus By Pass"]' in adversarial
         and "github.event.workflow_run.head_sha || github.sha" in adversarial
         and "github.event.workflow_run.conclusion == 'success'" in adversarial
+        and "always() && (github.event_name != 'workflow_run'" in adversarial
         and "Build and install package wheel" in adversarial
         and "sudo apt-get install -y git build-essential clang" in adversarial
         and "Build and install package wheel" in differential
