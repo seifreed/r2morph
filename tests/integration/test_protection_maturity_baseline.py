@@ -31,6 +31,7 @@ from scripts.protection_maturity_baseline import (
     _runtime_observables_equal,
     _select_fixture_shard,
     _selected_generated_fixture_names,
+    _semantic_artifacts,
     _semantic_run_matches,
     _transformation_evidence,
     discover_executables,
@@ -205,6 +206,14 @@ def test_register_substitution_preserves_pie_live_in_arguments(tmp_path: Path) -
     )
 
     expect(result["runs"][0]["unicorn"]["exit_code"] == _EXPECTED_PIE_EXIT_CODE)
+
+
+def test_semantic_artifacts_emulates_pie_at_runtime_load_bias() -> None:
+    evidence = _semantic_artifacts(_PIE_FIXTURE)
+
+    expect(evidence["status"] == "completed")
+    expect(evidence["exit_code"] == _EXPECTED_PIE_EXIT_CODE)
+    expect(evidence["load_bias"] != 0)
 
 
 def test_constant_unfolding_keeps_flag_neutral_instruction_before_branch(tmp_path: Path) -> None:

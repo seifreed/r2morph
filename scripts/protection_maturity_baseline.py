@@ -54,6 +54,7 @@ _EM_X86_64 = 62
 _ELFCLASS64 = 2
 _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
+_PIE_LOAD_BIAS = 0x5555_5555_4000
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
 _MAX_AFFECTED_INSTRUCTION_MNEMONICS = 256
@@ -573,18 +574,28 @@ def _safe_inspect(path: Path) -> dict[str, object]:
 
 def _semantic_artifacts(path: Path) -> dict[str, object]:
     started = time.perf_counter()
+    header = path.read_bytes()[:_ELF_IDENT_HEADER_BYTES]
+    load_bias = (
+        _PIE_LOAD_BIAS
+        if len(header) >= _ELF_IDENT_HEADER_BYTES
+        and header[:4] == _ELF_MAGIC
+        and struct.unpack_from("<H", header, 16)[0] == _ET_DYN
+        else 0
+    )
     try:
-        exit_code = emulate_exit_code(path)
+        exit_code = emulate_exit_code(path, load_bias=load_bias)
     except Exception as error:  # Measurement boundary records emulator failures per artifact.
         return {
             "status": "error",
             "error_type": type(error).__name__,
             "error": str(error),
+            "load_bias": load_bias,
             "duration_seconds": time.perf_counter() - started,
         }
     return {
         "status": "completed" if exit_code is not None else "no_exit_syscall",
         "exit_code": exit_code,
+        "load_bias": load_bias,
         "duration_seconds": time.perf_counter() - started,
     }
 
