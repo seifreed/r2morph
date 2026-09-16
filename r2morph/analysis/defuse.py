@@ -45,6 +45,9 @@ class DefUseAnalyzer:
 
     def analyze(self) -> None:
         """Perform def-use analysis."""
+        self._def_webs.clear()
+        self._use_webs.clear()
+        self._all_chains.clear()
         self._dataflow.analyze()
         self._liveness.compute()
         self._build_def_webs()
@@ -278,7 +281,10 @@ class DefUseAnalyzer:
             }
             for addr, block in self.cfg.blocks.items()
         }
-        return SSAConverter().convert_to_ssa(blocks)
+        converter = SSAConverter()
+        ssa_blocks = converter.convert_to_ssa(blocks)
+        converter.compute_live_variables_ssa(ssa_blocks)
+        return ssa_blocks
 
     def has_complete_liveness_coverage(self) -> bool:
         """Return whether liveness exists for every materialized instruction."""

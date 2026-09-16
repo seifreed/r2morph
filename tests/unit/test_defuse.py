@@ -14,6 +14,7 @@ from r2morph.analysis.defuse import (
     UseWeb,
 )
 from r2morph.analysis.ssa import SSAConverter
+from r2morph.analysis.ssa_models import SSAVariable
 from tests.utils.assertions import expect
 
 _EXPECTED_DEFN_ADDRESS_4096 = 0x1000
@@ -254,6 +255,16 @@ class TestDefUseAnalyzer:
         expect(not (len(analyzer._def_webs) < 0))
         expect(not (len(analyzer._use_webs) < 0))
 
+    def test_analyze_repeatedly_preserves_def_use_results(self):
+        """Repeated analysis does not retain webs from the prior run."""
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+        analyzer.analyze()
+        first_result = analyzer.to_dict()
+
+        analyzer.analyze()
+
+        expect(analyzer.to_dict() == first_result)
+
     def test_get_def_web(self):
         """Test get_def_web method."""
         cfg = create_simple_cfg()
@@ -408,6 +419,13 @@ class TestBuildSSAForm:
         ssa = analyzer.build_ssa_form()
 
         expect(ssa[0x2030].phi_functions)
+
+    def test_build_ssa_form_computes_liveness_for_successor_use(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        ssa = analyzer.build_ssa_form()
+
+        expect(SSAVariable("rax", 0) in ssa[0x1010].live_in)
 
     def test_ssa_converter_is_public_analysis_export(self):
         exported_s_s_a_converter = importlib.import_module("r2morph.analysis").SSAConverter
