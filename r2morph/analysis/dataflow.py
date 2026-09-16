@@ -26,6 +26,7 @@ from r2morph.analysis.dataflow_models import (
     DefUseChain,
     Register,
     Use,
+    register_definition_covers_use,
 )
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
@@ -290,7 +291,7 @@ class DataFlowAnalyzer:
         for reg in defined_regs:
             for definitions in self._result.reaching_in.values():
                 for defn in definitions:
-                    if defn.register and defn.register.name == reg.name:
+                    if defn.register and register_definition_covers_use(reg, defn.register):
                         kill.add(defn)
 
         return kill
@@ -322,7 +323,7 @@ class DataFlowAnalyzer:
                     reaching = self._get_reaching_definition_for(reg, insn_addr)
 
                     if reaching:
-                        key = (reaching.address, reg.name)
+                        key = (reaching.address, reaching.register.name if reaching.register else reg.name)
                         if key in chains_by_def:
                             use = Use(address=insn_addr, register=reg)
                             chains_by_def[key].add_use(use)
@@ -349,7 +350,11 @@ class DataFlowAnalyzer:
         latest_addr = -1
 
         for defn in reaching:
-            if defn.register and defn.register.name == reg.name and latest_addr < defn.address < address:
+            if (
+                defn.register
+                and register_definition_covers_use(defn.register, reg)
+                and latest_addr < defn.address < address
+            ):
                 latest_def = defn
                 latest_addr = defn.address
 

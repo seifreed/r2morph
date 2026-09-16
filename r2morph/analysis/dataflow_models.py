@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+_X86_32_BIT_SIZE = 32
+_X86_64_BIT_SIZE = 64
+
 
 class DataFlowDirection(Enum):
     """Direction of data flow analysis."""
@@ -59,6 +62,17 @@ class Register:
         if "b" in alias:
             return 8
         return 64
+
+
+def register_definition_covers_use(definition: Register, use: Register) -> bool:
+    """Return whether a definition supplies the complete value read by a use."""
+    if definition.name == use.name:
+        return True
+    if definition.aliases().isdisjoint(use.aliases()):
+        return False
+    if definition.size >= use.size:
+        return True
+    return definition.size == _X86_32_BIT_SIZE and use.size == _X86_64_BIT_SIZE
 
 
 @dataclass
@@ -172,7 +186,7 @@ class DataFlowResult:
     def is_register_live(self, address: int, register: Register) -> bool:
         """Check if a register is live at an address."""
         live = self.live_in.get(address, set())
-        return any(r.name == register.name for r in live)
+        return any(register_definition_covers_use(r, register) for r in live)
 
     def get_reaching_definitions(self, address: int) -> set[Definition]:
         """Get definitions reaching an address."""
@@ -181,7 +195,7 @@ class DataFlowResult:
     def get_def_use_chain(self, register: Register) -> DefUseChain | None:
         """Get def-use chain for a register."""
         for chain in self.def_use_chains:
-            if chain.register.name == register.name:
+            if register_definition_covers_use(chain.register, register):
                 return chain
         return None
 

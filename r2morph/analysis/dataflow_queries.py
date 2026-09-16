@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from r2morph.analysis.cfg import ControlFlowGraph
-from r2morph.analysis.dataflow_models import DataFlowResult, Definition, Register
+from r2morph.analysis.dataflow_models import (
+    DataFlowResult,
+    Definition,
+    Register,
+    register_definition_covers_use,
+)
 
 
 def find_block_containing_address(cfg: ControlFlowGraph, address: int) -> int | None:
@@ -23,7 +28,7 @@ def get_value_at(cfg: ControlFlowGraph, result: DataFlowResult, address: int, re
 
     reaching = result.reaching_in.get(block_addr, set())
     for defn in reaching:
-        if defn.register and defn.register.name == register.name and defn.value is not None:
+        if defn.register and register_definition_covers_use(defn.register, register) and defn.value is not None:
             values.add(defn.value)
     return values
 

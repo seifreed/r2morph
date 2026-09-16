@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
+from r2morph.analysis.dataflow_models import Register, register_definition_covers_use
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
@@ -45,7 +46,10 @@ def compute_block_use(instructions: list[dict[str, Any]], abi: str = "sysv_amd64
     for insn in instructions:
         regs_used = _extract_used_registers(insn, abi)
         for reg in regs_used:
-            if reg not in defined:
+            used_register = Register(*reg)
+            if not any(
+                register_definition_covers_use(Register(*defined_reg), used_register) for defined_reg in defined
+            ):
                 used.add(reg)
 
         regs_defined = _extract_defined_registers(insn, abi)

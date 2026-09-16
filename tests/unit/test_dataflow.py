@@ -31,6 +31,9 @@ _EXPECTED_USE_ADDRESS_4101 = 0x1005
 _DEEP_DATAFLOW_BLOCK_COUNT = 102
 _DEEP_DATAFLOW_START_ADDRESS = 0x5000
 _DEEP_DATAFLOW_BLOCK_STRIDE = 0x10
+_ALIAS_LIVENESS_ADDRESS = 0x6000
+_ALIAS_REACHING_ADDRESS = 0x6100
+_ALIAS_REACHING_USE_ADDRESS = 0x6110
 
 
 def create_test_cfg() -> ControlFlowGraph:
@@ -539,6 +542,61 @@ class TestDataFlowAnalyzer:
         live_names = {register.name for register in result.live_in[0x4000]}
 
         expect({"eax", "ebx"}.issubset(live_names))
+
+    def test_32_bit_definition_satisfies_64_bit_use_in_block_liveness(self):
+        """An x86-64 zero-extending write removes its parent from block live-in."""
+        cfg = ControlFlowGraph(function_address=_ALIAS_LIVENESS_ADDRESS, function_name="alias_liveness")
+        cfg.add_block(
+            BasicBlock(
+                address=_ALIAS_LIVENESS_ADDRESS,
+                size=10,
+                instructions=[
+                    {"offset": _ALIAS_LIVENESS_ADDRESS, "type": "mov", "disasm": "mov eax, 1"},
+                    {"offset": 0x6005, "type": "mov", "disasm": "mov ecx, rax"},
+                ],
+                successors=[],
+                predecessors=[],
+                block_type=BlockType.RETURN,
+            )
+        )
+
+        result = DataFlowAnalyzer(cfg).analyze()
+
+        expect(not result.is_register_live(_ALIAS_LIVENESS_ADDRESS, Register("rax", 64)))
+
+    def test_32_bit_definition_reaches_64_bit_use(self):
+        """An x86-64 zero-extending definition feeds a parent-register use."""
+        cfg = ControlFlowGraph(function_address=_ALIAS_REACHING_ADDRESS, function_name="alias_reaching")
+        cfg.add_block(
+            BasicBlock(
+                address=_ALIAS_REACHING_ADDRESS,
+                size=5,
+                instructions=[{"offset": _ALIAS_REACHING_ADDRESS, "type": "mov", "disasm": "mov eax, 1"}],
+                successors=[_ALIAS_REACHING_USE_ADDRESS],
+                predecessors=[],
+                block_type=BlockType.NORMAL,
+            )
+        )
+        cfg.add_block(
+            BasicBlock(
+                address=_ALIAS_REACHING_USE_ADDRESS,
+                size=5,
+                instructions=[{"offset": _ALIAS_REACHING_USE_ADDRESS, "type": "mov", "disasm": "mov ecx, rax"}],
+                successors=[],
+                predecessors=[_ALIAS_REACHING_ADDRESS],
+                block_type=BlockType.RETURN,
+            )
+        )
+        cfg.add_edge(_ALIAS_REACHING_ADDRESS, _ALIAS_REACHING_USE_ADDRESS)
+
+        result = DataFlowAnalyzer(cfg).analyze()
+
+        expect(
+            any(
+                definition.address == _ALIAS_REACHING_ADDRESS
+                for definition in result.get_reaching_definitions(_ALIAS_REACHING_USE_ADDRESS)
+            )
+        )
 
     def test_read_modify_write_destination_has_def_use_chain(self):
         """Test read-modify-write destinations consume reaching definitions."""
