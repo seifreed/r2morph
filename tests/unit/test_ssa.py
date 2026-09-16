@@ -392,6 +392,36 @@ class TestSSAConverter:
 
         expect(SSAVariable(base_name="eax", version=0) in live_out and SSAVariable("eax", 0) not in live_in)
 
+    def test_compute_live_variables_ssa_resolves_branch_reaching_definition(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [{"offset": 0x1000, "disasm": "mov eax, 1"}],
+                "predecessors": [],
+                "successors": [0x1010, 0x1020],
+            },
+            0x1010: {
+                "instructions": [{"offset": 0x1010, "disasm": "mov eax, 2"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1020: {
+                "instructions": [{"offset": 0x1020, "disasm": "add ebx, eax"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1030: {
+                "instructions": [{"offset": 0x1030, "disasm": "ret"}],
+                "predecessors": [0x1010, 0x1020],
+                "successors": [],
+            },
+        }
+        ssa_blocks = converter.convert_to_ssa(blocks)
+
+        live_info = converter.compute_live_variables_ssa(ssa_blocks)
+        right_live_in = {variable for variable in live_info[0x1020][0] if variable.base_name == "eax"}
+
+        expect(right_live_in == {SSAVariable("eax", 0)})
+
 
 class TestSSAIntegration:
     @pytest.fixture

@@ -580,25 +580,62 @@ class SSAConverter:
         liveness, rather than being treated as uses in the phi block itself.
         """
         live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]] = {}
+        dominators = self._compute_dominators(ssa_blocks)
 
         for block_addr, ssa_block in ssa_blocks.items():
             used: set[str] = set()
             defined: set[str] = set()
+            first_use_addresses: dict[str, int] = {}
             for instruction in ssa_block.instructions:
                 disasm = instruction.get("disasm", "").lower()
                 for register in self._extract_used_registers(disasm):
                     if register not in defined:
                         used.add(register)
+                        first_use_addresses.setdefault(register, int(instruction.get("offset", block_addr)))
                 defined.update(self._extract_defined_registers(disasm))
 
             live_in: set[SSAVariable] = set()
             for reg in used:
-                version = self._get_current_version(reg)
+                version = self._resolve_live_version(
+                    reg,
+                    block_addr,
+                    first_use_addresses[reg],
+                    ssa_blocks,
+                    dominators,
+                )
                 live_in.add(SSAVariable(base_name=reg, version=version))
 
             live_info[block_addr] = (live_in, set())
 
         return live_info
+
+    def _resolve_live_version(
+        self,
+        register: str,
+        block_addr: int,
+        use_address: int,
+        ssa_blocks: dict[int, SSABlock],
+        dominators: dict[int, set[int]],
+    ) -> int:
+        """Resolve the definition that dominates a block's first use."""
+        candidates: list[tuple[int, int, int]] = []
+        for definition_block_addr, definition_block in ssa_blocks.items():
+            if definition_block_addr not in dominators.get(block_addr, {block_addr}):
+                continue
+            variable = definition_block.definitions.get(register)
+            if variable is None or variable.definition_address is None:
+                continue
+            if variable.definition_address <= use_address:
+                candidates.append(
+                    (
+                        len(dominators.get(definition_block_addr, set())),
+                        definition_block_addr,
+                        variable.version,
+                    )
+                )
+        if candidates:
+            return max(candidates)[2]
+        return self._get_current_version(register)
 
     def _propagate_liveness(
         self,
