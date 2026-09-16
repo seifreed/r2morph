@@ -161,7 +161,7 @@ def test_instruction_substitution_pe_fixture_preserves_windows_exit_code(tmp_pat
     if platform.system() != "Windows":
         pytest.skip("native PE fixture execution requires Windows")
 
-    source = Path("fixtures/dataset/pe_x86_64.exe")
+    source = Path("fixtures/dataset/pe_mutation_x86_64.exe")
     target = tmp_path / "pe_fixture_substituted.exe"
     shutil.copy2(source, target)
     original_execution = run_command([target], timeout=30)
