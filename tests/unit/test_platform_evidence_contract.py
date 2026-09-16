@@ -24,7 +24,7 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
     _write_report(tmp_path / "windows-pe" / "report.xml", "test_pe_handler_checksum", skipped=True)
     _write_report(
         tmp_path / "elf-arm64" / "report.xml",
-        "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+        "test_elf_arm64_register_substitution_preserves_native_exit_code",
     )
 
     report = summarize_platform_reports(tmp_path)

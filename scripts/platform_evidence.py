@@ -13,7 +13,7 @@ import defusedxml.ElementTree
 _REQUIRED_CASES = {
     "macos-arm64": "test_nop_insertion_arm64_preserves_native_output",
     "windows-pe": "test_pe_handler_checksum",
-    "elf-arm64": "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+    "elf-arm64": "test_elf_arm64_register_substitution_preserves_native_exit_code",
 }
 
 

@@ -1283,7 +1283,7 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 2:
+          if len(cases) != 3:
               raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
@@ -1299,6 +1299,13 @@ jobs:
               for case in cases
           ):
               raise SystemExit("native ELF ARM64 substitution test name is missing")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm64_register_substitution_preserves_native_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 register substitution test name is missing")
           PY
 
       - name: Upload native ELF ARM64 evidence
@@ -1355,7 +1362,7 @@ jobs:
           expected = {
               "macos-arm64": "test_nop_insertion_arm64_preserves_native_output",
               "windows-pe": "test_pe_handler_checksum",
-              "elf-arm64": "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+              "elf-arm64": "test_elf_arm64_register_substitution_preserves_native_exit_code",
           }
           root = Path("platform-evidence")
           for platform, required_name in expected.items():
