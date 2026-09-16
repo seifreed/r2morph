@@ -84,8 +84,18 @@ def test_pattern_substitution_preserves_instruction_region_size(
     # the original span (NOP-padded), never grow or shrink the binary.
     for mutation in report["mutations"]:
         span = mutation["end_address"] - mutation["start_address"] + 1
-        expect(len(mutation["original_bytes"]) == span)
-        expect(len(mutation["mutated_bytes"]) == span)
+        expect(len(bytes.fromhex(mutation["original_bytes"])) == span)
+        expect(len(bytes.fromhex(mutation["mutated_bytes"])) == span)
+
+
+def test_pattern_substitution_records_each_instruction_once(deterministic_pattern_subst_elf):
+    with Binary(deterministic_pattern_subst_elf, writable=True) as binary:
+        binary.analyze("aa")
+        mutation_pass = PatternSubstitutionPass({"probability": 1.0, "seed": 1337})
+        mutation_pass.apply(binary)
+
+    start_addresses = [record.start_address for record in mutation_pass.get_records()]
+    expect(len(start_addresses) == len(set(start_addresses)))
 
 
 def test_pattern_substitution_preserves_flag_live_fixture_exit(tmp_path):

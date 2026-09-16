@@ -100,6 +100,7 @@ class PatternSubstitutionPass(MutationPass):
     def _mutate_function(self, binary: Any, func_addr: int, instructions: list[dict[str, Any]]) -> int:
         """Apply size-preserving substitutions within a single function."""
         applied = 0
+        edited_indices: set[int] = set()
         disasms = [str(instruction.get("disasm", instruction.get("opcode", ""))) for instruction in instructions]
         for edit in self._integration.enumerate_substitutions(instructions):
             if edit["length"] != 1:
@@ -112,10 +113,13 @@ class PatternSubstitutionPass(MutationPass):
             idx = edit["index"]
             if idx >= len(instructions):
                 continue
+            if idx in edited_indices:
+                continue
             if flags_live_after(disasms, idx):
                 continue
             if self._apply_edit(binary, func_addr, instructions[idx], edit):
                 applied += 1
+                edited_indices.add(idx)
         return applied
 
     def _apply_edit(
