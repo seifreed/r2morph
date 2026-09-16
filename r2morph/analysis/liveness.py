@@ -85,6 +85,9 @@ class LivenessAnalysis:
 
     def compute(self) -> None:
         """Compute liveness analysis."""
+        self._instruction_liveness.clear()
+        self._live_ranges.clear()
+        self._interference_graph = InterferenceGraph()
         self._compute_block_liveness()
         self._compute_instruction_liveness()
         self._compute_live_ranges()

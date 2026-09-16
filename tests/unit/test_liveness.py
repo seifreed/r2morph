@@ -389,6 +389,16 @@ class TestLivenessAnalysis:
         expect(not (len(analyzer._instruction_liveness) <= 0))
         expect(not (len(analyzer._live_ranges) <= 0))
 
+    def test_compute_repeatedly_preserves_liveness_results(self):
+        """Repeated computation does not retain results from the prior run."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+        analyzer.compute()
+        first_result = analyzer.to_dict()
+
+        analyzer.compute()
+
+        expect(analyzer.to_dict() == first_result)
+
     def test_compute_block_liveness(self):
         """Test block-level liveness computation."""
         cfg = create_sequential_cfg()
