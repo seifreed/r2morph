@@ -14,6 +14,13 @@ class _FunctionListDisassembler:
         return []
 
 
+class _FunctionDisassembler:
+    def cmdj(self, command: str) -> dict[str, list[dict[str, int]]]:
+        if command == "pdfj @ 4096":
+            return {"ops": [{"addr": _EXPECTED_FUNCTION_ADDRESS, "size": 4}]}
+        return {"ops": []}
+
+
 @pytest.mark.parametrize(
     ("hex_data", "expected_size", "expected"),
     [
@@ -60,3 +67,11 @@ def test_get_functions_normalizes_cached_offset_to_canonical_address() -> None:
     functions = reader.get_functions(cached=[{"offset": _EXPECTED_FUNCTION_ADDRESS}])
 
     expect(functions[0]["addr"] == _EXPECTED_FUNCTION_ADDRESS)
+
+
+def test_get_function_disasm_normalizes_addr_to_offset() -> None:
+    reader = BinaryReader(_FunctionDisassembler())
+
+    instructions = reader.get_function_disasm(4096)
+
+    expect(instructions[0]["offset"] == _EXPECTED_FUNCTION_ADDRESS)

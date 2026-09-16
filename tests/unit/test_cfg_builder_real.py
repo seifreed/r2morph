@@ -43,9 +43,11 @@ def test_cfg_builder_with_real_binary():
 
         func = functions[0]
         builder = CFGBuilder(bin_obj)
-        cfg = builder.build_cfg(func.get("offset", 0), func.get("name", "func"))
-        expect(cfg.function_address == func.get("offset", 0))
+        function_address = func.get("offset", func.get("addr", 0))
+        cfg = builder.build_cfg(function_address, func.get("name", "func"))
+        expect(cfg.function_address == function_address)
         expect(cfg.function_name)
+        expect(any(block.instructions for block in cfg.blocks.values()))
 
         all_cfgs = builder.build_all_cfgs()
         expect(isinstance(all_cfgs, dict))

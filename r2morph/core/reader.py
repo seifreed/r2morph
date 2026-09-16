@@ -138,6 +138,9 @@ class BinaryReader:
 
         disasm = self._r2.cmdj(f"pdfj @ {address}") or {}
         ops: list[dict[str, Any]] = disasm.get("ops", [])
+        for instruction in ops:
+            if "offset" not in instruction and isinstance(instruction.get("addr"), int):
+                instruction["offset"] = instruction["addr"]
         return ops
 
     def get_basic_blocks(self, address: int) -> list[dict[str, Any]]:
