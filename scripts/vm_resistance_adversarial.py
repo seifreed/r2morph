@@ -11,9 +11,13 @@ import argparse
 import hashlib
 import json
 import shutil
+import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
+
+# Keep direct CLI execution equivalent to importing this module from the repo.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
