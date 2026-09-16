@@ -9,6 +9,7 @@ Provides definition-use chain analysis including:
 """
 
 import logging
+import re
 from typing import Any
 
 from r2morph.analysis._register_names import X86_REGISTER_NAMES
@@ -88,7 +89,7 @@ class DefUseAnalyzer:
         disasm = insn.get("disasm", "").lower()
 
         for reg in X86_REGISTER_NAMES:
-            if reg in disasm:
+            if re.search(rf"\b{re.escape(reg)}\b", disasm):
                 if reg.startswith("ymm"):
                     size = 256
                 elif reg.startswith("xmm"):

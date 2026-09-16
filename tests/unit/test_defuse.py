@@ -512,3 +512,10 @@ class TestBuildSSAForm:
                 ("ymm3", 256),
             }
         )
+
+    def test_defuse_extracts_numbered_register_tokens_without_alias_substrings(self):
+        analyzer = DefUseAnalyzer(create_simple_cfg())
+
+        registers = analyzer._extract_registers({"disasm": "add r10, r11"})
+
+        expect({register.name for register in registers} == {"r10", "r11"})

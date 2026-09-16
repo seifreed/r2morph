@@ -22,6 +22,8 @@ _REGISTER_BITS_64 = 64
 _XMM_REGISTER_COUNT = 16
 _EXTENDED_REGISTER = re.compile(r"\br(?:[89]|1[0-5])(?:[bwd])?\b", re.IGNORECASE)
 _SELF_REGISTER_OPERATION = re.compile(r"(xor|sub)\s+([a-z][a-z0-9]*),\s*\2$", re.IGNORECASE)
+_ARM64_REGISTER = re.compile(r"\b(?:[wx](?:[0-9]|[12][0-9]|30)|[wx]zr)\b", re.IGNORECASE)
+_ARM64_STACK_OFFSET = re.compile(r"\[(sp|x(?:[0-9]|[12][0-9]|30))\s*\+\s*(0x[0-9a-f]+|[0-9]+)\]", re.IGNORECASE)
 
 
 # Register encoding tables for manual instruction encoding
@@ -188,6 +190,10 @@ class AssemblyService:
         Returns:
             Normalized instruction
         """
+        # rasm2 silently drops the offset in AArch64 `[sp+offset]` syntax.
+        if _ARM64_REGISTER.search(instruction):
+            instruction = _ARM64_STACK_OFFSET.sub(r"[\1, \2]", instruction)
+
         # No longer removing size specifiers with segment prefixes
         # The segment prefix fallback will handle these correctly
         return instruction

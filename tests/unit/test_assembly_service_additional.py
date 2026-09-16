@@ -15,6 +15,10 @@ def test_assembly_service_fallbacks():
     expect(not (asm_service._assemble_movzx_movsx_fallback("movzx foo, bar") is not None))
 
 
+def test_assembly_service_normalizes_arm64_stack_offsets() -> None:
+    expect(AssemblyService()._normalize_assembly_syntax("ldr w1, [sp+0xc]") == "ldr w1, [sp, 0xc]")
+
+
 def test_movd_fallback_encodes_xmm_to_gp_register() -> None:
     expect(AssemblyService._assemble_movd_fallback("movd edx, xmm6") == b"\x66\x0f\x7e\xf2")
 

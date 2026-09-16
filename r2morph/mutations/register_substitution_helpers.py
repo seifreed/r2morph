@@ -326,6 +326,7 @@ def _build_canonical_registers() -> dict[str, str]:
 
 _CANONICAL_REGISTER = _build_canonical_registers()
 _REGISTER_TOKEN_RE = re.compile(r"\b(" + "|".join(sorted(_CANONICAL_REGISTER, key=len, reverse=True)) + r")\b")
+_SYMBOLIC_STACK_OPERAND_RE = re.compile(r"\[(?:var_(?:bp_)?|arg_)[0-9a-f]+h(?:_\d+)?\]", re.IGNORECASE)
 
 
 def _build_register_families() -> dict[str, set[str]]:
@@ -365,7 +366,10 @@ def _register_bases(instructions: list[dict[str, Any]]) -> set[str]:
 def _has_unbased_memory_operand(disasm: str) -> bool:
     """Reject memory operands whose PC-relative base may be hidden by the disassembler."""
     operands = re.findall(r"\[([^]]*)\]", disasm)
-    return any(not _register_tokens(operand) for operand in operands)
+    return any(
+        not _register_tokens(operand) and not _SYMBOLIC_STACK_OPERAND_RE.fullmatch(f"[{operand}]")
+        for operand in operands
+    )
 
 
 def _register_size(register: str) -> int:

@@ -49,3 +49,4 @@ def test_register_substitution_helpers():
 
     # Absolute-looking memory operands may be RIP-relative in x86-64 encoding.
     expect(pass_obj._substituted_disasm({"disasm": "mov rax, qword [0x402010]"}, "rax", "r10") is None)
+    expect(pass_obj._substituted_disasm({"disasm": "str w8, [var_8h]"}, "w8", "w1") == "str w1, [var_8h]")

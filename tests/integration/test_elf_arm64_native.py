@@ -87,9 +87,10 @@ def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Pa
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze()
-        result = RegisterSubstitutionPass(
+        pass_instance = RegisterSubstitutionPass(
             config={"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
-        ).apply(binary)
+        )
+        result = pass_instance.apply(binary)
 
     mutated = run_command([binary_path], text=True, timeout=30)
     expect(
@@ -97,5 +98,9 @@ def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Pa
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (0, "", ""),
-        "native ELF ARM64 register substitution changed execution",
+        "native ELF ARM64 register substitution changed execution: "
+        f"original={original.returncode, original.stdout, original.stderr!r}; "
+        f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
+        f"result={result!r}; "
+        f"mutations={[record.mutated_disasm for record in pass_instance.get_records()]!r}",
     )
