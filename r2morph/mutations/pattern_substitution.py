@@ -23,7 +23,7 @@ import logging
 from typing import Any
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import ARCH_BITS_64
+from r2morph.core.constants import ARCH_BITS_64, MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
@@ -68,6 +68,16 @@ class PatternSubstitutionPass(MutationPass):
             return {"mutations_applied": 0, "skipped": True, "reason": "unsupported architecture"}
 
         functions = binary.get_functions()
+        if len(functions) > MAX_FUNCTION_ANALYSIS_COUNT:
+            reason = "function population exceeds the pattern substitution analysis budget"
+            logger.warning("Skipping pattern substitution: %s (%d functions)", reason, len(functions))
+            return {
+                "mutations_applied": 0,
+                "functions_mutated": 0,
+                "functions_skipped": len(functions),
+                "analysis_budget": MAX_FUNCTION_ANALYSIS_COUNT,
+                "reason": reason,
+            }
         mutations_applied = 0
         functions_mutated = 0
 

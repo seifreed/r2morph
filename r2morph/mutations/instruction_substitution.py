@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import ARCH_BITS_64
+from r2morph.core.constants import ARCH_BITS_64, MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.instruction_substitution_arm64 import apply_arm64_mov_substitution
 from r2morph.mutations.instruction_substitution_helpers import (
@@ -274,6 +274,21 @@ class InstructionSubstitutionPass(MutationPass):
             }
 
         functions = binary.get_functions()
+        if len(functions) > MAX_FUNCTION_ANALYSIS_COUNT:
+            reason = "function population exceeds the instruction substitution analysis budget"
+            logger.warning("Skipping instruction substitution: %s (%d functions)", reason, len(functions))
+            return {
+                "mutations_applied": 0,
+                "functions_mutated": 0,
+                "candidates_found": 0,
+                "total_functions": len(functions),
+                "functions_processed": 0,
+                "max_functions": self.max_functions,
+                "force_different": self.force_different,
+                "strict_size": self.strict_size,
+                "analysis_budget": MAX_FUNCTION_ANALYSIS_COUNT,
+                "reason": reason,
+            }
         functions_to_process = functions[: self.max_functions]
         mutations_applied = 0
         functions_mutated = 0

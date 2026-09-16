@@ -11,7 +11,7 @@ import r2morph.core.randomness as random
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT, MINIMUM_FUNCTION_SIZE
 from r2morph.core.support import _normalize_architecture_name
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,29 @@ def _empty_result(target_diagnostic: dict[str, Any] | None) -> dict[str, Any]:
         "partial_virtualization_severities": {},
         "target_diagnostic": target_diagnostic,
     }
+
+
+def _analysis_budget_result() -> dict[str, Any]:
+    """Reject oversized function populations before expensive per-function analysis."""
+    capability = "analysis_budget"
+    result = _empty_result(None)
+    result.update(
+        {
+            "functions_skipped": MAX_FUNCTION_ANALYSIS_COUNT + 1,
+            "unsupported_functions": [
+                {
+                    "function_address": 0,
+                    "capability": capability,
+                    "severity": "error",
+                    "reason": "function population exceeds the VM analysis budget",
+                }
+            ],
+            "unsupported_functions_total": 1,
+            "unsupported_function_capabilities": {capability: 1},
+            "unsupported_function_severities": {"error": 1},
+        }
+    )
+    return result
 
 
 def _field_counts(records: list[dict[str, Any]], field: str) -> dict[str, int]:
@@ -425,9 +448,17 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
-def _ordered_functions(binary: Any) -> list[dict[str, Any]]:
+def _ordered_functions(binary: Any) -> list[dict[str, Any]] | None:
     """Visit functions in stable image order before applying the budget."""
-    return sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
+    functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
+    if len(functions) > MAX_FUNCTION_ANALYSIS_COUNT:
+        logger.warning(
+            "Skipping code virtualization: function population exceeds the VM analysis budget (%d > %d)",
+            len(functions),
+            MAX_FUNCTION_ANALYSIS_COUNT,
+        )
+        return None
+    return functions
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
@@ -440,16 +471,18 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     pass_instance._ensure_analyzed(binary)
     logger.info("Applying code virtualization")
 
-    virtualized, skipped, total_insns, total_bytecode = 0, 0, 0, 0
+    virtualized, skipped, total_insns, total_bytecode, unsupported_total, partial_total = (0, 0, 0, 0, 0, 0)
     unsupported: list[dict[str, Any]] = []
     partial: list[dict[str, Any]] = []
     covered_ranges: list[tuple[int, int]] = []
-    unsupported_total = partial_total = 0
     executable_ranges = _executable_ranges(binary)
+    ordered_functions = _ordered_functions(binary)
+    if ordered_functions is None:
+        return _analysis_budget_result()
     unwind_section = _unwind_metadata_name(binary)
     exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 
-    for func in _ordered_functions(binary):
+    for func in ordered_functions:
         if virtualized >= pass_instance.max_functions:
             break
         function_address = func.get("addr")

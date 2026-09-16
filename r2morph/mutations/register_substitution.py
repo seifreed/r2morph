@@ -10,7 +10,7 @@ import logging
 import re
 from typing import Any
 
-from r2morph.core.constants import ARCH_BITS_64
+from r2morph.core.constants import ARCH_BITS_64, MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.register_substitution_helpers import (
     _has_unbased_memory_operand,
@@ -276,6 +276,17 @@ class RegisterSubstitutionPass(MutationPass):
             }
 
         functions = binary.get_functions()
+        if len(functions) > MAX_FUNCTION_ANALYSIS_COUNT:
+            reason = "function population exceeds the register substitution analysis budget"
+            logger.warning("Skipping register substitution: %s (%d functions)", reason, len(functions))
+            return {
+                "mutations_applied": 0,
+                "functions_mutated": 0,
+                "registers_substituted": 0,
+                "total_functions": len(functions),
+                "analysis_budget": MAX_FUNCTION_ANALYSIS_COUNT,
+                "reason": reason,
+            }
         mutations_applied = 0
         functions_mutated = 0
         total_registers_substituted = 0
