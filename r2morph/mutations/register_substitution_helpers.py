@@ -520,6 +520,7 @@ _IMPLICIT_FIXED_REGISTERS = {
     "cpuid": ("rax", "rbx", "rcx", "rdx"),
     "ret": ("x30",),
 }
+_REGISTER_CONTROL_TRANSFER_MNEMONICS = frozenset({"br", "blr", "blx", "jmp", "call"})
 _STRING_OP_FRAGMENTS = ("movs", "stos", "scas", "cmps", "lods")
 _STRING_OP_REGISTERS = frozenset({"rsi", "rdi", "rcx", "rax"})
 _REP_PREFIXES = frozenset({"rep", "repe", "repz", "repne", "repnz"})
@@ -542,6 +543,12 @@ def _implicit_register_bases(disasm: str) -> frozenset[str]:
         registers = frozenset({"rax", "rdx"}) if operands and "," not in operands else frozenset()
     elif mnemonic in _IMPLICIT_FIXED_REGISTERS:
         registers = frozenset(_IMPLICIT_FIXED_REGISTERS[mnemonic])
+    elif mnemonic in _REGISTER_CONTROL_TRANSFER_MNEMONICS:
+        registers = frozenset(
+            _CANONICAL_REGISTER[token]
+            for token in _register_tokens(disasm[len(mnemonic) :].lower())
+            if token in _CANONICAL_REGISTER
+        )
     elif any(mnemonic.startswith(f) for f in _STRING_OP_FRAGMENTS):
         registers = _STRING_OP_REGISTERS
     return registers

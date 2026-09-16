@@ -201,6 +201,13 @@ def test_find_substitution_candidates_excludes_live_in_indirect_call_target() ->
     expect("r11" not in sources)
 
 
+def test_find_substitution_candidates_excludes_arm64_indirect_branch_target() -> None:
+    instructions = [{"disasm": "ldr x0, [x16, 0xfb0]"}, {"disasm": "br x16"}, {"disasm": "ret"}]
+    sources = {original for original, _ in find_substitution_candidates(instructions, "arm64")}
+
+    expect("x16" not in sources)
+
+
 def test_register_substitution_replaces_whole_tokens_without_touching_numbered_aliases() -> None:
     pass_obj = RegisterSubstitutionPass()
     replacement = pass_obj._substituted_disasm(
