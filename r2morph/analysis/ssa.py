@@ -105,6 +105,7 @@ class SSAConverter:
         self._abi = abi
         self._version_counter: dict[str, int] = {}
         self._current_def: dict[str, list[SSAVariable]] = {}
+        self._instruction_definitions: dict[int, dict[str, list[SSAVariable]]] = {}
         self._sealed_blocks: set[int] = set()
         self._incomplete_phis: dict[int, list[tuple[str, SSAVariable]]] = {}
 
@@ -137,6 +138,7 @@ class SSAConverter:
 
         self._version_counter.clear()
         self._current_def.clear()
+        self._instruction_definitions.clear()
         self._sealed_blocks.clear()
         self._incomplete_phis.clear()
 
@@ -411,11 +413,13 @@ class SSAConverter:
 
         for reg in defined_regs:
             version = self._get_new_version(reg)
-            ssa_block.definitions[reg] = SSAVariable(
+            variable = SSAVariable(
                 base_name=reg,
                 version=version,
                 definition_address=instruction.get("offset", 0),
             )
+            ssa_block.definitions[reg] = variable
+            self._instruction_definitions.setdefault(ssa_block.address, {}).setdefault(reg, []).append(variable)
 
     def _extract_defined_registers(self, disasm: str) -> set[str]:
         """Extract registers that are defined (written to) in an instruction."""
@@ -618,23 +622,27 @@ class SSAConverter:
         dominators: dict[int, set[int]],
     ) -> int:
         """Resolve the definition that dominates a block's first use."""
-        candidates: list[tuple[int, int, int]] = []
+        candidates: list[tuple[int, int, int, int]] = []
         for definition_block_addr, definition_block in ssa_blocks.items():
             if definition_block_addr not in dominators.get(block_addr, {block_addr}):
                 continue
-            variable = definition_block.definitions.get(register)
-            if variable is None or variable.definition_address is None:
-                continue
-            if variable.definition_address <= use_address:
-                candidates.append(
-                    (
-                        len(dominators.get(definition_block_addr, set())),
-                        definition_block_addr,
-                        variable.version,
+            variables = self._instruction_definitions.get(definition_block_addr, {}).get(register, [])
+            variables = [*variables]
+            final_variable = definition_block.definitions.get(register)
+            if final_variable is not None:
+                variables.append(final_variable)
+            for variable in variables:
+                if variable.definition_address is not None and variable.definition_address <= use_address:
+                    candidates.append(
+                        (
+                            len(dominators.get(definition_block_addr, set())),
+                            variable.definition_address,
+                            definition_block_addr,
+                            variable.version,
+                        )
                     )
-                )
         if candidates:
-            return max(candidates)[2]
+            return max(candidates)[3]
         return self._get_current_version(register)
 
     def _propagate_liveness(

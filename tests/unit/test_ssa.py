@@ -422,6 +422,26 @@ class TestSSAConverter:
 
         expect(right_live_in == {SSAVariable("eax", 0)})
 
+    def test_resolve_live_version_uses_definition_before_later_redefinition(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [
+                    {"offset": 0x1000, "disasm": "mov eax, 1"},
+                    {"offset": 0x1001, "disasm": "add ebx, eax"},
+                    {"offset": 0x1002, "disasm": "mov eax, 2"},
+                    {"offset": 0x1003, "disasm": "ret"},
+                ],
+                "predecessors": [],
+                "successors": [],
+            }
+        }
+        ssa_blocks = converter.convert_to_ssa(blocks)
+
+        dominators = converter._compute_dominators(ssa_blocks)
+        version = converter._resolve_live_version("eax", 0x1000, 0x1001, ssa_blocks, dominators)
+
+        expect(version == 0)
+
 
 class TestSSAIntegration:
     @pytest.fixture
