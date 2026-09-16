@@ -357,6 +357,26 @@ class TestSSAConverter:
 
         expect(len(live_info) == _EXPECTED_LEN_LIVE_INFO_2)
 
+    def test_compute_live_variables_ssa_propagates_successor_use(self, converter):
+        blocks = {
+            0x1000: SSABlock(
+                address=0x1000,
+                instructions=[{"disasm": "mov eax, 1"}],
+                definitions={"eax": SSAVariable(base_name="eax", version=0, definition_address=0x1000)},
+                successors=[0x1005],
+            ),
+            0x1005: SSABlock(
+                address=0x1005,
+                instructions=[{"disasm": "add ebx, eax"}],
+                predecessors=[0x1000],
+            ),
+        }
+
+        live_info = converter.compute_live_variables_ssa(blocks)
+        live_in, live_out = live_info[0x1000]
+
+        expect(SSAVariable(base_name="eax", version=0) in live_out and SSAVariable("eax", 0) not in live_in)
+
 
 class TestSSAIntegration:
     @pytest.fixture

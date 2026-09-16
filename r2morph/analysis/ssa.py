@@ -558,62 +558,75 @@ class SSAConverter:
             Dictionary mapping block address to (live_in, live_out)
         """
         live_info = self._seed_block_liveness(ssa_blocks)
-        self._propagate_live_out(ssa_blocks, live_info)
+        self._propagate_liveness(ssa_blocks, live_info)
+        for block_addr, (live_in, live_out) in live_info.items():
+            ssa_blocks[block_addr].live_in = live_in.copy()
+            ssa_blocks[block_addr].live_out = live_out.copy()
         return live_info
 
     def _seed_block_liveness(
         self,
         ssa_blocks: dict[int, SSABlock],
     ) -> dict[int, tuple[set[SSAVariable], set[SSAVariable]]]:
-        """Seed each block's live-in from the registers and phi operands it uses.
+        """Seed each block's live-in from uses that precede local definitions.
 
-        live-out starts empty and is filled by the propagation pass.
+        Phi operands are edge uses and are added while propagating successor
+        liveness, rather than being treated as uses in the phi block itself.
         """
         live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]] = {}
 
         for block_addr, ssa_block in ssa_blocks.items():
-            used: set[str | SSAVariable] = set()
+            used: set[str] = set()
+            defined: set[str] = set()
             for instruction in ssa_block.instructions:
                 disasm = instruction.get("disasm", "").lower()
-                used.update(self._extract_used_registers(disasm))
-            for phi in ssa_block.phi_functions:
-                used.update(phi.operands)
+                for register in self._extract_used_registers(disasm):
+                    if register not in defined:
+                        used.add(register)
+                defined.update(self._extract_defined_registers(disasm))
 
             live_in: set[SSAVariable] = set()
             for reg in used:
-                if isinstance(reg, SSAVariable):
-                    live_in.add(reg)
-                else:
-                    version = self._get_current_version(reg)
-                    live_in.add(SSAVariable(base_name=reg, version=version))
+                version = self._get_current_version(reg)
+                live_in.add(SSAVariable(base_name=reg, version=version))
 
             live_info[block_addr] = (live_in, set())
 
         return live_info
 
-    def _propagate_live_out(
+    def _propagate_liveness(
         self,
         ssa_blocks: dict[int, SSABlock],
         live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]],
     ) -> None:
-        """Fixpoint: each block's live-out is the union of its successors'
-        live-in. Mutates the live-out sets in ``live_info`` in place."""
+        """Solve block liveness with the standard backward transfer function."""
+        block_use = {block_addr: live_in.copy() for block_addr, (live_in, _) in live_info.items()}
         changed = True
-        max_iterations = 100
-        iteration = 0
-
-        while changed and iteration < max_iterations:
+        while changed:
             changed = False
-            iteration += 1
+            for block_addr, ssa_block in reversed(tuple(ssa_blocks.items())):
+                old_live_in, old_live_out = live_info[block_addr]
+                new_live_out: set[SSAVariable] = set()
+                for successor_addr in ssa_block.successors:
+                    successor = ssa_blocks.get(successor_addr)
+                    successor_live_in = live_info.get(successor_addr, (set(), set()))[0]
+                    new_live_out.update(successor_live_in)
+                    if successor is not None and block_addr in successor.predecessors:
+                        predecessor_index = successor.predecessors.index(block_addr)
+                        for phi in successor.phi_functions:
+                            if predecessor_index < len(phi.operands):
+                                new_live_out.add(phi.operands[predecessor_index])
 
-            for block_addr, ssa_block in ssa_blocks.items():
-                _, live_out = live_info[block_addr]
+                defined = {
+                    variable.base_name
+                    for variable in ssa_block.definitions.values()
+                    if variable.definition_address is not None
+                }
+                defined.update(phi.result.base_name for phi in ssa_block.phi_functions)
+                new_live_in = block_use[block_addr] | {
+                    variable for variable in new_live_out if variable.base_name not in defined
+                }
 
-                for succ_addr in ssa_block.successors:
-                    if succ_addr not in live_info:
-                        continue
-                    succ_live_in, _ = live_info[succ_addr]
-                    for ssa_var in succ_live_in:
-                        if ssa_var not in live_out:
-                            live_out.add(ssa_var)
-                            changed = True
+                if new_live_in != old_live_in or new_live_out != old_live_out:
+                    live_info[block_addr] = (new_live_in, new_live_out)
+                    changed = True
