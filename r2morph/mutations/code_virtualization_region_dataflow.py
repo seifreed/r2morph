@@ -100,6 +100,8 @@ def _constant_definition(item: list[Any]) -> tuple[int, int] | None:
     if item[0] != "op":
         return None
     operation: VirtualizedOp = item[1]
+    if operation.mnemonic in {"sub", "xor"} and not operation.is_immediate and operation.dst_index == operation.value:
+        return operation.dst_index, 0
     if operation.mnemonic != "mov" or not operation.is_immediate or not isinstance(operation.value, int):
         return None
     return operation.dst_index, operation.value

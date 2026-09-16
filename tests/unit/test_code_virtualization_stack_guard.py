@@ -21,6 +21,7 @@ from tests.utils.assertions import expect
 
 _EXPANDED_STACK_ARGUMENT_OFFSET = 928
 _CONSTANT_INDEX_COPY_BYTES = 16
+_ZERO_INDEX_COPY_BYTES = 8
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
@@ -92,6 +93,21 @@ def test_region_copies_constant_rsp_indexed_memory_argument() -> None:
     ]
     region = extract_region(instructions)
     expect(region is not None and region.stack_argument_copy_bytes == _CONSTANT_INDEX_COPY_BYTES)
+
+
+def test_region_copies_zeroed_rsp_indexed_memory_argument() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 2, "type": "xor", "opcode": "xor ecx, ecx"},
+        {
+            "addr": 0x1002,
+            "size": 4,
+            "type": "mov",
+            "opcode": "mov rax, qword ptr [rsp+rcx*8+8]",
+        },
+        {"addr": 0x1006, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(region is not None and region.stack_argument_copy_bytes == _ZERO_INDEX_COPY_BYTES)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:
