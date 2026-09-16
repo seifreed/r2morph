@@ -395,8 +395,8 @@ _start:
 def deterministic_pattern_subst_elf(tmp_path: Path) -> Path:
     """Small ELF with size-reducing pattern-substitution candidates.
 
-    ``mov $0, %reg`` (5 bytes) reduces to ``xor %reg, %reg`` (2 bytes) plus
-    NOP padding, exercising the size-reducing path of PatternSubstitutionPass.
+    ``mov %r8, %r9`` has a same-size ``lea`` form, exercising the substitution
+    path without relying on flag-changing zeroing idioms.
     """
     return _compile_elf_x86_64_binary(
         tmp_path,
@@ -405,6 +405,7 @@ def deterministic_pattern_subst_elf(tmp_path: Path) -> Path:
 .global _start
 .text
 _start:
+    mov %r8, %r9
     mov $0, %eax
     mov $0, %ebx
     mov $0, %ecx

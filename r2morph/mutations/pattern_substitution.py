@@ -25,7 +25,11 @@ from typing import Any
 import r2morph.core.randomness as random
 from r2morph.core.constants import ARCH_BITS_64, MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations.base import MutationPass
-from r2morph.mutations.instruction_substitution_helpers import flags_live_after
+from r2morph.mutations.instruction_substitution_helpers import (
+    equivalent_flags_written,
+    flags_live_after,
+    instruction_flags_written,
+)
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 
 logger = logging.getLogger(__name__)
@@ -125,12 +129,21 @@ class PatternSubstitutionPass(MutationPass):
                 continue
             if idx in edited_indices:
                 continue
+            if not self._preserves_flags(instructions[idx], edit["replacement"]):
+                continue
             if flags_live_after(disasms, idx):
                 continue
             if self._apply_edit(binary, func_addr, instructions[idx], edit):
                 applied += 1
                 edited_indices.add(idx)
         return applied
+
+    @staticmethod
+    def _preserves_flags(original: dict[str, Any], replacement: list[Any]) -> bool:
+        """Require exact status-flag write compatibility for a substitution."""
+        original_flags = instruction_flags_written(str(original.get("disasm", "")))
+        replacement_text = "; ".join(str(instruction.opcode) for instruction in replacement)
+        return original_flags == equivalent_flags_written(replacement_text)
 
     def _apply_edit(
         self,

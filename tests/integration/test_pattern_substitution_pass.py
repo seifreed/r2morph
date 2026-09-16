@@ -76,6 +76,26 @@ def test_pattern_substitution_move_replacement_does_not_use_stack_side_effects()
     expect(all(not any(ins.mnemonic in {"push", "pop"} for ins in edit["replacement"]) for edit in edits))
 
 
+def test_pattern_substitution_rejects_flag_incompatible_replacement() -> None:
+    mutation_pass = PatternSubstitutionPass({"probability": 1.0})
+    original = {"disasm": "mov eax, 0"}
+    replacement = [
+        Instruction(
+            address=0,
+            mnemonic="xor",
+            operand_1="eax",
+            operand_2="eax",
+            operand_3="",
+            operand_str="eax, eax",
+            bytes="",
+            type="xor",
+            opcode="xor eax, eax",
+        )
+    ]
+
+    expect(not mutation_pass._preserves_flags(original, replacement))
+
+
 def test_pattern_substitution_produces_valid_size_reducing_mutations(
     deterministic_pattern_subst_elf,
 ):

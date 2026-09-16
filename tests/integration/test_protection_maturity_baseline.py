@@ -416,9 +416,11 @@ def test_nop_insertion_fixture_records_a_semantic_mutation(tmp_path: Path) -> No
     expect(run["transformation"]["status"] == "applied" and result["all_semantic_equal"] is (sys.platform == "linux"))
 
 
-def test_pattern_substitution_fixture_records_a_semantic_mutation(tmp_path: Path) -> None:
+def test_pattern_substitution_fixture_records_a_semantic_mutation(
+    tmp_path: Path, deterministic_pattern_subst_elf: Path
+) -> None:
     result = measure_fixture(
-        _CONTROL_FLOW_FIXTURE,
+        deterministic_pattern_subst_elf,
         range(20260912, 20260913),
         tmp_path,
         "PatternSubstitution",
