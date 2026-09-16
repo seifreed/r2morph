@@ -12,6 +12,7 @@ from scripts.adversarial_benchmark import (
     _measure_tool,
     _missing_tool_slot_error,
     _parse_adversarial_pass_names,
+    _parse_ghidra_decompiler_metrics,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
     _pass_result,
@@ -248,6 +249,12 @@ def test_adversarial_benchmark_reports_radare2_decompiler_recovery() -> None:
         and result["original"]["decompiler_entrypoints"] > 0
         and result["protected"]["decompiler_lines"] > 0
     )
+
+
+def test_adversarial_benchmark_parses_ghidra_decompiler_metrics() -> None:
+    metrics = _parse_ghidra_decompiler_metrics("R2MORPH_DECOMPILER=fixture=3=27=512")
+
+    expect(metrics == {"fixture": {"decompiler_entrypoints": 3, "decompiler_lines": 27, "decompiler_bytes": 512}})
 
 
 def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Path) -> None:

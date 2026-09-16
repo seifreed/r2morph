@@ -52,6 +52,9 @@ _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
+_GHIDRA_DECOMPILER_PATTERN = re.compile(
+    r"R2MORPH_DECOMPILER=(?P<program>[^=\r\n]+)=(?P<entrypoints>\d+)=(?P<lines>\d+)=(?P<bytes>\d+)"
+)
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _IDA_SCRIPT = Path(__file__).with_name("ida") / "count_functions.py"
 _IDA_RESULT_SUFFIX = ".function-count"
@@ -313,7 +316,24 @@ def _ida_metric(path: Path) -> dict[str, object]:
         if not result_path.is_file():
             raise RuntimeError("IDA function count result is missing")
         count = int(result_path.read_text(encoding="ascii"))
-    return {"status": "completed", "functions": count, "duration_seconds": time.perf_counter() - started}
+        decompiler_path = Path(f"{analysis_path}.decompiler")
+        decompiler = {"entrypoints": 0, "lines": 0, "bytes": 0}
+        if decompiler_path.is_file():
+            values = json.loads(decompiler_path.read_text(encoding="utf-8"))
+            if isinstance(values, dict):
+                decompiler = {field: int(values.get(field, 0)) for field in ("entrypoints", "lines", "bytes")}
+    metric: dict[str, object] = {
+        "status": "completed",
+        "functions": count,
+        "duration_seconds": time.perf_counter() - started,
+        "decompiler_status": "completed" if decompiler["entrypoints"] else "unavailable",
+        "decompiler_entrypoints": decompiler["entrypoints"],
+        "decompiler_lines": decompiler["lines"],
+        "decompiler_bytes": decompiler["bytes"],
+    }
+    if not decompiler["entrypoints"]:
+        metric["decompiler_reason"] = "no decompiler output was produced"
+    return metric
 
 
 def _parse_ghidra_function_counts(output: str) -> dict[str, int]:
@@ -325,6 +345,17 @@ def _parse_ghidra_function_counts(output: str) -> dict[str, int]:
     if not counts:
         raise ValueError("Ghidra function count markers are missing")
     return counts
+
+
+def _parse_ghidra_decompiler_metrics(output: str) -> dict[str, dict[str, int]]:
+    return {
+        match.group("program"): {
+            "decompiler_entrypoints": int(match.group("entrypoints")),
+            "decompiler_lines": int(match.group("lines")),
+            "decompiler_bytes": int(match.group("bytes")),
+        }
+        for match in _GHIDRA_DECOMPILER_PATTERN.finditer(output)
+    }
 
 
 def _ghidra_metric(path: Path) -> dict[str, object]:
@@ -353,8 +384,22 @@ def _ghidra_metric(path: Path) -> dict[str, object]:
         )
     if result.returncode != 0:
         raise RuntimeError(f"Ghidra headless exited with status {result.returncode}")
-    count = _parse_ghidra_function_count(result.stdout_text + result.stderr_text)
-    return {"status": "completed", "functions": count, "duration_seconds": time.perf_counter() - started}
+    output = result.stdout_text + result.stderr_text
+    count = _parse_ghidra_function_count(output)
+    decompiler = _parse_ghidra_decompiler_metrics(output)
+    values = next(
+        iter(decompiler.values()), {"decompiler_entrypoints": 0, "decompiler_lines": 0, "decompiler_bytes": 0}
+    )
+    metric: dict[str, object] = {
+        "status": "completed",
+        "functions": count,
+        "duration_seconds": time.perf_counter() - started,
+        **values,
+        "decompiler_status": "completed" if values["decompiler_entrypoints"] else "unavailable",
+    }
+    if not values["decompiler_entrypoints"]:
+        metric["decompiler_reason"] = "no decompiler output was produced"
+    return metric
 
 
 def _binary_metric(path: Path) -> dict[str, object]:
