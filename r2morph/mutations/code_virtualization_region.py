@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
 from r2morph.mutations.code_virtualization_region_dataflow import (
+    _constant_register_states,
     has_static_internal_indirect_call,
 )
 from r2morph.mutations.code_virtualization_region_dataflow import (
@@ -54,7 +55,7 @@ _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
 _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 _NONRETURNING_SYSCALLS = frozenset({15, 60, 231})
 _CALL_SITE_ITEM_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"})
-_MIN_INDEXED_CALL_FIELDS = 5
+_FPMOV_MEMORY_ITEM_WITHOUT_SOURCE_FIELDS = 7
 
 
 @dataclass
@@ -204,6 +205,48 @@ _DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
     "fppackedvex256cmpmem": (4, 5, None),
 }
 
+_INDEXED_MEMORY_LAYOUTS: dict[str, tuple[int | None, int, int, int, int | None, int | None]] = {
+    **{
+        kind: (2, 3, 4, 5, 6, None)
+        for kind in (
+            "loadidx",
+            "storeidx",
+            "cmpmemimmidx",
+            "storeiidx",
+            "fploadidx",
+            "fpstoreidx",
+            "fploadvexidx",
+            "fpstorevexidx",
+            "divmemidx",
+            "xchgmemidx",
+            "cmpxchgmemidx",
+        )
+    },
+    **{
+        kind: (3, 4, 5, 6, 7, None)
+        for kind in ("opmemidx", "opmemdstidx", "fparithmemidx", "fpcmpmemidx", "atomicmemidx", "atomicmemimmidx")
+    },
+    **{kind: (1, 2, 3, 4, 5, None) for kind in ("pushmemidx", "popmemidx", "notmemidx")},
+    "incdecmemidx": (2, 3, 4, 5, 6, None),
+    "movxidx": (5, 6, 7, 8, 2, None),
+    "btmemidx": (1, 2, 3, 4, 7, None),
+    "callmemidx": (1, 2, 3, 4, None, 8),
+    "ijmpmem": (1, 2, 3, 4, None, 8),
+    "fparithvexmemidx": (4, 5, 6, 7, 8, None),
+    "fpmovvexmemidx": (None, 0, 0, 0, None, None),
+    "fppackedmemidx": (3, 4, 5, 6, None, 16),
+    "fppackedvexmemidx": (4, 5, 6, 7, None, 16),
+    "fppackedvex256memidx": (4, 5, 6, 7, None, 32),
+    "fppackedvexcmpmemidx": (4, 5, 6, 7, None, 16),
+    "fppackedvex256cmpmemidx": (4, 5, 6, 7, None, 32),
+    "fppackedveximmmemidx": (3, 4, 5, 6, None, 16),
+    "fppackedvex256immmemidx": (3, 4, 5, 6, None, 32),
+    "fploadvex256idx": (2, 3, 4, 5, None, 32),
+    "fpstorevex256idx": (2, 3, 4, 5, None, 32),
+    "mxcsrloadidx": (1, 2, 3, 4, None, 4),
+    "mxcsrstoreidx": (1, 2, 3, 4, None, 4),
+}
+
 
 def _direct_stack_access(item: list[Any]) -> tuple[int, int, int] | None:
     """Return ``(base_slot, displacement, width_bytes)`` for direct memory items."""
@@ -221,11 +264,52 @@ def _direct_stack_access(item: list[Any]) -> tuple[int, int, int] | None:
     return int(item[base_index]), int(item[displacement_index]), width
 
 
-def _has_unbounded_stack_indirect_call(item: list[Any]) -> bool:
-    """Reject an indexed call through ``rsp`` when its target range is unknown."""
-    if item[0] != "callmemidx" or len(item) < _MIN_INDEXED_CALL_FIELDS:
-        return False
-    return int(item[1]) == RSP_INDEX
+def _indexed_memory_fields(item: list[Any]) -> tuple[int | None, int, int, int, int] | None:
+    """Return address fields as ``(base, index, shift, displacement, width)``."""
+    kind = item[0]
+    no_base = kind.endswith("idxnb")
+    layout = _INDEXED_MEMORY_LAYOUTS.get(kind)
+    if layout is None and no_base:
+        layout = _INDEXED_MEMORY_LAYOUTS.get(kind[:-2])
+    if layout is None:
+        return None
+    base_index, index_index, shift_index, displacement_index, width_index, fixed_width = layout
+    if kind in ("fpmovvexmemidx", "fpmovvexmemidxnb"):
+        offset = 1 if no_base else 0
+        base_index, index_index, shift_index, displacement_index, width_index = (
+            (2, 3, 4, 5, 6) if len(item) == _FPMOV_MEMORY_ITEM_WITHOUT_SOURCE_FIELDS - offset else (3, 4, 5, 6, 7)
+        )
+        if no_base:
+            base_index = None
+            index_index -= 1
+            shift_index -= 1
+            displacement_index -= 1
+            width_index -= 1
+    elif no_base:
+        base_index = None
+        index_index -= 1
+        shift_index -= 1
+        displacement_index -= 1
+        if width_index is not None:
+            width_index -= 1
+    indexes = (index_index, shift_index, displacement_index)
+    if any(len(item) <= index for index in indexes) or (base_index is not None and len(item) <= base_index):
+        return None
+    if width_index is None:
+        if fixed_width is None:
+            return None
+        width = fixed_width
+    elif len(item) <= width_index:
+        return None
+    else:
+        width = int(item[width_index]) // 8
+    return (
+        None if base_index is None else int(item[base_index]),
+        int(item[index_index]),
+        int(item[shift_index]),
+        int(item[displacement_index]),
+        width,
+    )
 
 
 def _stack_argument_copy_bytes(
@@ -233,14 +317,33 @@ def _stack_argument_copy_bytes(
 ) -> int | None:
     """Find the largest incoming stack range directly addressed by a region."""
     required_end = _STACK_ARGUMENT_START
+    constant_states = _constant_register_states(items)
     for index, item in enumerate(items):
-        if _has_unbounded_stack_indirect_call(item):
-            return None
         access = _direct_stack_access(item)
         state = stack_states[index]
-        if access is None or state is None or access[0] != RSP_INDEX:
-            continue
-        _base_slot, displacement, width = access
+        indexed = _indexed_memory_fields(item)
+        if (
+            indexed is None
+            and item[0].endswith(("idx", "idxnb"))
+            and not (item[0] in ("leaidx", "leaidxnb") or item[0].startswith("tls"))
+        ):
+            return None
+        if indexed is not None:
+            base, index_slot, shift, displacement, width = indexed
+            if base is None:
+                if index_slot == RSP_INDEX:
+                    return None
+                continue
+            if base != RSP_INDEX:
+                continue
+            constants = constant_states[index]
+            if constants is None or index_slot not in constants or state is None:
+                return None
+            displacement += constants[index_slot] * (1 << shift)
+        else:
+            if access is None or state is None or access[0] != RSP_INDEX:
+                continue
+            _base_slot, displacement, width = access
         original_offset = displacement - state[0]
         if original_offset >= _STACK_ARGUMENT_START:
             required_end = max(required_end, original_offset + width)

@@ -20,6 +20,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 from tests.utils.assertions import expect
 
 _EXPANDED_STACK_ARGUMENT_OFFSET = 928
+_CONSTANT_INDEX_COPY_BYTES = 16
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
@@ -63,6 +64,34 @@ def test_region_rejects_unbounded_rsp_indexed_indirect_call() -> None:
         {"addr": 0x1004, "size": 1, "type": "ret", "opcode": "ret"},
     ]
     expect(extract_region(instructions) is None)
+
+
+def test_region_rejects_unbounded_rsp_indexed_memory() -> None:
+    instructions = [
+        {
+            "addr": 0x1000,
+            "size": 4,
+            "type": "mov",
+            "opcode": "mov rax, qword ptr [rsp+rcx*8+8]",
+        },
+        {"addr": 0x1004, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    expect(extract_region(instructions) is None)
+
+
+def test_region_copies_constant_rsp_indexed_memory_argument() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 5, "type": "mov", "opcode": "mov eax, 1"},
+        {
+            "addr": 0x1005,
+            "size": 4,
+            "type": "mov",
+            "opcode": "mov rax, qword ptr [rsp+rax*8+8]",
+        },
+        {"addr": 0x1009, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(region is not None and region.stack_argument_copy_bytes == _CONSTANT_INDEX_COPY_BYTES)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:
