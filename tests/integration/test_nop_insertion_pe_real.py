@@ -155,3 +155,27 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Pa
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE register substitution changed the native execution result",
     )
+
+
+def test_instruction_substitution_pe_fixture_preserves_windows_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Windows":
+        pytest.skip("native PE fixture execution requires Windows")
+
+    source = Path("fixtures/dataset/pe_x86_64.exe")
+    target = tmp_path / "pe_fixture_substituted.exe"
+    shutil.copy2(source, target)
+    original_execution = run_command([target], timeout=30)
+
+    with Binary(target, writable=True) as binary:
+        binary.analyze("aa")
+        result = InstructionSubstitutionPass({"probability": 1.0, "force_different": True, "seed": 1337}).apply(binary)
+
+    handler = PEHandler(target)
+    expect(result["mutations_applied"] > 0)
+    expect(handler.fix_checksum())
+    expect(handler.validate_integrity()[0])
+    mutated_execution = run_command([target], timeout=30)
+    expect(
+        mutated_execution.returncode == original_execution.returncode,
+        "PE instruction substitution changed the native Windows result",
+    )

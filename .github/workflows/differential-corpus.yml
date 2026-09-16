@@ -1016,14 +1016,15 @@ jobs:
             tests/integration/test_platform_handlers_deeper_real_more.py `
             tests/integration/test_platform_handlers_extended.py `
             tests/integration/test_platform_handlers_real.py `
-            -k pe_handler
+            tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_fixture_preserves_windows_exit_code `
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 4) { throw "Windows PE smoke ran $($cases.Count) cases; expected 4" }
+          if ($cases.Count -ne 5) { throw "Windows PE smoke ran $($cases.Count) cases; expected 5" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1032,7 +1033,8 @@ jobs:
             "test_pe_handler_checksum",
             "test_pe_handler_checksum_and_imports",
             "test_pe_handler_extended",
-            "test_pe_handler_real_binary"
+            "test_pe_handler_real_binary",
+            "test_instruction_substitution_pe_fixture_preserves_windows_exit_code"
           )
           foreach ($name in $required) {
             if (-not ($cases | Where-Object { $_.name -like "$name*" })) {
