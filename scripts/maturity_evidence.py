@@ -144,8 +144,11 @@ def read_composition_evidence(paths: Iterable[Path]) -> dict[str, Any]:
 
 
 def _performance_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
+    applied = summary.get("applied_runs", 0)
     coverage = {field: summary.get(field) for field in _PERFORMANCE_FIELDS}
-    complete = all(value == _FULL_COVERAGE_PERCENT for value in coverage.values())
+    complete = (
+        isinstance(applied, int) and applied > 0 and all(value == _FULL_COVERAGE_PERCENT for value in coverage.values())
+    )
     return {"status": "complete" if complete else "incomplete", "coverage": coverage}
 
 

@@ -55,6 +55,7 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
     expect(
         evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "complete"
         and evidence["passes"]["StackStrings"]["composition"]["status"] == "preview-only"
+        and evidence["passes"]["StackStrings"]["performance"]["status"] == "incomplete"
         and composition_evidence["directional_pair_count"] == _EXPECTED_DIRECTIONAL_PAIR_COUNT
         and evidence["summary"]["blocker_totals"]["decompiler"] == _EXPECTED_DECOMPILER_BLOCKERS
     )
