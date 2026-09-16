@@ -7,6 +7,7 @@ Replaces registers with equivalent unused registers in code sequences.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from r2morph.core.constants import ARCH_BITS_64
@@ -157,7 +158,7 @@ class RegisterSubstitutionPass(MutationPass):
             return None
         if self._register_only_in_memory(disasm, original):
             return None
-        return disasm.replace(original, substitute)
+        return re.sub(rf"\b{re.escape(original)}\b", substitute, disasm)
 
     def _apply_instruction_substitution(
         self,

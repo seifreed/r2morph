@@ -30,16 +30,9 @@ def _create_instruction(mnemonic: str, operands: list[str], ins_type: str = "") 
     return ins
 
 
-def generator_mov_reg_reg(operands: list[Any], os_type: str) -> list[Instruction]:
+def generator_lea_reg_reg(operands: list[Any], os_type: str) -> list[Instruction]:
     dst, src = operands[0], operands[1]
-    return [_create_instruction("mov", [dst, src], "mov")]
-
-
-def generator_push_pop_reg(operands: list[Any], os_type: str) -> list[Instruction]:
-    dst, src = operands[0], operands[1]
-    push = _create_instruction("push", [src], "push")
-    pop = _create_instruction("pop", [dst], "pop")
-    return [push, pop]
+    return [_create_instruction("lea", [dst, f"[{src}]"], "lea")]
 
 
 def generator_xor_reg_reg(operands: list[Any], os_type: str) -> list[Instruction]:

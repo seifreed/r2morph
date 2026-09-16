@@ -15,10 +15,9 @@ from r2morph.mutations.pattern_generators import (
     generator_dec_chain,
     generator_dec_to_sub,
     generator_inc_to_add,
+    generator_lea_reg_reg,
     generator_mov_reg_0,
-    generator_mov_reg_reg,
     generator_mov_with_junk_before,
-    generator_push_pop_reg,
     generator_shl_to_lea,
     generator_sub_reg_same,
     generator_xor_reg_reg,
@@ -31,7 +30,6 @@ from r2morph.mutations.pattern_rules import (
     match_inc_reg,
     match_mov_reg_0_all,
     match_mov_reg_reg_reg64_reg16,
-    match_push_pop_reg64_reg16,
     match_shl_reg_imm,
     match_sub_reg_imm_small,
     match_xor_reg_reg_all,
@@ -227,10 +225,9 @@ register_pattern_pool(junk_enhanced_pool)
 
 mov_reg_value_pool = MutationPatternPool(
     name="mov_reg_value",
-    match_rules=[match_mov_reg_reg_reg64_reg16, match_push_pop_reg64_reg16],
+    match_rules=[match_mov_reg_reg_reg64_reg16],
     generators=[
-        (generator_mov_reg_reg, 1),
-        (generator_push_pop_reg, 1),
+        (generator_lea_reg_reg, 1),
     ],
     mutation_probability=100,
 )

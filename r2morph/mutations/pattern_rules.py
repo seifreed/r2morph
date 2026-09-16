@@ -7,7 +7,7 @@ rewrite. Rules are pure leaf functions depending only on
 :mod:`r2morph.mutations.pattern_types` and core register metadata.
 """
 
-from r2morph.core.register_tracker import REG_16, REG_32, REG_64, REG_SIZES_MAP
+from r2morph.core.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 from r2morph.mutations.pattern_types import Instruction, MatchResult
 
 _MAX_SMALL_IMMEDIATE = 8
@@ -29,32 +29,8 @@ def match_mov_reg_reg_reg64_reg16(instructions: list[Instruction]) -> list[Match
         op1_size = REG_SIZES_MAP.get(op1.lower() if op1 else "", 0)
         op2_size = REG_SIZES_MAP.get(op2.lower() if op2 else "", 0)
 
-        if (op1_size & (REG_64 | REG_16)) and (op2_size & (REG_64 | REG_16)):
+        if (op1_size & REG_64) and (op2_size & REG_64):
             matches.append(MatchResult(index=idx, length=1, operands=[op1, op2]))
-
-    return matches
-
-
-def match_push_pop_reg64_reg16(instructions: list[Instruction]) -> list[MatchResult]:
-    matches = []
-
-    for idx in range(len(instructions) - 1):
-        ins1 = instructions[idx]
-        ins2 = instructions[idx + 1]
-
-        if not hasattr(ins1, "mnemonic") or ins1.mnemonic != "push":
-            continue
-        if not hasattr(ins2, "mnemonic") or ins2.mnemonic != "pop":
-            continue
-
-        op1 = getattr(ins1, "operand_1", "")
-        op2 = getattr(ins2, "operand_1", "")
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
-
-        if REG_SIZES_MAP.get(op1.lower() if op1 else "", 0) and REG_SIZES_MAP.get(op2.lower() if op2 else "", 0):
-            matches.append(MatchResult(index=idx, length=2, operands=[op2, op1]))
 
     return matches
 

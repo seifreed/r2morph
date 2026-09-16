@@ -25,6 +25,7 @@ from r2morph.core.binary import Binary
 from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
+from r2morph.mutations.pattern_types import Instruction
 from tests.integration.elf_emulator import emulate_exit_code
 
 
@@ -53,6 +54,26 @@ def test_pattern_substitution_rejects_lea_memory_as_register_move() -> None:
     edits = PatternMatchIntegration().enumerate_substitutions(instructions)
 
     expect(all(edit["pool"] != "lea_off" for edit in edits))
+
+
+def test_pattern_substitution_move_replacement_does_not_use_stack_side_effects() -> None:
+    instructions = [
+        Instruction(
+            address=0x1000,
+            mnemonic="mov",
+            operand_1="rax",
+            operand_2="rbx",
+            operand_3="",
+            operand_str="rax, rbx",
+            bytes="",
+            type="mov",
+            opcode="mov rax, rbx",
+        )
+    ]
+
+    edits = PatternMatchIntegration().enumerate_substitutions(instructions)
+
+    expect(all(not any(ins.mnemonic in {"push", "pop"} for ins in edit["replacement"]) for edit in edits))
 
 
 def test_pattern_substitution_produces_valid_size_reducing_mutations(

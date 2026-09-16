@@ -1,3 +1,4 @@
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.register_substitution_helpers import (
     abi_live_registers,
     find_substitution_candidates,
@@ -198,6 +199,17 @@ def test_find_substitution_candidates_excludes_live_in_indirect_call_target() ->
     sources = {original for original, _ in find_substitution_candidates(instructions, "x64")}
 
     expect("r11" not in sources)
+
+
+def test_register_substitution_replaces_whole_tokens_without_touching_numbered_aliases() -> None:
+    pass_obj = RegisterSubstitutionPass()
+    replacement = pass_obj._substituted_disasm(
+        {"disasm": "add x1, x10, x1"},
+        "x1",
+        "x2",
+    )
+
+    expect(replacement == "add x2, x10, x2")
 
 
 def test_call_live_registers_empty_when_no_call_present() -> None:
