@@ -1004,18 +1004,33 @@ jobs:
           Set-Location $wheelRoot
           python -W error -m pytest -q --no-cov --tb=short `
             --junitxml="$env:GITHUB_WORKSPACE/windows-format-differential.xml" `
-            tests/integration/test_platform_deeper.py -k pe_handler_checksum
+            tests/integration/test_platform_deeper.py `
+            tests/integration/test_platform_handlers_deeper_real_more.py `
+            tests/integration/test_platform_handlers_extended.py `
+            tests/integration/test_platform_handlers_real.py `
+            -k pe_handler
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -lt 1) { throw "Windows PE smoke ran no cases" }
+          if ($cases.Count -ne 4) { throw "Windows PE smoke ran $($cases.Count) cases; expected 4" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
           if ($suite.SelectNodes("//skipped").Count -gt 0) { throw "Windows PE smoke contains skipped cases" }
+          $required = @(
+            "test_pe_handler_checksum",
+            "test_pe_handler_checksum_and_imports",
+            "test_pe_handler_extended",
+            "test_pe_handler_real_binary"
+          )
+          foreach ($name in $required) {
+            if (-not ($cases | Where-Object { $_.name -like "$name*" })) {
+              throw "Windows PE smoke is missing $name"
+            }
+          }
 
       - name: Upload Windows PE differential evidence
         uses: actions/upload-artifact@v7

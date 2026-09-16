@@ -1689,7 +1689,12 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
 
     expect(
         "runs-on: windows-latest" in windows_job
-        and "test_platform_deeper.py -k pe_handler_checksum" in windows_job
+        and "test_platform_handlers_deeper_real_more.py" in windows_job
+        and "test_platform_handlers_extended.py" in windows_job
+        and "test_platform_handlers_real.py" in windows_job
+        and "-k pe_handler" in windows_job
+        and "expected 4" in windows_job
+        and "test_pe_handler_checksum_and_imports" in windows_job
         and "windows-format-differential.xml" in windows_job
         and 'SelectNodes("//testcase")' in windows_job
         and 'SelectNodes("//failure")' in windows_job
