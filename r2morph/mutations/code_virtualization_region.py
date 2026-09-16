@@ -229,6 +229,7 @@ _INDEXED_MEMORY_LAYOUTS: dict[str, tuple[int | None, int, int, int, int | None, 
     **{kind: (1, 2, 3, 4, 5, None) for kind in ("pushmemidx", "popmemidx", "notmemidx")},
     "incdecmemidx": (2, 3, 4, 5, 6, None),
     "movxidx": (5, 6, 7, 8, 2, None),
+    "movxidxnb": (None, 5, 6, 7, 2, None),
     "btmemidx": (1, 2, 3, 4, 7, None),
     "callmemidx": (1, 2, 3, 4, None, 8),
     "ijmpmem": (1, 2, 3, 4, None, 8),
@@ -287,7 +288,7 @@ def _indexed_memory_fields(item: list[Any]) -> tuple[int | None, int, int, int, 
             shift_index -= 1
             displacement_index -= 1
             width_index -= 1
-    elif no_base:
+    elif no_base and base_index is not None:
         base_index = None
         index_index -= 1
         shift_index -= 1
