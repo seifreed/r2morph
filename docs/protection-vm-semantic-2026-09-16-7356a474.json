@@ -1,0 +1,67 @@
+{
+  "category_summary": {
+    "calls_and_returns": {
+      "failed_count": 0,
+      "fixture_count": 10,
+      "passed_count": 10
+    },
+    "control_flow_and_dispatch": {
+      "failed_count": 0,
+      "fixture_count": 5,
+      "passed_count": 5
+    },
+    "fallback_paths": {
+      "failed_count": 0,
+      "fixture_count": 9,
+      "passed_count": 9
+    },
+    "flags_and_conditions": {
+      "failed_count": 0,
+      "fixture_count": 25,
+      "passed_count": 25
+    },
+    "floating_point_and_simd": {
+      "failed_count": 0,
+      "fixture_count": 55,
+      "passed_count": 55
+    },
+    "gp_arithmetic": {
+      "failed_count": 0,
+      "fixture_count": 27,
+      "passed_count": 27
+    },
+    "memory_addressing": {
+      "failed_count": 0,
+      "fixture_count": 38,
+      "passed_count": 38
+    },
+    "signals_and_system_calls": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "stack_and_abi": {
+      "failed_count": 0,
+      "fixture_count": 11,
+      "passed_count": 11
+    },
+    "thread_runtime_boundaries": {
+      "failed_count": 0,
+      "fixture_count": 8,
+      "passed_count": 8
+    }
+  },
+  "failed_count": 0,
+  "failures": [],
+  "fixture_count": 150,
+  "measurement": "vm-semantic-native-parity-campaign",
+  "passed_count": 150,
+  "schema_version": 1,
+  "seed": 20260916,
+  "status": "passed",
+  "target": {
+    "architecture": "x86-64",
+    "format": "ELF",
+    "os": "linux"
+  }
+}

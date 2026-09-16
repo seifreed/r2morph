@@ -194,6 +194,10 @@ missing, non-virtualized, or divergent fixture. This closes the missing
 continuous corpus-run evidence; the nine semantic gap labels remain because
 one corpus run does not prove arbitrary inputs, unsupported ABIs, or
 cross-platform parity.
+The current local run
+[`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
+completed all 150 declared fixtures with zero failures for the official Linux
+ELF x86-64 target.
 
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
