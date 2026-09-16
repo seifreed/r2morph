@@ -11,6 +11,7 @@ Provides forward and backward data flow analysis including:
 from __future__ import annotations
 
 import logging
+from collections import deque
 from typing import Any
 
 from r2morph.analysis.call_effects import call_register_effects, is_call_instruction
@@ -99,36 +100,37 @@ class DataFlowAnalyzer:
         self._result.live_in.clear()
         self._result.live_out.clear()
 
-        for addr in self.cfg.blocks:
+        block_addresses = set(self.cfg.blocks)
+        for addr in block_addresses:
             self._result.live_in[addr] = set()
             self._result.live_out[addr] = set()
 
-        changed = True
-        iterations = 0
-        max_iterations = 100
+        predecessors: dict[int, set[int]] = {addr: set() for addr in block_addresses}
+        for addr, block in self.cfg.blocks.items():
+            for successor in block.successors:
+                if successor in predecessors:
+                    predecessors[successor].add(addr)
 
-        while changed and iterations < max_iterations:
-            changed = False
-            iterations += 1
+        pending = deque(sorted(block_addresses, reverse=True))
+        queued = set(pending)
+        while pending:
+            addr = pending.popleft()
+            queued.remove(addr)
+            block = self.cfg.blocks[addr]
+            live_out: set[Register] = set()
+            for successor in block.successors:
+                live_out.update(self._result.live_in.get(successor, set()))
+            live_in = self._get_block_use(block) | (live_out - self._get_block_def(block))
 
-            for addr in sorted(self.cfg.blocks.keys(), reverse=True):
-                block = self.cfg.blocks[addr]
+            if live_out == self._result.live_out[addr] and live_in == self._result.live_in[addr]:
+                continue
 
-                old_out = self._result.live_out[addr].copy()
-
-                for succ_addr in block.successors:
-                    if succ_addr in self._result.live_in:
-                        self._result.live_out[addr].update(self._result.live_in[succ_addr])
-
-                old_in = self._result.live_in[addr].copy()
-
-                use = self._get_block_use(block)
-                defn = self._get_block_def(block)
-
-                self._result.live_in[addr] = use | (self._result.live_out[addr] - defn)
-
-                if self._result.live_in[addr] != old_in or self._result.live_out[addr] != old_out:
-                    changed = True
+            self._result.live_out[addr] = live_out
+            self._result.live_in[addr] = live_in
+            for predecessor in sorted(predecessors[addr], reverse=True):
+                if predecessor not in queued:
+                    pending.append(predecessor)
+                    queued.add(predecessor)
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before being defined in a block."""
@@ -223,37 +225,32 @@ class DataFlowAnalyzer:
         self._result.reaching_in.clear()
         self._result.reaching_out.clear()
 
-        for addr in self.cfg.blocks:
+        block_addresses = set(self.cfg.blocks)
+        for addr in block_addresses:
             self._result.reaching_in[addr] = set()
             self._result.reaching_out[addr] = set()
 
-        changed = True
-        iterations = 0
-        max_iterations = 100
+        pending = deque(sorted(block_addresses))
+        queued = set(pending)
+        while pending:
+            addr = pending.popleft()
+            queued.remove(addr)
+            block = self.cfg.blocks[addr]
+            reaching_in: set[Definition] = set()
+            for predecessor in block.predecessors:
+                reaching_in.update(self._result.reaching_out.get(predecessor, set()))
+            gen = self._get_block_gen(block)
+            new_out = gen | (reaching_in - self._get_block_kill(block, gen))
 
-        while changed and iterations < max_iterations:
-            changed = False
-            iterations += 1
+            if reaching_in == self._result.reaching_in[addr] and new_out == self._result.reaching_out[addr]:
+                continue
 
-            for addr in sorted(self.cfg.blocks.keys()):
-                block = self.cfg.blocks[addr]
-
-                old_in = self._result.reaching_in[addr].copy()
-
-                for pred_addr in block.predecessors:
-                    if pred_addr in self._result.reaching_out:
-                        self._result.reaching_in[addr].update(self._result.reaching_out[pred_addr])
-
-                gen = self._get_block_gen(block)
-                kill = self._get_block_kill(block, gen)
-
-                new_out = gen | (self._result.reaching_in[addr] - kill)
-
-                if self._result.reaching_out[addr] != new_out:
-                    self._result.reaching_out[addr] = new_out
-                    changed = True
-                elif self._result.reaching_in[addr] != old_in:
-                    changed = True
+            self._result.reaching_in[addr] = reaching_in
+            self._result.reaching_out[addr] = new_out
+            for successor in sorted(block.successors):
+                if successor in block_addresses and successor not in queued:
+                    pending.append(successor)
+                    queued.add(successor)
 
     def _get_block_gen(self, block: BasicBlock) -> set[Definition]:
         """Get definitions generated by a block."""

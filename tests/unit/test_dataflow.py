@@ -28,6 +28,9 @@ _EXPECTED_LEN_RESULT_LIVE_OUT_5 = 5
 _EXPECTED_REG_SIZE_64 = 64
 _EXPECTED_RMW_USE_ADDRESS = 0x1010
 _EXPECTED_USE_ADDRESS_4101 = 0x1005
+_DEEP_DATAFLOW_BLOCK_COUNT = 102
+_DEEP_DATAFLOW_START_ADDRESS = 0x5000
+_DEEP_DATAFLOW_BLOCK_STRIDE = 0x10
 
 
 def create_test_cfg() -> ControlFlowGraph:
@@ -215,6 +218,35 @@ def create_loop_cfg() -> ControlFlowGraph:
     cfg.add_edge(0x3020, 0x3030)
     cfg.add_edge(0x3030, 0x3010)
 
+    return cfg
+
+
+def create_deep_backward_dataflow_cfg() -> ControlFlowGraph:
+    """Create a backward chain that exceeds the old fixed iteration limit."""
+    cfg = ControlFlowGraph(function_address=_DEEP_DATAFLOW_START_ADDRESS, function_name="deep_dataflow")
+    addresses = [
+        _DEEP_DATAFLOW_START_ADDRESS + index * _DEEP_DATAFLOW_BLOCK_STRIDE
+        for index in range(_DEEP_DATAFLOW_BLOCK_COUNT)
+    ]
+    for index in reversed(range(_DEEP_DATAFLOW_BLOCK_COUNT)):
+        address = addresses[index]
+        block = BasicBlock(
+            address=address,
+            size=4,
+            instructions=[
+                {
+                    "offset": address,
+                    "type": "mov",
+                    "disasm": "mov ebx, [rax]" if index == 0 else "mov ebx, 1",
+                }
+            ],
+            successors=addresses[index - 1 : index] if index else [],
+            predecessors=[],
+            block_type=BlockType.NORMAL,
+        )
+        cfg.add_block(block)
+    for index in range(1, _DEEP_DATAFLOW_BLOCK_COUNT):
+        cfg.add_edge(addresses[index], addresses[index - 1])
     return cfg
 
 
@@ -460,6 +492,14 @@ class TestDataFlowAnalyzer:
 
         expect(len(analyzer._result.live_in) == _EXPECTED_LEN_ANALYZER_RESULT_LIVE_IN_3)
         expect(len(analyzer._result.live_out) == _EXPECTED_LEN_ANALYZER_RESULT_LIVE_OUT_3)
+
+    def test_liveness_propagates_past_100_backward_cfg_rounds(self):
+        """Liveness reaches the head of a deep backward chain."""
+        result = DataFlowAnalyzer(create_deep_backward_dataflow_cfg()).analyze()
+
+        head_address = _DEEP_DATAFLOW_START_ADDRESS + (_DEEP_DATAFLOW_BLOCK_COUNT - 1) * _DEEP_DATAFLOW_BLOCK_STRIDE
+        live_names = {register.name for register in result.live_in[head_address]}
+        expect("rax" in live_names)
 
     def test_analyze_reaching_definitions(self):
         """Test reaching definitions computation."""
