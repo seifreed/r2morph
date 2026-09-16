@@ -139,6 +139,7 @@ jobs:
           PY
 
       - name: Run cross-format differential smoke
+        if: always()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -151,6 +152,7 @@ jobs:
             tests/integration/test_code_virtualization_target_support_real.py
 
       - name: Validate cross-format differential evidence
+        if: always() && hashFiles('cross-format-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -191,6 +193,7 @@ jobs:
           PY
 
       - name: Run composition regression smoke
+        if: always()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -199,6 +202,7 @@ jobs:
             tests/integration/test_polymorphic_engine_real.py
 
       - name: Validate composition differential evidence
+        if: always() && hashFiles('composition-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -276,6 +280,7 @@ jobs:
           PY
 
       - name: Run VM semantic regression smoke
+        if: always()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -303,6 +308,7 @@ jobs:
             tests/integration/test_code_virtualization_threads_signals_real.py
 
       - name: Validate VM semantic differential evidence
+        if: always() && hashFiles('vm-semantic-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -347,6 +353,7 @@ jobs:
           PY
 
       - name: Run parser and rewriter fuzz smoke
+        if: always()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -357,6 +364,7 @@ jobs:
             --output "$GITHUB_WORKSPACE/differential-fuzz-smoke.json"
 
       - name: Validate parser and rewriter fuzz smoke
+        if: always() && hashFiles('differential-fuzz-smoke.json') != ''
         run: |
           python - <<'PY'
           import json
@@ -376,6 +384,7 @@ jobs:
           PY
 
       - name: Run extended maturity pass smoke
+        if: always()
         env:
           EXTENDED_MATURITY_PASSES: >-
             AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation,
@@ -398,6 +407,7 @@ jobs:
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
+        if: always() && hashFiles('extended-maturity-passes.json') != ''
         run: |
           python - <<'PY'
           import json
@@ -501,6 +511,7 @@ jobs:
 
       - name: Upload cross-format differential evidence
         uses: actions/upload-artifact@v7
+        if: always() && hashFiles('cross-format-differential.xml') != ''
         with:
           name: cross-format-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: cross-format-differential.xml
@@ -521,13 +532,14 @@ jobs:
 
       - name: Upload extended maturity pass smoke
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && hashFiles('extended-maturity-passes.json') != ''
         with:
           name: extended-maturity-passes-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: extended-maturity-passes.json
 
       - name: Upload differential fuzz smoke
         uses: actions/upload-artifact@v7
+        if: always() && hashFiles('differential-fuzz-smoke.json') != ''
         with:
           name: differential-fuzz-smoke-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: differential-fuzz-smoke.json
