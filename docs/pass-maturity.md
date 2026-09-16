@@ -183,6 +183,18 @@ regression contracts, including the installed-wheel smoke in the scheduled
 differential campaign. The companion `total_vm_semantic_blockers` count is currently 9 VM semantic
 blockers.
 
+The VM semantic fixture inventory is exercised by the bounded native parity
+campaign in [`scripts/vm_semantic_campaign.py`](../scripts/vm_semantic_campaign.py).
+Every scheduled run processes all 150 ELF x86-64 fixtures from
+[`virtualization-coverage.json`](virtualization-coverage.json), preserves the
+executable mode in a temporary copy, requires one applied virtualization, and
+compares return code plus hashed stdout/stderr observables before and after the
+mutation. The workflow retains the JSON result as an artifact and fails on any
+missing, non-virtualized, or divergent fixture. This closes the missing
+continuous corpus-run evidence; the nine semantic gap labels remain because
+one corpus run does not prove arbitrary inputs, unsupported ABIs, or
+cross-platform parity.
+
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
 completed its four shards and aggregate validation without pass or analyzer

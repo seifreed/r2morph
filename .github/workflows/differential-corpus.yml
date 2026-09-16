@@ -532,6 +532,62 @@ jobs:
           name: differential-fuzz-smoke-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: differential-fuzz-smoke.json
 
+  vm-semantic-campaign:
+    name: VM semantic native parity campaign
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Run VM semantic native parity campaign
+        run: |
+          python scripts/vm_semantic_campaign.py \
+            --dataset fixtures/dataset \
+            --coverage docs/virtualization-coverage.json \
+            --output vm-semantic-campaign.json
+
+      - name: Validate VM semantic campaign
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("vm-semantic-campaign.json").read_text(encoding="utf-8"))
+          if report["status"] != "passed" or report["fixture_count"] != 150:
+              raise SystemExit(f"VM semantic campaign incomplete: {report}")
+          if report["failed_count"] != 0 or report["passed_count"] != 150:
+              raise SystemExit(f"VM semantic campaign has failures: {report}")
+          if len(report["category_summary"]) < 9:
+              raise SystemExit("VM semantic campaign category coverage is incomplete")
+          PY
+
+      - name: Upload VM semantic campaign evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vm-semantic-campaign-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-campaign.json
+
   aggregate-differential-corpus:
     name: Aggregate differential corpus evidence
     if: ${{ always() }}

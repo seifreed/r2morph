@@ -25,8 +25,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   Exit criteria: all relevant passes have complete differential evidence across
   the supported corpus and declared platform matrix.
 - RB-003: VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals,
-  threads, FP/SIMD, and SSA/liveness. Unsupported instructions must fail closed
-  with precise diagnostics. Evidence map:
+  threads, FP/SIMD, and SSA/liveness. The complete 150-fixture native parity campaign
+  now runs continuously, but unsupported instructions must still fail closed with
+  precise diagnostics. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [support-matrix.json](support-matrix.json) `vm_semantic_gap_scope`
   and `vm_semantic_blocker_totals`,
