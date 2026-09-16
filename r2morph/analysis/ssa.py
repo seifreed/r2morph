@@ -511,11 +511,17 @@ class SSAConverter:
         Returns:
             SSAVariable or None if not found
         """
+        latest_address: int | None = None
+        latest_variable: SSAVariable | None = None
         for block_addr, ssa_block in ssa_blocks.items():
-            if block_addr <= address and reg_name in ssa_block.definitions:
-                return ssa_block.definitions[reg_name]
-
-        return None
+            if (
+                block_addr <= address
+                and reg_name in ssa_block.definitions
+                and (latest_address is None or block_addr > latest_address)
+            ):
+                latest_address = block_addr
+                latest_variable = ssa_block.definitions[reg_name]
+        return latest_variable
 
     def get_all_versions(
         self,

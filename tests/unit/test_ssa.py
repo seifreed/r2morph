@@ -307,6 +307,21 @@ class TestSSAConverter:
         var = converter.get_ssa_variable_at("nonexistent", 0x1000, blocks)
         expect(not (var is not None))
 
+    def test_get_ssa_variable_at_uses_latest_definition_before_address(self, converter):
+        blocks = {
+            0x1005: SSABlock(
+                address=0x1005,
+                definitions={"eax": SSAVariable(base_name="eax", version=1)},
+            ),
+            0x1000: SSABlock(
+                address=0x1000,
+                definitions={"eax": SSAVariable(base_name="eax", version=0)},
+            ),
+        }
+
+        var = converter.get_ssa_variable_at("eax", 0x1008, blocks)
+        expect(var is not None and var.version == 1)
+
     def test_get_all_versions(self, converter):
         blocks = {
             0x1000: SSABlock(
