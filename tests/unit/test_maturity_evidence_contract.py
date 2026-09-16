@@ -149,7 +149,10 @@ def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
         "summary": {
             "analyzer_effectiveness_by_pass": {
                 "NopInsertion": {
-                    "radare2": {"completion_percent": 100.0},
+                    "radare2": {
+                        "completion_percent": 100.0,
+                        "decompiler": {"observed_pairs": 1, "completion_percent": 100.0},
+                    },
                     "objdump": {"completion_percent": 100.0},
                 }
             }
@@ -162,4 +165,19 @@ def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
         evidence["passes"]["NopInsertion"]["decompiler"]["status"] == "comparable"
         and evidence["summary"]["blocker_totals"]["decompiler"] == 0
         and evidence["summary"]["adversarial_evidence_attached"] is True
+    )
+
+
+def test_maturity_evidence_rejects_completed_non_decompiler_tool_as_decompiler_proof() -> None:
+    evidence = merge_decompiler_evidence(
+        {
+            "passes": {"NopInsertion": {"decompiler": {"status": "pending"}}},
+            "summary": {"blockers": {}, "blocker_totals": {}},
+        },
+        {"summary": {"analyzer_effectiveness_by_pass": {"NopInsertion": {"objdump": {"completion_percent": 100.0}}}}},
+    )
+
+    expect(
+        evidence["passes"]["NopInsertion"]["decompiler"]["status"] == "pending"
+        and evidence["summary"]["blocker_totals"]["decompiler"] == 1
     )

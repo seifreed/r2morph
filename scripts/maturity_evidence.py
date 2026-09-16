@@ -227,14 +227,27 @@ def _decompiler_evidence(
     tools = effectiveness.get(pass_name, {}) if isinstance(effectiveness, Mapping) else {}
     if not isinstance(tools, Mapping):
         return {"status": "pending", "completed_tools": [], "incomplete_tools": []}
+    observed_tools = {
+        name: value
+        for name, value in tools.items()
+        if isinstance(value, Mapping)
+        and isinstance(value.get("decompiler"), Mapping)
+        and value["decompiler"].get("observed_pairs", 0) > 0
+    }
     completed = sorted(
         name
-        for name, value in tools.items()
-        if isinstance(value, Mapping) and value.get("completion_percent") == _FULL_COVERAGE_PERCENT
+        for name, value in observed_tools.items()
+        if value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
     )
-    incomplete = sorted(name for name in tools if name not in completed)
+    incomplete = sorted(name for name in observed_tools if name not in completed)
     status = "comparable" if not incomplete else "partial" if completed else "pending"
-    return {"status": status, "completed_tools": completed, "incomplete_tools": incomplete}
+    return {
+        "status": status if completed else "pending",
+        "completed_tools": completed,
+        "incomplete_tools": incomplete,
+        "observed_tools": sorted(observed_tools),
+        "non_decompiler_tools": sorted(name for name in tools if name not in observed_tools),
+    }
 
 
 def build_evidence(
