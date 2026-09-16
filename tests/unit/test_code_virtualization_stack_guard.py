@@ -52,6 +52,19 @@ def test_region_stack_argument_window_covers_direct_rsp_access() -> None:
     expect(region is not None and region.stack_argument_copy_bytes == _EXPANDED_STACK_ARGUMENT_OFFSET)
 
 
+def test_region_rejects_unbounded_rsp_indexed_indirect_call() -> None:
+    instructions = [
+        {
+            "addr": 0x1000,
+            "size": 4,
+            "type": "ucall",
+            "opcode": "call qword ptr [rsp+rax*8]",
+        },
+        {"addr": 0x1004, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    expect(extract_region(instructions) is None)
+
+
 def test_stack_balanced_accepts_matched_push_pop() -> None:
     items = [["push", 0, 64], ["pop", 0, 64], ["exit", 0x1000]]
     expect(not (_stack_balanced(items) is not True))

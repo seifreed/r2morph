@@ -54,6 +54,7 @@ _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
 _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 _NONRETURNING_SYSCALLS = frozenset({15, 60, 231})
 _CALL_SITE_ITEM_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"})
+_MIN_INDEXED_CALL_FIELDS = 5
 
 
 @dataclass
@@ -220,12 +221,21 @@ def _direct_stack_access(item: list[Any]) -> tuple[int, int, int] | None:
     return int(item[base_index]), int(item[displacement_index]), width
 
 
+def _has_unbounded_stack_indirect_call(item: list[Any]) -> bool:
+    """Reject an indexed call through ``rsp`` when its target range is unknown."""
+    if item[0] != "callmemidx" or len(item) < _MIN_INDEXED_CALL_FIELDS:
+        return False
+    return int(item[1]) == RSP_INDEX
+
+
 def _stack_argument_copy_bytes(
     items: list[list[Any]], stack_states: list[tuple[int, tuple[int, int] | None] | None]
-) -> int:
+) -> int | None:
     """Find the largest incoming stack range directly addressed by a region."""
     required_end = _STACK_ARGUMENT_START
     for index, item in enumerate(items):
+        if _has_unbounded_stack_indirect_call(item):
+            return None
         access = _direct_stack_access(item)
         state = stack_states[index]
         if access is None or state is None or access[0] != RSP_INDEX:
@@ -627,10 +637,10 @@ def extract_region(
                 item[0] = "vret"
     items = build.items
     call_site_item_of = dict(build.call_site_item_of)
-    stack_states = _stack_states(items)
-    if stack_states is None:
+    if (stack_states := _stack_states(items)) is None or (
+        stack_argument_copy_bytes := _stack_argument_copy_bytes(items, stack_states)
+    ) is None:
         return None
-    stack_argument_copy_bytes = _stack_argument_copy_bytes(items, stack_states)
     for index, item in enumerate(items):
         if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"):
             state = stack_states[index]
