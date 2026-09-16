@@ -577,8 +577,16 @@ jobs:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
           if report["failed_count"] != 0 or report["passed_count"] != 150:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
-          if len(report["category_summary"]) < 9:
-              raise SystemExit("VM semantic campaign category coverage is incomplete")
+          categories = report["category_summary"]
+          if len(categories) != 10:
+              raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
+          for category, summary in categories.items():
+              if (
+                  summary["fixture_count"] == 0
+                  or summary["passed_count"] != summary["fixture_count"]
+                  or summary["failed_count"] != 0
+              ):
+                  raise SystemExit(f"VM semantic campaign category failed: {category}: {summary}")
           PY
 
       - name: Upload VM semantic campaign evidence
