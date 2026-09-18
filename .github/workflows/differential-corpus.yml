@@ -1349,10 +1349,21 @@ jobs:
                           "symbols": symbols,
                           "link": link,
                       }
-                      for optimization, pie, symbols, link in variants
+                  for optimization, pie, symbols, link in variants
                   ],
                   "source_count": len({source_name(record) for record in selected}),
                   "compiler_count": len({record["compiler"] for record in selected}),
+                  "variant_count": len(
+                      {
+                          (
+                              record["optimization"],
+                              record["pie"],
+                              record["symbols"],
+                              record["link"],
+                          )
+                          for record in selected
+                      }
+                  ),
               },
               "records": selected,
           }
@@ -1364,6 +1375,8 @@ jobs:
               raise SystemExit("bounded public corpus selection lost a source family")
           if selected_manifest["selection"]["compiler_count"] < 2:
               raise SystemExit("bounded public corpus selection lost a compiler")
+          if selected_manifest["selection"]["variant_count"] != len(variants):
+              raise SystemExit("bounded public corpus selection lost a requested variant")
           print(f"bounded public corpus samples: {len(selected)}")
           PY
 

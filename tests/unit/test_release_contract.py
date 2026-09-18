@@ -1632,6 +1632,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and '"O0", "non-pie", "symbols", "dynamic"' in differential
         and '"O1", "non-pie", "symbols", "dynamic"' in differential
         and '"Os", "non-pie", "symbols", "dynamic"' in differential
+        and '"variant_count": len(' in differential
+        and 'selected_manifest["selection"]["variant_count"] != len(variants)' in differential
         and "public-compatibility-corpus" in differential
         and "aggregate-platform-differential:" in differential
         and "Aggregate platform differential evidence" in differential
