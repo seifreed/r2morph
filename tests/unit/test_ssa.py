@@ -187,6 +187,45 @@ class TestSSAConverter:
         expect(not (_EXPECTED_RESULT_4096_2 not in result))
         expect(not (_EXPECTED_RESULT_4101 not in result))
 
+    def test_convert_linear_cfg_resolves_zero_extending_register_alias(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [
+                    {"offset": 0x1000, "disasm": "mov eax, 1"},
+                    {"offset": 0x1002, "disasm": "mov ecx, rax"},
+                ],
+                "predecessors": [],
+                "successors": [],
+            },
+        }
+
+        result = converter.convert_to_ssa(blocks)
+
+        expect(result[0x1000].definitions["rax"] == result[0x1000].definitions["eax"])
+
+    def test_live_version_resolves_zero_extending_register_alias_across_blocks(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [
+                    {"offset": 0x1000, "disasm": "mov eax, 1"},
+                    {"offset": 0x1002, "disasm": "mov eax, 2"},
+                ],
+                "predecessors": [],
+                "successors": [0x1005],
+            },
+            0x1005: {
+                "instructions": [{"offset": 0x1005, "disasm": "mov ecx, rax"}],
+                "predecessors": [0x1000],
+                "successors": [],
+            },
+        }
+
+        ssa_blocks = converter.convert_to_ssa(blocks)
+        live_info = converter.compute_live_variables_ssa(ssa_blocks)
+
+        live_in = live_info[0x1005][0]
+        expect(SSAVariable("rax", 1) in live_in)
+
     def test_convert_with_branch(self, converter):
         blocks = {
             0x1000: {

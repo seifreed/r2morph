@@ -428,7 +428,12 @@ class LivenessAnalysis:
             List of live ranges
         """
         if register:
-            return self._live_ranges.get(register.name, [])
+            return [
+                live_range
+                for ranges in self._live_ranges.values()
+                for live_range in ranges
+                if not live_range.register.aliases().isdisjoint(register.aliases())
+            ]
         all_ranges = []
         for ranges in self._live_ranges.values():
             all_ranges.extend(ranges)

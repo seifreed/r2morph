@@ -16,7 +16,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from r2morph.analysis.call_effects import call_register_effects, return_register_effects
+from r2morph.analysis.dataflow_models import Register, register_definition_covers_use
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
+from r2morph.analysis.liveness_models import _X86_REGISTER_BIT_SIZES
 from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 
@@ -404,14 +406,17 @@ class SSAConverter:
         used_regs = self._extract_used_registers(disasm)
 
         for reg in used_regs:
-            if reg not in ssa_block.definitions:
+            variable = self._find_alias_definition(ssa_block.definitions, reg)
+            if variable is None:
                 version = self._get_current_version(reg)
-                ssa_block.definitions[reg] = SSAVariable(
+                variable = SSAVariable(
                     base_name=reg,
                     version=version,
                 )
+            ssa_block.definitions[reg] = variable
 
         for reg in defined_regs:
+            self._remove_overwritten_definitions(ssa_block.definitions, reg)
             version = self._get_new_version(reg)
             variable = SSAVariable(
                 base_name=reg,
@@ -420,6 +425,47 @@ class SSAConverter:
             )
             ssa_block.definitions[reg] = variable
             self._instruction_definitions.setdefault(ssa_block.address, {}).setdefault(reg, []).append(variable)
+
+    @staticmethod
+    def _register(register_name: str) -> Register:
+        """Build a register value with the width used by alias analysis."""
+        return Register(register_name, _X86_REGISTER_BIT_SIZES.get(register_name, 64))
+
+    @classmethod
+    def _definition_covers_use(cls, definition: str, use: str) -> bool:
+        """Return whether an SSA definition supplies a complete register use."""
+        return register_definition_covers_use(cls._register(definition), cls._register(use))
+
+    @classmethod
+    def _find_alias_definition(
+        cls,
+        definitions: dict[str, SSAVariable],
+        register_name: str,
+    ) -> SSAVariable | None:
+        """Find the most specific active definition that covers a register use."""
+        exact = definitions.get(register_name)
+        if exact is not None:
+            return exact
+
+        candidates = [
+            (name, variable)
+            for name, variable in definitions.items()
+            if cls._definition_covers_use(name, register_name)
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda item: cls._register(item[0]).size)[1]
+
+    @classmethod
+    def _remove_overwritten_definitions(
+        cls,
+        definitions: dict[str, SSAVariable],
+        definition_name: str,
+    ) -> None:
+        """Drop aliases fully replaced by a new register definition."""
+        overwritten = [name for name in definitions if cls._definition_covers_use(definition_name, name)]
+        for name in overwritten:
+            del definitions[name]
 
     def _extract_defined_registers(self, disasm: str) -> set[str]:
         """Extract registers that are defined (written to) in an instruction."""
@@ -626,19 +672,32 @@ class SSAConverter:
         for definition_block_addr, definition_block in ssa_blocks.items():
             if definition_block_addr not in dominators.get(block_addr, {block_addr}):
                 continue
-            variables = self._instruction_definitions.get(definition_block_addr, {}).get(register, [])
-            variables = [*variables]
-            final_variable = definition_block.definitions.get(register)
-            if final_variable is not None:
-                variables.append(final_variable)
-            for variable in variables:
-                if variable.definition_address is not None and variable.definition_address <= use_address:
+            instruction_definitions = self._instruction_definitions.get(definition_block_addr, {})
+            for definition_name, definition_variables in instruction_definitions.items():
+                if not self._definition_covers_use(definition_name, register):
+                    continue
+                for variable in definition_variables:
+                    if variable.definition_address is not None and variable.definition_address <= use_address:
+                        candidates.append(
+                            (
+                                len(dominators.get(definition_block_addr, set())),
+                                variable.definition_address,
+                                definition_block_addr,
+                                variable.version,
+                            )
+                        )
+            for definition_name, final_variable in definition_block.definitions.items():
+                if (
+                    self._definition_covers_use(definition_name, register)
+                    and final_variable.definition_address is not None
+                    and final_variable.definition_address <= use_address
+                ):
                     candidates.append(
                         (
                             len(dominators.get(definition_block_addr, set())),
-                            variable.definition_address,
+                            final_variable.definition_address,
                             definition_block_addr,
-                            variable.version,
+                            final_variable.version,
                         )
                     )
         if candidates:

@@ -459,7 +459,7 @@ class TestBuildSSAForm:
 
         ssa = analyzer.build_ssa_form()
 
-        expect(SSAVariable("rax", 0) in ssa[0x1010].live_in)
+        expect(SSAVariable("rax", 1) in ssa[0x1010].live_in)
 
     def test_ssa_converter_is_public_analysis_export(self):
         exported_s_s_a_converter = importlib.import_module("r2morph.analysis").SSAConverter

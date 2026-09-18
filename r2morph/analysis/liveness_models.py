@@ -97,7 +97,7 @@ class LiveRange:
 
     def overlaps(self, other: LiveRange) -> bool:
         """Check if this live range overlaps with another."""
-        if self.register.name != other.register.name:
+        if self.register.aliases().isdisjoint(other.register.aliases()):
             return False
         return self.start_address <= other.end_address and other.start_address <= self.end_address
 

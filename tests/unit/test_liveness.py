@@ -607,6 +607,17 @@ class TestLivenessAnalysis:
 
         expect(not analyzer._definition_kills_use(defined, use))
 
+    def test_live_ranges_query_includes_register_aliases(self):
+        """A parent-register query returns a range recorded for its alias."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+        analyzer._live_ranges = {
+            "eax": [LiveRange(Register("eax", 32), 0x1000, 0x1010)],
+        }
+
+        ranges = analyzer.get_live_ranges(Register("rax", 64))
+
+        expect(len(ranges) == 1)
+
     def test_sysv_call_uses_rax_for_variadic_vector_count(self):
         """SysV calls consume al/rax for the variadic vector-argument count."""
         analyzer = LivenessAnalysis(create_simple_cfg())
