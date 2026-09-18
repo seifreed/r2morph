@@ -5,6 +5,18 @@ concurrency:
   cancel-in-progress: false
 
 "on":
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/differential-corpus.yml"
+      - "docs/compatibility-corpus.md"
+      - "docs/support-matrix.json"
+      - "fixtures/dataset/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "r2morph/**"
+      - "scripts/**"
+      - "tests/**"
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:

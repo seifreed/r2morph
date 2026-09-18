@@ -142,7 +142,7 @@ passes with semantic or runtime-observable failures, and records
 runtime-observable failure reasons, omission/error reasons, and severities by
 pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
-The scheduled differential workflow validates this campaign summary before
+The scheduled and main-push differential workflow validates this campaign summary before
 uploading the artifact. It runs four deterministic fixture shards across three
 seeds in parallel, so the full 161-fixture repository corpus and all selected
 passes remain covered without a monolithic job timing out. Each shard records
@@ -155,7 +155,7 @@ GCC PIE `-O2`, and Clang `-O2`, generated argv input coverage,
 the PE/Mach-O and ARM/AArch64/x86 platform gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
-counts, including `total_continuous_evidence_blockers`; the scheduled campaign
+counts, including `total_continuous_evidence_blockers`; the scheduled or main-push campaign
 fails on unexpected official-target evidence blockers while retaining the
 declared platform blockers as release gaps. The same
 workflow also emits an

@@ -163,6 +163,17 @@ def test_compatibility_corpus_documents_differential_metrics() -> None:
     )
 
 
+def test_differential_workflow_runs_on_relevant_main_pushes() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+
+    expect(
+        "  push:\n    branches: [main]" in workflow
+        and '      - "r2morph/**"' in workflow
+        and '      - "scripts/**"' in workflow
+        and '      - "tests/**"' in workflow
+    )
+
+
 def test_compatibility_corpus_does_not_promote_historical_six_pass_campaign() -> None:
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 
