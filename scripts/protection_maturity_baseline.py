@@ -327,6 +327,38 @@ int main(int argc, char **argv) {
     return (result + (int)strlen(extended_anchor)) & 127;
 }
 """,
+    "generated_stack_strings": r"""
+#include <stddef.h>
+
+static volatile int observed_result;
+
+__attribute__((noinline)) static int consume_stack_string(const char *value) {
+    int result = value[0] == 's' ? 0 : 1;
+    observed_result = result;
+    return result;
+}
+
+__attribute__((noinline)) static int build_stack_string(void) {
+    const char *value = "stack-string-native";
+    int result = consume_stack_string(value);
+    return result + observed_result - observed_result;
+}
+
+int main(int argc, char **argv) {
+    (void)argc;
+    (void)argv;
+    return build_stack_string();
+}
+
+__asm__(
+    ".section .text.r2morph_stack_cave,\"ax\",@progbits\n"
+    ".balign 16\n"
+    ".rept 4096\n"
+    "nop\n"
+    ".endr\n"
+    ".previous\n"
+);
+""",
     "generated_cpp": r"""
 #include <cstdint>
 

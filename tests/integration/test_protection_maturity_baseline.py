@@ -86,6 +86,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_extended",
     "generated_lookup",
     "generated_memory",
+    "generated_stack_strings",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
 _EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 1) * len(
