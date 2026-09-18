@@ -69,6 +69,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             for emit in emitters:
                 if emit(item):
                     break
+            else:
+                raise ValueError(f"no region VM emitter for item kind {item[0]!r}")
         return bytes(byte ^ (self.checksum & 0xFF) for byte in self.plain)
 
     def _opcode(self, item: RegionItem, key: str | None = None) -> int:

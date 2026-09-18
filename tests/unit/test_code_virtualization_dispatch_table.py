@@ -12,6 +12,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import pytest
+
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import (
     build_region_scheme,
@@ -50,6 +52,12 @@ def test_region_encoder_serializes_syscall_item() -> None:
     scheme = RegionScheme({"syscall": (0,)}, 0, 0, tuple(range(16)), 0)
     encoded = RegionEncoder(scheme, [0], 0, 0).encode([("syscall",)])
     expect(len(encoded) == 1)
+
+
+def test_region_encoder_rejects_unencoded_item_kind() -> None:
+    scheme = RegionScheme({}, 0, 0, tuple(range(16)), 0)
+    with pytest.raises(ValueError, match="no region VM emitter for item kind 'unknown'"):
+        RegionEncoder(scheme, [0], 0, 0).encode([("unknown",)])
 
 
 def test_scheme_gp_slots_leave_a_hole_in_the_contiguous_context_array() -> None:
