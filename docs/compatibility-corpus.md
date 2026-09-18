@@ -21,10 +21,11 @@ or AArch64 parity.
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
 native ELF ARM64, native ELF ARM32, and native ELF x86 32-bit JUnit artifacts into
 `differential-platform-aggregate`. The aggregate is a completeness gate for
-those preview targets; it does not promote them to official parity. The x86
-32-bit targets currently have one instruction-substitution smoke case each,
-with ARM32 executing under QEMU; this is execution evidence only, not per-pass
-or full-format parity.
+those preview targets; it does not promote them to official parity. The ARM32,
+AArch64, and x86 32-bit targets currently have three smoke cases each for NOP
+insertion, instruction substitution, and register substitution; ARM32 and
+AArch64 execute under QEMU. This is execution evidence only, not per-pass or
+full-format parity.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static

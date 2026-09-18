@@ -15,9 +15,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   complete native, performance, composition, false-positive, analyzer, and
   affected-instruction evidence.
 - RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass
-  Linux ELF x86-64 campaign. PE/Mach-O and AArch64 still require broader
-  platform coverage, while ELF ARM32 and x86 32-bit currently have one smoke
-  case each and still lack per-pass evidence. Evidence map:
+  Linux ELF x86-64 campaign. PE/Mach-O, ARM32, x86 32-bit, and AArch64 have
+  three execution smoke cases each for the core passes, but still require
+  broader platform coverage and per-pass evidence. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [differential-corpus.yml](../.github/workflows/differential-corpus.yml)
   `continuous_evidence_blockers`, `continuous_evidence_blocker_totals`,
