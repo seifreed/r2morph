@@ -61,6 +61,7 @@ _IDA_RESULT_SUFFIX = ".function-count"
 _PF_EXECUTE = 1
 _MAX_X86_INSTRUCTION_BYTES = 15
 _TRITON_INSTRUCTION_BUDGET = 50_000
+_ANGR_DECOMPILER_FUNCTION_LIMIT = 16
 _ADVERSARIAL_ALL_PASS_NAMES = tuple(dict.fromkeys((*CORPUS_PASS_NAMES, *EXTENDED_MATURITY_PASS_NAMES)))
 
 
@@ -192,10 +193,47 @@ def _angr_metric(path: Path) -> dict[str, object]:
     started = time.perf_counter()
     project = angr.Project(str(path), auto_load_libs=False)
     cfg = project.analyses.CFGFast(normalize=True)
-    return {
+    functions = sorted(
+        (
+            function
+            for function in cfg.kb.functions.values()
+            if isinstance(getattr(function, "addr", None), int)
+            and not bool(getattr(function, "is_simprocedure", False))
+            and not bool(getattr(function, "is_plt", False))
+        ),
+        key=lambda function: function.addr,
+    )[:_ANGR_DECOMPILER_FUNCTION_LIMIT]
+    decompiler_entrypoints = 0
+    decompiler_lines = 0
+    decompiler_bytes = 0
+    decompiler_failures = 0
+    for function in functions:
+        try:
+            result = project.analyses.Decompiler(function, cfg=cfg)
+            text = getattr(getattr(result, "codegen", None), "text", "")
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            decompiler_failures += 1
+            continue
+        if not isinstance(text, str) or not text.strip():
+            continue
+        decompiler_entrypoints += 1
+        decompiler_lines += sum(bool(line.strip()) for line in text.splitlines())
+        decompiler_bytes += len(text.encode("utf-8"))
+    metric: dict[str, object] = {
         "status": "completed",
         "functions": len(cfg.kb.functions),
         "duration_seconds": time.perf_counter() - started,
+        "decompiler_status": "completed" if decompiler_entrypoints else "unavailable",
+        "decompiler_entrypoints": decompiler_entrypoints,
+        "decompiler_lines": decompiler_lines,
+        "decompiler_bytes": decompiler_bytes,
+        "decompiler_function_limit": _ANGR_DECOMPILER_FUNCTION_LIMIT,
+        "decompiler_failures": decompiler_failures,
+    }
+    if not decompiler_entrypoints:
+        metric["decompiler_reason"] = "angr produced no decompiler output"
+    return {
+        **metric,
     }
 
 

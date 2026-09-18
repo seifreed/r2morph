@@ -77,13 +77,13 @@ availability slot in
 (`SHA-256 d73a447dd8ee846d63641f2f0fbc5110346e50fbf137d55cdd0d644238e7553f`):
 `angr`, Unicorn, radare2, objdump, and the custom analyzer completed, while
 Binary Ninja, IDA, Ghidra, and Triton are explicit local availability gaps.
-The focused local refresh at `c554c46d` repeats the
+The focused local refresh at `59898697` repeats the
 `elf_vm_fppackedidxnb_x86_64` CodeVirtualization fixture with `angr` installed:
 `angr`, Unicorn, radare2, objdump, and the custom analyzer completed on both
 original and protected binaries, and the protected image preserved exit code 6.
 The bounded record is
-[`protection-adversarial-angr-local-2026-09-18-c554c46d.json`](protection-adversarial-angr-local-2026-09-18-c554c46d.json)
-(`SHA-256 387a0afbef91db1e80aadd1787cb92a4b4b36953c2edc0789b31f3bb5db83909`).
+[`protection-adversarial-angr-local-2026-09-18-59898697.json`](protection-adversarial-angr-local-2026-09-18-59898697.json)
+(`SHA-256 0c573f1e157ef4af716c08ec03db64de4f0a42912567b2808cb762c921d5495f`).
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
 bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas

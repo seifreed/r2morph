@@ -239,6 +239,21 @@ def test_adversarial_benchmark_runs_triton_when_available() -> None:
     )
 
 
+def test_adversarial_benchmark_records_angr_decompiler_output_when_available() -> None:
+    result = _measure_tool("angr", _FIXTURE, _FIXTURE)
+
+    if result["status"] == "unavailable":
+        expect(result.get("reason"))
+        return
+    expect(
+        result["status"] == "completed"
+        and result["original"]["decompiler_status"] == "completed"
+        and result["protected"]["decompiler_status"] == "completed"
+        and result["original"]["decompiler_entrypoints"] > 0
+        and result["protected"]["decompiler_lines"] > 0
+    )
+
+
 def test_adversarial_benchmark_reports_radare2_decompiler_recovery() -> None:
     result = _measure_tool("radare2", _FIXTURE, _FIXTURE)
 

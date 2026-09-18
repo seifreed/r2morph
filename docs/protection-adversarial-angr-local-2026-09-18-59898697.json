@@ -41,9 +41,19 @@
       "completed": 1,
       "duration_pairs": 1,
       "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_failures_pairs": 1,
+      "metric_decompiler_function_limit_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
       "metric_functions_pairs": 1,
       "runs": 1,
-      "total_duration_seconds": 0.08858450097613968,
+      "total_decompiler_bytes_delta": 13708,
+      "total_decompiler_entrypoints_delta": 15,
+      "total_decompiler_failures_delta": 0,
+      "total_decompiler_function_limit_delta": 0,
+      "total_decompiler_lines_delta": 454,
+      "total_duration_seconds": 0.7204561260296032,
       "total_functions_delta": 61,
       "unavailable": 0
     },
@@ -140,7 +150,7 @@
       "duration_pairs": 1,
       "errors": 0,
       "runs": 1,
-      "total_duration_seconds": 0.04922349998378195,
+      "total_duration_seconds": 0.05724345799535513,
       "unavailable": 0
     }
   },
@@ -188,13 +198,25 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.008651166979689151,
+        "decompiler_bytes": 158,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 16,
+        "decompiler_lines": 7,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.02568808401701972,
         "functions": 2,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.07993333399645053,
+        "decompiler_bytes": 13866,
+        "decompiler_entrypoints": 16,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 16,
+        "decompiler_lines": 461,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.6947680420125835,
         "functions": 63,
         "status": "completed"
       },
@@ -210,13 +232,13 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.0008300829795189202,
+        "duration_seconds": 0.006941957981325686,
         "exit_code": 6,
         "status": "completed"
       },
       "pass_name": "CodeVirtualization",
       "protected": {
-        "duration_seconds": 0.04839341700426303,
+        "duration_seconds": 0.05030150001402944,
         "exit_code": 6,
         "status": "completed"
       },

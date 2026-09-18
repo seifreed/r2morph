@@ -176,7 +176,7 @@ effects across nine seed-derived inputs.
 
 The current local adversarial analyzer fixture records
 5 completed analyzer slots and 4 unavailable analyzer slots with reasons in
-[`docs/protection-adversarial-angr-local-2026-09-18-c554c46d.json`](docs/protection-adversarial-angr-local-2026-09-18-c554c46d.json).
+[`docs/protection-adversarial-angr-local-2026-09-18-59898697.json`](docs/protection-adversarial-angr-local-2026-09-18-59898697.json).
 Binary Ninja is an explicit analyzer slot; the current local fixture records
 `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The VM review packet still has `human_signoff: not-attested` and
