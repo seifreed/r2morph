@@ -67,7 +67,7 @@ _RELATIVE_JUMP_SIZE = 5
 _MAX_STRINGS_PER_BINARY = 32
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
-_X86_64_ARCHITECTURES = frozenset({"x86_64", "x64", "amd64"})
+_X86_64_ARCHITECTURES = frozenset({"x86_64", "x86-64", "x64", "amd64"})
 _SUPPORTED_APPLY_ENCODINGS = frozenset(
     {
         EncodingScheme.PLAIN,
