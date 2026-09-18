@@ -121,19 +121,14 @@ class DefUseAnalyzer:
 
         block = self.cfg.blocks.get(block_addr)
         if block:
-            max_search_distance = max(100, block.size * 2)
-
-            for prev_addr in range(address - 1, max(block.address, address - max_search_distance), -1):
-                for insn in block.instructions:
-                    if insn.get("offset", 0) == prev_addr:
-                        for defn in self._dataflow.get_block_definitions(block):
-                            if (
-                                defn.register
-                                and register_definition_covers_use(defn.register, reg)
-                                and defn not in definitions
-                            ):
-                                definitions.append(defn)
-                        break
+            for defn in self._dataflow.get_block_definitions(block):
+                if (
+                    defn.register
+                    and defn.address < address
+                    and register_definition_covers_use(defn.register, reg)
+                    and defn not in definitions
+                ):
+                    definitions.append(defn)
 
         return definitions
 

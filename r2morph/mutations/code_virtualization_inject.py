@@ -59,6 +59,7 @@ _P_FILESZ = 0x20
 _P_MEMSZ = 0x28
 _P_ALIGN = 0x30
 _PT_LOAD = 1
+_PT_INTERP = 3
 _PT_PHDR = 6
 _PF_X = 0x1
 _PF_R = 0x4
@@ -215,6 +216,12 @@ def _parse_loads(table: bytes, e_phnum: int) -> list[_Load]:
     return loads
 
 
+def _has_dynamic_loader_relocation_hazard(table: bytes, e_phnum: int) -> bool:
+    """Whether relocating headers would leave an interpreter image un-loadable."""
+    types = {struct.unpack_from("<I", table, index * _PHDR_ENTRY_SIZE + _P_TYPE)[0] for index in range(e_phnum)}
+    return _PT_PHDR in types and _PT_INTERP in types
+
+
 def _exec_anchor(binary: Any, loads: list[_Load]) -> tuple[int, int] | None:
     """``(on-disk p_vaddr, r2 vaddr)`` of the first executable ``PT_LOAD``.
 
@@ -286,6 +293,10 @@ def _plan_placement(binary: Any, *, allow_inline: bool = True) -> _Placement | N
             table=table,
             inline_load_index=inline_load.index,
         )
+
+    if _has_dynamic_loader_relocation_hazard(table, e_phnum):
+        logger.debug("Refusing fragmented injection: PT_PHDR relocation is not loader-safe for PT_INTERP images")
+        return None
 
     segment_vaddr = _align_up(max(load.vaddr + load.memsz for load in loads), _SEGMENT_ALIGN)
     image_load_bias = _image_load_bias(loads)

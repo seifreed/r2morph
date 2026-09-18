@@ -347,6 +347,27 @@ class TestDefUseAnalyzer:
 
         expect(any(definition.address == _ALIAS_DEFINITION_ADDRESS for definition in definitions))
 
+    def test_defuse_handles_large_linear_block_without_address_scan(self):
+        start = 0x7000
+        instructions = [{"offset": start + index * 4, "type": "mov", "disasm": "mov eax, 1"} for index in range(300)]
+        instructions.append({"offset": start + 1200, "type": "mov", "disasm": "mov ecx, eax"})
+        cfg = ControlFlowGraph(function_address=start, function_name="large_linear")
+        cfg.add_block(
+            BasicBlock(
+                address=start,
+                size=1204,
+                instructions=instructions,
+                successors=[],
+                predecessors=[],
+                block_type=BlockType.RETURN,
+            )
+        )
+
+        analyzer = DefUseAnalyzer(cfg)
+        analyzer.analyze()
+
+        expect(len(analyzer.get_all_use_webs()) > 0)
+
     def test_find_uninitialized_uses(self):
         """Test find_uninitialized_uses method."""
         cfg = create_simple_cfg()

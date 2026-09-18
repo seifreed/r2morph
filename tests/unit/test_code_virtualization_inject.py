@@ -66,8 +66,10 @@ _FIXTURE_LARGE_WRITE = _DATASET / "elf_vm_arith_x86_64"
 _E_PHOFF = 0x20
 _E_PHNUM = 0x38
 _PT_NULL = 0
+_PT_INTERP = 3
 _PF_X = 0x1
 _PF_R = 0x4
+_PF_W = 0x2
 # Alignment a linker gives PT_PHDR: the table only needs natural 8-byte alignment.
 _PHDR_TABLE_ALIGN = 8
 
@@ -137,7 +139,7 @@ def _phdr_entry(*values: int) -> bytes:
     return struct.pack(PHDR_FORMAT, p_type, p_flags, p_offset, p_vaddr, p_vaddr, p_size, p_size, p_align)
 
 
-def _synthetic_phdr_table(e_phnum: int) -> bytes:
+def _synthetic_phdr_table(e_phnum: int, include_interp: bool = False) -> bytes:
     """PT_PHDR plus one executable PT_LOAD, padded out with PT_NULL entries."""
     table_size = e_phnum * _PHDR_ENTRY_SIZE
     code_offset = _align_up(ELF64_HEADER_SIZE + table_size, _SEGMENT_ALIGN)
@@ -147,6 +149,18 @@ def _synthetic_phdr_table(e_phnum: int) -> bytes:
         _phdr_entry(PT_PHDR, _PF_R, ELF64_HEADER_SIZE, table_vaddr, table_size, _PHDR_TABLE_ALIGN),
         _phdr_entry(PT_LOAD, _PF_R | _PF_X, 0, _SYNTHETIC_IMAGE_BASE, image_size, _SEGMENT_ALIGN),
     ]
+    if include_interp:
+        entries.append(
+            _phdr_entry(
+                PT_LOAD,
+                _PF_R | _PF_W,
+                code_offset + len(_SYNTHETIC_CODE) - 1,
+                _SYNTHETIC_IMAGE_BASE + 0x2000,
+                1,
+                _SEGMENT_ALIGN,
+            )
+        )
+        entries.append(_phdr_entry(_PT_INTERP, _PF_R, code_offset, _SYNTHETIC_IMAGE_BASE + code_offset, 1, 1))
     entries += [_phdr_entry(_PT_NULL, 0, 0, 0, 0, 0)] * (e_phnum - len(entries))
     return b"".join(entries)
 
@@ -160,9 +174,14 @@ def _elf64_header(entry: int, e_phnum: int, e_phentsize: int) -> bytes:
     return bytes(header)
 
 
-def _write_synthetic_elf(path: Path, e_phnum: int = _SYNTHETIC_PHNUM, e_phentsize: int = _PHDR_ENTRY_SIZE) -> Path:
+def _write_synthetic_elf(
+    path: Path,
+    e_phnum: int = _SYNTHETIC_PHNUM,
+    e_phentsize: int = _PHDR_ENTRY_SIZE,
+    include_interp: bool = False,
+) -> Path:
     """Hand-build a minimal ELF64 carrying a PT_PHDR and an executable PT_LOAD."""
-    table = _synthetic_phdr_table(e_phnum)
+    table = _synthetic_phdr_table(e_phnum, include_interp)
     code_offset = _align_up(ELF64_HEADER_SIZE + len(table), _SEGMENT_ALIGN)
     image = bytearray(code_offset + len(_SYNTHETIC_CODE))
     image[0:ELF64_HEADER_SIZE] = _elf64_header(_SYNTHETIC_IMAGE_BASE + code_offset, e_phnum, e_phentsize)
@@ -447,6 +466,14 @@ def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path
     target = _write_synthetic_elf(tmp_path / "wide_entries", e_phentsize=_PHDR_ENTRY_SIZE + 8)
 
     expect(not (_inject_into(target, _BLOB) is not None))
+
+
+def test_inject_blob_refuses_loader_unsafe_dynamic_header_relocation(tmp_path: Path) -> None:
+    target = _write_synthetic_elf(tmp_path / "dynamic", e_phnum=4, include_interp=True)
+    target.write_bytes(target.read_bytes() + b"trailing data")
+    before = target.read_bytes()
+
+    expect(_inject_into(target, _BLOB) is None and target.read_bytes() == before)
 
 
 def test_inject_blob_refuses_program_header_count_at_the_growth_cap(tmp_path: Path) -> None:
