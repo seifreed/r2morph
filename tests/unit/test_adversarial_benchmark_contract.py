@@ -7,6 +7,7 @@ from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
     _analyzer_effectiveness_by_pass,
+    _binary_ninja_decompiler_metrics,
     _campaign_summary,
     _is_binary_ninja_license_error,
     _measure_tool,
@@ -59,6 +60,8 @@ _EXPECTED_GENERIC_MUTATION_COUNT = 2
 _EXPECTED_DECOMPILER_COMPLETION_PERCENT = 100.0
 _EXPECTED_DECOMPILER_LINE_DELTA = 3
 _EXPECTED_FUNCTION_COUNT_DELTA = 1
+_EXPECTED_BINARY_NINJA_DECOMPILER_ENTRYPOINTS = 2
+_EXPECTED_BINARY_NINJA_DECOMPILER_LINES = 6
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -93,6 +96,27 @@ def test_adversarial_benchmark_separates_capability_gaps_from_adapter_errors() -
 
 def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:
     expect(_is_binary_ninja_license_error(RuntimeError("License is not valid")))
+
+
+def test_binary_ninja_decompiler_metrics_bound_hlil_output() -> None:
+    class FakeFunction:
+        def __init__(self, start: int, hlil: str) -> None:
+            self.start = start
+            self.hlil = hlil
+
+    metrics = _binary_ninja_decompiler_metrics(
+        (
+            FakeFunction(0x20, "int later(void) {\n  return 2;\n}"),
+            FakeFunction(0x10, "int first(void) {\n  return 1;\n}"),
+        )
+    )
+
+    expect(
+        metrics["decompiler_status"] == "completed"
+        and metrics["decompiler_entrypoints"] == _EXPECTED_BINARY_NINJA_DECOMPILER_ENTRYPOINTS
+        and metrics["decompiler_lines"] == _EXPECTED_BINARY_NINJA_DECOMPILER_LINES
+        and metrics["decompiler_failures"] == 0
+    )
 
 
 def test_adversarial_benchmark_report_preserves_every_tool_slot() -> None:

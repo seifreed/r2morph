@@ -243,16 +243,50 @@ def _binary_ninja_metric(path: Path) -> dict[str, object]:
     try:
         with binaryninja.load(str(path), update_analysis=False) as view:
             view.update_analysis_and_wait()
-            functions = len(view.functions)
+            functions = tuple(view.functions)
+            decompiler = _binary_ninja_decompiler_metrics(functions)
     except RuntimeError as error:
         if _is_binary_ninja_license_error(error):
             raise _ToolCapabilityUnavailableError("analyzer license is unavailable") from error
         raise
     return {
         "status": "completed",
-        "functions": functions,
+        "functions": len(functions),
+        **decompiler,
         "duration_seconds": time.perf_counter() - started,
     }
+
+
+def _binary_ninja_decompiler_metrics(functions: Sequence[Any]) -> dict[str, object]:
+    """Collect bounded HLIL output so Binary Ninja is comparable to other analyzers."""
+    entrypoints = 0
+    lines = 0
+    byte_count = 0
+    failures = 0
+    ordered_functions = sorted(functions, key=lambda function: getattr(function, "start", 0))
+    for function in ordered_functions[:_ANGR_DECOMPILER_FUNCTION_LIMIT]:
+        try:
+            high_level_il = function.hlil
+            text = str(high_level_il)
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            failures += 1
+            continue
+        if not text.strip():
+            continue
+        entrypoints += 1
+        lines += sum(bool(line.strip()) for line in text.splitlines())
+        byte_count += len(text.encode("utf-8"))
+    metric: dict[str, object] = {
+        "decompiler_status": "completed" if entrypoints else "unavailable",
+        "decompiler_entrypoints": entrypoints,
+        "decompiler_lines": lines,
+        "decompiler_bytes": byte_count,
+        "decompiler_function_limit": _ANGR_DECOMPILER_FUNCTION_LIMIT,
+        "decompiler_failures": failures,
+    }
+    if not entrypoints:
+        metric["decompiler_reason"] = "Binary Ninja produced no HLIL output"
+    return metric
 
 
 def _unicorn_metric(path: Path) -> dict[str, object]:
