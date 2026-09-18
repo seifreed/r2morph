@@ -1635,6 +1635,15 @@ def test_release_contract_validates_corpus_workflows() -> None:
     expect(_check_corpus_workflows() is None)
 
 
+def test_differential_merge_step_closes_python_heredoc() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    merge_step = workflow.split("      - name: Merge and validate campaign evidence\n", 1)[1].split(
+        "      - name: Build per-pass maturity evidence document\n", 1
+    )[0]
+
+    expect(merge_step.rstrip().endswith("          PY"))
+
+
 def test_continuous_fuzz_workflow_runs_against_installed_wheel() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
 
