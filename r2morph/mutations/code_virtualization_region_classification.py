@@ -125,7 +125,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _parse_riprel_operand,
 )
 from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
-from r2morph.mutations.code_virtualization_region_string import decode_string_instruction
+from r2morph.mutations.code_virtualization_region_string import decode_string_instruction, decode_xlat_instruction
 
 _INSTRUCTION_PART_COUNT = 2
 
@@ -480,6 +480,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     result = _first_item(
         (
             lambda: decode_string_instruction(text),
+            lambda: decode_xlat_instruction(text),
             lambda: _decode_fp_convert(text),
             lambda: _decode_mxcsr_memory(text, address, size),
             lambda: _decode_fp_movmskb(text),

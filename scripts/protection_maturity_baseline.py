@@ -251,6 +251,21 @@ __attribute__((noinline)) static int copy_bytes(void) {
 
 int main(void) { return copy_bytes() == 9 ? 42 : 1; }
 """,
+    "generated_xlat": r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static int table_lookup(unsigned int value) {
+    static const uint8_t table[256] = {
+        [0] = 3, [1] = 5, [7] = 11, [42] = 73, [255] = 127,
+    };
+    unsigned long index = value & 255u;
+    const uint8_t *base = table;
+    __asm__ volatile("xlatb" : "+a"(index) : "b"(base) : "memory");
+    return (int)(uint8_t)index;
+}
+
+int main(void) { return table_lookup(42) == 73 ? 42 : 1; }
+""",
     "generated_abi": r"""
 #include <stdarg.h>
 #include <stdint.h>

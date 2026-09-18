@@ -62,6 +62,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_bt_memory,
             self._emit_div_memory,
             self._emit_string,
+            self._emit_xlat,
             self._emit_misc,
             self._emit_calls,
             self._emit_branches,
@@ -73,6 +74,12 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             else:
                 raise ValueError(f"no region VM emitter for item kind {item[0]!r}")
         return bytes(byte ^ (self.checksum & 0xFF) for byte in self.plain)
+
+    def _emit_xlat(self, item: RegionItem) -> bool:
+        if item[0] != "xlat":
+            return False
+        self._opcode(item)
+        return True
 
     def _opcode(self, item: RegionItem, key: str | None = None) -> int:
         position = bytecode_position_mask(len(self.plain))

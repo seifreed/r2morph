@@ -22,6 +22,7 @@ _FIXED_SIZE_GROUPS = {
         "vbinop",
         "vbinopsynth",
         "vcmpsynth",
+        "xlat",
         "fsave",
         "frestore",
         "vzeroupper",

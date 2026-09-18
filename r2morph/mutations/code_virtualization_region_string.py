@@ -34,6 +34,12 @@ def decode_string_instruction(text: str) -> list[Any] | None:
     return ["string", operation, _WIDTHS[suffix], prefix]
 
 
+def decode_xlat_instruction(text: str) -> list[str] | None:
+    """Return the VM item for the implicit ``xlatb`` table lookup."""
+    mnemonic = text.strip().lower().split(None, 1)[0] if text.strip() else ""
+    return ["xlat"] if mnemonic in {"xlat", "xlatb"} else None
+
+
 def _string_width_suffix(width: int) -> str:
     suffixes = {8: "b", 16: "w", 32: "d", 64: "q"}
     try:

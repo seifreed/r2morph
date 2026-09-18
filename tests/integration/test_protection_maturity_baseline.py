@@ -91,6 +91,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_recursive",
     "generated_stack_strings",
     "generated_string",
+    "generated_xlat",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
 _EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 1) * len(
@@ -827,6 +828,12 @@ def test_generated_string_source_preserves_implicit_memory_shape() -> None:
     source = _GENERATED_CORPUS_SOURCES["generated_string"]
 
     expect('"rep movsb\\n"' in source and '"memory"' in source)
+
+
+def test_generated_xlat_source_preserves_implicit_table_lookup_shape() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_xlat"]
+
+    expect('"xlatb"' in source and '"b"(base)' in source)
 
 
 def test_generated_corpus_declares_compiler_and_pie_variants() -> None:

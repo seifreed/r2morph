@@ -75,6 +75,8 @@ def writes_register(item: tuple[Any, ...]) -> frozenset[int]:
             written.add(_RCX_SLOT)
         if item[1] == "lods":
             written.add(_RAX_SLOT)
+    elif kind == "xlat":
+        written = {_RAX_SLOT}
     elif kind in ("op", "opmba", "opsynth"):
         operation: VirtualizedOp = item[1]
         written = {operation.dst_index}

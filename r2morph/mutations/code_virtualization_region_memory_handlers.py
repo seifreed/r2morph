@@ -91,6 +91,24 @@ def _memory_store_slot_asm(width: int, address: str = "[r10]") -> str:
     return f"  mov rax, qword ptr [rsp+r8*8]\n  mov {value[0]} ptr {address}, {value[1]}\n"
 
 
+def _xlat_handler_asm(slot: tuple[int, ...]) -> str:
+    """Perform ``xlatb`` with the virtual RAX and RBX context slots."""
+    rax_offset = slot[0] * 8
+    rbx_offset = slot[3] * 8
+    return (
+        f"  mov r10, qword ptr [rsp+{rbx_offset}]\n"
+        f"  movzx r11d, byte ptr [rsp+{rax_offset}]\n"
+        "  lea r10, [r10+r11]\n"
+        "  movzx r11d, byte ptr [r10]\n"
+        f"  mov rax, qword ptr [rsp+{rax_offset}]\n"
+        "  and rax, -256\n"
+        "  or rax, r11\n"
+        f"  mov qword ptr [rsp+{rax_offset}], rax\n"
+        "  add rsi, 1\n"
+        "  jmp vm_dispatch\n"
+    )
+
+
 def _partial_result_store_asm(width: int) -> str:
     if width == _QWORD_WIDTH_BITS:
         return "  mov qword ptr [rsp+r8*8], r10\n"

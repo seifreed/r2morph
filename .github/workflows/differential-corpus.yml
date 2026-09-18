@@ -107,7 +107,7 @@ jobs:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
-              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings")
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += ["generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2"]
@@ -940,12 +940,12 @@ jobs:
           summary = report["campaign_summary"]
           expected_generated = sorted(
               f"{source}_{profile}"
-              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings")
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += ["generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2"]
           expected_generated.sort()
-          if summary["generated_fixture_count"] != 112 or summary["generated_fixture_names"] != expected_generated:
+          if summary["generated_fixture_count"] != 136 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")
           if summary["passes_without_applied_runs"]:
               raise SystemExit(

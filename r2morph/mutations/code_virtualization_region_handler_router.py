@@ -84,6 +84,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _tls_memory_handler_asm,
     _xchg_memory_handler_asm,
     _xchg_memory_indexed_handler_asm,
+    _xlat_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_microops import (
     _frestore_handler_asm,
@@ -110,7 +111,10 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vstorerip_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_push import _pop_memory_handler_asm, _push_memory_handler_asm
-from r2morph.mutations.code_virtualization_region_string import direction_control_handler_asm, string_handler_asm
+from r2morph.mutations.code_virtualization_region_string import (
+    direction_control_handler_asm,
+    string_handler_asm,
+)
 
 _VRET_CLEANUP_INDEX = 2
 
@@ -454,6 +458,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
 
     def _memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         flag, arithmetic, compare, _shift, address = variants
+        if key == "xlat":
+            return _xlat_handler_asm(self.context.slot)
         config = MemoryOperationConfig(
             key,
             self.context.key,

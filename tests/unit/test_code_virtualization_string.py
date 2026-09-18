@@ -5,8 +5,13 @@ from __future__ import annotations
 import pytest
 
 from r2morph.mutations.code_virtualization_region_classification import _classify
+from r2morph.mutations.code_virtualization_region_handler_router import HandlerBodyRouter, HandlerContext
 from r2morph.mutations.code_virtualization_region_models import _op_key
-from r2morph.mutations.code_virtualization_region_string import direction_control_handler_asm, string_handler_asm
+from r2morph.mutations.code_virtualization_region_string import (
+    decode_xlat_instruction,
+    direction_control_handler_asm,
+    string_handler_asm,
+)
 from tests.utils.assertions import expect
 
 
@@ -17,6 +22,20 @@ def test_classify_rep_movsb_returns_string_item() -> None:
 
 def test_classify_direction_control_returns_virtual_flag_item() -> None:
     expect(_classify({"type": "other", "opcode": "cld"}) == ["cld"])
+
+
+def test_classify_xlat_returns_implicit_memory_item() -> None:
+    expect(_classify({"type": "other", "opcode": "xlatb"}) == ["xlat"])
+
+
+def test_decode_xlat_rejects_other_mnemonics() -> None:
+    expect(decode_xlat_instruction("mov al, byte ptr [rbx+rax]") is None)
+
+
+def test_xlat_handler_uses_virtual_rax_and_rbx_slots() -> None:
+    context = HandlerContext("key", "key_qword", "key_dword", 0, "", "", "", 0, tuple(range(16)))
+    assembly = HandlerBodyRouter(context).body("xlat", 0, (0, 0, 0, 0, 0))
+    expect("mov r10, qword ptr [rsp+24]" in assembly and "mov qword ptr [rsp+0], rax" in assembly)
 
 
 def test_classify_vector_movsd_does_not_become_string_item() -> None:
