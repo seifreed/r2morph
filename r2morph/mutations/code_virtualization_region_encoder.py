@@ -61,6 +61,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_gp_memory,
             self._emit_bt_memory,
             self._emit_div_memory,
+            self._emit_string,
             self._emit_misc,
             self._emit_calls,
             self._emit_branches,
@@ -204,6 +205,12 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._mem(self._opcode(item), (self.slot_of[0], None, target - self.bytecode_base))
         else:
             return False
+        return True
+
+    def _emit_string(self, item: RegionItem) -> bool:
+        if item[0] != "string":
+            return False
+        self._opcode(item)
         return True
 
     def _emit_integer(self, item: RegionItem) -> bool:
@@ -702,6 +709,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             "clc",
             "stc",
             "cmc",
+            "cld",
+            "std",
         ):
             self._opcode(item)
         else:

@@ -78,6 +78,7 @@ class Region:
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
+    "string": (1, 2, 3),
     "lea": (4,),
     "learip": (3,),
     "leaidx": (6,),
@@ -324,6 +325,8 @@ _IDENTITY_KEYS = {
     "clc",
     "stc",
     "cmc",
+    "cld",
+    "std",
     "nop",
     "enter_inner",
     "inner_exit",

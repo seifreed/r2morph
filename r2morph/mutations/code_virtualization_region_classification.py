@@ -125,6 +125,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _parse_riprel_operand,
 )
 from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
+from r2morph.mutations.code_virtualization_region_string import decode_string_instruction
 
 _INSTRUCTION_PART_COUNT = 2
 
@@ -141,6 +142,8 @@ _IDENTITY_ITEMS = {
     "clc": "clc",
     "stc": "stc",
     "cmc": "cmc",
+    "cld": "cld",
+    "std": "std",
 }
 
 
@@ -476,6 +479,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     size = insn.get("size", 0)
     result = _first_item(
         (
+            lambda: decode_string_instruction(text),
             lambda: _decode_fp_convert(text),
             lambda: _decode_mxcsr_memory(text, address, size),
             lambda: _decode_fp_movmskb(text),

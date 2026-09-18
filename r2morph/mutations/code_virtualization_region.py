@@ -553,6 +553,8 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     def fixed_needed_in(i: int) -> bool | None:
         kind = items[i][0]
+        if kind == "string" and items[i][1] in {"cmps", "scas"}:
+            return False
         if kind in ("jcc", "exit", "vret", "fsave", "lahf", "sahf", "setcc", "cmov"):
             return True  # lahf reads flags; sahf leaves OF live while replacing the other status flags
         if kind in _FLAG_KILLER_KINDS:

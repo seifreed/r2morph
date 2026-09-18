@@ -110,6 +110,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vstorerip_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_push import _pop_memory_handler_asm, _push_memory_handler_asm
+from r2morph.mutations.code_virtualization_region_string import direction_control_handler_asm, string_handler_asm
 
 _VRET_CLEANUP_INDEX = 2
 
@@ -142,6 +143,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
     def body(self, handler_key: str, index: int, variants: tuple[int, int, int, int, int]) -> str:
         flag, arithmetic, compare, shift, address = variants
         routes = (
+            self._strings,
             self._calls,
             self._branches,
             self._microop_stack,
@@ -164,6 +166,11 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             if body is not None:
                 return body
         raise ValueError(f"No VM handler is registered for {handler_key!r}")
+
+    def _strings(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
+        if key.startswith("string_"):
+            return string_handler_asm(key, self.context.slot, self.context.flags_offset)
+        return None
 
     def _fp_immediate(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
         if key.startswith("fppackedimm_"):
@@ -256,6 +263,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             return (_lahf_handler_asm if key == "lahf" else _sahf_handler_asm)(self.context.slot[0])
         if key in ("clc", "stc", "cmc"):
             return _carry_control_handler_asm(key)
+        if key in ("cld", "std"):
+            return direction_control_handler_asm(key, self.context.flags_offset)
         return None
 
     def _branches(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:

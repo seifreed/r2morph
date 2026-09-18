@@ -8,6 +8,9 @@ from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, Virtualiz
 
 _RAX_SLOT = GP_REGISTERS.index("rax")
 _RDX_SLOT = GP_REGISTERS.index("rdx")
+_RCX_SLOT = GP_REGISTERS.index("rcx")
+_RSI_SLOT = GP_REGISTERS.index("rsi")
+_RDI_SLOT = GP_REGISTERS.index("rdi")
 _CALL_KINDS = frozenset({"call", "vcall", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "syscall"})
 _BOUNDARY_KINDS = _CALL_KINDS | {"jmp", "jcc", "exit", "vret"}
 _DIRECT_WRITE_KINDS = frozenset(
@@ -65,18 +68,27 @@ _SPECIAL_WRITES = {
 def writes_register(item: tuple[Any, ...]) -> frozenset[int]:
     """Return the architectural GP slots overwritten by one VM item."""
     kind = item[0]
-    if kind in ("op", "opmba", "opsynth"):
+    written: set[int]
+    if kind == "string":
+        written = {_RSI_SLOT, _RDI_SLOT}
+        if item[3] != "none":
+            written.add(_RCX_SLOT)
+        if item[1] == "lods":
+            written.add(_RAX_SLOT)
+    elif kind in ("op", "opmba", "opsynth"):
         operation: VirtualizedOp = item[1]
-        return frozenset({operation.dst_index})
-    if kind in _DIRECT_WRITE_KINDS:
-        return frozenset({int(item[1])})
-    if kind.startswith("atomic"):
-        return frozenset({int(item[2])}) if item[1] == "xadd" else frozenset()
-    if kind in _THIRD_FIELD_WRITE_KINDS:
-        return frozenset({int(item[2])})
-    if kind in _FIFTH_FIELD_WRITE_KINDS:
-        return frozenset({int(item[4])})
-    return _SPECIAL_WRITES.get(kind, frozenset())
+        written = {operation.dst_index}
+    elif kind in _DIRECT_WRITE_KINDS:
+        written = {int(item[1])}
+    elif kind.startswith("atomic"):
+        written = {int(item[2])} if item[1] == "xadd" else set()
+    elif kind in _THIRD_FIELD_WRITE_KINDS:
+        written = {int(item[2])}
+    elif kind in _FIFTH_FIELD_WRITE_KINDS:
+        written = {int(item[4])}
+    else:
+        written = set(_SPECIAL_WRITES.get(kind, frozenset()))
+    return frozenset(written)
 
 
 def _successors(items: list[list[Any]], index: int) -> tuple[int, ...]:
