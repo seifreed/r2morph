@@ -10,6 +10,8 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+from r2morph.mutations.nop_insertion import NopInsertionPass
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -78,4 +80,52 @@ def test_elf_arm32_instruction_substitution_preserves_emulated_exit_code(tmp_pat
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "ELF ARM32 instruction substitution changed emulated execution",
+    )
+
+
+def test_elf_arm32_nop_insertion_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
+    if shutil.which("qemu-arm") is None:
+        raise RuntimeError("qemu-arm is required for the ELF ARM32 differential fixture")
+
+    binary_path = _build_arm32_elf(tmp_path)
+    original = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 1337}).apply(binary)
+
+    mutated = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF ARM32 NOP insertion changed emulated execution",
+    )
+
+
+def test_elf_arm32_register_substitution_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
+    if shutil.which("qemu-arm") is None:
+        raise RuntimeError("qemu-arm is required for the ELF ARM32 differential fixture")
+
+    binary_path = _build_arm32_elf(tmp_path)
+    original = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = RegisterSubstitutionPass(
+            config={"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        ).apply(binary)
+
+    mutated = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF ARM32 register substitution changed emulated execution",
     )

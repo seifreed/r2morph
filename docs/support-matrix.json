@@ -31,6 +31,10 @@
       ],
       "evidence_cells": [
         {
+          "format": "ELF",
+          "architecture": "ARM"
+        },
+        {
           "format": "Mach-O",
           "architecture": "AArch64"
         },
@@ -44,6 +48,7 @@
         "tests/integration",
         "tests/integration/test_nop_insertion_pe_real.py",
         "tests/integration/test_mutation_nop_insertion_arm64.py",
+        "tests/integration/test_elf_arm32_native.py",
         "tests/integration/test_mutations_x86_compiled_binary.py",
         "tests/integration/test_protection_maturity_baseline.py"
       ]
@@ -59,6 +64,10 @@
       ],
       "evidence_cells": [
         {
+          "format": "ELF",
+          "architecture": "ARM"
+        },
+        {
           "format": "Mach-O",
           "architecture": "AArch64"
         },
@@ -71,6 +80,7 @@
         "tests/product_smoke",
         "tests/integration",
         "tests/integration/test_mutation_nop_insertion_arm64.py",
+        "tests/integration/test_elf_arm32_native.py",
         "tests/integration/test_mutation_passes_end_to_end_more2.py"
       ]
     },
@@ -85,6 +95,10 @@
       ],
       "evidence_cells": [
         {
+          "format": "ELF",
+          "architecture": "ARM"
+        },
+        {
           "format": "Mach-O",
           "architecture": "AArch64"
         },
@@ -97,6 +111,7 @@
         "tests/product_smoke",
         "tests/integration",
         "tests/integration/test_mutation_register_substitution_arm64.py",
+        "tests/integration/test_elf_arm32_native.py",
         "tests/integration/test_nop_insertion_pe_real.py"
       ]
     },
@@ -824,14 +839,14 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 29,
-      "not_supported_cells": 235,
+      "evidenced_cells": 32,
+      "not_supported_cells": 232,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 7,
-      "non_official_not_supported_cells": 235,
-      "non_official_evidence_percent": 2.89,
+      "non_official_evidenced_cells": 10,
+      "non_official_not_supported_cells": 232,
+      "non_official_evidence_percent": 4.13,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -843,9 +858,9 @@
         {
           "format": "ELF",
           "architecture": "ARM",
-          "evidenced_cells": 0,
-          "not_supported_cells": 22,
-          "evidence_percent": 0.0
+          "evidenced_cells": 3,
+          "not_supported_cells": 19,
+          "evidence_percent": 13.64
         },
         {
           "format": "ELF",
@@ -925,6 +940,13 @@
       "parity_gap_evidence": {
         "preview_evidence_targets": [
           {
+            "format": "ELF",
+            "architecture": "ARM",
+            "evidenced_cells": 3,
+            "not_supported_cells": 19,
+            "evidence_percent": 13.64
+          },
+          {
             "format": "Mach-O",
             "architecture": "AArch64",
             "evidenced_cells": 3,
@@ -950,13 +972,6 @@
           {
             "format": "ELF",
             "architecture": "AArch64",
-            "evidenced_cells": 0,
-            "not_supported_cells": 22,
-            "evidence_percent": 0.0
-          },
-          {
-            "format": "ELF",
-            "architecture": "ARM",
             "evidenced_cells": 0,
             "not_supported_cells": 22,
             "evidence_percent": 0.0
@@ -1017,9 +1032,9 @@
           {
             "format": "ELF",
             "architecture": "ARM",
-            "evidenced_cells": 0,
-            "not_supported_cells": 22,
-            "evidence_percent": 0.0
+            "evidenced_cells": 3,
+            "not_supported_cells": 19,
+            "evidence_percent": 13.64
           },
           {
             "format": "ELF",
@@ -1098,7 +1113,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 235,
+        "non_official_missing_evidence_cells": 232,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -1978,6 +1993,7 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutations_x86_compiled_binary.py",
           "tests/integration/test_protection_maturity_baseline.py"
         ]
@@ -2000,8 +2016,16 @@
         "pass": "nop",
         "format": "ELF",
         "architecture": "ARM",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
+        ]
       },
       {
         "pass": "nop",
@@ -2013,6 +2037,7 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutations_x86_compiled_binary.py",
           "tests/integration/test_protection_maturity_baseline.py"
         ]
@@ -2048,6 +2073,7 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutations_x86_compiled_binary.py",
           "tests/integration/test_protection_maturity_baseline.py"
         ]
@@ -2069,6 +2095,7 @@
           "tests/integration",
           "tests/integration/test_nop_insertion_pe_real.py",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutations_x86_compiled_binary.py",
           "tests/integration/test_protection_maturity_baseline.py"
         ]
@@ -2089,6 +2116,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutation_passes_end_to_end_more2.py"
         ]
       },
@@ -2110,8 +2138,14 @@
         "pass": "substitute",
         "format": "ELF",
         "architecture": "ARM",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+        ]
       },
       {
         "pass": "substitute",
@@ -2122,6 +2156,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutation_passes_end_to_end_more2.py"
         ]
       },
@@ -2169,6 +2204,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_mutation_passes_end_to_end_more2.py"
         ]
       },
@@ -2188,6 +2224,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
@@ -2209,8 +2246,14 @@
         "pass": "register",
         "format": "ELF",
         "architecture": "ARM",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "register",
@@ -2221,6 +2264,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
@@ -2268,6 +2312,7 @@
           "tests/product_smoke",
           "tests/integration",
           "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
