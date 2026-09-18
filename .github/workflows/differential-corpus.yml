@@ -2,7 +2,7 @@ name: Differential Corpus By Pass
 
 concurrency:
   group: differential-corpus-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 "on":
   push:

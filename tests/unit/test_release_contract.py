@@ -1745,6 +1745,12 @@ def test_evidence_workflow_artifacts_are_rerun_safe() -> None:
     )
 
 
+def test_differential_workflow_cancels_stale_campaigns() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+
+    expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: true" in workflow)
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 
