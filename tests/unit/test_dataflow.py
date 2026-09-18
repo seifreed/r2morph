@@ -289,6 +289,13 @@ class TestRegister:
         expect(not ("ax" not in alias_names))
         expect(not ("al" not in alias_names))
 
+    def test_register_aliases_x86_vector_widths(self):
+        """Test XMM and YMM registers share their vector alias family."""
+        aliases = Register("ymm0", 256).aliases()
+
+        expect({register.name for register in aliases} == {"xmm0", "ymm0"})
+        expect({register.size for register in aliases} == {128, 256})
+
     def test_register_aliases_32bit(self):
         """Test 32-bit register aliases."""
         reg = Register("ebx", 32)

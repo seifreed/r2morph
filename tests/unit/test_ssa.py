@@ -353,6 +353,19 @@ class TestSSAConverter:
 
         expect(result == variable)
 
+    def test_get_ssa_variable_at_resolves_vector_register_alias(self, converter):
+        variable = SSAVariable(base_name="ymm0", version=1)
+        blocks = {
+            0x1000: SSABlock(
+                address=0x1000,
+                definitions={"ymm0": variable},
+            )
+        }
+
+        result = converter.get_ssa_variable_at("xmm0", 0x1000, blocks)
+
+        expect(result == variable)
+
     def test_get_ssa_variable_at_not_found(self, converter):
         blocks = {0x1000: SSABlock(address=0x1000)}
 

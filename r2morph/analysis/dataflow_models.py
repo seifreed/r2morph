@@ -40,6 +40,10 @@ class Register:
             if name in alias_set:
                 return {Register(a, self._x86_alias_size(a)) for a in alias_set}
 
+        for alias_set in _X86_VECTOR_ALIAS_FAMILIES:
+            if name in alias_set:
+                return {Register(a, self._x86_alias_size(a)) for a in alias_set}
+
         for alias_set in _ARM64_ALIAS_FAMILIES:
             if name in alias_set:
                 return {Register(a, 64 if a.startswith("x") or a in ("sp", "lr") else 32) for a in alias_set}
@@ -53,6 +57,8 @@ class Register:
     @staticmethod
     def _x86_alias_size(alias: str) -> int:
         """Bit width of an x86 sub-register name within its alias family."""
+        if alias.startswith(("xmm", "ymm")):
+            return 128 if alias.startswith("xmm") else 256
         if alias.startswith("r") and "d" not in alias and "w" not in alias and "b" not in alias:
             return 64
         if "d" in alias or alias.startswith("e"):
@@ -218,6 +224,8 @@ _X86_ALIAS_FAMILIES = (
     {"r14", "r14d", "r14w", "r14b"},
     {"r15", "r15d", "r15w", "r15b"},
 )
+
+_X86_VECTOR_ALIAS_FAMILIES = tuple({f"xmm{index}", f"ymm{index}"} for index in range(16))
 
 _ARM64_ALIAS_FAMILIES = (*tuple({f"x{n}", f"w{n}"} for n in range(31)), {"sp", "wsp"}, {"lr", "x30"})
 

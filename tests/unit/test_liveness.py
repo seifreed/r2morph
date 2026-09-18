@@ -607,6 +607,18 @@ class TestLivenessAnalysis:
 
         expect(not analyzer._definition_kills_use(defined, use))
 
+    def test_vector_definition_kills_narrower_vector_use(self):
+        """A YMM definition supplies the complete XMM value."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        expect(analyzer._definition_kills_use(Register("ymm0", 256), Register("xmm0", 128)))
+
+    def test_vector_definition_preserves_wider_vector_use(self):
+        """An XMM definition does not supply the upper YMM lanes."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        expect(not analyzer._definition_kills_use(Register("xmm0", 128), Register("ymm0", 256)))
+
     def test_live_ranges_query_includes_register_aliases(self):
         """A parent-register query returns a range recorded for its alias."""
         analyzer = LivenessAnalysis(create_simple_cfg())
