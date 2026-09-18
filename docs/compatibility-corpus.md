@@ -83,7 +83,7 @@ The focused local refresh at `59898697` repeats the
 original and protected binaries, and the protected image preserved exit code 6.
 The bounded record is
 [`protection-adversarial-angr-local-2026-09-18-59898697.json`](protection-adversarial-angr-local-2026-09-18-59898697.json)
-(`SHA-256 0c573f1e157ef4af716c08ec03db64de4f0a42912567b2808cb762c921d5495f`).
+(`SHA-256 14b0f716a5f8d32d23eb2bc3f7c8bd9f556b558138d77f962f24496b55d9a085`).
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
 bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas
