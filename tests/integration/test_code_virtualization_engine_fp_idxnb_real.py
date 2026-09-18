@@ -79,7 +79,6 @@ _start:
     movq $1, %rcx
     movups values(,%rcx,8), %xmm0
     movups %xmm0, output(,%rcx,8)
-    cpuid
     movl $60, %eax
     movl $1, %edi
     syscall

@@ -77,7 +77,8 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         )
         and report["capability_summary"]["memory"]["status"] == "campaign-measured"
         and report["capability_summary"]["unwinding-exceptions"]["status"] == "not-covered-by-fixture-campaign"
-        and report["capability_summary"]["ssa-liveness"]["status"] == "not-covered-by-fixture-campaign"
+        and report["capability_summary"]["ssa-liveness"]["status"] == "not-covered-by-fixture-campaign",
+        f"vm semantic campaign report: {report}",
     )
 
 
