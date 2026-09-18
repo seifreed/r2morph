@@ -26,15 +26,15 @@ def _build_arm32_elf(tmp_path: Path) -> Path:
         ".global _start\n"
         ".type _start,%function\n"
         "_start:\n"
-        "    mov r1, #0\n"
-        "    add r1, r1, #1\n"
-        "    mov r0, #41\n"
-        "    add r0, r0, #1\n"
-        "    .rept 12\n"
-        "    nop\n"
-        "    .endr\n"
+        "    bl compute\n"
         "    mov r7, #1\n"
         "    svc #0\n"
+        "compute:\n"
+        "    mov r2, #40\n"
+        "    mov r2, r2\n"
+        "    add r2, r2, #2\n"
+        "    mov r0, r2\n"
+        "    bx lr\n"
         ".size _start, .-_start\n",
         encoding="ascii",
     )

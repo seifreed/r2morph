@@ -85,6 +85,15 @@ def test_find_substitution_candidates_with_return_pins_abi_result_register() -> 
     expect(return_value_pins(instructions) >= {"eax", "rax"})
 
 
+def test_find_substitution_candidates_with_arm32_return_pins_r0() -> None:
+    instructions = [{"disasm": "mov r2, 42"}, {"disasm": "mov r0, r2"}, {"disasm": "bx lr"}]
+    candidates = find_substitution_candidates(instructions, "arm")
+
+    expect("r0" not in {original for original, _ in candidates})
+    expect("r2" in {original for original, _ in candidates})
+    expect("r0" in return_value_pins(instructions))
+
+
 def test_abi_live_registers_empty_when_no_transfer_present() -> None:
     expect(abi_live_registers([{"disasm": "mov eax, ebx"}, {"disasm": "int3"}]) == set())
 

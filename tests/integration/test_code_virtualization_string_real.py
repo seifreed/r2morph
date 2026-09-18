@@ -80,5 +80,6 @@ def test_virtualized_rep_movsb_preserves_native_result(tmp_path: Path) -> None:
             transformed_result.returncode,
         )
         == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE),
-        f"rep movsb changed the result: {stats=}",
+        f"rep movsb changed the result: original={original_result.returncode}, "
+        f"transformed={transformed_result.returncode}, {stats=}",
     )

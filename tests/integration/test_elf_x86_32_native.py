@@ -26,10 +26,17 @@ def _build_x86_32_elf(tmp_path: Path) -> Path:
         ".globl _start\n"
         ".type _start,@function\n"
         "_start:\n"
-        "    movl $40, %ebx\n"
-        "    addl $2, %ebx\n"
+        "    call compute\n"
+        "    movl %eax, %ebx\n"
         "    movl $1, %eax\n"
         "    int $0x80\n"
+        ".type compute,@function\n"
+        "compute:\n"
+        "    movl $40, %ecx\n"
+        "    xchgl %ecx, %ecx\n"
+        "    addl $2, %ecx\n"
+        "    movl %ecx, %eax\n"
+        "    ret\n"
         ".size _start, .-_start\n",
         encoding="ascii",
     )

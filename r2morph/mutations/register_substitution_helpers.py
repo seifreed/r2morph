@@ -321,6 +321,8 @@ def _build_canonical_registers() -> dict[str, str]:
     for num in range(31):
         mapping[f"x{num}"] = f"x{num}"
         mapping[f"w{num}"] = f"x{num}"
+    for num in range(16):
+        mapping[f"r{num}"] = f"r{num}"
     return mapping
 
 
@@ -578,11 +580,19 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
 
 def return_value_pins(instructions: list[dict[str, Any]]) -> set[str]:
     """Pin ABI return-register families in functions that contain a return."""
-    if not any(insn.get("disasm", "").lower().split()[:1] in (["ret"], ["retn"]) for insn in instructions):
+    disasms = [str(insn.get("disasm", "")).lower().strip() for insn in instructions]
+    has_return = any(disasm.split()[:1] in (["ret"], ["retn"]) for disasm in disasms)
+    has_arm32_return = any(
+        disasm.startswith(("bx lr", "mov pc, lr")) or (disasm.startswith("pop ") and " pc" in disasm)
+        for disasm in disasms
+    )
+    if not has_return and not has_arm32_return:
         return set()
     pinned: set[str] = set()
     for base in _RETURN_REGISTERS:
         pinned |= _REGISTER_FAMILY.get(base, {base})
+    if has_arm32_return:
+        pinned.add("r0")
     return pinned
 
 
