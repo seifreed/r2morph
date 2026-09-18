@@ -91,6 +91,26 @@ def test_call_instruction_is_external_abi_boundary() -> None:
     expect(pass_obj._has_external_abi_boundary(call_instruction))
 
 
+def test_implicit_memory_instruction_is_rejected_until_operands_are_modeled() -> None:
+    pass_obj = DataFlowMutationPass()
+    string_instruction = {"addr": 0x2004, "next_addr": 0, "type": "string", "disasm": "rep movsb"}
+
+    expect(pass_obj._has_implicit_memory_boundary(string_instruction))
+
+
+def test_function_with_implicit_memory_instruction_has_no_substitution_candidates() -> None:
+    class _ImplicitMemoryBinary:
+        def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+            return [
+                {"offset": 0x1000, "size": 3, "disasm": "mov rsi, rdi"},
+                {"offset": 0x1003, "size": 2, "type": "string", "disasm": "rep movsb"},
+            ]
+
+    candidates = DataFlowMutationPass()._analyze_candidates(_ImplicitMemoryBinary(), {"addr": 0x1000}, "x86_64")
+
+    expect(candidates == [])
+
+
 def test_syscall_number_register_stays_live_until_syscall() -> None:
     """The Linux x86-64 syscall ABI consumes eax/rax at the syscall site."""
     pass_obj = DataFlowMutationPass()

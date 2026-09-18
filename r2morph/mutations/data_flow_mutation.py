@@ -25,6 +25,17 @@ from r2morph.mutations.data_flow_mutation_helpers import (
 
 logger = logging.getLogger(__name__)
 
+_IMPLICIT_MEMORY_INSTRUCTION_PREFIXES = (
+    "cmps",
+    "ins",
+    "lods",
+    "movs",
+    "outs",
+    "scas",
+    "stos",
+    "xlat",
+)
+
 
 class DataFlowMutationPass(MutationPass):
     """
@@ -102,7 +113,10 @@ class DataFlowMutationPass(MutationPass):
                 next_address = next_instruction.get("addr", next_instruction.get("offset")) if next_instruction else 0
                 instruction["next_addr"] = next_address if isinstance(next_address, int) else 0
             instructions.append(instruction)
-        if any(self._has_external_abi_boundary(instruction) for instruction in instructions):
+        if any(
+            self._has_external_abi_boundary(instruction) or self._has_implicit_memory_boundary(instruction)
+            for instruction in instructions
+        ):
             return []
         live_in = self._analyze_function_liveness(instructions) if self.use_liveness else {}
         return self._find_safe_substitution_candidates(instructions, live_in, arch)
@@ -117,6 +131,15 @@ class DataFlowMutationPass(MutationPass):
             "syscall",
             "sysenter",
         }
+
+    @staticmethod
+    def _has_implicit_memory_boundary(instruction: dict[str, Any]) -> bool:
+        """Reject string instructions until their implicit operands are modeled."""
+        instruction_type = str(instruction.get("type", "")).lower()
+        tokens = str(instruction.get("disasm", "")).lower().split()
+        return instruction_type in {"string", "xlat"} or any(
+            token.startswith(_IMPLICIT_MEMORY_INSTRUCTION_PREFIXES) for token in tokens
+        )
 
     def _apply_substitution(
         self,

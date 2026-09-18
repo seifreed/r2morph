@@ -21,11 +21,13 @@ _SOURCE = r"""
 __attribute__((noinline)) static int copy_bytes(void) {
     uint8_t source[8] = {1, 2, 3, 4, 5, 6, 7, 8};
     uint8_t destination[8] = {0};
+    uint8_t *source_ptr = source;
+    uint8_t *destination_ptr = destination;
     size_t count = sizeof(source);
     __asm__ volatile(
         "cld\n"
         "rep movsb\n"
-        : "+S"(source), "+D"(destination), "+c"(count)
+        : "+S"(source_ptr), "+D"(destination_ptr), "+c"(count)
         :
         : "memory");
     return destination[0] + destination[7] + (int)count;

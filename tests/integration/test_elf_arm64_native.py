@@ -18,20 +18,38 @@ def _build_arm64_elf(tmp_path: Path) -> Path:
     else:
         compiler = shutil.which("cc") or shutil.which("clang")
     if compiler is None:
-        raise RuntimeError("an AArch64 C compiler is required for the ELF AArch64 differential fixture")
-    source = tmp_path / "arm64_elf.c"
+        raise RuntimeError("an AArch64 assembler compiler is required for the ELF AArch64 differential fixture")
+    source = tmp_path / "arm64_exit.S"
     source.write_text(
-        "__attribute__((noinline)) int transform(int value) {\n"
-        "    volatile int cell = value;\n"
-        '    __asm__ volatile("mov w8, #0" ::: "w8");\n'
-        "    return cell + 5;\n"
-        "}\n"
-        "int main(void) { return transform(37) == 42 ? 0 : 1; }\n"
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov w8, #93\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov w1, #37\n"
+        "    mov w1, w1\n"
+        "    add w1, w1, #5\n"
+        "    mov w0, w1\n"
+        "    ret\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
     )
     binary_path = tmp_path / "arm64_elf"
-    command = [compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)]
-    if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
-        command.insert(1, "-static")
+    command = [
+        compiler,
+        "-nostdlib",
+        "-static",
+        "-Wl,-e,_start",
+        "-x",
+        "assembler",
+        "-o",
+        str(binary_path),
+        str(source),
+    ]
     run_command(command, check=True, text=True)
     return binary_path
 
@@ -73,7 +91,7 @@ def test_elf_arm64_nop_insertion_preserves_native_exit_code(tmp_path: Path) -> N
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
-        == (0, "", ""),
+        == (42, "", ""),
         "native ELF ARM64 NOP insertion changed execution",
     )
 
@@ -95,7 +113,7 @@ def test_elf_arm64_instruction_substitution_preserves_native_exit_code(tmp_path:
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
-        == (0, "", ""),
+        == (42, "", ""),
         "native ELF ARM64 instruction substitution changed execution",
     )
 
@@ -118,7 +136,7 @@ def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Pa
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
-        == (0, "", ""),
+        == (42, "", ""),
         "native ELF ARM64 register substitution changed execution: "
         f"original={original.returncode, original.stdout, original.stderr!r}; "
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
