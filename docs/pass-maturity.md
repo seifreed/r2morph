@@ -201,7 +201,10 @@ artifact, and fails on any missing, non-virtualized, or divergent fixture. The
 artifact also reports each declared capability explicitly: memory,
 calls, ABI/varargs, TLS/signals, threads, and FP/SIMD are campaign-measured;
 exception/unwinding and SSA/liveness remain marked as not covered by this
-fixture campaign. Fixture runs still do not prove arbitrary inputs,
+fixture campaign. The aggregate also validates the real exception/unwinding
+and static-dataflow regression contracts per shard and publishes them as
+`regression-covered`; that is stronger than an untested gap but does not prove
+fixture-campaign coverage. Fixture runs still do not prove arbitrary inputs,
 unsupported ABIs, or cross-platform parity.
 The current local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)

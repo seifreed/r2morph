@@ -380,6 +380,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import xml.etree.ElementTree as ET
           from pathlib import Path
 
           report = json.loads(Path("differential-fuzz-smoke.json").read_text(encoding="utf-8"))
@@ -754,10 +755,11 @@ jobs:
               minimum_cases: int,
               allow_skipped: bool = False,
               allowed_skip_text: str | None = None,
-          ) -> None:
+          ) -> list[Path]:
               import xml.etree.ElementTree as ET
 
-              for path in require_files(pattern, expected_shards):
+              paths = require_files(pattern, expected_shards)
+              for path in paths:
                   suite = ET.parse(path).getroot()
                   if len(suite.findall(".//testcase")) < minimum_cases:
                       raise SystemExit(f"evidence file has too few cases: {path}")
@@ -774,6 +776,7 @@ jobs:
                       ]
                       if unexpected:
                           raise SystemExit(f"evidence file has unexpected skipped cases: {path}: {unexpected}")
+              return paths
 
           validate_junit_reports(
               "cross-format-reports",
@@ -781,8 +784,67 @@ jobs:
               allow_skipped=True,
               allowed_skip_text="Mach-O arm64 execution requires macOS",
           )
-          validate_junit_reports("vm-semantic-reports", 55)
+          vm_semantic_reports = validate_junit_reports("vm-semantic-reports", 55)
           validate_junit_reports("composition-reports", 39)
+
+          required_vm_contracts = {
+              "memory": ("test_memory_width_fixture_virtualization_preserves_exit_code",),
+              "direct-calls": ("test_virtualized_direct_call_to_separate_function_preserves_exit_code",),
+              "indirect-calls": (
+                  "test_virtualized_local_indirect_call_preserves_exit_code",
+                  "test_virtualized_memory_indirect_call_preserves_external_result",
+              ),
+              "abi-varargs": (
+                  "test_virtualized_elf_preserves_integer_varargs_stack_abi",
+                  "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi",
+              ),
+              "unwinding-exceptions": (
+                  "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
+                  "test_code_virtualization_propagates_exception_through_virtualized_native_call",
+              ),
+              "tls-signals": (
+                  "test_virtualized_elf_preserves_fs_relative_access",
+                  "test_virtualized_async_signal_inside_vm_preserves_exit_code",
+              ),
+              "threads": ("test_virtualized_threads_tls_and_signal_preserve_exit_code",),
+              "fp-simd": (
+                  "test_virtualized_vex_nondestructive_packed_add_preserves_result",
+                  "test_simd_integer_fixture_virtualization_preserves_exit_code",
+                  "test_fpcmp_memory_fixture_virtualization_preserves_exit_code",
+              ),
+              "ssa-liveness": ("test_static_dataflow",),
+          }
+          capability_contracts = {
+              capability: {"status": "regression-covered", "tests": list(test_names)}
+              for capability, test_names in required_vm_contracts.items()
+          }
+          for report_path in vm_semantic_reports:
+              names = {
+                  case.attrib.get("name", "")
+                  for case in ET.parse(report_path).getroot().findall(".//testcase")
+              }
+              missing = [
+                  test_name
+                  for test_names in required_vm_contracts.values()
+                  for test_name in test_names
+                  if not any(name.startswith(test_name) for name in names)
+              ]
+              if missing:
+                  raise SystemExit(f"VM semantic regression contract drift in {report_path}: {missing}")
+          Path("vm-semantic-contracts-merged.json").write_text(
+              json.dumps(
+                  {
+                      "schema_version": 1,
+                      "measurement": "vm-semantic-regression-contracts",
+                      "shard_count": len(vm_semantic_reports),
+                      "capabilities": capability_contracts,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
 
           expected_fuzz_targets = {
               "binary_parsers": 64,
@@ -976,6 +1038,7 @@ jobs:
             differential-corpus-merged.json
             extended-maturity-merged.json
             maturity-evidence-merged.json
+            vm-semantic-contracts-merged.json
 
   cross-platform-differential:
     name: Cross-platform differential (macOS ARM64)

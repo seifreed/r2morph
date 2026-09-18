@@ -110,3 +110,16 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
         and 'row.get("unsupported_functions") != 0' in content
         and '"termination_signal" not in row["original"]' in content
     )
+
+
+def test_vm_semantic_workflow_publishes_regression_capability_contracts() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
+    content = workflow.read_text(encoding="utf-8")
+
+    expect(
+        "required_vm_contracts" in content
+        and '"unwinding-exceptions"' in content
+        and '"ssa-liveness"' in content
+        and '"regression-covered"' in content
+        and "vm-semantic-contracts-merged.json" in content
+    )
