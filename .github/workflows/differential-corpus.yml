@@ -612,9 +612,14 @@ jobs:
               or not isinstance(row.get("functions_virtualized"), int)
               or row["functions_virtualized"] < 1
               or row.get("unsupported_functions") != 0
+              or row.get("observables_equal") is not True
+              or not isinstance(row.get("original"), dict)
+              or not isinstance(row.get("mutated"), dict)
+              or not isinstance(row["original"].get("created_files"), dict)
+              or not isinstance(row["mutated"].get("created_files"), dict)
               for row in fixture_results
           ):
-              raise SystemExit("VM semantic fixture detail contains an unproven virtualization result")
+              raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
           if len(categories) != 10:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
@@ -923,6 +928,11 @@ jobs:
                   raise SystemExit(f"per-pass maturity evidence fields drift for {pass_name}")
           if report["summary"]["blocker_totals"]["performance"]:
               raise SystemExit("per-pass maturity evidence has incomplete performance rows")
+          for field in ("behavioral_false_positive", "affected_instructions", "composition"):
+              if report["summary"]["blocker_totals"][field]:
+                  raise SystemExit(f"per-pass maturity evidence has incomplete {field} rows")
+          if report["summary"]["blocker_totals"]["decompiler"] == 0:
+              raise SystemExit("per-pass maturity evidence lost the explicit decompiler evidence state")
           PY
 
       - name: Upload merged differential evidence
@@ -1451,6 +1461,14 @@ jobs:
           python scripts/platform_evidence.py \
             --root platform-evidence \
             --output platform-evidence-summary.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("platform-evidence-summary.json").read_text(encoding="utf-8"))
+          if report["summary"]["status"] != "complete":
+              raise SystemExit(f"platform differential evidence is incomplete: {report['summary']}")
+          PY
 
       - name: Upload aggregated platform evidence
         uses: actions/upload-artifact@v7

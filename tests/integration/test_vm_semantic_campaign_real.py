@@ -1,10 +1,28 @@
 from pathlib import Path
 
-from scripts.vm_semantic_campaign import _load_coverage, merge_campaign_reports, run_campaign
+from scripts.vm_semantic_campaign import _execution_observation, _load_coverage, merge_campaign_reports, run_campaign
 from tests.utils.assertions import expect
 
 _MERGED_SEED_COUNT = 2
 _MERGED_FIXTURE_COUNT = 2
+
+
+def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
+    program = tmp_path / "file_writer"
+    program.write_text("#!/bin/sh\nprintf created > result.txt\n", encoding="utf-8")
+    program.chmod(0o700)
+
+    observation = _execution_observation(program, 5.0, tmp_path / "run")
+
+    expect(
+        observation["created_files"]
+        == {
+            "result.txt": {
+                "sha256": "406effb1e9c59672c66a598c2b21e331b23b16c54024e96d6df3e7c173549791",
+                "size": 7,
+            }
+        }
+    )
 
 
 def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
@@ -26,6 +44,9 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         and report["failures"] == []
         and report["fixture_results"][0]["functions_virtualized"] >= 1
         and report["fixture_results"][0]["unsupported_functions"] == 0
+        and report["fixture_results"][0]["observables_equal"] is True
+        and report["fixture_results"][0]["original"]["created_files"] == {}
+        and report["fixture_results"][0]["mutated"]["created_files"] == {}
         and all(
             report["category_summary"][category]["passed_count"]
             == report["category_summary"][category]["fixture_count"]

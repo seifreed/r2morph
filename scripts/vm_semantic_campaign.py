@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from r2morph.adapters.process import ProcessTimeoutError, run_process
+from r2morph.adapters.process import ProcessContext, ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
@@ -20,6 +20,8 @@ _MAX_FIXTURES = 256
 _DEFAULT_TIMEOUT_SECONDS = 5.0
 _DEFAULT_SEEDS = (20260916,)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
+_MAX_CREATED_FILES = 256
+_HASH_CHUNK_BYTES = 1024 * 1024
 
 
 def _load_coverage(path: Path) -> dict[str, set[str]]:
@@ -42,26 +44,51 @@ def _fixture_categories(coverage: Mapping[str, set[str]], fixture: str) -> list[
     return categories or ["uncategorized"]
 
 
-def _execution_observation(path: Path, timeout: float) -> dict[str, Any]:
-    try:
-        completed = run_process([path], timeout=timeout)
-    except ProcessTimeoutError:
-        return {"status": "timeout"}
-    except OSError as exc:
-        return {"status": "error", "error_type": type(exc).__name__}
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(_HASH_CHUNK_BYTES), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _created_file_observations(directory: Path) -> dict[str, dict[str, int | str]]:
+    files = sorted(path for path in directory.rglob("*") if path.is_file())
+    if len(files) > _MAX_CREATED_FILES:
+        raise ValueError(f"execution created more than {_MAX_CREATED_FILES} files")
     return {
-        "status": "completed",
-        "returncode": completed.returncode,
-        "stdout_size": len(completed.stdout),
-        "stdout_sha256": hashlib.sha256(completed.stdout).hexdigest(),
-        "stderr_size": len(completed.stderr),
-        "stderr_sha256": hashlib.sha256(completed.stderr).hexdigest(),
+        path.relative_to(directory).as_posix(): {
+            "sha256": _sha256_file(path),
+            "size": path.stat().st_size,
+        }
+        for path in files
     }
 
 
-def _run_fixture(source: Path, destination: Path, seed: int, timeout: float) -> dict[str, Any]:
+def _execution_observation(path: Path, timeout: float, workdir: Path) -> dict[str, Any]:
+    workdir.mkdir(parents=True, exist_ok=True)
+    try:
+        completed = run_process([path.resolve()], timeout=timeout, context=ProcessContext(cwd=workdir))
+    except ProcessTimeoutError:
+        result: dict[str, Any] = {"status": "timeout"}
+    except OSError as exc:
+        result = {"status": "error", "error_type": type(exc).__name__}
+    else:
+        result = {
+            "status": "completed",
+            "returncode": completed.returncode,
+            "stdout_size": len(completed.stdout),
+            "stdout_sha256": hashlib.sha256(completed.stdout).hexdigest(),
+            "stderr_size": len(completed.stderr),
+            "stderr_sha256": hashlib.sha256(completed.stderr).hexdigest(),
+        }
+    result["created_files"] = _created_file_observations(workdir)
+    return result
+
+
+def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
-    original = _execution_observation(source, timeout)
+    original = _execution_observation(source, timeout, execution_root / "original")
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
@@ -79,7 +106,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float) -> 
             "unsupported_functions": result.get("unsupported_functions_total", 0),
             "capabilities": result.get("unsupported_function_capabilities", {}),
         }
-    mutated = _execution_observation(destination, timeout)
+    mutated = _execution_observation(destination, timeout, execution_root / "mutated")
     if original != mutated:
         return {
             "status": "semantic_mismatch",
@@ -92,6 +119,9 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float) -> 
         "functions_virtualized": functions_virtualized,
         "functions_skipped": result.get("functions_skipped", 0),
         "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "observables_equal": True,
+        "original": original,
+        "mutated": mutated,
     }
 
 
@@ -119,7 +149,13 @@ def run_campaign(
                 failures.append({"fixture": source.name, "status": "missing"})
                 continue
             categories = _fixture_categories(coverage, source.name)
-            result = _run_fixture(source, Path(temp_dir) / source.name, seed, timeout)
+            result = _run_fixture(
+                source,
+                Path(temp_dir) / source.name,
+                seed,
+                timeout,
+                Path(temp_dir) / "execution" / source.name,
+            )
             fixture_result = {"fixture": source.name, "categories": categories, **result}
             fixture_results.append(fixture_result)
             if result["status"] == "passed":

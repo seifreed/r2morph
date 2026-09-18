@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import re
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-import defusedxml.ElementTree
+_DEFUSED_ELEMENT_TREE = cast(Any, importlib.import_module("defusedxml.ElementTree"))
 
 _COMPOSITION_PARAMETER_MAP = {
     "antidisassembly": "AntiDisassembly",
@@ -49,6 +50,7 @@ _PERFORMANCE_FIELDS = (
     "static_metric_coverage_percent",
 )
 _FULL_COVERAGE_PERCENT = 100.0
+_MIN_DIRECTIONAL_COMPOSITION_PAIRS = 2
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -119,7 +121,7 @@ def read_composition_evidence(paths: Iterable[Path]) -> dict[str, Any]:
     pair_counts: dict[str, int] = {}
     case_count = failure_count = error_count = skipped_count = 0
     for path in reports:
-        root = defusedxml.ElementTree.parse(path).getroot()
+        root = _DEFUSED_ELEMENT_TREE.parse(path).getroot()
         cases = root.findall(".//testcase")
         case_count += len(cases)
         failure_count += len(root.findall(".//failure"))
@@ -200,6 +202,12 @@ def _instruction_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
 def _composition_status(pass_name: str, summary: Mapping[str, Any], composition: Mapping[str, Any]) -> dict[str, Any]:
     count = composition.get("pass_case_counts", {}).get(pass_name, 0)
     applied = summary.get("applied_runs", 0)
+    pair_counts = composition.get("pair_case_counts", {})
+    directional_pairs = sorted(
+        pair
+        for pair, pair_count in pair_counts.items()
+        if isinstance(pair, str) and isinstance(pair_count, int) and pair_count > 0 and pass_name in pair.split("->")
+    )
     complete = (
         isinstance(count, int)
         and count > 0
@@ -208,14 +216,14 @@ def _composition_status(pass_name: str, summary: Mapping[str, Any], composition:
         and composition.get("skipped_count") == 0
         and isinstance(applied, int)
         and applied > 0
+        and len(directional_pairs) >= _MIN_DIRECTIONAL_COMPOSITION_PAIRS
     )
     status = "complete" if complete else "preview-only" if applied == 0 else "incomplete"
     return {
         "status": status,
         "case_count": count,
-        "directional_pair_count": sum(
-            value for pair, value in composition.get("pair_case_counts", {}).items() if pass_name in pair.split("->")
-        ),
+        "directional_pair_count": len(directional_pairs),
+        "directional_pairs": directional_pairs,
     }
 
 
@@ -325,7 +333,7 @@ def merge_decompiler_evidence(base_evidence: Mapping[str, Any], adversarial: Map
     summary["blockers"] = {field: values for field, values in blockers.items() if values}
     summary["blocker_totals"] = {field: len(values) for field, values in blockers.items()}
     summary["adversarial_evidence_attached"] = True
-    return merged
+    return cast(dict[str, Any], merged)
 
 
 def main() -> None:

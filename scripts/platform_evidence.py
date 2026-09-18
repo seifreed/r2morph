@@ -4,36 +4,60 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-import defusedxml.ElementTree
+_DEFUSED_ELEMENT_TREE = cast(Any, importlib.import_module("defusedxml.ElementTree"))
 
 _REQUIRED_CASES = {
-    "macos-arm64": "test_nop_insertion_arm64_preserves_native_output",
-    "windows-pe": "test_pe_handler_checksum",
-    "elf-arm64": "test_elf_arm64_register_substitution_preserves_native_exit_code",
+    "macos-arm64": (
+        "test_macho_handler_repair_and_codesign",
+        "test_nop_insertion_arm64_preserves_native_output",
+        "test_instruction_substitution_arm64_preserves_native_output",
+        "test_register_substitution_arm64_preserves_generated_native_execution",
+        "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
+        "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
+        "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
+    ),
+    "windows-pe": (
+        "test_pe_handler_checksum",
+        "test_pe_handler_checksum_and_imports",
+        "test_pe_handler_extended",
+        "test_pe_handler_real_binary",
+        "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
+    ),
+    "elf-arm64": (
+        "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+        "test_elf_arm64_instruction_substitution_preserves_native_exit_code",
+        "test_elf_arm64_register_substitution_preserves_native_exit_code",
+    ),
 }
 
 
-def _report_summary(path: Path, required_case: str) -> dict[str, Any]:
-    root = defusedxml.ElementTree.parse(path).getroot()
+def _report_summary(path: Path, required_cases: Sequence[str]) -> dict[str, Any]:
+    root = _DEFUSED_ELEMENT_TREE.parse(path).getroot()
     cases = root.findall(".//testcase")
     names = [case.attrib.get("name", "") for case in cases]
     failures = len(root.findall(".//failure"))
     errors = len(root.findall(".//error"))
     skipped = len(root.findall(".//skipped"))
-    required_present = any(name.startswith(required_case) for name in names)
-    complete = not failures and not errors and not skipped and required_present and bool(cases)
+    missing_required_cases = [
+        required for required in required_cases if not any(name.startswith(required) for name in names)
+    ]
+    complete = not failures and not errors and not skipped and not missing_required_cases and bool(cases)
     return {
         "report": path.name,
         "case_count": len(cases),
         "failure_count": failures,
         "error_count": errors,
         "skipped_count": skipped,
-        "required_case": required_case,
-        "required_case_present": required_present,
+        "required_case": required_cases[0],
+        "required_cases": list(required_cases),
+        "required_case_present": not missing_required_cases,
+        "missing_required_cases": missing_required_cases,
         "status": "complete" if complete else "incomplete",
     }
 
@@ -41,7 +65,7 @@ def _report_summary(path: Path, required_case: str) -> dict[str, Any]:
 def summarize_platform_reports(root: Path) -> dict[str, Any]:
     """Build a bounded summary for the declared cross-platform smoke targets."""
     platforms: dict[str, dict[str, Any]] = {}
-    for platform_name, required_case in _REQUIRED_CASES.items():
+    for platform_name, required_cases in _REQUIRED_CASES.items():
         reports = sorted((root / platform_name).glob("*.xml"))
         if len(reports) != 1:
             platforms[platform_name] = {
@@ -50,13 +74,15 @@ def summarize_platform_reports(root: Path) -> dict[str, Any]:
                 "failure_count": 0,
                 "error_count": 0,
                 "skipped_count": 0,
-                "required_case": required_case,
+                "required_case": required_cases[0],
+                "required_cases": list(required_cases),
                 "required_case_present": False,
+                "missing_required_cases": list(required_cases),
                 "status": "incomplete",
                 "missing_report_count": len(reports),
             }
             continue
-        platforms[platform_name] = _report_summary(reports[0], required_case)
+        platforms[platform_name] = _report_summary(reports[0], required_cases)
     incomplete = sorted(name for name, report in platforms.items() if report["status"] != "complete")
     return {
         "schema_version": 1,

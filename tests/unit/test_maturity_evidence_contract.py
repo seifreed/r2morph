@@ -6,7 +6,7 @@ from scripts.maturity_evidence import build_evidence, merge_decompiler_evidence,
 from tests.utils.assertions import expect
 
 _EXPECTED_DECOMPILER_BLOCKERS = 2
-_EXPECTED_DIRECTIONAL_PAIR_COUNT = 3
+_EXPECTED_DIRECTIONAL_PAIR_COUNT = 4
 
 
 def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str, object]:
@@ -38,6 +38,7 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
         <testcase name='test_extended_passes_compose_after_nop_without_corrupting_fixture[AntiDisassembly]'/>
         <testcase name='test_extended_passes_compose_before_nop_without_corrupting_fixture[AntiDisassembly]'/>
         <testcase name='test_extended_passes_compose_after_nop_without_corrupting_fixture[StackStrings]'/>
+        <testcase name='test_extended_passes_compose_before_nop_without_corrupting_fixture[StackStrings]'/>
         </testsuite>""",
         encoding="utf-8",
     )
@@ -59,6 +60,20 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
         and composition_evidence["directional_pair_count"] == _EXPECTED_DIRECTIONAL_PAIR_COUNT
         and evidence["summary"]["blocker_totals"]["decompiler"] == _EXPECTED_DECOMPILER_BLOCKERS
     )
+
+
+def test_maturity_evidence_requires_both_composition_directions(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    case_name = "test_extended_passes_compose_after_nop_without_corrupting_fixture[AntiDisassembly]"
+    composition.write_text(
+        f"<testsuite><testcase name='{case_name}'/></testsuite>",
+        encoding="utf-8",
+    )
+    report = {"pass_names": ["AntiDisassembly"], "summary": {"AntiDisassembly": _summary(1)}}
+
+    evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
+
+    expect(evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "incomplete")
 
 
 def test_composition_evidence_keeps_simple_pair_direction(tmp_path: Path) -> None:
@@ -111,6 +126,8 @@ def test_differential_workflow_publishes_maturity_evidence() -> None:
     expect(
         "scripts/maturity_evidence.py" in workflow.read_text(encoding="utf-8")
         and "maturity-evidence-merged.json" in workflow.read_text(encoding="utf-8")
+        and '"behavioral_false_positive", "affected_instructions", "composition"'
+        in workflow.read_text(encoding="utf-8")
     )
 
 
