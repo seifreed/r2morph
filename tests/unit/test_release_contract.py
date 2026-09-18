@@ -1630,6 +1630,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "Select bounded public corpus matrix" in differential
         and "public-corpus/build-selected" in differential
         and '"O0", "non-pie", "symbols", "dynamic"' in differential
+        and '"O1", "non-pie", "symbols", "dynamic"' in differential
+        and '"Os", "non-pie", "symbols", "dynamic"' in differential
         and "public-compatibility-corpus" in differential
         and "aggregate-platform-differential:" in differential
         and "Aggregate platform differential evidence" in differential
@@ -1644,6 +1646,18 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
 
 def test_release_contract_validates_corpus_workflows() -> None:
     expect(_check_corpus_workflows() is None)
+
+
+def test_windows_pe_differential_covers_three_native_mutation_passes() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
+
+    expect(
+        "$cases.Count -ne 7" in windows_job
+        and "test_nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
+        and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
+        and "test_register_substitution_pe_x86_64_preserves_native_execution" in windows_job
+    )
 
 
 def test_differential_merge_step_closes_python_heredoc() -> None:
@@ -1746,8 +1760,9 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "test_platform_handlers_deeper_real_more.py" in windows_job
         and "test_platform_handlers_extended.py" in windows_job
         and "test_platform_handlers_real.py" in windows_job
-        and '-k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code"' in windows_job
-        and "expected 5" in windows_job
+        and "nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
+        and "register_substitution_pe_x86_64_preserves_native_execution" in windows_job
+        and "expected 7" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "windows-format-differential.xml" in windows_job

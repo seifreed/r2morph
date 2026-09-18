@@ -1204,15 +1204,17 @@ jobs:
             tests/integration/test_platform_handlers_deeper_real_more.py `
             tests/integration/test_platform_handlers_extended.py `
             tests/integration/test_platform_handlers_real.py `
+            tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity `
             tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_fixture_preserves_windows_exit_code `
-            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code"
+            tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution `
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or register_substitution_pe_x86_64_preserves_native_execution"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 5) { throw "Windows PE smoke ran $($cases.Count) cases; expected 5" }
+          if ($cases.Count -ne 7) { throw "Windows PE smoke ran $($cases.Count) cases; expected 7" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1222,7 +1224,9 @@ jobs:
             "test_pe_handler_checksum_and_imports",
             "test_pe_handler_extended",
             "test_pe_handler_real_binary",
-            "test_instruction_substitution_pe_fixture_preserves_windows_exit_code"
+            "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
+            "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
+            "test_register_substitution_pe_x86_64_preserves_native_execution"
           )
           foreach ($name in $required) {
             if (-not ($cases | Where-Object { $_.name -like "$name*" })) {
@@ -1307,8 +1311,10 @@ jobs:
           manifest = json.loads((build_root / "manifest.json").read_text(encoding="utf-8"))
           variants = (
               ("O0", "non-pie", "symbols", "dynamic"),
+              ("O1", "non-pie", "symbols", "dynamic"),
               ("O2", "pie", "stripped", "dynamic"),
               ("O3", "non-pie", "symbols", "static"),
+              ("Os", "non-pie", "symbols", "dynamic"),
           )
 
           def source_name(record: dict[str, object]) -> str:
