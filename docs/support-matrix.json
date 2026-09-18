@@ -499,7 +499,7 @@
         ],
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
-        "instructions_affected": "Preview-only generation targets printable static strings in named sections with x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions; runtime string-reference rewriting is not implemented.",
+        "instructions_affected": "Supported ELF x86-64 apply path rewrites a unique RIP-relative LEA followed by a direct call through a code-cave bridge; the bridge uses stack-pointer adjustment, byte stores, optional XOR/ADD byte decoding, and optional NOP interleaving. Other references and encodings remain no-op.",
         "false_positive_risk": "Not independently measured.",
         "unit_tests": [
           "tests/unit/test_morphing_evasion.py"
@@ -1159,12 +1159,12 @@
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
-        "Preview-only generation targets printable static strings in named sections with x86/x86-64 stack construction sequences using stack-pointer adjustment, byte stores, XOR/ADD decode loops, optional AES keyed-XOR decode helpers, and optional junk instructions; runtime string-reference rewriting is not implemented.": 1,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.": 1,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
+        "Supported ELF x86-64 apply path rewrites a unique RIP-relative LEA followed by a direct call through a code-cave bridge; the bridge uses stack-pointer adjustment, byte stores, optional XOR/ADD byte decoding, and optional NOP interleaving. Other references and encodings remain no-op.": 1,
         "Supported memory, calls/returns, stack/ABI, TLS, signals, threads, floating-point, SIMD, flags, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.": 1,
         "The polymorphic engine is a state-machine composition layer. By default it applies the enabled child-pass instruction families in sequence: instruction substitution, pattern substitution, dead-code injection, block reordering, control-flow flattening, string obfuscation, and a final NoOp; optional stages add code virtualization, code mobility, and function outlining. It does not introduce a separate instruction encoding beyond the registered child passes.": 1
       },

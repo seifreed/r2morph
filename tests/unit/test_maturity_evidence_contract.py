@@ -46,7 +46,7 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
         "pass_names": ["AntiDisassembly", "StackStrings"],
         "summary": {
             "AntiDisassembly": _summary(2),
-            "StackStrings": _summary(0),
+            "StackStrings": _summary(1),
         },
     }
     extended = {"pass_names": [], "summary": {}}
@@ -54,8 +54,8 @@ def test_maturity_evidence_preserves_preview_and_partial_statuses(tmp_path: Path
 
     expect(
         evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "complete"
-        and evidence["passes"]["StackStrings"]["composition"]["status"] == "preview-only"
-        and evidence["passes"]["StackStrings"]["performance"]["status"] == "incomplete"
+        and evidence["passes"]["StackStrings"]["composition"]["status"] == "complete"
+        and evidence["passes"]["StackStrings"]["performance"]["status"] == "complete"
         and composition_evidence["directional_pair_count"] == _EXPECTED_DIRECTIONAL_PAIR_COUNT
         and evidence["summary"]["blocker_totals"]["decompiler"] == _EXPECTED_DECOMPILER_BLOCKERS
     )

@@ -17,8 +17,9 @@ The continuous composition smoke exercises six directional pairs among
 of `NopInsertion` with each of the twelve extended maturity passes, and seven
 applied core-pass compositions on dedicated fixtures. The workflow requires
 all 30 directional pairs and all 39 real-fixture test cases. `StackStrings`
-remains explicitly preview-only because its apply path does not rewrite the
-binary.
+now has a native regression for its supported ELF x86-64 direct-call rewrite;
+references without a safe shape, unsupported encodings, and unavailable caves
+remain explicit no-op cases.
 The pass-ordering and runtime-preservation checks live in
 `tests/integration/test_polymorphic_engine_real.py`. This closes the declared
 two-pass order matrix; arbitrary pass-order combinations remain outside the
@@ -44,7 +45,7 @@ contract until they have equivalent real-fixture coverage.
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
 | Import obfuscation | Experimental | ELF x86-64 | Format-specific import handling | `README.md` |
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
-| Stack strings | Experimental | ELF x86-64 | Current apply path is preview-only; runtime string-reference rewriting is not implemented | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
+| Stack strings | Experimental | ELF x86-64 | Rewrites unique RIP-relative direct-call arguments only; unsupported references, encodings, and targets remain no-op | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; pattern coverage is intentionally narrow | `README.md`, `docs/compatibility-corpus.md` |
 | Polymorphic engine | Experimental | ELF x86-64 | The current real ELF x86-64 smoke covers 39 cases and 30 directional pairs; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
@@ -132,8 +133,8 @@ false-positive observations, eight without contractual composition support,
 22 without comparable decompiler evidence, and one without an applied
 affected-instruction catalogue: 41 per-pass evidence blockers across four
 measured categories. Performance coverage is complete in that artifact. The
-current tracked composition smoke adds applied evidence for seven of those
-eight composition gaps, leaving only `StackStrings` preview-only; the next
+current tracked composition smoke adds applied evidence for the extended
+composition cases, including the scoped `StackStrings` native rewrite; the next
 scheduled aggregate must confirm that reduction before the archived totals are
 replaced. The
 generated matrix also names the affected passes in
@@ -173,8 +174,9 @@ records zero performance-field gaps, ten passes without independent semantic
 false-positive observations, eight without contractual composition coverage,
 22 without comparable decompiler evidence, and `StackStrings` without an
 applied instruction catalogue. The current follow-up smoke has applied
-composition evidence for seven of those eight gaps; these remain release gaps
-until the scheduled aggregate publishes the updated artifact.
+composition evidence for the extended passes, including `StackStrings`; these
+remain release gaps until the scheduled aggregate publishes the updated
+artifact.
 The generated summary also exposes `vm_semantic_gap_scope` so memory,
 direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
 FP/SIMD, and SSA/liveness remain machine-readable VM blockers. SSA/liveness

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import platform
 import shutil
 from pathlib import Path
 
@@ -32,6 +33,7 @@ from r2morph.mutations.stack_strings import StackStringsPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
 _SEED = 20260913
@@ -134,21 +136,36 @@ def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(t
     )
 
 
-def test_stack_strings_apply_remains_preview_only_without_rewriting_binary(tmp_path: Path) -> None:
-    mutated = tmp_path / "elf_nop_stack_strings"
-    shutil.copyfile(_FIXTURE, mutated)
-    original_bytes = mutated.read_bytes()
+def test_stack_strings_rewrites_unique_call_argument_and_preserves_exit_code(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native stack-string regression requires an x86-64 ELF runner")
+    source = tmp_path / "stack_string.c"
+    original = tmp_path / "stack_string"
+    mutated = tmp_path / "stack_string.mutated"
+    source.write_text("""
+__attribute__((noinline)) int consume(const char *value) {
+    return value[0] == 's' ? 0 : 1;
+}
+__attribute__((noinline)) int run(void) { return consume("stack-string-native"); }
+int main(void) { return run(); }
+__asm__(".section .text.stack_cave,\\\"ax\\\",@progbits\\n.p2align 4\\n.fill 4096,1,0x90\\n.text");
+""")
+    compile_result = run_command(["gcc", "-O2", "-fno-pie", "-no-pie", "-o", original, source], timeout=30)
+    expect(compile_result.returncode == 0, "failed to compile stack-string fixture")
+    shutil.copyfile(original, mutated)
+    baseline = run_command([original], timeout=30)
 
     with Binary(mutated, writable=True) as binary:
         binary.analyze("aa")
-        result = StackStringsPass(config={"probability": 1.0, "seed": _SEED}).apply(binary)
+        result = StackStringsPass(config={"probability": 1.0, "seed": _SEED, "interleave_junk": False}).run(binary)
         binary.save()
 
     expect(
-        result["strings_transformed"] == 0
-        and result["transformation_status"] == "preview-only"
-        and result["strings_previewed"] >= 0
-        and mutated.read_bytes() == original_bytes
+        result["strings_transformed"] == 1
+        and result["transformation_status"] == "applied"
+        and result["mutations_applied"] == 1
+        and run_command([mutated], timeout=30).returncode == baseline.returncode,
+        f"result={result!r}, baseline={baseline.returncode}, mutated={mutated}",
     )
 
 
