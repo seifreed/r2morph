@@ -430,6 +430,89 @@ def _source_registers(disasm: str) -> set[str]:
     return tokens
 
 
+def _instruction_address(instruction: dict[str, Any]) -> int | None:
+    for field in ("addr", "offset"):
+        value = instruction.get(field)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _caller_live_registers(instructions: list[dict[str, Any]], call_address: int) -> set[str]:
+    """Return register families read after a call before a local redefinition.
+
+    Optimizing compilers may keep a value in a caller-saved register across a
+    direct call when the callee is known not to clobber it. A callee mutation
+    must therefore account for the caller's live state, not just its own body.
+    """
+    call_index = next(
+        (index for index, instruction in enumerate(instructions) if _instruction_address(instruction) == call_address),
+        None,
+    )
+    if call_index is None:
+        return set()
+
+    suffix = instructions[call_index + 1 :]
+    tracked = _register_bases(suffix)
+    for instruction in suffix:
+        disasm = str(instruction.get("disasm", "")).lower()
+        transfer = _transfer_abi(disasm)
+        if transfer is not None and disasm.split(None, 1)[0] in {"call", "bl", "blr", "blx"}:
+            tracked |= {
+                canonical for register in transfer[0] if (canonical := _CANONICAL_REGISTER.get(register)) is not None
+            }
+
+    live: set[str] = set()
+    for instruction in suffix:
+        disasm = str(instruction.get("disasm", "")).lower()
+        source_registers = _source_registers(disasm)
+        transfer = _transfer_abi(disasm)
+        if transfer is not None and disasm.split(None, 1)[0] in {"call", "bl", "blr", "blx"}:
+            source_registers |= set(transfer[0])
+        source_registers |= set(_implicit_register_bases(disasm))
+        live.update(
+            canonical
+            for register in source_registers
+            if (canonical := _CANONICAL_REGISTER.get(register)) is not None and canonical in tracked
+        )
+
+        destination = _destination_register(disasm)
+        if destination is not None:
+            tracked.discard(_CANONICAL_REGISTER.get(destination, destination))
+    return live
+
+
+def caller_live_registers(binary: Any, function_address: int) -> set[str]:
+    """Return register families live in callers across calls to a function."""
+    get_xrefs_to = getattr(binary, "get_xrefs_to", None)
+    get_function_disasm = getattr(binary, "get_function_disasm", None)
+    if not callable(get_xrefs_to) or not callable(get_function_disasm):
+        return set()
+
+    live: set[str] = set()
+    try:
+        xrefs = get_xrefs_to(function_address)
+    except (ValueError, OSError, BrokenPipeError, RuntimeError):
+        return live
+    if not isinstance(xrefs, list):
+        return live
+
+    for xref in xrefs:
+        if not isinstance(xref, dict):
+            continue
+        caller_address = xref.get("fcn_addr")
+        call_address = xref.get("from")
+        if not isinstance(caller_address, int) or not isinstance(call_address, int):
+            continue
+        try:
+            caller_instructions = get_function_disasm(caller_address)
+        except (ValueError, OSError, BrokenPipeError, RuntimeError):
+            continue
+        if isinstance(caller_instructions, list):
+            live |= _caller_live_registers(caller_instructions, call_address)
+    return live
+
+
 def _function_live_in_registers(instructions: list[dict[str, Any]]) -> set[str]:
     """Registers read before a local definition supplies their value."""
     defined: set[str] = set()
@@ -582,7 +665,11 @@ def memory_operand_pins(instructions: list[dict[str, Any]]) -> set[str]:
     return pinned
 
 
-def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
+def find_substitution_candidates(
+    instructions: list[dict[str, Any]],
+    arch: str,
+    extra_pinned_registers: set[str] | None = None,
+) -> list[tuple[str, str]]:
     """Find valid register substitution opportunities."""
     register_classes = get_register_class(arch)
     if not register_classes:
@@ -600,6 +687,8 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
         | implicit_operand_pins(instructions)
         | memory_operand_pins(instructions)
     )
+    if extra_pinned_registers:
+        abi_regs |= extra_pinned_registers
     if arch == "arm64" and any(_transfer_abi(insn.get("disasm", "").lower()) is not None for insn in instructions):
         # Keep the complete AAPCS argument bank stable around calls. Static
         # disassembly cannot prove that a caller-saved argument is dead across
@@ -801,7 +890,7 @@ def select_candidates(
             # ARM64 call-preserving substitution needs interprocedural ABI
             # liveness; skip the function until that proof is available.
             continue
-        candidates = find_substitution_candidates(instructions, arch)
+        candidates = find_substitution_candidates(instructions, arch, caller_live_registers(binary, func_addr))
         if not candidates:
             continue
         if random.random() > probability:
@@ -816,6 +905,7 @@ __all__ = [
     "REGISTER_CLASSES",
     "REGISTER_SIZES",
     "abi_live_registers",
+    "caller_live_registers",
     "count_register_uses",
     "find_substitution_candidates",
     "get_register_class",

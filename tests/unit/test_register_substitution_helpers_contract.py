@@ -1,6 +1,7 @@
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.register_substitution_helpers import (
     abi_live_registers,
+    caller_live_registers,
     find_substitution_candidates,
     get_register_class,
     implicit_operand_pins,
@@ -13,6 +14,9 @@ from tests.utils.assertions import expect
 
 _EXPECTED_ADDR_4096 = 0x1000
 _EXPECTED_ADDR_8192 = 0x2000
+_CALLER_ADDRESS = 0x2000
+_CALLER_CALL_SITE = 0x2000
+_CALLEE_ADDRESS = 0x3000
 
 
 class _Binary:
@@ -25,6 +29,20 @@ class _Binary:
         if addr == _EXPECTED_ADDR_8192:
             return [{"disasm": "mov rax, rbx"}]
         raise ValueError(addr)
+
+
+class _CallerLivenessBinary:
+    def get_xrefs_to(self, address: int):
+        expect(address == _CALLEE_ADDRESS)
+        return [{"from": _CALLER_CALL_SITE, "fcn_addr": _CALLER_ADDRESS, "type": "CALL"}]
+
+    def get_function_disasm(self, address: int):
+        expect(address == _CALLER_ADDRESS)
+        return [
+            {"addr": _CALLER_CALL_SITE, "disasm": "call 0x3000"},
+            {"addr": _CALLER_CALL_SITE + 5, "disasm": "add rax, r10"},
+            {"addr": 0x2008, "disasm": "ret"},
+        ]
 
 
 def test_register_substitution_helpers_cover_the_core_paths() -> None:
@@ -106,6 +124,36 @@ def test_find_substitution_candidates_with_x64_call_excludes_argument_register()
     ]
     sources = {orig for orig, _ in find_substitution_candidates(with_call, "x64")}
     expect("rdi" not in sources)
+
+
+def test_caller_live_registers_pins_value_used_after_callee_call() -> None:
+    live = caller_live_registers(_CallerLivenessBinary(), _CALLEE_ADDRESS)
+
+    expect("r10" in live)
+
+
+def test_caller_live_registers_drops_register_redefined_before_syscall() -> None:
+    class Binary:
+        def get_xrefs_to(self, address: int):
+            expect(address == _CALLEE_ADDRESS)
+            return [{"from": _CALLER_CALL_SITE, "fcn_addr": _CALLER_ADDRESS, "type": "CALL"}]
+
+        def get_function_disasm(self, address: int):
+            expect(address == _CALLER_ADDRESS)
+            return [
+                {"addr": _CALLER_CALL_SITE, "disasm": "call 0x3000"},
+                {"addr": _CALLER_CALL_SITE + 5, "disasm": "mov edx, 60"},
+                {"addr": _CALLER_CALL_SITE + 10, "disasm": "syscall"},
+            ]
+
+    expect("rdx" not in caller_live_registers(Binary(), _CALLEE_ADDRESS))
+
+
+def test_find_substitution_candidates_accepts_caller_live_register_pins() -> None:
+    instructions = [{"disasm": "mov rdi, 7"}, {"disasm": "add rdi, 2"}, {"disasm": "ret"}]
+    candidates = find_substitution_candidates(instructions, "x64", {"r10"})
+
+    expect("r10" not in {substitute for _, substitute in candidates})
 
 
 def test_find_substitution_candidates_without_call_still_renames_arg_register() -> None:
