@@ -150,6 +150,13 @@ def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
     )
 
 
+def test_adversarial_aggregate_checks_out_triggering_commit() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "adversarial-benchmark.yml"
+    aggregate = workflow.read_text(encoding="utf-8").split("  aggregate-benchmark:", maxsplit=1)[1]
+
+    expect("ref: ${{ github.event.workflow_run.head_sha || github.sha }}" in aggregate)
+
+
 def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
     base = {
         "passes": {
