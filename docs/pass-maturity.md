@@ -235,6 +235,12 @@ single-level tamper, nested tamper, nested growth, and diversified-build
 checks. This strengthens automated evidence but does not replace the pending
 human/adversarial review. The generated `total_vm_resistance_blockers` count is
 currently 6 VM resistance blockers.
+The local refresh
+[`protection-vm-resistance-2026-09-18-21471618.json`](protection-vm-resistance-2026-09-18-21471618.json)
+extends that evidence across three tracked ELF x86-64 fixtures: semantic parity,
+cross-fixture artifact diversity, single- and nested-layer tamper divergence,
+and progressive bytecode growth all passed across ten seeds. Its human review
+field remains pending by contract.
 The same workflow now publishes `vm-resistance-adversarial.json`, a bounded
 ten-seed report that joins semantic parity, distinct artifact hashes,
 opcode-assignment, dispatcher/handler/stride diversity, single- and nested-layer tamper
