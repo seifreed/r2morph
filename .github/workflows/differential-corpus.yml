@@ -601,12 +601,12 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("vm-semantic-campaign.json").read_text(encoding="utf-8"))
-          if report["status"] != "passed" or report["seed_count"] != 3 or report["fixture_count"] != 450:
+          if report["status"] != "passed" or report["seed_count"] != 3 or report["fixture_count"] != 453:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
-          if report["failed_count"] != 0 or report["passed_count"] != 450:
+          if report["failed_count"] != 0 or report["passed_count"] != 453:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
           fixture_results = report.get("fixture_results", [])
-          if len(fixture_results) != 450:
+          if len(fixture_results) != 453:
               raise SystemExit(f"VM semantic fixture detail coverage is incomplete: {len(fixture_results)}")
           if any(
               row.get("status") != "passed"
@@ -624,7 +624,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 10:
+          if len(categories) != 12:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (
@@ -655,14 +655,13 @@ jobs:
               "direct-calls",
               "indirect-calls",
               "abi-varargs",
+              "unwinding-exceptions",
               "tls-signals",
               "threads",
               "fp-simd",
+              "ssa-liveness",
           }:
               raise SystemExit(f"VM semantic capability evidence is incomplete: {capabilities}")
-          for name in ("unwinding-exceptions", "ssa-liveness"):
-              if capabilities[name]["status"] != "not-covered-by-fixture-campaign":
-                  raise SystemExit(f"VM semantic gap lost explicit fixture coverage status: {name}")
           PY
 
       - name: Upload VM semantic campaign evidence

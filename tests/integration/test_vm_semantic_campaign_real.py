@@ -1,12 +1,16 @@
 import os
+import platform
 import signal
 from pathlib import Path
+
+import pytest
 
 from scripts.vm_semantic_campaign import _execution_observation, _load_coverage, merge_campaign_reports, run_campaign
 from tests.utils.assertions import expect
 
 _MERGED_SEED_COUNT = 2
 _MERGED_FIXTURE_COUNT = 2
+_UNWIND_SSA_FIXTURE_COUNT = 2
 
 
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
@@ -42,6 +46,7 @@ def test_vm_semantic_observation_records_signal_termination(tmp_path: Path) -> N
     expect(observation["termination_signal"] == expected_signal)
 
 
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
 def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
     report = run_campaign(
         Path("fixtures/dataset"),
@@ -76,6 +81,24 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
     )
 
 
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
+def test_vm_semantic_campaign_measures_unwind_and_ssa_fixture_contracts() -> None:
+    report = run_campaign(
+        Path("fixtures/dataset"),
+        _load_coverage(Path("docs/virtualization-coverage.json")),
+        seed=20260916,
+        fixture_names=("elf_vm_unwind_x86_64", "elf_vm_multiexit_x86_64"),
+    )
+
+    expect(
+        report["status"] == "passed"
+        and report["passed_count"] == _UNWIND_SSA_FIXTURE_COUNT
+        and report["capability_summary"]["unwinding-exceptions"]["status"] == "campaign-measured"
+        and report["capability_summary"]["ssa-liveness"]["status"] == "campaign-measured"
+    )
+
+
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
 def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> None:
     coverage = _load_coverage(Path("docs/virtualization-coverage.json"))
     reports = tuple(
@@ -122,4 +145,16 @@ def test_vm_semantic_workflow_publishes_regression_capability_contracts() -> Non
         and '"ssa-liveness"' in content
         and '"regression-covered"' in content
         and "vm-semantic-contracts-merged.json" in content
+    )
+
+
+def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
+    content = workflow.read_text(encoding="utf-8")
+
+    expect(
+        'report["fixture_count"] != 453' in content
+        and "len(categories) != 12" in content
+        and '"unwinding-exceptions",\n              "tls-signals"' in content
+        and '"fp-simd",\n              "ssa-liveness"' in content
     )

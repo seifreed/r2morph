@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "150 fixtures, no unclassified entries",
+      "detail": "151 fixtures, no unclassified entries",
       "name": "virtualization_fixture_coverage",
       "status": "passed"
     },
@@ -111,7 +111,7 @@
       "status": "passed"
     },
     {
-      "detail": "150/150 valid ELF64 headers",
+      "detail": "151/151 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"
     },

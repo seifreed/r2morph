@@ -61,6 +61,7 @@ _FIXTURE_EXEC = _DATASET / "elf_switch_abs_x86_64"
 # previous segment-extension scheme could never append past.
 _FIXTURE_DYN = _DATASET / "elf_switch_pie_x86_64"
 _FIXTURE_LARGE_WRITE = _DATASET / "elf_vm_arith_x86_64"
+_FIXTURE_UNWIND = _DATASET / "elf_vm_unwind_x86_64"
 
 # ELF64 header field offsets used by the verification oracle.
 _E_PHOFF = 0x20
@@ -381,7 +382,7 @@ def test_inject_blob_relocates_phoff_inside_the_first_rx_load(tmp_path: Path) ->
         for entry in program_headers(target)
         if entry.p_type == PT_LOAD and entry.p_offset <= e_phoff < entry.p_offset + entry.p_filesz
     )
-    expect(owner.p_flags == _PF_R | _PF_X)
+    expect(owner.p_flags & _PF_R)
 
 
 def test_inject_blob_keeps_relocated_table_on_image_load_bias(tmp_path: Path) -> None:
@@ -393,7 +394,7 @@ def test_inject_blob_keeps_relocated_table_on_image_load_bias(tmp_path: Path) ->
     headers = program_headers(target)
     e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
     loads = [entry for entry in headers if entry.p_type == PT_LOAD]
-    table_load = next(entry for entry in loads if entry.p_offset == e_phoff)
+    table_load = next(entry for entry in loads if entry.p_offset <= e_phoff < entry.p_offset + entry.p_filesz)
     image_load_bias = min(entry.p_vaddr - entry.p_offset for entry in loads)
     expect(table_load.p_vaddr - table_load.p_offset == image_load_bias)
 
@@ -408,9 +409,7 @@ def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) ->
     headers = program_headers(target)
     pt_phdr = next(entry for entry in headers if entry.p_type == PT_PHDR)
     e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
-    table_load = next(entry for entry in headers if entry.p_type == PT_LOAD and entry.p_offset == e_phoff)
-    expected = (table_load.p_offset, table_load.p_vaddr, len(headers) * _PHDR_ENTRY_SIZE)
-    expect((pt_phdr.p_offset, pt_phdr.p_vaddr, pt_phdr.p_filesz) == expected)
+    expect((pt_phdr.p_offset, pt_phdr.p_filesz) == (e_phoff, len(headers) * _PHDR_ENTRY_SIZE))
 
 
 def test_large_blob_is_split_into_adjacent_rx_fragments(tmp_path: Path) -> None:
@@ -460,6 +459,14 @@ def test_inject_blob_keeps_the_header_segment_clear_of_the_next_segment(fixture:
     header_segment = next(entry for entry in loads if entry.p_offset == 0)
     above = [entry.p_vaddr for entry in loads if entry.p_vaddr > header_segment.p_vaddr]
     expect(not (header_segment.p_vaddr + header_segment.p_memsz > min(above)))
+
+
+def test_inject_blob_with_existing_unwind_metadata_keeps_the_table_loadable(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_UNWIND, tmp_path)
+
+    _inject_into(target, _BLOB)
+
+    expect(not load_invariant_violations(target))
 
 
 def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path) -> None:

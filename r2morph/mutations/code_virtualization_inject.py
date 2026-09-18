@@ -77,6 +77,7 @@ _SEGMENT_ALIGN = 0x1000
 _MAX_PHDR_ENTRIES = 128
 _MAX_RX_FRAGMENTS = 8
 _MIN_NOTE_ENTRIES = 2
+_PHDR_TABLE_ALIGNMENT = 8
 _PHDR_RESERVE_SIZE = ((_MAX_PHDR_ENTRIES * _PHDR_ENTRY_SIZE + _SEGMENT_ALIGN - 1) // _SEGMENT_ALIGN) * _SEGMENT_ALIGN
 _MIN_FRAGMENT_PAGES = 2
 _FRAGMENT_PAGE_VARIANTS = 4
@@ -375,11 +376,11 @@ def _plan_placement(binary: Any, *, allow_inline: bool = True) -> _Placement | N
     )
 
 
-def _retarget_phdr_entry(table: bytearray, base: int, placement: _Placement, table_size: int) -> None:
+def _retarget_phdr_entry(table: bytearray, base: int, table_offset: int, table_vaddr: int, table_size: int) -> None:
     """Point a ``PT_PHDR`` entry at the relocated program-header table."""
-    struct.pack_into("<Q", table, base + _P_OFFSET, placement.append_offset)
-    struct.pack_into("<Q", table, base + _P_VADDR, placement.segment_vaddr)
-    struct.pack_into("<Q", table, base + _P_PADDR, placement.segment_vaddr)
+    struct.pack_into("<Q", table, base + _P_OFFSET, table_offset)
+    struct.pack_into("<Q", table, base + _P_VADDR, table_vaddr)
+    struct.pack_into("<Q", table, base + _P_PADDR, table_vaddr)
     struct.pack_into("<Q", table, base + _P_FILESZ, table_size)
     struct.pack_into("<Q", table, base + _P_MEMSZ, table_size)
 
@@ -424,36 +425,6 @@ def _header_load_index(table: bytes, e_phnum: int) -> int | None:
         if struct.unpack_from("<Q", table, base + _P_OFFSET)[0] == 0:
             return index
     return None
-
-
-def _grow_header_segment(table: bytearray, placement: _Placement, new_phnum: int) -> None:
-    """Keep the ELF header's segment spanning the grown program-header table.
-
-    Adding an entry lengthens the header-plus-table prefix, and a loader that
-    locates the table from the image base rather than from ``AT_PHDR`` rejects
-    an image whose first loadable segment is shorter than that prefix. The
-    Linux kernel does not check it, so failing to grow is not fatal - but the
-    grown segment costs nothing and keeps the output acceptable to both. The
-    segment is only stretched into space the next one does not already claim.
-    """
-    index = _header_load_index(bytes(table), placement.e_phnum)
-    if index is None:
-        return
-    required = _ELF64_HEADER_SIZE + new_phnum * _PHDR_ENTRY_SIZE
-    base = index * _PHDR_ENTRY_SIZE
-    vaddr = struct.unpack_from("<Q", table, base + _P_VADDR)[0]
-    if struct.unpack_from("<Q", table, base + _P_FILESZ)[0] >= required or required > placement.file_size:
-        return
-
-    loads = _parse_loads(bytes(table), placement.e_phnum)
-    ceiling = min((load.vaddr for load in loads if load.vaddr > vaddr), default=None)
-    if ceiling is not None and vaddr + required > ceiling:
-        logger.debug("No room to span the program-header table in the header segment at 0x%x; leaving it", vaddr)
-        return
-
-    memsz = struct.unpack_from("<Q", table, base + _P_MEMSZ)[0]
-    struct.pack_into("<Q", table, base + _P_FILESZ, required)
-    struct.pack_into("<Q", table, base + _P_MEMSZ, max(memsz, required))
 
 
 def _eh_frame_entry(offset: int, vaddr: int, size: int) -> bytes:
@@ -557,13 +528,27 @@ def _merge_eh_frame_metadata(
     return bytes(header) + bytes(suffix)
 
 
+def _header_table_relocation(placement: _Placement, table_size: int) -> tuple[int, int] | None:
+    """Find safe slack after the header load for a relocated program table."""
+    loads = _parse_loads(placement.table, placement.e_phnum)
+    header = next((load for load in loads if load.offset == 0), None)
+    if header is None:
+        return None
+    next_offset = min((load.offset for load in loads if load.offset > 0), default=None)
+    table_offset = _align_up(header.offset + header.filesz, _PHDR_TABLE_ALIGNMENT)
+    if next_offset is not None and table_offset + table_size > next_offset:
+        return None
+    table_vaddr = header.vaddr + table_offset - header.offset
+    return table_offset, table_vaddr
+
+
 def _relocated_phdr_table(
     placement: _Placement,
     fragment_sizes: tuple[int, ...],
     unwind_size: int = 0,
     metadata_offset: int = 0,
-) -> bytes:
-    """Original entries and adjacent RX fragments with the table in the first.
+) -> tuple[bytes, int] | None:
+    """Original entries and adjacent RX fragments with a loadable table.
 
     The final fragment goes last and has the highest virtual address: the kernel
     sizes an ET_DYN total mapping from the last ``PT_LOAD`` in table order.
@@ -571,12 +556,26 @@ def _relocated_phdr_table(
     existing_eh_frame = _eh_frame_index(placement.table, placement.e_phnum) is not None
     new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if unwind_size and not existing_eh_frame else 0)
     table_size = new_phnum * _PHDR_ENTRY_SIZE
+    relocation = _header_table_relocation(placement, table_size)
+    if relocation is None:
+        return None
+    table_offset, table_vaddr = relocation
     table = bytearray(placement.table)
     for index in range(placement.e_phnum):
         base = index * _PHDR_ENTRY_SIZE
         if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_PHDR:
-            _retarget_phdr_entry(table, base, placement, table_size)
-    _grow_header_segment(table, placement, new_phnum)
+            _retarget_phdr_entry(table, base, table_offset, table_vaddr, table_size)
+    header_index = _header_load_index(bytes(table), placement.e_phnum)
+    if header_index is not None:
+        header_base = header_index * _PHDR_ENTRY_SIZE
+        header_end = table_offset + table_size
+        struct.pack_into("<Q", table, header_base + _P_FILESZ, header_end)
+        struct.pack_into(
+            "<Q",
+            table,
+            header_base + _P_MEMSZ,
+            max(struct.unpack_from("<Q", table, header_base + _P_MEMSZ)[0], header_end),
+        )
     consumed = 0
     for index, size in enumerate(fragment_sizes):
         if index == 0:
@@ -608,7 +607,7 @@ def _relocated_phdr_table(
         else:
             base = eh_frame_index * _PHDR_ENTRY_SIZE
             table[base : base + _PHDR_ENTRY_SIZE] = eh_frame_entry
-    return bytes(table)
+    return bytes(table), table_offset
 
 
 def predict_blob_vaddr(binary: Any, *, allow_inline: bool = True) -> int | None:
@@ -738,10 +737,15 @@ def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, met
     if not fragment_sizes or new_phnum > _MAX_PHDR_ENTRIES:
         return None
     padding = bytes(placement.append_offset - placement.file_size)
-    table = _relocated_phdr_table(placement, fragment_sizes, len(payload_metadata), metadata_offset)
-    table_padding = bytes(placement.blob_offset - placement.append_offset - len(table))
-    _write_physical(binary, placement.file_size, padding + table + table_padding + payload)
-    _write_physical(binary, _E_PHOFF, struct.pack("<Q", placement.append_offset))
+    relocated = _relocated_phdr_table(placement, fragment_sizes, len(payload_metadata), metadata_offset)
+    if relocated is None:
+        logger.debug("No loadable slack for the relocated program-header table; skipping injection")
+        return None
+    table, table_offset = relocated
+    table_padding = bytes(placement.blob_offset - placement.append_offset)
+    _write_physical(binary, placement.file_size, padding + table_padding + payload)
+    _write_physical(binary, table_offset, table)
+    _write_physical(binary, _E_PHOFF, struct.pack("<Q", table_offset))
     _write_physical(binary, _E_PHNUM, struct.pack("<H", new_phnum))
     if _read_physical(binary, placement.blob_offset, len(payload)) != payload:
         logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", placement.blob_offset)

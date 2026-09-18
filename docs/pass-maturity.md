@@ -190,26 +190,26 @@ blockers.
 
 The VM semantic fixture inventory is exercised by the bounded native parity
 campaign in [`scripts/vm_semantic_campaign.py`](../scripts/vm_semantic_campaign.py).
-Every scheduled run processes all 150 ELF x86-64 fixtures from
+Every scheduled run processes all 151 ELF x86-64 fixtures from
 [`virtualization-coverage.json`](virtualization-coverage.json), preserves the
 executable mode in a temporary copy, requires one applied virtualization, and
 compares return code, termination signal, hashed stdout/stderr, and bounded
 created-file hashes, sizes, and modes before and after the mutation. The
 workflow repeats that complete fixture set across three
-deterministic seeds, for 450 fixture runs, retains the JSON result as an
+deterministic seeds, for 453 fixture runs, retains the JSON result as an
 artifact, and fails on any missing, non-virtualized, or divergent fixture. The
-artifact also reports each declared capability explicitly: memory,
-calls, ABI/varargs, TLS/signals, threads, and FP/SIMD are campaign-measured;
-exception/unwinding and SSA/liveness remain marked as not covered by this
-fixture campaign. The aggregate also validates the real exception/unwinding
-and static-dataflow regression contracts per shard and publishes them as
-`regression-covered`; that is stronger than an untested gap but does not prove
-fixture-campaign coverage. Fixture runs still do not prove arbitrary inputs,
+artifact also reports each declared capability explicitly: memory, calls,
+ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,
+TLS/signals, threads, and FP/SIMD are campaign-measured. LSDA/landing-pad
+exception transformation remains fail-closed and is separately covered by
+real regression contracts; the campaign does not claim full language-level
+exception virtualization. Fixture runs still do not prove arbitrary inputs,
 unsupported ABIs, or cross-platform parity.
-The current local run
+The archived local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
-completed all 150 declared fixtures with zero failures for the official Linux
-ELF x86-64 target.
+completed 150 fixtures with zero failures for the official Linux ELF x86-64
+target; the current scheduled inventory is the 151-fixture campaign described
+above.
 
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)

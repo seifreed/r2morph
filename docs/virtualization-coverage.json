@@ -210,6 +210,16 @@
         "elf_vm_syscall_x86_64"
       ]
     },
+    "ssa_liveness": {
+      "fixture_count": 5,
+      "fixtures": [
+        "elf_vm_interp_reg_x86_64",
+        "elf_vm_interp_stack_x86_64",
+        "elf_vm_interp_x86_64",
+        "elf_vm_multiexit_x86_64",
+        "elf_vm_pie_x86_64"
+      ]
+    },
     "stack_and_abi": {
       "fixture_count": 11,
       "fixtures": [
@@ -238,11 +248,17 @@
         "elf_vm_tls_widths_x86_64",
         "elf_vm_tls_x86_64"
       ]
+    },
+    "unwinding_exceptions": {
+      "fixture_count": 1,
+      "fixtures": [
+        "elf_vm_unwind_x86_64"
+      ]
     }
   },
-  "capability_count": 10,
-  "covered_capability_count": 10,
-  "fixture_count": 150,
+  "capability_count": 12,
+  "covered_capability_count": 12,
+  "fixture_count": 151,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

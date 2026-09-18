@@ -29,11 +29,11 @@ _CAPABILITY_CATEGORIES = {
     "direct-calls": ("calls_and_returns",),
     "indirect-calls": ("calls_and_returns",),
     "abi-varargs": ("stack_and_abi",),
-    "unwinding-exceptions": (),
+    "unwinding-exceptions": ("unwinding_exceptions",),
     "tls-signals": ("thread_runtime_boundaries", "signals_and_system_calls"),
     "threads": ("thread_runtime_boundaries",),
     "fp-simd": ("floating_point_and_simd",),
-    "ssa-liveness": (),
+    "ssa-liveness": ("ssa_liveness",),
 }
 
 
@@ -129,6 +129,12 @@ def _execution_observation(path: Path, timeout: float, workdir: Path) -> dict[st
 def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
     original = _execution_observation(source, timeout, execution_root / "original")
+    if original.get("status") != "completed":
+        return {
+            "status": "execution_unavailable",
+            "functions_virtualized": 0,
+            "original": original,
+        }
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
@@ -147,6 +153,13 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             "capabilities": result.get("unsupported_function_capabilities", {}),
         }
     mutated = _execution_observation(destination, timeout, execution_root / "mutated")
+    if mutated.get("status") != "completed":
+        return {
+            "status": "execution_unavailable",
+            "functions_virtualized": functions_virtualized,
+            "original": original,
+            "mutated": mutated,
+        }
     if original != mutated:
         return {
             "status": "semantic_mismatch",

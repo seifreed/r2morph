@@ -1732,9 +1732,9 @@
       "vm_semantic_fixture_coverage": {
         "artifact": "docs/virtualization-coverage.json",
         "scope": "elf-x86-64-virtualization-fixtures",
-        "fixture_count": 150,
-        "capability_count": 10,
-        "covered_capability_count": 10,
+        "fixture_count": 151,
+        "capability_count": 12,
+        "covered_capability_count": 12,
         "unclassified_count": 0,
         "capabilities": [
           "calls_and_returns",
@@ -1745,8 +1745,10 @@
           "gp_arithmetic",
           "memory_addressing",
           "signals_and_system_calls",
+          "ssa_liveness",
           "stack_and_abi",
-          "thread_runtime_boundaries"
+          "thread_runtime_boundaries",
+          "unwinding_exceptions"
         ]
       },
       "vm_semantic_gap_evidence": {
@@ -1791,9 +1793,14 @@
           ]
         },
         "unwinding-exceptions": {
-          "status": "fail-closed-regression-incomplete",
-          "capabilities": [],
+          "status": "ordinary-unwind-fixture-measured-incomplete",
+          "capabilities": [
+            "unwinding_exceptions"
+          ],
           "evidence": [
+            "docs/virtualization-coverage.json",
+            "fixtures/dataset/elf_vm_unwind_x86_64",
+            ".github/workflows/differential-corpus.yml",
             "tests/integration/test_code_virtualization_exception_gate_real.py"
           ]
         },
@@ -1829,11 +1836,13 @@
           ]
         },
         "ssa-liveness": {
-          "status": "fail-closed-regression-incomplete",
+          "status": "fixture-backed-measured-incomplete",
           "capabilities": [
             "ssa_liveness"
           ],
           "evidence": [
+            "docs/virtualization-coverage.json",
+            ".github/workflows/differential-corpus.yml",
             "tests/unit/test_code_virtualization_static_dataflow.py",
             "tests/unit/test_code_virtualization_diagnostics.py"
           ]
@@ -3925,9 +3934,9 @@
     "fixture_coverage": {
       "artifact": "docs/virtualization-coverage.json",
       "scope": "elf-x86-64-virtualization-fixtures",
-      "fixture_count": 150,
-      "capability_count": 10,
-      "covered_capability_count": 10,
+      "fixture_count": 151,
+      "capability_count": 12,
+      "covered_capability_count": 12,
       "unclassified_count": 0,
       "capabilities": [
         "calls_and_returns",
@@ -3938,8 +3947,10 @@
         "gp_arithmetic",
         "memory_addressing",
         "signals_and_system_calls",
+        "ssa_liveness",
         "stack_and_abi",
-        "thread_runtime_boundaries"
+        "thread_runtime_boundaries",
+        "unwinding_exceptions"
       ]
     },
     "gap_evidence": {
@@ -3984,9 +3995,14 @@
         ]
       },
       "unwinding-exceptions": {
-        "status": "fail-closed-regression-incomplete",
-        "capabilities": [],
+        "status": "ordinary-unwind-fixture-measured-incomplete",
+        "capabilities": [
+          "unwinding_exceptions"
+        ],
         "evidence": [
+          "docs/virtualization-coverage.json",
+          "fixtures/dataset/elf_vm_unwind_x86_64",
+          ".github/workflows/differential-corpus.yml",
           "tests/integration/test_code_virtualization_exception_gate_real.py"
         ]
       },
@@ -4022,11 +4038,13 @@
         ]
       },
       "ssa-liveness": {
-        "status": "fail-closed-regression-incomplete",
+        "status": "fixture-backed-measured-incomplete",
         "capabilities": [
           "ssa_liveness"
         ],
         "evidence": [
+          "docs/virtualization-coverage.json",
+          ".github/workflows/differential-corpus.yml",
           "tests/unit/test_code_virtualization_static_dataflow.py",
           "tests/unit/test_code_virtualization_diagnostics.py"
         ]

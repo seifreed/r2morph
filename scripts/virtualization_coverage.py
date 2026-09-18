@@ -31,6 +31,8 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
     "thread_runtime_boundaries": ("dynamic", "tls", "thread", "signal"),
     "signals_and_system_calls": ("syscall",),
     "fallback_paths": ("fallback",),
+    "ssa_liveness": ("interp", "multiexit", "pie"),
+    "unwinding_exceptions": ("unwind",),
 }
 
 
