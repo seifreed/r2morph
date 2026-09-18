@@ -389,6 +389,55 @@ __asm__(
     ".previous\n"
 );
 """,
+    "generated_pointers": r"""
+#include <stdint.h>
+
+typedef struct {
+    uint32_t left;
+    uint32_t right;
+} Pair;
+
+__attribute__((noinline)) static uint32_t fold(const uint32_t *value) {
+    uint32_t state = *value ^ 0x9e3779b9u;
+    uint32_t *alias = &state;
+    *alias = (*alias << 5) | (*alias >> 27);
+    return (*alias * 33u) ^ (*value + 17u);
+}
+
+__attribute__((noinline)) static uint32_t combine(Pair *pair) {
+    uint32_t *first = &pair->left;
+    uint32_t *second = &pair->right;
+    return fold(first) + (fold(second) ^ *first);
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    Pair pair = {(uint32_t)argc + 3u, (uint32_t)argc * 7u + 11u};
+    return (int)(combine(&pair) & 127u);
+}
+""",
+    "generated_recursive": r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static uint32_t gcd_recursive(uint32_t left, uint32_t right) {
+    return right == 0 ? left : gcd_recursive(right, left % right);
+}
+
+__attribute__((noinline)) static uint32_t walk_recursive(uint32_t value, int depth) {
+    if (depth <= 0) {
+        return value ^ 0x5a5a5a5au;
+    }
+    return walk_recursive(value + (uint32_t)depth, depth - 1) ^ (value << (depth & 3));
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    uint32_t value = (uint32_t)argc * 19u + 37u;
+    uint32_t result = gcd_recursive(value + 91u, value + 47u);
+    result ^= walk_recursive(value, 4);
+    return (int)(result & 127u);
+}
+""",
     "generated_cpp": r"""
 #include <cstdint>
 

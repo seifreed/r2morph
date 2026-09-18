@@ -23,6 +23,9 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
     expect(
         report["status"] == "passed"
         and report["passed_count"] == 1
+        and report["failures"] == []
+        and report["fixture_results"][0]["functions_virtualized"] >= 1
+        and report["fixture_results"][0]["unsupported_functions"] == 0
         and all(
             report["category_summary"][category]["passed_count"]
             == report["category_summary"][category]["fixture_count"]
@@ -51,5 +54,17 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
         and merged["fixture_count"] == _MERGED_FIXTURE_COUNT
         and merged["passed_count"] == _MERGED_FIXTURE_COUNT
         and merged["failed_count"] == 0
+        and len(merged["fixture_results"]) == _MERGED_FIXTURE_COUNT
         and not merged["failures"]
+    )
+
+
+def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
+    content = workflow.read_text(encoding="utf-8")
+
+    expect(
+        'report.get("fixture_results", [])' in content
+        and 'row.get("functions_virtualized")' in content
+        and 'row.get("unsupported_functions") != 0' in content
     )

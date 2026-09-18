@@ -87,6 +87,8 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_extended",
     "generated_lookup",
     "generated_memory",
+    "generated_pointers",
+    "generated_recursive",
     "generated_stack_strings",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2

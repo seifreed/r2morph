@@ -65,20 +65,34 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float) -> 
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
-            result = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": seed}).apply(binary)
+            result = CodeVirtualizationPass(config={"probability": 1.0, "seed": seed}).apply(binary)
             binary.save()
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         return {"status": "error", "error_type": type(exc).__name__}
 
-    if result.get("functions_virtualized") != 1:
+    functions_virtualized = result.get("functions_virtualized", 0)
+    if not isinstance(functions_virtualized, int) or functions_virtualized < 1:
         return {
             "status": "not_virtualized",
+            "functions_virtualized": functions_virtualized,
+            "functions_skipped": result.get("functions_skipped", 0),
+            "unsupported_functions": result.get("unsupported_functions_total", 0),
             "capabilities": result.get("unsupported_function_capabilities", {}),
         }
     mutated = _execution_observation(destination, timeout)
     if original != mutated:
-        return {"status": "semantic_mismatch", "original": original, "mutated": mutated}
-    return {"status": "passed"}
+        return {
+            "status": "semantic_mismatch",
+            "functions_virtualized": functions_virtualized,
+            "original": original,
+            "mutated": mutated,
+        }
+    return {
+        "status": "passed",
+        "functions_virtualized": functions_virtualized,
+        "functions_skipped": result.get("functions_skipped", 0),
+        "unsupported_functions": result.get("unsupported_functions_total", 0),
+    }
 
 
 def run_campaign(
@@ -97,6 +111,7 @@ def run_campaign(
         raise ValueError(f"VM semantic campaign exceeds fixture cap {_MAX_FIXTURES}")
     category_summary: dict[str, dict[str, int]] = {}
     failures: list[dict[str, Any]] = []
+    fixture_results: list[dict[str, Any]] = []
     passed = 0
     with tempfile.TemporaryDirectory(prefix="r2morph-vm-semantic-") as temp_dir:
         for source in fixtures:
@@ -105,10 +120,12 @@ def run_campaign(
                 continue
             categories = _fixture_categories(coverage, source.name)
             result = _run_fixture(source, Path(temp_dir) / source.name, seed, timeout)
+            fixture_result = {"fixture": source.name, "categories": categories, **result}
+            fixture_results.append(fixture_result)
             if result["status"] == "passed":
                 passed += 1
             else:
-                failures.append({"fixture": source.name, "categories": categories, **result})
+                failures.append(fixture_result)
             for category in categories:
                 stats = category_summary.setdefault(
                     category,
@@ -127,6 +144,7 @@ def run_campaign(
         "failed_count": len(failures),
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
+        "fixture_results": fixture_results,
         "failures": failures,
     }
 
@@ -138,6 +156,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
     target = reports[0].get("target")
     seeds: list[int] = []
     category_summary: dict[str, dict[str, int]] = {}
+    fixture_results: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     fixture_count = passed_count = failed_count = 0
     for report in reports:
@@ -150,6 +169,9 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         fixture_count += int(report["fixture_count"])
         passed_count += int(report["passed_count"])
         failed_count += int(report["failed_count"])
+        for fixture_result in report.get("fixture_results", []):
+            if isinstance(fixture_result, Mapping):
+                fixture_results.append({"seed": seed, **fixture_result})
         for category, summary in report["category_summary"].items():
             aggregate = category_summary.setdefault(
                 category,
@@ -169,6 +191,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         "failed_count": failed_count,
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
+        "fixture_results": fixture_results,
         "failures": failures,
     }
 
