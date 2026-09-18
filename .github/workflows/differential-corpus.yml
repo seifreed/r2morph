@@ -588,6 +588,9 @@ jobs:
           python scripts/vm_semantic_campaign.py \
             --dataset fixtures/dataset \
             --coverage docs/virtualization-coverage.json \
+            --seed 20260916 \
+            --seed 20260917 \
+            --seed 20260918 \
             --output vm-semantic-campaign.json
 
       - name: Validate VM semantic campaign
@@ -597,9 +600,9 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("vm-semantic-campaign.json").read_text(encoding="utf-8"))
-          if report["status"] != "passed" or report["fixture_count"] != 150:
+          if report["status"] != "passed" or report["seed_count"] != 3 or report["fixture_count"] != 450:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
-          if report["failed_count"] != 0 or report["passed_count"] != 150:
+          if report["failed_count"] != 0 or report["passed_count"] != 450:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
           categories = report["category_summary"]
           if len(categories) != 10:

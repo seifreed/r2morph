@@ -18,6 +18,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
 _MAX_FIXTURES = 256
 _DEFAULT_TIMEOUT_SECONDS = 5.0
+_DEFAULT_SEEDS = (20260916,)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 
 
@@ -130,15 +131,59 @@ def run_campaign(
     }
 
 
+def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any]:
+    """Aggregate deterministic seed runs without hiding a single failure."""
+    if not reports:
+        raise ValueError("at least one VM semantic campaign report is required")
+    target = reports[0].get("target")
+    seeds: list[int] = []
+    category_summary: dict[str, dict[str, int]] = {}
+    failures: list[dict[str, Any]] = []
+    fixture_count = passed_count = failed_count = 0
+    for report in reports:
+        if report.get("target") != target:
+            raise ValueError("VM semantic campaign reports have different targets")
+        seed = report.get("seed")
+        if not isinstance(seed, int) or seed in seeds:
+            raise ValueError("VM semantic campaign reports must have unique integer seeds")
+        seeds.append(seed)
+        fixture_count += int(report["fixture_count"])
+        passed_count += int(report["passed_count"])
+        failed_count += int(report["failed_count"])
+        for category, summary in report["category_summary"].items():
+            aggregate = category_summary.setdefault(
+                category,
+                {"fixture_count": 0, "passed_count": 0, "failed_count": 0},
+            )
+            for field in ("fixture_count", "passed_count", "failed_count"):
+                aggregate[field] += int(summary[field])
+        failures.extend({"seed": seed, **failure} for failure in report["failures"])
+    return {
+        "schema_version": 1,
+        "measurement": "vm-semantic-native-parity-campaign",
+        "target": target,
+        "seeds": seeds,
+        "seed_count": len(seeds),
+        "fixture_count": fixture_count,
+        "passed_count": passed_count,
+        "failed_count": failed_count,
+        "status": "passed" if not failures else "failed",
+        "category_summary": dict(sorted(category_summary.items())),
+        "failures": failures,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=Path("fixtures/dataset"))
     parser.add_argument("--coverage", type=Path, default=Path("docs/virtualization-coverage.json"))
-    parser.add_argument("--seed", type=int, default=20260916)
+    parser.add_argument("--seed", type=int, action="append")
     parser.add_argument("--timeout", type=float, default=_DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    report = run_campaign(args.dataset, _load_coverage(args.coverage), args.seed, args.timeout)
+    seeds = tuple(args.seed or _DEFAULT_SEEDS)
+    reports = tuple(run_campaign(args.dataset, _load_coverage(args.coverage), seed, args.timeout) for seed in seeds)
+    report = reports[0] if len(reports) == 1 else merge_campaign_reports(reports)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"VM semantic campaign: {report['passed_count']}/{report['fixture_count']} passed")
     if report["status"] != "passed":

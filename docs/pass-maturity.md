@@ -191,10 +191,11 @@ Every scheduled run processes all 150 ELF x86-64 fixtures from
 [`virtualization-coverage.json`](virtualization-coverage.json), preserves the
 executable mode in a temporary copy, requires one applied virtualization, and
 compares return code plus hashed stdout/stderr observables before and after the
-mutation. The workflow retains the JSON result as an artifact and fails on any
-missing, non-virtualized, or divergent fixture. This closes the missing
-continuous corpus-run evidence; the nine semantic gap labels remain because
-one corpus run does not prove arbitrary inputs, unsupported ABIs, or
+mutation. The workflow repeats that complete fixture set across three
+deterministic seeds, for 450 fixture runs, retains the JSON result as an
+artifact, and fails on any missing, non-virtualized, or divergent fixture. This
+closes the missing continuous corpus-run evidence; the nine semantic gap labels
+remain because fixture runs do not prove arbitrary inputs, unsupported ABIs, or
 cross-platform parity.
 The current local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
