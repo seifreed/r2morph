@@ -99,6 +99,15 @@ jobs:
               raise SystemExit(f"missing pass runs: {summary['missing_pass_runs_by_pass']}")
           if summary["missing_tool_runs"] != 0:
               raise SystemExit(f"missing tool runs: {summary['missing_tool_runs_by_tool']}")
+          angr_completed = summary["completed_tool_runs_by_tool"].get("angr", 0)
+          if angr_completed != summary["expected_pass_runs"]:
+              raise SystemExit(
+                  f"angr campaign is incomplete: {angr_completed}/{summary['expected_pass_runs']}"
+              )
+          if summary["unavailable_tool_runs_by_tool"].get("angr", 0):
+              raise SystemExit("angr campaign reported unavailable runs")
+          if summary["error_tool_runs_by_tool"].get("angr", 0):
+              raise SystemExit("angr campaign reported error runs")
           effectiveness = summary["analyzer_effectiveness_by_pass"]
           expected_passes = set(report["pass_names"])
           if set(effectiveness) != expected_passes:

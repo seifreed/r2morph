@@ -1492,6 +1492,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "binary-ninja" in adversarial
         and "missing_pass_runs" in adversarial
         and "missing_tool_runs" in adversarial
+        and "angr campaign is incomplete" in adversarial
+        and 'summary["unavailable_tool_runs_by_tool"].get("angr", 0)' in adversarial
+        and 'summary["error_tool_runs_by_tool"].get("angr", 0)' in adversarial
         and "adversarial_evidence_blockers" in adversarial
         and "total_adversarial_evidence_blockers" in adversarial
         and "incomplete_tool_coverage" in adversarial
