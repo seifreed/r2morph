@@ -33,7 +33,7 @@ def _build_x86_32_elf(tmp_path: Path) -> Path:
         ".type compute,@function\n"
         "compute:\n"
         "    movl $40, %ecx\n"
-        "    xchgl %ecx, %ecx\n"
+        "    movl %ecx, %ecx\n"
         "    addl $2, %ecx\n"
         "    movl %ecx, %eax\n"
         "    ret\n"
