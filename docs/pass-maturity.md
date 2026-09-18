@@ -226,7 +226,8 @@ The selection contract exposes only five short aliases through the CLI:
 are engine-only capabilities until their configuration and end-to-end workflow
 are promoted into the public CLI surface.
 
-VM resistance artifacts currently cover 10 seeds with 255 handlers per seed,
+VM resistance artifacts currently cover 10 seeds with 255 handlers per seed
+across five tracked ELF x86-64 fixtures,
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
@@ -239,8 +240,8 @@ checks. This strengthens automated evidence but does not replace the pending
 human/adversarial review. The generated `total_vm_resistance_blockers` count is
 currently 6 VM resistance blockers.
 The local refresh
-[`protection-vm-resistance-2026-09-18-21471618.json`](protection-vm-resistance-2026-09-18-21471618.json)
-extends that evidence across three tracked ELF x86-64 fixtures: semantic parity,
+[`protection-vm-resistance-2026-09-19-3feec419.json`](protection-vm-resistance-2026-09-19-3feec419.json)
+extends that evidence across five tracked ELF x86-64 fixtures: semantic parity,
 cross-fixture artifact diversity, single- and nested-layer tamper divergence,
 and progressive bytecode growth all passed across ten seeds. Its human review
 field remains pending by contract.
