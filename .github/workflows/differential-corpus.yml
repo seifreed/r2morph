@@ -615,6 +615,8 @@ jobs:
               or row.get("observables_equal") is not True
               or not isinstance(row.get("original"), dict)
               or not isinstance(row.get("mutated"), dict)
+              or "termination_signal" not in row["original"]
+              or "termination_signal" not in row["mutated"]
               or not isinstance(row["original"].get("created_files"), dict)
               or not isinstance(row["mutated"].get("created_files"), dict)
               for row in fixture_results

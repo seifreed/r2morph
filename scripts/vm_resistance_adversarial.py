@@ -67,6 +67,13 @@ def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int |
     return stats
 
 
+def _required_bytecode_size(stats: dict[str, object]) -> int:
+    value = stats.get("total_bytecode_bytes")
+    if not isinstance(value, int):
+        raise ValueError("virtualization report is missing total_bytecode_bytes")
+    return value
+
+
 def _seed_campaign(source: Path, workdir: Path, first_seed: int, count: int) -> dict[str, object]:
     baseline = emulate_exit_code(source)
     builds: list[dict[str, object]] = []
@@ -144,6 +151,31 @@ def _dispatcher_digests(first_seed: int, count: int) -> list[str]:
     ]
 
 
+def _opcode_assignment_report(first_seed: int, count: int) -> dict[str, object]:
+    rows: list[dict[str, object]] = []
+    for seed in range(first_seed, first_seed + count):
+        scheme = build_vm_scheme(randomness.Random(seed))
+        assignments = [(key[0], key[1], key[2], tuple(indices)) for key, indices in sorted(scheme.dup.items())]
+        digest = hashlib.sha256(repr(assignments).encode("ascii")).hexdigest()
+        multiplicities = [len(indices) for _key, indices in sorted(scheme.dup.items())]
+        rows.append(
+            {
+                "seed": seed,
+                "opcode_count": sum(multiplicities),
+                "operation_key_count": len(assignments),
+                "minimum_multiplicity": min(multiplicities),
+                "maximum_multiplicity": max(multiplicities),
+                "assignment_digest": digest,
+            }
+        )
+    digests = [str(row["assignment_digest"]) for row in rows]
+    return {
+        "seeds": rows,
+        "assignment_unique_count": len(set(digests)),
+        "all_assignments_unique": len(set(digests)) == count,
+    }
+
+
 def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dict[str, object]:
     """Measure seed diversity, tamper response, and progressive VM growth."""
     if count < _MIN_SEEDS or count > _MAX_SEEDS:
@@ -162,9 +194,9 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
         progressive = {
             "depth_1_bytes": shallow.stat().st_size,
             "depth_2_bytes": deep.stat().st_size,
-            "depth_1_bytecode_bytes": shallow_stats.get("total_bytecode_bytes", 0),
-            "depth_2_bytecode_bytes": deep_stats.get("total_bytecode_bytes", 0),
-            "growth_observed": deep_stats.get("total_bytecode_bytes", 0) > shallow_stats.get("total_bytecode_bytes", 0),
+            "depth_1_bytecode_bytes": _required_bytecode_size(shallow_stats),
+            "depth_2_bytecode_bytes": _required_bytecode_size(deep_stats),
+            "growth_observed": _required_bytecode_size(deep_stats) > _required_bytecode_size(shallow_stats),
             "depth_1_exit_code": emulate_exit_code(shallow),
             "depth_2_exit_code": emulate_exit_code(deep),
             "baseline_exit_code": campaign["baseline_exit_code"],
@@ -179,6 +211,7 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
         "opcode_and_dispatcher_diversity": {
             "dispatcher_unique_count": len(set(dispatcher_digests)),
             "dispatcher_digests": dispatcher_digests,
+            "opcode_assignment": _opcode_assignment_report(first_seed, count),
             "handler_report": measure_handlers(first_seed, count),
             "bytecode_grammar_report": measure_grammar(first_seed, count),
         },
@@ -200,6 +233,23 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
     }
 
 
+def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, bool]:
+    campaign = report.get("seed_campaign")
+    tamper = report.get("anti_tamper")
+    progressive = report.get("progressive_bytecode")
+    if not isinstance(campaign, dict) or not isinstance(tamper, dict) or not isinstance(progressive, dict):
+        raise ValueError("VM resistance report is missing validation sections")
+    tamper_diverged = all(
+        isinstance(layer_report := tamper.get(layer), dict) and layer_report.get("all_tamper_probes_diverged") is True
+        for layer in ("single_layer", "nested")
+    )
+    return (
+        campaign.get("semantic_parity") is True,
+        tamper_diverged,
+        progressive.get("growth_observed") is True,
+    )
+
+
 def measure_corpus(
     sources: Sequence[Path],
     first_seed: int = _DEFAULT_SEED,
@@ -209,10 +259,14 @@ def measure_corpus(
     if not sources:
         raise ValueError("at least one VM fixture is required")
     reports = [measure(source, first_seed, count) for source in sources]
-    seed_builds = [
-        build for report in reports for build in report["seed_campaign"]["builds"] if isinstance(build, dict)
-    ]
-    artifact_hashes = [build["sha256"] for build in seed_builds]
+    seed_builds: list[dict[str, object]] = []
+    for report in reports:
+        campaign = report.get("seed_campaign")
+        if not isinstance(campaign, dict) or not isinstance(builds := campaign.get("builds"), list):
+            raise ValueError("VM resistance report is missing seed builds")
+        seed_builds.extend(build for build in builds if isinstance(build, dict))
+    artifact_hashes = [digest for build in seed_builds if isinstance(digest := build.get("sha256"), str)]
+    validation_flags = [_corpus_validation_flags(report) for report in reports]
     return {
         "schema_version": 1,
         "fixture_count": len(reports),
@@ -220,13 +274,9 @@ def measure_corpus(
         "first_seed": first_seed,
         "seed_count": count,
         "cross_fixture_distinct_artifacts": len(set(artifact_hashes)) == len(artifact_hashes),
-        "semantic_parity": all(report["seed_campaign"]["semantic_parity"] for report in reports),
-        "all_tamper_probes_diverged": all(
-            report["anti_tamper"][layer]["all_tamper_probes_diverged"]
-            for report in reports
-            for layer in ("single_layer", "nested")
-        ),
-        "progressive_growth_observed": all(report["progressive_bytecode"]["growth_observed"] for report in reports),
+        "semantic_parity": all(flags[0] for flags in validation_flags),
+        "all_tamper_probes_diverged": all(flags[1] for flags in validation_flags),
+        "progressive_growth_observed": all(flags[2] for flags in validation_flags),
         "automated_validation": {
             "status": "completed",
             "evidence_quality": "automated-adversarial-smoke",

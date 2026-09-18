@@ -190,8 +190,9 @@ campaign in [`scripts/vm_semantic_campaign.py`](../scripts/vm_semantic_campaign.
 Every scheduled run processes all 150 ELF x86-64 fixtures from
 [`virtualization-coverage.json`](virtualization-coverage.json), preserves the
 executable mode in a temporary copy, requires one applied virtualization, and
-compares return code plus hashed stdout/stderr observables before and after the
-mutation. The workflow repeats that complete fixture set across three
+compares return code, termination signal, hashed stdout/stderr, and bounded
+created-file hashes, sizes, and modes before and after the mutation. The
+workflow repeats that complete fixture set across three
 deterministic seeds, for 450 fixture runs, retains the JSON result as an
 artifact, and fails on any missing, non-virtualized, or divergent fixture. This
 closes the missing continuous corpus-run evidence; the nine semantic gap labels

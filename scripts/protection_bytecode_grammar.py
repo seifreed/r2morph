@@ -78,8 +78,10 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
             }
         )
 
-    total_handlers = sum(int(row["handler_count"]) for row in seed_rows)
-    seeds_with_target_handlers = sum(int(row["target_handler_count"]) > 0 for row in seed_rows)
+    total_handlers = sum(value for row in seed_rows if isinstance(value := row.get("handler_count"), int))
+    seeds_with_target_handlers = sum(
+        isinstance(value := row.get("target_handler_count"), int) and value > 0 for row in seed_rows
+    )
     target_stride_unique_count = len(set(target_strides))
     return {
         "schema_version": 2,

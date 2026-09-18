@@ -22,6 +22,7 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
     report = measure(_FIXTURE, first_seed=20260915, count=4)
     campaign = cast(dict[str, object], report["seed_campaign"])
     diversity = cast(dict[str, object], report["opcode_and_dispatcher_diversity"])
+    opcode_assignment = cast(dict[str, object], diversity["opcode_assignment"])
     progressive = cast(dict[str, object], report["progressive_bytecode"])
     tamper = cast(dict[str, object], report["anti_tamper"])
     validation = cast(dict[str, object], report["automated_validation"])
@@ -36,6 +37,8 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and campaign["semantic_parity"] is True
         and campaign["distinct_artifacts"] is True
         and diversity["dispatcher_unique_count"] == _EXPECTED_SEED_COUNT
+        and opcode_assignment["assignment_unique_count"] == _EXPECTED_SEED_COUNT
+        and opcode_assignment["all_assignments_unique"] is True
         and handler_report["cross_seed_has_exact_normalised_matches"] is False
         and grammar_report["target_stride_diverse"] is True
         and single_layer["tamper_diverged"] is True

@@ -6,7 +6,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
+import stat
 import tempfile
 from collections.abc import Mapping
 from pathlib import Path
@@ -60,6 +62,7 @@ def _created_file_observations(directory: Path) -> dict[str, dict[str, int | str
         path.relative_to(directory).as_posix(): {
             "sha256": _sha256_file(path),
             "size": path.stat().st_size,
+            "mode": stat.S_IMODE(path.stat().st_mode),
         }
         for path in files
     }
@@ -74,9 +77,11 @@ def _execution_observation(path: Path, timeout: float, workdir: Path) -> dict[st
     except OSError as exc:
         result = {"status": "error", "error_type": type(exc).__name__}
     else:
+        returncode = completed.returncode
         result = {
             "status": "completed",
-            "returncode": completed.returncode,
+            "returncode": returncode,
+            "termination_signal": -returncode if os.name == "posix" and returncode < 0 else None,
             "stdout_size": len(completed.stdout),
             "stdout_sha256": hashlib.sha256(completed.stdout).hexdigest(),
             "stderr_size": len(completed.stderr),

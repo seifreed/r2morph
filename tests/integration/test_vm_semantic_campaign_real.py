@@ -1,3 +1,5 @@
+import os
+import signal
 from pathlib import Path
 
 from scripts.vm_semantic_campaign import _execution_observation, _load_coverage, merge_campaign_reports, run_campaign
@@ -20,9 +22,24 @@ def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
             "result.txt": {
                 "sha256": "406effb1e9c59672c66a598c2b21e331b23b16c54024e96d6df3e7c173549791",
                 "size": 7,
+                "mode": 0o644,
             }
         }
     )
+
+
+def test_vm_semantic_observation_records_signal_termination(tmp_path: Path) -> None:
+    program = tmp_path / "signal_sender"
+    program.write_text(
+        "#!/usr/bin/env python3\nimport os\nimport signal\nos.kill(os.getpid(), signal.SIGTERM)\n",
+        encoding="utf-8",
+    )
+    program.chmod(0o700)
+
+    observation = _execution_observation(program, 5.0, tmp_path / "run")
+
+    expected_signal = signal.SIGTERM if os.name == "posix" else None
+    expect(observation["termination_signal"] == expected_signal)
 
 
 def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
@@ -88,4 +105,5 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
         'report.get("fixture_results", [])' in content
         and 'row.get("functions_virtualized")' in content
         and 'row.get("unsupported_functions") != 0' in content
+        and '"termination_signal" not in row["original"]' in content
     )
