@@ -340,6 +340,19 @@ class TestSSAConverter:
         expect(var is not None)
         expect(var.base_name == "eax")
 
+    def test_get_ssa_variable_at_resolves_register_alias(self, converter):
+        variable = SSAVariable(base_name="eax", version=1)
+        blocks = {
+            0x1000: SSABlock(
+                address=0x1000,
+                definitions={"eax": variable},
+            )
+        }
+
+        result = converter.get_ssa_variable_at("rax", 0x1000, blocks)
+
+        expect(result == variable)
+
     def test_get_ssa_variable_at_not_found(self, converter):
         blocks = {0x1000: SSABlock(address=0x1000)}
 
@@ -377,6 +390,22 @@ class TestSSAConverter:
         expect(len(versions) == _EXPECTED_LEN_VERSIONS_2)
         expect(versions[0].version == 0)
         expect(versions[1].version == 1)
+
+    def test_get_all_versions_resolves_register_alias(self, converter):
+        blocks = {
+            0x1000: SSABlock(
+                address=0x1000,
+                definitions={"eax": SSAVariable(base_name="eax", version=0)},
+            ),
+            0x1005: SSABlock(
+                address=0x1005,
+                definitions={"eax": SSAVariable(base_name="eax", version=1)},
+            ),
+        }
+
+        versions = converter.get_all_versions("rax", blocks)
+
+        expect([variable.version for variable in versions] == [0, 1])
 
     def test_compute_live_variables_ssa_single_block(self, converter):
         blocks = {

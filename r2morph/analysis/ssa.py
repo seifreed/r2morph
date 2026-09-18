@@ -564,13 +564,14 @@ class SSAConverter:
         latest_address: int | None = None
         latest_variable: SSAVariable | None = None
         for block_addr, ssa_block in ssa_blocks.items():
+            variable = self._find_alias_definition(ssa_block.definitions, reg_name)
             if (
-                block_addr <= address
-                and reg_name in ssa_block.definitions
+                variable is not None
+                and block_addr <= address
                 and (latest_address is None or block_addr > latest_address)
             ):
                 latest_address = block_addr
-                latest_variable = ssa_block.definitions[reg_name]
+                latest_variable = variable
         return latest_variable
 
     def get_all_versions(
@@ -592,11 +593,10 @@ class SSAConverter:
         seen_versions: set[int] = set()
 
         for ssa_block in ssa_blocks.values():
-            if reg_name in ssa_block.definitions:
-                ssa_var = ssa_block.definitions[reg_name]
-                if ssa_var.version not in seen_versions:
-                    versions.append(ssa_var)
-                    seen_versions.add(ssa_var.version)
+            ssa_var = self._find_alias_definition(ssa_block.definitions, reg_name)
+            if ssa_var is not None and ssa_var.version not in seen_versions:
+                versions.append(ssa_var)
+                seen_versions.add(ssa_var.version)
 
         return sorted(versions, key=lambda v: v.version)
 
