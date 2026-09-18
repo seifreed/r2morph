@@ -74,7 +74,7 @@ _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-2026-09-06-cf44477.json"
-_CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-13-13214f9.json"
+_CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-c554c46d.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
 
 

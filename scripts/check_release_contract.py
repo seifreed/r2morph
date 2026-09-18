@@ -872,7 +872,7 @@ def _blocker_totals(blockers: dict[str, object]) -> dict[str, int]:
 def _check_adversarial_benchmark_artifacts() -> None:
     for path in (
         ROOT / "docs" / "protection-adversarial-benchmark.json",
-        ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json",
+        ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json",
     ):
         _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
 
@@ -890,7 +890,7 @@ def _check_angr_runtime_available() -> None:
 
 def _check_readme_adversarial_summary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    report_name = "protection-adversarial-angr-local-2026-09-13-13214f9.json"
+    report_name = "protection-adversarial-angr-local-2026-09-18-c554c46d.json"
     report = json.loads((ROOT / "docs" / report_name).read_text(encoding="utf-8"))
     tools = report["tools"]
     completed = sum(1 for tool in tools if tool["status"] == "completed")

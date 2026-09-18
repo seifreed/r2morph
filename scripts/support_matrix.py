@@ -442,7 +442,7 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
             "angr": {
                 "status": "completed",
                 "evidence": [
-                    "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+                    "docs/protection-adversarial-angr-local-2026-09-18-c554c46d.json",
                     "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
                 ],
             },
@@ -470,7 +470,7 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
             "binary-ninja": {
                 "status": "unavailable",
                 "evidence": [
-                    "docs/protection-adversarial-angr-local-2026-09-13-13214f9.json",
+                    "docs/protection-adversarial-angr-local-2026-09-18-c554c46d.json",
                     ".github/workflows/adversarial-benchmark.yml",
                 ],
             }

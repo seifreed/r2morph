@@ -205,7 +205,7 @@ def test_compatibility_corpus_does_not_promote_historical_six_pass_campaign() ->
 
 def test_local_adversarial_angr_evidence_completes_original_and_protected() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     tools = {row["tool"]: row for row in report["tools"]}
     angr = tools["angr"]
@@ -237,7 +237,7 @@ def test_release_contract_allows_missing_angr_runtime_on_windows() -> None:
 
 def test_release_contract_rejects_missing_binary_ninja_slot() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     report["tools"] = [row for row in report["tools"] if row["tool"] != "binary-ninja"]
 
@@ -252,7 +252,7 @@ def test_release_contract_rejects_missing_binary_ninja_slot() -> None:
 
 def test_release_contract_rejects_incomplete_completed_analyzer_row() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     tools = {row["tool"]: row for row in report["tools"]}
     del tools["angr"]["protected"]
@@ -268,7 +268,7 @@ def test_release_contract_rejects_incomplete_completed_analyzer_row() -> None:
 
 def test_release_contract_rejects_unexplained_unavailable_analyzer_row() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     tools = {row["tool"]: row for row in report["tools"]}
     tools["binary-ninja"]["reason"] = ""
@@ -284,7 +284,7 @@ def test_release_contract_rejects_unexplained_unavailable_analyzer_row() -> None
 
 def test_release_contract_rejects_adversarial_benchmark_without_signoff_blockers() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     del report["release_signoff_blockers"]
 
@@ -299,7 +299,7 @@ def test_release_contract_rejects_adversarial_benchmark_without_signoff_blockers
 
 def test_release_contract_rejects_adversarial_benchmark_without_signoff_blocker_totals() -> None:
     report = json.loads(
-        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-13-13214f9.json").read_text(encoding="utf-8")
+        (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-c554c46d.json").read_text(encoding="utf-8")
     )
     del report["release_signoff_blocker_totals"]
 
