@@ -89,6 +89,24 @@ def test_composition_evidence_keeps_simple_pair_direction(tmp_path: Path) -> Non
     expect(evidence["pair_case_counts"] == {"ConstantUnfolding->NopInsertion": 1, "NopInsertion->ConstantUnfolding": 1})
 
 
+def test_composition_evidence_reads_core_order_from_parameter_id(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    prefix = "test_core_passes_compose_with_nop_and_preserve_exit_code"
+    before = f"{prefix}[BlockReordering_before_nop]"
+    after = f"{prefix}[BlockReordering_after_nop]"
+    composition.write_text(
+        f"<testsuite><testcase name='{before}'/><testcase name='{after}'/></testsuite>",
+        encoding="utf-8",
+    )
+
+    evidence = read_composition_evidence((composition,))
+
+    expect(
+        evidence["pass_case_counts"] == {"BlockReordering": 2}
+        and evidence["pair_case_counts"] == {"BlockReordering->NopInsertion": 1, "NopInsertion->BlockReordering": 1}
+    )
+
+
 def test_maturity_evidence_marks_missing_behavioral_observation_as_incomplete(tmp_path: Path) -> None:
     composition = tmp_path / "composition.xml"
     composition.write_text(

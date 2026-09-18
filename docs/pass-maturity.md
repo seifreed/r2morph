@@ -14,9 +14,9 @@ The compatibility corpus selection currently covers `BlockReordering`,
 
 The continuous composition smoke exercises six directional pairs among
 `NopInsertion`, `InstructionSubstitution`, and `ConstantUnfolding`, both orders
-of `NopInsertion` with each of the twelve extended maturity passes, and seven
+of `NopInsertion` with each of the twelve extended maturity passes, and fourteen
 applied core-pass compositions on dedicated fixtures. The workflow requires
-all 30 directional pairs and all 39 real-fixture test cases. `StackStrings`
+all 44 directional pairs and all 46 real-fixture test cases. `StackStrings`
 now has a native regression for its supported ELF x86-64 direct-call and optimized tail-jump rewrites;
 references without a safe shape, unsupported encodings, and unavailable caves
 remain explicit no-op cases.
@@ -48,7 +48,7 @@ contract until they have equivalent real-fixture coverage.
 | Stack strings | Experimental | ELF x86-64 | Rewrites unique RIP-relative direct-call arguments only; unsupported references, encodings, and targets remain no-op | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
 | String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; pattern coverage is intentionally narrow | `README.md`, `docs/compatibility-corpus.md` |
-| Polymorphic engine | Experimental | ELF x86-64 | The current real ELF x86-64 smoke covers 39 cases and 30 directional pairs; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
+| Polymorphic engine | Experimental | ELF x86-64 | The current real ELF x86-64 smoke covers 46 cases and 44 directional pairs; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
 
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a

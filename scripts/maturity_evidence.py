@@ -81,6 +81,7 @@ def _composition_passes(test_name: str) -> set[str]:
     parameters = _COMPOSITION_PARAMETER_RE.findall(test_name)
     if parameters:
         parameter = parameters[-1].lower()
+        parameter = parameter.removesuffix("_before_nop").removesuffix("_after_nop")
         if parameter in _COMPOSITION_PARAMETER_MAP:
             return {_COMPOSITION_PARAMETER_MAP[parameter]}
     lowered = test_name.lower()
@@ -102,12 +103,16 @@ def _composition_pairs(test_name: str) -> set[tuple[str, str]]:
     if not parameters:
         return set()
     parameter = parameters[-1].lower()
+    order = next((suffix for suffix in ("before_nop", "after_nop") if suffix in parameter), None)
+    if order is None:
+        order = next((suffix for suffix in ("before_nop", "after_nop") if suffix in lowered), None)
+    parameter = parameter.removesuffix("_before_nop").removesuffix("_after_nop")
     extended = _COMPOSITION_PARAMETER_MAP.get(parameter)
-    if extended is None or "nop" not in lowered:
+    if extended is None or order is None or "nop" not in lowered:
         return set()
-    if "after_nop" in lowered:
+    if order == "after_nop":
         return {("NopInsertion", extended)}
-    if "before_nop" in lowered:
+    if order == "before_nop":
         return {(extended, "NopInsertion")}
     return set()
 

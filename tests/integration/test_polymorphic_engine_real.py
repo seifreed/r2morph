@@ -54,7 +54,9 @@ _EXTENDED_COMPOSITION_PASSES = (
 )
 _CORE_COMPOSITION_CASES = (
     ("BlockReordering", "elf_jumpchain_x86_64", BlockReorderingPass, {"max_functions": 10}, "before_nop", _SEED),
+    ("BlockReordering", "elf_jumpchain_x86_64", BlockReorderingPass, {"max_functions": 10}, "after_nop", _SEED + 1),
     ("CodeVirtualization", "elf_vm_arith_x86_64", CodeVirtualizationPass, {"max_functions": 2}, "before_nop", _SEED),
+    ("CodeVirtualization", "elf_vm_arith_x86_64", CodeVirtualizationPass, {"max_functions": 2}, "after_nop", _SEED + 1),
     (
         "ControlFlowFlattening",
         "elf_cff_flagdead_x86_64",
@@ -62,6 +64,14 @@ _CORE_COMPOSITION_CASES = (
         {"max_functions_to_flatten": 2},
         "before_nop",
         _SEED,
+    ),
+    (
+        "ControlFlowFlattening",
+        "elf_cff_flagdead_x86_64",
+        ControlFlowFlatteningPass,
+        {"max_functions_to_flatten": 2},
+        "after_nop",
+        _SEED + 1,
     ),
     (
         "DeadCodeInjection",
@@ -72,12 +82,28 @@ _CORE_COMPOSITION_CASES = (
         _SEED,
     ),
     (
+        "DeadCodeInjection",
+        "elf_cff_flagdead_x86_64",
+        DeadCodeInjectionPass,
+        {"max_injections_per_function": 2},
+        "after_nop",
+        _SEED + 1,
+    ),
+    (
         "InstructionExpansion",
         "elf_vm_shift_x86_64",
         InstructionExpansionPass,
         {"max_expansions_per_function": 2},
         "before_nop",
         _SEED,
+    ),
+    (
+        "InstructionExpansion",
+        "elf_vm_shift_x86_64",
+        InstructionExpansionPass,
+        {"max_expansions_per_function": 2},
+        "after_nop",
+        _SEED + 1,
     ),
     (
         "PatternSubstitution",
@@ -88,12 +114,28 @@ _CORE_COMPOSITION_CASES = (
         20260920,
     ),
     (
+        "PatternSubstitution",
+        "elf_vm_call_x86_64",
+        PatternSubstitutionPass,
+        {"max_substitutions_per_function": 2},
+        "before_nop",
+        20260922,
+    ),
+    (
         "RegisterSubstitution",
         "elf_vm_redzone_x86_64",
         RegisterSubstitutionPass,
         {"max_substitutions_per_function": 2},
         "before_nop",
         _SEED,
+    ),
+    (
+        "RegisterSubstitution",
+        "elf_vm_redzone_x86_64",
+        RegisterSubstitutionPass,
+        {"max_substitutions_per_function": 2},
+        "after_nop",
+        _SEED + 1,
     ),
 )
 
@@ -293,7 +335,7 @@ def test_extended_passes_compose_before_nop_without_corrupting_fixture(
 @pytest.mark.parametrize(
     "case",
     _CORE_COMPOSITION_CASES,
-    ids=[name for name, _, _, _, _, _ in _CORE_COMPOSITION_CASES],
+    ids=[f"{name}_{order}" for name, _, _, _, order, _ in _CORE_COMPOSITION_CASES],
 )
 def test_core_passes_compose_with_nop_and_preserve_exit_code(
     case: tuple[str, str, type, dict[str, int], str, int],
