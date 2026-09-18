@@ -230,6 +230,27 @@ int main(int argc, char **argv) {
     return argc > 1 ? mix((const uint8_t *)argv[1], (int)strlen(argv[1])) : mix((const uint8_t *)"r2morph", 7);
 }
 """,
+    "generated_string": r"""
+#include <stddef.h>
+#include <stdint.h>
+
+__attribute__((noinline)) static int copy_bytes(void) {
+    uint8_t source[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t destination[8] = {0};
+    __asm__ volatile(
+        "mov %[source], %%rsi\n"
+        "mov %[destination], %%rdi\n"
+        "mov $8, %%rcx\n"
+        "cld\n"
+        "rep movsb\n"
+        :
+        : [source] "r"(source), [destination] "r"(destination)
+        : "rsi", "rdi", "rcx", "memory");
+    return destination[0] + destination[7];
+}
+
+int main(void) { return copy_bytes() == 9 ? 42 : 1; }
+""",
     "generated_abi": r"""
 #include <stdarg.h>
 #include <stdint.h>

@@ -90,6 +90,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_pointers",
     "generated_recursive",
     "generated_stack_strings",
+    "generated_string",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
 _EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 1) * len(
@@ -820,6 +821,12 @@ def test_generated_calls_source_preserves_direct_and_indirect_call_shapes() -> N
         and "call_target volatile selected_target" in source
         and "selected_target(direct)" in source
     )
+
+
+def test_generated_string_source_preserves_implicit_memory_shape() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_string"]
+
+    expect('"rep movsb\\n"' in source and '"memory"' in source)
 
 
 def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
