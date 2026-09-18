@@ -1614,7 +1614,6 @@ jobs:
 
   aggregate-platform-differential:
     name: Aggregate platform differential evidence
-    if: ${{ always() }}
     needs:
       - cross-platform-differential
       - cross-platform-format-windows

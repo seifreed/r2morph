@@ -1767,6 +1767,13 @@ def test_differential_workflow_cancels_stale_campaigns() -> None:
     expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: true" in workflow)
 
 
+def test_platform_evidence_aggregate_skips_cancelled_dependencies() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    aggregate_header = workflow.split("  aggregate-platform-differential:\n", 1)[1].split("    needs:", 1)[0]
+
+    expect("if:" not in aggregate_header)
+
+
 def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
 
