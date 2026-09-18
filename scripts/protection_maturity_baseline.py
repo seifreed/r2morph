@@ -96,9 +96,13 @@ _GENERATED_CORPUS_PROFILES = (
     ("gcc-stripped-o2", "gcc", "-O2", "-fno-pie", "-no-pie", "-s"),
     ("clang-o0", "clang", "-O0", "-fno-pie", "-no-pie"),
     ("clang-o2", "clang", "-O2", "-fno-pie", "-no-pie"),
+    ("clang-o3", "clang", "-O3", "-fno-pie", "-no-pie"),
+    ("clang-pie-o2", "clang", "-O2", "-fPIE", "-pie"),
 )
 _GENERATED_CPP_CORPUS_PROFILES = (
+    ("gxx-o0", "g++", "-O0", "-fno-pie", "-no-pie"),
     ("gxx-o2", "g++", "-O2", "-fno-pie", "-no-pie"),
+    ("clangxx-o0", "clang++", "-O0", "-fno-pie", "-no-pie"),
     ("clangxx-o2", "clang++", "-O2", "-fno-pie", "-no-pie"),
 )
 _GENERATED_UNREACHABLE_PADDING = r"""

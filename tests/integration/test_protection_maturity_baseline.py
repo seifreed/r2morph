@@ -834,12 +834,17 @@ def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
             "gcc-stripped-o2",
             "clang-o0",
             "clang-o2",
+            "clang-o3",
+            "clang-pie-o2",
         )
     )
 
 
 def test_generated_corpus_declares_cpp_compiler_variants() -> None:
-    expect(tuple(profile[0] for profile in _GENERATED_CPP_CORPUS_PROFILES) == ("gxx-o2", "clangxx-o2"))
+    expect(
+        tuple(profile[0] for profile in _GENERATED_CPP_CORPUS_PROFILES)
+        == ("gxx-o0", "gxx-o2", "clangxx-o0", "clangxx-o2")
+    )
 
 
 def test_complete_evidence_gate_accepts_full_single_pass_report() -> None:
