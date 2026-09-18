@@ -198,7 +198,9 @@ created-file hashes, sizes, and modes before and after the mutation. The
 workflow repeats that complete fixture set across three
 deterministic seeds, for 453 fixture runs, retains the JSON result as an
 artifact, and fails on any missing, non-virtualized, or divergent fixture. The
-artifact also reports each declared capability explicitly: memory, calls,
+latest passing campaign is retained in
+[`protection-vm-semantic-2026-09-18-1d0b69e4.json`](protection-vm-semantic-2026-09-18-1d0b69e4.json).
+The artifact also reports each declared capability explicitly: memory, calls,
 ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,
 TLS/signals, threads, and FP/SIMD are campaign-measured. LSDA/landing-pad
 exception transformation remains fail-closed and is separately covered by
