@@ -112,6 +112,32 @@ __asm__(
 );
 """
 _GENERATED_CORPUS_SOURCES = {
+    "generated_calls": r"""
+#include <stdint.h>
+
+typedef int (*call_target)(int);
+
+__attribute__((noinline)) static int direct_target(int value) {
+    return value * 5 + 3;
+}
+
+__attribute__((noinline)) static int indirect_target(int value) {
+    return (value ^ 0x2a) - 7;
+}
+
+static call_target volatile selected_target = indirect_target;
+
+__attribute__((noinline)) static int call_mix(int value) {
+    int direct = direct_target(value + 7);
+    int indirect = selected_target(direct);
+    return (direct + indirect) & 127;
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    return call_mix(argc);
+}
+""",
     "generated_branch": r"""
 #include <stdint.h>
 #include <stdlib.h>

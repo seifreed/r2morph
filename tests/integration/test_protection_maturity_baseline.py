@@ -82,6 +82,7 @@ _EXPECTED_EXTENDED_PASS_COUNT = len(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_abi",
     "generated_branch",
+    "generated_calls",
     "generated_cpp",
     "generated_extended",
     "generated_lookup",
@@ -807,6 +808,16 @@ def test_render_multi_pass_result_records_generated_input_coverage() -> None:
 
 def test_generated_corpus_includes_branch_memory_and_lookup_shapes() -> None:
     expect(tuple(sorted(_GENERATED_CORPUS_SOURCES)) == _EXPECTED_GENERATED_CORPUS_SOURCES)
+
+
+def test_generated_calls_source_preserves_direct_and_indirect_call_shapes() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_calls"]
+
+    expect(
+        "direct_target(value + 7)" in source
+        and "call_target volatile selected_target" in source
+        and "selected_target(direct)" in source
+    )
 
 
 def test_generated_corpus_declares_compiler_and_pie_variants() -> None:

@@ -210,7 +210,7 @@ so missing pass/tool rows and missing applications for the ten contractual
 corpus passes fail the run. It also starts automatically after a successful
 `Differential Corpus By Pass` run and checks out that run's exact `head_sha`,
 so analyzer evidence is refreshed for the same source revision rather than
-drifting behind the differential campaign. It includes the same sixty-two generated ELF
+drifting behind the differential campaign. It includes the same seventy-two generated ELF
 x86-64 variants used by the differential campaign, records that scope in the
 merged report, and partitions generated fixtures together with repository
 fixtures. Extended-pass application gaps remain published as explicit evidence
@@ -243,7 +243,7 @@ partial-ISA rows remain release blockers.
 
 The scheduled differential workflow uses the same four-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,
-and the aggregate artifact rechecks that all fifty-two generated variants and all
+and the aggregate artifact rechecks that all seventy-two generated variants and all
 pass/fixture/seed rows are present before publishing the campaign evidence.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
