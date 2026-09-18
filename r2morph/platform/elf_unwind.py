@@ -95,6 +95,7 @@ def _cie() -> bytes:
     body = (
         b"\x00\x00\x00\x00\x01zR\x00" + _uleb128(1) + _sleb128(-8) + _uleb128(_X86_64_RIP) + b"\x01\x1b" + instructions
     )
+    body += b"\x00" * ((-(len(body) + 4)) & 3)
     return struct.pack("<I", len(body)) + body
 
 
@@ -104,6 +105,7 @@ def _cie_with_personality(eh_frame_vaddr: int, personality: int) -> bytes:
     augmentation = b"\x07\x1b" + _sdata4(personality - (eh_frame_vaddr + 4 + len(prefix) + 2)) + b"\x1b\x1b"
     instructions = bytes((_DW_CFA_DEF_CFA, _X86_64_RSP, 8, _DW_CFA_OFFSET_RIP, 1))
     body = prefix + augmentation + instructions
+    body += b"\x00" * ((-(len(body) + 4)) & 3)
     return struct.pack("<I", len(body)) + body
 
 

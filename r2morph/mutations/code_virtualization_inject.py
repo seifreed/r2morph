@@ -142,6 +142,11 @@ def _align_up(value: int, alignment: int) -> int:
     return (value + alignment - 1) & ~(alignment - 1)
 
 
+def _metadata_offset(blob_vaddr: int, blob_size: int) -> int:
+    """Place unwind metadata at an aligned absolute virtual address."""
+    return _align_up(blob_vaddr + blob_size, _EH_FRAME_ALIGNMENT) - blob_vaddr
+
+
 @dataclass(frozen=True)
 class _Load:
     """One ``PT_LOAD`` entry of the on-disk program-header table."""
@@ -490,10 +495,22 @@ def _read_eh_frame_entries(binary: Any, table: bytes, index: int) -> list[tuple[
     entries = []
     for entry_index in range(count):
         entry_offset = _EH_FRAME_BASE_BYTES + entry_index * 8
-        initial = vaddr + entry_offset + struct.unpack_from("<i", header, entry_offset)[0]
-        fde = vaddr + entry_offset + 4 + struct.unpack_from("<i", header, entry_offset + 4)[0]
+        initial = vaddr + struct.unpack_from("<i", header, entry_offset)[0]
+        fde = vaddr + struct.unpack_from("<i", header, entry_offset + 4)[0]
         entries.append((initial, fde))
     return entries
+
+
+def _read_eh_frame_pointer(binary: Any, table: bytes, index: int) -> int | None:
+    """Return the absolute base referenced by an existing EH-frame header."""
+    base = index * _PHDR_ENTRY_SIZE
+    offset = struct.unpack_from("<Q", table, base + _P_OFFSET)[0]
+    vaddr = struct.unpack_from("<Q", table, base + _P_VADDR)[0]
+    header = _read_physical(binary, offset, _EH_FRAME_BASE_BYTES)
+    if len(header) < _EH_FRAME_BASE_BYTES or header[:4] != bytes((1, 0x1B, 0x03, 0x3B)):
+        return None
+    pointer_field = int(vaddr) + 4
+    return pointer_field + int(struct.unpack_from("<i", header, 4)[0])
 
 
 def _merge_eh_frame_metadata(
@@ -507,7 +524,8 @@ def _merge_eh_frame_metadata(
     if index is None:
         return metadata
     old_entries = _read_eh_frame_entries(binary, placement.table, index)
-    if old_entries is None or len(metadata) < _EH_FRAME_HEADER_BYTES:
+    old_eh_frame_vaddr = _read_eh_frame_pointer(binary, placement.table, index)
+    if old_entries is None or old_eh_frame_vaddr is None or len(metadata) < _EH_FRAME_HEADER_BYTES:
         return None
 
     new_metadata_vaddr = placement.blob_vaddr + metadata_offset
@@ -531,13 +549,11 @@ def _merge_eh_frame_metadata(
     entries.sort()
 
     header = bytearray(bytes((1, 0x1B, 0x03, 0x3B)))
-    header.extend(struct.pack("<i", new_header_size - 4))
+    header.extend(struct.pack("<i", old_eh_frame_vaddr - (new_metadata_vaddr + 4)))
     header.extend(struct.pack("<I", len(entries)))
-    for entry_index, (initial_address, fde_address) in enumerate(entries):
-        initial_field_vaddr = new_metadata_vaddr + _EH_FRAME_BASE_BYTES + entry_index * 8
-        fde_field_vaddr = initial_field_vaddr + 4
-        header.extend(struct.pack("<i", initial_address - initial_field_vaddr))
-        header.extend(struct.pack("<i", fde_address - fde_field_vaddr))
+    for initial_address, fde_address in entries:
+        header.extend(struct.pack("<i", initial_address - new_metadata_vaddr))
+        header.extend(struct.pack("<i", fde_address - new_metadata_vaddr))
     return bytes(header) + bytes(suffix)
 
 
@@ -615,7 +631,7 @@ def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes, metadat
     """Extend the selected executable load and write the blob into its tail."""
     if placement.inline_load_index is None:
         return None
-    metadata_offset = _align_up(len(blob), _EH_FRAME_ALIGNMENT) if metadata else len(blob)
+    metadata_offset = _metadata_offset(placement.blob_vaddr, len(blob)) if metadata else len(blob)
     payload_metadata = metadata
     if metadata:
         merged_metadata = _merge_eh_frame_metadata(binary, placement, metadata_offset, metadata)
@@ -660,7 +676,7 @@ def _inject_replacement_blob(binary: Any, placement: _Placement, blob: bytes, me
     """Use a merged PT_NOTE slot for one appended executable load."""
     if placement.replacement_load_index is None:
         return None
-    metadata_offset = _align_up(len(blob), _EH_FRAME_ALIGNMENT) if metadata else len(blob)
+    metadata_offset = _metadata_offset(placement.blob_vaddr, len(blob)) if metadata else len(blob)
     payload_metadata = metadata
     if metadata:
         merged_metadata = _merge_eh_frame_metadata(binary, placement, metadata_offset, metadata)
@@ -709,7 +725,7 @@ def _inject_replacement_blob(binary: Any, placement: _Placement, blob: bytes, me
 
 
 def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, metadata: bytes) -> int | None:
-    metadata_offset = _align_up(len(blob), _EH_FRAME_ALIGNMENT) if metadata else len(blob)
+    metadata_offset = _metadata_offset(placement.blob_vaddr, len(blob)) if metadata else len(blob)
     payload_metadata = metadata
     if metadata:
         merged_metadata = _merge_eh_frame_metadata(binary, placement, metadata_offset, metadata)
