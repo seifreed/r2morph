@@ -174,6 +174,16 @@ def test_differential_workflow_runs_on_relevant_main_pushes() -> None:
     )
 
 
+def test_independent_review_follows_successful_adversarial_campaign() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "independent-review.yml").read_text(encoding="utf-8")
+
+    expect(
+        'workflows: ["Adversarial Analysis Benchmark"]' in workflow
+        and "types: [completed]" in workflow
+        and "github.event.workflow_run.head_sha || github.sha" in workflow
+    )
+
+
 def test_compatibility_corpus_does_not_promote_historical_six_pass_campaign() -> None:
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 

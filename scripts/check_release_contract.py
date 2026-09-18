@@ -1136,6 +1136,7 @@ def _check_corpus_workflows() -> None:
     adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     fuzz = (ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
+    independent_review = (ROOT / ".github" / "workflows" / "independent-review.yml").read_text(encoding="utf-8")
     for fragment in (
         "schedule:",
         "workflow_dispatch:",
@@ -1310,6 +1311,15 @@ def _check_corpus_workflows() -> None:
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
+    for fragment in (
+        "workflow_run:",
+        'workflows: ["Adversarial Analysis Benchmark"]',
+        "types: [completed]",
+        "github.event.workflow_run.conclusion == 'success'",
+        "github.event.workflow_run.head_sha || github.sha",
+    ):
+        if fragment not in independent_review:
+            raise ValueError(f"independent review workflow is missing: {fragment}")
     for fragment in (
         "schedule:",
         "workflow_dispatch:",
