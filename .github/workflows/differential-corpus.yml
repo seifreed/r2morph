@@ -282,8 +282,16 @@ jobs:
               "test_extended_passes_compose_before_nop_without_corrupting_fixture[StackStrings]",
               "test_extended_passes_compose_before_nop_without_corrupting_fixture[StringObfuscation]",
           }
-          if not required.issubset(names):
-              raise SystemExit(f"composition smoke coverage drift: {sorted(names)}")
+          missing = [
+              expected
+              for expected in required
+              if not any(
+                  name == expected or (expected.endswith("_") and name.startswith(expected))
+                  for name in names
+              )
+          ]
+          if missing:
+              raise SystemExit(f"composition smoke coverage drift: {sorted(missing)}")
           directional_pairs = {
               "NopInsertion->InstructionSubstitution",
               "InstructionSubstitution->NopInsertion",
@@ -292,14 +300,14 @@ jobs:
               "ConstantUnfolding->InstructionSubstitution",
               "InstructionSubstitution->ConstantUnfolding",
           }
-          for name in required:
+          for name in names:
               if "after_nop" in name:
-                  parameter = name.rsplit("[", 1)[-1].rstrip("]")
+                  parameter = name.rsplit("[", 1)[-1].rstrip("]").removesuffix("_after_nop")
                   directional_pairs.add(f"NopInsertion->{parameter}")
               elif "before_nop" in name:
-                  parameter = name.rsplit("[", 1)[-1].rstrip("]")
+                  parameter = name.rsplit("[", 1)[-1].rstrip("]").removesuffix("_before_nop")
                   directional_pairs.add(f"{parameter}->NopInsertion")
-          if len(directional_pairs) != 30:
+          if len(directional_pairs) != 44:
               raise SystemExit(f"composition directional matrix drift: {sorted(directional_pairs)}")
           Path("composition-differential.xml").stat()
           PY
