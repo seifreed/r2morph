@@ -9,6 +9,7 @@ concurrency:
     branches: [main]
     paths:
       - ".github/workflows/differential-corpus.yml"
+      - ".github/workflows/ci.yml"
       - "docs/compatibility-corpus.md"
       - "docs/support-matrix.json"
       - "fixtures/dataset/**"
