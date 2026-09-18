@@ -65,6 +65,7 @@ logger = logging.getLogger(__name__)
 
 _RELATIVE_JUMP_SIZE = 5
 _MAX_STRINGS_PER_BINARY = 32
+_X86_64_BITS = 64
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
 _X86_64_ARCHITECTURES = frozenset({"x86_64", "x86-64", "x64", "amd64"})
@@ -314,7 +315,9 @@ class StackStringsPass(MutationPass):
         arch_info = binary.get_arch_info()
         binary_format = str(arch_info.get("format", "")).lower()
         architecture = str(arch_info.get("arch", "")).lower()
-        return binary_format.startswith("elf") and architecture in _X86_64_ARCHITECTURES
+        bits = arch_info.get("bits")
+        x86_64 = architecture in _X86_64_ARCHITECTURES or (architecture == "x86" and bits == _X86_64_BITS)
+        return binary_format.startswith("elf") and x86_64
 
     @staticmethod
     def _has_safe_stack_layout(binary: Any, reference: _StringReference) -> bool:
