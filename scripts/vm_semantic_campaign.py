@@ -65,7 +65,7 @@ def _capability_summary(category_summary: Mapping[str, Mapping[str, int]]) -> di
         fixture_count = sum(int(row.get("fixture_count", 0)) for row in category_rows)
         passed_count = sum(int(row.get("passed_count", 0)) for row in category_rows)
         failed_count = sum(int(row.get("failed_count", 0)) for row in category_rows)
-        if not categories:
+        if fixture_count == 0:
             status = "not-covered-by-fixture-campaign"
         elif fixture_count and failed_count == 0:
             status = "campaign-measured"
