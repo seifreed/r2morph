@@ -61,6 +61,7 @@ _FIXTURE_EXEC = _DATASET / "elf_switch_abs_x86_64"
 # previous segment-extension scheme could never append past.
 _FIXTURE_DYN = _DATASET / "elf_switch_pie_x86_64"
 _FIXTURE_LARGE_WRITE = _DATASET / "elf_vm_arith_x86_64"
+_FIXTURE_COMPACT = _DATASET / "elf_vm_movd_x86_64"
 _FIXTURE_UNWIND = _DATASET / "elf_vm_unwind_x86_64"
 
 # ELF64 header field offsets used by the verification oracle.
@@ -467,6 +468,14 @@ def test_inject_blob_with_existing_unwind_metadata_keeps_the_table_loadable(tmp_
     _inject_into(target, _BLOB)
 
     expect(not load_invariant_violations(target))
+
+
+def test_inject_blob_handles_compact_load_layout_without_rejecting_the_image(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_COMPACT, tmp_path)
+
+    injected = _inject_into(target, _BLOB)
+
+    expect(injected is not None and not load_invariant_violations(target))
 
 
 def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path) -> None:

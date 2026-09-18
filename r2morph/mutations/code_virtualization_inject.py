@@ -529,16 +529,21 @@ def _merge_eh_frame_metadata(
 
 
 def _header_table_relocation(placement: _Placement, table_size: int) -> tuple[int, int] | None:
-    """Find safe slack after the header load for a relocated program table."""
+    """Find mapped slack for a relocated program table."""
     loads = _parse_loads(placement.table, placement.e_phnum)
     header = next((load for load in loads if load.offset == 0), None)
     if header is None:
         return None
     next_offset = min((load.offset for load in loads if load.offset > 0), default=None)
     table_offset = _align_up(header.offset + header.filesz, _PHDR_TABLE_ALIGNMENT)
-    if next_offset is not None and table_offset + table_size > next_offset:
-        return None
+    if next_offset is None or table_offset + table_size <= next_offset:
+        return table_offset, header.vaddr + table_offset - header.offset
+
+    next_vaddr = min((load.vaddr for load in loads if load.vaddr > header.vaddr), default=None)
+    table_offset = _align_up(max(placement.file_size, header.offset + header.filesz), _PHDR_TABLE_ALIGNMENT)
     table_vaddr = header.vaddr + table_offset - header.offset
+    if next_vaddr is not None and table_vaddr + table_size > next_vaddr:
+        return None
     return table_offset, table_vaddr
 
 
