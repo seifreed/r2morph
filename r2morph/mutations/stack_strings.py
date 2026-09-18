@@ -262,7 +262,7 @@ class StackStringsPass(MutationPass):
     def _find_strings_in_section(self, binary: Any, section: dict[str, Any]) -> list[dict[str, Any]]:
         """Find strings in a binary section."""
         strings: list[dict[str, Any]] = []
-        addr = section.get("addr", 0)
+        addr = section.get("vaddr", section.get("addr", 0))
         size = section.get("size", 0)
 
         if size == 0 or not section.get("name", "").startswith("."):
@@ -272,7 +272,8 @@ class StackStringsPass(MutationPass):
             data = binary.read_bytes(addr, size)
             found = find_printable_strings(data, self.min_length)
 
-            for offset, string_data in found:
+            for offset, raw_string_data in found:
+                string_data = raw_string_data.rstrip(b"\x00")
                 if len(string_data) > self.max_length:
                     continue
                 if len(string_data) < self.min_length:
