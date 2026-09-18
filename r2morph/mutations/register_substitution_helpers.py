@@ -422,11 +422,11 @@ def _source_registers(disasm: str) -> set[str]:
     parts = disasm.split(None, 1)
     if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return set()
+    operands = parts[1].split(",")
     tokens = set(_register_tokens(parts[1]))
-    if parts[0] in _PURE_WRITE_MNEMONICS:
-        destination = _destination_register(disasm)
-        if destination is not None:
-            tokens.discard(destination)
+    destination = _destination_register(disasm)
+    if destination is not None and destination not in _register_tokens(",".join(operands[1:])):
+        tokens.discard(destination)
     return tokens
 
 

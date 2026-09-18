@@ -149,6 +149,23 @@ def test_caller_live_registers_drops_register_redefined_before_syscall() -> None
     expect("rdx" not in caller_live_registers(Binary(), _CALLEE_ADDRESS))
 
 
+def test_caller_live_registers_drops_arm64_register_redefined_after_call() -> None:
+    class Binary:
+        def get_xrefs_to(self, address: int):
+            expect(address == _CALLEE_ADDRESS)
+            return [{"from": _CALLER_CALL_SITE, "fcn_addr": _CALLER_ADDRESS, "type": "CALL"}]
+
+        def get_function_disasm(self, address: int):
+            expect(address == _CALLER_ADDRESS)
+            return [
+                {"addr": _CALLER_CALL_SITE, "disasm": "bl 0x3000"},
+                {"addr": _CALLER_CALL_SITE + 4, "disasm": "subs w8, w0, 0x2a"},
+                {"addr": _CALLER_CALL_SITE + 8, "disasm": "cset w0, ne"},
+            ]
+
+    expect("x8" not in caller_live_registers(Binary(), _CALLEE_ADDRESS))
+
+
 def test_find_substitution_candidates_accepts_caller_live_register_pins() -> None:
     instructions = [{"disasm": "mov rdi, 7"}, {"disasm": "add rdi, 2"}, {"disasm": "ret"}]
     candidates = find_substitution_candidates(instructions, "x64", {"r10"})
