@@ -68,7 +68,22 @@ _MAX_STRINGS_PER_BINARY = 32
 _X86_64_BITS = 64
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
+_ASCII_SPACE = 0x20
+_PRINTABLE_ASCII_MAX = 0x7E
+_BYTE_MASK = 0xFF
+_ROLLING_KEY_INCREMENT = 1
+_ROLLING_KEY_MULTIPLIER = 7
 _X86_64_ARCHITECTURES = frozenset({"x86_64", "x86-64", "x64", "amd64"})
+_X86_64_POINTER_REGISTERS = {
+    "eax": "rax",
+    "ebx": "rbx",
+    "ecx": "rcx",
+    "edx": "rdx",
+    "edi": "rdi",
+    "esi": "rsi",
+    "ebp": "rbp",
+    "esp": "rsp",
+}
 _SUPPORTED_APPLY_ENCODINGS = frozenset(
     {
         EncodingScheme.PLAIN,
@@ -141,8 +156,25 @@ def _parse_rip_relative_lea(instruction: dict[str, Any]) -> tuple[str, str] | No
     return match.group(1), text
 
 
+def _parse_string_argument(instruction: dict[str, Any]) -> tuple[str, str] | None:
+    """Parse a direct string-pointer argument emitted by common x86-64 compilers."""
+    parsed = _parse_rip_relative_lea(instruction)
+    if parsed is not None:
+        return parsed
+
+    text = _instruction_text(instruction)
+    match = re.fullmatch(r"mov\s+([a-z][a-z0-9]+)\s*,\s*(.+)", text)
+    if match is None:
+        return None
+    operand = match.group(2).strip()
+    if operand.startswith(("[", "qword [", "dword [")):
+        return None
+    register = _X86_64_POINTER_REGISTERS.get(match.group(1), match.group(1))
+    return register, text
+
+
 def _direct_call_target(instruction: dict[str, Any]) -> int | None:
-    if instruction.get("type") not in {"call", "rcall"}:
+    if instruction.get("type") not in {"call", "rcall", "jmp"}:
         return None
     target = instruction.get("jump")
     return target if isinstance(target, int) else None
@@ -175,7 +207,7 @@ def _find_string_reference(binary: Any, string_address: int) -> _StringReference
         for index, instruction in enumerate(instructions[:-1]):
             if _instruction_address(instruction) != reference_address:
                 continue
-            parsed = _parse_rip_relative_lea(instruction)
+            parsed = _parse_string_argument(instruction)
             call = instructions[index + 1]
             call_target = _direct_call_target(call)
             call_address = _instruction_address(call)
@@ -273,7 +305,17 @@ class StackStringsPass(MutationPass):
             found = find_printable_strings(data, self.min_length)
 
             for offset, raw_string_data in found:
-                string_data = raw_string_data.rstrip(b"\x00")
+                first_printable = next(
+                    (
+                        index
+                        for index, byte in enumerate(raw_string_data)
+                        if _ASCII_SPACE <= byte <= _PRINTABLE_ASCII_MAX
+                    ),
+                    None,
+                )
+                if first_printable is None:
+                    continue
+                string_data = raw_string_data[first_printable:].rstrip(b"\x00")
                 if len(string_data) > self.max_length:
                     continue
                 if len(string_data) < self.min_length:
@@ -281,7 +323,7 @@ class StackStringsPass(MutationPass):
 
                 strings.append(
                     {
-                        "address": addr + offset,
+                        "address": addr + offset + first_printable,
                         "size": len(string_data),
                         "data": string_data,
                         "section": section.get("name", "unknown"),
@@ -347,14 +389,13 @@ class StackStringsPass(MutationPass):
             if index in build.junk_offsets:
                 instructions.append("nop")
         if self.encoding == EncodingScheme.XOR_SINGLE:
-            instructions.append(f"mov r11d, 0x{build.key:02x}")
-            instructions.extend(f"xor byte [rsp+{index}], r11b" for index in range(len(encoded_data)))
+            instructions.extend(f"xor byte [rsp+{index}], 0x{build.key:02x}" for index in range(len(encoded_data)))
         elif self.encoding == EncodingScheme.XOR_ROLLING:
-            instructions.append(f"mov r11d, 0x{build.key:02x}")
+            rolling_key = build.key
             for index in range(len(encoded_data)):
-                instructions.append(f"xor byte [rsp+{index}], r11b")
+                instructions.append(f"xor byte [rsp+{index}], 0x{rolling_key:02x}")
                 if index + 1 < len(encoded_data):
-                    instructions.extend(("imul r11d, r11d, 7", "inc r11b", "and r11d, 0xff"))
+                    rolling_key = (rolling_key * _ROLLING_KEY_MULTIPLIER + _ROLLING_KEY_INCREMENT) & _BYTE_MASK
         elif self.encoding == EncodingScheme.ADD_SHIFT:
             instructions.extend(f"sub byte [rsp+{index}], {build.shift}" for index in range(len(encoded_data)))
         instructions.extend(

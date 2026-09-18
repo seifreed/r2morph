@@ -153,6 +153,7 @@ __asm__(".section .text.stack_cave,\\\"ax\\\",@progbits\\n.p2align 4\\n.fill 409
     compile_result = run_command(["gcc", "-O2", "-fno-pie", "-no-pie", "-o", original, source], timeout=30)
     expect(compile_result.returncode == 0, "failed to compile stack-string fixture")
     shutil.copyfile(original, mutated)
+    mutated.chmod(original.stat().st_mode)
     baseline = run_command([original], timeout=30)
 
     with Binary(mutated, writable=True) as binary:

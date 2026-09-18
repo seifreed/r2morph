@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.mutations.stack_strings import StackStringsPass
+from r2morph.mutations.stack_strings import StackStringsPass, _direct_call_target, _parse_string_argument
 from tests.utils.assertions import expect
 
 _BITS_64 = 64
 _SECTION_ADDRESS = 0x402000
+_TAIL_TARGET = 0x401120
 _STRING_DATA = b"stack-string"
-_SECTION_BYTES = _STRING_DATA + b"\x00"
+_SECTION_BYTES = b"\x00" + _STRING_DATA + b"\x00"
 
 
 class _ArchitectureBinary:
@@ -55,4 +56,14 @@ def test_stack_strings_discovers_r2_vaddr_section() -> None:
         {"name": ".rodata", "vaddr": _SECTION_ADDRESS, "size": len(_SECTION_BYTES)},
     )
 
-    expect(bool(strings) and strings[0]["address"] == _SECTION_ADDRESS and strings[0]["data"] == _STRING_DATA)
+    expect(bool(strings) and strings[0]["address"] == _SECTION_ADDRESS + 1 and strings[0]["data"] == _STRING_DATA)
+
+
+def test_stack_strings_parses_compiler_static_argument() -> None:
+    parsed = _parse_string_argument({"opcode": "mov edi, str.stack_string_native"})
+
+    expect(parsed == ("rdi", "mov edi, str.stack_string_native"))
+
+
+def test_stack_strings_accepts_direct_tail_jump_target() -> None:
+    expect(_direct_call_target({"type": "jmp", "jump": _TAIL_TARGET}) == _TAIL_TARGET)
