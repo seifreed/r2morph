@@ -10,8 +10,13 @@ _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_v
 _EXPECTED_SEED_COUNT = 4
 _EXPECTED_DEFAULT_SEED_COUNT = 10
 _EXPECTED_TAMPER_PROBE_COUNT = 8
-_EXPECTED_CORPUS_FIXTURE_COUNT = 2
-_CORPUS_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_bigimm_x86_64"
+_EXPECTED_CORPUS_FIXTURE_COUNT = 4
+_DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
+_CORPUS_FIXTURES = (
+    _DATASET / "elf_vm_bigimm_x86_64",
+    _DATASET / "elf_vm_memwidth_x86_64",
+    _DATASET / "elf_vm_simdint_x86_64",
+)
 
 
 def test_vm_resistance_default_campaign_matches_release_contract() -> None:
@@ -54,7 +59,7 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
 
 
 def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
-    report = measure_corpus((_FIXTURE, _CORPUS_FIXTURE), first_seed=20260915, count=2)
+    report = measure_corpus((_FIXTURE, *_CORPUS_FIXTURES), first_seed=20260915, count=2)
 
     expect(
         report["fixture_count"] == _EXPECTED_CORPUS_FIXTURE_COUNT
