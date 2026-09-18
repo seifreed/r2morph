@@ -223,6 +223,7 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
             "checks": [
                 "semantic-parity-across-seeds",
                 "distinct-build-artifacts",
+                "opcode-assignment-diversity",
                 "handler-and-dispatcher-diversity",
                 "single-layer-anti-tamper",
                 "nested-anti-tamper",
@@ -283,6 +284,7 @@ def measure_corpus(
             "checks": [
                 "semantic-parity-across-fixtures-and-seeds",
                 "cross-fixture-artifact-diversity",
+                "opcode-assignment-diversity",
                 "single-and-nested-anti-tamper",
                 "progressive-bytecode-growth",
             ],
