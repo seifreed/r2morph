@@ -22,6 +22,8 @@ _EXPECTED_LEN_WEB_USES_2 = 2
 _EXPECTED_LIVE_RANGE_0_4096 = 0x1000
 _EXPECTED_LIVE_RANGE_1_4176 = 0x1050
 _EXPECTED_USE_ADDRESS_4112 = 0x1010
+_ALIAS_DEFINITION_ADDRESS = 0x3000
+_ALIAS_USE_ADDRESS = 0x3010
 
 
 def create_simple_cfg() -> ControlFlowGraph:
@@ -312,6 +314,38 @@ class TestDefUseAnalyzer:
 
         expect(isinstance(def_webs, list))
         expect(isinstance(use_webs, list))
+
+    def test_defuse_resolves_zero_extending_parent_register_alias(self):
+        """A 32-bit definition is visible to a later 64-bit parent use."""
+        cfg = ControlFlowGraph(function_address=_ALIAS_DEFINITION_ADDRESS, function_name="alias_defuse")
+        cfg.add_block(
+            BasicBlock(
+                address=_ALIAS_DEFINITION_ADDRESS,
+                size=5,
+                instructions=[{"offset": _ALIAS_DEFINITION_ADDRESS, "type": "mov", "disasm": "mov eax, 1"}],
+                successors=[_ALIAS_USE_ADDRESS],
+                predecessors=[],
+                block_type=BlockType.NORMAL,
+            )
+        )
+        cfg.add_block(
+            BasicBlock(
+                address=_ALIAS_USE_ADDRESS,
+                size=5,
+                instructions=[{"offset": _ALIAS_USE_ADDRESS, "type": "mov", "disasm": "mov ecx, rax"}],
+                successors=[],
+                predecessors=[_ALIAS_DEFINITION_ADDRESS],
+                block_type=BlockType.RETURN,
+            )
+        )
+        cfg.add_edge(_ALIAS_DEFINITION_ADDRESS, _ALIAS_USE_ADDRESS)
+
+        analyzer = DefUseAnalyzer(cfg)
+        analyzer.analyze()
+
+        definitions = analyzer._get_reaching_definitions_for_use(Register("rax", 64), _ALIAS_USE_ADDRESS)
+
+        expect(any(definition.address == _ALIAS_DEFINITION_ADDRESS for definition in definitions))
 
     def test_find_uninitialized_uses(self):
         """Test find_uninitialized_uses method."""

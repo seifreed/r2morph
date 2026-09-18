@@ -15,7 +15,7 @@ from typing import Any
 from r2morph.analysis._register_names import X86_REGISTER_NAMES
 from r2morph.analysis.cfg import ControlFlowGraph
 from r2morph.analysis.dataflow import DataFlowAnalyzer
-from r2morph.analysis.dataflow_models import Definition, Register, Use
+from r2morph.analysis.dataflow_models import Definition, Register, Use, register_definition_covers_use
 from r2morph.analysis.defuse_models import DefWeb, UseWeb
 from r2morph.analysis.liveness import LivenessAnalysis
 from r2morph.analysis.ssa import SSAConverter
@@ -116,7 +116,7 @@ class DefUseAnalyzer:
         reaching_defs = self._dataflow.get_reaching_in(block_addr)
 
         for defn in reaching_defs:
-            if defn.register and defn.register.name == reg.name:
+            if defn.register and register_definition_covers_use(defn.register, reg):
                 definitions.append(defn)
 
         block = self.cfg.blocks.get(block_addr)
@@ -127,7 +127,11 @@ class DefUseAnalyzer:
                 for insn in block.instructions:
                     if insn.get("offset", 0) == prev_addr:
                         for defn in self._dataflow.get_block_definitions(block):
-                            if defn.register and defn.register.name == reg.name and defn not in definitions:
+                            if (
+                                defn.register
+                                and register_definition_covers_use(defn.register, reg)
+                                and defn not in definitions
+                            ):
                                 definitions.append(defn)
                         break
 
@@ -192,9 +196,17 @@ class DefUseAnalyzer:
         Returns:
             Tuple of (def_webs, use_webs)
         """
-        def_webs = [web for web in self._def_webs.values() if web.register and web.register.name == register.name]
+        def_webs = [
+            web
+            for web in self._def_webs.values()
+            if web.register and register_definition_covers_use(web.register, register)
+        ]
 
-        use_webs = [web for web in self._use_webs.values() if web.register and web.register.name == register.name]
+        use_webs = [
+            web
+            for web in self._use_webs.values()
+            if web.register and register_definition_covers_use(web.register, register)
+        ]
 
         return (def_webs, use_webs)
 
