@@ -318,7 +318,8 @@ jobs:
             tests/integration/test_code_virtualization_call_abi_real.py \
             tests/integration/test_code_virtualization_fp_compare_memory_real.py \
             tests/integration/test_code_virtualization_simd_move_real.py \
-            tests/integration/test_code_virtualization_threads_signals_real.py
+            tests/integration/test_code_virtualization_threads_signals_real.py \
+            tests/integration/test_code_virtualization_xlat_real.py
 
       - name: Validate VM semantic differential evidence
         if: always() && hashFiles('vm-semantic-differential.xml') != ''
@@ -329,13 +330,14 @@ jobs:
 
           suite = ET.parse("vm-semantic-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 55:
+          if len(cases) < 56:
               raise SystemExit(f"VM semantic smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("VM semantic smoke contains failures, errors, or skipped cases")
           names = "\n".join(case.attrib.get("name", "") for case in cases)
           required = (
               "test_memory_width_fixture_virtualization_preserves_exit_code",
+              "test_virtualized_xlatb_preserves_native_lookup_result",
               "test_virtualized_callee_saved_fixture_preserves_registers",
               "test_virtualized_elf_preserves_fs_relative_access",
               "test_virtualized_threads_tls_and_signal_preserve_exit_code",
@@ -784,11 +786,14 @@ jobs:
               allow_skipped=True,
               allowed_skip_text="Mach-O arm64 execution requires macOS",
           )
-          vm_semantic_reports = validate_junit_reports("vm-semantic-reports", 55)
+          vm_semantic_reports = validate_junit_reports("vm-semantic-reports", 56)
           validate_junit_reports("composition-reports", 39)
 
           required_vm_contracts = {
-              "memory": ("test_memory_width_fixture_virtualization_preserves_exit_code",),
+              "memory": (
+                  "test_memory_width_fixture_virtualization_preserves_exit_code",
+                  "test_virtualized_xlatb_preserves_native_lookup_result",
+              ),
               "direct-calls": ("test_virtualized_direct_call_to_separate_function_preserves_exit_code",),
               "indirect-calls": (
                   "test_virtualized_local_indirect_call_preserves_exit_code",
