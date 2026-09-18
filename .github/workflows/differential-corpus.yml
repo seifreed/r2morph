@@ -103,7 +103,7 @@ jobs:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
           if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if not 0 < summary["generated_fixture_count"] <= 112:
+          if not 0 < summary["generated_fixture_count"] <= 136:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
