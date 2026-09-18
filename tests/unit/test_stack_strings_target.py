@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.mutations.stack_strings import StackStringsPass, _direct_call_target, _parse_string_argument
+from r2morph.mutations.stack_strings import (
+    StackStringsPass,
+    _direct_call_target,
+    _direct_transfer_kind,
+    _parse_string_argument,
+)
 from tests.utils.assertions import expect
 
 _BITS_64 = 64
@@ -67,3 +72,7 @@ def test_stack_strings_parses_compiler_static_argument() -> None:
 
 def test_stack_strings_accepts_direct_tail_jump_target() -> None:
     expect(_direct_call_target({"type": "jmp", "jump": _TAIL_TARGET}) == _TAIL_TARGET)
+
+
+def test_stack_strings_identifies_tail_jump_transfer_kind() -> None:
+    expect(_direct_transfer_kind({"type": "jmp", "jump": _TAIL_TARGET}) == "jmp")

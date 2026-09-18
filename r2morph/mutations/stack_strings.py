@@ -96,7 +96,7 @@ _SUPPORTED_APPLY_ENCODINGS = frozenset(
 
 @dataclass(frozen=True)
 class _StringReference:
-    """A conservatively supported string construction followed by a call."""
+    """A conservatively supported string construction followed by a transfer."""
 
     function_address: int
     reference_address: int
@@ -105,6 +105,7 @@ class _StringReference:
     call_target: int
     continuation: int
     span: int
+    transfer_kind: str
 
 
 @dataclass(frozen=True)
@@ -180,6 +181,17 @@ def _direct_call_target(instruction: dict[str, Any]) -> int | None:
     return target if isinstance(target, int) else None
 
 
+def _direct_transfer_kind(instruction: dict[str, Any]) -> str | None:
+    transfer_kind = instruction.get("type")
+    if (
+        not isinstance(transfer_kind, str)
+        or transfer_kind not in {"call", "rcall", "jmp"}
+        or not isinstance(instruction.get("jump"), int)
+    ):
+        return None
+    return transfer_kind
+
+
 def _find_function_instructions(binary: Any, function_address: int) -> list[dict[str, Any]]:
     return [
         instruction
@@ -210,14 +222,18 @@ def _find_string_reference(binary: Any, string_address: int) -> _StringReference
             parsed = _parse_string_argument(instruction)
             call = instructions[index + 1]
             call_target = _direct_call_target(call)
+            transfer_kind = _direct_transfer_kind(call)
             call_address = _instruction_address(call)
             call_size = call.get("size")
             if (
                 parsed is None
                 or call_target is None
+                or transfer_kind is None
                 or not isinstance(call_address, int)
                 or not isinstance(call_size, int)
             ):
+                return None
+            if transfer_kind == "jmp" and index + 2 != len(instructions):
                 return None
             return _StringReference(
                 candidate_address,
@@ -227,6 +243,7 @@ def _find_string_reference(binary: Any, string_address: int) -> _StringReference
                 call_target,
                 call_address + call_size,
                 call_address + call_size - reference_address,
+                transfer_kind,
             )
     return None
 
@@ -403,7 +420,7 @@ class StackStringsPass(MutationPass):
                 f"lea {reference.register}, [rsp]",
                 f"call 0x{reference.call_target:x}",
                 f"add rsp, {_stack_allocation_size(len(build.original_data))}",
-                f"jmp 0x{reference.continuation:x}",
+                "ret" if reference.transfer_kind == "jmp" else f"jmp 0x{reference.continuation:x}",
             )
         )
         return instructions
