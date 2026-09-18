@@ -155,7 +155,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
 
     expect(
         'report["fixture_count"] != 453' in content
-        and "len(categories) != 12" in content
+        and "len(categories) != 17" in content
         and '"unwinding-exceptions",\n              "tls-signals"' in content
         and '"fp-simd",\n              "ssa-liveness"' in content
     )

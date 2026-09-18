@@ -1778,21 +1778,26 @@
         "artifact": "docs/virtualization-coverage.json",
         "scope": "elf-x86-64-virtualization-fixtures",
         "fixture_count": 151,
-        "capability_count": 12,
-        "covered_capability_count": 12,
+        "capability_count": 17,
+        "covered_capability_count": 17,
         "unclassified_count": 0,
         "capabilities": [
+          "abi_varargs",
           "calls_and_returns",
           "control_flow_and_dispatch",
+          "direct_calls",
           "fallback_paths",
           "flags_and_conditions",
           "floating_point_and_simd",
           "gp_arithmetic",
+          "indirect_calls",
           "memory_addressing",
           "signals_and_system_calls",
           "ssa_liveness",
           "stack_and_abi",
           "thread_runtime_boundaries",
+          "thread_safety",
+          "tls_accesses",
           "unwinding_exceptions"
         ]
       },
@@ -1811,7 +1816,7 @@
         "direct-calls": {
           "status": "fixture-backed-incomplete",
           "capabilities": [
-            "calls_and_returns"
+            "direct_calls"
           ],
           "evidence": [
             "docs/virtualization-coverage.json",
@@ -1822,7 +1827,7 @@
         "indirect-calls": {
           "status": "fixture-backed-incomplete",
           "capabilities": [
-            "calls_and_returns"
+            "indirect_calls"
           ],
           "evidence": [
             "docs/virtualization-coverage.json",
@@ -1833,7 +1838,7 @@
         "abi-varargs": {
           "status": "fixture-backed-incomplete",
           "capabilities": [
-            "stack_and_abi"
+            "abi_varargs"
           ],
           "evidence": [
             "docs/virtualization-coverage.json",
@@ -1857,7 +1862,7 @@
         "tls-signals": {
           "status": "fixture-backed-incomplete",
           "capabilities": [
-            "thread_runtime_boundaries",
+            "tls_accesses",
             "signals_and_system_calls"
           ],
           "evidence": [
@@ -1869,7 +1874,7 @@
         "threads": {
           "status": "fixture-backed-incomplete",
           "capabilities": [
-            "thread_runtime_boundaries"
+            "thread_safety"
           ],
           "evidence": [
             "docs/virtualization-coverage.json",
@@ -4103,21 +4108,26 @@
       "artifact": "docs/virtualization-coverage.json",
       "scope": "elf-x86-64-virtualization-fixtures",
       "fixture_count": 151,
-      "capability_count": 12,
-      "covered_capability_count": 12,
+      "capability_count": 17,
+      "covered_capability_count": 17,
       "unclassified_count": 0,
       "capabilities": [
+        "abi_varargs",
         "calls_and_returns",
         "control_flow_and_dispatch",
+        "direct_calls",
         "fallback_paths",
         "flags_and_conditions",
         "floating_point_and_simd",
         "gp_arithmetic",
+        "indirect_calls",
         "memory_addressing",
         "signals_and_system_calls",
         "ssa_liveness",
         "stack_and_abi",
         "thread_runtime_boundaries",
+        "thread_safety",
+        "tls_accesses",
         "unwinding_exceptions"
       ]
     },
@@ -4136,7 +4146,7 @@
       "direct-calls": {
         "status": "fixture-backed-incomplete",
         "capabilities": [
-          "calls_and_returns"
+          "direct_calls"
         ],
         "evidence": [
           "docs/virtualization-coverage.json",
@@ -4147,7 +4157,7 @@
       "indirect-calls": {
         "status": "fixture-backed-incomplete",
         "capabilities": [
-          "calls_and_returns"
+          "indirect_calls"
         ],
         "evidence": [
           "docs/virtualization-coverage.json",
@@ -4158,7 +4168,7 @@
       "abi-varargs": {
         "status": "fixture-backed-incomplete",
         "capabilities": [
-          "stack_and_abi"
+          "abi_varargs"
         ],
         "evidence": [
           "docs/virtualization-coverage.json",
@@ -4182,7 +4192,7 @@
       "tls-signals": {
         "status": "fixture-backed-incomplete",
         "capabilities": [
-          "thread_runtime_boundaries",
+          "tls_accesses",
           "signals_and_system_calls"
         ],
         "evidence": [
@@ -4194,7 +4204,7 @@
       "threads": {
         "status": "fixture-backed-incomplete",
         "capabilities": [
-          "thread_runtime_boundaries"
+          "thread_safety"
         ],
         "evidence": [
           "docs/virtualization-coverage.json",

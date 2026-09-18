@@ -53,3 +53,22 @@ def test_virtualization_coverage_classifies_movtorsp_as_stack_abi() -> None:
     capabilities = _capabilities_for_fixture("elf_vm_movtorsp_x86_64")
 
     expect("stack_and_abi" in capabilities)
+
+
+def test_virtualization_coverage_separates_direct_and_indirect_calls() -> None:
+    direct = _capabilities_for_fixture("elf_vm_call_x86_64")
+    indirect = _capabilities_for_fixture("elf_vm_icall_x86_64")
+
+    expect("direct_calls" in direct and "indirect_calls" not in direct and "indirect_calls" in indirect)
+
+
+def test_virtualization_coverage_classifies_varargs_tls_and_threads_explicitly() -> None:
+    capabilities = (
+        _capabilities_for_fixture("elf_vm_varargs_x86_64"),
+        _capabilities_for_fixture("elf_vm_tls_x86_64"),
+        _capabilities_for_fixture("elf_vm_thread_xchg_x86_64"),
+    )
+
+    expect(
+        "abi_varargs" in capabilities[0] and "tls_accesses" in capabilities[1] and "thread_safety" in capabilities[2]
+    )

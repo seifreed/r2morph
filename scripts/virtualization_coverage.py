@@ -34,6 +34,23 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
     "ssa_liveness": ("interp", "multiexit", "pie"),
     "unwinding_exceptions": ("unwind",),
 }
+_DIRECT_CALL_NAMES = ("call", "call_callee_saved", "call_stack_args", "callflags_stack", "incall", "multiret")
+_INDIRECT_CALL_PREFIXES = ("icall", "idxcall", "mcall")
+
+
+def _explicit_capabilities(name: str) -> tuple[str, ...]:
+    capabilities: list[str] = []
+    if name in _DIRECT_CALL_NAMES or name.startswith(("call_", "incall_")):
+        capabilities.append("direct_calls")
+    if name.startswith(_INDIRECT_CALL_PREFIXES):
+        capabilities.append("indirect_calls")
+    if "varargs" in name:
+        capabilities.append("abi_varargs")
+    if "tls" in name:
+        capabilities.append("tls_accesses")
+    if "thread" in name:
+        capabilities.append("thread_safety")
+    return tuple(capabilities)
 
 
 def _capabilities_for_fixture(stem: str) -> tuple[str, ...]:
@@ -41,17 +58,26 @@ def _capabilities_for_fixture(stem: str) -> tuple[str, ...]:
     if match is None:
         return ()
     name = match.group("name")
-    return tuple(
+    capabilities = [
         capability
         for capability, tokens in _CAPABILITY_PATTERNS.items()
         if not (capability == "calls_and_returns" and "syscall" in name) and any(token in name for token in tokens)
-    )
+    ]
+    return tuple(dict.fromkeys((*capabilities, *_explicit_capabilities(name))))
 
 
 def build_coverage_inventory(dataset: Path) -> dict[str, object]:
     """Return fixture coverage without retaining binary contents."""
     fixtures = sorted(path for path in dataset.iterdir() if path.is_file() and _FIXTURE_PATTERN.fullmatch(path.name))
-    by_capability: dict[str, list[str]] = {capability: [] for capability in _CAPABILITY_PATTERNS}
+    capability_names = (
+        *_CAPABILITY_PATTERNS,
+        "direct_calls",
+        "indirect_calls",
+        "abi_varargs",
+        "tls_accesses",
+        "thread_safety",
+    )
+    by_capability: dict[str, list[str]] = {capability: [] for capability in capability_names}
     unclassified: list[str] = []
     for fixture in fixtures:
         capabilities = _capabilities_for_fixture(fixture.name)

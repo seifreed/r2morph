@@ -1,5 +1,12 @@
 {
   "capabilities": {
+    "abi_varargs": {
+      "fixture_count": 2,
+      "fixtures": [
+        "elf_vm_varargs_scalar_x86_64",
+        "elf_vm_varargs_x86_64"
+      ]
+    },
     "calls_and_returns": {
       "fixture_count": 10,
       "fixtures": [
@@ -23,6 +30,16 @@
         "elf_vm_interp_x86_64",
         "elf_vm_multiexit_x86_64",
         "elf_vm_pie_x86_64"
+      ]
+    },
+    "direct_calls": {
+      "fixture_count": 5,
+      "fixtures": [
+        "elf_vm_call_callee_saved_x86_64",
+        "elf_vm_call_stack_args_x86_64",
+        "elf_vm_call_x86_64",
+        "elf_vm_callflags_stack_x86_64",
+        "elf_vm_incall_x86_64"
       ]
     },
     "fallback_paths": {
@@ -161,6 +178,15 @@
         "elf_vm_word16_x86_64"
       ]
     },
+    "indirect_calls": {
+      "fixture_count": 4,
+      "fixtures": [
+        "elf_vm_icall_x86_64",
+        "elf_vm_idxcall_x86_64",
+        "elf_vm_idxcallnb_x86_64",
+        "elf_vm_mcall_x86_64"
+      ]
+    },
     "memory_addressing": {
       "fixture_count": 38,
       "fixtures": [
@@ -249,6 +275,23 @@
         "elf_vm_tls_x86_64"
       ]
     },
+    "thread_safety": {
+      "fixture_count": 3,
+      "fixtures": [
+        "elf_vm_thread_cmpxchg_x86_64",
+        "elf_vm_thread_mematomicimm_x86_64",
+        "elf_vm_thread_xchg_x86_64"
+      ]
+    },
+    "tls_accesses": {
+      "fixture_count": 4,
+      "fixtures": [
+        "elf_vm_gs_tls_x86_64",
+        "elf_vm_gs_tlsidxnb_x86_64",
+        "elf_vm_tls_widths_x86_64",
+        "elf_vm_tls_x86_64"
+      ]
+    },
     "unwinding_exceptions": {
       "fixture_count": 1,
       "fixtures": [
@@ -256,8 +299,8 @@
       ]
     }
   },
-  "capability_count": 12,
-  "covered_capability_count": 12,
+  "capability_count": 17,
+  "covered_capability_count": 17,
   "fixture_count": 151,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",

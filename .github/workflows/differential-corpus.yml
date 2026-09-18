@@ -647,7 +647,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 12:
+          if len(categories) != 17:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (

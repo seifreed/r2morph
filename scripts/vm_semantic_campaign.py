@@ -26,12 +26,12 @@ _MAX_CREATED_FILES = 256
 _HASH_CHUNK_BYTES = 1024 * 1024
 _CAPABILITY_CATEGORIES = {
     "memory": ("memory_addressing",),
-    "direct-calls": ("calls_and_returns",),
-    "indirect-calls": ("calls_and_returns",),
-    "abi-varargs": ("stack_and_abi",),
+    "direct-calls": ("direct_calls",),
+    "indirect-calls": ("indirect_calls",),
+    "abi-varargs": ("abi_varargs",),
     "unwinding-exceptions": ("unwinding_exceptions",),
-    "tls-signals": ("thread_runtime_boundaries", "signals_and_system_calls"),
-    "threads": ("thread_runtime_boundaries",),
+    "tls-signals": ("tls_accesses", "signals_and_system_calls"),
+    "threads": ("thread_safety",),
     "fp-simd": ("floating_point_and_simd",),
     "ssa-liveness": ("ssa_liveness",),
 }
