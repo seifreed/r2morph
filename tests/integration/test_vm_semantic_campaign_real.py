@@ -47,13 +47,13 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         Path("fixtures/dataset"),
         _load_coverage(Path("docs/virtualization-coverage.json")),
         seed=20260916,
-        fixture_names=("elf_vm_shift_x86_64",),
+        fixture_names=("elf_vm_memwidth_x86_64",),
     )
 
     fixture_categories = {
         category
         for category, fixture_names in _load_coverage(Path("docs/virtualization-coverage.json")).items()
-        if "elf_vm_shift_x86_64" in fixture_names
+        if "elf_vm_memwidth_x86_64" in fixture_names
     }
     expect(
         report["status"] == "passed"
@@ -70,6 +70,9 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
             and report["category_summary"][category]["failed_count"] == 0
             for category in fixture_categories
         )
+        and report["capability_summary"]["memory"]["status"] == "campaign-measured"
+        and report["capability_summary"]["unwinding-exceptions"]["status"] == "not-covered-by-fixture-campaign"
+        and report["capability_summary"]["ssa-liveness"]["status"] == "not-covered-by-fixture-campaign"
     )
 
 

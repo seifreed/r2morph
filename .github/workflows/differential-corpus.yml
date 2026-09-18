@@ -632,6 +632,36 @@ jobs:
                   or summary["failed_count"] != 0
               ):
                   raise SystemExit(f"VM semantic campaign category failed: {category}: {summary}")
+          expected_capabilities = {
+              "memory",
+              "direct-calls",
+              "indirect-calls",
+              "abi-varargs",
+              "unwinding-exceptions",
+              "tls-signals",
+              "threads",
+              "fp-simd",
+              "ssa-liveness",
+          }
+          capabilities = report.get("capability_summary", {})
+          if set(capabilities) != expected_capabilities:
+              raise SystemExit(f"VM semantic capability coverage drift: {capabilities}")
+          measured = {
+              name for name, summary in capabilities.items() if summary["status"] == "campaign-measured"
+          }
+          if measured != {
+              "memory",
+              "direct-calls",
+              "indirect-calls",
+              "abi-varargs",
+              "tls-signals",
+              "threads",
+              "fp-simd",
+          }:
+              raise SystemExit(f"VM semantic capability evidence is incomplete: {capabilities}")
+          for name in ("unwinding-exceptions", "ssa-liveness"):
+              if capabilities[name]["status"] != "not-covered-by-fixture-campaign":
+                  raise SystemExit(f"VM semantic gap lost explicit fixture coverage status: {name}")
           PY
 
       - name: Upload VM semantic campaign evidence

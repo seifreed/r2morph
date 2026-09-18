@@ -194,10 +194,12 @@ compares return code, termination signal, hashed stdout/stderr, and bounded
 created-file hashes, sizes, and modes before and after the mutation. The
 workflow repeats that complete fixture set across three
 deterministic seeds, for 450 fixture runs, retains the JSON result as an
-artifact, and fails on any missing, non-virtualized, or divergent fixture. This
-closes the missing continuous corpus-run evidence; the nine semantic gap labels
-remain because fixture runs do not prove arbitrary inputs, unsupported ABIs, or
-cross-platform parity.
+artifact, and fails on any missing, non-virtualized, or divergent fixture. The
+artifact also reports each declared capability explicitly: memory,
+calls, ABI/varargs, TLS/signals, threads, and FP/SIMD are campaign-measured;
+exception/unwinding and SSA/liveness remain marked as not covered by this
+fixture campaign. Fixture runs still do not prove arbitrary inputs,
+unsupported ABIs, or cross-platform parity.
 The current local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
 completed all 150 declared fixtures with zero failures for the official Linux

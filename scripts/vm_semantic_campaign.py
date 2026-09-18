@@ -24,6 +24,17 @@ _DEFAULT_SEEDS = (20260916,)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
 _HASH_CHUNK_BYTES = 1024 * 1024
+_CAPABILITY_CATEGORIES = {
+    "memory": ("memory_addressing",),
+    "direct-calls": ("calls_and_returns",),
+    "indirect-calls": ("calls_and_returns",),
+    "abi-varargs": ("stack_and_abi",),
+    "unwinding-exceptions": (),
+    "tls-signals": ("thread_runtime_boundaries", "signals_and_system_calls"),
+    "threads": ("thread_runtime_boundaries",),
+    "fp-simd": ("floating_point_and_simd",),
+    "ssa-liveness": (),
+}
 
 
 def _load_coverage(path: Path) -> dict[str, set[str]]:
@@ -44,6 +55,30 @@ def _load_coverage(path: Path) -> dict[str, set[str]]:
 def _fixture_categories(coverage: Mapping[str, set[str]], fixture: str) -> list[str]:
     categories = sorted(category for category, names in coverage.items() if fixture in names)
     return categories or ["uncategorized"]
+
+
+def _capability_summary(category_summary: Mapping[str, Mapping[str, int]]) -> dict[str, dict[str, Any]]:
+    """Expose each declared VM gap and its campaign-backed category evidence."""
+    summary: dict[str, dict[str, Any]] = {}
+    for capability, categories in _CAPABILITY_CATEGORIES.items():
+        category_rows = [category_summary.get(category, {}) for category in categories]
+        fixture_count = sum(int(row.get("fixture_count", 0)) for row in category_rows)
+        passed_count = sum(int(row.get("passed_count", 0)) for row in category_rows)
+        failed_count = sum(int(row.get("failed_count", 0)) for row in category_rows)
+        if not categories:
+            status = "not-covered-by-fixture-campaign"
+        elif fixture_count and failed_count == 0:
+            status = "campaign-measured"
+        else:
+            status = "campaign-incomplete"
+        summary[capability] = {
+            "categories": list(categories),
+            "fixture_count": fixture_count,
+            "passed_count": passed_count,
+            "failed_count": failed_count,
+            "status": status,
+        }
+    return summary
 
 
 def _sha256_file(path: Path) -> str:
@@ -185,6 +220,7 @@ def run_campaign(
         "failed_count": len(failures),
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
+        "capability_summary": _capability_summary(category_summary),
         "fixture_results": fixture_results,
         "failures": failures,
     }
@@ -232,6 +268,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         "failed_count": failed_count,
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
+        "capability_summary": _capability_summary(category_summary),
         "fixture_results": fixture_results,
         "failures": failures,
     }
