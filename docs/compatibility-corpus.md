@@ -19,11 +19,12 @@ and benchmark report are uploaded as one bounded artifact. This is additional
 continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
-native ELF ARM64, and native ELF x86 32-bit JUnit artifacts into
+native ELF ARM64, native ELF ARM32, and native ELF x86 32-bit JUnit artifacts into
 `differential-platform-aggregate`. The aggregate is a completeness gate for
 those preview targets; it does not promote them to official parity. The x86
-32-bit target currently has one native instruction-substitution smoke case,
-which is execution evidence only, not per-pass or full-format parity.
+32-bit targets currently have one instruction-substitution smoke case each,
+with ARM32 executing under QEMU; this is execution evidence only, not per-pass
+or full-format parity.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static

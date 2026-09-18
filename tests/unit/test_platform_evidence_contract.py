@@ -32,6 +32,10 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
         tmp_path / "elf-x86-32" / "report.xml",
         _REQUIRED_CASES["elf-x86-32"],
     )
+    _write_report(
+        tmp_path / "elf-arm-32" / "report.xml",
+        _REQUIRED_CASES["elf-arm-32"],
+    )
 
     report = summarize_platform_reports(tmp_path)
 

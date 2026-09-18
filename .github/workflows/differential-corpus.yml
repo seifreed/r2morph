@@ -1486,6 +1486,68 @@ jobs:
           name: elf-x86-32-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: elf-x86-32-native.xml
 
+  elf-arm-32-native:
+    name: Native ELF ARM32 differential
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential clang gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake binutils
+          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
+      - name: Install dependencies and package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
+          pip install -r requirements.txt
+          python -m build
+          python -m pip install --force-reinstall dist/*.whl
+
+      - name: Run native ELF ARM32 differential
+        run: |
+          pytest -W error -q --no-cov --tb=short \
+            --junitxml=elf-arm-32-native.xml \
+            tests/integration/test_elf_arm32_native.py
+
+      - name: Validate native ELF ARM32 evidence
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          suite = ET.parse("elf-arm-32-native.xml").getroot()
+          cases = suite.findall(".//testcase")
+          if len(cases) != 1:
+              raise SystemExit(f"unexpected ELF ARM32 case count: {len(cases)}")
+          if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
+              raise SystemExit("native ELF ARM32 evidence is incomplete")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM32 test name is missing")
+          PY
+
+      - name: Upload native ELF ARM32 evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: elf-arm-32-native-${{ github.run_id }}-${{ github.run_attempt }}
+          path: elf-arm-32-native.xml
+
   aggregate-platform-differential:
     name: Aggregate platform differential evidence
     if: ${{ always() }}
@@ -1494,6 +1556,7 @@ jobs:
       - cross-platform-format-windows
       - elf-arm64-native
       - elf-x86-32-native
+      - elf-arm-32-native
     runs-on: ubuntu-latest
     steps:
       - name: Checkout r2morph
@@ -1531,6 +1594,12 @@ jobs:
           name: elf-x86-32-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: platform-evidence/elf-x86-32
 
+      - name: Download ELF ARM32 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: elf-arm-32-native-${{ github.run_id }}-${{ github.run_attempt }}
+          path: platform-evidence/elf-arm-32
+
       - name: Validate aggregated platform evidence
         run: |
           python - <<'PY'
@@ -1542,6 +1611,7 @@ jobs:
               "windows-pe": "test_pe_handler_checksum",
               "elf-arm64": "test_elf_arm64_register_substitution_preserves_native_exit_code",
               "elf-x86-32": "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
+              "elf-arm-32": "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
           }
           root = Path("platform-evidence")
           for platform, required_name in expected.items():

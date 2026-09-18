@@ -684,13 +684,14 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         and summary["differential_evidence_scope"]["preview_smoke_scope"]
         == {
             "formats": ["ELF", "Mach-O", "PE"],
-            "architectures": ["AArch64", "x86"],
+            "architectures": ["AArch64", "ARM", "x86"],
             "evidence": [
                 ".github/workflows/differential-corpus.yml",
                 "tests/integration/test_mutation_nop_insertion_arm64.py",
                 "tests/integration/test_platform_deeper.py",
                 "tests/integration/test_elf_arm64_native.py",
                 "tests/integration/test_elf_x86_32_native.py",
+                "tests/integration/test_elf_arm32_native.py",
             ],
             "status": "preview-smoke-only",
         }
