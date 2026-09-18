@@ -296,7 +296,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget cmake
+            git build-essential gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake
 
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
