@@ -864,6 +864,7 @@ def test_support_matrix_classifies_non_official_parity_evidence() -> None:
         and {(row["format"], row["architecture"]) for row in preview_targets}
         == {
             ("ELF", "ARM"),
+            ("ELF", "AArch64"),
             ("ELF", "x86"),
             ("Mach-O", "AArch64"),
             ("Mach-O", "x86-64"),
