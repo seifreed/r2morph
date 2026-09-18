@@ -43,7 +43,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang pkg-config wget cmake binutils qemu-user
+          sudo apt-get install -y git build-essential clang gcc-aarch64-linux-gnu pkg-config wget cmake binutils qemu-user
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
@@ -163,6 +163,7 @@ jobs:
             tests/integration/test_mutation_passes_end_to_end_more2.py \
             tests/integration/test_mutation_nop_insertion_arm64.py \
             tests/integration/test_elf_arm32_native.py \
+            tests/integration/test_elf_arm64_native.py \
             tests/integration/test_elf_x86_32_native.py \
             tests/integration/test_code_virtualization_target_support_real.py
 
@@ -202,6 +203,9 @@ jobs:
               "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
               "test_elf_arm32_nop_insertion_preserves_emulated_exit_code",
               "test_elf_arm32_register_substitution_preserves_emulated_exit_code",
+              "test_elf_arm64_instruction_substitution_preserves_native_exit_code",
+              "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+              "test_elf_arm64_register_substitution_preserves_native_exit_code",
               "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
               "test_elf_x86_32_nop_insertion_preserves_native_exit_code",
               "test_elf_x86_32_register_substitution_preserves_native_exit_code",

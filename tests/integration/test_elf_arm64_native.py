@@ -13,9 +13,12 @@ from tests.utils.process import run_command
 
 
 def _build_arm64_elf(tmp_path: Path) -> Path:
-    compiler = shutil.which("cc") or shutil.which("clang")
+    if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
+        compiler = shutil.which("aarch64-linux-gnu-gcc")
+    else:
+        compiler = shutil.which("cc") or shutil.which("clang")
     if compiler is None:
-        pytest.skip("C compiler not available")
+        raise RuntimeError("an AArch64 C compiler is required for the ELF AArch64 differential fixture")
     source = tmp_path / "arm64_elf.c"
     source.write_text(
         "__attribute__((noinline)) int transform(int value) {\n"
@@ -26,26 +29,46 @@ def _build_arm64_elf(tmp_path: Path) -> Path:
         "int main(void) { return transform(37) == 42 ? 0 : 1; }\n"
     )
     binary_path = tmp_path / "arm64_elf"
-    run_command(
-        [compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)],
-        check=True,
-        text=True,
-    )
+    command = [compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)]
+    if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
+        command.insert(1, "-static")
+    run_command(command, check=True, text=True)
     return binary_path
 
 
+def _run_arm64(binary_path: Path):
+    if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
+        emulator = shutil.which("qemu-aarch64")
+        if emulator is None:
+            raise RuntimeError("qemu-aarch64 is required for the ELF AArch64 differential fixture")
+        return run_command([emulator, binary_path], text=True, timeout=30)
+    return run_command([binary_path], text=True, timeout=30)
+
+
+def _require_arm64_execution() -> None:
+    if platform.system() == "Linux" and (
+        platform.machine().lower() in {"aarch64", "arm64"}
+        or (
+            platform.machine().lower() in {"x86_64", "amd64"}
+            and shutil.which("aarch64-linux-gnu-gcc")
+            and shutil.which("qemu-aarch64")
+        )
+    ):
+        return
+    pytest.skip("ELF AArch64 differential execution requires Linux AArch64 or Linux qemu-aarch64")
+
+
 def test_elf_arm64_nop_insertion_preserves_native_exit_code(tmp_path: Path) -> None:
-    if platform.system() != "Linux" or platform.machine().lower() not in {"aarch64", "arm64"}:
-        pytest.skip("native ELF ARM64 execution requires a Linux ARM64 runner")
+    _require_arm64_execution()
 
     binary_path = _build_arm64_elf(tmp_path)
-    original = run_command([binary_path], text=True, timeout=30)
+    original = _run_arm64(binary_path)
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze()
         result = NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 1337}).apply(binary)
 
-    mutated = run_command([binary_path], text=True, timeout=30)
+    mutated = _run_arm64(binary_path)
     expect(
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
@@ -56,11 +79,10 @@ def test_elf_arm64_nop_insertion_preserves_native_exit_code(tmp_path: Path) -> N
 
 
 def test_elf_arm64_instruction_substitution_preserves_native_exit_code(tmp_path: Path) -> None:
-    if platform.system() != "Linux" or platform.machine().lower() not in {"aarch64", "arm64"}:
-        pytest.skip("native ELF ARM64 execution requires a Linux ARM64 runner")
+    _require_arm64_execution()
 
     binary_path = _build_arm64_elf(tmp_path)
-    original = run_command([binary_path], text=True, timeout=30)
+    original = _run_arm64(binary_path)
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze()
@@ -68,7 +90,7 @@ def test_elf_arm64_instruction_substitution_preserves_native_exit_code(tmp_path:
             config={"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
         ).apply(binary)
 
-    mutated = run_command([binary_path], text=True, timeout=30)
+    mutated = _run_arm64(binary_path)
     expect(
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
@@ -79,11 +101,10 @@ def test_elf_arm64_instruction_substitution_preserves_native_exit_code(tmp_path:
 
 
 def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Path) -> None:
-    if platform.system() != "Linux" or platform.machine().lower() not in {"aarch64", "arm64"}:
-        pytest.skip("native ELF ARM64 execution requires a Linux ARM64 runner")
+    _require_arm64_execution()
 
     binary_path = _build_arm64_elf(tmp_path)
-    original = run_command([binary_path], text=True, timeout=30)
+    original = _run_arm64(binary_path)
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze()
@@ -92,7 +113,7 @@ def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Pa
         )
         result = pass_instance.apply(binary)
 
-    mutated = run_command([binary_path], text=True, timeout=30)
+    mutated = _run_arm64(binary_path)
     expect(
         result["mutations_applied"] > 0
         and (original.returncode, original.stdout, original.stderr)
