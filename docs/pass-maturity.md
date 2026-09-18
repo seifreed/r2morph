@@ -148,7 +148,9 @@ format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
 summaries also count declared formats and architectures, making the current ELF
 x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 They also count declared unit and end-to-end evidence paths so test coverage
-gaps are visible at release-gate level.
+gaps are visible at release-gate level. The continuous differential workflow
+also runs one native ELF x86 32-bit instruction-substitution smoke case; it is
+preview evidence only and does not close the per-pass x86 parity gap.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive

@@ -1,0 +1,76 @@
+"""Native differential coverage for the ELF x86 32-bit target."""
+
+from __future__ import annotations
+
+import platform
+import shutil
+from pathlib import Path
+
+import pytest
+
+from r2morph.core.binary import Binary
+from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
+
+def _build_x86_32_elf(tmp_path: Path) -> Path:
+    compiler = shutil.which("clang")
+    if compiler is None:
+        raise RuntimeError("clang is required for the ELF x86 32-bit differential fixture")
+    source = tmp_path / "x86_32_exit.S"
+    source.write_text(
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    movl $40, %ebx\n"
+        "    addl $2, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "x86_32_exit"
+    run_command(
+        [
+            compiler,
+            "-target",
+            "i386-linux-gnu",
+            "-nostdlib",
+            "-static",
+            "-Wl,-e,_start",
+            "-x",
+            "assembler",
+            "-o",
+            binary_path,
+            source,
+        ],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
+def test_elf_x86_32_instruction_substitution_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
+
+    binary_path = _build_x86_32_elf(tmp_path)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        mutation_pass = InstructionSubstitutionPass(
+            config={"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1337}
+        )
+        result = mutation_pass.apply(binary)
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF x86 32-bit instruction substitution changed native execution",
+    )

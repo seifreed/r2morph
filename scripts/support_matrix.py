@@ -69,13 +69,14 @@ _DIFFERENTIAL_PLATFORM_GAP_SCOPE = {
     "architectures": ["AArch64", "ARM", "x86"],
 }
 _DIFFERENTIAL_PREVIEW_SMOKE_SCOPE = {
-    "formats": ["Mach-O", "PE"],
-    "architectures": ["AArch64"],
+    "formats": ["ELF", "Mach-O", "PE"],
+    "architectures": ["AArch64", "x86"],
     "evidence": [
         ".github/workflows/differential-corpus.yml",
         "tests/integration/test_mutation_nop_insertion_arm64.py",
         "tests/integration/test_platform_deeper.py",
         "tests/integration/test_elf_arm64_native.py",
+        "tests/integration/test_elf_x86_32_native.py",
     ],
     "status": "preview-smoke-only",
 }

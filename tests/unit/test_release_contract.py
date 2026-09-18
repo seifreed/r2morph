@@ -683,13 +683,14 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
         == {"os": "linux", "format": "ELF", "architecture": "x86-64"}
         and summary["differential_evidence_scope"]["preview_smoke_scope"]
         == {
-            "formats": ["Mach-O", "PE"],
-            "architectures": ["AArch64"],
+            "formats": ["ELF", "Mach-O", "PE"],
+            "architectures": ["AArch64", "x86"],
             "evidence": [
                 ".github/workflows/differential-corpus.yml",
                 "tests/integration/test_mutation_nop_insertion_arm64.py",
                 "tests/integration/test_platform_deeper.py",
                 "tests/integration/test_elf_arm64_native.py",
+                "tests/integration/test_elf_x86_32_native.py",
             ],
             "status": "preview-smoke-only",
         }
@@ -1623,6 +1624,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "cross-platform-differential-macos-arm64" in differential
         and "cross-platform-differential-windows-pe" in differential
         and "elf-arm64-native" in differential
+        and "elf-x86-32-native" in differential
         and "differential-platform-aggregate" in differential
         and "Validate aggregated platform evidence" in differential
     )

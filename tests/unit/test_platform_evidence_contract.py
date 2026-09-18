@@ -17,7 +17,7 @@ def _write_report(path: Path, case_names: str | tuple[str, ...], *, skipped: boo
 
 
 def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Path) -> None:
-    for platform_name in ("macos-arm64", "windows-pe", "elf-arm64"):
+    for platform_name in _REQUIRED_CASES:
         (tmp_path / platform_name).mkdir()
     _write_report(
         tmp_path / "macos-arm64" / "report.xml",
@@ -27,6 +27,10 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
     _write_report(
         tmp_path / "elf-arm64" / "report.xml",
         _REQUIRED_CASES["elf-arm64"],
+    )
+    _write_report(
+        tmp_path / "elf-x86-32" / "report.xml",
+        _REQUIRED_CASES["elf-x86-32"],
     )
 
     report = summarize_platform_reports(tmp_path)
