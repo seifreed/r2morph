@@ -56,6 +56,9 @@ VM_ADVERSARIAL_VALIDATION = {
         "progressive-bytecode-protection",
     ],
 }
+VM_RESISTANCE_EVIDENCE_QUALITY = {
+    "anti-tamper": "automated-native-tamper-smoke",
+}
 ADVERSARIAL_TOOL_SLOTS = {
     "angr",
     "binary-ninja",
@@ -256,7 +259,8 @@ def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
     if totals["vm_resistance_gap_scope"] != len(gap_scope) or totals["total_vm_resistance_blockers"] != len(gap_scope):
         raise ValueError("vm resistance blocker totals must match declared gap scope")
     for gap, row in evidence.items():
-        if row["status"] == "complete" or row["evidence_quality"] != "seed-diversity-only":
+        expected_quality = VM_RESISTANCE_EVIDENCE_QUALITY.get(gap, "seed-diversity-only")
+        if row["status"] == "complete" or row["evidence_quality"] != expected_quality:
             raise ValueError(f"vm resistance gap must remain pending adversarial review: {gap}")
         if not row["evidence"]:
             raise ValueError(f"vm resistance gap evidence is empty: {gap}")

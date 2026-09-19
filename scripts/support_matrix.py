@@ -162,7 +162,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
     },
     "anti-tamper": {
         "status": "seed-diversity-only-incomplete",
-        "evidence_quality": "seed-diversity-only",
+        "evidence_quality": "automated-native-tamper-smoke",
         "evidence": [
             "docs/protection-maturity.md",
             ".github/workflows/adversarial-benchmark.yml",

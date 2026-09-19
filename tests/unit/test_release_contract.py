@@ -635,7 +635,11 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
 
     expect(
         sorted(evidence) == sorted(gap_scope)
-        and all(row["evidence_quality"] == "seed-diversity-only" for row in evidence.values())
+        and all(
+            row["evidence_quality"]
+            == ("automated-native-tamper-smoke" if gap == "anti-tamper" else "seed-diversity-only")
+            for gap, row in evidence.items()
+        )
         and all(row["status"] != "complete" for row in evidence.values())
         and all((_ROOT / path).exists() for path in evidence_paths)
         and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(gap_scope)
