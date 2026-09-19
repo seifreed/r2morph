@@ -316,6 +316,7 @@ class LivenessAnalysis:
             used = self._registers_used_by_operands(operand_parts[1], disasm)
             if memory_accesses(disasm)[0]:
                 used.add(Register(MEMORY_RESOURCE_NAME))
+            used.update(Register(*register) for register in frame_pointer_registers(disasm, self._abi))
             used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
             return used
         if flag_accesses(disasm)[0]:

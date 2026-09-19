@@ -697,6 +697,14 @@ class TestLivenessAnalysis:
 
         expect(Register("rbp", 64) in used and Register("rsp", 64) in defined)
 
+    def test_enter_tracks_implicit_stack_frame_effects(self):
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "enter", "disasm": "enter 0x20, 0"})
+        defined = analyzer._extract_registers_defined({"type": "enter", "disasm": "enter 0x20, 0"})
+
+        expect(Register("rbp", 64) in used and Register("rsp", 64) in used and Register("rsp", 64) in defined)
+
     def test_ssa_return_uses_abi_registers(self):
         """SSA keeps ABI return values observable at a ret instruction."""
         used = SSAConverter()._extract_used_registers("ret")

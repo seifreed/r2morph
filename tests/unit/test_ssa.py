@@ -303,6 +303,12 @@ class TestSSAConverter:
 
         expect("rbp" in used and "rsp" in defined and "rbp" in defined)
 
+    def test_extract_enter_tracks_frame_and_stack_pointers(self, converter):
+        used = converter._extract_used_registers("enter 0x20, 0")
+        defined = converter._extract_defined_registers("enter 0x20, 0")
+
+        expect("rbp" in used and "rsp" in used and "rsp" in defined and "rbp" in defined)
+
     def test_extract_defined_registers_read_modify_write(self, converter):
         defined = converter._extract_defined_registers("add eax, ebx")
         expect(defined == {"eax", "rflags"})

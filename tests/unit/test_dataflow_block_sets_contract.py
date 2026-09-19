@@ -78,3 +78,12 @@ def test_dataflow_block_sets_track_leave_stack_pointer_effects() -> None:
         compute_block_use(instructions) == {("rbp", 64), ("memory", 0)}
         and compute_block_def(instructions) == {("rbp", 64), ("rsp", 64)}
     )
+
+
+def test_dataflow_block_sets_track_enter_stack_frame_effects() -> None:
+    instructions = [{"disasm": "enter 0x20, 0", "type": "enter"}]
+
+    expect(
+        compute_block_use(instructions) == {("rbp", 64), ("rsp", 64), ("memory", 0)}
+        and compute_block_def(instructions) == {("rbp", 64), ("rsp", 64), ("memory", 0)}
+    )
