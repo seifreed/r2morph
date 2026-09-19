@@ -7,6 +7,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_DECOMPILER_BLOCKERS = 2
 _EXPECTED_DIRECTIONAL_PAIR_COUNT = 4
+_EXPECTED_DECOMPILER_GATE_COUNT = 2
 
 
 def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str, object]:
@@ -179,6 +180,17 @@ def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
         in content
         and "--base-evidence" in content
         and "maturity-evidence-with-adversarial.json" in content
+    )
+
+
+def test_adversarial_workflow_requires_two_complete_decompiler_tools() -> None:
+    workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "adversarial-benchmark.yml"
+    content = workflow.read_text(encoding="utf-8")
+
+    expect(
+        content.count('for decompiler_tool in ("radare2", "angr"):') == _EXPECTED_DECOMPILER_GATE_COUNT
+        and 'decompiler.get("completed_pairs") != report["sample_count"]' in content
+        and 'decompiler.get("completion_percent") != 100.0' in content
     )
 
 
