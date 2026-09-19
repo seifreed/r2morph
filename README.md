@@ -111,7 +111,7 @@ transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary still records 12 with no independent
 false-positive measurement,
 12 with no independent decompiler-effectiveness measurement,
-11 without contractual composition support, and no remaining affected-instruction catalogue gap.
+0 without contractual composition support, and no remaining affected-instruction catalogue gap.
 The reproducible GCC/Clang corpus and its build manifest live in the public
 [`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
 

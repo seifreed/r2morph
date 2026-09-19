@@ -490,7 +490,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "polymorphic-engine-instruction-catalogued": {
         "formats": [
@@ -533,7 +533,7 @@
         ],
         "performance": "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "stack-strings-instruction-catalogued": {
         "formats": [
@@ -554,7 +554,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "string-obfuscation-instruction-catalogued": {
         "formats": [
@@ -575,7 +575,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "function-outlining-instruction-catalogued": {
         "formats": [
@@ -596,7 +596,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "data-flow-mutation-instruction-catalogued": {
         "formats": [
@@ -617,7 +617,7 @@
         ],
         "performance": "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "api-hashing-instruction-catalogued": {
         "formats": [
@@ -638,7 +638,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "import-obfuscation-instruction-catalogued": {
         "formats": [
@@ -659,7 +659,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "opaque-predicates-instruction-catalogued": {
         "formats": [
@@ -680,7 +680,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "code-mobility-instruction-catalogued": {
         "formats": [
@@ -701,7 +701,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "self-modifying-code-instruction-catalogued": {
         "formats": [
@@ -722,7 +722,7 @@
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
         "decompiler_effectiveness": "Not independently measured.",
-        "compatibility": "Composition with other passes is not contractually supported."
+        "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "code-virtualization": {
         "formats": [
@@ -1184,9 +1184,9 @@
       },
       "compatibility_counts": {
         "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported.": 1,
-        "Composition with other passes is not contractually supported.": 11,
         "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
         "Pass combinations are not exhaustively covered.": 3,
+        "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported.": 11,
         "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
       },
       "performance_counts": {
@@ -1273,54 +1273,34 @@
           "short-jump-patching",
           "stack-strings",
           "string-obfuscation"
-        ],
-        "compatibility": [
-          "anti-disassembly",
-          "api-hashing",
-          "code-mobility",
-          "data-flow-mutation",
-          "function-outlining",
-          "import-obfuscation",
-          "opaque-predicates",
-          "self-modifying-code",
-          "short-jump-patching",
-          "stack-strings",
-          "string-obfuscation"
         ]
       },
       "maturity_gaps_by_pass": {
         "anti-disassembly": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "api-hashing": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "code-mobility": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "data-flow-mutation": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "function-outlining": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "import-obfuscation": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "opaque-predicates": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
@@ -1329,22 +1309,18 @@
           "false_positive_risk"
         ],
         "self-modifying-code": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "short-jump-patching": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "stack-strings": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ],
         "string-obfuscation": [
-          "compatibility",
           "decompiler_effectiveness",
           "false_positive_risk"
         ]
@@ -1406,54 +1382,34 @@
             "short-jump-patching",
             "stack-strings",
             "string-obfuscation"
-          ],
-          "compatibility": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
           ]
         },
         "missing_fields_by_pass": {
           "anti-disassembly": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "api-hashing": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "code-mobility": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "data-flow-mutation": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "function-outlining": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "import-obfuscation": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "opaque-predicates": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
@@ -1462,22 +1418,18 @@
             "false_positive_risk"
           ],
           "self-modifying-code": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "short-jump-patching": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "stack-strings": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ],
           "string-obfuscation": [
-            "compatibility",
             "decompiler_effectiveness",
             "false_positive_risk"
           ]
@@ -1528,27 +1480,6 @@
             "string-obfuscation"
           ]
         },
-        "compatibility": {
-          "status": "arbitrary-pass-composition-unsupported",
-          "evidence_quality": "scheduled-corpus-gate",
-          "evidence": [
-            "docs/compatibility-corpus.md",
-            "docs/pass-maturity.md"
-          ],
-          "passes": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ]
-        },
         "native_evidence": {
           "status": "native-evidence-incomplete",
           "evidence_quality": "partial-native-regression",
@@ -1573,14 +1504,13 @@
         }
       },
       "maturity_blocker_totals": {
-        "maturity_gap_categories": 3,
+        "maturity_gap_categories": 2,
         "native_evidence_gap_passes": 12,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 47,
-        "total_maturity_field_gaps": 35,
+        "total_maturity_blockers": 36,
+        "total_maturity_field_gaps": 24,
         "false_positive_risk_gap_passes": 12,
-        "decompiler_effectiveness_gap_passes": 12,
-        "compatibility_gap_passes": 11
+        "decompiler_effectiveness_gap_passes": 12
       },
       "differential_evidence_scope": {
         "platform_scope": {

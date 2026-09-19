@@ -46,7 +46,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf pkg-config wget cmake binutils qemu-user
+          sudo apt-get install -y git build-essential clang lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf pkg-config wget cmake binutils qemu-user
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
@@ -1656,7 +1656,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang pkg-config wget cmake binutils
+          sudo apt-get install -y git build-essential clang lld pkg-config wget cmake binutils
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
@@ -1732,7 +1732,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential clang gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake binutils
+          sudo apt-get install -y git build-essential clang lld gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake binutils
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh

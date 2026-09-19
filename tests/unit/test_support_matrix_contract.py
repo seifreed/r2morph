@@ -32,9 +32,9 @@ _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "string-obfuscation-instruction-catalogued": 1,
     "tier-1-native": 3,
 }
-_EXPECTED_MATURITY_GAP_CATEGORIES = 3
-_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 35
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 47
+_EXPECTED_MATURITY_GAP_CATEGORIES = 2
+_EXPECTED_TOTAL_MATURITY_FIELD_GAPS = 24
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 36
 
 
 def test_support_matrix_has_one_cell_per_declared_combination() -> None:

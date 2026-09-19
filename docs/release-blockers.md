@@ -5,15 +5,15 @@ review. It is not a feature roadmap and must not be read as a support claim.
 
 ## Open blockers
 
-- RB-001: Per-pass maturity remains incomplete: native evidence, performance,
-  composition, false-positive measurement, analyzer effectiveness, and
-  affected-instruction coverage are not complete for every pass. Evidence map:
+- RB-001: Per-pass maturity remains incomplete: native evidence, false-positive
+  measurement, and analyzer effectiveness are not complete for every pass.
+  The scoped NOP composition contract and affected-instruction catalog are
+  complete. Evidence map:
   [pass-maturity.md](pass-maturity.md),
   [support-matrix.json](support-matrix.json) `maturity_evidence_blockers`
   and `maturity_blocker_totals`.
-  Exit criteria: every pass has
-  complete native, performance, composition, false-positive, analyzer, and
-  affected-instruction evidence.
+  Exit criteria: every pass has complete native, performance, scoped composition,
+  false-positive, analyzer, and affected-instruction evidence.
 - RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass
   Linux ELF x86-64 campaign. PE/Mach-O, ARM32, x86 32-bit, and AArch64 have
   execution smoke cases for the core passes (ARM32, x86 32-bit, and AArch64

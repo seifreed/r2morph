@@ -486,6 +486,9 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         if performance_gap_count
         else "scheduled extended maturity smoke now records output-size,"
     )
+    compatibility_gap_count = summary["compatibility_counts"].get(
+        "Composition with other passes is not contractually supported.", 0
+    )
     for fragment in (
         f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
@@ -502,10 +505,7 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
             f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
             "decompiler-effectiveness measurement"
         ),
-        (
-            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
-            "without contractual composition support"
-        ),
+        (f"{compatibility_gap_count} " "without contractual composition support"),
         instruction_gap_fragment,
     ):
         if fragment not in readme:
@@ -595,6 +595,9 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         if performance_gap_count
         else "scheduled extended maturity smoke now records output-size,"
     )
+    compatibility_gap_count = summary["compatibility_counts"].get(
+        "Composition with other passes is not contractually supported.", 0
+    )
     fragments = [
         f"{summary['official_evidence_percent']}% official evidence",
         f"{summary['non_official_evidence_percent']}% non-official evidence",
@@ -613,10 +616,7 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
             f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
             "decompiler-effectiveness measurement"
         ),
-        (
-            f"{summary['compatibility_counts']['Composition with other passes is not contractually supported.']} "
-            "without contractual composition support"
-        ),
+        (f"{compatibility_gap_count} " "without contractual composition support"),
         f"{summary['maturity_blocker_totals']['total_maturity_field_gaps']} total per-pass maturity field gaps",
         f"{summary['maturity_blocker_totals']['maturity_gap_categories']} maturity gap categories",
         f"{summary['vm_semantic_blocker_totals']['total_vm_semantic_blockers']} VM semantic blockers",

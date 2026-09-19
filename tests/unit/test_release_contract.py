@@ -50,7 +50,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 47
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 36
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -186,6 +186,13 @@ def test_differential_workflow_runs_on_relevant_main_pushes() -> None:
         and '      - "scripts/**"' in workflow
         and '      - "tests/**"' in workflow
     )
+
+
+def test_differential_workflow_installs_lld_for_real_composition() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    primary_job = workflow.split("  differential-corpus:\n", 1)[1].split("  cross-platform-differential:", 1)[0]
+
+    expect("clang lld" in primary_job and "test_polymorphic_engine_real.py" in primary_job)
 
 
 def test_independent_review_follows_successful_adversarial_campaign() -> None:
@@ -404,15 +411,12 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
         == {
             "false_positive_risk",
             "decompiler_effectiveness",
-            "compatibility",
         }
         and "Not measured per pass." not in summary["performance_counts"]
         and any("scheduled extended maturity pass smoke" in value for value in summary["performance_counts"])
         and len(gaps["false_positive_risk"]) == summary["false_positive_risk_counts"]["Not independently measured."]
         and len(gaps["decompiler_effectiveness"])
         == summary["decompiler_effectiveness_counts"]["Not independently measured."]
-        and len(gaps["compatibility"])
-        == summary["compatibility_counts"]["Composition with other passes is not contractually supported."]
     )
 
 

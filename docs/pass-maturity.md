@@ -124,8 +124,8 @@ workflow does not promote partial analyzer coverage or a preview-only pass to
 official support.
 The static profile summary remains a declared-gap view: it still reports 12
 with no independent false-positive measurement, 12 with no independent
-decompiler-effectiveness measurement, 11 without contractual composition
-support, and 35 total per-pass maturity field gaps across 3 maturity gap
+decompiler-effectiveness measurement, 0 without contractual composition
+support, and 24 total per-pass maturity field gaps across 2 maturity gap
 categories, with no remaining exhaustive affected-instruction catalogue gap in
 the static profiles. The current
 last archived scheduled artifact records ten passes without independent semantic
@@ -133,10 +133,9 @@ false-positive observations, eight without contractual composition support,
 22 without comparable decompiler evidence, and one without an applied
 affected-instruction catalogue: 41 per-pass evidence blockers across four
 measured categories. Performance coverage is complete in that artifact. The
-current tracked composition smoke adds applied evidence for the extended
-composition cases, including the scoped `StackStrings` native rewrite; the next
-scheduled aggregate must confirm that reduction before the archived totals are
-replaced. The
+verified 46-case composition smoke now provides the scoped NOP-order contract
+for all twelve extended passes, including the `StackStrings` native rewrite;
+arbitrary pass combinations remain outside the contract. The
 generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
