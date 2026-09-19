@@ -34,6 +34,8 @@ _DIRECT_WRITE_KINDS = frozenset(
         "not",
         "bswap",
         "neg",
+        "movsub",
+        "imulmem",
     }
 )
 _THIRD_FIELD_WRITE_KINDS = frozenset(

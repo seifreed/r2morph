@@ -262,6 +262,26 @@ def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, 
     return body
 
 
+def _vimul_handler_asm(handler_key: str, key: str) -> str:
+    """Multiply the top two virtual-stack values and capture native flags."""
+    width = int(handler_key.split("_")[1])
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
+        "  sub r9, 8\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
+    )
+    body += "  imul r10, rax\n" if width == _QWORD_WIDTH_BITS else "  imul r10d, eax\n"
+    return (
+        body
+        + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        + f"  xor r10, {_VKEY}\n  mov qword ptr [rsp+r9+{_VBASE}], r10\n"
+        + "  add r9, 8\n"
+        + f"  mov qword ptr [rsp+{_VSP}], r9\n  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _vcmpsynth_handler_asm(
     handler_key: str, key: str, flag_variant: int = 0, arith_variant: int = 0, compare_variant: int = 0
 ) -> str:

@@ -60,6 +60,15 @@ def _lower_memory(item: list[Any]) -> list[list[Any]]:
 
 def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
+    if kind.startswith("opmemimm"):
+        return _lower_memory_immediate_arithmetic(item)
+    if kind.startswith("shiftmem"):
+        return _lower_memory_shift(item)
+    return _lower_register_memory_arithmetic(item)
+
+
+def _lower_register_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
+    kind = item[0]
     if item[1] in ("adc", "sbb"):
         return [item]
     if kind == "opmem":
@@ -117,6 +126,81 @@ def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
         ["vbinopsynth", mnemonic, width],
         ["vstorerip", target, width],
     ]
+
+
+def _lower_memory_immediate_arithmetic(item: list[Any]) -> list[list[Any]]:
+    kind = item[0]
+    if kind == "opmemimm":
+        _, mnemonic, value, base, displacement, width = item
+        return [
+            ["vload", base, displacement, width],
+            ["vpushi", value, width],
+            ["vbinopsynth", mnemonic, width],
+            ["vstore", base, displacement, width],
+        ]
+    if kind == "opmemimmrip":
+        _, mnemonic, value, target, width = item
+        return [
+            ["vloadrip", target, width],
+            ["vpushi", value, width],
+            ["vbinopsynth", mnemonic, width],
+            ["vstorerip", target, width],
+        ]
+    if kind == "opmemimmidx":
+        _, mnemonic, value, base, index, shift, displacement, width = item
+        load = ["vloadidx", base, index, shift, displacement, width]
+        store = ["vstoreidx", base, index, shift, displacement, width]
+        return [load, ["vpushi", value, width], ["vbinopsynth", mnemonic, width], store]
+    if kind == "opmemimmidxnb":
+        _, mnemonic, value, index, shift, displacement, width = item
+        load = ["vloadidxnb", index, shift, displacement, width]
+        store = ["vstoreidxnb", index, shift, displacement, width]
+        return [load, ["vpushi", value, width], ["vbinopsynth", mnemonic, width], store]
+    raise ValueError(f"unsupported immediate memory arithmetic item: {kind}")
+
+
+def _lower_memory_shift(item: list[Any]) -> list[list[Any]]:
+    kind = item[0]
+    if kind == "shiftmem":
+        _, mnemonic, count, base, displacement, width = item
+        load = ["vload", base, displacement, width]
+        store = ["vstore", base, displacement, width]
+    elif kind == "shiftmemrip":
+        _, mnemonic, count, target, width = item
+        load = ["vloadrip", target, width]
+        store = ["vstorerip", target, width]
+    elif kind == "shiftmemidx":
+        _, mnemonic, count, base, index, shift, displacement, width = item
+        load = ["vloadidx", base, index, shift, displacement, width]
+        store = ["vstoreidx", base, index, shift, displacement, width]
+    else:
+        _, mnemonic, count, index, shift, displacement, width = item
+        load = ["vloadidxnb", index, shift, displacement, width]
+        store = ["vstoreidxnb", index, shift, displacement, width]
+    return [load, ["vshift", mnemonic, count, width], store]
+
+
+def _lower_partial_register_move(item: list[Any]) -> list[list[Any]]:
+    _, destination, source, is_immediate, width = item
+    value = ["vpushi", source, width] if is_immediate else ["vpush", source]
+    return [value, ["vpop8" if width == _BYTE_WIDTH_BITS else "vpop16", destination]]
+
+
+def _lower_memory_imul(item: list[Any]) -> list[list[Any]]:
+    kind = item[0]
+    if kind == "imulmem":
+        _, destination, immediate, base, displacement, width = item
+        load = ["vload", base, displacement, width]
+    elif kind == "imulmemrip":
+        _, destination, immediate, target, width = item
+        load = ["vloadrip", target, width]
+    elif kind == "imulmemidx":
+        _, destination, immediate, base, index, shift, displacement, width = item
+        load = ["vloadidx", base, index, shift, displacement, width]
+    else:
+        _, destination, immediate, index, shift, displacement, width = item
+        load = ["vloadidxnb", index, shift, displacement, width]
+    return [load, ["vpushi", immediate, width], ["vimul", width], ["vpop", destination]]
 
 
 def _lower_compare_memory_immediate(item: list[Any]) -> list[list[Any]]:
@@ -205,6 +289,10 @@ _LOWERERS: dict[str, _Lowerer] = {
         kind: _lower_memory_arithmetic
         for kind in (
             "opmem",
+            "opmemimm",
+            "opmemimmrip",
+            "opmemimmidx",
+            "opmemimmidxnb",
             "opmemidx",
             "opmemidxnb",
             "opmemdst",
@@ -212,8 +300,14 @@ _LOWERERS: dict[str, _Lowerer] = {
             "opmemdstidxnb",
             "opriprel",
             "opmemdstrip",
+            "shiftmem",
+            "shiftmemrip",
+            "shiftmemidx",
+            "shiftmemidxnb",
         )
     },
+    "movsub": _lower_partial_register_move,
+    **{kind: _lower_memory_imul for kind in ("imulmem", "imulmemrip", "imulmemidx", "imulmemidxnb")},
     **{
         kind: _lower_shift_compare
         for kind in (

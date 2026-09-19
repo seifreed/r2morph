@@ -196,7 +196,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self.plain.append(item[2] ^ self._opcode(item))
         elif kind == "vshiftreg":
             self.plain.append(self.slot_of[1] ^ self._opcode(item))
-        elif kind in ("vbinop", "vbinopsynth", "vcmpsynth"):
+        elif kind in ("vbinop", "vbinopsynth", "vimul", "vcmpsynth"):
             self._opcode(item)
         elif kind in ("vload", "vstore", "vlea"):
             _, base, disp, _width = item

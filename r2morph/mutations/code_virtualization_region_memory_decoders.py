@@ -26,6 +26,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
 
 _DWORD_WIDTH_BITS = 32
 _BYTE_IMMEDIATE_MAX = 0xFF
+_MAX_SHIFT_COUNT = 63
+_TERNARY_OPERAND_COUNT = 3
 _LOCKED_INSTRUCTION_PART_COUNT = 3
 _INDEXED_MEMORY_WIDTHS = {
     "byte": _BYTE_WIDTH_BITS,
@@ -236,6 +238,133 @@ def _decode_memory_immediate(text: str, insn_addr: int, insn_size: int) -> tuple
     return result
 
 
+def _decode_memory_rmw_immediate(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode an immediate arithmetic/logic read-modify-write memory operation."""
+    parts = text.split(None, 1)
+    if (
+        len(parts) != _INSTRUCTION_PART_COUNT
+        or parts[0].lower() != mnemonic
+        or mnemonic not in ("add", "sub", "and", "or", "xor")
+        or "," not in parts[1]
+    ):
+        return None
+    memory_text, immediate_text = (token.strip() for token in parts[1].split(",", 1))
+    if "[" not in memory_text or "[" in immediate_text:
+        return None
+
+    direct = _parse_mem_operand(memory_text)
+    if direct is not None and direct[2] is not None:
+        decoded = _memory_immediate_item("opmemimm", immediate_text, direct[2], direct[:2])
+        return ("opmemimm", mnemonic, *decoded[1:]) if decoded is not None else None
+
+    rip_relative = _parse_riprel_operand(memory_text, insn_addr, insn_size)
+    if rip_relative is not None and rip_relative[1] is not None:
+        decoded = _memory_immediate_item("opmemimmrip", immediate_text, rip_relative[1], rip_relative[0])
+        return ("opmemimmrip", mnemonic, *decoded[1:]) if decoded is not None else None
+
+    width = _explicit_memory_width(memory_text)
+    indexed = _parse_indexed_operand(memory_text, base_optional=True)
+    if width is None or indexed is None:
+        return None
+    base_slot, index_slot, shift, displacement = indexed
+    kind = "opmemimmidxnb" if base_slot < 0 else "opmemimmidx"
+    operands = (index_slot, shift, displacement) if base_slot < 0 else (base_slot, index_slot, shift, displacement)
+    decoded = _memory_immediate_item(kind, immediate_text, width, operands)
+    return (kind, mnemonic, *decoded[1:]) if decoded is not None else None
+
+
+def _decode_shift_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode an immediate shift or rotate whose destination is memory."""
+    result: tuple[Any, ...] | None = None
+    parts = text.split(None, 1)
+    if len(parts) == _INSTRUCTION_PART_COUNT and "," in parts[1]:
+        mnemonic = parts[0].lower()
+        if mnemonic in ("shl", "shr", "sar", "rol", "ror", "rcl", "rcr"):
+            memory_text, count_text = (token.strip() for token in parts[1].split(",", 1))
+            if "[" in memory_text:
+                try:
+                    count = int(count_text, 0)
+                except ValueError:
+                    count = -1
+                if 0 <= count <= _MAX_SHIFT_COUNT:
+                    direct = _parse_mem_operand(memory_text)
+                    if direct is not None and direct[2] is not None:
+                        result = ("shiftmem", mnemonic, count, direct[0], direct[1], direct[2])
+                    else:
+                        rip_relative = _parse_riprel_operand(memory_text, insn_addr, insn_size)
+                        if rip_relative is not None and rip_relative[1] is not None:
+                            result = ("shiftmemrip", mnemonic, count, rip_relative[0], rip_relative[1])
+                        else:
+                            width = _explicit_memory_width(memory_text)
+                            indexed = _parse_indexed_operand(memory_text, base_optional=True)
+                            if width is not None and indexed is not None:
+                                base_slot, index_slot, shift, displacement = indexed
+                                if base_slot < 0:
+                                    result = ("shiftmemidxnb", mnemonic, count, index_slot, shift, displacement, width)
+                                else:
+                                    result = (
+                                        "shiftmemidx",
+                                        mnemonic,
+                                        count,
+                                        base_slot,
+                                        index_slot,
+                                        shift,
+                                        displacement,
+                                        width,
+                                    )
+    return result
+
+
+def _decode_imul_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode three-operand ``imul`` with a memory source and immediate."""
+    result: tuple[Any, ...] | None = None
+    parts = text.split(None, 1)
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == "imul":
+        fields = [field.strip().lower() for field in parts[1].split(",")]
+        if len(fields) == _TERNARY_OPERAND_COUNT and "[" in fields[1] and "[" not in fields[2]:
+            destination = _register_operand(fields[0])
+            if destination is not None:
+                try:
+                    immediate = int(fields[2], 0)
+                except ValueError:
+                    immediate = 1 << 32
+                if immediate_fits_width(immediate, 32):
+                    memory = _parse_mem_operand(fields[1])
+                    if memory is not None and memory[2] == destination[1]:
+                        result = ("imulmem", destination[0], immediate, memory[0], memory[1], destination[1])
+                    else:
+                        rip_relative = _parse_riprel_operand(fields[1], insn_addr, insn_size)
+                        if rip_relative is not None and rip_relative[1] == destination[1]:
+                            result = ("imulmemrip", destination[0], immediate, rip_relative[0], destination[1])
+                        else:
+                            width = _explicit_memory_width(fields[1])
+                            indexed = _parse_indexed_operand(fields[1], base_optional=True)
+                            if width == destination[1] and indexed is not None:
+                                base_slot, index_slot, shift, displacement = indexed
+                                if base_slot < 0:
+                                    result = (
+                                        "imulmemidxnb",
+                                        destination[0],
+                                        immediate,
+                                        index_slot,
+                                        shift,
+                                        displacement,
+                                        width,
+                                    )
+                                else:
+                                    result = (
+                                        "imulmemidx",
+                                        destination[0],
+                                        immediate,
+                                        base_slot,
+                                        index_slot,
+                                        shift,
+                                        displacement,
+                                        width,
+                                    )
+    return result
+
+
 def _explicit_memory_width(text: str) -> int | None:
     head = text.strip().lower().split(None, 1)
     return _INDEXED_MEMORY_WIDTHS.get(head[0]) if head else None
@@ -251,12 +380,12 @@ def _memory_immediate_item(kind: str, text: str, width: int, operands: Any) -> t
     accepted_width = 32 if width == _QWORD_WIDTH_BITS else width
     if not immediate_fits_width(value, accepted_width):
         return None
-    if kind in ("storei", "cmpmemimm"):
+    if kind in ("storei", "cmpmemimm", "opmemimm"):
         base_slot, displacement = operands
         return kind, value, base_slot, displacement, width
-    if kind in ("storeirip", "cmpriprelimm"):
+    if kind in ("storeirip", "cmpriprelimm", "opmemimmrip"):
         return kind, value, operands, width
-    if kind in ("storeiidxnb", "cmpmemimmidxnb"):
+    if kind in ("storeiidxnb", "cmpmemimmidxnb", "opmemimmidxnb"):
         index_slot, shift, displacement = operands
         return kind, value, index_slot, shift, displacement, width
     base_slot, index_slot, shift, displacement = operands

@@ -245,6 +245,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "vpushi": (2,),
     "vbinop": (1, 2),
     "vbinopsynth": (1, 2),
+    "vimul": (1,),
     "vload": (3,),
     "vstore": (3,),
     "vloadidx": (5,),

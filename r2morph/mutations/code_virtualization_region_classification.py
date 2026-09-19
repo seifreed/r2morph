@@ -102,6 +102,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_cmpxchg_memory,
     _decode_cqo,
     _decode_div,
+    _decode_imul_memory,
     _decode_incdec,
     _decode_lea,
     _decode_lea_indexed,
@@ -109,6 +110,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_memory_immediate,
     _decode_memory_mov,
     _decode_memory_mov_indexed,
+    _decode_memory_rmw_immediate,
     _decode_movx,
     _decode_mxcsr_memory,
     _decode_neg,
@@ -118,6 +120,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_memdst,
     _decode_op_memdst_indexed,
     _decode_riprel_mov,
+    _decode_shift_memory,
     _decode_tls_binary_memory,
     _decode_tls_compare_memory,
     _decode_tls_memory_mov,
@@ -299,6 +302,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
     if result is None and kind == "mov":
         result = _first_item(
             (
+                lambda: _decode_partial_register_move(text),
                 lambda: _decode_tls_memory_mov(text),
                 lambda: _decode_mov_from_rsp(text),
                 lambda: _decode_mov_to_rsp(text),
@@ -313,6 +317,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
         result = _first_item(
             (
                 lambda: _decode_incdec(text),
+                lambda: _decode_memory_rmw_immediate(text, kind, address, size),
                 lambda: _decode_op_mem(text, kind, address, size),
                 lambda: _decode_op_memdst(text, kind, address, size),
                 lambda: _decode_op_memdst_indexed(text, kind),
@@ -320,6 +325,13 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
             )
         )
     return result
+
+
+def _decode_partial_register_move(text: str) -> list[Any] | None:
+    decoded = _decode_two_operand(text, "mov")
+    if decoded is None or decoded[3] not in (8, 16):
+        return None
+    return ["movsub", *decoded]
 
 
 def _decode_subregister_binary(kind: str, text: str) -> list[Any] | None:
@@ -371,12 +383,18 @@ def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
     )
 
 
-def _classify_shift(text: str) -> list[Any] | None:
+def _classify_shift(text: str, address: int, size: int) -> list[Any] | None:
+    memory = _decode_shift_memory(text, address, size)
+    if memory is not None:
+        return list(memory)
     shift = _decode_shift(text)
     return ["shift", *shift] if shift is not None else _first_item((lambda: _decode_shift_reg(text),))
 
 
-def _classify_mul(text: str) -> list[Any] | None:
+def _classify_mul(text: str, address: int, size: int) -> list[Any] | None:
+    memory = _decode_imul_memory(text, address, size)
+    if memory is not None:
+        return list(memory)
     imul = _decode_imul(text)
     return ["imul", *imul] if imul is not None else _first_item((lambda: _decode_imul3(text),), ("imul3",))
 
@@ -385,14 +403,14 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
     classifiers: dict[str, Callable[[], list[Any] | None]] = {
         "cmp": lambda: _classify_compare(text, address, size),
         "acmp": lambda: _first_item((lambda: _decode_two_operand(text, "test"),), ("test",)),
-        "shl": lambda: _classify_shift(text),
-        "shr": lambda: _classify_shift(text),
-        "sar": lambda: _classify_shift(text),
-        "rol": lambda: _classify_shift(text),
-        "ror": lambda: _classify_shift(text),
-        "rcl": lambda: _classify_shift(text),
-        "rcr": lambda: _classify_shift(text),
-        "mul": lambda: _classify_mul(text),
+        "shl": lambda: _classify_shift(text, address, size),
+        "shr": lambda: _classify_shift(text, address, size),
+        "sar": lambda: _classify_shift(text, address, size),
+        "rol": lambda: _classify_shift(text, address, size),
+        "ror": lambda: _classify_shift(text, address, size),
+        "rcl": lambda: _classify_shift(text, address, size),
+        "rcr": lambda: _classify_shift(text, address, size),
+        "mul": lambda: _classify_mul(text, address, size),
         "not": lambda: _first_item((lambda: _decode_not(text, address, size),)),
         "div": lambda: _first_item((lambda: _decode_div(text, address, size),)),
         "lea": lambda: _first_item((lambda: _decode_lea(text, address, size), lambda: _decode_lea_indexed(text))),

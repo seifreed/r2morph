@@ -96,6 +96,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vbinop_handler_asm,
     _vbinopsynth_handler_asm,
     _vcmpsynth_handler_asm,
+    _vimul_handler_asm,
     _vlea_handler_asm,
     _vleaidx_handler_asm,
     _vleaidxnb_handler_asm,
@@ -348,10 +349,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _vpushi_handler_asm(key, self.context.key_qword, self.context.key_dword)
         elif key.startswith("vcmpsynth_"):
             body = _vcmpsynth_handler_asm(key, self.context.key, flag, arithmetic, compare)
-        elif key.startswith("vbinopsynth_"):
-            body = _vbinopsynth_handler_asm(key, self.context.key, flag, arithmetic)
-        elif key.startswith("vbinop_"):
-            body = _vbinop_handler_asm(key, self.context.key, arithmetic)
+        elif key.startswith(("vbinopsynth_", "vbinop_", "vimul_")):
+            body = self._microop_arithmetic(key, flag, arithmetic)
         elif key.startswith("vsuper_"):
             body = _op_mba_handler_asm(
                 IntegerHandlerConfig(
@@ -368,6 +367,13 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
         elif key.startswith("vshiftreg_"):
             body = _vshiftreg_handler_asm(key, self.context.key)
         return body
+
+    def _microop_arithmetic(self, key: str, flag: int, arithmetic: int) -> str:
+        if key.startswith("vbinopsynth_"):
+            return _vbinopsynth_handler_asm(key, self.context.key, flag, arithmetic)
+        if key.startswith("vbinop_"):
+            return _vbinop_handler_asm(key, self.context.key, arithmetic)
+        return _vimul_handler_asm(key, self.context.key)
 
     def _microop_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
