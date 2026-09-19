@@ -889,6 +889,14 @@ def _decode_cqo(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_cdqe(text: str) -> tuple[Any, ...] | None:
+    """Decode ``cdqe`` as sign-extension from ``eax`` into ``rax``."""
+    mnemonic = text.split(maxsplit=1)[0].lower() if text else ""
+    if mnemonic != "cdqe":
+        return None
+    return ("movxreg", "s", 32, 64, REGISTER_INDEX["rax"], REGISTER32_INDEX["eax"])
+
+
 def _decode_bswap(text: str) -> tuple[Any, ...] | None:
     """Decode ``bswap reg`` (byte-order reversal, register operand, 32/64-bit only).
 

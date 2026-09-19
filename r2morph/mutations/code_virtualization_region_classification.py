@@ -96,6 +96,7 @@ from r2morph.mutations.code_virtualization_region_fp_packed_extra import (
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
     _decode_bt,
+    _decode_cdqe,
     _decode_cmp_mem,
     _decode_cmp_memory_immediate,
     _decode_cmpxchg_memory,
@@ -512,6 +513,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             lambda: _decode_locked_memory_rmw(text, address, size),
             lambda: _decode_xchg_memory(text),
             lambda: _decode_bswap(text),
+            lambda: _decode_cdqe(text),
             lambda: _decode_cqo(text),
             lambda: _decode_neg(text),
         )
