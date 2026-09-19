@@ -199,10 +199,12 @@ Every scheduled run processes all 151 ELF x86-64 fixtures from
 executable mode in a temporary copy, requires one applied virtualization, and
 compares return code, termination signal, hashed stdout/stderr, and bounded
 created-file hashes, sizes, and modes before and after the mutation. The
-workflow repeats that complete fixture set across three
-deterministic seeds, for 453 fixture runs, retains the JSON result as an
-artifact, and fails on any missing, non-virtualized, or divergent fixture. The
-latest passing campaign is retained in
+workflow also compiles the reproducible C and C++ generated corpus used by the
+differential campaign: 136 additional Linux ELF x86-64 fixtures. It repeats
+the combined 287-fixture set across three deterministic seeds, for 861 fixture
+runs (453 repository fixtures and 408 generated-corpus runs), records the
+family counts in the JSON artifact, and fails on any missing,
+non-virtualized, or divergent fixture. The latest passing campaign is retained in
 [`protection-vm-semantic-2026-09-18-1d0b69e4.json`](protection-vm-semantic-2026-09-18-1d0b69e4.json).
 The artifact also reports each declared capability explicitly: memory, calls,
 ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,

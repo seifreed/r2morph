@@ -17,8 +17,9 @@ from typing import Any
 from r2morph.adapters.process import ProcessContext, ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from scripts.protection_maturity_baseline import build_generated_corpus
 
-_MAX_FIXTURES = 256
+_MAX_FIXTURES = 512
 _DEFAULT_TIMEOUT_SECONDS = 5.0
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
@@ -55,6 +56,14 @@ def _load_coverage(path: Path) -> dict[str, set[str]]:
 def _fixture_categories(coverage: Mapping[str, set[str]], fixture: str) -> list[str]:
     categories = sorted(category for category, names in coverage.items() if fixture in names)
     return categories or ["uncategorized"]
+
+
+def _corpus_fixture_counts(fixtures: tuple[Path, ...]) -> dict[str, int]:
+    """Count repository and compiler-generated fixtures without retaining payloads."""
+    return {
+        "generated-corpus": sum(path.name.startswith("generated_") for path in fixtures),
+        "repository-fixtures": sum(not path.name.startswith("generated_") for path in fixtures),
+    }
 
 
 def _capability_summary(category_summary: Mapping[str, Mapping[str, int]]) -> dict[str, dict[str, Any]]:
@@ -183,11 +192,18 @@ def run_campaign(
     coverage: Mapping[str, set[str]],
     seed: int,
     timeout: float = _DEFAULT_TIMEOUT_SECONDS,
-    fixture_names: tuple[str, ...] | None = None,
+    fixture_selection: tuple[str | Path, ...] | None = None,
 ) -> dict[str, Any]:
     """Virtualize each selected fixture and compare native observables."""
-    selected_names = fixture_names or tuple(sorted(path.name for path in dataset.glob("elf_vm_*_x86_64")))
-    fixtures = tuple(dataset / name for name in selected_names)
+    if fixture_selection is None:
+        selected_names = tuple(sorted(path.name for path in dataset.glob("elf_vm_*_x86_64")))
+        fixtures = tuple(dataset / name for name in selected_names)
+    elif all(isinstance(item, str) for item in fixture_selection):
+        fixtures = tuple(dataset / item for item in fixture_selection)
+    elif all(isinstance(item, Path) for item in fixture_selection):
+        fixtures = tuple(fixture_selection)
+    else:
+        raise ValueError("VM semantic campaign fixture selection must contain names or paths")
     if not fixtures:
         raise ValueError("VM semantic campaign selected no fixtures")
     if len(fixtures) > _MAX_FIXTURES:
@@ -229,6 +245,7 @@ def run_campaign(
         "target": _TARGET,
         "seed": seed,
         "fixture_count": len(fixtures),
+        "corpus_fixture_counts": _corpus_fixture_counts(fixtures),
         "passed_count": passed,
         "failed_count": len(failures),
         "status": "passed" if not failures else "failed",
@@ -249,6 +266,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
     fixture_results: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     fixture_count = passed_count = failed_count = 0
+    corpus_fixture_counts = {"generated-corpus": 0, "repository-fixtures": 0}
     for report in reports:
         if report.get("target") != target:
             raise ValueError("VM semantic campaign reports have different targets")
@@ -257,6 +275,9 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
             raise ValueError("VM semantic campaign reports must have unique integer seeds")
         seeds.append(seed)
         fixture_count += int(report["fixture_count"])
+        for family, count in report.get("corpus_fixture_counts", {}).items():
+            if family in corpus_fixture_counts:
+                corpus_fixture_counts[family] += int(count)
         passed_count += int(report["passed_count"])
         failed_count += int(report["failed_count"])
         for fixture_result in report.get("fixture_results", []):
@@ -277,6 +298,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         "seeds": seeds,
         "seed_count": len(seeds),
         "fixture_count": fixture_count,
+        "corpus_fixture_counts": corpus_fixture_counts,
         "passed_count": passed_count,
         "failed_count": failed_count,
         "status": "passed" if not failures else "failed",
@@ -293,10 +315,22 @@ def main() -> None:
     parser.add_argument("--coverage", type=Path, default=Path("docs/virtualization-coverage.json"))
     parser.add_argument("--seed", type=int, action="append")
     parser.add_argument("--timeout", type=float, default=_DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument(
+        "--generated-corpus",
+        action="store_true",
+        help="compile and include the reproducible Linux ELF x86-64 C/C++ corpus",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     seeds = tuple(args.seed or _DEFAULT_SEEDS)
-    reports = tuple(run_campaign(args.dataset, _load_coverage(args.coverage), seed, args.timeout) for seed in seeds)
+    coverage = _load_coverage(args.coverage)
+    with tempfile.TemporaryDirectory(prefix="r2morph-vm-semantic-corpus-") as temp_dir:
+        fixtures = tuple(sorted(args.dataset.glob("elf_vm_*_x86_64")))
+        if args.generated_corpus:
+            fixtures += tuple(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
+        reports = tuple(
+            run_campaign(args.dataset, coverage, seed, args.timeout, fixture_selection=fixtures) for seed in seeds
+        )
     report = reports[0] if len(reports) == 1 else merge_campaign_reports(reports)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"VM semantic campaign: {report['passed_count']}/{report['fixture_count']} passed")

@@ -619,6 +619,7 @@ jobs:
           python scripts/vm_semantic_campaign.py \
             --dataset fixtures/dataset \
             --coverage docs/virtualization-coverage.json \
+            --generated-corpus \
             --seed 20260916 \
             --seed 20260917 \
             --seed 20260918 \
@@ -631,12 +632,17 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("vm-semantic-campaign.json").read_text(encoding="utf-8"))
-          if report["status"] != "passed" or report["seed_count"] != 3 or report["fixture_count"] != 453:
+          expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
+          if report["status"] != "passed" or report["seed_count"] != 3:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
-          if report["failed_count"] != 0 or report["passed_count"] != 453:
+          if report["corpus_fixture_counts"] != expected_corpus_counts:
+              raise SystemExit(f"VM semantic corpus coverage is incomplete: {report}")
+          if report["fixture_count"] != sum(expected_corpus_counts.values()):
+              raise SystemExit(f"VM semantic fixture count drift: {report}")
+          if report["failed_count"] != 0 or report["passed_count"] != report["fixture_count"]:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
           fixture_results = report.get("fixture_results", [])
-          if len(fixture_results) != 453:
+          if len(fixture_results) != report["fixture_count"]:
               raise SystemExit(f"VM semantic fixture detail coverage is incomplete: {len(fixture_results)}")
           if any(
               row.get("status") != "passed"
@@ -654,7 +660,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 17:
+          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != 408:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (

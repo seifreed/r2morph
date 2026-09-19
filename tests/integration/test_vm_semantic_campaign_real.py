@@ -7,6 +7,7 @@ import pytest
 
 from scripts.vm_semantic_campaign import (
     _DEFAULT_SEEDS,
+    _corpus_fixture_counts,
     _execution_observation,
     _load_coverage,
     merge_campaign_reports,
@@ -21,6 +22,12 @@ _UNWIND_SSA_FIXTURE_COUNT = 2
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
     expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
+
+
+def test_vm_semantic_campaign_counts_generated_and_repository_fixtures() -> None:
+    counts = _corpus_fixture_counts((Path("fixtures/dataset/elf_vm_memwidth_x86_64"), Path("generated_c_gcc-o0")))
+
+    expect(counts == {"generated-corpus": 1, "repository-fixtures": 1})
 
 
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
@@ -62,7 +69,7 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         Path("fixtures/dataset"),
         _load_coverage(Path("docs/virtualization-coverage.json")),
         seed=20260916,
-        fixture_names=("elf_vm_memwidth_x86_64",),
+        fixture_selection=("elf_vm_memwidth_x86_64",),
     )
 
     fixture_categories = {
@@ -98,7 +105,7 @@ def test_vm_semantic_campaign_measures_unwind_and_ssa_fixture_contracts() -> Non
         Path("fixtures/dataset"),
         _load_coverage(Path("docs/virtualization-coverage.json")),
         seed=20260916,
-        fixture_names=("elf_vm_unwind_x86_64", "elf_vm_multiexit_x86_64"),
+        fixture_selection=("elf_vm_unwind_x86_64", "elf_vm_multiexit_x86_64"),
     )
 
     expect(
@@ -117,7 +124,7 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
             Path("fixtures/dataset"),
             coverage,
             seed=seed,
-            fixture_names=("elf_vm_shift_x86_64",),
+            fixture_selection=("elf_vm_shift_x86_64",),
         )
         for seed in (20260916, 20260917)
     )
@@ -131,6 +138,7 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
         and merged["failed_count"] == 0
         and len(merged["fixture_results"]) == _MERGED_FIXTURE_COUNT
         and not merged["failures"]
+        and merged["corpus_fixture_counts"] == {"generated-corpus": 0, "repository-fixtures": 2}
     )
 
 
@@ -164,8 +172,11 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
     content = workflow.read_text(encoding="utf-8")
 
     expect(
-        'report["fixture_count"] != 453' in content
-        and "len(categories) != 17" in content
+        "--generated-corpus" in content
+        and 'report["corpus_fixture_counts"]' in content
+        and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
+        and "len(categories) != 18" in content
+        and 'categories["uncategorized"]["fixture_count"]' in content
         and '"unwinding-exceptions",\n              "tls-signals"' in content
         and '"fp-simd",\n              "ssa-liveness"' in content
     )
