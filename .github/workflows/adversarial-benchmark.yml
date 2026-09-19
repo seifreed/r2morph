@@ -273,7 +273,7 @@ jobs:
               raise SystemExit("VM resistance smoke report is missing")
           suite = ET.parse(report).getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 9:
+          if len(cases) != 10:
               raise SystemExit(f"unexpected VM resistance smoke case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("VM resistance smoke contains failed or skipped cases")
