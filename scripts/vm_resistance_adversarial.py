@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
+from r2morph.mutations.base import MutationRecord
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
@@ -42,7 +43,8 @@ _DEFAULT_SEED = 20260915
 _DEFAULT_COUNT = 10
 _MIN_SEEDS = 2
 _MAX_SEEDS = 32
-_VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
+_TRAMPOLINE_SIZE = 5
+_JMP_REL32_OPCODE = 0xE9
 _TAMPER_OFFSETS = (0x10, 0x18, 0x20, 0x28, 0x30, 0x40, 0x50, 0x60)
 _NATIVE_EXECUTION_TIMEOUT_SECONDS = 5
 _GENERATED_RESISTANCE_FIXTURE_NAMES = (
@@ -78,8 +80,39 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _find_vm_entry(data: bytes) -> int:
-    return next((offset for signature in _VM_ENTRY_SIGNATURES if (offset := data.find(signature)) >= 0), -1)
+def _resolve_segment_offset(binary: Binary, address: int) -> int | None:
+    """Resolve an injected address through ELF load-segment geometry."""
+    segments = binary.r2.cmdj("iSSj") or []
+    for segment in segments:
+        vaddr = segment.get("vaddr")
+        paddr = segment.get("paddr")
+        size = segment.get("size") or segment.get("vsize") or 0
+        if not all(isinstance(value, int) for value in (vaddr, paddr, size)):
+            continue
+        if "x" not in str(segment.get("perm", "")) or not vaddr <= address < vaddr + size:
+            continue
+        return paddr + address - vaddr
+    return None
+
+
+def _vm_entry_locations(binary: Binary, records: Sequence[MutationRecord]) -> tuple[dict[str, int], ...]:
+    """Map recorded VM trampolines to the injected blob's file offsets."""
+    locations: list[dict[str, int]] = []
+    for record in records:
+        if record.mutation_kind != "code_virtualization":
+            continue
+        mutated = bytes.fromhex(record.mutated_bytes)
+        if len(mutated) < _TRAMPOLINE_SIZE or mutated[0] != _JMP_REL32_OPCODE:
+            continue
+        target_vaddr = (
+            record.start_address + _TRAMPOLINE_SIZE + int.from_bytes(mutated[1:_TRAMPOLINE_SIZE], "little", signed=True)
+        )
+        file_offset = _resolve_segment_offset(binary, target_vaddr)
+        bytecode_size = record.metadata.get("bytecode_size")
+        if file_offset is None or not isinstance(bytecode_size, int) or bytecode_size <= 0:
+            continue
+        locations.append({"offset": file_offset, "size": bytecode_size})
+    return tuple(locations)
 
 
 def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int | None = None) -> dict[str, object]:
@@ -89,8 +122,11 @@ def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int |
     if depth is not None:
         config["vm_nesting_depth"] = depth
     with Binary(destination, writable=True) as binary:
-        stats = CodeVirtualizationPass(config=config).apply(binary)
+        virtualization_pass = CodeVirtualizationPass(config=config)
+        stats = virtualization_pass.apply(binary)
         binary.save()
+        binary.reload()
+        stats["vm_entries"] = _vm_entry_locations(binary, virtualization_pass.get_records())
     return stats
 
 
@@ -147,8 +183,17 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
     original_exit = emulate_exit_code(protected)
     native_original = _native_execution(protected)
     data = bytearray(protected.read_bytes())
-    vm_entry = _find_vm_entry(bytes(data))
-    if vm_entry < 0 or any(vm_entry + offset >= len(data) for offset in _TAMPER_OFFSETS):
+    vm_entries = stats.get("vm_entries")
+    if not isinstance(vm_entries, tuple) or not vm_entries or not isinstance(vm_entries[0], dict):
+        raise ValueError("virtualized fixture does not expose a recorded VM entry")
+    vm_entry = vm_entries[0].get("offset")
+    vm_size = vm_entries[0].get("size")
+    if (
+        not isinstance(vm_entry, int)
+        or not isinstance(vm_size, int)
+        or vm_size <= max(_TAMPER_OFFSETS)
+        or any(vm_entry + offset >= len(data) for offset in _TAMPER_OFFSETS)
+    ):
         raise ValueError("virtualized fixture does not expose a bounded VM entry")
     probes: list[dict[str, object]] = []
     for offset in _TAMPER_OFFSETS:

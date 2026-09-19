@@ -4,6 +4,7 @@ from typing import Any
 
 from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.code_virtualization_apply import _ordered_functions
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -66,3 +67,16 @@ def test_code_virtualization_accepts_explicitly_bounded_larger_population() -> N
     ).apply(_LargeFunctionPopulationBinary())
 
     expect(result["unsupported_function_capabilities"] != {"analysis_budget": 1})
+
+
+def test_code_virtualization_keeps_sole_runtime_function_candidate() -> None:
+    class _SingleFunctionBinary:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [{"addr": 0x401000, "name": "entry0", "size": 53}]
+
+    candidates = _ordered_functions(
+        _SingleFunctionBinary(),
+        entrypoint_addresses=frozenset({0x401000}),
+    )
+
+    expect(candidates == [{"addr": 0x401000, "name": "entry0", "size": 53}])

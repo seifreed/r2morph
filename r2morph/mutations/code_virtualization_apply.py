@@ -480,11 +480,15 @@ def _ordered_functions(
 ) -> list[dict[str, Any]] | None:
     """Visit viable functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
-    candidates = [
+    viable = [
         function
         for function in functions
         if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
-        and not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
+    ]
+    if len(viable) <= analysis_budget:
+        return viable
+    candidates = [
+        function for function in viable if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
     ]
     if len(candidates) > analysis_budget:
         logger.warning(
