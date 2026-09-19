@@ -1024,6 +1024,12 @@ jobs:
           )
           expected_generated += ["generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2"]
           expected_generated.sort()
+          if summary["corpus_families"] != [
+              "generated-cpp-x86-64",
+              "generated-elf-x86-64",
+              "repository-fixtures",
+          ]:
+              raise SystemExit(f"merged corpus families drifted: {summary['corpus_families']}")
           if summary["generated_fixture_count"] != 136 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")
           if summary["passes_without_applied_runs"]:

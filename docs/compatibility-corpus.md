@@ -158,7 +158,10 @@ x86-64 platform scope,
 extended, memory, implicit-string-memory, lookup-table, call, ABI, and stack-string fixtures compiled
 with GCC `-O0`, `-O1`, `-O2`, `-O3`, `-Os`, PIE, static, and stripped variants,
 Clang `-O0`, `-O2`, `-O3`, and PIE variants, plus GCC and Clang++ C++ `-O0` and
-`-O2` variants, generated argv input coverage,
+`-O2` variants. The generated fixtures are reported under the distinct
+`generated-elf-x86-64` and `generated-cpp-x86-64` corpus families, so C++
+coverage cannot be mistaken for another C-only compiler variant. The campaign
+also records generated argv input coverage,
 the PE/Mach-O and ARM/AArch64/x86 platform gap scope, missing
 corpus passes and incomplete coverage groups, plus a compact
 `continuous_evidence_blockers` map and `continuous_evidence_blocker_totals`
@@ -226,7 +229,8 @@ The campaign now runs as four deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
 the full corpus. This keeps the evidence continuous without treating a
-per-shard omission as a corpus-wide pass.
+per-shard omission as a corpus-wide pass. The aggregate gate also requires
+both generated corpus families after merging all shards.
 The current four-shard 22-pass aggregate
 [`35021131440`](https://github.com/seifreed/r2morph/actions/runs/35021131440)
 completed 11,682 pass rows (5,310 core and 6,372 extended) with zero missing or
