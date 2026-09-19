@@ -23,6 +23,12 @@ def test_tls_load_decoder_preserves_segment_and_absolute_displacement() -> None:
     expect(item == ("tlsload", 0, "fs", None, 0x28, 64))
 
 
+def test_tls_decoder_normalizes_unsigned_negative_displacement() -> None:
+    item = _decode_tls_memory_mov("mov r11, qword fs:[0xfffffffffffffff8]")
+
+    expect(item == ("tlsload", 11, "fs", None, -8, 64))
+
+
 def test_tls_store_decoder_preserves_segment_and_base_register() -> None:
     item = _decode_tls_memory_mov("mov qword ptr gs:[rdi+8], rax")
 
