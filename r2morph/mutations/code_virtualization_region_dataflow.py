@@ -69,7 +69,9 @@ def writes_register(item: tuple[Any, ...]) -> frozenset[int]:
     """Return the architectural GP slots overwritten by one VM item."""
     kind = item[0]
     written: set[int]
-    if kind == "string":
+    if kind == "enter":
+        written = {int(item[1]), GP_REGISTERS.index("rsp")}
+    elif kind == "string":
         written = {_RSI_SLOT, _RDI_SLOT}
         if item[3] != "none":
             written.add(_RCX_SLOT)

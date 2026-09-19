@@ -26,6 +26,7 @@ _WORD_WIDTH_BITS = 16
 _QWORD_WIDTH_BITS = 64
 _MAX_SHIFT_COUNT = 63
 _REGISTER_COUNT = 16
+_MAX_ENTER_ALLOCATION = 0xFFFF
 
 
 def _register_operand(name: str) -> tuple[int, int] | None:
@@ -374,6 +375,22 @@ def _decode_leave(disasm: str) -> tuple[Any, ...] | None:
     if disasm.strip().lower() != "leave":
         return None
     return ("leave", REGISTER_INDEX["rbp"])
+
+
+def _decode_enter(disasm: str) -> tuple[Any, ...] | None:
+    """Decode the level-zero ``enter imm16, 0`` stack-frame prologue."""
+    parts = disasm.lower().split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0] != "enter" or "," not in parts[1]:
+        return None
+    allocation_text, nesting_text = (value.strip() for value in parts[1].split(",", 1))
+    try:
+        allocation = int(allocation_text, 0)
+        nesting = int(nesting_text, 0)
+    except ValueError:
+        return None
+    if not 0 <= allocation <= _MAX_ENTER_ALLOCATION or nesting != 0:
+        return None
+    return ("enter", REGISTER_INDEX["rbp"], allocation)
 
 
 def _decode_pop(disasm: str) -> tuple[Any, ...] | None:

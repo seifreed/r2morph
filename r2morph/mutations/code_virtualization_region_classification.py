@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_atomic_immediate import (
 )
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmov,
+    _decode_enter,
     _decode_imul,
     _decode_imul3,
     _decode_leave,
@@ -391,6 +392,9 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
 
 def _classify_stack(kind: str, text: str, address: int, size: int, allow_computed_jump: bool) -> list[Any] | None:
     mnemonic = text.partition(" ")[0].lower()
+    if kind == "enter" or mnemonic == "enter":
+        decoded = _decode_enter(text)
+        return list(decoded) if decoded is not None else None
     if mnemonic in ("pushfq", "pushfd", "pushf"):
         return ["fsave"]
     if mnemonic in ("popfq", "popfd", "popf"):

@@ -5,9 +5,12 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region import _stack_transition
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_decoders import _decode_enter
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
 from tests.utils.assertions import expect
+
+_ENTER_ITEM_SIZE = 6
 
 
 def test_decode_push_memory_base_form_returns_qword_item() -> None:
@@ -96,3 +99,23 @@ def test_classify_pop_memory_uses_region_item() -> None:
 
 def test_stack_balance_uses_declared_memory_width() -> None:
     expect(_stack_transition(["pushmem", 0, 0, 16], 0, None) == (2, None))
+
+
+def test_decode_enter_level_zero_returns_frame_item() -> None:
+    expect(_decode_enter("enter 0x20, 0") == ("enter", 5, 32))
+
+
+def test_decode_enter_rejects_nested_frame() -> None:
+    expect(_decode_enter("enter 0x20, 1") is None)
+
+
+def test_classify_enter_uses_region_item() -> None:
+    expect(_classify({"type": "enter", "opcode": "enter 0x20, 0"}) == ["enter", 5, 32])
+
+
+def test_enter_item_has_immediate_encoding_size() -> None:
+    expect(_item_size(("enter", 5, 32)) == _ENTER_ITEM_SIZE)
+
+
+def test_enter_stack_transition_records_frame_pointer_snapshot() -> None:
+    expect(_stack_transition(["enter", 5, 32], 0, None) == (40, (5, 8)))

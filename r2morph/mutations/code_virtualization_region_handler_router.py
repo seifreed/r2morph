@@ -37,6 +37,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _compare_handler_asm,
     _cqo_handler_asm,
     _div_handler_asm,
+    _enter_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
@@ -438,22 +439,31 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _pushi_handler_asm(self.context.key_qword, self.context.rsp_off)
         elif key.startswith("rspadj_"):
             body = _rspadj_handler_asm(key, self.context.key_dword, self.context.rsp_off)
+        elif key == "enter":
+            body = _enter_handler_asm(self.context.key, self.context.key_dword, self.context.rsp_off)
         elif key == "movfromrsp":
             body = _mov_from_rsp_handler_asm(self.context.key, self.context.rsp_off)
         elif key == "movtorsp":
             body = _mov_to_rsp_handler_asm(self.context.key, self.context.rsp_off)
         elif key == "leave":
             body = _leave_handler_asm(self.context.key, self.context.rsp_off)
-        elif key.startswith("not_"):
-            body = _not_handler_asm(key, self.context.key)
-        elif key.startswith("bswap_"):
-            body = _bswap_handler_asm(key, self.context.key)
-        elif key.startswith("div_"):
-            body = _div_handler_asm(key, self.context.key)
-        elif key.startswith("cqo_"):
-            body = _cqo_handler_asm(key, self.context.key)
-        elif key.startswith("bt_"):
-            body = _bt_handler_asm(key, self.context.key)
+        elif key.startswith(("not_", "bswap_", "div_", "cqo_", "bt_")):
+            handler = next(
+                (
+                    handler
+                    for prefix, handler in (
+                        ("not_", _not_handler_asm),
+                        ("bswap_", _bswap_handler_asm),
+                        ("div_", _div_handler_asm),
+                        ("cqo_", _cqo_handler_asm),
+                        ("bt_", _bt_handler_asm),
+                    )
+                    if key.startswith(prefix)
+                ),
+                None,
+            )
+            if handler is not None:
+                body = handler(key, self.context.key)
         return body
 
     def _memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:

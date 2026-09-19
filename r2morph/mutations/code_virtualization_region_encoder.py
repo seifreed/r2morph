@@ -220,20 +220,26 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         self._opcode(item)
         return True
 
-    def _emit_integer(self, item: RegionItem) -> bool:
+    def _emit_vmovx(self, item: RegionItem) -> bool:
         kind = item[0]
-        if kind == "vleaidxnb":
-            _, index, shift, disp, _width = item
-            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
-        elif kind == "vmovx":
+        if kind == "vmovx":
             _, _ext, _src_size, _width, base, disp = item
             self._mem(self._opcode(item), (self.slot_of[0], self.slot_of[base], disp))
         elif kind == "vmovxidx":
             _, _ext, _src_size, _width, base, index, shift, disp = item
             self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
-        elif kind == "vmovxidxnb":
+        else:
             _, _ext, _src_size, _width, index, shift, disp = item
             self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
+        return True
+
+    def _emit_integer(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "vleaidxnb":
+            _, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
+        elif kind in ("vmovx", "vmovxidx", "vmovxidxnb"):
+            return self._emit_vmovx(item)
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
             position = self._opcode(item)
@@ -259,6 +265,10 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._imm(item[1], 64, self._opcode(item))
         elif kind == "rspadj":
             self._imm(item[2], 32, self._opcode(item))
+        elif kind == "enter":
+            position = self._opcode(item)
+            self.plain.append(self.slot_of[item[1]] ^ position)
+            self._imm(item[2], 32, position)
         elif kind in ("movfromrsp", "movtorsp", "leave"):
             self._slot(item, item[1])
         else:

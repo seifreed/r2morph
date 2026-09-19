@@ -679,6 +679,22 @@ def _mov_to_rsp_handler_asm(key: str, rsp_off: int) -> str:
     )
 
 
+def _enter_handler_asm(key: str, key_dword: str, rsp_off: int) -> str:
+    """Implement ``enter imm16, 0`` on the relocated program stack."""
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r9\n  mov qword ptr [r9], rax\n"
+        "  mov qword ptr [rsp+r8*8], r9\n"
+        f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        + _unmask_dword("r11")
+        + "  movsxd rax, eax\n"
+        f"  sub r9, rax\n  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  add rsi, 6\n  jmp vm_dispatch\n"
+    )
+
+
 def _leave_handler_asm(key: str, rsp_off: int) -> str:
     """Assembly body for ``leave`` (``mov rsp, rbp`` then ``pop rbp``).
 

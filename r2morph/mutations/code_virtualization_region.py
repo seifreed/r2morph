@@ -387,8 +387,8 @@ def _stack_transition(
     item: list[Any], depth: int, snapshot: tuple[int, int] | None
 ) -> tuple[int, tuple[int, int] | None] | None:
     kind = item[0]
-    if kind in ("push", "pushi"):
-        out_depth = depth + 8
+    if kind in ("push", "pushi", "enter"):
+        out_depth = depth + 8 + (int(item[2]) if kind == "enter" else 0)
     elif kind in ("pushmem", "pushmemrip", "pushmemidx", "pushmemidxnb"):
         out_depth = depth + int(item[-1]) // 8
     elif kind in ("pop", "popmem", "popmemrip", "popmemidx", "popmemidxnb"):
@@ -408,8 +408,8 @@ def _stack_transition(
     if out_depth < 0 or (kind in ("exit", "vret") and depth != 0):
         return None
     out_snapshot: tuple[int, int] | None
-    if kind == "movfromrsp":
-        out_snapshot = (int(item[1]), depth)
+    if kind in ("enter", "movfromrsp"):
+        out_snapshot = (int(item[1]), depth + 8 if kind == "enter" else depth)
     else:
         written = _writes_register(tuple(item))
         out_snapshot = None if snapshot is not None and snapshot[0] in written else snapshot

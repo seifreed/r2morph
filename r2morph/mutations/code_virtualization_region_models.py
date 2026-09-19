@@ -303,6 +303,7 @@ _IDENTITY_KEYS = {
     "pushi",
     "movfromrsp",
     "movtorsp",
+    "enter",
     "leave",
     "call",
     "vcall",
