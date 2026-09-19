@@ -1321,7 +1321,7 @@ class CodeVirtualizationPass(MutationPass):
         rng: random.Random,
         use_nesting: bool,
         unwind_frame: Any | None = None,
-    ) -> tuple[int, bytes, bytes, _UnwindPayload] | None:
+    ) -> tuple[int, bytes, bytes, _UnwindPayload, bool] | None:
         complete_unwind = unwind_frame is not None
         if complete_unwind and not region_supports_unwind_contract(region, unwind_frame):
             return None
@@ -1330,8 +1330,10 @@ class CodeVirtualizationPass(MutationPass):
             return None
         blob = None
         scheme: Any | None = None
+        nested = False
         if use_nesting and self.vm_nesting_depth >= _MIN_NESTING_DEPTH and not complete_unwind:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
+            nested = blob is not None
         if blob is None:
             scheme = build_region_scheme(region, rng)
             blob = build_region_blob(region, blob_vaddr, scheme)
@@ -1353,6 +1355,7 @@ class CodeVirtualizationPass(MutationPass):
             blob,
             bytes(original_bytes),
             unwind,
+            nested,
         )
 
     def _build_unwind_metadata(self, blob_vaddr: int, blob: bytes, unwind: _UnwindPayload) -> bytes | None:
@@ -1423,7 +1426,7 @@ class CodeVirtualizationPass(MutationPass):
         payload = self._build_region_payload(binary, region, options.rng, options.use_nesting, options.unwind_frame)
         if payload is None:
             return None
-        blob_vaddr, blob, original_bytes, unwind = payload
+        blob_vaddr, blob, original_bytes, unwind, nested = payload
         installed = self._install_region_payload(binary, region, blob_vaddr, blob, unwind)
         if installed is None:
             return None
@@ -1447,6 +1450,7 @@ class CodeVirtualizationPass(MutationPass):
                     {str(item[0]) for item in region.instructions if item and isinstance(item[0], str)}
                 ),
                 "bytecode_size": len(blob),
+                "nested_vm": nested,
             },
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):

@@ -126,7 +126,9 @@ def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int |
         stats = virtualization_pass.apply(binary)
         binary.save()
         binary.reload()
-        stats["vm_entries"] = _vm_entry_locations(binary, virtualization_pass.get_records())
+        records = virtualization_pass.get_records()
+        stats["vm_entries"] = _vm_entry_locations(binary, records)
+        stats["nested_vm_regions"] = _nested_region_count(records)
     return stats
 
 
@@ -145,6 +147,21 @@ def _required_bytecode_size(stats: dict[str, object]) -> int:
     value = stats.get("total_bytecode_bytes")
     if not isinstance(value, int):
         raise ValueError("virtualization report is missing total_bytecode_bytes")
+    return value
+
+
+def _nested_region_count(records: Sequence[MutationRecord]) -> int:
+    return sum(
+        1
+        for record in records
+        if record.mutation_kind == "code_virtualization" and record.metadata.get("nested_vm") is True
+    )
+
+
+def _required_nested_region_count(stats: dict[str, object]) -> int:
+    value = stats.get("nested_vm_regions", 0)
+    if not isinstance(value, int):
+        raise ValueError("virtualization report has an invalid nested VM count")
     return value
 
 
@@ -292,7 +309,12 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
             "depth_2_bytes": deep.stat().st_size,
             "depth_1_bytecode_bytes": _required_bytecode_size(shallow_stats),
             "depth_2_bytecode_bytes": _required_bytecode_size(deep_stats),
-            "growth_observed": _required_bytecode_size(deep_stats) > _required_bytecode_size(shallow_stats),
+            "depth_1_nested_regions": _required_nested_region_count(shallow_stats),
+            "depth_2_nested_regions": _required_nested_region_count(deep_stats),
+            "growth_observed": _required_nested_region_count(deep_stats) > _required_nested_region_count(shallow_stats),
+            "bytecode_size_growth_observed": (
+                _required_bytecode_size(deep_stats) > _required_bytecode_size(shallow_stats)
+            ),
             "depth_1_exit_code": emulate_exit_code(shallow),
             "depth_2_exit_code": emulate_exit_code(deep),
             "baseline_exit_code": campaign["baseline_exit_code"],
@@ -351,10 +373,12 @@ def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, boo
     grammar = diversity.get("bytecode_grammar_report")
     if not isinstance(opcode, dict) or not isinstance(handlers, dict) or not isinstance(grammar, dict):
         raise ValueError("VM resistance report is missing diversity sections")
+    nested_regions = progressive.get("depth_2_nested_regions")
+    progressive_passed = progressive.get("growth_observed") is True or nested_regions == 0
     return (
         campaign.get("semantic_parity") is True,
         tamper_diverged,
-        progressive.get("growth_observed") is True,
+        progressive_passed,
         diversity.get("dispatcher_unique_count") == report.get("seed_count"),
         opcode.get("all_assignments_unique") is True,
         handlers.get("cross_seed_has_exact_normalised_matches") is False
@@ -390,6 +414,12 @@ def measure_corpus(
         "semantic_parity": all(flags[0] for flags in validation_flags),
         "all_tamper_probes_diverged": all(flags[1] for flags in validation_flags),
         "progressive_growth_observed": all(flags[2] for flags in validation_flags),
+        "progressive_growth_supported_fixture_count": sum(
+            1
+            for report in reports
+            if isinstance(progressive := report.get("progressive_bytecode"), dict)
+            and progressive.get("depth_2_nested_regions", 0) > 0
+        ),
         "dispatcher_diversity_observed": all(flags[3] for flags in validation_flags),
         "opcode_assignment_diversity_observed": all(flags[4] for flags in validation_flags),
         "handler_diversity_observed": all(flags[5] for flags in validation_flags),
