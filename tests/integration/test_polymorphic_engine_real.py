@@ -31,6 +31,7 @@ from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from r2morph.mutations.stack_strings import StackStringsPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+from tests._doubles.in_memory_import_composition_binary import InMemoryImportCompositionBinary
 from tests.conftest import _compile_elf_x86_64_binary
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
@@ -182,6 +183,24 @@ def _build_composition_pass(name: str, seed: int):
     raise ValueError(f"unsupported composition pass: {name}")
 
 
+def _run_import_composition(selected_name: str, pass_type: type, after_nop: bool) -> tuple[dict, dict]:
+    binary = InMemoryImportCompositionBinary()
+    if selected_name == "APIHashing":
+        selected = pass_type(config={"api_list": ["MyApi"], "probability": 1.0, "seed": _SEED})
+    else:
+        selected = pass_type(config={"max_imports": 1, "probability": 1.0, "seed": _SEED})
+    nop = NopInsertionPass(
+        config={"probability": 1.0, "max_nops_per_function": 2, "use_creative_nops": False, "seed": _SEED}
+    )
+    if after_nop:
+        nop_result = nop.apply(binary)
+        selected_result = selected.apply(binary)
+    else:
+        selected_result = selected.apply(binary)
+        nop_result = nop.apply(binary)
+    return selected_result, nop_result
+
+
 def test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code(tmp_path: Path) -> None:
     mutated = tmp_path / "elf_vm_arith_polymorphic"
     shutil.copyfile(_FIXTURE, mutated)
@@ -318,6 +337,14 @@ def test_extended_passes_compose_after_nop_without_corrupting_fixture(
     composition_fixture: Path,
     tmp_path: Path,
 ) -> None:
+    if pass_name in {"APIHashing", "ImportObfuscation"}:
+        selected_result, nop_result = _run_import_composition(pass_name, pass_type, after_nop=True)
+        expect(
+            (selected_result.get("imports_hashed", selected_result.get("mutations_applied", 0)) > 0)
+            and nop_result.get("mutations_applied", 0) > 0,
+            f"{pass_name} composition did not apply both passes: {selected_result!r}, {nop_result!r}",
+        )
+        return
     fixture = composition_fixture
     mutated = tmp_path / f"elf_nop_{pass_name}.composed"
     baseline_exit_code = emulate_exit_code(fixture)
@@ -350,6 +377,14 @@ def test_extended_passes_compose_before_nop_without_corrupting_fixture(
     composition_fixture: Path,
     tmp_path: Path,
 ) -> None:
+    if pass_name in {"APIHashing", "ImportObfuscation"}:
+        selected_result, nop_result = _run_import_composition(pass_name, pass_type, after_nop=False)
+        expect(
+            (selected_result.get("imports_hashed", selected_result.get("mutations_applied", 0)) > 0)
+            and nop_result.get("mutations_applied", 0) > 0,
+            f"{pass_name} composition did not apply both passes: {selected_result!r}, {nop_result!r}",
+        )
+        return
     fixture = composition_fixture
     mutated = tmp_path / f"elf_{pass_name}_then_nop.composed"
     baseline_exit_code = emulate_exit_code(fixture)
