@@ -179,6 +179,9 @@ def test_differential_workflow_runs_on_relevant_main_pushes() -> None:
     expect(
         "  push:\n    branches: [main]" in workflow
         and '      - ".github/workflows/ci.yml"' in workflow
+        and '      - "docs/pass-maturity.md"' in workflow
+        and '      - "docs/release-blockers.md"' in workflow
+        and '      - "docs/independent-review-packet.md"' in workflow
         and '      - "r2morph/**"' in workflow
         and '      - "scripts/**"' in workflow
         and '      - "tests/**"' in workflow
