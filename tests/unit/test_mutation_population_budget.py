@@ -80,3 +80,19 @@ def test_code_virtualization_keeps_sole_runtime_function_candidate() -> None:
     )
 
     expect(candidates == [{"addr": 0x401000, "name": "entry0", "size": 53}])
+
+
+def test_code_virtualization_filters_runtime_entrypoint_when_user_function_exists() -> None:
+    class _BinaryWithLoaderAndUserFunction:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x401000, "name": "entry0", "size": 53},
+                {"addr": 0x401100, "name": "main", "size": 80},
+            ]
+
+    candidates = _ordered_functions(
+        _BinaryWithLoaderAndUserFunction(),
+        entrypoint_addresses=frozenset({0x401000}),
+    )
+
+    expect(candidates == [{"addr": 0x401100, "name": "main", "size": 80}])

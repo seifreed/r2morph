@@ -485,6 +485,11 @@ def _ordered_functions(
         for function in functions
         if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
     ]
+    runtime_free = [
+        function for function in viable if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
+    ]
+    if runtime_free:
+        viable = runtime_free
     if len(viable) <= analysis_budget:
         return viable
     candidates = [
