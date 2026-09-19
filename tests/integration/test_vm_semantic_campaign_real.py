@@ -83,6 +83,21 @@ def test_vm_semantic_campaign_rejects_unsupported_functions_with_equal_observabl
     )
 
 
+def test_vm_semantic_campaign_rejects_unsupported_functions_with_divergent_observables() -> None:
+    result = _semantic_failure_result(
+        {
+            "unsupported_functions_total": 1,
+            "unsupported_functions": [{"capability": "calls", "severity": "error"}],
+            "unsupported_function_capabilities": {"calls": 1},
+        },
+        1,
+        {"returncode": 0},
+        {"returncode": 1},
+    )
+
+    expect(result["status"] == "semantic_mismatch" and result["observables_equal"] is False)
+
+
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
     program = tmp_path / "file_writer"
     program.write_text("#!/bin/sh\nprintf created > result.txt\n", encoding="utf-8")

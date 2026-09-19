@@ -194,11 +194,16 @@ def _semantic_failure_result(
     mutated: dict[str, Any],
 ) -> dict[str, Any]:
     """Classify unsupported functions before falling back to parity mismatch."""
-    if result.get("unsupported_functions_total", 0):
+    observables_equal = original == mutated
+    if result.get("unsupported_functions_total", 0) and observables_equal:
         return _unsupported_functions_result(result, functions_virtualized, original, mutated)
     return {
         "status": "semantic_mismatch",
         "functions_virtualized": functions_virtualized,
+        "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "unsupported_function_details": result.get("unsupported_functions", []),
+        "unsupported_function_capabilities": result.get("unsupported_function_capabilities", {}),
+        "observables_equal": observables_equal,
         "original": original,
         "mutated": mutated,
     }
