@@ -160,6 +160,8 @@ def _review_differential_continuous_evidence(root: Path) -> dict[str, object]:
             "extended_passes_with_error_runs",
             "extended_maturity_evidence_blockers",
             "total_extended_maturity_evidence_blockers",
+            "Download public compatibility evidence",
+            "public-compatibility-merged.json",
         )
     )
     return _check(
