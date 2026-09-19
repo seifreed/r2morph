@@ -173,8 +173,10 @@ The aggregate jobs of the current four-shard 22-pass campaign
 completed 11,682 pass runs (5,310 core and 6,372 extended) with no
 transformation, semantic, or runtime-observable errors. It provides continuous
 output-size, duration, static-metric, and behavioral evidence for all 22 declared
-passes. The separate public compatibility-corpus job in that run is still
-pending completion. The merged maturity artifact
+passes. The public compatibility-corpus job is now a required input to the
+differential aggregator, which validates its six-pass matrix and static-recovery
+artifact before publishing the merged maturity evidence. The merged maturity
+artifact
 records zero performance-field gaps, ten passes without independent semantic
 false-positive observations, eight without contractual composition coverage,
 22 without comparable decompiler evidence, and `StackStrings` without an

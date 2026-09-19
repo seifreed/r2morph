@@ -232,8 +232,9 @@ The current four-shard 22-pass aggregate
 completed 11,682 pass rows (5,310 core and 6,372 extended) with zero missing or
 error rows across the repository and generated ELF x86-64 fixtures. All
 output-size, duration, static-metric, runtime-observable, and semantic fields
-were complete. The separate public compatibility-corpus job in that run is
-still pending completion. The merged maturity
+were complete. The public compatibility-corpus job is now a required input to
+the differential aggregator, which validates its six-pass matrix and
+static-recovery artifact before publishing merged evidence. The merged maturity
 evidence retains ten independent false-positive gaps, eight composition gaps,
 22 decompiler gaps, and one pass without an applied instruction catalogue;
 these archived totals are release blockers, not implied support. The current
