@@ -407,9 +407,15 @@ class NopInsertionPass(MutationPass):
             or random.random() >= self.probability
         ):
             return False
-        replacement = random.choice(replacements)
-        new_bytes = binary.assemble(replacement, function["addr"])
-        if not new_bytes or len(new_bytes) != _ARM_INSTRUCTION_SIZE_BYTES:
+        replacement = None
+        new_bytes = None
+        for candidate in random.sample(replacements, len(replacements)):
+            assembled = binary.assemble(candidate, function["addr"])
+            if assembled and len(assembled) == _ARM_INSTRUCTION_SIZE_BYTES:
+                replacement = candidate
+                new_bytes = assembled
+                break
+        if replacement is None or new_bytes is None:
             return False
         original_bytes = binary.read_bytes(address, size)
         if not binary.write_bytes(address, new_bytes):
