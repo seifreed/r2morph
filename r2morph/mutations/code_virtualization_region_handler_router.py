@@ -469,7 +469,7 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
     def _memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         flag, arithmetic, compare, _shift, address = variants
         if key == "xlat":
-            return _xlat_handler_asm(self.context.slot, self.context.key_qword)
+            return _xlat_handler_asm(self.context.slot)
         config = MemoryOperationConfig(
             key,
             self.context.key,

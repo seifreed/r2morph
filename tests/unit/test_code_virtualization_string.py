@@ -32,13 +32,15 @@ def test_decode_xlat_rejects_other_mnemonics() -> None:
     expect(decode_xlat_instruction("mov al, byte ptr [rbx+rax]") is None)
 
 
-def test_xlat_handler_uses_virtual_rax_and_rbx_slots() -> None:
+def test_xlat_handler_uses_cipher_wrapped_virtual_rax_and_rbx_slots() -> None:
     context = HandlerContext("key", "key_qword", "key_dword", 0, "", "", "", 0, tuple(range(16)))
     assembly = HandlerBodyRouter(context).body("xlat", 0, (0, 0, 0, 0, 0))
     expect(
         "mov r10, qword ptr [rsp+24]" in assembly
-        and "xor r10, key_qword" in assembly
-        and "xor rax, key_qword" in assembly
+        and "mov rax, qword ptr [rsp+0]" in assembly
+        and "movzx r11d, al" in assembly
+        and "xor r10, key_qword" not in assembly
+        and "xor rax, key_qword" not in assembly
         and "mov qword ptr [rsp+0], rax" in assembly
     )
 

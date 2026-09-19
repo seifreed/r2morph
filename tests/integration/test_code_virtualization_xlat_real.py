@@ -40,7 +40,7 @@ int main(void) { return table_lookup(42) == 73 ? 42 : 1; }
     compile_result = run_command(
         [
             "gcc",
-            "-O0",
+            "-O1",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",
@@ -58,9 +58,16 @@ int main(void) { return table_lookup(42) == 73 ? 42 : 1; }
 
     with Binary(mutated, writable=True) as binary:
         binary.analyze("aa")
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260918}).apply(binary)
+        virtualization_pass = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 5, "seed": 20260918})
+        stats = virtualization_pass.apply(binary)
         binary.save()
 
     transformed = run_command([mutated], timeout=30)
-    expect(stats["functions_virtualized"] >= 1, f"xlat fixture was not virtualized: {stats=}")
+    expect(
+        any(
+            "xlat" in record.metadata.get("affected_instruction_mnemonics", [])
+            for record in virtualization_pass.get_records()
+        ),
+        f"xlat instruction was not virtualized: {stats=}",
+    )
     expect((baseline.returncode, transformed.returncode) == (_EXPECTED_EXIT_CODE, _EXPECTED_EXIT_CODE))
