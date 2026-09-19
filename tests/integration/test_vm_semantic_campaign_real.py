@@ -1,6 +1,10 @@
+import contextlib
+import io
 import os
 import platform
+import runpy
 import signal
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,6 +26,24 @@ _UNWIND_SSA_FIXTURE_COUNT = 2
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
     expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
+
+
+def test_vm_semantic_campaign_script_resolves_local_imports() -> None:
+    original_argv = sys.argv
+    original_path = sys.path.copy()
+    output = io.StringIO()
+    sys.argv = ["scripts/vm_semantic_campaign.py", "--help"]
+    sys.path.insert(0, str(Path("scripts").resolve()))
+    try:
+        with contextlib.redirect_stdout(output):
+            runpy.run_path("scripts/vm_semantic_campaign.py", run_name="__main__")
+    except SystemExit as error:
+        expect(error.code == 0)
+    finally:
+        sys.argv = original_argv
+        sys.path = original_path
+
+    expect("--generated-corpus" in output.getvalue())
 
 
 def test_vm_semantic_campaign_counts_generated_and_repository_fixtures() -> None:

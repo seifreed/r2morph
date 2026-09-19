@@ -17,7 +17,11 @@ from typing import Any
 from r2morph.adapters.process import ProcessContext, ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from scripts.protection_maturity_baseline import build_generated_corpus
+
+if __package__:
+    from scripts.protection_maturity_baseline import build_generated_corpus
+else:
+    from protection_maturity_baseline import build_generated_corpus
 
 _MAX_FIXTURES = 512
 _DEFAULT_TIMEOUT_SECONDS = 5.0
