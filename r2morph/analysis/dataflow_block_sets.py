@@ -11,6 +11,7 @@ from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SI
 from r2morph.analysis.memory_effects import (
     MEMORY_RESOURCE_NAME,
     MEMORY_RESOURCE_SIZE,
+    frame_pointer_registers,
     memory_accesses,
     stack_pointer_registers,
 )
@@ -88,6 +89,7 @@ def _extract_used_registers(insn: dict[str, Any], abi: str) -> set[tuple[str, in
     if memory_accesses(disasm)[0]:
         used.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
     used.update(stack_pointer_registers(disasm, abi, read=True))
+    used.update(frame_pointer_registers(disasm, abi))
     if flag_accesses(disasm)[0]:
         used.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
@@ -130,6 +132,7 @@ def _extract_defined_registers(insn: dict[str, Any], abi: str) -> set[tuple[str,
     if memory_accesses(disasm)[1]:
         defined.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
     defined.update(stack_pointer)
+    defined.update(frame_pointer_registers(disasm, abi))
     if flag_accesses(disasm)[1]:
         defined.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 

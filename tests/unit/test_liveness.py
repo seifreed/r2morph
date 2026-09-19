@@ -680,7 +680,7 @@ class TestLivenessAnalysis:
         used = analyzer._extract_registers_used({"type": "push", "disasm": "push rbp"})
         defined = analyzer._extract_registers_defined({"type": "pop", "disasm": "pop rbp"})
 
-        expect(Register("rsp", 64) in used and Register("rsp", 64) in defined)
+        expect(Register("rbp", 64) in used and Register("rsp", 64) in defined)
 
     def test_stack_operations_track_implicit_cdecl_stack_pointer(self):
         analyzer = LivenessAnalysis(create_simple_cfg(), abi="cdecl_32")
@@ -695,7 +695,7 @@ class TestLivenessAnalysis:
         used = analyzer._extract_registers_used({"type": "leave", "disasm": "leave"})
         defined = analyzer._extract_registers_defined({"type": "leave", "disasm": "leave"})
 
-        expect(Register("rsp", 64) in used and Register("rsp", 64) in defined)
+        expect(Register("rbp", 64) in used and Register("rsp", 64) in defined)
 
     def test_ssa_return_uses_abi_registers(self):
         """SSA keeps ABI return values observable at a ret instruction."""

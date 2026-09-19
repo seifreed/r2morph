@@ -23,7 +23,12 @@ from r2morph.analysis.liveness_models import (
     InterferenceGraph,
     LiveRange,
 )
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses, stack_pointer_registers
+from r2morph.analysis.memory_effects import (
+    MEMORY_RESOURCE_NAME,
+    frame_pointer_registers,
+    memory_accesses,
+    stack_pointer_registers,
+)
 
 _INSTRUCTION_PART_COUNT = 2
 _X86_32_BIT_SIZE = 32
@@ -306,6 +311,7 @@ class LivenessAnalysis:
             return used
 
         operand_parts = disasm.split(None, 1)
+        used.update(Register(*register) for register in frame_pointer_registers(disasm, self._abi))
         if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
             used = self._registers_used_by_operands(operand_parts[1], disasm)
             if memory_accesses(disasm)[0]:
@@ -365,6 +371,7 @@ class LivenessAnalysis:
             return defined
 
         defined.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, write=True))
+        defined.update(Register(*register) for register in frame_pointer_registers(disasm, self._abi))
 
         operand_parts = disasm.split(None, 1)
         if len(operand_parts) >= _INSTRUCTION_PART_COUNT:

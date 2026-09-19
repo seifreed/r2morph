@@ -19,7 +19,12 @@ from r2morph.analysis.call_effects import call_register_effects, return_register
 from r2morph.analysis.dataflow_models import Register, register_definition_covers_use
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
 from r2morph.analysis.liveness_models import _X86_REGISTER_BIT_SIZES
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses, stack_pointer_registers
+from r2morph.analysis.memory_effects import (
+    MEMORY_RESOURCE_NAME,
+    frame_pointer_registers,
+    memory_accesses,
+    stack_pointer_registers,
+)
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 
 logger = logging.getLogger(__name__)
@@ -480,6 +485,7 @@ class SSAConverter:
         destination = operands.split(",", 1)[0].strip().lower()
         defined: set[str] = set()
         defined.update(register for register, _ in stack_pointer_registers(disasm, self._abi, write=True))
+        defined.update(register for register, _ in frame_pointer_registers(disasm, self._abi))
         if destination in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES and (
             mnemonic in {"lea", "mov", "pop"}
             or mnemonic in _RMW_MNEMONICS
@@ -517,6 +523,7 @@ class SSAConverter:
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
         used: set[str] = set()
         used.update(register for register, _ in stack_pointer_registers(disasm, self._abi, read=True))
+        used.update(register for register, _ in frame_pointer_registers(disasm, self._abi))
         if memory_accesses(disasm)[0]:
             used.add(MEMORY_RESOURCE_NAME)
         if not operands:

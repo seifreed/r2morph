@@ -32,7 +32,12 @@ from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
 from r2morph.analysis.dataflow_queries import is_safe_to_mutate as _is_safe_to_mutate
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses, stack_pointer_registers
+from r2morph.analysis.memory_effects import (
+    MEMORY_RESOURCE_NAME,
+    frame_pointer_registers,
+    memory_accesses,
+    stack_pointer_registers,
+)
 
 _MIN_INSTRUCTION_PART_COUNT = 2
 _READ_BOTH_OPERANDS_MNEMONICS = frozenset(
@@ -156,6 +161,7 @@ class DataFlowAnalyzer:
         if memory_accesses(disasm)[0]:
             used.add(Register(MEMORY_RESOURCE_NAME))
         used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
+        used.update(Register(*register) for register in frame_pointer_registers(disasm, self._abi))
         if flag_accesses(disasm)[0]:
             used.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
@@ -198,6 +204,7 @@ class DataFlowAnalyzer:
         if memory_accesses(disasm)[1]:
             defined.add(Register(MEMORY_RESOURCE_NAME))
         defined.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, write=True))
+        defined.update(Register(*register) for register in frame_pointer_registers(disasm, self._abi))
         if flag_accesses(disasm)[1]:
             defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 

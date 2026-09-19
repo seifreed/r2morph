@@ -74,4 +74,7 @@ def test_dataflow_block_sets_track_implicit_x86_32_stack_pointer_effects() -> No
 def test_dataflow_block_sets_track_leave_stack_pointer_effects() -> None:
     instructions = [{"disasm": "leave", "type": "leave"}]
 
-    expect(("rsp", 64) in compute_block_use(instructions) and ("rsp", 64) in compute_block_def(instructions))
+    expect(
+        compute_block_use(instructions) == {("rbp", 64), ("memory", 0)}
+        and compute_block_def(instructions) == {("rbp", 64), ("rsp", 64)}
+    )

@@ -297,6 +297,12 @@ class TestSSAConverter:
 
         expect("rsp" in used)
 
+    def test_extract_leave_tracks_frame_and_stack_pointers(self, converter):
+        used = converter._extract_used_registers("leave")
+        defined = converter._extract_defined_registers("leave")
+
+        expect("rbp" in used and "rsp" in defined and "rbp" in defined)
+
     def test_extract_defined_registers_read_modify_write(self, converter):
         defined = converter._extract_defined_registers("add eax, ebx")
         expect(defined == {"eax", "rflags"})

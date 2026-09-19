@@ -41,7 +41,13 @@ _STACK_POINTERS = {
     "x86_32_linux": ("esp", 32),
     "x86_32_windows": ("esp", 32),
 }
-_STACK_POINTER_OPERATIONS = frozenset({"call", "leave", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"})
+_FRAME_POINTERS = {
+    "cdecl_32": ("ebp", 32),
+    "x86_32_linux": ("ebp", 32),
+    "x86_32_windows": ("ebp", 32),
+}
+_STACK_POINTER_READ_OPERATIONS = frozenset({"call", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"})
+_FRAME_POINTER_OPERATION = "leave"
 
 
 def stack_pointer_effects(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[str, int], bool, bool]:
@@ -51,8 +57,8 @@ def stack_pointer_effects(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[s
     opcode = tokens[0].lower() if tokens else ""
     if opcode == "lock" and len(tokens) == _MIN_INSTRUCTION_PART_COUNT:
         opcode = tokens[1].split(None, 1)[0].lower()
-    reads = opcode in _STACK_POINTER_OPERATIONS
-    writes = opcode in {"leave", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"}
+    reads = opcode in _STACK_POINTER_READ_OPERATIONS
+    writes = opcode in {_FRAME_POINTER_OPERATION, "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"}
     return register, reads, writes
 
 
@@ -63,6 +69,14 @@ def stack_pointer_registers(
     register, reads, writes = stack_pointer_effects(disasm, abi)
     if (read and reads) or (write and writes):
         return (register,)
+    return ()
+
+
+def frame_pointer_registers(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[str, int], ...]:
+    """Return the frame-pointer register read and written by ``leave``."""
+    tokens = disasm.split(None, 1)
+    if tokens and tokens[0].lower() == _FRAME_POINTER_OPERATION:
+        return (_FRAME_POINTERS.get(abi, ("rbp", 64)),)
     return ()
 
 
@@ -78,7 +92,7 @@ def memory_accesses(disasm: str) -> tuple[bool, bool]:
         return True, True
     if opcode in {"push", "pushf", "pushfq"}:
         return False, True
-    if opcode in {"pop", "popf", "popfq", "ret"}:
+    if opcode in {"leave", "pop", "popf", "popfq", "ret"}:
         return True, False
     if opcode == "lea" or "[" not in disasm:
         return False, False
