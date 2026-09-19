@@ -31,11 +31,13 @@ from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from r2morph.mutations.stack_strings import StackStringsPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+from tests.conftest import _compile_elf_x86_64_binary
 from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
+_COMPOSITION_SOURCE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_composition_x86_64.S"
 _SEED = 20260913
 _EXPECTED_COMPOSED_PASSES = 2
 _EXTENDED_COMPOSITION_PASSES = (
@@ -138,6 +140,29 @@ _CORE_COMPOSITION_CASES = (
         _SEED + 1,
     ),
 )
+_COMPOSITION_PASSES_WITH_REAL_APPLICATION = frozenset(
+    {
+        "AntiDisassembly",
+        "CodeMobility",
+        "DataFlowMutation",
+        "FunctionOutlining",
+        "OpaquePredicates",
+        "PolymorphicEngine",
+        "SelfModifyingCode",
+        "ShortJumpPatching",
+        "StackStrings",
+        "StringObfuscation",
+    }
+)
+
+
+@pytest.fixture(scope="module")
+def composition_fixture(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _compile_elf_x86_64_binary(
+        tmp_path_factory.mktemp("polymorphic-composition"),
+        "elf_composition_x86_64",
+        _COMPOSITION_SOURCE.read_text(encoding="utf-8"),
+    )
 
 
 def _build_composition_pass(name: str, seed: int):
@@ -290,9 +315,10 @@ def test_composed_real_passes_preserve_exit_code(
 def test_extended_passes_compose_after_nop_without_corrupting_fixture(
     pass_name: str,
     pass_type: type,
+    composition_fixture: Path,
     tmp_path: Path,
 ) -> None:
-    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
+    fixture = composition_fixture
     mutated = tmp_path / f"elf_nop_{pass_name}.composed"
     baseline_exit_code = emulate_exit_code(fixture)
 
@@ -303,7 +329,13 @@ def test_extended_passes_compose_after_nop_without_corrupting_fixture(
         result = engine.run(EngineRunOptions(validation_mode="structural", seed=_SEED))
         engine.save(mutated)
 
+    selected_result = result["pass_results"].get(pass_name, {})
     expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
+    if pass_name in _COMPOSITION_PASSES_WITH_REAL_APPLICATION:
+        expect(
+            selected_result.get("status") == "applied" or selected_result.get("mutations_applied", 0) > 0,
+            result,
+        )
     expect(emulate_exit_code(mutated) == baseline_exit_code, result)
 
 
@@ -315,9 +347,10 @@ def test_extended_passes_compose_after_nop_without_corrupting_fixture(
 def test_extended_passes_compose_before_nop_without_corrupting_fixture(
     pass_name: str,
     pass_type: type,
+    composition_fixture: Path,
     tmp_path: Path,
 ) -> None:
-    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_nop_x86_64"
+    fixture = composition_fixture
     mutated = tmp_path / f"elf_{pass_name}_then_nop.composed"
     baseline_exit_code = emulate_exit_code(fixture)
 
@@ -328,7 +361,13 @@ def test_extended_passes_compose_before_nop_without_corrupting_fixture(
         result = engine.run(EngineRunOptions(validation_mode="structural", seed=_SEED))
         engine.save(mutated)
 
+    selected_result = result["pass_results"].get(pass_name, {})
     expect(result["passes_run"] == _EXPECTED_COMPOSED_PASSES and result["failed_passes"] == 0, result)
+    if pass_name in _COMPOSITION_PASSES_WITH_REAL_APPLICATION:
+        expect(
+            selected_result.get("status") == "applied" or selected_result.get("mutations_applied", 0) > 0,
+            result,
+        )
     expect(emulate_exit_code(mutated) == baseline_exit_code, result)
 
 
