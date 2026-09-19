@@ -35,7 +35,12 @@ def test_decode_xlat_rejects_other_mnemonics() -> None:
 def test_xlat_handler_uses_virtual_rax_and_rbx_slots() -> None:
     context = HandlerContext("key", "key_qword", "key_dword", 0, "", "", "", 0, tuple(range(16)))
     assembly = HandlerBodyRouter(context).body("xlat", 0, (0, 0, 0, 0, 0))
-    expect("mov r10, qword ptr [rsp+24]" in assembly and "mov qword ptr [rsp+0], rax" in assembly)
+    expect(
+        "mov r10, qword ptr [rsp+24]" in assembly
+        and "xor r10, key_qword" in assembly
+        and "xor rax, key_qword" in assembly
+        and "mov qword ptr [rsp+0], rax" in assembly
+    )
 
 
 def test_classify_vector_movsd_does_not_become_string_item() -> None:
