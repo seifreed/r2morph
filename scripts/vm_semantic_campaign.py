@@ -49,6 +49,7 @@ _CAPABILITY_CATEGORIES = {
     "fp-simd": ("floating_point_and_simd",),
     "ssa-liveness": ("ssa_liveness",),
 }
+_QEMU_NON_COMPLETED_EQUIVALENT_STATUSES = frozenset({"unavailable", "timeout"})
 
 
 def _load_coverage(path: Path) -> dict[str, set[str]]:
@@ -214,7 +215,7 @@ def _qemu_observables_equal(expected: Mapping[str, Any], actual: Mapping[str, An
     """Compare the independent oracle when both executions are available."""
     expected_status = expected.get("status")
     actual_status = actual.get("status")
-    if expected_status == actual_status == "unavailable":
+    if expected_status == actual_status and expected_status in _QEMU_NON_COMPLETED_EQUIVALENT_STATUSES:
         return True
     if expected_status != "completed" or actual_status != "completed":
         return False
@@ -238,7 +239,10 @@ def _qemu_summary(fixture_results: list[dict[str, Any]]) -> dict[str, int | str]
                 completed += 1
             else:
                 divergent += 1
-        elif expected.get("status") == actual.get("status") == "unavailable":
+        elif (
+            expected.get("status") == actual.get("status")
+            and expected.get("status") in _QEMU_NON_COMPLETED_EQUIVALENT_STATUSES
+        ):
             unavailable += 1
         else:
             divergent += 1

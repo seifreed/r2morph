@@ -68,11 +68,13 @@ def test_vm_semantic_campaign_qemu_oracle_requires_matching_completed_results() 
     completed = {"status": "completed", "exit_code": 0}
     changed = {"status": "completed", "exit_code": 1}
     unavailable = {"status": "unavailable", "exit_code": None}
+    timed_out = {"status": "timeout", "exit_code": None}
 
     expect(
         _qemu_observables_equal(completed, completed)
         and not _qemu_observables_equal(completed, changed)
         and _qemu_observables_equal(unavailable, unavailable)
+        and _qemu_observables_equal(timed_out, timed_out)
     )
 
 
@@ -95,6 +97,13 @@ def test_vm_semantic_campaign_qemu_summary_counts_independent_pairs() -> None:
             },
             {
                 "qemu": {
+                    "original": {"status": "timeout"},
+                    "mutated": {"status": "timeout"},
+                    "observables_equal": True,
+                }
+            },
+            {
+                "qemu": {
                     "original": {"status": "completed", "exit_code": 0},
                     "mutated": {"status": "completed", "exit_code": 1},
                     "observables_equal": False,
@@ -109,7 +118,7 @@ def test_vm_semantic_campaign_qemu_summary_counts_independent_pairs() -> None:
         == {
             "oracle": "qemu-x86_64",
             "completed_pairs": 1,
-            "unavailable_pairs": 1,
+            "unavailable_pairs": 2,
             "divergent_pairs": 1,
             "missing_pairs": 1,
         }

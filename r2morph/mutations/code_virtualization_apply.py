@@ -30,6 +30,17 @@ _UNWIND_SECTION_NAMES = frozenset(
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 
 
+def _is_runtime_entrypoint(
+    function: dict[str, Any],
+    unwind_section: str | None,
+    entrypoint_addresses: frozenset[int] = frozenset(),
+) -> bool:
+    """Exclude a compiler-generated loader entry stub from VM candidates."""
+    name = str(function.get("name", "")).strip()
+    address = function.get("addr")
+    return unwind_section == ".eh_frame" and (name == "entry0" or address in entrypoint_addresses)
+
+
 @dataclass(frozen=True, slots=True)
 class _UnwindContext:
     """Preflight result passed to one complete-region transformation."""
@@ -140,6 +151,17 @@ def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
         return tuple(ranges)
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
         return ()
+
+
+def _entrypoint_addresses(binary: Any) -> frozenset[int]:
+    """Return loader entry addresses when the binary adapter exposes them."""
+    try:
+        entries = binary.r2.cmdj("iej") or []
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return frozenset()
+    return frozenset(
+        int(entry["vaddr"]) for entry in entries if isinstance(entry, dict) and isinstance(entry.get("vaddr"), int)
+    )
 
 
 def _address_in_ranges(address: object, ranges: Iterable[tuple[int, int]]) -> bool:
@@ -448,7 +470,12 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
-def _ordered_functions(binary: Any, analysis_budget: int = MAX_FUNCTION_ANALYSIS_COUNT) -> list[dict[str, Any]] | None:
+def _ordered_functions(
+    binary: Any,
+    analysis_budget: int = MAX_FUNCTION_ANALYSIS_COUNT,
+    unwind_section: str | None = None,
+    entrypoint_addresses: frozenset[int] = frozenset(),
+) -> list[dict[str, Any]] | None:
     """Visit functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
     if len(functions) > analysis_budget:
@@ -458,7 +485,9 @@ def _ordered_functions(binary: Any, analysis_budget: int = MAX_FUNCTION_ANALYSIS
             analysis_budget,
         )
         return None
-    return functions
+    return [
+        function for function in functions if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
+    ]
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
@@ -476,10 +505,15 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     partial: list[dict[str, Any]] = []
     covered_ranges: list[tuple[int, int]] = []
     executable_ranges = _executable_ranges(binary)
-    ordered_functions = _ordered_functions(binary, pass_instance.max_function_analysis_count)
+    unwind_section = _unwind_metadata_name(binary)
+    ordered_functions = _ordered_functions(
+        binary,
+        pass_instance.max_function_analysis_count,
+        unwind_section,
+        _entrypoint_addresses(binary),
+    )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
-    unwind_section = _unwind_metadata_name(binary)
     exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 
     for func in ordered_functions:

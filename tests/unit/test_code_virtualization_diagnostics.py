@@ -6,8 +6,10 @@ from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, L
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _empty_result,
+    _entrypoint_addresses,
     _field_counts,
     _function_has_unproven_unwind_metadata,
+    _is_runtime_entrypoint,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
     _unwind_metadata_name,
@@ -122,6 +124,27 @@ def test_partial_virtualization_is_rejected_by_default() -> None:
 
 def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> None:
     expect(not CodeVirtualizationPass(config={"reject_partial_virtualization": False}).reject_partial_virtualization)
+
+
+def test_runtime_entrypoint_is_skipped_only_with_ordinary_unwind_metadata() -> None:
+    expect(
+        _is_runtime_entrypoint({"name": "entry0"}, ".eh_frame")
+        and _is_runtime_entrypoint({"addr": 0x401000}, ".eh_frame", frozenset({0x401000}))
+        and not _is_runtime_entrypoint({"name": "entry0"}, None)
+        and not _is_runtime_entrypoint({"name": "_start"}, ".eh_frame")
+    )
+
+
+def test_entrypoint_addresses_are_read_from_the_binary_adapter() -> None:
+    class _Binary:
+        class _Disassembler:
+            @staticmethod
+            def cmdj(command: str) -> list[dict[str, int]]:
+                return [{"vaddr": 0x401000}] if command == "iej" else []
+
+        r2 = _Disassembler()
+
+    expect(_entrypoint_addresses(_Binary()) == frozenset({0x401000}))
 
 
 def test_virtualization_result_exposes_diagnostic_counts() -> None:
