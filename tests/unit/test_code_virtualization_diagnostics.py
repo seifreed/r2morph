@@ -129,6 +129,7 @@ def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> 
 def test_runtime_entrypoint_is_skipped_only_with_ordinary_unwind_metadata() -> None:
     expect(
         _is_runtime_entrypoint({"name": "entry0"}, ".eh_frame")
+        and _is_runtime_entrypoint({"name": "entry.init0"}, ".eh_frame")
         and _is_runtime_entrypoint({"addr": 0x401000}, ".eh_frame", frozenset({0x401000}))
         and not _is_runtime_entrypoint({"name": "entry0"}, None)
         and not _is_runtime_entrypoint({"name": "_start"}, ".eh_frame")
