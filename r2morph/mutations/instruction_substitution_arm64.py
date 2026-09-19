@@ -10,7 +10,9 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 logger = logging.getLogger(__name__)
 
 _ARM_MOV_OPERAND_COUNT = 2
+_AARCH64_ADD_IMMEDIATE_MAX = 0xFFF
 _MAX_ARM_MOV_IMMEDIATE = 0xFFFF
+_AARCH64_LOGICAL_IMMEDIATE_WIDTHS = (2, 4, 8, 16, 32, 64)
 
 
 def _alternative_mov_replacement(destination: str, immediate: int) -> str | None:
@@ -19,7 +21,30 @@ def _alternative_mov_replacement(destination: str, immediate: int) -> str | None
     zero_register = "wzr" if destination.startswith("w") else "xzr"
     if immediate == 0:
         return f"orr {destination}, {zero_register}, {zero_register}"
-    return f"orr {destination}, {zero_register}, {hex(immediate)}"
+    width = 32 if destination.startswith("w") else 64
+    if _is_logical_immediate(immediate, width):
+        return f"orr {destination}, {zero_register}, {hex(immediate)}"
+    if immediate <= _AARCH64_ADD_IMMEDIATE_MAX:
+        return f"add {destination}, {zero_register}, {hex(immediate)}"
+    return None
+
+
+def _is_logical_immediate(value: int, width: int) -> bool:
+    """Return whether an integer is encodable by an AArch64 logical immediate."""
+    if value <= 0 or value >= (1 << width) - 1:
+        return False
+    for element_width in _AARCH64_LOGICAL_IMMEDIATE_WIDTHS:
+        if element_width > width or width % element_width:
+            continue
+        element_mask = (1 << element_width) - 1
+        element = value & element_mask
+        if any((value >> offset) & element_mask != element for offset in range(0, width, element_width)):
+            continue
+        for rotation in range(element_width):
+            rotated = ((element >> rotation) | (element << (element_width - rotation))) & element_mask
+            if rotated and rotated != element_mask and rotated & (rotated + 1) == 0:
+                return True
+    return False
 
 
 def _movz_replacement(disasm: str) -> str | None:

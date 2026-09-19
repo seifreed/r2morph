@@ -89,3 +89,14 @@ def test_arm64_mov_substitution_helper_rejects_unrepresentable_immediate() -> No
     result = apply_arm64_mov_substitution(binary, max_substitutions=4)
 
     expect(result["mutations_applied"] == 0)
+
+
+def test_arm64_mov_substitution_helper_uses_add_for_nonlogical_small_immediate() -> None:
+    binary = _Binary(
+        [{"disasm": "mov w0, 0x25", "addr": 0x1000, "size": 4}],
+        {"add w0, wzr, 0x25": b"\x00\x00\x00\x11"},
+    )
+
+    result = apply_arm64_mov_substitution(binary, max_substitutions=4)
+
+    expect(result["mutations_applied"] == 1)
