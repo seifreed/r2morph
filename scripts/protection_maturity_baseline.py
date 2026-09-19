@@ -1017,7 +1017,10 @@ def _diagnostic_counts(records: object, field: str) -> dict[str, int]:
 def _instruction_mnemonic(disassembly: object) -> str | None:
     if not isinstance(disassembly, str):
         return None
-    tokens = disassembly.strip().lower().split()
+    text = disassembly.strip().lower()
+    if not text or text.startswith(";"):
+        return None
+    tokens = text.split()
     if not tokens:
         return None
     while tokens and tokens[0] in {"lock", "rep", "repe", "repne", "rex"}:

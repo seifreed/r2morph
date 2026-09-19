@@ -597,6 +597,19 @@ def test_affected_instruction_evidence_includes_recorded_metadata_mnemonics() ->
     )
 
 
+def test_affected_instruction_evidence_ignores_virtualization_summary_comments() -> None:
+    evidence = _affected_instruction_evidence(
+        [
+            {
+                "original_disasm": "; 11 instructions (control-flow region)",
+                "metadata": {"affected_instruction_mnemonics": ["vcall", "mov"]},
+            }
+        ]
+    )
+
+    expect(evidence["affected_instruction_mnemonics"] == ["mov", "vcall"])
+
+
 def test_render_result_counts_missing_size_and_duration_pairs() -> None:
     report = _render_result(
         [
