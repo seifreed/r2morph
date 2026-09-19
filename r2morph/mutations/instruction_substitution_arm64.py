@@ -10,7 +10,6 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 logger = logging.getLogger(__name__)
 
 _ARM_MOV_OPERAND_COUNT = 2
-_AARCH64_ADD_IMMEDIATE_MAX = 0xFFF
 _MAX_ARM_MOV_IMMEDIATE = 0xFFFF
 _AARCH64_LOGICAL_IMMEDIATE_WIDTHS = (2, 4, 8, 16, 32, 64)
 
@@ -24,8 +23,6 @@ def _alternative_mov_replacement(destination: str, immediate: int) -> str | None
     width = 32 if destination.startswith("w") else 64
     if _is_logical_immediate(immediate, width):
         return f"orr {destination}, {zero_register}, {hex(immediate)}"
-    if immediate <= _AARCH64_ADD_IMMEDIATE_MAX:
-        return f"add {destination}, {zero_register}, {hex(immediate)}"
     return None
 
 
