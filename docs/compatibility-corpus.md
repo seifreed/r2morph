@@ -221,10 +221,10 @@ corpus passes fail the run. It also starts automatically after a successful
 `Differential Corpus By Pass` run and checks out that run's exact `head_sha`,
 so analyzer evidence is refreshed for the same source revision rather than
 drifting behind the differential campaign. It includes the same 136 generated ELF
-x86-64 variants used by the differential campaign, records that scope in the
-merged report, and partitions generated fixtures together with repository
-fixtures. Extended-pass application gaps remain published as explicit evidence
-blockers.
+x86-64 variants used by the differential campaign, records the distinct
+`generated-elf-x86-64` and `generated-cpp-x86-64` families in the merged report,
+and partitions generated fixtures together with repository fixtures. Extended-
+pass application gaps remain published as explicit evidence blockers.
 The campaign now runs as four deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
