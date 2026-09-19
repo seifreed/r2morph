@@ -238,7 +238,7 @@ static-recovery artifact before publishing merged evidence. The merged maturity
 evidence retains ten independent false-positive gaps, eight composition gaps,
 22 decompiler gaps, and one pass without an applied instruction catalogue;
 these archived totals are release blockers, not implied support. The current
-39-case composition smoke adds applied evidence for seven of those eight
+46-case composition smoke adds applied evidence for seven of those eight
 composition gaps; the scheduled aggregate must publish the updated total
 before this archived report is replaced.
 
