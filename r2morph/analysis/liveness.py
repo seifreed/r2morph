@@ -23,7 +23,7 @@ from r2morph.analysis.liveness_models import (
     InterferenceGraph,
     LiveRange,
 )
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
+from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses, stack_pointer_registers
 
 _INSTRUCTION_PART_COUNT = 2
 _X86_32_BIT_SIZE = 32
@@ -290,6 +290,7 @@ class LivenessAnalysis:
                 for register, size in return_register_effects(self._abi)
                 if register in _X86_REGISTER_BIT_SIZES
             )
+            used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
             return used
 
         # call instructions implicitly use argument registers per ABI
@@ -301,6 +302,7 @@ class LivenessAnalysis:
             operand_parts = disasm.split(None, 1)
             if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
                 used.update(self._parse_registers_from_string(operand_parts[1]))
+            used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
             return used
 
         operand_parts = disasm.split(None, 1)
@@ -308,11 +310,13 @@ class LivenessAnalysis:
             used = self._registers_used_by_operands(operand_parts[1], disasm)
             if memory_accesses(disasm)[0]:
                 used.add(Register(MEMORY_RESOURCE_NAME))
+            used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
             return used
         if flag_accesses(disasm)[0]:
             used.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
         if memory_accesses(disasm)[0]:
             used.add(Register(MEMORY_RESOURCE_NAME))
+        used.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, read=True))
         return used
 
     def _registers_used_by_operands(self, operands: str, disasm: str) -> set[Register]:
@@ -348,6 +352,7 @@ class LivenessAnalysis:
             return defined
 
         if mnemonic in ("jmp", "ret", "nop"):
+            defined.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, write=True))
             return defined
 
         # call instructions implicitly define return value and caller-saved registers per ABI
@@ -358,6 +363,8 @@ class LivenessAnalysis:
             defined.add(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
             defined.add(Register(MEMORY_RESOURCE_NAME))
             return defined
+
+        defined.update(Register(*register) for register in stack_pointer_registers(disasm, self._abi, write=True))
 
         operand_parts = disasm.split(None, 1)
         if len(operand_parts) >= _INSTRUCTION_PART_COUNT:

@@ -36,6 +36,35 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
     }
 )
 
+_STACK_POINTERS = {
+    "cdecl_32": ("esp", 32),
+    "x86_32_linux": ("esp", 32),
+    "x86_32_windows": ("esp", 32),
+}
+_STACK_POINTER_OPERATIONS = frozenset({"call", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"})
+
+
+def stack_pointer_effects(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[str, int], bool, bool]:
+    """Return the implicit stack-pointer register and its read/write effects."""
+    register = _STACK_POINTERS.get(abi, ("rsp", 64))
+    tokens = disasm.split(None, 1)
+    opcode = tokens[0].lower() if tokens else ""
+    if opcode == "lock" and len(tokens) == _MIN_INSTRUCTION_PART_COUNT:
+        opcode = tokens[1].split(None, 1)[0].lower()
+    reads = opcode in _STACK_POINTER_OPERATIONS
+    writes = opcode in {"pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"}
+    return register, reads, writes
+
+
+def stack_pointer_registers(
+    disasm: str, abi: str = "sysv_amd64", *, read: bool = False, write: bool = False
+) -> tuple[tuple[str, int], ...]:
+    """Return the stack-pointer register when the requested implicit effect exists."""
+    register, reads, writes = stack_pointer_effects(disasm, abi)
+    if (read and reads) or (write and writes):
+        return (register,)
+    return ()
+
 
 def memory_accesses(disasm: str) -> tuple[bool, bool]:
     """Return conservative ``(reads, writes)`` effects for memory."""

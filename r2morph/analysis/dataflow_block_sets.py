@@ -8,7 +8,12 @@ from r2morph.analysis.call_effects import call_register_effects, is_call_instruc
 from r2morph.analysis.dataflow_models import Register, register_definition_covers_use
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE, flag_accesses
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE, memory_accesses
+from r2morph.analysis.memory_effects import (
+    MEMORY_RESOURCE_NAME,
+    MEMORY_RESOURCE_SIZE,
+    memory_accesses,
+    stack_pointer_registers,
+)
 
 _MIN_INSTRUCTION_PART_COUNT = 2
 _READ_BOTH_OPERANDS_MNEMONICS = frozenset(
@@ -82,6 +87,7 @@ def _extract_used_registers(insn: dict[str, Any], abi: str) -> set[tuple[str, in
 
     if memory_accesses(disasm)[0]:
         used.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+    used.update(stack_pointer_registers(disasm, abi, read=True))
     if flag_accesses(disasm)[0]:
         used.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 
@@ -116,11 +122,14 @@ def _extract_defined_registers(insn: dict[str, Any], abi: str) -> set[tuple[str,
     if not disasm:
         return defined
 
+    stack_pointer = stack_pointer_registers(disasm, abi, write=True)
     if mnemonic in ("jmp", "ret", "nop"):
+        defined.update(stack_pointer)
         return defined
 
     if memory_accesses(disasm)[1]:
         defined.add((MEMORY_RESOURCE_NAME, MEMORY_RESOURCE_SIZE))
+    defined.update(stack_pointer)
     if flag_accesses(disasm)[1]:
         defined.add((FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE))
 

@@ -11,8 +11,8 @@ def test_dataflow_block_sets_track_use_and_def() -> None:
         {"disasm": "ret", "type": "ret"},
     ]
 
-    expect(compute_block_def(instructions) == {("eax", 32), ("ecx", 32), ("rflags", 64)})
-    expect(compute_block_use(instructions) == {("ebx", 32), ("ecx", 32), ("memory", 0)})
+    expect(compute_block_def(instructions) == {("eax", 32), ("ecx", 32), ("rflags", 64), ("rsp", 64)})
+    expect(compute_block_use(instructions) == {("ebx", 32), ("ecx", 32), ("memory", 0), ("rsp", 64)})
 
 
 def test_dataflow_block_sets_branch_reads_status_flags() -> None:
@@ -53,3 +53,19 @@ def test_dataflow_block_sets_call_defines_caller_saved_state() -> None:
     defined = compute_block_def(instructions)
 
     expect({("rax", 64), ("r11", 64), ("xmm15", 128)}.issubset(defined))
+
+
+def test_dataflow_block_sets_track_implicit_x86_64_stack_pointer_effects() -> None:
+    instructions = [
+        {"disasm": "push rbp", "type": "push"},
+        {"disasm": "call rax", "type": "icall"},
+        {"disasm": "pop rbp", "type": "pop"},
+    ]
+
+    expect(("rsp", 64) in compute_block_use(instructions) and ("rsp", 64) in compute_block_def(instructions))
+
+
+def test_dataflow_block_sets_track_implicit_x86_32_stack_pointer_effects() -> None:
+    instructions = [{"disasm": "push ebp", "type": "push"}, {"disasm": "ret", "type": "ret"}]
+
+    expect(("esp", 32) in compute_block_use(instructions, abi="cdecl_32"))
