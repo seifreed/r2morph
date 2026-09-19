@@ -26,10 +26,11 @@ else:
     from protection_maturity_baseline import build_generated_corpus
 
 _MAX_FIXTURES = 512
-_MAX_WORKERS = 8
 _MAX_FIXTURE_SHARDS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
-_DEFAULT_WORKERS = min(_MAX_WORKERS, os.cpu_count() or 1)
+# CodeVirtualizationPass uses the process-global random generator during codegen;
+# serial workers keep each seeded campaign deterministic.
+_CAMPAIGN_WORKERS = 1
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _PASSABLE_FIXTURE_STATUSES = frozenset({"passed", "passed_with_unsupported"})
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
@@ -322,7 +323,7 @@ def run_campaign(
             seed=seed,
             timeout=timeout,
         )
-        with ThreadPoolExecutor(max_workers=_DEFAULT_WORKERS) as executor:
+        with ThreadPoolExecutor(max_workers=_CAMPAIGN_WORKERS) as executor:
             results = executor.map(run_fixture, fixtures)
             for source, result in results:
                 if not source.is_file():

@@ -16,14 +16,15 @@ from tests.utils.process import run_command
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_scalar_x86_64"
 _EXPECTED_EXIT_CODE = 2
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 6
+_REGRESSION_SEEDS = (20260828, 20260917)
 
 
-def _mutate_fixture(destination: Path) -> dict[str, int]:
+def _mutate_fixture(destination: Path, seed: int = _REGRESSION_SEEDS[0]) -> dict[str, int]:
     shutil.copy(_FIXTURE, destination)
     binary = Binary(destination, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": 20260828}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1, "seed": seed}).apply(binary)
         binary.save()
     finally:
         binary.close()
@@ -46,11 +47,12 @@ def test_vex128_scalar_fixture_virtualization_applies(tmp_path: Path) -> None:
     expect(stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS)
 
 
-def test_vex128_scalar_fixture_virtualization_preserves_result(tmp_path: Path) -> None:
+@pytest.mark.parametrize("seed", _REGRESSION_SEEDS)
+def test_vex128_scalar_fixture_virtualization_preserves_result(tmp_path: Path, seed: int) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native VEX execution requires an x86-64 host")
     mutated = tmp_path / "mutated_vex128_scalar"
-    _mutate_fixture(mutated)
+    _mutate_fixture(mutated, seed)
 
     result = run_command([mutated])
     expect(

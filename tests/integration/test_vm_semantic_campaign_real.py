@@ -195,7 +195,7 @@ def test_vm_semantic_campaign_measures_unwind_and_ssa_fixture_contracts() -> Non
 
 
 @pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
-def test_vm_semantic_campaign_parallel_workers_preserve_native_parity() -> None:
+def test_vm_semantic_campaign_workers_preserve_native_parity() -> None:
     coverage = _load_coverage(Path("docs/virtualization-coverage.json"))
     report = run_campaign(
         Path("fixtures/dataset"),
