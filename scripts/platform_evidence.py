@@ -18,6 +18,7 @@ _REQUIRED_CASES = {
         "test_nop_insertion_arm64_preserves_native_output",
         "test_instruction_substitution_arm64_preserves_native_output",
         "test_register_substitution_arm64_preserves_generated_native_execution",
+        "test_x86_mutation_sequence_preserves_native_exit_code",
         "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
         "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
         "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",

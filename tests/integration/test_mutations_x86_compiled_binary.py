@@ -13,6 +13,7 @@ from r2morph.mutations.instruction_substitution import InstructionSubstitutionPa
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.platform.codesign import CodeSigner
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -98,6 +99,31 @@ def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path
 
     expect(nop_result["mutations_applied"] > 0)
     expect(sub_result["mutations_applied"] > 0)
+
+
+def test_x86_mutation_sequence_preserves_native_exit_code(x86_binary_path: Path, tmp_path: Path):
+    randomness.seed(4)
+    writable_path = _copy_writable(tmp_path, x86_binary_path)
+    original = run_command([writable_path], text=True, timeout=30)
+
+    with Binary(writable_path, writable=True) as bin_obj:
+        bin_obj.analyze("aa")
+        results = (
+            NopInsertionPass(config={"probability": 1.0, "max_nops_per_function": 2}).apply(bin_obj),
+            InstructionSubstitutionPass(
+                config={"probability": 1.0, "max_substitutions_per_function": 2, "force_different": True}
+            ).apply(bin_obj),
+            RegisterSubstitutionPass(config={"probability": 1.0, "max_substitutions_per_function": 2}).apply(bin_obj),
+        )
+
+    expect(CodeSigner().sign(writable_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([writable_path], text=True, timeout=30)
+    expect(
+        sum(result["mutations_applied"] for result in results) > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr),
+        f"Mach-O x86-64 mutation sequence changed native execution: original={original!r}, mutated={mutated!r}",
+    )
 
 
 def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_path: Path, tmp_path: Path):
