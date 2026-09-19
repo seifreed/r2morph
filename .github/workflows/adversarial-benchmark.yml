@@ -297,6 +297,10 @@ jobs:
               for layer in ("single_layer", "nested"):
                   if not fixture["anti_tamper"][layer]["tamper_diverged"]:
                       raise SystemExit(f"VM {layer} tamper_diverged probe did not diverge")
+                  if fixture["anti_tamper"][layer]["native_original"]["status"] != "completed":
+                      raise SystemExit(f"VM {layer} native tamper baseline did not execute")
+                  if not fixture["anti_tamper"][layer]["all_native_tamper_probes_diverged"]:
+                      raise SystemExit(f"VM {layer} native tamper probes did not diverge")
           if report["human_adversarial_review"]["status"] != "pending-human-adversarial-review":
               raise SystemExit("automated evidence must not imply human adversarial signoff")
           PY

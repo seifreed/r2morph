@@ -1,5 +1,6 @@
 """Real automated adversarial evidence for diversified VM builds."""
 
+import sys
 from pathlib import Path
 from typing import cast
 
@@ -50,12 +51,17 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and nested["tamper_diverged"] is True
         and single_layer["all_tamper_probes_diverged"] is True
         and nested["all_tamper_probes_diverged"] is True
+        and (single_layer["native_execution_available"] is (sys.platform.startswith("linux")))
         and single_layer["tamper_probe_count"] == nested["tamper_probe_count"] == _EXPECTED_TAMPER_PROBE_COUNT
         and progressive["growth_observed"] is True
         and progressive["depth_1_exit_code"] == progressive["baseline_exit_code"]
         and progressive["depth_2_exit_code"] == progressive["baseline_exit_code"]
         and human_review["status"] == "pending-human-adversarial-review"
     )
+
+    if sys.platform.startswith("linux"):
+        expect(single_layer["all_native_tamper_probes_diverged"] is True)
+        expect(nested["all_native_tamper_probes_diverged"] is True)
 
 
 def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:

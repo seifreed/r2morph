@@ -19,6 +19,7 @@ from pathlib import Path
 # Keep direct CLI execution equivalent to importing this module from the repo.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
@@ -34,6 +35,7 @@ _MIN_SEEDS = 2
 _MAX_SEEDS = 32
 _VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
 _TAMPER_OFFSETS = (0x10, 0x18, 0x20, 0x28, 0x30, 0x40, 0x50, 0x60)
+_NATIVE_EXECUTION_TIMEOUT_SECONDS = 5
 _HUMAN_REVIEW = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "automated-adversarial-smoke",
@@ -58,6 +60,7 @@ def _find_vm_entry(data: bytes) -> int:
 
 def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int | None = None) -> dict[str, object]:
     shutil.copyfile(source, destination)
+    destination.chmod(0o700)
     config: dict[str, object] = {"probability": 1.0, "seed": seed}
     if depth is not None:
         config["vm_nesting_depth"] = depth
@@ -65,6 +68,17 @@ def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int |
         stats = CodeVirtualizationPass(config=config).apply(binary)
         binary.save()
     return stats
+
+
+def _native_execution(path: Path) -> dict[str, object]:
+    """Run an ELF probe when the host can execute the fixture natively."""
+    if not sys.platform.startswith("linux"):
+        return {"status": "unavailable", "reason": "native ELF execution requires Linux"}
+    try:
+        result = run_process([path], timeout=_NATIVE_EXECUTION_TIMEOUT_SECONDS)
+    except (OSError, ProcessTimeoutError) as error:
+        return {"status": "error", "error_type": type(error).__name__}
+    return {"status": "completed", "return_code": result.returncode}
 
 
 def _required_bytecode_size(stats: dict[str, object]) -> int:
@@ -107,6 +121,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
     tampered_prefix = "nested-tampered" if depth is not None else "tampered"
     stats = _virtualize_fixture(source, protected, seed, depth)
     original_exit = emulate_exit_code(protected)
+    native_original = _native_execution(protected)
     data = bytearray(protected.read_bytes())
     vm_entry = _find_vm_entry(bytes(data))
     if vm_entry < 0 or any(vm_entry + offset >= len(data) for offset in _TAMPER_OFFSETS):
@@ -121,11 +136,18 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
             tampered_exit: int | None = emulate_exit_code(tampered)
         except Exception:  # A tamper-triggered emulator fault is itself divergence.
             tampered_exit = None
+        native_tampered = _native_execution(tampered)
+        native_diverged = native_original.get("status") == "completed" and (
+            native_tampered.get("status") != "completed"
+            or native_tampered.get("return_code") != native_original.get("return_code")
+        )
         probes.append(
             {
                 "offset": offset,
                 "tampered_exit_code": tampered_exit,
                 "diverged": tampered_exit != original_exit,
+                "native": native_tampered,
+                "native_diverged": native_diverged,
             }
         )
     first_probe = probes[0]
@@ -139,6 +161,11 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         "tamper_probe_count": len(probes),
         "tamper_probes": probes,
         "all_tamper_probes_diverged": all(probe["diverged"] for probe in probes),
+        "native_original": native_original,
+        "native_execution_available": native_original.get("status") == "completed",
+        "all_native_tamper_probes_diverged": (
+            native_original.get("status") == "completed" and all(probe["native_diverged"] for probe in probes)
+        ),
     }
 
 
