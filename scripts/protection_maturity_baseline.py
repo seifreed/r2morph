@@ -192,10 +192,10 @@ __asm__(
 extern int short_jump_probe(int value);
 extern int self_modify_probe(int value);
 
-__attribute__((noinline)) static int fold(int argc, char **argv) {
+__attribute__((noinline)) static int fold(int argc) {
     uint32_t acc = (uint32_t)argc;
     for (int i = 0; i < argc; ++i) {
-        const unsigned char *p = (const unsigned char *)argv[i];
+        const unsigned char *p = (const unsigned char *)"r2morph";
         while (*p) {
             acc = ((acc << 3) ^ *p) + (acc >> 1);
             ++p;
@@ -212,7 +212,10 @@ __attribute__((noinline)) static int fold(int argc, char **argv) {
     }
 }
 
-int main(int argc, char **argv) { return fold(argc, argv); }
+int main(int argc, char **argv) {
+    (void)argv;
+    return fold(argc);
+}
 """,
     "generated_memory": r"""
 #include <stdint.h>

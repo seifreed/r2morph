@@ -12,6 +12,7 @@ import pytest
 from scripts.vm_semantic_campaign import (
     _DEFAULT_SEEDS,
     _corpus_fixture_counts,
+    _error_result,
     _execution_observation,
     _load_coverage,
     merge_campaign_reports,
@@ -22,6 +23,7 @@ from tests.utils.assertions import expect
 _MERGED_SEED_COUNT = 2
 _MERGED_FIXTURE_COUNT = 2
 _UNWIND_SSA_FIXTURE_COUNT = 2
+_MAX_ERROR_MESSAGE_LENGTH = 240
 
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
@@ -83,6 +85,16 @@ def test_vm_semantic_observation_records_signal_termination(tmp_path: Path) -> N
 
     expected_signal = signal.SIGTERM if os.name == "posix" else None
     expect(observation["termination_signal"] == expected_signal)
+
+
+def test_vm_semantic_error_result_bounds_diagnostic_message() -> None:
+    result = _error_result(ValueError("line one\n" + "x" * 400))
+
+    expect(
+        result["status"] == "error"
+        and result["error_type"] == "ValueError"
+        and len(result["error_message"]) == _MAX_ERROR_MESSAGE_LENGTH
+    )
 
 
 @pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")

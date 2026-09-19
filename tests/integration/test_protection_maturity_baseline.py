@@ -848,6 +848,12 @@ def test_generated_calls_source_preserves_direct_and_indirect_call_shapes() -> N
     )
 
 
+def test_generated_branch_source_uses_stable_runtime_input() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_branch"]
+
+    expect('"r2morph"' in source and "argv[i]" not in source)
+
+
 def test_generated_string_source_preserves_implicit_memory_shape() -> None:
     source = _GENERATED_CORPUS_SOURCES["generated_string"]
 

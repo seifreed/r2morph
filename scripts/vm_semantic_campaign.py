@@ -29,6 +29,7 @@ _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
 _HASH_CHUNK_BYTES = 1024 * 1024
+_MAX_ERROR_MESSAGE_LENGTH = 240
 _CAPABILITY_CATEGORIES = {
     "memory": ("memory_addressing",),
     "direct-calls": ("direct_calls",),
@@ -139,6 +140,15 @@ def _execution_observation(path: Path, timeout: float, workdir: Path) -> dict[st
     return result
 
 
+def _error_result(error: BaseException) -> dict[str, str]:
+    message = str(error).replace("\n", " ").strip()
+    return {
+        "status": "error",
+        "error_type": type(error).__name__,
+        "error_message": message[:_MAX_ERROR_MESSAGE_LENGTH],
+    }
+
+
 def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
     original = _execution_observation(source, timeout, execution_root / "original")
@@ -154,7 +164,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             result = CodeVirtualizationPass(config={"probability": 1.0, "seed": seed}).apply(binary)
             binary.save()
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
-        return {"status": "error", "error_type": type(exc).__name__}
+        return _error_result(exc)
 
     functions_virtualized = result.get("functions_virtualized", 0)
     if not isinstance(functions_virtualized, int) or functions_virtualized < 1:
