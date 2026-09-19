@@ -27,13 +27,12 @@ def test_opaque_predicate_generators():
     expect(arm_pred)
 
 
-def test_x86_opaque_predicates_preserve_registers_and_flags():
+def test_x86_opaque_predicates_require_dead_registers_and_flags():
     predicate = OpaquePredicatePass()._generate_x86_predicate("always_true", 64)
 
-    expect(predicate[0] == "pushfq")
-    expect("push r11" in predicate)
-    expect("pop r11" in predicate)
-    expect(predicate[-1] == "popfq")
+    expect(predicate[0] == "xor r11d, r11d")
+    expect("pushfq" not in predicate and "popfq" not in predicate)
+    expect("push r11" not in predicate and "pop r11" not in predicate)
 
 
 def test_opaque_predicate_assembles_local_labels_as_absolute_targets():

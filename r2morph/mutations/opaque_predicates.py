@@ -13,6 +13,10 @@ import re
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.cfg import CFGBuilder
+from r2morph.analysis.dataflow_models import Register
+from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE
+from r2morph.analysis.liveness import LivenessAnalysis
 from r2morph.core.constants import (
     ARCH_BITS_64,
     OPAQUE_PREDICATE_MIN_FUNCTION_SIZE,
@@ -115,6 +119,10 @@ class OpaquePredicatePass(MutationPass):
         if str(arch_info.get("arch", "")).lower() not in {"x86", "x86_64", "amd64"}:
             logger.debug("Skipping opaque predicates: rel32 relocation is only implemented for x86")
             return 0
+        safe_blocks = self._safe_predicate_blocks(binary, func_addr, basic_blocks)
+        if not safe_blocks:
+            logger.debug("Skipping opaque predicates: no block has dead scratch-register and flag state")
+            return 0
 
         mutation_checkpoint = self._create_mutation_checkpoint("opaque_predicate")
         baseline = {}
@@ -132,6 +140,8 @@ class OpaquePredicatePass(MutationPass):
             bb = random.choice(basic_blocks)
             bb_addr = bb.get("addr", 0)
             bb_size = bb.get("size", 0)
+            if bb_addr not in safe_blocks:
+                continue
 
             predicate_type = random.choice(
                 [
@@ -170,6 +180,32 @@ class OpaquePredicatePass(MutationPass):
                 return 0
 
         return mutations
+
+    @staticmethod
+    def _safe_predicate_blocks(binary: Any, function_address: int, basic_blocks: list[dict[str, Any]]) -> set[int]:
+        """Return blocks where the register-only predicate cannot alter live state."""
+        try:
+            arch_info = binary.get_arch_info()
+            bits = arch_info.get("bits", ARCH_BITS_64)
+            abi = "sysv_amd64" if bits == ARCH_BITS_64 else "cdecl_32"
+            cfg = CFGBuilder(binary).build_cfg(function_address)
+            liveness = LivenessAnalysis(cfg, abi=abi)
+            liveness.compute()
+        except (AttributeError, KeyError, OSError, RuntimeError, ValueError):
+            return set()
+
+        scratch = "r11" if bits == ARCH_BITS_64 else "edx"
+        safe: set[int] = set()
+        for block in basic_blocks:
+            address = block.get("addr")
+            if not isinstance(address, int) or liveness.get_instruction_liveness(address) is None:
+                continue
+            if liveness.is_live_at(Register(scratch, bits), address):
+                continue
+            if liveness.is_live_at(Register(FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SIZE), address):
+                continue
+            safe.add(address)
+        return safe
 
     @staticmethod
     def _has_pc_relative_memory_operand(instruction: dict[str, Any]) -> bool | None:
@@ -369,70 +405,43 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Assembly instructions
         """
-        if bits == ARCH_BITS_64:
-            flags_push = "pushfq"
-            flags_pop = "popfq"
-            scratch = "r11"
-            scratch32 = "r11d"
-        else:
-            flags_push = "pushfd"
-            flags_pop = "popfd"
-            scratch = "edx"
-            scratch32 = scratch
+        scratch32 = "r11d" if bits == ARCH_BITS_64 else "edx"
 
         if predicate_type == "always_true":
             predicates = [
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jz .real_code",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jz .real_code",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jz .real_code",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jz .real_code",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
             ]
 
         else:
             predicates = [
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jnz .fake_code",
@@ -440,12 +449,8 @@ class OpaquePredicatePass(MutationPass):
                     ".fake_code:",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
                 [
-                    flags_push,
-                    f"push {scratch}",
                     f"xor {scratch32}, {scratch32}",
                     f"test {scratch32}, {scratch32}",
                     "jne .fake_code",
@@ -453,8 +458,6 @@ class OpaquePredicatePass(MutationPass):
                     ".fake_code:",
                     "nop",
                     ".real_code:",
-                    f"pop {scratch}",
-                    flags_pop,
                 ],
             ]
 
