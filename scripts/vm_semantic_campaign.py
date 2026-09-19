@@ -234,11 +234,12 @@ def _qemu_summary(fixture_results: list[dict[str, Any]]) -> dict[str, int | str]
             missing += 1
             continue
         if expected.get("status") == actual.get("status") == "completed":
-            completed += 1
+            if evidence.get("observables_equal") is True:
+                completed += 1
+            else:
+                divergent += 1
         elif expected.get("status") == actual.get("status") == "unavailable":
             unavailable += 1
-        elif evidence.get("observables_equal") is not True:
-            divergent += 1
         else:
             divergent += 1
     return {

@@ -88,6 +88,13 @@ def test_vm_semantic_campaign_qemu_summary_counts_independent_pairs() -> None:
                     "observables_equal": True,
                 }
             },
+            {
+                "qemu": {
+                    "original": {"status": "completed", "exit_code": 0},
+                    "mutated": {"status": "completed", "exit_code": 1},
+                    "observables_equal": False,
+                }
+            },
             {},
         ]
     )
@@ -98,7 +105,7 @@ def test_vm_semantic_campaign_qemu_summary_counts_independent_pairs() -> None:
             "oracle": "qemu-x86_64",
             "completed_pairs": 1,
             "unavailable_pairs": 1,
-            "divergent_pairs": 0,
+            "divergent_pairs": 1,
             "missing_pairs": 1,
         }
     )
