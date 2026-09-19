@@ -704,6 +704,7 @@ def test_support_matrix_names_differential_gap_evidence() -> None:
                 "tests/integration/test_elf_arm64_native.py",
                 "tests/integration/test_elf_x86_32_native.py",
                 "tests/integration/test_elf_arm32_native.py",
+                "tests/integration/test_platform_tier1_matrix.py",
             ],
             "status": "preview-smoke-only",
         }
