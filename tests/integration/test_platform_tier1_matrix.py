@@ -92,6 +92,35 @@ def _build_target(target: str, tmp_path: Path, mutation_name: str) -> tuple[Path
         return binary_path, lambda path: run_command(["qemu-arm", path], text=True, timeout=30)
     if target == "arm64":
         _require_arm64_execution()
+        if mutation_name == "ConstantUnfolding":
+            source = tmp_path / "arm64_constant.S"
+            source.write_text(
+                ".text\n"
+                ".global _start\n"
+                ".type _start,%function\n"
+                "_start:\n"
+                "    bl compute\n"
+                "    mov w8, #93\n"
+                "    svc #0\n"
+                ".type compute,%function\n"
+                "compute:\n"
+                "    mov w1, #0\n"
+                "    add w1, w1, #42\n"
+                "    mov w0, w1\n"
+                "    ret\n"
+                ".size _start, .-_start\n",
+                encoding="ascii",
+            )
+            binary_path = tmp_path / "arm64_constant"
+            compiler = shutil.which("aarch64-linux-gnu-gcc") or shutil.which("cc")
+            if compiler is None:
+                raise RuntimeError("an AArch64 assembler compiler is required for the constant fixture")
+            run_command(
+                [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+                check=True,
+                text=True,
+            )
+            return binary_path, _run_arm64
         return _build_arm64_elf(tmp_path), _run_arm64
     if target == "x86-32":
         _require_x86_32_execution()
