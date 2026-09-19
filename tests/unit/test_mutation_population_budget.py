@@ -11,6 +11,13 @@ from tests.utils.assertions import expect
 
 
 class _LargeFunctionPopulationBinary:
+    class _R2:
+        @staticmethod
+        def cmdj(_command: str) -> list[dict[str, Any]]:
+            return []
+
+    r2 = _R2()
+
     def is_analyzed(self) -> bool:
         return True
 
@@ -51,3 +58,11 @@ def test_code_virtualization_rejects_large_function_population() -> None:
     expect(
         result["functions_virtualized"] == 0 and result["unsupported_function_capabilities"] == {"analysis_budget": 1}
     )
+
+
+def test_code_virtualization_accepts_explicitly_bounded_larger_population() -> None:
+    result = CodeVirtualizationPass(
+        {"probability": 0.0, "max_function_analysis_count": MAX_FUNCTION_ANALYSIS_COUNT + 1}
+    ).apply(_LargeFunctionPopulationBinary())
+
+    expect(result["unsupported_function_capabilities"] != {"analysis_budget": 1})

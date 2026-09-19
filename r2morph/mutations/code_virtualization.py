@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import r2morph.core.randomness as random
+from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_apply import _DEFAULT_MAX_FUNCTION_SIZE, apply_code_virtualization
@@ -592,6 +593,9 @@ class CodeVirtualizationPass(MutationPass):
         self.max_function_size = self.config.get("max_function_size", _DEFAULT_MAX_FUNCTION_SIZE)
         if not isinstance(self.max_function_size, int) or self.max_function_size < 1:
             raise ValueError("max_function_size must be a positive integer")
+        self.max_function_analysis_count = self.config.get("max_function_analysis_count", MAX_FUNCTION_ANALYSIS_COUNT)
+        if not isinstance(self.max_function_analysis_count, int) or self.max_function_analysis_count < 1:
+            raise ValueError("max_function_analysis_count must be a positive integer")
         # Dispatch-shaped functions are inferred automatically; an explicit False
         # remains available for debugging and regression reproduction.
         self.virtualize_dispatch = self.config.get("virtualize_dispatch", True)

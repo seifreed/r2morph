@@ -332,6 +332,7 @@ _IDENTITY_KEYS = {
     "enter_inner",
     "inner_exit",
     "syscall",
+    "xlat",
 }
 
 

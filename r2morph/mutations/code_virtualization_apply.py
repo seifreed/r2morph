@@ -11,7 +11,7 @@ import r2morph.core.randomness as random
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
-from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT, MINIMUM_FUNCTION_SIZE
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.core.support import _normalize_architecture_name
 
 logger = logging.getLogger(__name__)
@@ -93,13 +93,13 @@ def _empty_result(target_diagnostic: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def _analysis_budget_result() -> dict[str, Any]:
+def _analysis_budget_result(analysis_budget: int) -> dict[str, Any]:
     """Reject oversized function populations before expensive per-function analysis."""
     capability = "analysis_budget"
     result = _empty_result(None)
     result.update(
         {
-            "functions_skipped": MAX_FUNCTION_ANALYSIS_COUNT + 1,
+            "functions_skipped": analysis_budget + 1,
             "unsupported_functions": [
                 {
                     "function_address": 0,
@@ -448,14 +448,14 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
-def _ordered_functions(binary: Any) -> list[dict[str, Any]] | None:
+def _ordered_functions(binary: Any, analysis_budget: int) -> list[dict[str, Any]] | None:
     """Visit functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
-    if len(functions) > MAX_FUNCTION_ANALYSIS_COUNT:
+    if len(functions) > analysis_budget:
         logger.warning(
             "Skipping code virtualization: function population exceeds the VM analysis budget (%d > %d)",
             len(functions),
-            MAX_FUNCTION_ANALYSIS_COUNT,
+            analysis_budget,
         )
         return None
     return functions
@@ -476,9 +476,9 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     partial: list[dict[str, Any]] = []
     covered_ranges: list[tuple[int, int]] = []
     executable_ranges = _executable_ranges(binary)
-    ordered_functions = _ordered_functions(binary)
+    ordered_functions = _ordered_functions(binary, pass_instance.max_function_analysis_count)
     if ordered_functions is None:
-        return _analysis_budget_result()
+        return _analysis_budget_result(pass_instance.max_function_analysis_count)
     unwind_section = _unwind_metadata_name(binary)
     exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 

@@ -47,6 +47,10 @@ def test_string_item_has_stable_handler_key() -> None:
     expect(_op_key(("string", "cmps", 32, "repe")) == "string_cmps_32_repe")
 
 
+def test_xlat_item_has_identity_handler_key() -> None:
+    expect(_op_key(("xlat",)) == "xlat")
+
+
 def test_string_handler_updates_guest_implicit_registers_and_flags() -> None:
     assembly = string_handler_asm("string_movs_64_rep", tuple(range(16)), 0x90)
     expect(

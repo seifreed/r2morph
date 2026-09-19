@@ -28,6 +28,7 @@ _DEFAULT_TIMEOUT_SECONDS = 5.0
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
+_MAX_FUNCTION_ANALYSIS_COUNT = 2048
 _HASH_CHUNK_BYTES = 1024 * 1024
 _MAX_ERROR_MESSAGE_LENGTH = 240
 _CAPABILITY_CATEGORIES = {
@@ -161,7 +162,13 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
-            result = CodeVirtualizationPass(config={"probability": 1.0, "seed": seed}).apply(binary)
+            result = CodeVirtualizationPass(
+                config={
+                    "probability": 1.0,
+                    "seed": seed,
+                    "max_function_analysis_count": _MAX_FUNCTION_ANALYSIS_COUNT,
+                }
+            ).apply(binary)
             binary.save()
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         return _error_result(exc)
