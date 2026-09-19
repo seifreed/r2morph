@@ -87,6 +87,15 @@ original and protected binaries, and the protected image preserved exit code 6.
 The bounded record is
 [`protection-adversarial-angr-local-2026-09-18-59898697.json`](protection-adversarial-angr-local-2026-09-18-59898697.json)
 (`SHA-256 14b0f716a5f8d32d23eb2bc3f7c8bd9f556b558138d77f962f24496b55d9a085`).
+The full local refresh on 2026-09-20 measured all 162 repository fixtures for
+`CodeVirtualization`. `angr` completed 162/162 runs with zero error rows;
+radare2, objdump, and the custom analyzer also completed all runs. Unicorn
+completed 155/162 runs and reported seven unavailable rows because its
+installed x86 emulator could not execute an instruction in those fixtures.
+Binary Ninja, IDA, Ghidra, and Triton remained unavailable in the local
+environment. The bounded report is
+[`protection-adversarial-angr-local-2026-09-20.json`](protection-adversarial-angr-local-2026-09-20.json)
+(`SHA-256 793a2e48a19274d9efad6ab84aea4f00c740678fa7aa24c5ae5e68f48ea5f1ba`).
 Corpus benchmark reports also aggregate completed, unavailable, error, changed,
 bounded unavailable/error reasons, duration pair counts and totals, comparable
 numeric metric pair counts, and numeric original-versus-protected metric deltas

@@ -174,11 +174,18 @@ transform duration, runtime duration, and static analyzer evidence while
 comparing exit code, stdout, stderr, created files, and declared observable
 effects across nine seed-derived inputs.
 
-The current local adversarial analyzer fixture records
-5 completed analyzer slots and 4 unavailable analyzer slots with reasons in
+The latest local adversarial refresh measures all 162 repository fixtures:
+`angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
+also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
+rows are retained with their instruction-support reasons. Binary Ninja, IDA,
+Ghidra, and Triton remain explicit unavailable analyzer slots. The bounded
+report is
+[`docs/protection-adversarial-angr-local-2026-09-20.json`](docs/protection-adversarial-angr-local-2026-09-20.json).
+The earlier focused `angr` fixture remains available in
 [`docs/protection-adversarial-angr-local-2026-09-18-59898697.json`](docs/protection-adversarial-angr-local-2026-09-18-59898697.json).
-Binary Ninja is an explicit analyzer slot; the current local fixture records
-`binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
+That focused fixture records 5 completed analyzer slots and 4 unavailable analyzer slots.
+Binary Ninja is an explicit analyzer slot; the focused local
+fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The VM review packet still has `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
 flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths
