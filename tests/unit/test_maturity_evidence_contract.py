@@ -266,6 +266,41 @@ def test_maturity_evidence_requires_two_decompiler_tools_for_comparison() -> Non
     )
 
 
+def test_maturity_evidence_keeps_comparable_tools_when_optional_slots_are_unavailable() -> None:
+    evidence = merge_decompiler_evidence(
+        {
+            "passes": {"NopInsertion": {"decompiler": {"status": "pending"}}},
+            "summary": {"blockers": {}, "blocker_totals": {}},
+        },
+        {
+            "sample_count": 1,
+            "summary": {
+                "analyzer_effectiveness_by_pass": {
+                    "NopInsertion": {
+                        "radare2": {
+                            "decompiler": {"observed_pairs": 1, "completed_pairs": 1, "completion_percent": 100.0}
+                        },
+                        "angr": {
+                            "decompiler": {"observed_pairs": 1, "completed_pairs": 1, "completion_percent": 100.0}
+                        },
+                        "binary-ninja": {
+                            "decompiler": {"observed_pairs": 1, "completed_pairs": 0, "completion_percent": 0.0}
+                        },
+                    }
+                }
+            },
+        },
+    )
+
+    decompiler = evidence["passes"]["NopInsertion"]["decompiler"]
+    expect(
+        decompiler["status"] == "comparable"
+        and decompiler["completed_tools"] == ["angr", "radare2"]
+        and decompiler["incomplete_tools"] == ["binary-ninja"]
+        and evidence["summary"]["blocker_totals"]["decompiler"] == 0
+    )
+
+
 def test_maturity_evidence_rejects_partial_decompiler_corpus_coverage() -> None:
     evidence = merge_decompiler_evidence(
         {

@@ -103,10 +103,11 @@ selected pass. It now also executes generated argv inputs and records
 `behavioral_validation_observations`,
 `behavioral_false_positive_observations`, and
 `behavioral_false_positive_rate_percent` for every applied run. A non-zero
-rate or missing observation fails the scheduled evidence gate. The same gate
-also compares every applicable applied run against the independent Unicorn
-exit-code oracle and rejects missing or divergent oracle observations; this is the
-native-runtime oracle for behavioral false positives, not a static-risk claim.
+rate or missing observation fails the scheduled evidence gate. On Linux the
+same gate compares every applicable applied run against an independent QEMU
+x86-64 exit-code oracle, falling back to the bounded Unicorn oracle elsewhere;
+missing or divergent oracle observations are rejected. This is an execution
+oracle for behavioral false positives, not a static-risk claim.
 Applied mutation records now also contribute a bounded
 `affected_instruction_mnemonics` catalogue and record count per pass. An
 applied run without those records is a release-gate blocker, so an instruction
@@ -142,6 +143,12 @@ reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
 visible directly. It also publishes `native_evidence_gap_passes`, listing every
 pass that has not reached a native evidence profile.
+The adversarial maturity join marks a pass as decompiler-comparable when the
+complete `radare2` and `angr` pairs cover the full sample set. It retains
+`incomplete_tools` in every pass row, so unavailable Binary Ninja and other
+optional analyzers remain visible under RB-005 without removing the two-tool
+per-pass measurement.
+
 The generated summary also exposes `parity_gap_scope`, naming Mach-O and PE as
 format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
 summaries also count declared formats and architectures, making the current ELF
@@ -205,6 +212,9 @@ runs (453 repository fixtures and 408 generated-corpus runs), records the
 family counts in the JSON artifact, and fails on any missing,
 non-virtualized, or divergent fixture. The latest passing campaign is retained in
 [`protection-vm-semantic-2026-09-18-1d0b69e4.json`](protection-vm-semantic-2026-09-18-1d0b69e4.json).
+Each fixture row now also carries a paired QEMU x86-64 observation; the report
+summary counts completed, unavailable, divergent, and missing independent pairs.
+Linux CI requires all 861 pairs to complete with no divergence.
 The artifact also reports each declared capability explicitly: memory, calls,
 ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,
 TLS/signals, threads, and FP/SIMD are campaign-measured. LSDA/landing-pad

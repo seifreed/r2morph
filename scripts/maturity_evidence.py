@@ -274,9 +274,7 @@ def _decompiler_evidence(
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
     status = (
-        "comparable"
-        if len(completed) >= _MIN_COMPARABLE_DECOMPILER_TOOLS and not incomplete
-        else "partial" if completed else "pending"
+        "comparable" if len(completed) >= _MIN_COMPARABLE_DECOMPILER_TOOLS else "partial" if completed else "pending"
     )
     return {
         "status": status if completed else "pending",
