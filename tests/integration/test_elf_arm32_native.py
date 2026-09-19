@@ -181,5 +181,8 @@ def test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code(tmp_path: 
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
-        "complex ELF ARM32 mutation sequence changed emulated execution",
+        "complex ELF ARM32 mutation sequence changed emulated execution: "
+        f"original={original.returncode, original.stdout, original.stderr!r}; "
+        f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
+        f"results={results!r}",
     )

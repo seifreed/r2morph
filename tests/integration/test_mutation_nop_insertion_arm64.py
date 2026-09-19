@@ -201,7 +201,7 @@ def test_instruction_substitution_arm64_compiled_binary_rejects_unrepresentable_
     if platform.system() != "Darwin":
         pytest.skip("Mach-O arm64 execution requires macOS")
 
-    binary_path = _build_arm64_return_binary(tmp_path, 37)
+    binary_path = _build_arm64_return_binary(tmp_path, 0x1001)
     original = run_command([binary_path], text=True, timeout=30)
 
     with Binary(binary_path, writable=True) as bin_obj:
@@ -215,7 +215,7 @@ def test_instruction_substitution_arm64_compiled_binary_rejects_unrepresentable_
         result["mutations_applied"] == 0
         and (mutated.returncode, mutated.stdout, mutated.stderr)
         == (original.returncode, original.stdout, original.stderr)
-        == (37, "", ""),
+        == (1, "", ""),
         "ARM64 substitution did not fail closed for an unrepresentable immediate",
     )
 

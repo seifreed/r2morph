@@ -179,5 +179,8 @@ def test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code(tmp_path: P
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
-        "complex ELF x86 32-bit mutation sequence changed native execution",
+        "complex ELF x86 32-bit mutation sequence changed native execution: "
+        f"original={original.returncode, original.stdout, original.stderr!r}; "
+        f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
+        f"results={results!r}",
     )
