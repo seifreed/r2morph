@@ -684,6 +684,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         elif kind == "ijmpmemnb":
             _, index, shift, disp = item
             self._idx(self._opcode(item, kind), (self.slot_of[0], None, self.slot_of[index], shift, disp))
+        elif kind == "ijmpmemrip":
+            self._disp(item[1] - self.bytecode_base, self._opcode(item, kind))
         elif kind == "callmem":
             base, disp = item[1], item[2]
             self._mem(self._opcode(item), (self.slot_of[0], self.slot_of[base], disp))

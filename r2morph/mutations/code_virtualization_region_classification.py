@@ -469,6 +469,10 @@ def _classify_jump(kind: str, text: str, insn: dict[str, Any], allow_computed_ju
                     if base_slot < 0
                     else ["ijmpmem", base_slot, index_slot, scale_shift, displacement]
                 )
+            else:
+                rip_relative = _parse_riprel_operand(operand, insn.get("addr", 0), insn.get("size", 0))
+                if rip_relative is not None:
+                    result = ["ijmpmemrip", rip_relative[0]]
     elif kind == "cjmp":
         mnemonic = text.split(None, 1)[0].lower()
         condition = _CONDITION.get(mnemonic)

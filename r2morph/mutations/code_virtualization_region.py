@@ -691,7 +691,7 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
         _record_call_site_item(call_site_item_of, instruction["addr"], item[0], len(items))
         items.append(item)
         next_address = instruction["addr"] + instruction.get("size", 0)
-        if item[0] not in ("jmp", "ijmp") and next_address in exit_set:
+        if item[0] not in ("jmp", "ijmp", "ijmpmemrip") and next_address in exit_set:
             items.append(["jmp", next_address])
     for address in exit_addrs:
         if address in ret_cleanup:
@@ -793,7 +793,7 @@ def extract_region(
     # lowering and junk passes so the indices stay correct as items shift. Only built
     # when the region actually contains a computed jump; otherwise the map is empty
     # and the region's blob is byte-identical to the straight-line contract's.
-    has_computed_jump = any(item[0] in ("ijmp", "ijmpmem", "ijmpmemnb") for item in items)
+    has_computed_jump = any(item[0] in ("ijmp", "ijmpmem", "ijmpmemnb", "ijmpmemrip") for item in items)
     target_map: dict[int, int] | None = (
         dict(build.item_index_of) if has_computed_jump or has_internal_indirect_call else None
     )

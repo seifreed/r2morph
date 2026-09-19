@@ -434,6 +434,19 @@ def _ijmpmemnb_handler_asm(index: int, key: str, key_dword: str, field_perm: int
     return address + "  mov r10, qword ptr [r10]\n" + _ijmp_scan_asm(index)
 
 
+def _ijmpmemrip_handler_asm(index: int, key_dword: str) -> str:
+    """RIP-relative memory-indirect jump through a relocated table entry."""
+    return (
+        "  mov eax, dword ptr [rsi+1]\n"
+        f"  mov r11d, {key_dword}\n"
+        "  xor eax, r11d\n"
+        f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n"
+        "  xor eax, r11d\n"
+        "  movsxd r10, eax\n  add r10, r15\n"
+        "  mov r10, qword ptr [r10]\n" + _ijmp_scan_asm(index)
+    )
+
+
 def _vcall_handler_asm(retarget_target: str, rsp_off: int) -> str:
     """In-function direct ``call``: push a resume vIP onto the program's relocated
     stack and re-enter the VM at the callee's virtualized entry, so the call and its

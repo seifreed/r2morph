@@ -98,6 +98,7 @@ _FIXED_SIZE_GROUPS = {
         "jrcxz",
         "jmp",
         "jcc",
+        "ijmpmemrip",
         "vcall",
         "call",
         "fppackedvex256var",

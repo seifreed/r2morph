@@ -39,6 +39,18 @@ def _ijmp_region() -> Region:
     )
 
 
+def _ijmpmemrip_region() -> Region:
+    """A minimal RIP-relative jump-table region with a mapped target."""
+    return Region(
+        instructions=[("ijmpmemrip", 0x3000), ("exit", 0x2000)],
+        exit_vaddr=0x2000,
+        entry_vaddr=0x1000,
+        op_keys={"ijmpmemrip", "exit_8192"},
+        body_ranges=[(0x1010, 5)],
+        target_map={0x3010: 1},
+    )
+
+
 def test_build_ijmp_targets_pairs_native_address_with_encoder_offset() -> None:
     """A target address maps to the bytecode offset of its item (ijmp size 2)."""
     # Item 0 (ijmp) occupies offset 0..1, so item 1 (the target) starts at offset 2.
@@ -65,6 +77,14 @@ def test_ijmp_interpreter_emits_target_map_section() -> None:
     scheme = build_region_scheme(region, randomness.Random(1234))
     asm = _interpreter_asm(region, scheme)
     expect("ijmp_map:" in asm and f"  .quad ijmp_map - {0x1017}\n" in asm)
+
+
+def test_ijmpmemrip_interpreter_assembles_with_handler_and_map() -> None:
+    """The RIP-relative table handler assembles and reuses the computed-target map."""
+    region = _ijmpmemrip_region()
+    scheme = build_region_scheme(region, randomness.Random(1234))
+    asm = _interpreter_asm(region, scheme)
+    expect("movsxd r10, eax" in asm and build_region_blob(region, _CAVE_VADDR, scheme) is not None)
 
 
 def test_ordinary_region_emits_no_target_map_section() -> None:

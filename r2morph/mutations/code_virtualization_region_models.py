@@ -318,6 +318,7 @@ _IDENTITY_KEYS = {
     "ijmp",
     "ijmpmem",
     "ijmpmemnb",
+    "ijmpmemrip",
     "fsave",
     "frestore",
     "vzeroupper",

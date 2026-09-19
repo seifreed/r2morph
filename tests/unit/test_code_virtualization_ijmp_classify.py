@@ -22,6 +22,7 @@ from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
 _EXPECTED_ITEM_SIZE_IJMP_3_2 = 2
+_EXPECTED_ITEM_SIZE_IJMPMEMRIP = 5
 _EXPECTED_ITEM_SIZE_CALLMEMIDXNB = 8
 
 
@@ -47,6 +48,12 @@ def test_classify_based_memory_indirect_jump_lowered_to_ijmpmem() -> None:
     """A based memory-indexed computed jump lowers to an ijmpmem (base + index)."""
     insn = {"type": "ujmp", "opcode": "jmp qword [rbx + rax*8]"}
     expect(_classify(insn, allow_computed_jump=True) == ["ijmpmem", 3, 0, 3, 0])
+
+
+def test_classify_rip_relative_memory_indirect_jump_lowered_to_ijmpmemrip() -> None:
+    """A RIP-relative jump-table load keeps its absolute table-entry address."""
+    insn = {"type": "ujmp", "addr": 0x1000, "size": 6, "opcode": "jmp qword [rip + 0x1ffa]"}
+    expect(_classify(insn, allow_computed_jump=True) == ["ijmpmemrip", 0x3000])
 
 
 def test_classify_no_base_memory_indirect_call_lowered_to_callmemidxnb() -> None:
@@ -79,3 +86,8 @@ def test_ijmp_op_key_is_its_own_handler_family() -> None:
 def test_ijmp_item_size_matches_indirect_call() -> None:
     """An ijmp encodes as an opcode byte plus a single register-slot byte."""
     expect(_item_size(("ijmp", 3)) == _EXPECTED_ITEM_SIZE_IJMP_3_2)
+
+
+def test_ijmpmemrip_item_has_opcode_and_relative_displacement() -> None:
+    """A RIP-relative computed jump encodes as one opcode plus four displacement bytes."""
+    expect(_item_size(("ijmpmemrip", 0x3000)) == _EXPECTED_ITEM_SIZE_IJMPMEMRIP)

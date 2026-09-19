@@ -16,6 +16,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _ijmp_handler_asm,
     _ijmpmem_handler_asm,
     _ijmpmemnb_handler_asm,
+    _ijmpmemrip_handler_asm,
     _jcc_handler_asm,
     _jrcxz_handler_asm,
     _movx_reg_handler_asm,
@@ -297,6 +298,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                 self.context.field_perm,
                 address,
             )
+        elif key == "ijmpmemrip":
+            body = _ijmpmemrip_handler_asm(index, self.context.key_dword)
         elif key.startswith("jcc_"):
             body = _jcc_handler_asm(key.split("_", 1)[1], self.context.retarget_target)
         elif key.startswith("jrcxz_"):
