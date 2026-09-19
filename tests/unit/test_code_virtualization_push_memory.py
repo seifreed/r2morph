@@ -5,7 +5,7 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region import _stack_transition
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_decoders import _decode_enter
+from r2morph.mutations.code_virtualization_region_decoders import _decode_enter, _decode_push
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from r2morph.mutations.code_virtualization_region_push import _decode_pop_memory, _decode_push_memory
 from tests.utils.assertions import expect
@@ -31,6 +31,10 @@ def test_decode_push_memory_rip_relative_form_returns_absolute_target() -> None:
 
 def test_decode_push_memory_rejects_non_qword_form() -> None:
     expect(_decode_push_memory("push dword ptr [rax]") is None)
+
+
+def test_decode_push_rsp_uses_virtual_stack_pointer_slot() -> None:
+    expect(_decode_push("push rsp") == ("push", 4, 64))
 
 
 def test_decode_push_and_pop_memory_support_word_width() -> None:

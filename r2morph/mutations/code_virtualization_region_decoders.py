@@ -293,14 +293,18 @@ def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
 def _decode_push(disasm: str) -> tuple[Any, ...] | None:
     """Decode ``push reg`` (64-bit GP) or ``push imm`` into a VM item.
 
-    rsp is rejected as an operand (``_register_operand`` returns ``None`` for
-    it), so the pushed register is never the stack pointer. A memory-operand
-    push is left native. The immediate form sign-extends an imm32.
+    ``rsp`` is handled explicitly because the region VM stores the relocated
+    program stack pointer in a frame slot and its push handler reads that slot
+    before changing it. Other stack-pointer operands remain rejected by the
+    generic register decoder. A memory-operand push is left native. The
+    immediate form sign-extends an imm32.
     """
     parts = disasm.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "push":
         return None
     operand = parts[1].strip().lower()
+    if operand == "rsp":
+        return ("push", REGISTER_INDEX["rsp"], 64)
     reg = _register_operand(operand)
     if reg is not None:
         return ("push", reg[0], 64) if reg[1] == _QWORD_WIDTH_BITS else None
