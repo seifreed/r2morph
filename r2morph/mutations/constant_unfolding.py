@@ -84,13 +84,14 @@ class ConstantUnfoldingPass(MutationPass):
         self.size_limit = self.config.get("size_limit", 3.0)
         self.set_support(
             formats=("ELF",),
-            architectures=("x86_64", "x86", "arm64"),
+            architectures=("x86_64", "x86", "arm", "arm64"),
             validators=("structural", "runtime"),
             stability="experimental",
             notes=(
                 "unfolds constants into sequences",
                 "may increase code size",
                 "preserves register semantics",
+                "ARM32 and ARM64 currently cover zeroing only",
             ),
         )
 
@@ -256,8 +257,8 @@ class ConstantUnfoldingPass(MutationPass):
         arch = arch_info.get("arch", "unknown")
         bits = arch_info.get("bits", 64)
 
-        if arch not in ["x86", "x86_64", "arm64"]:
-            logger.warning(f"Constant unfolding supports x86 and ARM64 architectures, got: {arch}")
+        if arch not in ["x86", "x86_64", "arm", "arm64"]:
+            logger.warning(f"Constant unfolding supports x86, ARM32, and ARM64 architectures, got: {arch}")
             return {"mutations_applied": 0, "skipped": True, "reason": "unsupported architecture"}
 
         functions = binary.get_functions()

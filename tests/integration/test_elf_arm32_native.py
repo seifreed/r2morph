@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -185,4 +186,53 @@ def test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code(tmp_path: 
         f"original={original.returncode, original.stdout, original.stderr!r}; "
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
         f"results={results!r}",
+    )
+
+
+def test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
+    if shutil.which("qemu-arm") is None:
+        raise RuntimeError("qemu-arm is required for the ELF ARM32 differential fixture")
+
+    compiler = shutil.which("arm-linux-gnueabihf-gcc")
+    if compiler is None:
+        raise RuntimeError("arm-linux-gnueabihf-gcc is required for the ELF ARM32 differential fixture")
+    source = tmp_path / "arm32_constant.S"
+    source.write_text(
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov r7, #1\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov r2, #0\n"
+        "    add r2, r2, #42\n"
+        "    mov r0, r2\n"
+        "    bx lr\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "arm32_constant"
+    run_command(
+        [compiler, "-marm", "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
+    original = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260919}).apply(binary)
+
+    mutated = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        f"ARM32 constant unfolding changed emulated execution: {result=}",
     )

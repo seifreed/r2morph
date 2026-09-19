@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -184,4 +185,64 @@ def test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code(tmp_path: P
         f"original={original.returncode, original.stdout, original.stderr!r}; "
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
         f"results={results!r}",
+    )
+
+
+def test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
+
+    compiler = shutil.which("clang")
+    if compiler is None:
+        raise RuntimeError("clang is required for the ELF x86 32-bit differential fixture")
+    source = tmp_path / "x86_32_constant.S"
+    binary_path = tmp_path / "x86_32_constant"
+    source.write_text(
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    call compute\n"
+        "    movl %eax, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".type compute,@function\n"
+        "compute:\n"
+        "    movl $0, %ecx\n"
+        "    addl $42, %ecx\n"
+        "    movl %ecx, %eax\n"
+        "    ret\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    run_command(
+        [
+            compiler,
+            "-target",
+            "i386-linux-gnu",
+            "-nostdlib",
+            "-static",
+            "-Wl,-e,_start",
+            "-x",
+            "assembler",
+            "-o",
+            binary_path,
+            source,
+        ],
+        check=True,
+        text=True,
+    )
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260919}).apply(binary)
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        f"x86 32-bit constant unfolding changed native execution: {result=}",
     )

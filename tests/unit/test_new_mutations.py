@@ -363,6 +363,7 @@ class TestConstantUnfoldingPass:
         support = p.get_support()
 
         expect(not ("x86_64" not in support.architectures))
+        expect(not ("arm" not in support.architectures))
         expect(not ("ELF" not in support.formats))
         expect(support.stability == "experimental")
 
@@ -383,6 +384,14 @@ class TestConstantUnfoldingPass:
         instructions = p._unfold_zero("w1", 64, _Binary(b"\x00\x00\x00\x00"), 0x1000)
 
         expect(instructions == ["eor w1, w1, w1"])
+
+    def test_unfold_zero_uses_arm32_logical_zeroing_instruction(self):
+        """Test that ARM32 zeroing preserves the fixed four-byte instruction width."""
+        p = ConstantUnfoldingPass()
+
+        instructions = p._unfold_zero("r2", 32, _Binary(b"\x00\x00\x00\x00"), 0x1000)
+
+        expect(instructions == ["eor r2, r2, r2"])
 
     def test_unfold_one(self):
         """Test one constant unfolding."""

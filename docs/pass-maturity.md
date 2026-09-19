@@ -39,7 +39,7 @@ contract until they have equivalent real-fixture coverage.
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |
-| Constant unfolding | Experimental | ELF x86-64 | Selected by the compatibility corpus; x86-only transformation rules and analyzer-effectiveness evidence remain incomplete | `tests/integration/test_protection_maturity_baseline.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S`, `docs/compatibility-corpus.md` |
+| Constant unfolding | Experimental | ELF x86-64 | Selected by the compatibility corpus; x86 add/sub rules and analyzer-effectiveness evidence remain incomplete; ARM32/ARM64 evidence covers zeroing only | `tests/integration/test_protection_maturity_baseline.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_elf_x86_32_native.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S`, `docs/compatibility-corpus.md` |
 | Code mobility | Experimental | ELF x86-64 | Code-cave geometry is input-dependent | `README.md` |
 | Function outlining | Experimental | ELF x86-64 | ABI and exception edges need more evidence | `README.md` |
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
@@ -149,11 +149,11 @@ summaries also count declared formats and architectures, making the current ELF
 x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 They also count declared unit and end-to-end evidence paths so test coverage
 gaps are visible at release-gate level. The continuous differential workflow
-also runs four ELF ARM32 cases under `qemu-arm`, five ELF AArch64 cases on
-native ARM64, and four native ELF x86 32-bit cases. Each target covers NOP
-insertion, instruction substitution, register substitution, and a composed pass
-sequence; they are preview evidence only and do not close the per-pass ARM,
-AArch64, or x86 parity gaps.
+also runs five ELF ARM32 cases under `qemu-arm`, five ELF AArch64 cases on
+native ARM64, and five native ELF x86 32-bit cases. Each target covers NOP
+insertion, instruction substitution, register substitution, constant zero
+unfolding, and a composed pass sequence; they are preview evidence only and do
+not close the per-pass ARM, AArch64, or x86 parity gaps.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive

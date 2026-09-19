@@ -16,6 +16,7 @@ from r2morph.mutations.instruction_substitution_helpers import (
 logger = logging.getLogger(__name__)
 
 _BITS_64 = 64
+_BITS_32 = 32
 _ALTERNATE_ONE_PROBABILITY = 0.5
 _MAX_UNIT_OPERATION_COUNT = 3
 _MIN_INSTRUCTION_TOKEN_COUNT = 2
@@ -59,6 +60,8 @@ def get_reg_mapping(bits: int) -> dict[str, list[str]]:
 def unfold_zero(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
     """Unfold setting register to zero."""
     if reg.startswith(("w", "x")) and reg[1:].isdigit():
+        return [f"eor {reg}, {reg}, {reg}"]
+    if bits == _BITS_32 and reg.startswith("r") and reg[1:].isdigit():
         return [f"eor {reg}, {reg}, {reg}"]
     patterns = [
         f"xor {reg}, {reg}",
