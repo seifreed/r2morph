@@ -1729,6 +1729,13 @@ def test_ci_runs_generated_support_matrix_freshness_check() -> None:
     expect("python scripts/support_matrix.py --check docs/support-matrix.json" in workflow)
 
 
+def test_ci_core_tests_install_arm_emulator() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    core_tests = workflow.split("  stable-tests:", 1)[1].split("  unit-tests:", 1)[0]
+
+    expect("qemu-user" in core_tests)
+
+
 def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     cross_platform_job = workflow.split("  cross-platform-tests:", 1)[1].split("  package-smoke:", 1)[0]
