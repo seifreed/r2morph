@@ -98,7 +98,14 @@ def _availability(tool: str) -> tuple[bool, str]:
         command = _configured_executable(tool)
         return (True, command) if command else (False, f"executable {_COMMANDS[tool]!r} is unavailable")
     module = _PYTHON_MODULES[tool]
-    return (True, module) if importlib.util.find_spec(module) else (False, f"module {module!r} is unavailable")
+    if importlib.util.find_spec(module) is None:
+        return False, f"module {module!r} is unavailable"
+    try:
+        import_module(module)
+    # Optional analyzer imports can fail for ABI, license, or dependency reasons.
+    except Exception as error:
+        return False, f"module {module!r} cannot be imported: {type(error).__name__}: {error}"
+    return True, module
 
 
 def _radare2_metric(path: Path) -> dict[str, object]:

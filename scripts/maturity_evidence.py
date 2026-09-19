@@ -50,6 +50,7 @@ _PERFORMANCE_FIELDS = (
     "static_metric_coverage_percent",
 )
 _FULL_COVERAGE_PERCENT = 100.0
+_MIN_COMPARABLE_DECOMPILER_TOOLS = 2
 
 
 def _required_composition_pairs(mutation_name: str) -> set[str]:
@@ -269,10 +270,16 @@ def _decompiler_evidence(
         if value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
-    status = "comparable" if not incomplete else "partial" if completed else "pending"
+    status = (
+        "comparable"
+        if len(completed) >= _MIN_COMPARABLE_DECOMPILER_TOOLS and not incomplete
+        else "partial" if completed else "pending"
+    )
     return {
         "status": status if completed else "pending",
         "completed_tools": completed,
+        "completed_tool_count": len(completed),
+        "minimum_comparable_tool_count": _MIN_COMPARABLE_DECOMPILER_TOOLS,
         "incomplete_tools": incomplete,
         "observed_tools": sorted(observed_tools),
         "non_decompiler_tools": sorted(name for name in tools if name not in observed_tools),
