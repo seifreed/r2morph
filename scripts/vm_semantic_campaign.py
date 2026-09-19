@@ -11,6 +11,8 @@ import shutil
 import stat
 import tempfile
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +26,9 @@ else:
     from protection_maturity_baseline import build_generated_corpus
 
 _MAX_FIXTURES = 512
+_MAX_WORKERS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
+_DEFAULT_WORKERS = min(_MAX_WORKERS, os.cpu_count() or 1)
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
@@ -208,6 +212,23 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
     }
 
 
+def _run_selected_fixture(
+    source: Path,
+    temp_dir: Path,
+    seed: int,
+    timeout: float,
+) -> tuple[Path, dict[str, Any]]:
+    """Run one fixture with paths isolated from other workers."""
+    result = _run_fixture(
+        source,
+        temp_dir / source.name,
+        seed,
+        timeout,
+        temp_dir / "execution" / source.name,
+    )
+    return source, result
+
+
 def run_campaign(
     dataset: Path,
     coverage: Mapping[str, set[str]],
@@ -234,32 +255,33 @@ def run_campaign(
     fixture_results: list[dict[str, Any]] = []
     passed = 0
     with tempfile.TemporaryDirectory(prefix="r2morph-vm-semantic-") as temp_dir:
-        for source in fixtures:
-            if not source.is_file():
-                failures.append({"fixture": source.name, "status": "missing"})
-                continue
-            categories = _fixture_categories(coverage, source.name)
-            result = _run_fixture(
-                source,
-                Path(temp_dir) / source.name,
-                seed,
-                timeout,
-                Path(temp_dir) / "execution" / source.name,
-            )
-            fixture_result = {"fixture": source.name, "categories": categories, **result}
-            fixture_results.append(fixture_result)
-            if result["status"] == "passed":
-                passed += 1
-            else:
-                failures.append(fixture_result)
-            for category in categories:
-                stats = category_summary.setdefault(
-                    category,
-                    {"fixture_count": 0, "passed_count": 0, "failed_count": 0},
-                )
-                stats["fixture_count"] += 1
-                stats["passed_count"] += result["status"] == "passed"
-                stats["failed_count"] += result["status"] != "passed"
+        run_fixture = partial(
+            _run_selected_fixture,
+            temp_dir=Path(temp_dir),
+            seed=seed,
+            timeout=timeout,
+        )
+        with ThreadPoolExecutor(max_workers=_DEFAULT_WORKERS) as executor:
+            results = executor.map(run_fixture, fixtures)
+            for source, result in results:
+                if not source.is_file():
+                    failures.append({"fixture": source.name, "status": "missing"})
+                    continue
+                categories = _fixture_categories(coverage, source.name)
+                fixture_result = {"fixture": source.name, "categories": categories, **result}
+                fixture_results.append(fixture_result)
+                if result["status"] == "passed":
+                    passed += 1
+                else:
+                    failures.append(fixture_result)
+                for category in categories:
+                    stats = category_summary.setdefault(
+                        category,
+                        {"fixture_count": 0, "passed_count": 0, "failed_count": 0},
+                    )
+                    stats["fixture_count"] += 1
+                    stats["passed_count"] += result["status"] == "passed"
+                    stats["failed_count"] += result["status"] != "passed"
     return {
         "schema_version": 1,
         "measurement": "vm-semantic-native-parity-campaign",
@@ -350,7 +372,14 @@ def main() -> None:
         if args.generated_corpus:
             fixtures += tuple(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
         reports = tuple(
-            run_campaign(args.dataset, coverage, seed, args.timeout, fixture_selection=fixtures) for seed in seeds
+            run_campaign(
+                args.dataset,
+                coverage,
+                seed,
+                args.timeout,
+                fixture_selection=fixtures,
+            )
+            for seed in seeds
         )
     report = reports[0] if len(reports) == 1 else merge_campaign_reports(reports)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -22,6 +22,7 @@ from tests.utils.assertions import expect
 
 _MERGED_SEED_COUNT = 2
 _MERGED_FIXTURE_COUNT = 2
+_PARALLEL_FIXTURE_COUNT = 2
 _UNWIND_SSA_FIXTURE_COUNT = 2
 _MAX_ERROR_MESSAGE_LENGTH = 240
 
@@ -148,6 +149,19 @@ def test_vm_semantic_campaign_measures_unwind_and_ssa_fixture_contracts() -> Non
         and report["capability_summary"]["unwinding-exceptions"]["status"] == "campaign-measured"
         and report["capability_summary"]["ssa-liveness"]["status"] == "campaign-measured"
     )
+
+
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
+def test_vm_semantic_campaign_parallel_workers_preserve_native_parity() -> None:
+    coverage = _load_coverage(Path("docs/virtualization-coverage.json"))
+    report = run_campaign(
+        Path("fixtures/dataset"),
+        coverage,
+        seed=20260916,
+        fixture_selection=("elf_vm_memwidth_x86_64", "elf_vm_shift_x86_64"),
+    )
+
+    expect(report["status"] == "passed" and report["passed_count"] == _PARALLEL_FIXTURE_COUNT)
 
 
 @pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
