@@ -11,7 +11,7 @@ import r2morph.core.randomness as random
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT, MINIMUM_FUNCTION_SIZE
 from r2morph.core.support import _normalize_architecture_name
 
 logger = logging.getLogger(__name__)
@@ -448,7 +448,7 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
 
 
-def _ordered_functions(binary: Any, analysis_budget: int) -> list[dict[str, Any]] | None:
+def _ordered_functions(binary: Any, analysis_budget: int = MAX_FUNCTION_ANALYSIS_COUNT) -> list[dict[str, Any]] | None:
     """Visit functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
     if len(functions) > analysis_budget:
