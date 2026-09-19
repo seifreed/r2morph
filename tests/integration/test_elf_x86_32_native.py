@@ -16,12 +16,12 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 
-def _build_x86_32_elf(tmp_path: Path) -> Path:
+def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     compiler = shutil.which("clang")
     if compiler is None:
         raise RuntimeError("clang is required for the ELF x86 32-bit differential fixture")
     source = tmp_path / "x86_32_exit.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".globl _start\n"
         ".type _start,@function\n"
@@ -37,9 +37,34 @@ def _build_x86_32_elf(tmp_path: Path) -> Path:
         "    addl $2, %ecx\n"
         "    movl %ecx, %eax\n"
         "    ret\n"
-        ".size _start, .-_start\n",
-        encoding="ascii",
+        ".size _start, .-_start\n"
     )
+    complex_source = (
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    call compute\n"
+        "    movl %eax, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".type compute,@function\n"
+        "compute:\n"
+        "    movl $40, %ecx\n"
+        "    movl %ecx, %edx\n"
+        "    movl %esi, %esi\n"
+        "    cmpl $0, %edx\n"
+        "    je zero\n"
+        "    addl $2, %ecx\n"
+        "    jmp done\n"
+        "zero:\n"
+        "    addl $2, %ecx\n"
+        "done:\n"
+        "    movl %ecx, %eax\n"
+        "    ret\n"
+        ".size _start, .-_start\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "x86_32_exit"
     run_command(
         [
@@ -126,4 +151,33 @@ def test_elf_x86_32_register_substitution_preserves_native_exit_code(tmp_path: P
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "ELF x86 32-bit register substitution changed native execution",
+    )
+
+
+def test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
+
+    binary_path = _build_x86_32_elf(tmp_path, complex_fixture=True)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        results = (
+            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260919}).apply(binary),
+            InstructionSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+            RegisterSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+        )
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        all(result["mutations_applied"] > 0 for result in results)
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "complex ELF x86 32-bit mutation sequence changed native execution",
     )

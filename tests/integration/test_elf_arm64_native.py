@@ -12,7 +12,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 
-def _build_arm64_elf(tmp_path: Path) -> Path:
+def _build_arm64_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
         compiler = shutil.which("aarch64-linux-gnu-gcc")
     else:
@@ -20,7 +20,7 @@ def _build_arm64_elf(tmp_path: Path) -> Path:
     if compiler is None:
         raise RuntimeError("an AArch64 assembler compiler is required for the ELF AArch64 differential fixture")
     source = tmp_path / "arm64_exit.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".global _start\n"
         ".type _start,%function\n"
@@ -35,9 +35,33 @@ def _build_arm64_elf(tmp_path: Path) -> Path:
         "    add w1, w1, #5\n"
         "    mov w0, w1\n"
         "    ret\n"
-        ".size _start, .-_start\n",
-        encoding="ascii",
+        ".size _start, .-_start\n"
     )
+    complex_source = (
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov w8, #93\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov w1, #37\n"
+        "    mov w2, w1\n"
+        "    mov w3, w3\n"
+        "    cmp w2, #0\n"
+        "    b.eq zero\n"
+        "    add w1, w1, #5\n"
+        "    b done\n"
+        "zero:\n"
+        "    add w1, w1, #5\n"
+        "done:\n"
+        "    mov w0, w1\n"
+        "    ret\n"
+        ".size _start, .-_start\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "arm64_elf"
     command = [
         compiler,
@@ -142,4 +166,32 @@ def test_elf_arm64_register_substitution_preserves_native_exit_code(tmp_path: Pa
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
         f"result={result!r}; "
         f"mutations={[record.mutated_disasm for record in pass_instance.get_records()]!r}",
+    )
+
+
+def test_elf_arm64_complex_pass_sequence_preserves_native_exit_code(tmp_path: Path) -> None:
+    _require_arm64_execution()
+
+    binary_path = _build_arm64_elf(tmp_path, complex_fixture=True)
+    original = _run_arm64(binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        results = (
+            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260919}).apply(binary),
+            InstructionSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+            RegisterSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+        )
+
+    mutated = _run_arm64(binary_path)
+    expect(
+        all(result["mutations_applied"] > 0 for result in results)
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "complex ELF ARM64 mutation sequence changed native execution",
     )

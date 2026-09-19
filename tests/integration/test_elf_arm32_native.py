@@ -16,12 +16,12 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 
-def _build_arm32_elf(tmp_path: Path) -> Path:
+def _build_arm32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     compiler = shutil.which("arm-linux-gnueabihf-gcc")
     if compiler is None:
         raise RuntimeError("arm-linux-gnueabihf-gcc is required for the ELF ARM32 differential fixture")
     source = tmp_path / "arm32_exit.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".global _start\n"
         ".type _start,%function\n"
@@ -35,9 +35,32 @@ def _build_arm32_elf(tmp_path: Path) -> Path:
         "    add r2, r2, #2\n"
         "    mov r0, r2\n"
         "    bx lr\n"
-        ".size _start, .-_start\n",
-        encoding="ascii",
+        ".size _start, .-_start\n"
     )
+    complex_source = (
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov r7, #1\n"
+        "    svc #0\n"
+        "compute:\n"
+        "    mov r2, #40\n"
+        "    mov r3, r2\n"
+        "    mov r4, r4\n"
+        "    cmp r3, #0\n"
+        "    beq zero\n"
+        "    add r2, r2, #2\n"
+        "    b done\n"
+        "zero:\n"
+        "    add r2, r2, #2\n"
+        "done:\n"
+        "    mov r0, r2\n"
+        "    bx lr\n"
+        ".size _start, .-_start\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "arm32_exit"
     run_command(
         [
@@ -128,4 +151,35 @@ def test_elf_arm32_register_substitution_preserves_emulated_exit_code(tmp_path: 
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "ELF ARM32 register substitution changed emulated execution",
+    )
+
+
+def test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
+    if shutil.which("qemu-arm") is None:
+        raise RuntimeError("qemu-arm is required for the ELF ARM32 differential fixture")
+
+    binary_path = _build_arm32_elf(tmp_path, complex_fixture=True)
+    original = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        results = (
+            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260919}).apply(binary),
+            InstructionSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+            RegisterSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
+            ).apply(binary),
+        )
+
+    mutated = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    expect(
+        all(result["mutations_applied"] > 0 for result in results)
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "complex ELF ARM32 mutation sequence changed emulated execution",
     )
