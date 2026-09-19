@@ -101,7 +101,11 @@ jobs:
               raise SystemExit(f"unexpected platform gap scope: {summary['platform_gap_scope']}")
           if summary["input_sources"] != ["default-argv", "generated-argv"]:
               raise SystemExit(f"unexpected input sources: {summary['input_sources']}")
-          if summary["corpus_families"] != ["repository-fixtures", "generated-elf-x86-64"]:
+          if summary["corpus_families"] != [
+              "repository-fixtures",
+              "generated-elf-x86-64",
+              "generated-cpp-x86-64",
+          ]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
           if not 0 < summary["generated_fixture_count"] <= 136:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")

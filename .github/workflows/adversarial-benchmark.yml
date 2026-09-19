@@ -391,7 +391,7 @@ jobs:
           )
           corpus_scope = report.get("corpus_scope")
           if corpus_scope != {
-              "families": ["repository-fixtures", "generated-elf-x86-64"],
+              "families": ["repository-fixtures", "generated-elf-x86-64", "generated-cpp-x86-64"],
               "generated_fixture_count": 136,
           }:
               raise SystemExit(f"unexpected adversarial corpus scope: {corpus_scope}")

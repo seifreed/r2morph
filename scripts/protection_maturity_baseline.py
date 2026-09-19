@@ -85,6 +85,7 @@ _GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
 _DEFAULT_INPUT_SOURCE = "default-argv"
 _GENERATED_INPUT_SOURCE = "generated-argv"
 _GENERATED_CORPUS_FAMILY = "generated-elf-x86-64"
+_GENERATED_CPP_CORPUS_FAMILY = "generated-cpp-x86-64"
 _GENERATED_CORPUS_PROFILES = (
     ("gcc-o0", "gcc", "-O0", "-fno-pie", "-no-pie"),
     ("gcc-o1", "gcc", "-O1", "-fno-pie", "-no-pie"),
@@ -1677,10 +1678,11 @@ def _differential_corpus_gap_scope(
     input_sources: list[str],
     corpus_families: list[str],
 ) -> dict[str, list[str]]:
+    generated_families = {_GENERATED_CORPUS_FAMILY, _GENERATED_CPP_CORPUS_FAMILY}
     return {
         "corpus_families": (
             []
-            if _GENERATED_CORPUS_FAMILY in corpus_families
+            if generated_families.issubset(corpus_families)
             else list(_DIFFERENTIAL_CORPUS_GAP_SCOPE["corpus_families"])
         ),
         "input_sources": [] if _GENERATED_INPUT_SOURCE in input_sources else ["generated-inputs"],
@@ -2059,6 +2061,8 @@ def _select_fixtures(
         generated_fixture_names = sorted(path.name for path in generated_fixtures)
         selected.extend(generated_fixtures)
         corpus_families.append(_GENERATED_CORPUS_FAMILY)
+        if any(name.startswith("generated_cpp_") for name in generated_fixture_names):
+            corpus_families.append(_GENERATED_CPP_CORPUS_FAMILY)
     return selected, corpus_families, generated_fixture_count, generated_fixture_names
 
 

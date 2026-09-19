@@ -1018,7 +1018,9 @@ def benchmark_corpus(
         "corpus": dataset.name,
         "corpus_scope": {
             "families": (
-                ["repository-fixtures", "generated-elf-x86-64"] if generated_corpus else ["repository-fixtures"]
+                ["repository-fixtures", "generated-elf-x86-64", "generated-cpp-x86-64"]
+                if generated_corpus
+                else ["repository-fixtures"]
             ),
             "generated_fixture_count": generated_fixture_count,
         },
