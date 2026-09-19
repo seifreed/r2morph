@@ -69,7 +69,7 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         Path("fixtures/dataset"),
         _load_coverage(Path("docs/virtualization-coverage.json")),
         seed=20260916,
-        fixture_selection=("elf_vm_memwidth_x86_64",),
+        fixture_selection=(Path("fixtures/dataset/elf_vm_memwidth_x86_64"),),
     )
 
     fixture_categories = {
