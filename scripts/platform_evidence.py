@@ -37,6 +37,7 @@ _REQUIRED_CASES = {
         "test_elf_arm64_instruction_substitution_preserves_native_exit_code",
         "test_elf_arm64_register_substitution_preserves_native_exit_code",
         "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code",
+        "test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code",
     ),
     "elf-x86-32": (
         "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",

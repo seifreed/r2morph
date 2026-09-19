@@ -149,7 +149,7 @@ summaries also count declared formats and architectures, making the current ELF
 x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 They also count declared unit and end-to-end evidence paths so test coverage
 gaps are visible at release-gate level. The continuous differential workflow
-also runs four ELF ARM32 cases under `qemu-arm`, four ELF AArch64 cases on
+also runs four ELF ARM32 cases under `qemu-arm`, five ELF AArch64 cases on
 native ARM64, and four native ELF x86 32-bit cases. Each target covers NOP
 insertion, instruction substitution, register substitution, and a composed pass
 sequence; they are preview evidence only and do not close the per-pass ARM,

@@ -376,6 +376,14 @@ class TestConstantUnfoldingPass:
         expect(len(instructions) == 1)
         expect("xor" in instructions[0] or "sub" in instructions[0] or "and" in instructions[0])
 
+    def test_unfold_zero_uses_arm64_logical_zeroing_instruction(self):
+        """Test that ARM64 zeroing preserves the fixed four-byte instruction width."""
+        p = ConstantUnfoldingPass()
+
+        instructions = p._unfold_zero("w1", 64, _Binary(b"\x00\x00\x00\x00"), 0x1000)
+
+        expect(instructions == ["eor w1, w1, w1"])
+
     def test_unfold_one(self):
         """Test one constant unfolding."""
         p = ConstantUnfoldingPass()

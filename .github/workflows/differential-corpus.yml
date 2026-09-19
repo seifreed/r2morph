@@ -1592,7 +1592,7 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 4:
+          if len(cases) != 5:
               raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
@@ -1622,6 +1622,13 @@ jobs:
               for case in cases
           ):
               raise SystemExit("native ELF ARM64 composition test name is missing")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 constant-unfolding test name is missing")
           PY
 
       - name: Upload native ELF ARM64 evidence

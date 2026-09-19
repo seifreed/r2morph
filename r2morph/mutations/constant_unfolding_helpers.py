@@ -58,6 +58,8 @@ def get_reg_mapping(bits: int) -> dict[str, list[str]]:
 
 def unfold_zero(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
     """Unfold setting register to zero."""
+    if reg.startswith(("w", "x")) and reg[1:].isdigit():
+        return [f"eor {reg}, {reg}, {reg}"]
     patterns = [
         f"xor {reg}, {reg}",
         f"sub {reg}, {reg}",

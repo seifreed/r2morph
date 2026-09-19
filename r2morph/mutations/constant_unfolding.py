@@ -256,8 +256,8 @@ class ConstantUnfoldingPass(MutationPass):
         arch = arch_info.get("arch", "unknown")
         bits = arch_info.get("bits", 64)
 
-        if arch not in ["x86", "x86_64"]:
-            logger.warning(f"Constant unfolding only supports x86 architectures, got: {arch}")
+        if arch not in ["x86", "x86_64", "arm64"]:
+            logger.warning(f"Constant unfolding supports x86 and ARM64 architectures, got: {arch}")
             return {"mutations_applied": 0, "skipped": True, "reason": "unsupported architecture"}
 
         functions = binary.get_functions()

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -197,4 +198,50 @@ def test_elf_arm64_complex_pass_sequence_preserves_native_exit_code(tmp_path: Pa
         f"original={original.returncode, original.stdout, original.stderr!r}; "
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; "
         f"results={results!r}",
+    )
+
+
+def test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code(tmp_path: Path) -> None:
+    _require_arm64_execution()
+
+    source = tmp_path / "arm64_constant.S"
+    source.write_text(
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov w8, #93\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov w1, #0\n"
+        "    add w1, w1, #42\n"
+        "    mov w0, w1\n"
+        "    ret\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    compiler = shutil.which("aarch64-linux-gnu-gcc") if platform.system() == "Linux" else shutil.which("cc")
+    if compiler is None:
+        raise RuntimeError("an AArch64 assembler compiler is required for the constant fixture")
+    binary_path = tmp_path / "arm64_constant"
+    run_command(
+        [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
+    original = _run_arm64(binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260919}).apply(binary)
+
+    mutated = _run_arm64(binary_path)
+    expect(
+        result["mutations_applied"] > 0
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        f"ARM64 constant unfolding changed native execution: {result=}",
     )
