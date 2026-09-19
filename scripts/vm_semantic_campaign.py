@@ -221,6 +221,35 @@ def _qemu_observables_equal(expected: Mapping[str, Any], actual: Mapping[str, An
     return expected.get("exit_code") == actual.get("exit_code")
 
 
+def _qemu_summary(fixture_results: list[dict[str, Any]]) -> dict[str, int | str]:
+    completed = unavailable = divergent = missing = 0
+    for row in fixture_results:
+        evidence = row.get("qemu")
+        if not isinstance(evidence, Mapping):
+            missing += 1
+            continue
+        expected = evidence.get("original")
+        actual = evidence.get("mutated")
+        if not isinstance(expected, Mapping) or not isinstance(actual, Mapping):
+            missing += 1
+            continue
+        if expected.get("status") == actual.get("status") == "completed":
+            completed += 1
+        elif expected.get("status") == actual.get("status") == "unavailable":
+            unavailable += 1
+        elif evidence.get("observables_equal") is not True:
+            divergent += 1
+        else:
+            divergent += 1
+    return {
+        "oracle": "qemu-x86_64",
+        "completed_pairs": completed,
+        "unavailable_pairs": unavailable,
+        "divergent_pairs": divergent,
+        "missing_pairs": missing,
+    }
+
+
 def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
     original = _execution_observation(source, timeout, execution_root / "original")
@@ -377,6 +406,7 @@ def run_campaign(
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
         "capability_summary": _capability_summary(category_summary),
+        "qemu_summary": _qemu_summary(fixture_results),
         "fixture_results": fixture_results,
         "failures": failures,
     }
@@ -441,6 +471,7 @@ def merge_campaign_reports(
         "status": "passed" if not failures else "failed",
         "category_summary": dict(sorted(category_summary.items())),
         "capability_summary": _capability_summary(category_summary),
+        "qemu_summary": _qemu_summary(fixture_results),
         "fixture_results": fixture_results,
         "failures": failures,
     }

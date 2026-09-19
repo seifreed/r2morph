@@ -655,6 +655,14 @@ jobs:
               raise SystemExit(f"VM semantic fixture count drift: {report}")
           if report["failed_count"] != 0 or report["passed_count"] != report["fixture_count"]:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
+          qemu_summary = report.get("qemu_summary", {})
+          if (
+              qemu_summary.get("completed_pairs") != report["fixture_count"]
+              or qemu_summary.get("unavailable_pairs") != 0
+              or qemu_summary.get("divergent_pairs") != 0
+              or qemu_summary.get("missing_pairs") != 0
+          ):
+              raise SystemExit(f"VM semantic independent oracle coverage is incomplete: {qemu_summary}")
           fixture_results = report.get("fixture_results", [])
           if len(fixture_results) != report["fixture_count"]:
               raise SystemExit(f"VM semantic fixture detail coverage is incomplete: {len(fixture_results)}")
@@ -801,6 +809,14 @@ jobs:
               raise SystemExit(f"VM semantic fixture count drift: {report}")
           if report["failed_count"] != 0 or report["passed_count"] != report["fixture_count"]:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
+          qemu_summary = report.get("qemu_summary", {})
+          if (
+              qemu_summary.get("completed_pairs") != report["fixture_count"]
+              or qemu_summary.get("unavailable_pairs") != 0
+              or qemu_summary.get("divergent_pairs") != 0
+              or qemu_summary.get("missing_pairs") != 0
+          ):
+              raise SystemExit(f"VM semantic independent oracle coverage is incomplete: {qemu_summary}")
           if len(report.get("fixture_results", [])) != report["fixture_count"]:
               raise SystemExit("VM semantic fixture detail coverage is incomplete")
           categories = report["category_summary"]

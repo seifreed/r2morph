@@ -16,6 +16,7 @@ from scripts.vm_semantic_campaign import (
     _execution_observation,
     _load_coverage,
     _qemu_observables_equal,
+    _qemu_summary,
     _select_fixture_shard,
     _semantic_failure_result,
     merge_campaign_reports,
@@ -67,6 +68,39 @@ def test_vm_semantic_campaign_qemu_oracle_requires_matching_completed_results() 
         _qemu_observables_equal(completed, completed)
         and not _qemu_observables_equal(completed, changed)
         and _qemu_observables_equal(unavailable, unavailable)
+    )
+
+
+def test_vm_semantic_campaign_qemu_summary_counts_independent_pairs() -> None:
+    summary = _qemu_summary(
+        [
+            {
+                "qemu": {
+                    "original": {"status": "completed"},
+                    "mutated": {"status": "completed"},
+                    "observables_equal": True,
+                }
+            },
+            {
+                "qemu": {
+                    "original": {"status": "unavailable"},
+                    "mutated": {"status": "unavailable"},
+                    "observables_equal": True,
+                }
+            },
+            {},
+        ]
+    )
+
+    expect(
+        summary
+        == {
+            "oracle": "qemu-x86_64",
+            "completed_pairs": 1,
+            "unavailable_pairs": 1,
+            "divergent_pairs": 0,
+            "missing_pairs": 1,
+        }
     )
 
 
@@ -287,6 +321,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
         and "qemu-user" in content
         and 'row.get("qemu")' in content
         and "incomplete independent observable evidence" in content
+        and 'qemu_summary.get("completed_pairs")' in content
         and 'summary["status"] not in {"campaign-measured", "not-covered-by-fixture-campaign"}' in content
         and '"unwinding-exceptions",\n              "tls-signals"' in content
         and '"fp-simd",\n              "ssa-liveness"' in content
