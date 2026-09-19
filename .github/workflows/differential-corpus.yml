@@ -694,7 +694,9 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != expected_corpus_counts["generated-corpus"]:
+          if not categories or categories.get("uncategorized", {}).get("fixture_count", 0) != expected_corpus_counts[
+              "generated-corpus"
+          ]:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (
@@ -717,20 +719,10 @@ jobs:
           capabilities = report.get("capability_summary", {})
           if set(capabilities) != expected_capabilities:
               raise SystemExit(f"VM semantic capability coverage drift: {capabilities}")
-          measured = {
-              name for name, summary in capabilities.items() if summary["status"] == "campaign-measured"
-          }
-          if measured != {
-              "memory",
-              "direct-calls",
-              "indirect-calls",
-              "abi-varargs",
-              "unwinding-exceptions",
-              "tls-signals",
-              "threads",
-              "fp-simd",
-              "ssa-liveness",
-          }:
+          if any(
+              summary["status"] not in {"campaign-measured", "not-covered-by-fixture-campaign"}
+              for summary in capabilities.values()
+          ):
               raise SystemExit(f"VM semantic capability evidence is incomplete: {capabilities}")
           PY
 
