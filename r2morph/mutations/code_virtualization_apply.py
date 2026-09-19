@@ -156,6 +156,30 @@ def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
         return ()
 
 
+def _plt_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
+    """Return linker-stub ranges so external thunks are not VM candidates."""
+    try:
+        sections = binary.get_sections()
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return ()
+    ranges: list[tuple[int, int]] = []
+    for section in sections:
+        name = str(section.get("name", "")).lower()
+        if ".plt" not in name:
+            continue
+        permissions = section.get("perm")
+        if permissions is not None and "x" not in str(permissions):
+            continue
+        try:
+            start = int(section.get("vaddr", section.get("addr", section.get("virtual_address", 0))))
+            size = int(section.get("vsize", section.get("size", section.get("virtual_size", 0))))
+        except (TypeError, ValueError):
+            continue
+        if start >= 0 and size > 0:
+            ranges.append((start, size))
+    return tuple(ranges)
+
+
 def _entrypoint_addresses(binary: Any) -> frozenset[int]:
     """Return loader entry addresses when the binary adapter exposes them."""
     try:
@@ -498,10 +522,12 @@ def _ordered_functions(
 ) -> list[dict[str, Any]] | None:
     """Visit viable functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
+    plt_ranges = _plt_ranges(binary)
     viable = [
         function
         for function in functions
         if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
+        and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
 
     def is_runtime_entrypoint(function: dict[str, Any]) -> bool:

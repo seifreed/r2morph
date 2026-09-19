@@ -119,3 +119,19 @@ def test_code_virtualization_keeps_dispatch_entrypoint_when_requested() -> None:
             {"addr": 0x401100, "name": "main", "size": 80},
         ]
     )
+
+
+def test_code_virtualization_filters_linker_plt_stub_before_user_function() -> None:
+    class _BinaryWithPltStub:
+        def get_sections(self) -> list[dict[str, int | str]]:
+            return [{"name": ".plt", "vaddr": 0x401000, "size": 0x40, "perm": "r-x"}]
+
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x401020, "name": "sym.imp.puts", "size": 16},
+                {"addr": 0x401100, "name": "main", "size": 80},
+            ]
+
+    candidates = _ordered_functions(_BinaryWithPltStub())
+
+    expect(candidates == [{"addr": 0x401100, "name": "main", "size": 80}])
