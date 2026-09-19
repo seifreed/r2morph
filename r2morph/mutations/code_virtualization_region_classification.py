@@ -286,6 +286,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
         op = decode_instruction(text)
         if op is not None:
             result = ["op", op]
+    result = result or _decode_subregister_binary(kind, text)
     if result is None and kind in ("add", "sub"):
         rsp_arith = _decode_rsp_arith(text)
         if rsp_arith is not None:
@@ -318,6 +319,16 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
             )
         )
     return result
+
+
+def _decode_subregister_binary(kind: str, text: str) -> list[Any] | None:
+    if kind not in ("add", "sub", "xor", "and", "or"):
+        return None
+    decoded = _decode_two_operand(text, kind)
+    if decoded is None:
+        return None
+    slot, value, is_immediate, width = decoded
+    return ["op", VirtualizedOp(kind, slot, value, is_immediate, width)]
 
 
 def _decode_incdec_memory(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:

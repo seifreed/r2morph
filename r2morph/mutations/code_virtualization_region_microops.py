@@ -185,10 +185,18 @@ def _vbinop_handler_asm(handler_key: str, key: str, arith_variant: int = 0) -> s
         "  sub r9, 8\n"
         f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
     )
+    if width == _BYTE_WIDTH_BITS:
+        body += "  and eax, 0xff\n  and r10d, 0xff\n"
+    elif width == _WORD_WIDTH_BITS:
+        body += "  and eax, 0xffff\n  and r10d, 0xffff\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
     body += arith_fold(mnemonic, 0, arith_variant)
-    if width == _DWORD_WIDTH_BITS:
+    if width == _BYTE_WIDTH_BITS:
+        body += "  and r10d, 0xff\n"
+    elif width == _WORD_WIDTH_BITS:
+        body += "  and r10d, 0xffff\n"
+    elif width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
     body += (
         f"  xor r10, {_VKEY}\n"
@@ -226,13 +234,21 @@ def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, 
         "  sub r9, 8\n"
         f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
     )
+    if width == _BYTE_WIDTH_BITS:
+        body += "  and eax, 0xff\n  and r10d, 0xff\n"
+    elif width == _WORD_WIDTH_BITS:
+        body += "  and eax, 0xffff\n  and r10d, 0xffff\n"
     # Save the originals for the synthesis (a and b before any negation) and park the
     # result cell index in r8, which survives the flag synthesis.
     body += "  mov rbx, r10\n  mov rbp, rax\n  mov r8, r9\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
     body += arith_fold(mnemonic, 0, arith_variant)
-    if width == _DWORD_WIDTH_BITS:
+    if width == _BYTE_WIDTH_BITS:
+        body += "  and r10d, 0xff\n"
+    elif width == _WORD_WIDTH_BITS:
+        body += "  and r10d, 0xffff\n"
+    elif width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"

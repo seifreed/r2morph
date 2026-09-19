@@ -195,13 +195,13 @@ def _decode_subregister_source(left: str, right: str) -> tuple[int, int, bool, i
         slot = registers[left]
         if right in registers:
             result = (slot, registers[right], False, width)
-        elif width == _BYTE_WIDTH_BITS and not any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
+        elif not any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
             try:
                 immediate = int(right, 0)
             except ValueError:
-                immediate = 1 << _BYTE_WIDTH_BITS
-            if immediate_fits_width(immediate, _BYTE_WIDTH_BITS):
-                result = (slot, immediate, True, _BYTE_WIDTH_BITS)
+                immediate = 1 << width
+            if immediate_fits_width(immediate, width):
+                result = (slot, immediate, True, width)
         break
     return result
 

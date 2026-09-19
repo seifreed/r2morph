@@ -15,6 +15,7 @@ import struct
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region import extract_region
+from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_handlers import _VSP_OFFSET
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
@@ -90,6 +91,30 @@ def test_flag_dead_immediate_arith_lowers_with_vpushi() -> None:
     expect(
         kinds.count("vbinop") == _EXPECTED_KINDS_COUNT_VBINOP_2_2
         and kinds.count("vpop") == _EXPECTED_KINDS_COUNT_VPOP_2_2
+    )
+
+
+def test_low_byte_logic_classifies_as_region_operation() -> None:
+    classified = _classify({"type": "and", "opcode": "and cl, 0x10"})
+    operation = classified[1] if classified is not None else None
+    expect(
+        classified is not None
+        and classified[0] == "op"
+        and isinstance(operation, VirtualizedOp)
+        and (operation.mnemonic, operation.dst_index, operation.value, operation.is_immediate, operation.width)
+        == ("and", 1, 0x10, True, 8)
+    )
+
+
+def test_low_word_logic_classifies_as_region_operation() -> None:
+    classified = _classify({"type": "and", "opcode": "and cx, 0x10"})
+    operation = classified[1] if classified is not None else None
+    expect(
+        classified is not None
+        and classified[0] == "op"
+        and isinstance(operation, VirtualizedOp)
+        and (operation.mnemonic, operation.dst_index, operation.value, operation.is_immediate, operation.width)
+        == ("and", 1, 0x10, True, 16)
     )
 
 
