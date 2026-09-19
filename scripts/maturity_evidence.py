@@ -257,6 +257,8 @@ def _decompiler_evidence(
     tools = effectiveness.get(pass_name, {}) if isinstance(effectiveness, Mapping) else {}
     if not isinstance(tools, Mapping):
         return {"status": "pending", "completed_tools": [], "incomplete_tools": []}
+    expected_pairs = adversarial.get("sample_count")
+    expected_pair_count = expected_pairs if isinstance(expected_pairs, int) and expected_pairs > 0 else None
     observed_tools = {
         name: value
         for name, value in tools.items()
@@ -268,6 +270,7 @@ def _decompiler_evidence(
         name
         for name, value in observed_tools.items()
         if value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
+        and (expected_pair_count is None or value["decompiler"].get("completed_pairs") == expected_pair_count)
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
     status = (
@@ -280,6 +283,10 @@ def _decompiler_evidence(
         "completed_tools": completed,
         "completed_tool_count": len(completed),
         "minimum_comparable_tool_count": _MIN_COMPARABLE_DECOMPILER_TOOLS,
+        "expected_pair_count": expected_pair_count,
+        "observed_pair_counts": {
+            name: value["decompiler"].get("completed_pairs", 0) for name, value in observed_tools.items()
+        },
         "incomplete_tools": incomplete,
         "observed_tools": sorted(observed_tools),
         "non_decompiler_tools": sorted(name for name in tools if name not in observed_tools),
