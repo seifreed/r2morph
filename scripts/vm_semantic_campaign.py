@@ -27,6 +27,7 @@ else:
 
 _MAX_FIXTURES = 512
 _MAX_WORKERS = 8
+_MAX_FIXTURE_SHARDS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
 _DEFAULT_WORKERS = min(_MAX_WORKERS, os.cpu_count() or 1)
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
@@ -229,6 +230,22 @@ def _run_selected_fixture(
     return source, result
 
 
+def _select_fixture_shard(
+    fixtures: tuple[Path, ...],
+    shard_index: int,
+    shard_count: int,
+) -> tuple[Path, ...]:
+    """Select a deterministic, non-overlapping slice of the fixture corpus."""
+    if shard_count < 1 or shard_count > _MAX_FIXTURE_SHARDS:
+        raise ValueError(f"VM semantic fixture shard count must be between 1 and {_MAX_FIXTURE_SHARDS}")
+    if shard_index < 0 or shard_index >= shard_count:
+        raise ValueError("VM semantic fixture shard index must be within the shard count")
+    selected = tuple(fixtures[shard_index::shard_count])
+    if not selected:
+        raise ValueError("VM semantic fixture shard selected no fixtures")
+    return selected
+
+
 def run_campaign(
     dataset: Path,
     coverage: Mapping[str, set[str]],
@@ -299,12 +316,16 @@ def run_campaign(
     }
 
 
-def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any]:
+def merge_campaign_reports(
+    reports: tuple[dict[str, Any], ...],
+    allow_duplicate_seeds: bool = False,
+) -> dict[str, Any]:
     """Aggregate deterministic seed runs without hiding a single failure."""
     if not reports:
         raise ValueError("at least one VM semantic campaign report is required")
     target = reports[0].get("target")
     seeds: list[int] = []
+    fixture_keys: set[tuple[int, str]] = set()
     category_summary: dict[str, dict[str, int]] = {}
     fixture_results: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
@@ -314,7 +335,7 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         if report.get("target") != target:
             raise ValueError("VM semantic campaign reports have different targets")
         seed = report.get("seed")
-        if not isinstance(seed, int) or seed in seeds:
+        if not isinstance(seed, int) or (seed in seeds and not allow_duplicate_seeds):
             raise ValueError("VM semantic campaign reports must have unique integer seeds")
         seeds.append(seed)
         fixture_count += int(report["fixture_count"])
@@ -325,6 +346,13 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         failed_count += int(report["failed_count"])
         for fixture_result in report.get("fixture_results", []):
             if isinstance(fixture_result, Mapping):
+                fixture_name = fixture_result.get("fixture")
+                if not isinstance(fixture_name, str):
+                    raise ValueError("VM semantic campaign fixture result is missing its name")
+                fixture_key = (seed, fixture_name)
+                if fixture_key in fixture_keys:
+                    raise ValueError(f"VM semantic campaign fixture overlap: {fixture_key}")
+                fixture_keys.add(fixture_key)
                 fixture_results.append({"seed": seed, **fixture_result})
         for category, summary in report["category_summary"].items():
             aggregate = category_summary.setdefault(
@@ -338,8 +366,8 @@ def merge_campaign_reports(reports: tuple[dict[str, Any], ...]) -> dict[str, Any
         "schema_version": 1,
         "measurement": "vm-semantic-native-parity-campaign",
         "target": target,
-        "seeds": seeds,
-        "seed_count": len(seeds),
+        "seeds": list(dict.fromkeys(seeds)),
+        "seed_count": len(dict.fromkeys(seeds)),
         "fixture_count": fixture_count,
         "corpus_fixture_counts": corpus_fixture_counts,
         "passed_count": passed_count,
@@ -364,6 +392,8 @@ def main() -> None:
         help="compile and include the reproducible Linux ELF x86-64 C/C++ corpus",
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--fixture-shard-index", type=int, default=0)
+    parser.add_argument("--fixture-shard-count", type=int, default=1)
     args = parser.parse_args()
     seeds = tuple(args.seed or _DEFAULT_SEEDS)
     coverage = _load_coverage(args.coverage)
@@ -371,6 +401,12 @@ def main() -> None:
         fixtures = tuple(sorted(args.dataset.glob("elf_vm_*_x86_64")))
         if args.generated_corpus:
             fixtures += tuple(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
+        if args.fixture_shard_count > 1:
+            fixtures = _select_fixture_shard(
+                fixtures,
+                args.fixture_shard_index,
+                args.fixture_shard_count,
+            )
         reports = tuple(
             run_campaign(
                 args.dataset,

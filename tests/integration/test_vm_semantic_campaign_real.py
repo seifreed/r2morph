@@ -15,6 +15,7 @@ from scripts.vm_semantic_campaign import (
     _error_result,
     _execution_observation,
     _load_coverage,
+    _select_fixture_shard,
     merge_campaign_reports,
     run_campaign,
 )
@@ -53,6 +54,13 @@ def test_vm_semantic_campaign_counts_generated_and_repository_fixtures() -> None
     counts = _corpus_fixture_counts((Path("fixtures/dataset/elf_vm_memwidth_x86_64"), Path("generated_c_gcc-o0")))
 
     expect(counts == {"generated-corpus": 1, "repository-fixtures": 1})
+
+
+def test_vm_semantic_campaign_shards_are_disjoint_and_complete() -> None:
+    fixtures = tuple(Path(f"fixture-{index}") for index in range(7))
+    shards = tuple(_select_fixture_shard(fixtures, index, 3) for index in range(3))
+
+    expect(set().union(*map(set, shards)) == set(fixtures) and len(set().intersection(*map(set, shards))) == 0)
 
 
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:

@@ -595,13 +595,14 @@ jobs:
           path: differential-fuzz-smoke.json
 
   vm-semantic-campaign:
-    name: VM semantic native parity campaign (${{ matrix.seed }})
+    name: VM semantic native parity campaign (${{ matrix.seed }}, shard ${{ matrix.fixture_shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         seed: [20260916, 20260917, 20260918]
+        fixture_shard: [0, 1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -632,7 +633,9 @@ jobs:
             --coverage docs/virtualization-coverage.json \
             --generated-corpus \
             --seed "${{ matrix.seed }}" \
-            --output vm-semantic-campaign-${{ matrix.seed }}.json
+            --fixture-shard-index "${{ matrix.fixture_shard }}" \
+            --fixture-shard-count 4 \
+            --output vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}.json
 
       - name: Validate VM semantic campaign
         run: |
@@ -641,14 +644,14 @@ jobs:
           from pathlib import Path
 
           report = json.loads(
-              Path("vm-semantic-campaign-${{ matrix.seed }}.json").read_text(encoding="utf-8")
+              Path("vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}.json").read_text(
+                  encoding="utf-8"
+              )
           )
-          expected_corpus_counts = {"generated-corpus": 136, "repository-fixtures": 151}
+          expected_corpus_counts = report["corpus_fixture_counts"]
           if report["status"] != "passed" or report["seed_count"] != 1:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
-          if report["corpus_fixture_counts"] != expected_corpus_counts:
-              raise SystemExit(f"VM semantic corpus coverage is incomplete: {report}")
-          if report["fixture_count"] != sum(expected_corpus_counts.values()):
+          if report["fixture_count"] <= 0 or report["fixture_count"] != sum(expected_corpus_counts.values()):
               raise SystemExit(f"VM semantic fixture count drift: {report}")
           if report["failed_count"] != 0 or report["passed_count"] != report["fixture_count"]:
               raise SystemExit(f"VM semantic campaign has failures: {report}")
@@ -671,7 +674,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != 136:
+          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != expected_corpus_counts["generated-corpus"]:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (
@@ -715,8 +718,8 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-semantic-campaign-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: vm-semantic-campaign-${{ matrix.seed }}.json
+          name: vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}.json
 
   vm-semantic-campaign-aggregate:
     name: Aggregate VM semantic native parity campaign
@@ -755,10 +758,24 @@ jobs:
           from scripts.vm_semantic_campaign import merge_campaign_reports
 
           paths = sorted(Path("vm-semantic-reports").glob("*/vm-semantic-campaign-*.json"))
-          if len(paths) != 3:
-              raise SystemExit(f"expected three VM semantic seed reports, found {paths}")
-          reports = tuple(json.loads(path.read_text(encoding="utf-8")) for path in paths)
-          report = merge_campaign_reports(reports)
+          if len(paths) != 12:
+              raise SystemExit(f"expected twelve VM semantic shard reports, found {paths}")
+          reports = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+          by_seed: dict[int, list[dict[str, object]]] = {}
+          for seed_report in reports:
+              seed = seed_report.get("seed")
+              if not isinstance(seed, int):
+                  raise SystemExit(f"VM semantic shard is missing its seed: {seed_report}")
+              by_seed.setdefault(seed, []).append(seed_report)
+          if set(by_seed) != {20260916, 20260917, 20260918} or any(
+              len(seed_reports) != 4 for seed_reports in by_seed.values()
+          ):
+              raise SystemExit(f"VM semantic seed shard coverage is incomplete: {by_seed}")
+          merged_seeds = tuple(
+              merge_campaign_reports(tuple(seed_reports), allow_duplicate_seeds=True)
+              for seed_reports in (by_seed[seed] for seed in sorted(by_seed))
+          )
+          report = merge_campaign_reports(merged_seeds)
           expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
           if report["status"] != "passed" or report["seed_count"] != 3:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
