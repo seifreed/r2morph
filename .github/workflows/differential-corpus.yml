@@ -1506,7 +1506,7 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 3:
+          if len(cases) != 4:
               raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
@@ -1529,6 +1529,13 @@ jobs:
               for case in cases
           ):
               raise SystemExit("native ELF ARM64 register substitution test name is missing")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 composition test name is missing")
           PY
 
       - name: Upload native ELF ARM64 evidence
@@ -1580,7 +1587,7 @@ jobs:
 
           suite = ET.parse("elf-x86-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 3:
+          if len(cases) != 4:
               raise SystemExit(f"unexpected ELF x86 32-bit case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF x86 32-bit evidence is incomplete")
@@ -1599,6 +1606,11 @@ jobs:
           missing = [name for name in required if not any(value.startswith(name) for value in names)]
           if missing:
               raise SystemExit(f"native ELF x86 32-bit test names are missing: {missing}")
+          if not any(
+              value.startswith("test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code")
+              for value in names
+          ):
+              raise SystemExit("native ELF x86 32-bit composition test name is missing")
           PY
 
       - name: Upload native ELF x86 32-bit evidence
@@ -1650,7 +1662,7 @@ jobs:
 
           suite = ET.parse("elf-arm-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 3:
+          if len(cases) != 4:
               raise SystemExit(f"unexpected ELF ARM32 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM32 evidence is incomplete")
@@ -1669,6 +1681,11 @@ jobs:
           missing = [name for name in required if not any(value.startswith(name) for value in names)]
           if missing:
               raise SystemExit(f"native ELF ARM32 test names are missing: {missing}")
+          if not any(
+              value.startswith("test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code")
+              for value in names
+          ):
+              raise SystemExit("native ELF ARM32 composition test name is missing")
           PY
 
       - name: Upload native ELF ARM32 evidence
