@@ -59,7 +59,7 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
 
 
 def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
-    report = measure_corpus((_FIXTURE, *_CORPUS_FIXTURES), first_seed=20260915, count=2)
+    report = measure_corpus((_FIXTURE, *_CORPUS_FIXTURES), first_seed=20260915, count=3)
 
     expect(
         report["fixture_count"] == _EXPECTED_CORPUS_FIXTURE_COUNT
@@ -68,5 +68,9 @@ def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
         and report["cross_fixture_distinct_artifacts"] is True
         and report["all_tamper_probes_diverged"] is True
         and report["progressive_growth_observed"] is True
+        and report["dispatcher_diversity_observed"] is True
+        and report["opcode_assignment_diversity_observed"] is True
+        and report["handler_diversity_observed"] is True
+        and report["bytecode_grammar_diversity_observed"] is True
         and report["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
     )

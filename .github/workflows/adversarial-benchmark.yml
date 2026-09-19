@@ -283,6 +283,14 @@ jobs:
               raise SystemExit("VM tamper matrix did not diverge at every fixture and layer")
           if not report["progressive_growth_observed"]:
               raise SystemExit("progressive VM bytecode growth was not observed for every fixture")
+          for field in (
+              "dispatcher_diversity_observed",
+              "opcode_assignment_diversity_observed",
+              "handler_diversity_observed",
+              "bytecode_grammar_diversity_observed",
+          ):
+              if not report[field]:
+                  raise SystemExit(f"VM resistance diversity evidence is incomplete: {field}")
           for fixture in report["fixtures"]:
               if fixture["opcode_and_dispatcher_diversity"]["dispatcher_unique_count"] != fixture["seed_count"]:
                   raise SystemExit("VM dispatcher diversity did not vary across seeds")

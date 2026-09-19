@@ -234,20 +234,36 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
     }
 
 
-def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, bool]:
+def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, bool, bool, bool, bool, bool]:
     campaign = report.get("seed_campaign")
     tamper = report.get("anti_tamper")
     progressive = report.get("progressive_bytecode")
-    if not isinstance(campaign, dict) or not isinstance(tamper, dict) or not isinstance(progressive, dict):
+    diversity = report.get("opcode_and_dispatcher_diversity")
+    if (
+        not isinstance(campaign, dict)
+        or not isinstance(tamper, dict)
+        or not isinstance(progressive, dict)
+        or not isinstance(diversity, dict)
+    ):
         raise ValueError("VM resistance report is missing validation sections")
     tamper_diverged = all(
         isinstance(layer_report := tamper.get(layer), dict) and layer_report.get("all_tamper_probes_diverged") is True
         for layer in ("single_layer", "nested")
     )
+    opcode = diversity.get("opcode_assignment")
+    handlers = diversity.get("handler_report")
+    grammar = diversity.get("bytecode_grammar_report")
+    if not isinstance(opcode, dict) or not isinstance(handlers, dict) or not isinstance(grammar, dict):
+        raise ValueError("VM resistance report is missing diversity sections")
     return (
         campaign.get("semantic_parity") is True,
         tamper_diverged,
         progressive.get("growth_observed") is True,
+        diversity.get("dispatcher_unique_count") == report.get("seed_count"),
+        opcode.get("all_assignments_unique") is True,
+        handlers.get("cross_seed_has_exact_normalised_matches") is False
+        and handlers.get("cross_seed_largest_normalised_cluster") == 1,
+        grammar.get("target_stride_diverse") is True and grammar.get("seeds_without_target_handlers") == 0,
     )
 
 
@@ -278,6 +294,10 @@ def measure_corpus(
         "semantic_parity": all(flags[0] for flags in validation_flags),
         "all_tamper_probes_diverged": all(flags[1] for flags in validation_flags),
         "progressive_growth_observed": all(flags[2] for flags in validation_flags),
+        "dispatcher_diversity_observed": all(flags[3] for flags in validation_flags),
+        "opcode_assignment_diversity_observed": all(flags[4] for flags in validation_flags),
+        "handler_diversity_observed": all(flags[5] for flags in validation_flags),
+        "bytecode_grammar_diversity_observed": all(flags[6] for flags in validation_flags),
         "automated_validation": {
             "status": "completed",
             "evidence_quality": "automated-adversarial-smoke",
@@ -285,6 +305,9 @@ def measure_corpus(
                 "semantic-parity-across-fixtures-and-seeds",
                 "cross-fixture-artifact-diversity",
                 "opcode-assignment-diversity",
+                "dispatcher-diversity",
+                "handler-diversity",
+                "bytecode-grammar-diversity",
                 "single-and-nested-anti-tamper",
                 "progressive-bytecode-growth",
             ],
