@@ -5,12 +5,22 @@ from pathlib import Path
 
 import pytest
 
-from scripts.vm_semantic_campaign import _execution_observation, _load_coverage, merge_campaign_reports, run_campaign
+from scripts.vm_semantic_campaign import (
+    _DEFAULT_SEEDS,
+    _execution_observation,
+    _load_coverage,
+    merge_campaign_reports,
+    run_campaign,
+)
 from tests.utils.assertions import expect
 
 _MERGED_SEED_COUNT = 2
 _MERGED_FIXTURE_COUNT = 2
 _UNWIND_SSA_FIXTURE_COUNT = 2
+
+
+def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
+    expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
 
 
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:

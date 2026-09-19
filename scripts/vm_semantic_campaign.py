@@ -20,7 +20,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
 _MAX_FIXTURES = 256
 _DEFAULT_TIMEOUT_SECONDS = 5.0
-_DEFAULT_SEEDS = (20260916,)
+_DEFAULT_SEEDS = (20260916, 20260917, 20260918)
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
 _HASH_CHUNK_BYTES = 1024 * 1024
