@@ -407,9 +407,29 @@ class NopInsertionPass(MutationPass):
             or random.random() >= self.probability
         ):
             return False
+        candidate_replacements = list(replacements)
+        preserve_register = False
+        operands = disasm.split(",")
+        if len(operands) == _OPERAND_COUNT:
+            destination = operands[0].split()[-1].strip()
+            source = operands[1].strip()
+            if destination == source and destination.startswith("r") and destination[1:].isdigit():
+                preserve_register = True
+                candidate_replacements = [
+                    "nop",
+                    f"add {destination}, {destination}, #0",
+                    f"sub {destination}, {destination}, #0",
+                    f"orr {destination}, {destination}, #0",
+                    *candidate_replacements,
+                ]
         replacement = None
         new_bytes = None
-        for candidate in random.sample(replacements, len(replacements)):
+        candidates = (
+            candidate_replacements
+            if preserve_register
+            else random.sample(candidate_replacements, len(candidate_replacements))
+        )
+        for candidate in candidates:
             assembled = binary.assemble(candidate, function["addr"])
             if assembled and len(assembled) == _ARM_INSTRUCTION_SIZE_BYTES:
                 replacement = candidate

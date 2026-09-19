@@ -38,6 +38,7 @@ def init_substitution_rules() -> tuple[dict[str, list[list[str]]], dict[str, dic
 def normalize_instruction(disasm: str) -> str:
     """Normalize instruction text for pattern matching."""
     normalized = " ".join(disasm.lower().split())
+    normalized = normalized.replace("#", "")
     normalized = normalized.replace("0x0", "0")
     normalized = normalized.replace("0x1", "1")
     return normalized

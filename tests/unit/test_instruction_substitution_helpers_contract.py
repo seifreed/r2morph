@@ -81,6 +81,10 @@ def test_instruction_substitution_helpers_cover_the_core_paths() -> None:
     expect(not ("x86" not in loaded_patterns))
 
 
+def test_normalize_instruction_accepts_arm_immediate_prefixes() -> None:
+    expect(normalize_instruction("mov r0, #1") == "mov r0, 1")
+
+
 def test_flags_live_after_detects_conditional_jump() -> None:
     """A status flag read by a later conditional jump (before any flag write) is live."""
     expect(not (flags_live_after(["xor eax, eax", "je 0x10", "mov ebx, 1"], 0) is not True))

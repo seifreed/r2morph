@@ -10,7 +10,7 @@ class _Arm32Binary:
         self.writes: list[tuple[int, bytes]] = []
 
     def assemble(self, instruction: str, _function_address: int) -> bytes | None:
-        if instruction == "mov r0, r0":
+        if instruction in {"nop", "mov r0, r0", "add r4, r4, #0"}:
             return b"\x00\x00\xa0\xe1"
         return None
 
@@ -30,9 +30,26 @@ def test_arm32_nop_tries_next_assembly_candidate_after_failure() -> None:
     applied = pass_instance._apply_arm32_instruction(
         binary,
         {"addr": 0x1000},
-        {"addr": 0x1000, "size": 4, "disasm": "mov r4, r4"},
+        {"addr": 0x1000, "size": 4, "disasm": "nop"},
         ["invalid instruction", "mov r0, r0"],
     )
 
     expect(applied)
     expect(binary.writes == [(0x1000, b"\x00\x00\xa0\xe1")])
+
+
+def test_arm32_nop_keeps_self_move_on_the_same_register() -> None:
+    nop_insertion.random.seed(2)
+    binary = _Arm32Binary()
+    pass_instance = NopInsertionPass({"probability": 1.0})
+
+    applied = pass_instance._apply_arm32_instruction(
+        binary,
+        {"addr": 0x1000},
+        {"addr": 0x1000, "size": 4, "disasm": "mov r4, r4"},
+        ["mov r0, r0"],
+    )
+
+    expect(applied)
+    expect(binary.writes == [(0x1000, b"\x00\x00\xa0\xe1")])
+    expect(pass_instance.get_records()[0].mutated_disasm == "nop")
