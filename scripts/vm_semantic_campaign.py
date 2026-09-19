@@ -21,9 +21,9 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
 if __package__:
-    from scripts.protection_maturity_baseline import build_generated_corpus
+    from scripts.protection_maturity_baseline import _qemu_semantic_artifacts, build_generated_corpus
 else:
-    from protection_maturity_baseline import build_generated_corpus
+    from protection_maturity_baseline import _qemu_semantic_artifacts, build_generated_corpus
 
 _MAX_FIXTURES = 512
 _MAX_FIXTURE_SHARDS = 8
@@ -210,6 +210,17 @@ def _semantic_failure_result(
     }
 
 
+def _qemu_observables_equal(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:
+    """Compare the independent oracle when both executions are available."""
+    expected_status = expected.get("status")
+    actual_status = actual.get("status")
+    if expected_status == actual_status == "unavailable":
+        return True
+    if expected_status != "completed" or actual_status != "completed":
+        return False
+    return expected.get("exit_code") == actual.get("exit_code")
+
+
 def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
     original = _execution_observation(source, timeout, execution_root / "original")
@@ -219,6 +230,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             "functions_virtualized": 0,
             "original": original,
         }
+    original_qemu = _qemu_semantic_artifacts(source)
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
@@ -244,9 +256,17 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             "original": original,
             "mutated": mutated,
         }
+    mutated_qemu = _qemu_semantic_artifacts(destination)
+    qemu_evidence = {
+        "original": original_qemu,
+        "mutated": mutated_qemu,
+        "observables_equal": _qemu_observables_equal(original_qemu, mutated_qemu),
+    }
     unsupported_functions = result.get("unsupported_functions_total", 0)
-    if unsupported_functions or original != mutated:
-        return _semantic_failure_result(result, functions_virtualized, original, mutated)
+    if unsupported_functions or original != mutated or not qemu_evidence["observables_equal"]:
+        failure = _semantic_failure_result(result, functions_virtualized, original, mutated)
+        failure["qemu"] = qemu_evidence
+        return failure
     return {
         "status": "passed",
         "functions_virtualized": functions_virtualized,
@@ -255,6 +275,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
         "observables_equal": True,
         "original": original,
         "mutated": mutated,
+        "qemu": qemu_evidence,
     }
 
 

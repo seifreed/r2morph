@@ -15,6 +15,7 @@ from scripts.vm_semantic_campaign import (
     _error_result,
     _execution_observation,
     _load_coverage,
+    _qemu_observables_equal,
     _select_fixture_shard,
     _semantic_failure_result,
     merge_campaign_reports,
@@ -55,6 +56,18 @@ def test_vm_semantic_campaign_counts_generated_and_repository_fixtures() -> None
     counts = _corpus_fixture_counts((Path("fixtures/dataset/elf_vm_memwidth_x86_64"), Path("generated_c_gcc-o0")))
 
     expect(counts == {"generated-corpus": 1, "repository-fixtures": 1})
+
+
+def test_vm_semantic_campaign_qemu_oracle_requires_matching_completed_results() -> None:
+    completed = {"status": "completed", "exit_code": 0}
+    changed = {"status": "completed", "exit_code": 1}
+    unavailable = {"status": "unavailable", "exit_code": None}
+
+    expect(
+        _qemu_observables_equal(completed, completed)
+        and not _qemu_observables_equal(completed, changed)
+        and _qemu_observables_equal(unavailable, unavailable)
+    )
 
 
 def test_vm_semantic_campaign_shards_are_disjoint_and_complete() -> None:
@@ -271,6 +284,9 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
         and 'if not categories or categories.get("uncategorized", {}).get("fixture_count", 0)' in content
         and 'categories["uncategorized"]["fixture_count"]' in content
+        and "qemu-user" in content
+        and 'row.get("qemu")' in content
+        and "incomplete independent observable evidence" in content
         and 'summary["status"] not in {"campaign-measured", "not-covered-by-fixture-campaign"}' in content
         and '"unwinding-exceptions",\n              "tls-signals"' in content
         and '"fp-simd",\n              "ssa-liveness"' in content

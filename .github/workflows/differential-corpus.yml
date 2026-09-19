@@ -615,7 +615,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          sudo apt-get install -y git build-essential pkg-config wget cmake binutils qemu-user
           git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
@@ -690,9 +690,13 @@ jobs:
               or "termination_signal" not in row["mutated"]
               or not isinstance(row["original"].get("created_files"), dict)
               or not isinstance(row["mutated"].get("created_files"), dict)
+              or not isinstance(row.get("qemu"), dict)
+              or row["qemu"].get("original", {}).get("status") != "completed"
+              or row["qemu"].get("mutated", {}).get("status") != "completed"
+              or row["qemu"].get("observables_equal") is not True
               for row in fixture_results
           ):
-              raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
+              raise SystemExit("VM semantic fixture detail contains incomplete independent observable evidence")
           categories = report["category_summary"]
           if not categories or categories.get("uncategorized", {}).get("fixture_count", 0) != expected_corpus_counts[
               "generated-corpus"
