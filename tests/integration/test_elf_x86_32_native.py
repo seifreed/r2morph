@@ -165,11 +165,11 @@ def test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code(tmp_path: P
     with Binary(binary_path, writable=True) as binary:
         binary.analyze()
         results = (
-            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260919}).apply(binary),
-            InstructionSubstitutionPass(
+            RegisterSubstitutionPass(
                 config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
             ).apply(binary),
-            RegisterSubstitutionPass(
+            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260919}).apply(binary),
+            InstructionSubstitutionPass(
                 config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260919}
             ).apply(binary),
         )
