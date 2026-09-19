@@ -32,6 +32,10 @@ _SYSV_ENTRY_RSP_MODULO = 8
 _RSP_ALIGNMENT_MASK = -_SYSV_STACK_ALIGNMENT
 
 
+def _signed_64(value: int) -> int:
+    return value - (1 << 64) if value >= 1 << 63 else value
+
+
 def _register_operand(name: str) -> tuple[int, int] | None:
     if name in REGISTER_INDEX:
         return (REGISTER_INDEX[name], 64) if name != "rsp" else None
@@ -486,6 +490,7 @@ def _parse_tls_operand(text: str) -> tuple[str, int | None, int, int | None] | N
         except ValueError:
             return None
         base_slot = None
+    displacement = _signed_64(displacement)
     if not -_MEM_DISP_BOUND <= displacement < _MEM_DISP_BOUND:
         return None
     return segment, base_slot, displacement, width
