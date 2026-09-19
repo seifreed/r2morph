@@ -35,6 +35,7 @@ from r2morph.mutations.code_virtualization_inject import (
     _file_size,
     _fragment_sizes,
     _read_physical,
+    _replacement_note_index,
     _write_physical,
     inject_blob,
     predict_blob_vaddr,
@@ -482,6 +483,17 @@ def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path
     target = _write_synthetic_elf(tmp_path / "wide_entries", e_phentsize=_PHDR_ENTRY_SIZE + 8)
 
     expect(not (_inject_into(target, _BLOB) is not None))
+
+
+def test_replacement_note_index_accepts_noncontiguous_dynamic_notes() -> None:
+    entries = (
+        _phdr_entry(PT_LOAD, _PF_R, 0, 0x400000, 0x1000, _SEGMENT_ALIGN),
+        _phdr_entry(4, _PF_R, 0x100, 0x400100, 32, 4),
+        _phdr_entry(4, _PF_R, 0x500, 0x400500, 32, 4),
+    )
+    table = b"".join(entries)
+
+    expect(_replacement_note_index(table, len(entries)) == len(entries) - 1)
 
 
 def test_inject_blob_refuses_loader_unsafe_dynamic_header_relocation(tmp_path: Path) -> None:

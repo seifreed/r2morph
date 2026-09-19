@@ -241,21 +241,19 @@ def _has_dynamic_loader_relocation_hazard(table: bytes, e_phnum: int) -> bool:
 
 
 def _replacement_note_index(table: bytes, e_phnum: int) -> int | None:
-    """Find a contiguous PT_NOTE slot that can become an executable load."""
+    """Find a trailing PT_NOTE slot that can become an executable load.
+
+    Dynamic linkers commonly emit separate note segments for the build id and
+    ABI tag, with unrelated file ranges between them.  The last note is still
+    disposable for runtime loading; requiring physical contiguity here used to
+    reject otherwise valid dynamically linked ELF images.
+    """
     note_indices = [
         index
         for index in range(e_phnum)
         if struct.unpack_from("<I", table, index * _PHDR_ENTRY_SIZE + _P_TYPE)[0] == _PT_NOTE
     ]
     if len(note_indices) < _MIN_NOTE_ENTRIES:
-        return None
-    first_base = note_indices[0] * _PHDR_ENTRY_SIZE
-    last_base = note_indices[-1] * _PHDR_ENTRY_SIZE
-    first_offset = struct.unpack_from("<Q", table, first_base + _P_OFFSET)[0]
-    first_end = first_offset + struct.unpack_from("<Q", table, first_base + _P_FILESZ)[0]
-    last_offset = struct.unpack_from("<Q", table, last_base + _P_OFFSET)[0]
-    last_end = last_offset + struct.unpack_from("<Q", table, last_base + _P_FILESZ)[0]
-    if first_end != last_offset or last_end <= first_offset:
         return None
     return note_indices[-1]
 
@@ -698,11 +696,13 @@ def _inject_replacement_blob(binary: Any, placement: _Placement, blob: bytes, me
     preserved_base = note_indices[0] * _PHDR_ENTRY_SIZE
     replacement_base = placement.replacement_load_index * _PHDR_ENTRY_SIZE
     first_offset = struct.unpack_from("<Q", placement.table, preserved_base + _P_OFFSET)[0]
+    first_size = struct.unpack_from("<Q", placement.table, preserved_base + _P_FILESZ)[0]
     last_offset = struct.unpack_from("<Q", placement.table, replacement_base + _P_OFFSET)[0]
     last_size = struct.unpack_from("<Q", placement.table, replacement_base + _P_FILESZ)[0]
     table = bytearray(placement.table)
-    struct.pack_into("<Q", table, preserved_base + _P_FILESZ, last_offset + last_size - first_offset)
-    struct.pack_into("<Q", table, preserved_base + _P_MEMSZ, last_offset + last_size - first_offset)
+    if first_offset + first_size == last_offset:
+        struct.pack_into("<Q", table, preserved_base + _P_FILESZ, last_offset + last_size - first_offset)
+        struct.pack_into("<Q", table, preserved_base + _P_MEMSZ, last_offset + last_size - first_offset)
     new_load = _load_entry(
         _PF_R | _PF_X,
         placement.append_offset,
