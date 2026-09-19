@@ -41,7 +41,7 @@ _STACK_POINTERS = {
     "x86_32_linux": ("esp", 32),
     "x86_32_windows": ("esp", 32),
 }
-_STACK_POINTER_OPERATIONS = frozenset({"call", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"})
+_STACK_POINTER_OPERATIONS = frozenset({"call", "leave", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"})
 
 
 def stack_pointer_effects(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[str, int], bool, bool]:
@@ -52,7 +52,7 @@ def stack_pointer_effects(disasm: str, abi: str = "sysv_amd64") -> tuple[tuple[s
     if opcode == "lock" and len(tokens) == _MIN_INSTRUCTION_PART_COUNT:
         opcode = tokens[1].split(None, 1)[0].lower()
     reads = opcode in _STACK_POINTER_OPERATIONS
-    writes = opcode in {"pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"}
+    writes = opcode in {"leave", "pop", "popf", "popfq", "push", "pushf", "pushfq", "ret"}
     return register, reads, writes
 
 

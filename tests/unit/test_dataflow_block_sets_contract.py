@@ -69,3 +69,9 @@ def test_dataflow_block_sets_track_implicit_x86_32_stack_pointer_effects() -> No
     instructions = [{"disasm": "push ebp", "type": "push"}, {"disasm": "ret", "type": "ret"}]
 
     expect(("esp", 32) in compute_block_use(instructions, abi="cdecl_32"))
+
+
+def test_dataflow_block_sets_track_leave_stack_pointer_effects() -> None:
+    instructions = [{"disasm": "leave", "type": "leave"}]
+
+    expect(("rsp", 64) in compute_block_use(instructions) and ("rsp", 64) in compute_block_def(instructions))

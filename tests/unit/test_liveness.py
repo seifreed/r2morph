@@ -689,6 +689,14 @@ class TestLivenessAnalysis:
 
         expect(Register("esp", 32) in used)
 
+    def test_leave_tracks_implicit_stack_pointer(self):
+        analyzer = LivenessAnalysis(create_simple_cfg())
+
+        used = analyzer._extract_registers_used({"type": "leave", "disasm": "leave"})
+        defined = analyzer._extract_registers_defined({"type": "leave", "disasm": "leave"})
+
+        expect(Register("rsp", 64) in used and Register("rsp", 64) in defined)
+
     def test_ssa_return_uses_abi_registers(self):
         """SSA keeps ABI return values observable at a ret instruction."""
         used = SSAConverter()._extract_used_registers("ret")
