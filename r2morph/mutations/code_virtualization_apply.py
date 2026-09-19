@@ -174,14 +174,13 @@ def _plt_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
             start = int(section.get("vaddr", section.get("addr", section.get("virtual_address", 0))))
         except (TypeError, ValueError):
             continue
-        size = next(
-            (
-                candidate
-                for key in ("vsize", "size", "virtual_size")
-                if isinstance(candidate := section.get(key), int) and candidate > 0
-            ),
-            0,
-        )
+        size = 0
+        for key in ("vsize", "size", "virtual_size"):
+            try:
+                candidate = int(section.get(key, 0))
+            except (TypeError, ValueError):
+                continue
+            size = max(size, candidate)
         if start >= 0 and size > 0:
             ranges.append((start, size))
     return tuple(ranges)
