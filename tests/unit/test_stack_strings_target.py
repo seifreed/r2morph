@@ -6,9 +6,11 @@ from typing import Any
 
 from r2morph.mutations.stack_strings import (
     StackStringsPass,
+    _affected_instruction_mnemonics,
     _direct_call_target,
     _direct_transfer_kind,
     _parse_string_argument,
+    _StringReference,
 )
 from tests.utils.assertions import expect
 
@@ -76,3 +78,20 @@ def test_stack_strings_accepts_direct_tail_jump_target() -> None:
 
 def test_stack_strings_identifies_tail_jump_transfer_kind() -> None:
     expect(_direct_transfer_kind({"type": "jmp", "jump": _TAIL_TARGET}) == "jmp")
+
+
+def test_stack_strings_catalogues_source_and_stub_instructions() -> None:
+    reference = _StringReference(
+        function_address=0x401000,
+        reference_address=0x401010,
+        reference_text="lea rdi, [rip + string]",
+        register="rdi",
+        call_target=0x401100,
+        continuation=0x401020,
+        span=5,
+        transfer_kind="call",
+    )
+
+    expect(
+        _affected_instruction_mnemonics(reference, "xor_single") == ["add", "call", "jmp", "lea", "mov", "sub", "xor"]
+    )

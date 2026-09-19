@@ -251,6 +251,7 @@ __asm__(".section .text.stack_cave,\\\"ax\\\",@progbits\\n.p2align 4\\n.fill 409
         result["strings_transformed"] == 1
         and result["transformation_status"] == "applied"
         and result["mutations_applied"] == 1
+        and {"call", "lea", "mov", "sub"}.issubset(result["mutations"][0]["metadata"]["affected_instruction_mnemonics"])
         and run_command([mutated], timeout=30).returncode == baseline.returncode,
         f"result={result!r}, baseline={baseline.returncode}, mutated={mutated}",
     )

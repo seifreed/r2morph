@@ -271,6 +271,18 @@ def _relative_jump(from_address: int, to_address: int) -> bytes | None:
     return b"\xe9" + struct.pack("<i", offset)
 
 
+def _affected_instruction_mnemonics(reference: _StringReference, encoding: str) -> list[str]:
+    """Describe source and generated instructions recorded by the rewrite."""
+    source_mnemonic = reference.reference_text.split(maxsplit=1)[0]
+    mnemonics = {source_mnemonic, "sub", "mov", "lea", "call", "add"}
+    if encoding in {EncodingScheme.XOR_SINGLE, EncodingScheme.XOR_ROLLING}:
+        mnemonics.add("xor")
+    elif encoding == EncodingScheme.ADD_SHIFT:
+        mnemonics.add("sub")
+    mnemonics.add("ret" if reference.transfer_kind == "jmp" else "jmp")
+    return sorted(mnemonic for mnemonic in mnemonics if mnemonic)
+
+
 class StackStringsPass(MutationPass):
     """
     Mutation pass that transforms static strings into stack-built strings.
@@ -533,6 +545,7 @@ class StackStringsPass(MutationPass):
                 "cave_size": allocation.size,
                 "encoding": self.encoding,
                 "junk_instruction_count": len(prepared.build.junk_offsets),
+                "affected_instruction_mnemonics": _affected_instruction_mnemonics(reference, self.encoding),
             },
         )
         return True
