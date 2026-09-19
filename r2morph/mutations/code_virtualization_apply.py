@@ -38,8 +38,8 @@ def _is_runtime_entrypoint(
     """Exclude a compiler-generated loader entry stub from VM candidates."""
     name = str(function.get("name", "")).strip()
     address = function.get("addr")
-    return unwind_section == ".eh_frame" and (
-        name == "entry0" or name.startswith("entry.") or address in entrypoint_addresses
+    return address in entrypoint_addresses or (
+        unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry."))
     )
 
 
