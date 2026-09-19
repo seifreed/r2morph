@@ -649,7 +649,7 @@ jobs:
               )
           )
           expected_corpus_counts = report["corpus_fixture_counts"]
-          if report["status"] != "passed" or report["seed_count"] != 1:
+          if report["status"] != "passed" or report["seed"] != int("${{ matrix.seed }}"):
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
           if report["fixture_count"] <= 0 or report["fixture_count"] != sum(expected_corpus_counts.values()):
               raise SystemExit(f"VM semantic fixture count drift: {report}")
