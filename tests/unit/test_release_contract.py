@@ -1635,6 +1635,10 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and '"variant_count": len(' in differential
         and 'selected_manifest["selection"]["variant_count"] != len(variants)' in differential
         and "public-compatibility-corpus" in differential
+        and "Download public compatibility evidence" in differential
+        and "public-compatibility-merged.json" in differential
+        and "public corpus pass selection drift" in differential
+        and "public static recovery benchmark is incomplete" in differential
         and "aggregate-platform-differential:" in differential
         and "Aggregate platform differential evidence" in differential
         and "cross-platform-differential-macos-arm64" in differential

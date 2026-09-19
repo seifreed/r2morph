@@ -700,7 +700,9 @@ jobs:
   aggregate-differential-corpus:
     name: Aggregate differential corpus evidence
     if: ${{ always() }}
-    needs: differential-corpus
+    needs:
+      - differential-corpus
+      - public-compatibility-corpus
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -722,6 +724,13 @@ jobs:
         with:
           pattern: differential-corpus-by-pass-*
           path: differential-reports
+          merge-multiple: false
+
+      - name: Download public compatibility evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: public-compatibility-corpus-*
+          path: public-corpus-reports
           merge-multiple: false
 
       - name: Download secondary evidence
@@ -766,6 +775,44 @@ jobs:
           from pathlib import Path
 
           from scripts.protection_maturity_baseline import merge_maturity_reports
+
+          public_reports = sorted(
+              Path("public-corpus-reports").glob("*/public-corpus/results/matrix.json")
+          )
+          if len(public_reports) != 1:
+              raise SystemExit(f"expected one public corpus matrix, found {public_reports}")
+          public_matrix = json.loads(public_reports[0].read_text(encoding="utf-8"))
+          public_passes = {
+              "BlockReordering",
+              "CodeVirtualization",
+              "InstructionExpansion",
+              "InstructionSubstitution",
+              "NopInsertion",
+              "RegisterSubstitution",
+          }
+          if set(public_matrix["passes"]) != public_passes:
+              raise SystemExit(f"public corpus pass selection drift: {public_matrix['passes']}")
+          if public_matrix["built_samples"] == 0 or public_matrix["failed_samples"] != 0:
+              raise SystemExit(f"public differential failures: {public_matrix['failed_samples']}")
+          for pass_name, summary in public_matrix["pass_summary"].items():
+              if summary["samples"] != public_matrix["built_samples"]:
+                  raise SystemExit(f"incomplete public pass coverage: {pass_name}")
+              if summary["differential_failed"] or summary["errors"] or not summary["applied"]:
+                  raise SystemExit(f"public differential evidence is incomplete: {pass_name}")
+          public_benchmarks = sorted(
+              Path("public-corpus-reports").glob("*/public-corpus/results/tools.json")
+          )
+          if len(public_benchmarks) != 1:
+              raise SystemExit(f"expected one public corpus benchmark, found {public_benchmarks}")
+          public_benchmark = json.loads(public_benchmarks[0].read_text(encoding="utf-8"))
+          expected_measurements = sum(
+              item["samples"] for item in public_matrix["pass_summary"].values()
+          )
+          if (
+              public_benchmark["status"] != "passed"
+              or public_benchmark["measured_samples"] != expected_measurements
+          ):
+              raise SystemExit("public static recovery benchmark is incomplete")
 
           expected_shards = 12
 
@@ -1022,6 +1069,20 @@ jobs:
               json.dumps(report, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
+          Path("public-compatibility-merged.json").write_text(
+              json.dumps(
+                  {
+                      "schema_version": 1,
+                      "measurement": "public-compatibility-corpus",
+                      "matrix": public_matrix,
+                      "static_recovery": public_benchmark,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
           PY
 
       - name: Build per-pass maturity evidence document
@@ -1064,6 +1125,7 @@ jobs:
           name: differential-corpus-merged-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             differential-corpus-merged.json
+            public-compatibility-merged.json
             extended-maturity-merged.json
             maturity-evidence-merged.json
             vm-semantic-contracts-merged.json
