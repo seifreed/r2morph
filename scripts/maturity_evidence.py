@@ -50,7 +50,18 @@ _PERFORMANCE_FIELDS = (
     "static_metric_coverage_percent",
 )
 _FULL_COVERAGE_PERCENT = 100.0
-_MIN_DIRECTIONAL_COMPOSITION_PAIRS = 2
+
+
+def _required_composition_pairs(mutation_name: str) -> set[str]:
+    """Return the directional smoke pairs required for a pass."""
+    if mutation_name == "NopInsertion":
+        return {
+            "NopInsertion->InstructionSubstitution",
+            "InstructionSubstitution->NopInsertion",
+            "NopInsertion->ConstantUnfolding",
+            "ConstantUnfolding->NopInsertion",
+        }
+    return {f"NopInsertion->{mutation_name}", f"{mutation_name}->NopInsertion"}
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -213,6 +224,7 @@ def _composition_status(pass_name: str, summary: Mapping[str, Any], composition:
         for pair, pair_count in pair_counts.items()
         if isinstance(pair, str) and isinstance(pair_count, int) and pair_count > 0 and pass_name in pair.split("->")
     )
+    required_pairs = _required_composition_pairs(pass_name)
     complete = (
         isinstance(count, int)
         and count > 0
@@ -221,7 +233,7 @@ def _composition_status(pass_name: str, summary: Mapping[str, Any], composition:
         and composition.get("skipped_count") == 0
         and isinstance(applied, int)
         and applied > 0
-        and len(directional_pairs) >= _MIN_DIRECTIONAL_COMPOSITION_PAIRS
+        and required_pairs.issubset(directional_pairs)
     )
     status = "complete" if complete else "preview-only" if applied == 0 else "incomplete"
     return {
@@ -229,6 +241,7 @@ def _composition_status(pass_name: str, summary: Mapping[str, Any], composition:
         "case_count": count,
         "directional_pair_count": len(directional_pairs),
         "directional_pairs": directional_pairs,
+        "required_directional_pairs": sorted(required_pairs),
     }
 
 

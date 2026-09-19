@@ -76,6 +76,20 @@ def test_maturity_evidence_requires_both_composition_directions(tmp_path: Path) 
     expect(evidence["passes"]["AntiDisassembly"]["composition"]["status"] == "incomplete")
 
 
+def test_maturity_evidence_requires_nop_composition_pairs_for_all_simple_passes(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        "<testsuite><testcase name='test_composed_real_passes_preserve_exit_code[nop_then_constant]'/>"
+        "<testcase name='test_composed_real_passes_preserve_exit_code[constant_then_nop]'/></testsuite>",
+        encoding="utf-8",
+    )
+    report = {"pass_names": ["NopInsertion"], "summary": {"NopInsertion": _summary(1)}}
+
+    evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
+
+    expect(evidence["passes"]["NopInsertion"]["composition"]["status"] == "incomplete")
+
+
 def test_composition_evidence_keeps_simple_pair_direction(tmp_path: Path) -> None:
     composition = tmp_path / "composition.xml"
     composition.write_text(
