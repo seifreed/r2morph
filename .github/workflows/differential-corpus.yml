@@ -663,6 +663,7 @@ jobs:
               or not isinstance(row.get("functions_virtualized"), int)
               or row["functions_virtualized"] < 1
               or row.get("unsupported_functions") != 0
+              or row.get("unsupported_function_details")
               or row.get("observables_equal") is not True
               or not isinstance(row.get("original"), dict)
               or not isinstance(row.get("mutated"), dict)

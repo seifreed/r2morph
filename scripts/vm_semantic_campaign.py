@@ -155,6 +155,54 @@ def _error_result(error: BaseException) -> dict[str, str]:
     }
 
 
+def _unsupported_functions_result(
+    result: Mapping[str, Any],
+    functions_virtualized: int,
+    original: dict[str, Any],
+    mutated: dict[str, Any],
+) -> dict[str, Any]:
+    """Keep rejected functions visible even when native observables match."""
+    return {
+        "status": "unsupported_functions",
+        "functions_virtualized": functions_virtualized,
+        "functions_skipped": result.get("functions_skipped", 0),
+        "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "unsupported_function_details": result.get("unsupported_functions", []),
+        "unsupported_function_capabilities": result.get("unsupported_function_capabilities", {}),
+        "observables_equal": original == mutated,
+        "original": original,
+        "mutated": mutated,
+    }
+
+
+def _not_virtualized_result(result: Mapping[str, Any], functions_virtualized: object) -> dict[str, Any]:
+    """Record a fixture that produced no virtualized function."""
+    return {
+        "status": "not_virtualized",
+        "functions_virtualized": functions_virtualized,
+        "functions_skipped": result.get("functions_skipped", 0),
+        "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "capabilities": result.get("unsupported_function_capabilities", {}),
+    }
+
+
+def _semantic_failure_result(
+    result: Mapping[str, Any],
+    functions_virtualized: int,
+    original: dict[str, Any],
+    mutated: dict[str, Any],
+) -> dict[str, Any]:
+    """Classify unsupported functions before falling back to parity mismatch."""
+    if result.get("unsupported_functions_total", 0):
+        return _unsupported_functions_result(result, functions_virtualized, original, mutated)
+    return {
+        "status": "semantic_mismatch",
+        "functions_virtualized": functions_virtualized,
+        "original": original,
+        "mutated": mutated,
+    }
+
+
 def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, execution_root: Path) -> dict[str, Any]:
     shutil.copy2(source, destination)
     original = _execution_observation(source, timeout, execution_root / "original")
@@ -180,13 +228,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
 
     functions_virtualized = result.get("functions_virtualized", 0)
     if not isinstance(functions_virtualized, int) or functions_virtualized < 1:
-        return {
-            "status": "not_virtualized",
-            "functions_virtualized": functions_virtualized,
-            "functions_skipped": result.get("functions_skipped", 0),
-            "unsupported_functions": result.get("unsupported_functions_total", 0),
-            "capabilities": result.get("unsupported_function_capabilities", {}),
-        }
+        return _not_virtualized_result(result, functions_virtualized)
     mutated = _execution_observation(destination, timeout, execution_root / "mutated")
     if mutated.get("status") != "completed":
         return {
@@ -195,18 +237,14 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             "original": original,
             "mutated": mutated,
         }
-    if original != mutated:
-        return {
-            "status": "semantic_mismatch",
-            "functions_virtualized": functions_virtualized,
-            "original": original,
-            "mutated": mutated,
-        }
+    unsupported_functions = result.get("unsupported_functions_total", 0)
+    if unsupported_functions or original != mutated:
+        return _semantic_failure_result(result, functions_virtualized, original, mutated)
     return {
         "status": "passed",
         "functions_virtualized": functions_virtualized,
         "functions_skipped": result.get("functions_skipped", 0),
-        "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "unsupported_functions": unsupported_functions,
         "observables_equal": True,
         "original": original,
         "mutated": mutated,

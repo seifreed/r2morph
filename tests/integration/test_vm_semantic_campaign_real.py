@@ -16,6 +16,7 @@ from scripts.vm_semantic_campaign import (
     _execution_observation,
     _load_coverage,
     _select_fixture_shard,
+    _semantic_failure_result,
     merge_campaign_reports,
     run_campaign,
 )
@@ -61,6 +62,25 @@ def test_vm_semantic_campaign_shards_are_disjoint_and_complete() -> None:
     shards = tuple(_select_fixture_shard(fixtures, index, 3) for index in range(3))
 
     expect(set().union(*map(set, shards)) == set(fixtures) and len(set().intersection(*map(set, shards))) == 0)
+
+
+def test_vm_semantic_campaign_rejects_unsupported_functions_with_equal_observables() -> None:
+    result = _semantic_failure_result(
+        {
+            "unsupported_functions_total": 1,
+            "unsupported_functions": [{"capability": "calls", "severity": "error"}],
+            "unsupported_function_capabilities": {"calls": 1},
+        },
+        1,
+        {"status": "completed"},
+        {"status": "completed"},
+    )
+
+    expect(
+        result["status"] == "unsupported_functions"
+        and result["observables_equal"] is True
+        and result["unsupported_function_details"] == [{"capability": "calls", "severity": "error"}]
+    )
 
 
 def test_vm_semantic_observation_records_created_files(tmp_path: Path) -> None:
@@ -206,6 +226,7 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
         'report.get("fixture_results", [])' in content
         and 'row.get("functions_virtualized")' in content
         and 'row.get("unsupported_functions") != 0' in content
+        and 'row.get("unsupported_function_details")' in content
         and '"termination_signal" not in row["original"]' in content
     )
 
