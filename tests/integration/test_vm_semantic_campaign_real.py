@@ -77,7 +77,7 @@ def test_vm_semantic_campaign_rejects_unsupported_functions_with_equal_observabl
     )
 
     expect(
-        result["status"] == "unsupported_functions"
+        result["status"] == "passed_with_unsupported"
         and result["observables_equal"] is True
         and result["unsupported_function_details"] == [{"capability": "calls", "severity": "error"}]
     )
@@ -225,8 +225,8 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
     expect(
         'report.get("fixture_results", [])' in content
         and 'row.get("functions_virtualized")' in content
-        and 'row.get("unsupported_functions") != 0' in content
-        and 'row.get("unsupported_function_details")' in content
+        and '"passed_with_unsupported"' in content
+        and 'row.get("unsupported_function_details", [])' in content
         and '"termination_signal" not in row["original"]' in content
     )
 

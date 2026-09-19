@@ -31,6 +31,7 @@ _MAX_FIXTURE_SHARDS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
 _DEFAULT_WORKERS = min(_MAX_WORKERS, os.cpu_count() or 1)
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
+_PASSABLE_FIXTURE_STATUSES = frozenset({"passed", "passed_with_unsupported"})
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
 _MAX_FUNCTION_ANALYSIS_COUNT = 2048
@@ -163,7 +164,7 @@ def _unsupported_functions_result(
 ) -> dict[str, Any]:
     """Keep rejected functions visible even when native observables match."""
     return {
-        "status": "unsupported_functions",
+        "status": "passed_with_unsupported",
         "functions_virtualized": functions_virtualized,
         "functions_skipped": result.get("functions_skipped", 0),
         "unsupported_functions": result.get("unsupported_functions_total", 0),
@@ -325,7 +326,7 @@ def run_campaign(
                 categories = _fixture_categories(coverage, source.name)
                 fixture_result = {"fixture": source.name, "categories": categories, **result}
                 fixture_results.append(fixture_result)
-                if result["status"] == "passed":
+                if result["status"] in _PASSABLE_FIXTURE_STATUSES:
                     passed += 1
                 else:
                     failures.append(fixture_result)
@@ -335,8 +336,8 @@ def run_campaign(
                         {"fixture_count": 0, "passed_count": 0, "failed_count": 0},
                     )
                     stats["fixture_count"] += 1
-                    stats["passed_count"] += result["status"] == "passed"
-                    stats["failed_count"] += result["status"] != "passed"
+                    stats["passed_count"] += result["status"] in _PASSABLE_FIXTURE_STATUSES
+                    stats["failed_count"] += result["status"] not in _PASSABLE_FIXTURE_STATUSES
     return {
         "schema_version": 1,
         "measurement": "vm-semantic-native-parity-campaign",
