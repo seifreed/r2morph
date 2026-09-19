@@ -19,7 +19,7 @@ from r2morph.analysis.call_effects import call_register_effects, return_register
 from r2morph.analysis.dataflow_models import Register, register_definition_covers_use
 from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, flag_accesses
 from r2morph.analysis.liveness_models import _X86_REGISTER_BIT_SIZES
-from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses
+from r2morph.analysis.memory_effects import MEMORY_RESOURCE_NAME, memory_accesses, stack_pointer_registers
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 
 logger = logging.getLogger(__name__)
@@ -479,6 +479,7 @@ class SSAConverter:
             }
         destination = operands.split(",", 1)[0].strip().lower()
         defined: set[str] = set()
+        defined.update(register for register, _ in stack_pointer_registers(disasm, self._abi, write=True))
         if destination in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES and (
             mnemonic in {"lea", "mov", "pop"}
             or mnemonic in _RMW_MNEMONICS
@@ -499,7 +500,9 @@ class SSAConverter:
         opcode, _, operands_text = disasm.partition(" ")
         mnemonic = opcode.lower()
         if mnemonic == "ret":
-            return {register for register, _ in return_register_effects(self._abi)}
+            return {register for register, _ in return_register_effects(self._abi)} | {
+                register for register, _ in stack_pointer_registers(disasm, self._abi, read=True)
+            }
         if mnemonic == "call":
             call_used, _ = call_register_effects(self._abi)
             call_used_names = {register for register, _ in call_used}
@@ -509,9 +512,11 @@ class SSAConverter:
                 if match.group(1) in _SSA_REGISTER_NAMES | _SSA_VECTOR_REGISTER_NAMES
             )
             call_used_names.add(MEMORY_RESOURCE_NAME)
+            call_used_names.update(register for register, _ in stack_pointer_registers(disasm, self._abi, read=True))
             return call_used_names
         operands = [operand.strip() for operand in operands_text.split(",")] if operands_text else []
         used: set[str] = set()
+        used.update(register for register, _ in stack_pointer_registers(disasm, self._abi, read=True))
         if memory_accesses(disasm)[0]:
             used.add(MEMORY_RESOURCE_NAME)
         if not operands:

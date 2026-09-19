@@ -285,7 +285,17 @@ class TestSSAConverter:
 
     def test_extract_defined_registers_pop(self, converter):
         defined = converter._extract_defined_registers("pop eax")
-        expect(not ("eax" not in defined))
+        expect("eax" in defined and "rsp" in defined)
+
+    def test_extract_used_registers_ret_tracks_stack_pointer(self, converter):
+        used = converter._extract_used_registers("ret")
+
+        expect("rsp" in used)
+
+    def test_extract_used_registers_call_tracks_stack_pointer(self, converter):
+        used = converter._extract_used_registers("call rax")
+
+        expect("rsp" in used)
 
     def test_extract_defined_registers_read_modify_write(self, converter):
         defined = converter._extract_defined_registers("add eax, ebx")
