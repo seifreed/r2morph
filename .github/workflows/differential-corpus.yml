@@ -595,9 +595,13 @@ jobs:
           path: differential-fuzz-smoke.json
 
   vm-semantic-campaign:
-    name: VM semantic native parity campaign
+    name: VM semantic native parity campaign (${{ matrix.seed }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [20260916, 20260917, 20260918]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -627,10 +631,8 @@ jobs:
             --dataset fixtures/dataset \
             --coverage docs/virtualization-coverage.json \
             --generated-corpus \
-            --seed 20260916 \
-            --seed 20260917 \
-            --seed 20260918 \
-            --output vm-semantic-campaign.json
+            --seed "${{ matrix.seed }}" \
+            --output vm-semantic-campaign-${{ matrix.seed }}.json
 
       - name: Validate VM semantic campaign
         run: |
@@ -638,9 +640,11 @@ jobs:
           import json
           from pathlib import Path
 
-          report = json.loads(Path("vm-semantic-campaign.json").read_text(encoding="utf-8"))
-          expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
-          if report["status"] != "passed" or report["seed_count"] != 3:
+          report = json.loads(
+              Path("vm-semantic-campaign-${{ matrix.seed }}.json").read_text(encoding="utf-8")
+          )
+          expected_corpus_counts = {"generated-corpus": 136, "repository-fixtures": 151}
+          if report["status"] != "passed" or report["seed_count"] != 1:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
           if report["corpus_fixture_counts"] != expected_corpus_counts:
               raise SystemExit(f"VM semantic corpus coverage is incomplete: {report}")
@@ -667,7 +671,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete observable evidence")
           categories = report["category_summary"]
-          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != 408:
+          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != 136:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (
@@ -711,8 +715,100 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: vm-semantic-campaign-${{ github.run_id }}-${{ github.run_attempt }}
-          path: vm-semantic-campaign.json
+          name: vm-semantic-campaign-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-campaign-${{ matrix.seed }}.json
+
+  vm-semantic-campaign-aggregate:
+    name: Aggregate VM semantic native parity campaign
+    if: ${{ always() }}
+    needs: vm-semantic-campaign
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install package dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Download seed reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vm-semantic-campaign-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-reports
+          merge-multiple: false
+
+      - name: Merge and validate VM semantic campaign
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from scripts.vm_semantic_campaign import merge_campaign_reports
+
+          paths = sorted(Path("vm-semantic-reports").glob("*/vm-semantic-campaign-*.json"))
+          if len(paths) != 3:
+              raise SystemExit(f"expected three VM semantic seed reports, found {paths}")
+          reports = tuple(json.loads(path.read_text(encoding="utf-8")) for path in paths)
+          report = merge_campaign_reports(reports)
+          expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
+          if report["status"] != "passed" or report["seed_count"] != 3:
+              raise SystemExit(f"VM semantic campaign incomplete: {report}")
+          if report["corpus_fixture_counts"] != expected_corpus_counts:
+              raise SystemExit(f"VM semantic corpus coverage is incomplete: {report}")
+          if report["fixture_count"] != sum(expected_corpus_counts.values()):
+              raise SystemExit(f"VM semantic fixture count drift: {report}")
+          if report["failed_count"] != 0 or report["passed_count"] != report["fixture_count"]:
+              raise SystemExit(f"VM semantic campaign has failures: {report}")
+          if len(report.get("fixture_results", [])) != report["fixture_count"]:
+              raise SystemExit("VM semantic fixture detail coverage is incomplete")
+          categories = report["category_summary"]
+          if len(categories) != 18 or categories["uncategorized"]["fixture_count"] != 408:
+              raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
+          for category, summary in categories.items():
+              if (
+                  summary["fixture_count"] == 0
+                  or summary["passed_count"] != summary["fixture_count"]
+                  or summary["failed_count"] != 0
+              ):
+                  raise SystemExit(f"VM semantic campaign category failed: {category}: {summary}")
+          expected_capabilities = {
+              "memory",
+              "direct-calls",
+              "indirect-calls",
+              "abi-varargs",
+              "unwinding-exceptions",
+              "tls-signals",
+              "threads",
+              "fp-simd",
+              "ssa-liveness",
+          }
+          capabilities = report.get("capability_summary", {})
+          if set(capabilities) != expected_capabilities:
+              raise SystemExit(f"VM semantic capability coverage drift: {capabilities}")
+          if {
+              name for name, summary in capabilities.items() if summary["status"] == "campaign-measured"
+          } != expected_capabilities:
+              raise SystemExit(f"VM semantic capability evidence is incomplete: {capabilities}")
+          Path("vm-semantic-campaign-merged.json").write_text(
+              json.dumps(report, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+      - name: Upload merged VM semantic campaign evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vm-semantic-campaign-merged-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-campaign-merged.json
 
   aggregate-differential-corpus:
     name: Aggregate differential corpus evidence

@@ -212,6 +212,7 @@ def test_vm_semantic_workflow_publishes_regression_capability_contracts() -> Non
         and '"ssa-liveness"' in content
         and '"regression-covered"' in content
         and "vm-semantic-contracts-merged.json" in content
+        and "vm-semantic-campaign-aggregate" in content
     )
 
 
@@ -221,6 +222,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
 
     expect(
         "--generated-corpus" in content
+        and "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
         and "len(categories) != 18" in content
