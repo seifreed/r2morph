@@ -25,6 +25,7 @@ from scripts.protection_maturity_baseline import (
     _behavioral_false_positive_metrics,
     _complete_evidence_error,
     _diagnostic_counts,
+    _independent_semantic_pair,
     _measure_seed,
     _parse_pass_names,
     _render_multi_pass_result,
@@ -1223,6 +1224,29 @@ def test_semantic_run_rejects_invalid_emulator_status() -> None:
     }
 
     expect(not (_semantic_run_matches(baseline, runtime, run) is not False))
+
+
+def test_semantic_run_prefers_matching_qemu_oracle() -> None:
+    baseline = {
+        "baseline_qemu": {"status": "completed", "exit_code": 42},
+        "baseline_unicorn": {"status": "completed", "exit_code": 7},
+    }
+    runtime = {
+        "status": "completed",
+        "return_code": 42,
+        "stdout": {"sha256": "empty", "size": 0},
+        "stderr": {"sha256": "empty", "size": 0},
+        "created_files": {},
+    }
+    run = {
+        "status": "passed",
+        "runtime": runtime,
+        "qemu": {"status": "completed", "exit_code": 42},
+        "unicorn": {"status": "completed", "exit_code": 7},
+    }
+
+    expect(_semantic_run_matches(baseline, runtime, run))
+    expect(_independent_semantic_pair(baseline, run) == (baseline["baseline_qemu"], run["qemu"]))
 
 
 def test_semantic_run_uses_native_runtime_when_emulator_lacks_instruction_support() -> None:

@@ -56,6 +56,7 @@ _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
 _PIE_LOAD_BIAS = 0x5555_5555_4000
 _RUNTIME_TIMEOUT_SECONDS = 5.0
+_QEMU_EXECUTABLE = "qemu-x86_64"
 _PREVIEW_BYTES = 32
 _MAX_AFFECTED_INSTRUCTION_MNEMONICS = 256
 _FULL_COVERAGE_PERCENT = 100.0
@@ -733,6 +734,46 @@ def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str,
         return result
 
 
+def _qemu_semantic_artifacts(path: Path) -> dict[str, object]:
+    """Run supported ELF fixtures through an independent user-mode oracle."""
+    unavailable: dict[str, object] = {
+        "status": "unavailable",
+        "reason": "qemu-x86_64 is unavailable for this host or fixture",
+        "exit_code": None,
+    }
+    if not sys.platform.startswith("linux"):
+        return unavailable
+    qemu = shutil.which(_QEMU_EXECUTABLE)
+    if qemu is None:
+        return unavailable
+    header = path.read_bytes()[:_ELF_IDENT_HEADER_BYTES]
+    if (
+        len(header) < _ELF_IDENT_HEADER_BYTES
+        or header[:4] != _ELF_MAGIC
+        or header[4] != _ELFCLASS64
+        or struct.unpack_from("<H", header, 18)[0] != _EM_X86_64
+    ):
+        return unavailable
+    started = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="r2morph-qemu-") as temporary:
+        workdir = Path(temporary)
+        runtime_path = workdir / "program"
+        shutil.copyfile(path, runtime_path)
+        runtime_path.chmod(0o700)
+        result = asyncio.run(_run_runtime([qemu, f"./{runtime_path.name}"], workdir))
+    if result.get("status") != "completed":
+        return {
+            "status": result.get("status", "error"),
+            "exit_code": None,
+            "duration_seconds": time.perf_counter() - started,
+        }
+    return {
+        "status": "completed",
+        "exit_code": result.get("return_code"),
+        "duration_seconds": time.perf_counter() - started,
+    }
+
+
 def _runtime_input_artifacts(path: Path, runtime_inputs: tuple[tuple[str, ...], ...]) -> list[dict[str, object]]:
     return [_runtime_artifacts(path, arguments) for arguments in runtime_inputs]
 
@@ -872,17 +913,37 @@ def _digest_failure_reason(stream: str, expected: Mapping[str, object], actual: 
 
 
 def _semantic_run_matches(baseline: object, baseline_runtime: object, run: object) -> bool:
-    """Require native runtime parity and use emulation when it supports both files."""
+    """Require native runtime parity and use one independent oracle when available."""
     if not isinstance(baseline, Mapping) or not isinstance(baseline_runtime, Mapping):
         return False
     if not isinstance(run, Mapping) or run.get("status") != "passed":
         return False
     if not _runtime_observables_equal(baseline_runtime, run.get("runtime")):
         return False
-    unicorn = run.get("unicorn")
-    if baseline.get("status") == "completed" and isinstance(unicorn, Mapping) and unicorn.get("status") == "completed":
-        return unicorn.get("exit_code") == baseline.get("exit_code")
+    semantic_pair = _independent_semantic_pair(baseline, run)
+    if semantic_pair is not None:
+        baseline_semantic, actual_semantic = semantic_pair
+        return actual_semantic.get("exit_code") == baseline_semantic.get("exit_code")
     return True
+
+
+def _independent_semantic_pair(
+    baseline: Mapping[str, object], run: Mapping[str, object]
+) -> tuple[Mapping[str, object], Mapping[str, object]] | None:
+    baseline_artifacts = baseline
+    if "baseline_unicorn" not in baseline and "baseline_qemu" not in baseline:
+        baseline_artifacts = {"baseline_unicorn": baseline}
+    for name in ("qemu", "unicorn"):
+        expected = baseline_artifacts.get(f"baseline_{name}")
+        actual = run.get(name)
+        if (
+            isinstance(expected, Mapping)
+            and expected.get("status") == "completed"
+            and isinstance(actual, Mapping)
+            and actual.get("status") == "completed"
+        ):
+            return expected, actual
+    return None
 
 
 def _build_mutation_pass(pass_name: str, seed: int) -> MutationPass:
@@ -1042,6 +1103,7 @@ def _measure_seed(
         "transform_duration_seconds": time.perf_counter() - started,
         "runtime": _runtime_artifacts(output),
         "runtime_inputs": _runtime_input_artifacts(output, runtime_inputs),
+        "qemu": _qemu_semantic_artifacts(output),
         "unicorn": _semantic_artifacts(output),
     }
     run.update(_affected_instruction_evidence(mutation_records))
@@ -1079,6 +1141,7 @@ def measure_fixture(
 ) -> dict[str, object]:
     baseline_runtime = _runtime_artifacts(fixture)
     baseline_runtime_inputs = _runtime_input_artifacts(fixture, runtime_inputs)
+    baseline_qemu = _qemu_semantic_artifacts(fixture)
     baseline_unicorn = _semantic_artifacts(fixture)
     baseline = _safe_inspect(fixture)
     output_dir = output_root / _PASS_LABELS[pass_name] / fixture.name
@@ -1090,7 +1153,8 @@ def measure_fixture(
         runtime_input_equal = _runtime_input_observables_equal(baseline_runtime_inputs, run.get("runtime_inputs"))
         run["runtime_observable_equal"] = runtime_equal
         run["runtime_input_observable_equal"] = runtime_input_equal
-        if runtime_input_equal and _semantic_run_matches(baseline_unicorn, baseline_runtime, run):
+        semantic_baseline = {"baseline_qemu": baseline_qemu, "baseline_unicorn": baseline_unicorn}
+        if runtime_input_equal and _semantic_run_matches(semantic_baseline, baseline_runtime, run):
             semantic_runs.append(run)
     return {
         "sample": fixture.name,
@@ -1099,6 +1163,7 @@ def measure_fixture(
         "baseline": baseline,
         "baseline_runtime": baseline_runtime,
         "baseline_runtime_inputs": baseline_runtime_inputs,
+        "baseline_qemu": baseline_qemu,
         "baseline_unicorn": baseline_unicorn,
         "seeds": [run["seed"] for run in runs],
         "runs": runs,
@@ -1228,6 +1293,13 @@ def _runtime_observable_failure_reasons(
     return dict(sorted(reasons.items()))
 
 
+def _has_completed_semantic_baseline(baseline: Mapping[str, object]) -> bool:
+    return any(
+        isinstance(candidate, Mapping) and candidate.get("status") == "completed"
+        for candidate in (baseline.get("baseline_qemu"), baseline.get("baseline_unicorn"))
+    )
+
+
 def _behavioral_false_positive_metrics(
     seed_runs: list[tuple[dict[str, object], Mapping[str, object]]],
 ) -> dict[str, int | float]:
@@ -1260,15 +1332,19 @@ def _behavioral_false_positive_metrics(
             complete_observations += 1
             if not _runtime_observables_equal(baseline, actual):
                 false_positive_observations += 1
-        baseline_unicorn = fixture.get("baseline_unicorn")
-        actual_unicorn = run.get("unicorn")
-        if not isinstance(baseline_unicorn, Mapping) or baseline_unicorn.get("status") != "completed":
+        baseline_semantic = {
+            "baseline_qemu": fixture.get("baseline_qemu"),
+            "baseline_unicorn": fixture.get("baseline_unicorn"),
+        }
+        if not _has_completed_semantic_baseline(baseline_semantic):
             continue
-        if not isinstance(actual_unicorn, Mapping) or actual_unicorn.get("status") != "completed":
+        semantic_pair = _independent_semantic_pair(baseline_semantic, run)
+        if semantic_pair is None:
             independent_missing_observations += 1
             continue
+        expected_semantic, actual_semantic = semantic_pair
         independent_observations += 1
-        if baseline_unicorn.get("exit_code") != actual_unicorn.get("exit_code"):
+        if expected_semantic.get("exit_code") != actual_semantic.get("exit_code"):
             independent_false_positive_observations += 1
     rate = round(false_positive_observations / complete_observations * 100.0, 2) if complete_observations else 0.0
     independent_rate = (
