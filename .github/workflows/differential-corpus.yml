@@ -850,6 +850,7 @@ jobs:
     needs:
       - differential-corpus
       - public-compatibility-corpus
+      - vm-semantic-campaign-aggregate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -879,6 +880,49 @@ jobs:
           pattern: public-compatibility-corpus-*
           path: public-corpus-reports
           merge-multiple: false
+
+      - name: Download VM semantic campaign evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: vm-semantic-campaign-merged-${{ github.run_id }}-${{ github.run_attempt }}
+          path: vm-semantic-campaign
+
+      - name: Validate VM semantic campaign evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path("vm-semantic-campaign/vm-semantic-campaign-merged.json").read_text(encoding="utf-8")
+          )
+          if report["status"] != "passed" or report["failed_count"] != 0:
+              raise SystemExit(f"VM semantic campaign evidence is incomplete: {report}")
+          qemu = report.get("qemu_summary", {})
+          if (
+              qemu.get("completed_pairs") != report["fixture_count"]
+              or qemu.get("unavailable_pairs") != 0
+              or qemu.get("divergent_pairs") != 0
+              or qemu.get("missing_pairs") != 0
+          ):
+              raise SystemExit(f"VM semantic campaign independent evidence is incomplete: {qemu}")
+          required = {
+              "memory",
+              "direct-calls",
+              "indirect-calls",
+              "abi-varargs",
+              "unwinding-exceptions",
+              "tls-signals",
+              "threads",
+              "fp-simd",
+              "ssa-liveness",
+          }
+          capabilities = report.get("capability_summary", {})
+          if set(capabilities) != required or any(
+              row.get("status") != "campaign-measured" for row in capabilities.values()
+          ):
+              raise SystemExit(f"VM semantic capability evidence is incomplete: {capabilities}")
+          PY
 
       - name: Download secondary evidence
         uses: actions/download-artifact@v8

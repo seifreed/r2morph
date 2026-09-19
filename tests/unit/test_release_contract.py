@@ -1651,6 +1651,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "public-compatibility-corpus" in differential
         and "Download public compatibility evidence" in differential
         and "public-compatibility-merged.json" in differential
+        and "vm-semantic-campaign-aggregate" in differential
+        and "Download VM semantic campaign evidence" in differential
+        and "VM semantic campaign evidence is incomplete" in differential
         and "public corpus pass selection drift" in differential
         and "public static recovery benchmark is incomplete" in differential
         and "aggregate-platform-differential:" in differential
