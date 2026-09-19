@@ -172,6 +172,7 @@ jobs:
             tests/integration/test_elf_arm32_native.py \
             tests/integration/test_elf_arm64_native.py \
             tests/integration/test_elf_x86_32_native.py \
+            tests/integration/test_platform_tier1_matrix.py \
             tests/integration/test_code_virtualization_target_support_real.py
 
       - name: Validate cross-format differential evidence
@@ -183,7 +184,7 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 19:
+          if len(cases) < 31:
               raise SystemExit(f"cross-format smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
@@ -221,6 +222,7 @@ jobs:
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
               "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
               "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+              "test_tier1_pass_preview_target_preserves_exit_code",
               "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
               "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
             }
