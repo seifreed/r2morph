@@ -28,6 +28,7 @@ _UNWIND_SECTION_NAMES = frozenset(
     }
 )
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
+_TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
 
 
 def _is_runtime_entrypoint(
@@ -163,6 +164,22 @@ def _entrypoint_addresses(binary: Any) -> frozenset[int]:
         return frozenset()
     return frozenset(
         int(entry["vaddr"]) for entry in entries if isinstance(entry, dict) and isinstance(entry.get("vaddr"), int)
+    )
+
+
+def _has_terminal_system_call(binary: Any, function: dict[str, Any]) -> bool:
+    """Recognize user entrypoints that terminate through the native syscall ABI."""
+    try:
+        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}") or {}
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    if not isinstance(disassembly, dict):
+        return False
+    return any(
+        instruction.get("type") in _TERMINAL_SYSTEM_CALL_TYPES
+        or str(instruction.get("opcode", "")).strip().lower().split(maxsplit=1)[0] in _TERMINAL_SYSTEM_CALL_TYPES
+        for instruction in disassembly.get("ops", [])
+        if isinstance(instruction, dict)
     )
 
 
@@ -477,6 +494,7 @@ def _ordered_functions(
     analysis_budget: int = MAX_FUNCTION_ANALYSIS_COUNT,
     unwind_section: str | None = None,
     entrypoint_addresses: frozenset[int] = frozenset(),
+    dispatch_entrypoint_addresses: frozenset[int] = frozenset(),
 ) -> list[dict[str, Any]] | None:
     """Visit viable functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
@@ -485,16 +503,19 @@ def _ordered_functions(
         for function in functions
         if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
     ]
-    runtime_free = [
-        function for function in viable if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
-    ]
+
+    def is_runtime_entrypoint(function: dict[str, Any]) -> bool:
+        address = function.get("addr")
+        return address not in dispatch_entrypoint_addresses and _is_runtime_entrypoint(
+            function, unwind_section, entrypoint_addresses
+        )
+
+    runtime_free = [function for function in viable if not is_runtime_entrypoint(function)]
     if runtime_free:
         viable = runtime_free
     if len(viable) <= analysis_budget:
         return viable
-    candidates = [
-        function for function in viable if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
-    ]
+    candidates = [function for function in viable if not is_runtime_entrypoint(function)]
     if len(candidates) > analysis_budget:
         logger.warning(
             "Skipping code virtualization: function population exceeds the VM analysis budget (%d > %d)",
@@ -526,6 +547,15 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         pass_instance.max_function_analysis_count,
         unwind_section,
         _entrypoint_addresses(binary),
+        frozenset(
+            int(function["addr"])
+            for function in binary.get_functions()
+            if (
+                isinstance(function.get("addr"), int)
+                and function["addr"] in _entrypoint_addresses(binary)
+                and (pass_instance._has_computed_jump(binary, function) or _has_terminal_system_call(binary, function))
+            )
+        ),
     )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
