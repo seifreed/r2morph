@@ -32,7 +32,7 @@ _DEFAULT_TIMEOUT_SECONDS = 5.0
 # serial workers keep each seeded campaign deterministic.
 _CAMPAIGN_WORKERS = 1
 _DEFAULT_SEEDS = (20260916, 20260917, 20260918)
-_PASSABLE_FIXTURE_STATUSES = frozenset({"passed", "passed_with_unsupported"})
+_PASSABLE_FIXTURE_STATUSES = frozenset({"passed"})
 _TARGET = {"os": "linux", "format": "ELF", "architecture": "x86-64"}
 _MAX_CREATED_FILES = 256
 _MAX_FUNCTION_ANALYSIS_COUNT = 2048

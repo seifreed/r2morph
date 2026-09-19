@@ -670,7 +670,7 @@
         ],
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
-        "instructions_affected": "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.",
+        "instructions_affected": "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use register-only xor, test, and conditional/unconditional jumps; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.",
         "false_positive_risk": "Not independently measured.",
         "unit_tests": [
           "tests/unit/test_mutation_opaque_predicates_helpers.py"
@@ -1205,7 +1205,7 @@
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
         "Pass-specific x86-64 rules exercised by native fixtures.": 3,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
-        "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use xor, mov, test, cmp, jz, je, jnz, jne, jmp, push, pop, and nop; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
+        "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use register-only xor, test, and conditional/unconditional jumps; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
         "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
         "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.": 1,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,

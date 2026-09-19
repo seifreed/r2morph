@@ -667,26 +667,11 @@ jobs:
           if len(fixture_results) != report["fixture_count"]:
               raise SystemExit(f"VM semantic fixture detail coverage is incomplete: {len(fixture_results)}")
           for row in fixture_results:
-              if row.get("status") not in {"passed", "passed_with_unsupported"}:
+              if row.get("status") != "passed":
                   raise SystemExit(f"VM semantic fixture failed: {row}")
               unsupported = row.get("unsupported_functions", 0)
               details = row.get("unsupported_function_details", [])
-              if row["status"] == "passed_with_unsupported":
-                  if (
-                      not isinstance(unsupported, int)
-                      or unsupported < 1
-                      or not isinstance(details, list)
-                      or not details
-                      or any(
-                          not isinstance(detail, dict)
-                          or not isinstance(detail.get("capability"), str)
-                          or not isinstance(detail.get("reason"), str)
-                          or not isinstance(detail.get("severity"), str)
-                          for detail in details
-                      )
-                  ):
-                      raise SystemExit(f"VM semantic unsupported-function diagnostics are incomplete: {row}")
-              elif unsupported != 0 or details:
+              if unsupported != 0 or details:
                   raise SystemExit(f"VM semantic passed fixture contains unsupported functions: {row}")
           if any(
               not isinstance(row.get("functions_virtualized"), int)

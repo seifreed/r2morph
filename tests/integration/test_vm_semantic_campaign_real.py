@@ -11,6 +11,7 @@ import pytest
 
 from scripts.vm_semantic_campaign import (
     _DEFAULT_SEEDS,
+    _PASSABLE_FIXTURE_STATUSES,
     _corpus_fixture_counts,
     _error_result,
     _execution_observation,
@@ -33,6 +34,10 @@ _MAX_ERROR_MESSAGE_LENGTH = 240
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
     expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
+
+
+def test_vm_semantic_campaign_only_counts_fully_virtualized_fixtures_as_passed() -> None:
+    expect(frozenset({"passed"}) == _PASSABLE_FIXTURE_STATUSES)
 
 
 def test_vm_semantic_campaign_script_resolves_local_imports() -> None:
@@ -294,7 +299,7 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
     expect(
         'report.get("fixture_results", [])' in content
         and 'row.get("functions_virtualized")' in content
-        and '"passed_with_unsupported"' in content
+        and 'row.get("status") != "passed"' in content
         and 'row.get("unsupported_function_details", [])' in content
         and '"termination_signal" not in row["original"]' in content
     )
