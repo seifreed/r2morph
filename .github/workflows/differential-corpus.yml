@@ -1286,7 +1286,12 @@ jobs:
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
-          if ($suite.SelectNodes("//skipped").Count -gt 0) { throw "Windows PE smoke contains skipped cases" }
+          $unexpectedSkips = @(
+            $suite.SelectNodes("//skipped") | Where-Object {
+              $_.message -notlike "*Mach-O arm64 execution requires macOS*"
+            }
+          )
+          if ($unexpectedSkips.Count -gt 0) { throw "Windows PE smoke contains unexpected skips" }
           $required = @(
             "test_pe_handler_checksum",
             "test_pe_handler_checksum_and_imports",

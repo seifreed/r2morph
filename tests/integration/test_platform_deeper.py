@@ -2,6 +2,8 @@ import platform
 import shutil
 from pathlib import Path
 
+import pytest
+
 from r2morph.platform.codesign import CodeSigner
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.macho_handler import MachOHandler
@@ -40,7 +42,7 @@ def test_pe_handler_checksum(tmp_path: Path):
 
 def test_macho_handler_repair_and_codesign(tmp_path: Path):
     if platform.system() != "Darwin":
-        return
+        pytest.skip("Mach-O arm64 execution requires macOS")
     binary_path = _copy_binary(tmp_path, Path("fixtures/dataset/macho_arm64"), "macho_tmp")
     handler = MachOHandler(binary_path)
 
