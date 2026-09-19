@@ -4,7 +4,13 @@ import sys
 from pathlib import Path
 from typing import cast
 
-from scripts.vm_resistance_adversarial import _DEFAULT_COUNT, measure, measure_corpus
+from scripts.vm_resistance_adversarial import (
+    _DEFAULT_COUNT,
+    _GENERATED_RESISTANCE_FIXTURE_NAMES,
+    _select_generated_resistance_fixtures,
+    measure,
+    measure_corpus,
+)
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_shift_x86_64"
@@ -22,6 +28,12 @@ _CORPUS_FIXTURES = (
 
 def test_vm_resistance_default_campaign_matches_release_contract() -> None:
     expect(_DEFAULT_COUNT == _EXPECTED_DEFAULT_SEED_COUNT)
+
+
+def test_vm_resistance_generated_fixture_selection_preserves_declared_families(tmp_path: Path) -> None:
+    paths = tuple(tmp_path / name for name in _GENERATED_RESISTANCE_FIXTURE_NAMES)
+
+    expect(_select_generated_resistance_fixtures(paths) == paths)
 
 
 def test_vm_resistance_measurement_records_automated_adversarial_contract() -> None:

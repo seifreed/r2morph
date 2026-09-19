@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import json
 import shutil
 import sys
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import cast
 
 # Keep direct CLI execution equivalent to importing this module from the repo.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -29,6 +31,13 @@ from scripts.protection_bytecode_grammar import measure as measure_grammar
 from scripts.protection_handler_clustering import measure as measure_handlers
 from tests.integration.elf_emulator import emulate_exit_code
 
+
+def _build_generated_corpus(output_dir: Path) -> list[Path]:
+    module = importlib.import_module("scripts.protection_maturity_baseline")
+    builder = cast(Callable[[Path], list[Path]], module.__dict__["build_generated_corpus"])
+    return builder(output_dir)
+
+
 _DEFAULT_SEED = 20260915
 _DEFAULT_COUNT = 10
 _MIN_SEEDS = 2
@@ -36,6 +45,12 @@ _MAX_SEEDS = 32
 _VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
 _TAMPER_OFFSETS = (0x10, 0x18, 0x20, 0x28, 0x30, 0x40, 0x50, 0x60)
 _NATIVE_EXECUTION_TIMEOUT_SECONDS = 5
+_GENERATED_RESISTANCE_FIXTURE_NAMES = (
+    "generated_calls_gcc-o0",
+    "generated_cpp_gxx-o2",
+    "generated_memory_gcc-o2",
+    "generated_xlat_gcc-o2",
+)
 _HUMAN_REVIEW = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "automated-adversarial-smoke",
@@ -48,6 +63,15 @@ _HUMAN_REVIEW = {
         "progressive-bytecode-protection",
     ],
 }
+
+
+def _select_generated_resistance_fixtures(paths: Sequence[Path]) -> tuple[Path, ...]:
+    """Select a stable cross-family subset from the generated corpus."""
+    by_name = {path.name: path for path in paths}
+    missing = [name for name in _GENERATED_RESISTANCE_FIXTURE_NAMES if name not in by_name]
+    if missing:
+        raise ValueError(f"generated resistance corpus is missing fixtures: {missing}")
+    return tuple(by_name[name] for name in _GENERATED_RESISTANCE_FIXTURE_NAMES)
 
 
 def _sha256(path: Path) -> str:
@@ -346,15 +370,20 @@ def measure_corpus(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", type=Path, action="append", required=True)
+    parser.add_argument("--generated-corpus", action="store_true")
     parser.add_argument("--first-seed", type=int, default=_DEFAULT_SEED)
     parser.add_argument("--count", type=int, default=_DEFAULT_COUNT)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    result = (
-        measure(args.fixture[0], args.first_seed, args.count)
-        if len(args.fixture) == 1
-        else measure_corpus(args.fixture, args.first_seed, args.count)
-    )
+    with tempfile.TemporaryDirectory(prefix="r2morph-vm-resistance-sources-") as directory:
+        sources = list(args.fixture)
+        if args.generated_corpus:
+            sources.extend(_select_generated_resistance_fixtures(_build_generated_corpus(Path(directory))))
+        result = (
+            measure(sources[0], args.first_seed, args.count)
+            if len(sources) == 1
+            else measure_corpus(sources, args.first_seed, args.count)
+        )
     rendered = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")
