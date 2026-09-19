@@ -69,6 +69,16 @@ def test_ordered_functions_prioritize_lowest_image_address() -> None:
     expect([function["addr"] for function in _ordered_functions(FunctionSource())] == [0x1000, 0x2000, 0x4000])
 
 
+def test_ordered_functions_excludes_tiny_functions_before_analysis_budget() -> None:
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int]]:
+            return [{"addr": index, "size": 1} for index in range(300)] + [{"addr": 0x1000, "size": 16}]
+
+    functions = _ordered_functions(FunctionSource(), analysis_budget=1)
+
+    expect(functions == [{"addr": 0x1000, "size": 16}])
+
+
 def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions() -> None:
     analyzer = DefUseAnalyzer(_branching_cfg())
     analyzer.analyze()

@@ -478,18 +478,22 @@ def _ordered_functions(
     unwind_section: str | None = None,
     entrypoint_addresses: frozenset[int] = frozenset(),
 ) -> list[dict[str, Any]] | None:
-    """Visit functions in stable image order before applying the budget."""
+    """Visit viable functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
-    if len(functions) > analysis_budget:
+    candidates = [
+        function
+        for function in functions
+        if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
+        and not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
+    ]
+    if len(candidates) > analysis_budget:
         logger.warning(
             "Skipping code virtualization: function population exceeds the VM analysis budget (%d > %d)",
-            len(functions),
+            len(candidates),
             analysis_budget,
         )
         return None
-    return [
-        function for function in functions if not _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses)
-    ]
+    return candidates
 
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
