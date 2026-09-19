@@ -54,6 +54,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _push_handler_asm,
     _pushi_handler_asm,
     _rspadj_handler_asm,
+    _rspalign_handler_asm,
     _sahf_handler_asm,
     _shift_handler_asm,
 )
@@ -439,6 +440,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _pushi_handler_asm(self.context.key_qword, self.context.rsp_off)
         elif key.startswith("rspadj_"):
             body = _rspadj_handler_asm(key, self.context.key_dword, self.context.rsp_off)
+        elif key == "rspalign":
+            body = _rspalign_handler_asm(self.context.rsp_off)
         elif key == "enter":
             body = _enter_handler_asm(self.context.key, self.context.key_dword, self.context.rsp_off)
         elif key == "movfromrsp":

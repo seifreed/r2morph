@@ -9,7 +9,9 @@ graphs (no r2, no binary) — real calls into the real function, no mocks.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_region import _stack_balanced, extract_region
+from r2morph.core import randomness
+from r2morph.mutations.code_virtualization_region import _stack_balanced, build_region_scheme, extract_region
+from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _SIGNAL_FRAME_RESERVE,
@@ -108,6 +110,31 @@ def test_region_copies_zeroed_rsp_indexed_memory_argument() -> None:
     ]
     region = extract_region(instructions)
     expect(region is not None and region.stack_argument_copy_bytes == _ZERO_INDEX_COPY_BYTES)
+
+
+def test_region_models_sysv_rsp_alignment_and_restores_stack_depth() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 4, "type": "and", "opcode": "and rsp, 0xfffffffffffffff0"},
+        {"addr": 0x1004, "size": 4, "type": "add", "opcode": "add rsp, 8"},
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(
+        region is not None
+        and [item[0] for item in region.instructions[:2]] == ["rspalign", "rspadj"]
+        and region.instructions[-1][0] == "exit"
+    )
+
+
+def test_region_codegen_emits_sysv_rsp_alignment_handler() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 4, "type": "and", "opcode": "and rsp, 0xfffffffffffffff0"},
+        {"addr": 0x1004, "size": 4, "type": "add", "opcode": "add rsp, 8"},
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    blob = build_region_blob(region, 0x500000, build_region_scheme(region, randomness.Random(3))) if region else None
+    expect(blob is not None)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:

@@ -265,6 +265,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._imm(item[1], 64, self._opcode(item))
         elif kind == "rspadj":
             self._imm(item[2], 32, self._opcode(item))
+        elif kind == "rspalign":
+            self._opcode(item)
         elif kind == "enter":
             position = self._opcode(item)
             self.plain.append(self.slot_of[item[1]] ^ position)

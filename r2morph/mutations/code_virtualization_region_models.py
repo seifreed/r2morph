@@ -280,6 +280,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
 }
 
 _IDENTITY_KEYS = {
+    "rspalign",
     "fppload",
     "fppstore",
     "fpploadrip",

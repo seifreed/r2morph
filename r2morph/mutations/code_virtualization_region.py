@@ -383,9 +383,7 @@ def _merge_stack_state(
     return True
 
 
-def _stack_transition(
-    item: list[Any], depth: int, snapshot: tuple[int, int] | None
-) -> tuple[int, tuple[int, int] | None] | None:
+def _stack_depth_transition(item: list[Any], depth: int, snapshot: tuple[int, int] | None) -> int | None:
     kind = item[0]
     if kind in ("push", "pushi", "enter"):
         out_depth = depth + 8 + (int(item[2]) if kind == "enter" else 0)
@@ -395,6 +393,10 @@ def _stack_transition(
         out_depth = depth - (8 if kind == "pop" else int(item[-1]) // 8)
     elif kind == "rspadj":
         out_depth = depth + (item[2] if item[1] == "sub" else -item[2])
+    elif kind == "rspalign":
+        # SysV x86-64 function entry has rsp % 16 == 8. The virtual stack depth
+        # therefore grows by the current rsp remainder when aligning down.
+        out_depth = depth + ((8 - depth) % 16)
     elif kind == "movtorsp":
         if snapshot is None or item[1] != snapshot[0]:
             return None
@@ -405,6 +407,16 @@ def _stack_transition(
         out_depth = snapshot[1] - 8
     else:
         out_depth = depth
+    return out_depth
+
+
+def _stack_transition(
+    item: list[Any], depth: int, snapshot: tuple[int, int] | None
+) -> tuple[int, tuple[int, int] | None] | None:
+    kind = item[0]
+    out_depth = _stack_depth_transition(item, depth, snapshot)
+    if out_depth is None:
+        return None
     if out_depth < 0 or (kind in ("exit", "vret") and depth != 0):
         return None
     out_snapshot: tuple[int, int] | None

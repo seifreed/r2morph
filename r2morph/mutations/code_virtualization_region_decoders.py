@@ -27,6 +27,9 @@ _QWORD_WIDTH_BITS = 64
 _MAX_SHIFT_COUNT = 63
 _REGISTER_COUNT = 16
 _MAX_ENTER_ALLOCATION = 0xFFFF
+_SYSV_STACK_ALIGNMENT = 16
+_SYSV_ENTRY_RSP_MODULO = 8
+_RSP_ALIGNMENT_MASK = -_SYSV_STACK_ALIGNMENT
 
 
 def _register_operand(name: str) -> tuple[int, int] | None:
@@ -312,12 +315,12 @@ def _decode_push(disasm: str) -> tuple[Any, ...] | None:
 
 
 def _decode_rsp_arith(disasm: str) -> tuple[Any, ...] | None:
-    """Decode ``add rsp, imm`` / ``sub rsp, imm`` (stack frame allocation)."""
+    """Decode stack allocation and the SysV ``and rsp, -16`` prologue."""
     parts = disasm.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in ("add", "sub"):
+    if mnemonic not in ("add", "sub", "and"):
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     if left != "rsp" or any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
@@ -328,9 +331,14 @@ def _decode_rsp_arith(disasm: str) -> tuple[Any, ...] | None:
         return None
     if value >= 1 << 63:
         value -= 1 << 64
-    if value < 0 or not immediate_fits_width(value, 32):
-        return None
-    return ("rspadj", mnemonic, value)
+    result: tuple[Any, ...] | None
+    if mnemonic == "and":
+        result = ("rspalign",) if value == _RSP_ALIGNMENT_MASK else None
+    elif value < 0 or not immediate_fits_width(value, 32):
+        result = None
+    else:
+        result = ("rspadj", mnemonic, value)
+    return result
 
 
 def _decode_mov_from_rsp(disasm: str) -> tuple[Any, ...] | None:

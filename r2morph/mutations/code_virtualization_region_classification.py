@@ -287,7 +287,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
         if op is not None:
             result = ["op", op]
     result = result or _decode_subregister_binary(kind, text)
-    if result is None and kind in ("add", "sub"):
+    if result is None and kind in ("add", "sub", "and"):
         rsp_arith = _decode_rsp_arith(text)
         if rsp_arith is not None:
             result = [*rsp_arith]
