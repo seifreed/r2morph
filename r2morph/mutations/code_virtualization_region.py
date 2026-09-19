@@ -436,8 +436,9 @@ def _stack_successors(item: list[Any], index: int) -> tuple[list[int], int | Non
         return [index + 1], int(item[1])
     if kind == "jmp":
         return [int(item[1])], None
-    if kind == "jcc":
-        return [index + 1, int(item[2])], None
+    if kind in ("jcc", "jrcxz"):
+        target = item[2] if kind == "jcc" else item[1]
+        return [index + 1, int(target)], None
     return [index + 1], None
 
 
@@ -541,8 +542,9 @@ def _flag_successors(items: list[list[Any]], i: int) -> list[int]:
         return []
     if kind == "jmp":
         return [items[i][1]]
-    if kind == "jcc":
-        return [i + 1, items[i][2]]
+    if kind in ("jcc", "jrcxz"):
+        target = items[i][2] if kind == "jcc" else items[i][1]
+        return [i + 1, target]
     return [i + 1]
 
 
@@ -640,8 +642,9 @@ def _inject_junk_movs(
     for item in new_items:
         if item[0] in ("jmp", "vcall"):
             item[1] = old_to_new[item[1]]
-        elif item[0] == "jcc":
-            item[2] = old_to_new[item[2]]
+        elif item[0] in ("jcc", "jrcxz"):
+            target_index = 2 if item[0] == "jcc" else 1
+            item[target_index] = old_to_new[item[target_index]]
     _remap_index_map(index_map, old_to_new)
     _remap_index_map(source_index_map, old_to_new)
     return new_items
@@ -710,11 +713,12 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
             if resolved is None:
                 return False
             item[1] = resolved
-        elif item[0] == "jcc":
-            resolved = resolve(item[2])
+        elif item[0] in ("jcc", "jrcxz"):
+            target_index = 2 if item[0] == "jcc" else 1
+            resolved = resolve(item[target_index])
             if resolved is None:
                 return False
-            item[2] = resolved
+            item[target_index] = resolved
     function_start = min(instruction["addr"] for instruction in instructions)
     function_end = max(instruction["addr"] + instruction.get("size", 0) for instruction in instructions)
     has_internal_call = False

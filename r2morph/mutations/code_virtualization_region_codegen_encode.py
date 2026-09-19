@@ -95,6 +95,7 @@ _FIXED_SIZE_GROUPS = {
     ),
     5: (
         "rspadj",
+        "jrcxz",
         "jmp",
         "jcc",
         "vcall",

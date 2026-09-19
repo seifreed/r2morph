@@ -261,8 +261,9 @@ def lower_arith_to_microops(
     for item in lowered:
         if item[0] in ("jmp", "vcall"):
             item[1] = old_to_new[item[1]]
-        elif item[0] == "jcc":
-            item[2] = old_to_new[item[2]]
+        elif item[0] in ("jcc", "jrcxz"):
+            target_index = 2 if item[0] == "jcc" else 1
+            item[target_index] = old_to_new[item[target_index]]
     _remap_index_map(index_map, old_to_new)
     _remap_index_map(source_index_map, old_to_new)
     return lowered

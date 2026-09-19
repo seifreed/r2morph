@@ -705,6 +705,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._disp(self._target_offset(item[1]), self._opcode(item, kind))
         elif kind == "jcc":
             self._disp(self._target_offset(item[2]), self._opcode(item))
+        elif kind == "jrcxz":
+            self._disp(self._target_offset(item[1]), self._opcode(item))
         elif kind == "setcc":
             self._slot(item, item[2])
         elif kind == "cmov":

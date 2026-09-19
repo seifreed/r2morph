@@ -656,6 +656,19 @@ def _jcc_handler_asm(condition: str, retarget_target: str) -> str:
     )
 
 
+def _jrcxz_handler_asm(rcx_offset: int, retarget_target: str) -> str:
+    """Select a static target from the virtual RCX zero condition."""
+    return (
+        retarget_target
+        + "  lea r8, [rsi+5]\n"
+        + f"  mov r10, qword ptr [rsp+{rcx_offset}]\n"
+        + "  mov rcx, r10\n  neg rcx\n  or rcx, r10\n  shr rcx, 63\n  xor ecx, 1\n"
+        + "  neg rcx\n  mov r10, r9\n  and r10, rcx\n"
+        + "  not rcx\n  and r8, rcx\n  or r10, r8\n  mov rsi, r10\n"
+        + "  jmp vm_dispatch\n"
+    )
+
+
 def _setcc_slot_read(offset: int, key: str, reg: str) -> str:
     """Read the destination slot index at ``[rsi+offset]`` into 64-bit ``reg``.
 

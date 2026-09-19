@@ -13,6 +13,7 @@ from r2morph.mutations.code_virtualization_region_classification import _CONDITI
 from r2morph.mutations.code_virtualization_region_control_handlers import (
     _JCC_CONDITION_BASE,
     _jcc_handler_asm,
+    _jrcxz_handler_asm,
 )
 from tests.utils.assertions import expect
 
@@ -92,3 +93,10 @@ def test_jcc_handler_selects_branch_free_from_captured_flags() -> None:
     expect(not ("neg" not in mnemonics))
     expect("cmov" not in "".join(mnemonics))
     expect(not ("vm_dispatch" not in asm))
+
+
+def test_jrcxz_handler_selects_branch_free_from_virtual_rcx() -> None:
+    asm = _jrcxz_handler_asm(8, _RETARGET_TARGET_STUB)
+    mnemonics = _mnemonics(asm)
+    expect(not _NATIVE_CONDITIONAL_JUMPS.intersection(mnemonics))
+    expect("shr rcx, 63" in asm and "vm_dispatch" in asm)

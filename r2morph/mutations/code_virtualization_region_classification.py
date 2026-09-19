@@ -470,8 +470,11 @@ def _classify_jump(kind: str, text: str, insn: dict[str, Any], allow_computed_ju
                     else ["ijmpmem", base_slot, index_slot, scale_shift, displacement]
                 )
     elif kind == "cjmp":
-        condition = _CONDITION.get(text.split(None, 1)[0].lower())
-        if condition is not None:
+        mnemonic = text.split(None, 1)[0].lower()
+        condition = _CONDITION.get(mnemonic)
+        if mnemonic == "jrcxz":
+            result = ["jrcxz", insn.get("jump", -1)]
+        elif condition is not None:
             result = ["jcc", condition, insn.get("jump", -1)]
     return result
 

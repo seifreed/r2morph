@@ -272,6 +272,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "push": (2,),
     "pop": (2,),
     "rspadj": (1,),
+    "jrcxz": (1,),
     "jcc": (1,),
     "setcc": (1,),
     "cmov": (1, 4),
