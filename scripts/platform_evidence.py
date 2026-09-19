@@ -27,7 +27,9 @@ _REQUIRED_CASES = {
         "test_pe_handler_checksum_and_imports",
         "test_pe_handler_extended",
         "test_pe_handler_real_binary",
+        "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
         "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
+        "test_register_substitution_pe_x86_64_preserves_native_execution",
     ),
     "elf-arm64": (
         "test_elf_arm64_nop_insertion_preserves_native_exit_code",
