@@ -77,22 +77,25 @@ def _read_block_instructions(binary: Binary, address: int, size: int) -> list[di
     """Recover a block omitted by radare2's whole-function disassembly."""
     if size <= 0 or getattr(binary, "r2", None) is None:
         return []
-    try:
-        instructions = binary.r2.cmdj(f"pdbj {size} @ {address}") or []
-    except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
-        logger.debug("Could not recover block at 0x%x: %s", address, exc)
-        return []
-    if not isinstance(instructions, list):
-        return []
-    recovered: list[dict[str, Any]] = []
-    for instruction in instructions:
-        if not isinstance(instruction, dict):
+    for command in ("pdbj", "pdj"):
+        try:
+            instructions = binary.r2.cmdj(f"{command} {size} @ {address}") or []
+        except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
+            logger.debug("Could not recover block at 0x%x with %s: %s", address, command, exc)
             continue
-        offset = instruction.get("offset", instruction.get("addr"))
-        if not isinstance(offset, int) or not address <= offset < address + size:
+        if not isinstance(instructions, list):
             continue
-        recovered.append(instruction if "offset" in instruction else {**instruction, "offset": offset})
-    return recovered
+        recovered: list[dict[str, Any]] = []
+        for instruction in instructions:
+            if not isinstance(instruction, dict):
+                continue
+            offset = instruction.get("offset", instruction.get("addr"))
+            if not isinstance(offset, int) or not address <= offset < address + size:
+                continue
+            recovered.append(instruction if "offset" in instruction else {**instruction, "offset": offset})
+        if recovered:
+            return recovered
+    return []
 
 
 def populate_cfg_edges(cfg: ControlFlowGraph, r2_blocks: list[dict[str, Any]]) -> None:
