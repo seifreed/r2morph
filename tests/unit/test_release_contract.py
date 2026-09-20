@@ -1860,7 +1860,7 @@ def test_evidence_workflow_artifacts_are_rerun_safe() -> None:
 def test_differential_workflow_cancels_stale_campaigns() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
 
-    expect("group: differential-corpus-${{ github.sha }}" in workflow and "cancel-in-progress: true" in workflow)
+    expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: true" in workflow)
 
 
 def test_platform_evidence_aggregate_skips_cancelled_dependencies() -> None:
