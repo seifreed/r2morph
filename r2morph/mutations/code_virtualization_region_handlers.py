@@ -142,6 +142,24 @@ def _unmask_qword(scratch: str, scratch2: str) -> str:
     )
 
 
+def _mask_low_register_asm(register: str, width: int) -> str:
+    mask = {8: "0xff", 16: "0xffff"}.get(width)
+    return "" if mask is None else f"  and {register}, {mask}\n"
+
+
+def _prepare_partial_destination_asm(width: int) -> str:
+    mask = {8: "0xff", 16: "0xffff"}.get(width)
+    return "" if mask is None else f"  mov r12, r10\n  and r10d, {mask}\n"
+
+
+def _merge_partial_result_asm(width: int) -> str:
+    preserve_mask = {8: -256, 16: -65536}.get(width)
+    if preserve_mask is None:
+        return ""
+    result_mask = {8: 0xFF, 16: 0xFFFF}[width]
+    return f"  and r10d, {result_mask:#x}\n  and r12, {preserve_mask}\n  or r10, r12\n"
+
+
 def _restore_virtual_flags_asm() -> str:
     """Restore the VM flags image before an instruction consumes carry."""
     return f"  mov r10, qword ptr [rsp+{_FLAGS_OFFSET}]\n  push r10\n  popfq\n"
@@ -259,15 +277,18 @@ def _op_mba_handler_asm(config: IntegerHandlerConfig) -> str:
             "  mov rax, qword ptr [rsp+r9*8]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [rsp+r9*8]\n"
         )
         advance = 3
+    body += _mask_low_register_asm("eax", width)
     # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == _QWORD_WIDTH_BITS else "  mov r10d, dword ptr [rsp+r8*8]\n"
+    body += "  mov r10, qword ptr [rsp+r8*8]\n"
+    body += _prepare_partial_destination_asm(width)
     body += arith_fold(mnemonic, 0, arith_variant)
     if width == _QWORD_WIDTH_BITS:
         body += "  mov qword ptr [rsp+r8*8], r10\n"
     else:
-        body += "  mov r10d, r10d\n  mov qword ptr [rsp+r8*8], r10\n"
+        body += "  mov r10d, r10d\n" if width == _DWORD_WIDTH_BITS else _merge_partial_result_asm(width)
+        body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -304,20 +325,21 @@ def _op_synth_handler_asm(config: IntegerHandlerConfig) -> str:
             "  mov rax, qword ptr [rsp+r9*8]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [rsp+r9*8]\n"
         )
         advance = 3
+    body += _mask_low_register_asm("eax", width)
     # Save the original operands (b before any negation, a before the MBA) so the
     # flag synthesis can read them alongside the result.
     body += "  mov rbp, rax\n"
-    body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == _QWORD_WIDTH_BITS else "  mov r10d, dword ptr [rsp+r8*8]\n"
+    body += "  mov r10, qword ptr [rsp+r8*8]\n"
+    body += _prepare_partial_destination_asm(width)
     body += "  mov rbx, r10\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
     body += arith_fold(mnemonic, 0, arith_variant)
-    if width == _DWORD_WIDTH_BITS:
-        body += "  mov r10d, r10d\n"
+    body += "  mov r10d, r10d\n" if width == _DWORD_WIDTH_BITS else _mask_low_register_asm("r10d", width)
     # add/sub keep their arithmetic flags; xor/and/or clear CF and OF (logic mode).
     body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic", flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
-    body += "  mov qword ptr [rsp+r8*8], r10\n"
+    body += _merge_partial_result_asm(width) + "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 

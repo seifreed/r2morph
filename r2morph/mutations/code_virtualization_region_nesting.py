@@ -106,6 +106,23 @@ def _stack_copy_bytes(region: Region) -> int:
     return max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
 
 
+def _has_subword_operation(region: Region) -> bool:
+    """Return whether nested layers would need byte/word register semantics."""
+    for item in region.instructions:
+        kind = item[0]
+        if kind in ("op", "opmba", "opsynth", "vsuper"):
+            if getattr(item[1], "width", 0) in (8, 16):
+                return True
+        elif kind in ("cmp", "test", "bt") and item[-1] in (8, 16):
+            return True
+        elif kind in ("vbinop", "vbinopsynth", "vcmpsynth", "vshift", "vshiftreg", "vpushi"):
+            if item[-1] in (8, 16):
+                return True
+        elif kind in ("vpop8", "vpop16"):
+            return True
+    return False
+
+
 def _region_stack_guard(region: Region, junk_seed: int) -> int:
     return stack_guard_for_copy(frame_size_for_seed(junk_seed), _stack_copy_bytes(region))
 
@@ -551,6 +568,13 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
 
 
 def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random, depth: int = 2) -> bytes | None:
+    """Build nested layers when the region has no sub-word operation."""
+    if _has_subword_operation(region):
+        return None
+    return _build_nested_region_blob(region, cave_vaddr, rng, depth)
+
+
+def _build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random, depth: int = 2) -> bytes | None:
     """Assemble an N-layer nested interpreter for ``region`` at ``cave_vaddr``.
 
     Each layer is an independently-keyed VM; a peeled register-op run in layer

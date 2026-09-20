@@ -158,6 +158,16 @@ def test_build_nested_region_blob_at_depth_four_assembles() -> None:
     expect(blob is not None and len(blob) > 0)
 
 
+def test_build_nested_region_blob_falls_back_for_subword_operations() -> None:
+    instructions = [
+        {"addr": 0x1000, "type": "xor", "opcode": "xor al, 0xaa", "size": 2, "jump": -1},
+        {"addr": 0x1002, "type": "xor", "opcode": "xor al, 0x55", "size": 2, "jump": -1},
+        {"addr": 0x1004, "type": "ret", "opcode": "ret", "size": 1, "jump": -1},
+    ]
+    region = extract_region(instructions, randomness.Random(2))
+    expect(region is not None and build_nested_region_blob(region, 0x401000, randomness.Random(7)) is None)
+
+
 def test_return_slot_budget_at_max_layers_fits_below_red_zone() -> None:
     # Each of the up-to-_MAX_LAYERS parent->child transitions reserves one qword
     # return slot at _RETURN_BASE + index*8; the whole run must stay below the

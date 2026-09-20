@@ -25,7 +25,7 @@ def _lower_fold(item: list[Any], fold: str, use_superinstructions: bool) -> list
         ["vpush", operation.dst_index],
         source,
         [fold, operation.mnemonic, operation.width],
-        ["vpop", operation.dst_index],
+        [_memory_pop_kind(operation.width), operation.dst_index],
     ]
 
 
