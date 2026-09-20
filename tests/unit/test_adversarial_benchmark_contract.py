@@ -11,6 +11,7 @@ from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
     _analyzer_effectiveness_by_pass,
+    _availability,
     _binary_ninja_decompiler_metrics,
     _campaign_summary,
     _is_binary_ninja_license_error,
@@ -346,6 +347,17 @@ def test_adversarial_benchmark_records_angr_decompiler_output_when_available() -
         and result["original"]["decompiler_entrypoints"] > 0
         and result["protected"]["decompiler_lines"] > 0
     )
+
+
+def test_adversarial_benchmark_uses_compatible_angr_import_boundary() -> None:
+    available, reason = _availability("angr")
+
+    if not available:
+        expect(bool(reason))
+        return
+
+    result = _measure_tool("angr", _FIXTURE, _FIXTURE)
+    expect(result["status"] == "completed", f"angr benchmark failed after compatible import: {result}")
 
 
 def test_adversarial_benchmark_reports_radare2_decompiler_recovery() -> None:

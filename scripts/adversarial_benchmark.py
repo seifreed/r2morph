@@ -20,6 +20,7 @@ from typing import Any, cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from r2morph.adapters.angr_import import import_angr_modules
 from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
 from r2morph.platform.elf_handler import ELFHandler
@@ -110,6 +111,11 @@ def _prepare_optional_module_path(tool: str) -> None:
 
 
 def _availability(tool: str) -> tuple[bool, str]:
+    if tool == "angr":
+        imported = import_angr_modules()
+        if imported.available:
+            return True, "angr"
+        return False, "module 'angr' cannot be imported through the compatibility adapter"
     if tool in _COMMANDS:
         command = _configured_executable(tool)
         return (True, command) if command else (False, f"executable {_COMMANDS[tool]!r} is unavailable")
@@ -213,9 +219,12 @@ def _is_binary_ninja_license_error(error: RuntimeError) -> bool:
 
 
 def _angr_metric(path: Path) -> dict[str, object]:
-    angr = import_module("angr")
+    imported = import_angr_modules(project=True)
+    if not imported.available or imported.project is None:
+        raise _ToolCapabilityUnavailableError("module 'angr' cannot be imported through the compatibility adapter")
+    project_class = imported.project
     started = time.perf_counter()
-    project = angr.Project(str(path), auto_load_libs=False)
+    project = project_class(str(path), auto_load_libs=False)
     cfg = project.analyses.CFGFast(normalize=True)
     functions = sorted(
         (
