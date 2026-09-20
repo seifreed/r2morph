@@ -62,6 +62,7 @@ _EXPECTED_ADVERSARIAL_TOOLS = [
     "ghidra",
     "custom",
 ]
+_CURRENT_ANGR_EVIDENCE = "docs/protection-adversarial-angr-local-2026-09-20.json"
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "instruction-expansion",
     "block-reordering",
@@ -778,6 +779,14 @@ def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
         and summary["adversarial_blocker_totals"]["total_adversarial_blockers"] == _EXPECTED_ADVERSARIAL_BLOCKERS
         and all((_ROOT / path).exists() for path in evidence_paths)
     )
+
+
+def test_support_matrix_records_current_angr_corpus_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    evidence = matrix["matrix"]["summary"]["adversarial_benchmark_evidence"]
+    angr_evidence = evidence["measured_available_tools"]["angr"]["evidence"]
+
+    expect(_CURRENT_ANGR_EVIDENCE in angr_evidence)
 
 
 def test_release_contract_rejects_missing_binary_ninja_adversarial_slot() -> None:
