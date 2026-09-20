@@ -38,7 +38,7 @@ non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static
 linking when the host toolchain provides it. C and C++ fixtures exercise switch
 dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
-The repository-local generated differential campaign adds 188 deterministic
+The repository-local generated differential campaign adds 200 deterministic
 ELF x86-64 fixtures across those compiler profiles. The C subset includes a
 dedicated SSE2 SIMD family so vector register and packed-integer paths remain
 visible in the differential inventory, plus a pthread/atomic family that
@@ -249,7 +249,7 @@ so missing pass/tool rows and missing applications for the ten contractual
 corpus passes fail the run. It also starts automatically after a successful
 `Differential Corpus By Pass` run and checks out that run's exact `head_sha`,
 so analyzer evidence is refreshed for the same source revision rather than
-drifting behind the differential campaign. It includes the same 188 generated ELF
+drifting behind the differential campaign. It includes the same 200 generated ELF
 x86-64 variants used by the differential campaign, records the distinct
 `generated-elf-x86-64` and `generated-cpp-x86-64` families in the merged report,
 and partitions generated fixtures together with repository fixtures. Extended-
@@ -284,7 +284,7 @@ partial-ISA rows remain release blockers.
 
 The scheduled differential workflow uses the same four-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,
-and the aggregate artifact rechecks that all 188 generated variants and all
+and the aggregate artifact rechecks that all 200 generated variants and all
 pass/fixture/seed rows are present before publishing the campaign evidence.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures

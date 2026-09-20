@@ -366,6 +366,31 @@ int main(int argc, char **argv) {
     return threaded_mix(argc);
 }
 """,
+    "generated_signals": r"""
+#include <signal.h>
+#include <stdint.h>
+
+static volatile sig_atomic_t signal_seen;
+
+static void signal_handler(int signal_number) {
+    signal_seen = signal_number == SIGUSR1;
+}
+
+__attribute__((noinline)) static int signal_mix(int value) {
+    if (signal(SIGUSR1, signal_handler) == SIG_ERR) {
+        return 113;
+    }
+    if (raise(SIGUSR1) != 0) {
+        return 114;
+    }
+    return (value ^ (int)signal_seen) & 127;
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    return signal_mix(argc);
+}
+""",
     "generated_lookup": r"""
 #include <stdint.h>
 

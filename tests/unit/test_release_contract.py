@@ -168,8 +168,8 @@ def test_compatibility_corpus_documents_current_generated_variant_count() -> Non
     contract = " ".join((_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
 
     expect(
-        "same 188 generated ELF x86-64 variants" in contract
-        and "all 188 generated variants" in contract
+        "same 200 generated ELF x86-64 variants" in contract
+        and "all 200 generated variants" in contract
         and "seventy-two generated" not in contract
     )
 

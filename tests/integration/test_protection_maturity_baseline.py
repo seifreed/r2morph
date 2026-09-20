@@ -94,6 +94,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_memory",
     "generated_pointers",
     "generated_recursive",
+    "generated_signals",
     "generated_simd",
     "generated_stack_strings",
     "generated_string",
@@ -882,6 +883,14 @@ def test_generated_threads_source_exercises_joined_atomic_worker() -> None:
         and "pthread_join" in source
         and "atomic_fetch_add_explicit" in source
         and "memory_order_seq_cst" in source
+    )
+
+
+def test_generated_signals_source_exercises_handler_and_delivery() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_signals"]
+
+    expect(
+        "signal(" in source and "raise(SIGUSR1)" in source and "signal_handler" in source and "sig_atomic_t" in source
     )
 
 

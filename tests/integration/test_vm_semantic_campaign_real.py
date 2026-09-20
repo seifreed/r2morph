@@ -74,6 +74,7 @@ def test_vm_semantic_campaign_classifies_generated_capability_families() -> None
         and _fixture_categories(coverage, "generated_memory_gcc-o2") == ["memory_addressing"]
         and _fixture_categories(coverage, "generated_simd_gcc-o2") == ["floating_point_and_simd"]
         and _fixture_categories(coverage, "generated_threads_gcc-o2") == ["thread_safety"]
+        and _fixture_categories(coverage, "generated_signals_gcc-o2") == ["signals_and_system_calls"]
         and _fixture_categories(coverage, "generated_cpp_exceptions_gxx-o2") == ["unwinding_exceptions"]
     )
 
@@ -373,7 +374,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
 
     expect(
         "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
-        and 'expected_corpus_counts = {"generated-corpus": 516, "repository-fixtures": 453}' in content
+        and 'expected_corpus_counts = {"generated-corpus": 552, "repository-fixtures": 453}' in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_names"] != expected_fixture_names' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content

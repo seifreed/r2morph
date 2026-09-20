@@ -81,7 +81,7 @@ jobs:
           report = json.loads(Path("adversarial-benchmark.json").read_text(encoding="utf-8"))
           expected_generated = sorted(
               f"{source}_{profile}"
-              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_simd", "generated_stack_strings", "generated_string", "generated_threads", "generated_xlat")
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_signals", "generated_simd", "generated_stack_strings", "generated_string", "generated_threads", "generated_xlat")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += [
@@ -435,7 +435,7 @@ jobs:
           corpus_scope = report.get("corpus_scope")
           expected_generated = sorted(
               f"{source}_{profile}"
-              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_simd", "generated_stack_strings", "generated_string", "generated_threads", "generated_xlat")
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_signals", "generated_simd", "generated_stack_strings", "generated_string", "generated_threads", "generated_xlat")
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += [

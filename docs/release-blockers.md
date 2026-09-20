@@ -27,9 +27,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   Exit criteria: all relevant passes have complete differential evidence across
   the supported corpus and declared platform matrix.
 - RB-003: VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals,
-  threads, FP/SIMD, and SSA/liveness. The scheduled campaign now covers 323 fixtures
-  per seed across three deterministic seeds (969 fixture runs: 453 repository-fixture
-  executions and 516 generated-corpus executions), including ordinary unwind metadata
+  threads, FP/SIMD, and SSA/liveness. The scheduled campaign now covers 335 fixtures
+  per seed across three deterministic seeds (1005 fixture runs: 453 repository-fixture
+  executions and 552 generated-corpus executions), including ordinary unwind metadata
   and non-linear CFG liveness fixtures. LSDA/landing-pad
   exception transformation remains fail-closed and is covered by a separate regression
   contract; it is not claimed as full language-level exception virtualization. Unsupported instructions must still fail closed with
