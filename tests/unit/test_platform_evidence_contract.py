@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.platform_evidence import _REQUIRED_CASES, summarize_platform_reports
+from scripts.platform_evidence import _PASS_CASES, _REQUIRED_CASES, summarize_platform_reports
 from tests.utils.assertions import expect
 
 
@@ -44,6 +44,25 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
         and report["platforms"]["macos-arm64"]["status"] == "complete"
         and report["platforms"]["windows-pe"]["status"] == "incomplete"
         and report["summary"]["incomplete_platforms"] == ["windows-pe"]
+    )
+
+
+def test_platform_evidence_publishes_pass_level_status(tmp_path: Path) -> None:
+    for platform_name, required_cases in _REQUIRED_CASES.items():
+        platform_dir = tmp_path / platform_name
+        platform_dir.mkdir()
+        _write_report(platform_dir / "report.xml", required_cases)
+
+    report = summarize_platform_reports(tmp_path)
+
+    expect(
+        report["summary"]["status"] == "complete"
+        and all(
+            row["status"] == "complete"
+            for platform in report["platforms"].values()
+            for row in platform["pass_evidence"].values()
+        )
+        and set(report["platforms"]["elf-arm64"]["pass_evidence"]) == set(_PASS_CASES["elf-arm64"])
     )
 
 

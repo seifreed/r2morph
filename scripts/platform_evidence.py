@@ -54,9 +54,54 @@ _REQUIRED_CASES = {
         "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
     ),
 }
+_PASS_CASES = {
+    "macos-arm64": {
+        "NopInsertion": "test_nop_insertion_arm64_preserves_native_output",
+        "InstructionSubstitution": "test_instruction_substitution_arm64_preserves_native_output",
+        "RegisterSubstitution": "test_register_substitution_arm64_preserves_generated_native_execution",
+    },
+    "windows-pe": {
+        "NopInsertion": "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
+        "InstructionSubstitution": "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
+        "RegisterSubstitution": "test_register_substitution_pe_x86_64_preserves_native_execution",
+    },
+    "elf-arm64": {
+        "NopInsertion": "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+        "InstructionSubstitution": "test_elf_arm64_instruction_substitution_preserves_native_exit_code",
+        "RegisterSubstitution": "test_elf_arm64_register_substitution_preserves_native_exit_code",
+        "ConstantUnfolding": "test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code",
+    },
+    "elf-x86-32": {
+        "NopInsertion": "test_elf_x86_32_nop_insertion_preserves_native_exit_code",
+        "InstructionSubstitution": "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
+        "RegisterSubstitution": "test_elf_x86_32_register_substitution_preserves_native_exit_code",
+        "ConstantUnfolding": "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+    },
+    "elf-arm-32": {
+        "NopInsertion": "test_elf_arm32_nop_insertion_preserves_emulated_exit_code",
+        "InstructionSubstitution": "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
+        "RegisterSubstitution": "test_elf_arm32_register_substitution_preserves_emulated_exit_code",
+        "ConstantUnfolding": "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+    },
+}
 
 
-def _report_summary(path: Path, required_cases: Sequence[str]) -> dict[str, Any]:
+def _pass_evidence(names: Sequence[str], required_cases: dict[str, str]) -> dict[str, dict[str, Any]]:
+    return {
+        pass_name: {
+            "required_case": case_name,
+            "present": any(name.startswith(case_name) for name in names),
+            "status": "complete" if any(name.startswith(case_name) for name in names) else "incomplete",
+        }
+        for pass_name, case_name in sorted(required_cases.items())
+    }
+
+
+def _report_summary(
+    path: Path,
+    required_cases: Sequence[str],
+    pass_cases: dict[str, str],
+) -> dict[str, Any]:
     root = _DEFUSED_ELEMENT_TREE.parse(path).getroot()
     cases = root.findall(".//testcase")
     names = [case.attrib.get("name", "") for case in cases]
@@ -66,7 +111,15 @@ def _report_summary(path: Path, required_cases: Sequence[str]) -> dict[str, Any]
     missing_required_cases = [
         required for required in required_cases if not any(name.startswith(required) for name in names)
     ]
-    complete = not failures and not errors and not skipped and not missing_required_cases and bool(cases)
+    pass_evidence = _pass_evidence(names, pass_cases)
+    complete = (
+        not failures
+        and not errors
+        and not skipped
+        and not missing_required_cases
+        and all(row["status"] == "complete" for row in pass_evidence.values())
+        and bool(cases)
+    )
     return {
         "report": path.name,
         "case_count": len(cases),
@@ -77,6 +130,7 @@ def _report_summary(path: Path, required_cases: Sequence[str]) -> dict[str, Any]
         "required_cases": list(required_cases),
         "required_case_present": not missing_required_cases,
         "missing_required_cases": missing_required_cases,
+        "pass_evidence": pass_evidence,
         "status": "complete" if complete else "incomplete",
     }
 
@@ -97,11 +151,19 @@ def summarize_platform_reports(root: Path) -> dict[str, Any]:
                 "required_cases": list(required_cases),
                 "required_case_present": False,
                 "missing_required_cases": list(required_cases),
+                "pass_evidence": {
+                    pass_name: {
+                        "required_case": case_name,
+                        "present": False,
+                        "status": "incomplete",
+                    }
+                    for pass_name, case_name in sorted(_PASS_CASES[platform_name].items())
+                },
                 "status": "incomplete",
                 "missing_report_count": len(reports),
             }
             continue
-        platforms[platform_name] = _report_summary(reports[0], required_cases)
+        platforms[platform_name] = _report_summary(reports[0], required_cases, _PASS_CASES[platform_name])
     incomplete = sorted(name for name, report in platforms.items() if report["status"] != "complete")
     return {
         "schema_version": 1,
