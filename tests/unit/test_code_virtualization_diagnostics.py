@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _field_counts,
     _function_has_unproven_unwind_metadata,
     _is_runtime_entrypoint,
+    _runtime_initialization_addresses,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
     _unwind_metadata_name,
@@ -150,6 +151,23 @@ def test_runtime_entrypoint_is_skipped_only_with_ordinary_unwind_metadata() -> N
     )
 
 
+def test_runtime_entrypoint_excludes_linker_initialization_helpers() -> None:
+    expect(
+        all(
+            _is_runtime_entrypoint({"name": name}, None)
+            for name in (
+                "sym._init",
+                "sym._fini",
+                "sym.register_tm_clones",
+                "sym.deregister_tm_clones",
+                "sym.frame_dummy",
+                "entry.init0",
+                "entry.fini0",
+            )
+        )
+    )
+
+
 def test_computed_jump_detection_stays_inside_analyzed_cfg_blocks() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
@@ -166,6 +184,23 @@ def test_entrypoint_addresses_are_read_from_the_binary_adapter() -> None:
         r2 = _Disassembler()
 
     expect(_entrypoint_addresses(_Binary()) == frozenset({0x401000}))
+
+
+def test_runtime_initialization_aliases_are_resolved_from_flags() -> None:
+    class _Binary:
+        class _Disassembler:
+            @staticmethod
+            def cmdj(command: str) -> list[dict[str, int | str]]:
+                if command != "fj":
+                    return []
+                return [
+                    {"addr": 0x1000, "name": "fcn.00001000", "realname": "deregister_tm_clones"},
+                    {"addr": 0x2000, "name": "sym.user_function", "realname": "user_function"},
+                ]
+
+        r2 = _Disassembler()
+
+    expect(_runtime_initialization_addresses(_Binary()) == frozenset({0x1000}))
 
 
 def test_virtualization_result_exposes_diagnostic_counts() -> None:

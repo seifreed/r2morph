@@ -79,6 +79,19 @@ def test_ordered_functions_excludes_tiny_functions_before_analysis_budget() -> N
     expect(functions == [{"addr": 0x1000, "size": 16}])
 
 
+def test_ordered_functions_excludes_runtime_helper_aliases_before_function_budget() -> None:
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x1000, "size": 16, "name": "fcn.00001000"},
+                {"addr": 0x2000, "size": 16, "name": "sym.user_function"},
+            ]
+
+    functions = _ordered_functions(FunctionSource(), analysis_budget=1, entrypoint_addresses=frozenset({0x1000}))
+
+    expect(functions == [{"addr": 0x2000, "size": 16, "name": "sym.user_function"}])
+
+
 def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions() -> None:
     analyzer = DefUseAnalyzer(_branching_cfg())
     analyzer.analyze()

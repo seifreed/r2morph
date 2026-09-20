@@ -29,6 +29,18 @@ _UNWIND_SECTION_NAMES = frozenset(
 )
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 _TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
+_RUNTIME_INITIALIZATION_NAMES = frozenset(
+    {
+        "sym._init",
+        "sym._fini",
+        "sym._dl_relocate_static_pie",
+        "sym.register_tm_clones",
+        "sym.deregister_tm_clones",
+        "sym.frame_dummy",
+        "entry.init0",
+        "entry.fini0",
+    }
+)
 
 
 def _is_runtime_entrypoint(
@@ -39,8 +51,10 @@ def _is_runtime_entrypoint(
     """Exclude a compiler-generated loader entry stub from VM candidates."""
     name = str(function.get("name", "")).strip()
     address = function.get("addr")
-    return address in entrypoint_addresses or (
-        unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry."))
+    return (
+        name in _RUNTIME_INITIALIZATION_NAMES
+        or address in entrypoint_addresses
+        or (unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry.")))
     )
 
 
@@ -195,6 +209,25 @@ def _entrypoint_addresses(binary: Any) -> frozenset[int]:
     return frozenset(
         int(entry["vaddr"]) for entry in entries if isinstance(entry, dict) and isinstance(entry.get("vaddr"), int)
     )
+
+
+def _runtime_initialization_addresses(binary: Any) -> frozenset[int]:
+    """Resolve linker helper aliases that the function list may leave anonymous."""
+    try:
+        flags = binary.r2.cmdj("fj") or []
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return frozenset()
+    addresses: set[int] = set()
+    for flag in flags:
+        if not isinstance(flag, dict):
+            continue
+        names = {str(flag.get("name", "")), f"sym.{flag.get('realname', '')}"}
+        if not names & _RUNTIME_INITIALIZATION_NAMES:
+            continue
+        address = flag.get("addr")
+        if isinstance(address, int):
+            addresses.add(address)
+    return frozenset(addresses)
 
 
 def _has_terminal_system_call(binary: Any, function: dict[str, Any]) -> bool:
@@ -583,7 +616,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         binary,
         pass_instance.max_function_analysis_count,
         unwind_section,
-        _entrypoint_addresses(binary),
+        _entrypoint_addresses(binary) | _runtime_initialization_addresses(binary),
         frozenset(
             int(function["addr"])
             for function in binary.get_functions()
