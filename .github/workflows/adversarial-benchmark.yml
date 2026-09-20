@@ -85,9 +85,14 @@ jobs:
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += [
-              "generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2",
-              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o2",
-              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o2",
+              "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
+              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
+              "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
+              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
+              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
+              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
           ]
           expected_generated.sort()
           corpus_scope = report["corpus_scope"]
@@ -429,9 +434,14 @@ jobs:
               for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
           )
           expected_generated += [
-              "generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2",
-              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o2",
-              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o2",
+              "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
+              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
+              "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
+              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
+              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
+              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
           ]
           expected_generated.sort()
           if corpus_scope != {

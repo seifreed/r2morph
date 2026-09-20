@@ -103,9 +103,15 @@ _GENERATED_CORPUS_PROFILES = (
 )
 _GENERATED_CPP_CORPUS_PROFILES = (
     ("gxx-o0", "g++", "-O0", "-fno-pie", "-no-pie"),
+    ("gxx-o1", "g++", "-O1", "-fno-pie", "-no-pie"),
     ("gxx-o2", "g++", "-O2", "-fno-pie", "-no-pie"),
+    ("gxx-o3", "g++", "-O3", "-fno-pie", "-no-pie"),
+    ("gxx-pie-o2", "g++", "-O2", "-fPIE", "-pie"),
     ("clangxx-o0", "clang++", "-O0", "-fno-pie", "-no-pie"),
+    ("clangxx-o1", "clang++", "-O1", "-fno-pie", "-no-pie"),
     ("clangxx-o2", "clang++", "-O2", "-fno-pie", "-no-pie"),
+    ("clangxx-o3", "clang++", "-O3", "-fno-pie", "-no-pie"),
+    ("clangxx-pie-o2", "clang++", "-O2", "-fPIE", "-pie"),
 )
 _GENERATED_CPP_UNWIND_SOURCES = frozenset({"generated_cpp_exceptions"})
 _GENERATED_UNREACHABLE_PADDING = r"""

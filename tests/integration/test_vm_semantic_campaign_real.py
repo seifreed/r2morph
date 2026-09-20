@@ -371,7 +371,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
 
     expect(
         "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
-        and 'expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}' in content
+        and 'expected_corpus_counts = {"generated-corpus": 426, "repository-fixtures": 453}' in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_names"] != expected_fixture_names' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content

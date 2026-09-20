@@ -929,7 +929,18 @@ def test_generated_corpus_declares_compiler_and_pie_variants() -> None:
 def test_generated_corpus_declares_cpp_compiler_variants() -> None:
     expect(
         tuple(profile[0] for profile in _GENERATED_CPP_CORPUS_PROFILES)
-        == ("gxx-o0", "gxx-o2", "clangxx-o0", "clangxx-o2")
+        == (
+            "gxx-o0",
+            "gxx-o1",
+            "gxx-o2",
+            "gxx-o3",
+            "gxx-pie-o2",
+            "clangxx-o0",
+            "clangxx-o1",
+            "clangxx-o2",
+            "clangxx-o3",
+            "clangxx-pie-o2",
+        )
     )
 
 
