@@ -1540,6 +1540,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "unavailable_tool_runs_by_tool" in adversarial
         and "unavailable_reasons_by_tool" in adversarial
         and "generated_fixture_count" in adversarial
+        and "generated_fixture_names" in adversarial
+        and "adversarial fixture manifest drift" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
         and "Run VM resistance seed-diversity smoke" in adversarial

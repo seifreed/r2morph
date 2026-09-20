@@ -414,7 +414,7 @@ jobs:
           from pathlib import Path
 
           from scripts.adversarial_benchmark import merge_adversarial_reports
-          from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
+          from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES, discover_executables
 
           paths = sorted(Path("adversarial-reports").glob("*/adversarial-benchmark.json"))
           if len(paths) != 4:
@@ -440,6 +440,19 @@ jobs:
               "generated_fixture_names": expected_generated,
           }:
               raise SystemExit(f"unexpected adversarial corpus scope: {corpus_scope}")
+          expected_fixtures = {path.name for path in discover_executables(Path("fixtures/dataset"))}
+          expected_fixtures.update(expected_generated)
+          observed_fixtures = {
+              sample["original"]
+              for sample in report["samples"]
+              if isinstance(sample, dict) and isinstance(sample.get("original"), str)
+          }
+          if observed_fixtures != expected_fixtures:
+              raise SystemExit(
+                  "adversarial fixture manifest drift: "
+                  f"missing={sorted(expected_fixtures - observed_fixtures)} "
+                  f"unexpected={sorted(observed_fixtures - expected_fixtures)}"
+              )
           summary = report["summary"]
           if summary["missing_pass_runs"] or summary["missing_tool_runs"]:
               raise SystemExit(
