@@ -49,6 +49,21 @@ _CAPABILITY_CATEGORIES = {
     "fp-simd": ("floating_point_and_simd",),
     "ssa-liveness": ("ssa_liveness",),
 }
+_GENERATED_FIXTURE_CATEGORIES = {
+    "generated_abi_": ("abi_varargs", "direct_calls", "tls_accesses"),
+    "generated_branch_": ("ssa_liveness",),
+    "generated_calls_": ("direct_calls", "indirect_calls"),
+    "generated_cpp_exceptions_": ("unwinding_exceptions",),
+    "generated_cpp_": ("direct_calls", "abi_varargs"),
+    "generated_extended_": ("memory_addressing", "floating_point_and_simd", "ssa_liveness"),
+    "generated_lookup_": ("memory_addressing",),
+    "generated_memory_": ("memory_addressing",),
+    "generated_pointers_": ("memory_addressing", "ssa_liveness"),
+    "generated_recursive_": ("direct_calls", "ssa_liveness"),
+    "generated_stack_strings_": ("memory_addressing",),
+    "generated_string_": ("memory_addressing",),
+    "generated_xlat_": ("memory_addressing",),
+}
 _QEMU_NON_COMPLETED_EQUIVALENT_STATUSES = frozenset({"unavailable", "timeout"})
 
 
@@ -69,7 +84,17 @@ def _load_coverage(path: Path) -> dict[str, set[str]]:
 
 def _fixture_categories(coverage: Mapping[str, set[str]], fixture: str) -> list[str]:
     categories = sorted(category for category, names in coverage.items() if fixture in names)
-    return categories or ["uncategorized"]
+    if categories:
+        return categories
+    if fixture.startswith("generated_"):
+        generated_categories = next(
+            (categories for prefix, categories in _GENERATED_FIXTURE_CATEGORIES.items() if fixture.startswith(prefix)),
+            None,
+        )
+        if generated_categories is None:
+            raise ValueError(f"generated fixture has no capability classification: {fixture}")
+        return list(generated_categories)
+    return ["uncategorized"]
 
 
 def _corpus_fixture_counts(fixtures: tuple[Path, ...]) -> dict[str, int]:

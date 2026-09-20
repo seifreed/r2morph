@@ -695,9 +695,7 @@ jobs:
           ):
               raise SystemExit("VM semantic fixture detail contains incomplete independent observable evidence")
           categories = report["category_summary"]
-          if not categories or categories.get("uncategorized", {}).get("fixture_count", 0) != expected_corpus_counts[
-              "generated-corpus"
-          ]:
+          if not categories or "uncategorized" in categories:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (
@@ -805,7 +803,7 @@ jobs:
           if len(report.get("fixture_results", [])) != report["fixture_count"]:
               raise SystemExit("VM semantic fixture detail coverage is incomplete")
           categories = report["category_summary"]
-          if len(categories) != 18 or categories.get("uncategorized", {}).get("fixture_count", 0) != 408:
+          if len(categories) != 17 or "uncategorized" in categories:
               raise SystemExit(f"VM semantic campaign category coverage is incomplete: {categories}")
           for category, summary in categories.items():
               if (

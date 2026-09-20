@@ -15,6 +15,7 @@ from scripts.vm_semantic_campaign import (
     _corpus_fixture_counts,
     _error_result,
     _execution_observation,
+    _fixture_categories,
     _load_coverage,
     _qemu_observables_equal,
     _qemu_summary,
@@ -62,6 +63,17 @@ def test_vm_semantic_campaign_counts_generated_and_repository_fixtures() -> None
     counts = _corpus_fixture_counts((Path("fixtures/dataset/elf_vm_memwidth_x86_64"), Path("generated_c_gcc-o0")))
 
     expect(counts == {"generated-corpus": 1, "repository-fixtures": 1})
+
+
+def test_vm_semantic_campaign_classifies_generated_capability_families() -> None:
+    coverage = _load_coverage(Path("docs/virtualization-coverage.json"))
+
+    expect(
+        _fixture_categories(coverage, "generated_abi_gcc-o2") == ["abi_varargs", "direct_calls", "tls_accesses"]
+        and _fixture_categories(coverage, "generated_calls_clang-o2") == ["direct_calls", "indirect_calls"]
+        and _fixture_categories(coverage, "generated_memory_gcc-o2") == ["memory_addressing"]
+        and _fixture_categories(coverage, "generated_cpp_exceptions_gxx-o2") == ["unwinding_exceptions"]
+    )
 
 
 def test_vm_semantic_campaign_qemu_oracle_requires_matching_completed_results() -> None:
@@ -362,7 +374,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
         and "--generated-corpus" in content
-        and 'categories.get("uncategorized", {}).get("fixture_count", 0) != 408' in content
+        and '"uncategorized" in categories' in content
         and "qemu-user" in content
         and 'row.get("qemu")' in content
         and "incomplete independent observable evidence" in content
