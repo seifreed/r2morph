@@ -110,7 +110,7 @@ jobs:
               "generated-cpp-x86-64",
           ]:
               raise SystemExit(f"unexpected corpus families: {summary['corpus_families']}")
-          if not 0 < summary["generated_fixture_count"] <= 152:
+          if not 0 < summary["generated_fixture_count"] <= 164:
               raise SystemExit(f"unexpected generated fixture count: {summary['generated_fixture_count']}")
           expected_generated = sorted(
               f"{source}_{profile}"
@@ -119,13 +119,18 @@ jobs:
           )
           expected_generated += [
               "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
-              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
-              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_gxx-os", "generated_cpp_gxx-pie-o2", "generated_cpp_gxx-static-o2",
+              "generated_cpp_gxx-stripped-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-os",
+              "generated_cpp_clangxx-pie-o2", "generated_cpp_clangxx-static-o2", "generated_cpp_clangxx-stripped-o2",
               "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
               "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
-              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
-              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
-              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-os", "generated_cpp_exceptions_gxx-pie-o2",
+              "generated_cpp_exceptions_gxx-static-o2", "generated_cpp_exceptions_gxx-stripped-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o1",
+              "generated_cpp_exceptions_clangxx-o2", "generated_cpp_exceptions_clangxx-o3",
+              "generated_cpp_exceptions_clangxx-os", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_clangxx-static-o2", "generated_cpp_exceptions_clangxx-stripped-o2",
           ]
           expected_generated.sort()
           if not set(summary["generated_fixture_names"]).issubset(expected_generated):
@@ -827,7 +832,7 @@ jobs:
           ):
               raise SystemExit(f"VM semantic seed shard coverage is incomplete: {by_seed}")
           report = merge_campaign_reports(tuple(reports), allow_duplicate_seeds=True)
-          expected_corpus_counts = {"generated-corpus": 426, "repository-fixtures": 453}
+          expected_corpus_counts = {"generated-corpus": 444, "repository-fixtures": 453}
           expected_generated = sorted(
               f"{source}_{profile}"
               for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
@@ -835,8 +840,10 @@ jobs:
           )
           expected_generated += [
               "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
-              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
-              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_gxx-os", "generated_cpp_gxx-pie-o2", "generated_cpp_gxx-static-o2",
+              "generated_cpp_gxx-stripped-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-os",
+              "generated_cpp_clangxx-pie-o2", "generated_cpp_clangxx-static-o2", "generated_cpp_clangxx-stripped-o2",
           ]
           expected_generated.sort()
           expected_fixture_names = sorted(
@@ -1269,13 +1276,18 @@ jobs:
           )
           expected_generated += [
               "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
-              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
-              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_gxx-os", "generated_cpp_gxx-pie-o2", "generated_cpp_gxx-static-o2",
+              "generated_cpp_gxx-stripped-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-os",
+              "generated_cpp_clangxx-pie-o2", "generated_cpp_clangxx-static-o2", "generated_cpp_clangxx-stripped-o2",
               "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
               "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
-              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
-              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
-              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-os", "generated_cpp_exceptions_gxx-pie-o2",
+              "generated_cpp_exceptions_gxx-static-o2", "generated_cpp_exceptions_gxx-stripped-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o1",
+              "generated_cpp_exceptions_clangxx-o2", "generated_cpp_exceptions_clangxx-o3",
+              "generated_cpp_exceptions_clangxx-os", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_clangxx-static-o2", "generated_cpp_exceptions_clangxx-stripped-o2",
           ]
           expected_generated.sort()
           if summary["corpus_families"] != [
@@ -1284,7 +1296,7 @@ jobs:
               "repository-fixtures",
           ]:
               raise SystemExit(f"merged corpus families drifted: {summary['corpus_families']}")
-          if summary["generated_fixture_count"] != 152 or summary["generated_fixture_names"] != expected_generated:
+          if summary["generated_fixture_count"] != 164 or summary["generated_fixture_names"] != expected_generated:
               raise SystemExit("merged generated corpus coverage is incomplete")
           if summary["passes_without_applied_runs"]:
               raise SystemExit(

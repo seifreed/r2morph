@@ -934,12 +934,18 @@ def test_generated_corpus_declares_cpp_compiler_variants() -> None:
             "gxx-o1",
             "gxx-o2",
             "gxx-o3",
+            "gxx-os",
             "gxx-pie-o2",
+            "gxx-static-o2",
+            "gxx-stripped-o2",
             "clangxx-o0",
             "clangxx-o1",
             "clangxx-o2",
             "clangxx-o3",
+            "clangxx-os",
             "clangxx-pie-o2",
+            "clangxx-static-o2",
+            "clangxx-stripped-o2",
         )
     )
 

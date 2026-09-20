@@ -207,16 +207,16 @@ compares return code, termination signal, hashed stdout/stderr, and bounded
 created-file hashes, sizes, and modes before and after the mutation. The
 workflow also compiles the reproducible C and C++ generated corpus used by the
 differential campaign: 142 additional Linux ELF x86-64 fixtures. The scheduled
-campaign repeats the combined 293-fixture set across three deterministic seeds,
-for 879 fixture runs (453 repository fixtures and 426 generated-corpus runs),
+campaign repeats the combined 299-fixture set across three deterministic seeds,
+for 897 fixture runs (453 repository fixtures and 444 generated-corpus runs),
 records the family counts in the JSON artifact, and fails on any missing,
 non-virtualized, or divergent fixture. The latest passing campaign is retained in
 [`protection-vm-semantic-2026-09-18-1d0b69e4.json`](protection-vm-semantic-2026-09-18-1d0b69e4.json).
 Each fixture row now also carries a paired QEMU x86-64 observation; the report
 summary counts completed, unavailable, divergent, and missing independent pairs.
-The scheduled Linux CI contract requires all 879 pairs to complete with no
-divergence; the archived report above predates the six newly added compiler
-profiles.
+The scheduled Linux CI contract requires all 897 pairs to complete with no
+divergence; the archived report above predates the six newly added C++ compiler
+profiles, producing twelve additional exception/non-exception variants.
 The artifact also reports each declared capability explicitly: memory, calls,
 ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,
 TLS/signals, threads, and FP/SIMD are campaign-measured. LSDA/landing-pad

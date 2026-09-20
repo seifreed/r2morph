@@ -86,13 +86,18 @@ jobs:
           )
           expected_generated += [
               "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
-              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
-              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_gxx-os", "generated_cpp_gxx-pie-o2", "generated_cpp_gxx-static-o2",
+              "generated_cpp_gxx-stripped-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-os",
+              "generated_cpp_clangxx-pie-o2", "generated_cpp_clangxx-static-o2", "generated_cpp_clangxx-stripped-o2",
               "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
               "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
-              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
-              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
-              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-os", "generated_cpp_exceptions_gxx-pie-o2",
+              "generated_cpp_exceptions_gxx-static-o2", "generated_cpp_exceptions_gxx-stripped-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o1",
+              "generated_cpp_exceptions_clangxx-o2", "generated_cpp_exceptions_clangxx-o3",
+              "generated_cpp_exceptions_clangxx-os", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_clangxx-static-o2", "generated_cpp_exceptions_clangxx-stripped-o2",
           ]
           expected_generated.sort()
           corpus_scope = report["corpus_scope"]
@@ -435,13 +440,18 @@ jobs:
           )
           expected_generated += [
               "generated_cpp_gxx-o0", "generated_cpp_gxx-o1", "generated_cpp_gxx-o2", "generated_cpp_gxx-o3",
-              "generated_cpp_gxx-pie-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
-              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-pie-o2",
+              "generated_cpp_gxx-os", "generated_cpp_gxx-pie-o2", "generated_cpp_gxx-static-o2",
+              "generated_cpp_gxx-stripped-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o1",
+              "generated_cpp_clangxx-o2", "generated_cpp_clangxx-o3", "generated_cpp_clangxx-os",
+              "generated_cpp_clangxx-pie-o2", "generated_cpp_clangxx-static-o2", "generated_cpp_clangxx-stripped-o2",
               "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o1",
               "generated_cpp_exceptions_gxx-o2", "generated_cpp_exceptions_gxx-o3",
-              "generated_cpp_exceptions_gxx-pie-o2", "generated_cpp_exceptions_clangxx-o0",
-              "generated_cpp_exceptions_clangxx-o1", "generated_cpp_exceptions_clangxx-o2",
-              "generated_cpp_exceptions_clangxx-o3", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_gxx-os", "generated_cpp_exceptions_gxx-pie-o2",
+              "generated_cpp_exceptions_gxx-static-o2", "generated_cpp_exceptions_gxx-stripped-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o1",
+              "generated_cpp_exceptions_clangxx-o2", "generated_cpp_exceptions_clangxx-o3",
+              "generated_cpp_exceptions_clangxx-os", "generated_cpp_exceptions_clangxx-pie-o2",
+              "generated_cpp_exceptions_clangxx-static-o2", "generated_cpp_exceptions_clangxx-stripped-o2",
           ]
           expected_generated.sort()
           if corpus_scope != {
