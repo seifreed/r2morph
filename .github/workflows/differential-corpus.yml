@@ -635,6 +635,7 @@ jobs:
           python scripts/vm_semantic_campaign.py \
             --dataset fixtures/dataset \
             --coverage docs/virtualization-coverage.json \
+            --generated-corpus \
             --seed "${{ matrix.seed }}" \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 4 \

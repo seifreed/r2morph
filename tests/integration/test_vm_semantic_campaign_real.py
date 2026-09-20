@@ -361,6 +361,7 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
         and 'expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}' in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
+        and "--generated-corpus" in content
         and 'categories.get("uncategorized", {}).get("fixture_count", 0) != 408' in content
         and "qemu-user" in content
         and 'row.get("qemu")' in content
