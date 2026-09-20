@@ -455,6 +455,7 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
             "angr": {
                 "status": "completed",
                 "evidence": [
+                    "docs/protection-adversarial-angr-local-2026-09-20.json",
                     "docs/protection-adversarial-angr-local-2026-09-18-59898697.json",
                     "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
                 ],
@@ -483,6 +484,7 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
             "binary-ninja": {
                 "status": "unavailable",
                 "evidence": [
+                    "docs/protection-adversarial-angr-local-2026-09-20.json",
                     "docs/protection-adversarial-angr-local-2026-09-18-59898697.json",
                     ".github/workflows/adversarial-benchmark.yml",
                 ],
@@ -491,6 +493,7 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
         "campaign_evidence": [
             ".github/workflows/adversarial-benchmark.yml",
             "scripts/adversarial_benchmark.py",
+            "docs/protection-adversarial-angr-local-2026-09-20.json",
             "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
         ],
     }

@@ -1670,6 +1670,7 @@
           "binary-ninja": {
             "status": "unavailable",
             "evidence": [
+              "docs/protection-adversarial-angr-local-2026-09-20.json",
               "docs/protection-adversarial-angr-local-2026-09-18-59898697.json",
               ".github/workflows/adversarial-benchmark.yml"
             ]
