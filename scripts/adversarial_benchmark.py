@@ -832,6 +832,9 @@ def _decompiler_observations(row: dict[str, object]) -> dict[str, int]:
         "completed_pairs": completed_pairs,
         "missing_pairs": 1 - completed_pairs,
     }
+    applied = row.get("pass_status", "applied") == "applied"
+    result["applied_observed_pairs"] = int(applied)
+    result["applied_completed_pairs"] = int(applied and completed_pairs == 1)
     for field in ("decompiler_entrypoints", "decompiler_lines", "decompiler_bytes"):
         original_value = original.get(field)
         protected_value = protected.get(field)
@@ -883,6 +886,10 @@ def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
         decompiler["completion_percent"] = _coverage_percent(
             decompiler["completed_pairs"],
             decompiler["observed_pairs"],
+        )
+        decompiler["applied_completion_percent"] = _coverage_percent(
+            decompiler.get("applied_completed_pairs", 0),
+            decompiler.get("applied_observed_pairs", 0),
         )
 
 
@@ -981,7 +988,14 @@ def benchmark_pair(
                     )
                     continue
                 pass_rows.append(pass_row)
-                tools.extend({**tool, "pass_name": pass_name} for tool in _measure_pair_tools(original, protected_path))
+                tools.extend(
+                    {
+                        **tool,
+                        "pass_name": pass_name,
+                        "pass_status": pass_row["status"],
+                    }
+                    for tool in _measure_pair_tools(original, protected_path)
+                )
         else:
             protected_path = protected
             tools = _measure_pair_tools(original, protected_path)

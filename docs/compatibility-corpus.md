@@ -254,6 +254,10 @@ x86-64 variants used by the differential campaign, records the distinct
 `generated-elf-x86-64` and `generated-cpp-x86-64` families in the merged report,
 and partitions generated fixtures together with repository fixtures. Extended-
 pass application gaps remain published as explicit evidence blockers.
+Decompiler effectiveness is counted twice: the full sample pair remains
+visible, while the release gate also requires complete `radare2` and `angr`
+pairs for every fixture where the pass actually applied. No-op fixtures cannot
+inflate per-pass decompiler evidence.
 The campaign now runs as four deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the four reports, rejects
 overlapping samples, and applies the application and row-completeness gates to

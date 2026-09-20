@@ -61,6 +61,7 @@ _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL = 2
 _EXPECTED_COMPLETED_TOOL_RUN_COVERAGE_PERCENT = 5.56
 _EXPECTED_NON_COMPLETED_TOOL_RUNS = 17
 _EXPECTED_MERGED_SAMPLE_COUNT = 2
+_EXPECTED_APPLIED_PAIR_COUNT = 1
 _EXPECTED_GENERIC_MUTATION_COUNT = 2
 _EXPECTED_DECOMPILER_COMPLETION_PERCENT = 100.0
 _EXPECTED_DECOMPILER_LINE_DELTA = 3
@@ -211,6 +212,53 @@ def test_adversarial_benchmark_summarizes_analyzer_effectiveness_by_pass() -> No
         and effectiveness["NopInsertion"]["radare2"]["metric_deltas"]["total_functions_delta"]
         == _EXPECTED_FUNCTION_COUNT_DELTA
         and effectiveness["NopInsertion"]["binary-ninja"]["unavailable"] == 1
+    )
+
+
+def test_adversarial_benchmark_separates_applied_decompiler_pairs() -> None:
+    completed_metrics = {
+        "decompiler_status": "completed",
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_bytes": 240,
+    }
+    samples = [
+        {
+            "tools": [
+                {
+                    "pass_name": "NopInsertion",
+                    "pass_status": "applied",
+                    "tool": "radare2",
+                    "status": "completed",
+                    "original": completed_metrics,
+                    "protected": completed_metrics,
+                }
+            ]
+        },
+        {
+            "tools": [
+                {
+                    "pass_name": "NopInsertion",
+                    "pass_status": "no-op",
+                    "tool": "radare2",
+                    "status": "completed",
+                    "original": completed_metrics,
+                    "protected": completed_metrics,
+                }
+            ]
+        },
+    ]
+
+    decompiler = _campaign_summary(samples, _EXPECTED_MERGED_SAMPLE_COUNT, ("NopInsertion",))[
+        "analyzer_effectiveness_by_pass"
+    ]["NopInsertion"]["radare2"]["decompiler"]
+
+    expect(
+        decompiler["observed_pairs"] == _EXPECTED_MERGED_SAMPLE_COUNT
+        and decompiler["completed_pairs"] == _EXPECTED_MERGED_SAMPLE_COUNT
+        and decompiler["applied_observed_pairs"] == _EXPECTED_APPLIED_PAIR_COUNT
+        and decompiler["applied_completed_pairs"] == _EXPECTED_APPLIED_PAIR_COUNT
+        and decompiler["applied_completion_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
     )
 
 

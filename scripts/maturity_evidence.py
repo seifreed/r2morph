@@ -277,7 +277,12 @@ def _decompiler_evidence(
     tools = effectiveness.get(pass_name, {}) if isinstance(effectiveness, Mapping) else {}
     if not isinstance(tools, Mapping):
         return {"status": "pending", "completed_tools": [], "incomplete_tools": []}
-    expected_pairs = adversarial.get("sample_count")
+    pass_summary = adversarial.get("pass_summary", {})
+    pass_counts = pass_summary.get(pass_name, {}) if isinstance(pass_summary, Mapping) else {}
+    applied_pairs = pass_counts.get("applied") if isinstance(pass_counts, Mapping) else None
+    expected_pairs = (
+        applied_pairs if isinstance(applied_pairs, int) and applied_pairs > 0 else adversarial.get("sample_count")
+    )
     expected_pair_count = expected_pairs if isinstance(expected_pairs, int) and expected_pairs > 0 else None
     observed_tools = {
         name: value
@@ -291,6 +296,14 @@ def _decompiler_evidence(
         for name, value in observed_tools.items()
         if value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
         and (expected_pair_count is None or value["decompiler"].get("completed_pairs") == expected_pair_count)
+        and (
+            not isinstance(value["decompiler"].get("applied_observed_pairs"), int)
+            or (
+                value["decompiler"].get("applied_observed_pairs") == expected_pair_count
+                and value["decompiler"].get("applied_completed_pairs") == expected_pair_count
+                and value["decompiler"].get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
+            )
+        )
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
     status = (
@@ -304,6 +317,9 @@ def _decompiler_evidence(
         "expected_pair_count": expected_pair_count,
         "observed_pair_counts": {
             name: value["decompiler"].get("completed_pairs", 0) for name, value in observed_tools.items()
+        },
+        "applied_pair_counts": {
+            name: value["decompiler"].get("applied_completed_pairs", 0) for name, value in observed_tools.items()
         },
         "incomplete_tools": incomplete,
         "observed_tools": sorted(observed_tools),

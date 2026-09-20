@@ -152,12 +152,16 @@ jobs:
                   raise SystemExit(f"analyzer effectiveness run coverage drift for {pass_name}: {tools}")
               for decompiler_tool in ("radare2", "angr"):
                   decompiler = tools[decompiler_tool].get("decompiler")
+                  applied_pairs = report["pass_summary"][pass_name]["applied"]
                   if not isinstance(decompiler, dict):
                       raise SystemExit(f"{decompiler_tool} decompiler evidence is missing for {pass_name}")
                   if (
                       decompiler.get("observed_pairs") != report["sample_count"]
                       or decompiler.get("completed_pairs") != report["sample_count"]
                       or decompiler.get("completion_percent") != 100.0
+                      or decompiler.get("applied_observed_pairs") != applied_pairs
+                      or decompiler.get("applied_completed_pairs") != applied_pairs
+                      or decompiler.get("applied_completion_percent") != 100.0
                   ):
                       raise SystemExit(
                           f"{decompiler_tool} decompiler evidence is incomplete for {pass_name}: {decompiler}"
@@ -495,6 +499,7 @@ jobs:
                   raise SystemExit(f"merged analyzer effectiveness run coverage drift for {pass_name}")
               for decompiler_tool in ("radare2", "angr"):
                   decompiler = tools[decompiler_tool].get("decompiler")
+                  applied_pairs = report["pass_summary"][pass_name]["applied"]
                   if not isinstance(decompiler, dict):
                       raise SystemExit(
                           f"merged {decompiler_tool} decompiler evidence is missing for {pass_name}"
@@ -503,6 +508,9 @@ jobs:
                       decompiler.get("observed_pairs") != report["sample_count"]
                       or decompiler.get("completed_pairs") != report["sample_count"]
                       or decompiler.get("completion_percent") != 100.0
+                      or decompiler.get("applied_observed_pairs") != applied_pairs
+                      or decompiler.get("applied_completed_pairs") != applied_pairs
+                      or decompiler.get("applied_completion_percent") != 100.0
                   ):
                       raise SystemExit(
                           f"merged {decompiler_tool} decompiler evidence is incomplete for {pass_name}: "
