@@ -245,12 +245,12 @@ are engine-only capabilities until their configuration and end-to-end workflow
 are promoted into the public CLI surface.
 
 The VM resistance workflow now covers 10 seeds with 255 handlers per seed
-across five tracked repository ELF x86-64 fixtures plus four generated
-cross-family fixtures (calls, C++, memory, and `xlat`). The generated subset is
+across five tracked repository ELF x86-64 fixtures plus five generated
+cross-family fixtures (calls, C++, memory, threads, and `xlat`). The generated subset is
 selected by name from the reproducible Linux corpus so fixture drift fails
 closed before measurement. The last committed local artifact below is
 historical and still contains five fixtures; the next scheduled workflow run
-is the authoritative nine-fixture evidence.
+is the authoritative ten-fixture evidence.
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
