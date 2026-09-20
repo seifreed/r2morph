@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement
+from scripts.vm_resistance_adversarial import _probe_diverged
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -46,6 +47,14 @@ def test_resistance_measurement_keeps_release_signoff_human_gated() -> None:
     expect(_measurement(reached_terminal=True).release_signoff_status == "failed_adversarial_probe")
     expect(_measurement(budget_exhausted=True).release_signoff_status == "pending_human_adversarial_review")
     expect(_measurement().release_signoff_status == "pending_human_adversarial_review")
+
+
+def test_vm_probe_uses_complete_emulation_before_native_fallback() -> None:
+    expect(_probe_diverged(42, 42, True) is False)
+
+
+def test_vm_probe_uses_native_fallback_when_emulation_is_incomplete() -> None:
+    expect(_probe_diverged(None, None, True) is True)
 
 
 def test_vm_resistance_cli_help_loads_sibling_modules() -> None:

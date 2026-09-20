@@ -146,6 +146,25 @@ def _native_execution(path: Path) -> dict[str, object]:
     return {"status": "completed", "return_code": result.returncode}
 
 
+def _observed_exit_code(path: Path) -> int | None:
+    """Use emulation first and native execution for dynamic ELF fixtures."""
+    try:
+        emulated = emulate_exit_code(path)
+    except Exception:  # A tampered instruction can fault before the exit syscall.
+        emulated = None
+    if emulated is not None:
+        return emulated
+    native = _native_execution(path)
+    return native.get("return_code") if native.get("status") == "completed" else None
+
+
+def _probe_diverged(original_exit: int | None, tampered_exit: int | None, native_diverged: bool) -> bool:
+    """Prefer a complete emulator observation and otherwise use native execution."""
+    if original_exit is not None:
+        return tampered_exit != original_exit
+    return native_diverged
+
+
 def _adversarial_recovery_probe(path: Path) -> dict[str, object]:
     """Run the bounded recovery adversary and retain only summary metrics."""
     try:
@@ -208,7 +227,7 @@ def _required_nested_region_count(stats: dict[str, object]) -> int:
 
 
 def _seed_campaign(source: Path, workdir: Path, first_seed: int, count: int) -> dict[str, object]:
-    baseline = emulate_exit_code(source)
+    baseline = _observed_exit_code(source)
     builds: list[dict[str, object]] = []
     for seed in range(first_seed, first_seed + count):
         output = workdir / f"seed-{seed}"
@@ -217,7 +236,7 @@ def _seed_campaign(source: Path, workdir: Path, first_seed: int, count: int) -> 
             {
                 "seed": seed,
                 "sha256": _sha256(output),
-                "exit_code": emulate_exit_code(output),
+                "exit_code": _observed_exit_code(output),
                 "functions_virtualized": stats.get("functions_virtualized", 0),
                 "bytecode_bytes": stats.get("total_bytecode_bytes", 0),
                 "unsupported_functions": stats.get("unsupported_functions_total", 0),
@@ -239,32 +258,37 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
     protected = workdir / ("nested-protected" if depth is not None else "protected")
     tampered_prefix = "nested-tampered" if depth is not None else "tampered"
     stats = _virtualize_fixture(source, protected, seed, depth)
-    original_exit = emulate_exit_code(protected)
+    original_exit = _observed_exit_code(protected)
     native_original = _native_execution(protected)
     adversarial_recovery = _adversarial_recovery_probe(protected)
     data = bytearray(protected.read_bytes())
     vm_entries = stats.get("vm_entries")
-    if not isinstance(vm_entries, tuple) or not vm_entries or not isinstance(vm_entries[0], dict):
+    if not isinstance(vm_entries, tuple) or not vm_entries:
         raise ValueError("virtualized fixture does not expose a recorded VM entry")
-    vm_entry = vm_entries[0].get("offset")
-    vm_size = vm_entries[0].get("size")
-    if (
-        not isinstance(vm_entry, int)
-        or not isinstance(vm_size, int)
-        or vm_size <= max(_TAMPER_OFFSETS)
-        or any(vm_entry + offset >= len(data) for offset in _TAMPER_OFFSETS)
-    ):
+    valid_vm_entries: list[tuple[int, int]] = []
+    for entry in vm_entries:
+        if not isinstance(entry, dict):
+            continue
+        vm_entry = entry.get("offset")
+        vm_size = entry.get("size")
+        if (
+            isinstance(vm_entry, int)
+            and isinstance(vm_size, int)
+            and vm_size > max(_TAMPER_OFFSETS)
+            and all(vm_entry + offset < len(data) for offset in _TAMPER_OFFSETS)
+        ):
+            valid_vm_entries.append((vm_entry, vm_size))
+    if not valid_vm_entries:
         raise ValueError("virtualized fixture does not expose a bounded VM entry")
     probes: list[dict[str, object]] = []
     for offset in _TAMPER_OFFSETS:
         tampered = workdir / f"{tampered_prefix}-{offset:x}"
         candidate = bytearray(data)
-        candidate[vm_entry + offset] ^= 0xFF
+        for vm_entry, _vm_size in valid_vm_entries:
+            candidate[vm_entry + offset] ^= 0xFF
         tampered.write_bytes(candidate)
-        try:
-            tampered_exit: int | None = emulate_exit_code(tampered)
-        except Exception:  # A tamper-triggered emulator fault is itself divergence.
-            tampered_exit = None
+        tampered.chmod(0o700)
+        tampered_exit = _observed_exit_code(tampered)
         native_tampered = _native_execution(tampered)
         native_diverged = native_original.get("status") == "completed" and (
             native_tampered.get("status") != "completed"
@@ -274,7 +298,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
             {
                 "offset": offset,
                 "tampered_exit_code": tampered_exit,
-                "diverged": tampered_exit != original_exit,
+                "diverged": _probe_diverged(original_exit, tampered_exit, native_diverged),
                 "native": native_tampered,
                 "native_diverged": native_diverged,
             }
@@ -284,6 +308,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         "seed": seed,
         "depth": depth or 1,
         "functions_virtualized": stats.get("functions_virtualized", 0),
+        "vm_entry_count": len(valid_vm_entries),
         "original_exit_code": original_exit,
         "tampered_exit_code": first_probe["tampered_exit_code"],
         "tamper_diverged": first_probe["diverged"],
@@ -359,8 +384,8 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
             "bytecode_size_growth_observed": (
                 _required_bytecode_size(deep_stats) > _required_bytecode_size(shallow_stats)
             ),
-            "depth_1_exit_code": emulate_exit_code(shallow),
-            "depth_2_exit_code": emulate_exit_code(deep),
+            "depth_1_exit_code": _observed_exit_code(shallow),
+            "depth_2_exit_code": _observed_exit_code(deep),
             "baseline_exit_code": campaign["baseline_exit_code"],
         }
     dispatcher_digests = _dispatcher_digests(first_seed, count)
