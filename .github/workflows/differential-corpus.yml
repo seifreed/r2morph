@@ -735,7 +735,7 @@ jobs:
 
   vm-semantic-campaign-aggregate:
     name: Aggregate VM semantic native parity campaign
-    if: ${{ always() }}
+    if: ${{ always() && !cancelled() }}
     needs: vm-semantic-campaign
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -849,7 +849,7 @@ jobs:
 
   aggregate-differential-corpus:
     name: Aggregate differential corpus evidence
-    if: ${{ always() }}
+    if: ${{ always() && !cancelled() }}
     needs:
       - differential-corpus
       - public-compatibility-corpus

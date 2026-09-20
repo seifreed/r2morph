@@ -101,3 +101,13 @@ def test_platform_aggregate_fails_when_summary_is_incomplete() -> None:
     aggregate = workflow.split("  aggregate-platform-differential:", maxsplit=1)[1]
 
     expect('report["summary"]["status"] != "complete"' in aggregate)
+
+
+def test_evidence_aggregators_stop_when_campaign_is_cancelled() -> None:
+    differential = Path(".github/workflows/differential-corpus.yml").read_text(encoding="utf-8")
+    adversarial = Path(".github/workflows/adversarial-benchmark.yml").read_text(encoding="utf-8")
+
+    expect(
+        "if: ${{ always() && !cancelled() }}" in differential
+        and "if: ${{ always() && !cancelled() && (github.event_name" in adversarial
+    )
