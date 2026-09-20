@@ -1004,6 +1004,7 @@ def benchmark_corpus(
         raise ValueError("at least one corpus pass is required")
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-corpus-") as temporary_directory:
         effective_dataset = dataset
+        generated_fixtures: list[Path] = []
         if generated_corpus:
             effective_dataset = Path(temporary_directory) / dataset.name
             effective_dataset.mkdir()
@@ -1013,7 +1014,8 @@ def benchmark_corpus(
             for fixture in generated_fixtures:
                 shutil.copy2(fixture, effective_dataset / fixture.name)
         fixtures = discover_executables(effective_dataset)
-        generated_fixture_count = len(fixtures) - len(discover_executables(dataset)) if generated_corpus else 0
+        generated_fixture_names = sorted(fixture.name for fixture in generated_fixtures)
+        generated_fixture_count = len(generated_fixture_names)
         if fixture_shard_count > 1:
             fixtures = _select_fixture_shard(fixtures, fixture_shard_index, fixture_shard_count)
         if not fixtures:
@@ -1030,6 +1032,7 @@ def benchmark_corpus(
                 else ["repository-fixtures"]
             ),
             "generated_fixture_count": generated_fixture_count,
+            "generated_fixture_names": generated_fixture_names,
         },
         "pass_names": list(pass_names),
         "fixture_shard": {"index": fixture_shard_index, "count": fixture_shard_count},

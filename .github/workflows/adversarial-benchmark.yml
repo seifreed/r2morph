@@ -79,6 +79,24 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path("adversarial-benchmark.json").read_text(encoding="utf-8"))
+          expected_generated = sorted(
+              f"{source}_{profile}"
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
+          )
+          expected_generated += [
+              "generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2",
+              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o2",
+          ]
+          expected_generated.sort()
+          corpus_scope = report["corpus_scope"]
+          if (
+              corpus_scope["families"] != ["repository-fixtures", "generated-elf-x86-64", "generated-cpp-x86-64"]
+              or corpus_scope["generated_fixture_count"] != len(expected_generated)
+              or corpus_scope["generated_fixture_names"] != expected_generated
+          ):
+              raise SystemExit(f"unexpected generated corpus manifest: {corpus_scope}")
           summary = report["summary"]
           expected_tools = [
               "radare2",
@@ -405,9 +423,21 @@ jobs:
               [json.loads(path.read_text(encoding="utf-8")) for path in paths]
           )
           corpus_scope = report.get("corpus_scope")
+          expected_generated = sorted(
+              f"{source}_{profile}"
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
+          )
+          expected_generated += [
+              "generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2",
+              "generated_cpp_exceptions_gxx-o0", "generated_cpp_exceptions_gxx-o2",
+              "generated_cpp_exceptions_clangxx-o0", "generated_cpp_exceptions_clangxx-o2",
+          ]
+          expected_generated.sort()
           if corpus_scope != {
               "families": ["repository-fixtures", "generated-elf-x86-64", "generated-cpp-x86-64"],
-              "generated_fixture_count": 140,
+              "generated_fixture_count": len(expected_generated),
+              "generated_fixture_names": expected_generated,
           }:
               raise SystemExit(f"unexpected adversarial corpus scope: {corpus_scope}")
           summary = report["summary"]
