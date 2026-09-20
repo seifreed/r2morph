@@ -22,6 +22,14 @@ _MAX_UNIT_OPERATION_COUNT = 3
 _MIN_INSTRUCTION_TOKEN_COUNT = 2
 
 
+def _is_arm64_register(register: str) -> bool:
+    return register.startswith(("w", "x")) and register[1:].isdigit()
+
+
+def _is_arm32_register(register: str, bits: int) -> bool:
+    return bits == _BITS_32 and register.startswith("r") and register[1:].isdigit()
+
+
 @dataclass(frozen=True, slots=True)
 class UnfoldMutation:
     function_address: int
@@ -73,9 +81,21 @@ def unfold_zero(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] |
 
 def unfold_one(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
     """Unfold setting register to one."""
+    if _is_arm64_register(reg):
+        return [f"orr {reg}, wzr, 1"]
+    if _is_arm32_register(reg, bits):
+        return [f"adds {reg}, {reg}, 0"]
     if random.random() < _ALTERNATE_ONE_PROBABILITY:
         return [f"xor {reg}, {reg}", f"inc {reg}"]
     return [f"mov {reg}, 1"]
+
+
+def unfold_constant_move(reg: str, value: int, bits: int, binary: Any, base_addr: int) -> list[str] | None:
+    """Use an alternate fixed-width ARM encoding for a materialized constant."""
+    if not _is_arm64_register(reg) or value in (0, 1):
+        return None
+    candidate = f"orr {reg}, wzr, {value}"
+    return [candidate] if binary.assemble(candidate, base_addr) else None
 
 
 def _unfold_constant_step(reg: str, value: int, max_sequence: int, unit_op: str, bulk_op: str) -> list[str] | None:
@@ -169,7 +189,7 @@ def match_unfold_pattern(
 
     mnemonic = parts[0]
     reg = parts[1]
-    value_str = parts[2] if len(parts) > _MIN_INSTRUCTION_TOKEN_COUNT else ""
+    value_str = parts[-1].lstrip("#") if len(parts) > _MIN_INSTRUCTION_TOKEN_COUNT else ""
 
     is_numeric = value_str.isdigit() or (
         value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
@@ -184,9 +204,19 @@ def match_unfold_pattern(
         instructions = unfold_zero(reg, bits, binary, func_addr)
     elif mnemonic == "mov" and value == 1:
         instructions = unfold_one(reg, bits, binary, func_addr)
-    elif mnemonic == "add" and 1 < value <= max_sequence:
+    elif mnemonic == "mov":
+        instructions = unfold_constant_move(reg, value, bits, binary, func_addr)
+    elif (
+        mnemonic == "add"
+        and 1 < value <= max_sequence
+        and not (_is_arm64_register(reg) or _is_arm32_register(reg, bits))
+    ):
         instructions = unfold_constant_add(reg, value, bits, max_sequence)
-    elif mnemonic == "sub" and 1 < value <= max_sequence:
+    elif (
+        mnemonic == "sub"
+        and 1 < value <= max_sequence
+        and not (_is_arm64_register(reg) or _is_arm32_register(reg, bits))
+    ):
         instructions = unfold_constant_sub(reg, value, bits, max_sequence)
     return instructions, instructions is not None
 
@@ -279,6 +309,7 @@ __all__ = [
     "match_unfold_pattern",
     "select_candidates",
     "unfold_constant_add",
+    "unfold_constant_move",
     "unfold_constant_sub",
     "unfold_one",
     "unfold_zero",

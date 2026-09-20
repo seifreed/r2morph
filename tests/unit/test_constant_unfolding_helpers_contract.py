@@ -5,6 +5,7 @@ from r2morph.mutations.constant_unfolding_helpers import (
     match_unfold_pattern,
     select_candidates,
     unfold_constant_add,
+    unfold_constant_move,
     unfold_constant_sub,
     unfold_one,
     unfold_zero,
@@ -28,9 +29,13 @@ class _Binary:
         raise ValueError(addr)
 
     def assemble(self, insn: str, base_addr: int):
-        return {"xor eax, eax": b"\x31\xc0", "inc eax": b"\x40", "dec eax": b"\x48", "add eax, 1": b"\x83\xc0\x01"}.get(
-            insn
-        )
+        return {
+            "xor eax, eax": b"\x31\xc0",
+            "inc eax": b"\x40",
+            "dec eax": b"\x48",
+            "add eax, 1": b"\x83\xc0\x01",
+            "orr w1, wzr, 64": b"\x21\x00\x01\x32",
+        }.get(insn)
 
 
 def test_constant_unfolding_helpers_cover_the_core_paths() -> None:
@@ -66,3 +71,15 @@ def test_constant_unfolding_rejects_flag_changing_split_when_flags_are_live() ->
 
 def test_constant_unfolding_accepts_flag_neutral_mov_when_flags_are_live() -> None:
     expect(flags_preserved_for_unfold("mov eax, 1", ["mov eax, 1"], True))
+
+
+def test_constant_unfolding_uses_arm32_fixed_width_one_encoding() -> None:
+    expect(unfold_one("r7", 32, _Binary(), _EXPECTED_ADDR_4096) == ["adds r7, r7, 0"])
+
+
+def test_constant_unfolding_uses_arm64_alternate_constant_encoding() -> None:
+    binary = _Binary()
+    expect(
+        unfold_constant_move("w1", 0x40, 64, binary, _EXPECTED_ADDR_4096) == ["orr w1, wzr, 64"]
+        and match_unfold_pattern("mov w1, #0x40", 64, binary, _EXPECTED_ADDR_4096, 10) == (["orr w1, wzr, 64"], True)
+    )
