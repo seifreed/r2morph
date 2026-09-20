@@ -227,8 +227,8 @@ unsupported ABIs, or cross-platform parity.
 The archived local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
 completed 150 fixtures with zero failures for the official Linux ELF x86-64
-target; the current scheduled inventory is the 151-fixture campaign described
-above.
+target; it predates the current scheduled inventory of 299 fixtures per seed
+(151 repository fixtures and 148 generated variants).
 
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
