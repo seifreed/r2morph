@@ -718,7 +718,29 @@ class CodeVirtualizationPass(MutationPass):
         if not disasm or "ops" not in disasm:
             return None
         rng = random.Random(random.getrandbits(64))
-        region = extract_region(disasm["ops"], rng)
+        function_start = func.get("addr")
+        function_size = func.get("size")
+        function_range = (
+            (int(function_start), int(function_start) + int(function_size))
+            if isinstance(function_start, int) and isinstance(function_size, int) and function_size > 0
+            else None
+        )
+        try:
+            known_function_ranges = tuple(
+                (int(candidate["addr"]), int(candidate["addr"]) + int(candidate["size"]))
+                for candidate in binary.get_functions()
+                if isinstance(candidate.get("addr"), int)
+                and isinstance(candidate.get("size"), int)
+                and candidate["size"] > 0
+            )
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            known_function_ranges = None
+        region = extract_region(
+            disasm["ops"],
+            rng,
+            function_range=function_range,
+            known_function_ranges=known_function_ranges,
+        )
         if region is None:
             return None
         return self._emit_region(binary, func, region, RegionOptions(rng, True, unwind_frame))

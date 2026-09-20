@@ -414,9 +414,14 @@ def _transform_function(
                 None,
                 "whole-function virtualization was not proven; partial virtualization is disabled: ",
             )
-            skipped_count = 1
-            partial_count = 0
-            result = None
+            return {
+                "skipped": 1,
+                "unsupported": 1,
+                "virtualized": 0,
+                "instructions": 0,
+                "bytecode": 0,
+                "partial": 0,
+            }
         else:
             result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
             skipped_count = 0
@@ -660,7 +665,6 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         total_bytecode += outcome["bytecode"]
         partial_total += outcome["partial"]
         covered_ranges.extend(outcome.get("body_ranges", ()))
-
     return {
         "functions_virtualized": virtualized,
         "functions_skipped": skipped,

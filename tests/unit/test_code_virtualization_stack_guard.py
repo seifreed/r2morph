@@ -137,6 +137,30 @@ def test_region_codegen_emits_sysv_rsp_alignment_handler() -> None:
     expect(blob is not None)
 
 
+def test_region_lowers_direct_tail_jumps_to_native_exits() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 3, "type": "cmp", "opcode": "cmp edi, 1"},
+        {"addr": 0x1003, "size": 2, "type": "cjmp", "opcode": "jne 0x100A", "jump": 0x100A},
+        {"addr": 0x1005, "size": 5, "type": "mov", "opcode": "mov eax, 2"},
+        {"addr": 0x100A, "size": 2, "type": "jmp", "opcode": "jmp 0x2000", "jump": 0x2000},
+    ]
+
+    region = extract_region(instructions)
+
+    expect(region is not None and ("exit", 0x2000) in region.instructions)
+
+
+def test_region_codegen_emits_direct_tail_jump_exit_handler() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 3, "type": "mov", "opcode": "mov eax, 2"},
+        {"addr": 0x1003, "size": 2, "type": "jmp", "opcode": "jmp 0x2000", "jump": 0x2000},
+    ]
+    region = extract_region(instructions)
+    blob = build_region_blob(region, 0x500000, build_region_scheme(region, randomness.Random(3))) if region else None
+
+    expect(blob is not None)
+
+
 def test_stack_balanced_accepts_matched_push_pop() -> None:
     items = [["push", 0, 64], ["pop", 0, 64], ["exit", 0x1000]]
     expect(not (_stack_balanced(items) is not True))

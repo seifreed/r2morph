@@ -10,9 +10,9 @@ each terminator (``ret``/``swi``/terminal ``syscall``) becomes a distinct VM exi
 back to native code (any number of terminators is supported). Returning syscalls
 are bridged inside the VM so execution can continue with the next item.
 
-A function that is not fully reducible to this model (a call, a memory operand,
-an indirect or out-of-function branch, no terminator) yields ``None`` and is
-left untouched.
+A function that is not fully reducible to this model (a memory operand, an
+indirect branch, or no terminator) yields ``None`` and is left untouched.
+Direct out-of-function terminal jumps are lowered as native tail exits.
 
 The interpreter assembly and bytecode generation for a lowered region live in
 :mod:`code_virtualization_region_codegen`; the shared value objects in
@@ -63,6 +63,7 @@ class _RegionBuild:
     items: list[list[Any]]
     item_index_of: dict[int, int]
     exit_addrs: list[int]
+    tail_exit_targets: dict[int, int]
     ret_addrs: set[int]
     body: list[dict[str, Any]]
     call_site_item_of: dict[int, int]
@@ -71,6 +72,33 @@ class _RegionBuild:
 def _record_call_site_item(mapping: dict[int, int], address: int, item_kind: str, item_index: int) -> None:
     if item_kind in _CALL_SITE_ITEM_KINDS:
         mapping[address] = item_index
+
+
+def _exit_item(address: int, tail_exit_targets: dict[int, int], ret_cleanup: dict[int, int]) -> list[Any]:
+    if address in tail_exit_targets:
+        return ["exit", tail_exit_targets[address]]
+    if address in ret_cleanup:
+        return ["exit", address, ret_cleanup[address]]
+    return ["exit", address]
+
+
+def _tail_exit_targets(
+    instructions: list[dict[str, Any]],
+    instruction_addresses: set[int],
+    function_range: tuple[int, int] | None,
+    known_function_ranges: tuple[tuple[int, int], ...] | None,
+) -> dict[int, int]:
+    targets: dict[int, int] = {}
+    for instruction in instructions:
+        target = instruction.get("jump")
+        if instruction.get("type") != "jmp" or not isinstance(target, int) or target in instruction_addresses:
+            continue
+        if function_range is not None and function_range[0] <= target < function_range[1]:
+            continue
+        if known_function_ranges and any(start < target < end for start, end in known_function_ranges):
+            continue
+        targets[int(instruction["addr"])] = target
+    return targets
 
 
 def _is_trailing_padding(instruction: dict[str, Any]) -> bool:
@@ -667,12 +695,19 @@ def _inject_junk_movs(
     return new_items
 
 
-def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
+def _build_region_items(
+    instructions: list[dict[str, Any]],
+    allow_computed_jump: bool,
+    function_range: tuple[int, int] | None,
+    known_function_ranges: tuple[tuple[int, int], ...] | None,
+) -> _RegionBuild | None:
     instructions = _trim_trailing_padding(instructions)
     instructions = [_normalize_syscall_instruction(instruction) for instruction in instructions]
     instructions = _trim_after_unreferenced_terminal_syscall(instructions)
     if not instructions:
         return None
+    instruction_addresses = {int(instruction["addr"]) for instruction in instructions}
+    tail_exit_targets = _tail_exit_targets(instructions, instruction_addresses, function_range, known_function_ranges)
     ret_cleanup: dict[int, int] = {}
     for instruction in instructions:
         if instruction.get("type") != "ret":
@@ -688,6 +723,7 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
             if instruction.get("type") == "ret"
             or (instruction.get("type") == "swi" and not _is_syscall_instruction(instruction))
             or _is_terminal_syscall(instructions, index)
+            or instruction["addr"] in tail_exit_targets
         }
     )
     if not exit_addrs:
@@ -711,15 +747,16 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
         if item[0] not in ("jmp", "ijmp", "ijmpmemrip") and next_address in exit_set:
             items.append(["jmp", next_address])
     for address in exit_addrs:
-        if address in ret_cleanup:
-            items.append(["exit", address, ret_cleanup[address]])
-        else:
-            items.append(["exit", address])
-    return _RegionBuild(items, item_index_of, exit_addrs, ret_addrs, body, call_site_item_of)
+        items.append(_exit_item(address, tail_exit_targets, ret_cleanup))
+    return _RegionBuild(items, item_index_of, exit_addrs, tail_exit_targets, ret_addrs, body, call_site_item_of)
 
 
 def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, Any]]) -> bool:
     exit_index_of = {int(item[1]): index for index, item in enumerate(build.items) if item[0] == "exit"}
+    try:
+        exit_index_of.update({source: exit_index_of[target] for source, target in build.tail_exit_targets.items()})
+    except KeyError:
+        return False
 
     def resolve(target: int) -> int | None:
         return exit_index_of.get(target, build.item_index_of.get(target))
@@ -755,7 +792,11 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
 
 
 def extract_region(
-    instructions: list[dict[str, Any]], rng: random.Random | None = None, allow_computed_jump: bool = False
+    instructions: list[dict[str, Any]],
+    rng: random.Random | None = None,
+    allow_computed_jump: bool = False,
+    function_range: tuple[int, int] | None = None,
+    known_function_ranges: tuple[tuple[int, int], ...] | None = None,
 ) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
@@ -768,7 +809,7 @@ def extract_region(
     via a target map (native address -> item index) built here. It is off by
     default so the straight-line contract and its guards are unchanged.
     """
-    build = _build_region_items(instructions, allow_computed_jump)
+    build = _build_region_items(instructions, allow_computed_jump, function_range, known_function_ranges)
     if build is None or not _resolve_region_targets(build, instructions):
         return None
     has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)
@@ -830,9 +871,13 @@ def extract_region(
         for address, item_index in sorted(call_site_item_of.items())
         if sizes.get(address, 0) > 0
     )
+    exit_vaddr = next(
+        (address for address in build.exit_addrs if address not in build.tail_exit_targets),
+        next(iter(build.tail_exit_targets.values()), build.exit_addrs[0]),
+    )
     return Region(
         [tuple(item) for item in items],
-        build.exit_addrs[0],
+        exit_vaddr,
         build.body[0]["addr"],
         op_keys,
         body_ranges,
