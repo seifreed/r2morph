@@ -107,6 +107,7 @@ _GENERATED_CPP_CORPUS_PROFILES = (
     ("clangxx-o0", "clang++", "-O0", "-fno-pie", "-no-pie"),
     ("clangxx-o2", "clang++", "-O2", "-fno-pie", "-no-pie"),
 )
+_GENERATED_CPP_UNWIND_SOURCES = frozenset({"generated_cpp_exceptions"})
 _GENERATED_UNREACHABLE_PADDING = r"""
 __asm__(
     ".section .text.r2morph_padding,\"ax\",@progbits\n"
@@ -510,6 +511,29 @@ int main(int argc, char** argv) {
     (void)argv;
     const DerivedProbe probe;
     return (dispatch(probe, argc) + dispatch(probe, argc + 1)) & 127;
+}
+""",
+    "generated_cpp_exceptions": r"""
+#include <stdexcept>
+
+__attribute__((noinline)) static int guarded_value(int value) {
+    try {
+        if (value < 0) {
+            throw std::runtime_error("negative value");
+        }
+        return value * 3 + 1;
+    } catch (const std::runtime_error&) {
+        return 41;
+    }
+}
+
+__attribute__((noinline)) static int caller_with_fallback(int value) {
+    return guarded_value(value) ^ 0x2d;
+}
+
+int main(int argc, char** argv) {
+    (void)argv;
+    return caller_with_fallback(argc - 2) & 127;
 }
 """,
 }
@@ -1198,7 +1222,7 @@ def build_generated_corpus(output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     fixtures: list[Path] = []
     for name, source_text in _GENERATED_CORPUS_SOURCES.items():
-        cpp_source = name == "generated_cpp"
+        cpp_source = name.startswith("generated_cpp")
         source = output_dir / f"{name}{'.cpp' if cpp_source else '.c'}"
         source.write_text(f"{_GENERATED_UNREACHABLE_PADDING}\n{source_text}", encoding="utf-8")
         profiles = _GENERATED_CPP_CORPUS_PROFILES if cpp_source else _GENERATED_CORPUS_PROFILES
@@ -1206,12 +1230,19 @@ def build_generated_corpus(output_dir: Path) -> list[Path]:
             if shutil.which(compiler) is None:
                 raise RuntimeError(f"required generated corpus compiler is unavailable: {compiler}")
             binary = output_dir / f"{name}_{profile}"
+            unwind_flags = (
+                ()
+                if name in _GENERATED_CPP_UNWIND_SOURCES
+                else (
+                    "-fno-unwind-tables",
+                    "-fno-asynchronous-unwind-tables",
+                )
+            )
             command = [
                 compiler,
                 optimization,
                 *linker_flags,
-                "-fno-unwind-tables",
-                "-fno-asynchronous-unwind-tables",
+                *unwind_flags,
                 "-fno-stack-protector",
                 source.as_posix(),
                 "-o",

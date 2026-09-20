@@ -86,6 +86,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_branch",
     "generated_calls",
     "generated_cpp",
+    "generated_cpp_exceptions",
     "generated_extended",
     "generated_lookup",
     "generated_memory",
@@ -96,9 +97,9 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_xlat",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
-_EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 1) * len(
+_EXPECTED_GENERATED_FIXTURE_COUNT = (len(_EXPECTED_GENERATED_CORPUS_SOURCES) - 2) * len(
     _GENERATED_CORPUS_PROFILES
-) + len(_GENERATED_CPP_CORPUS_PROFILES)
+) + 2 * len(_GENERATED_CPP_CORPUS_PROFILES)
 _EXPECTED_MISSING_CORPUS_PASSES = sorted(set(CORPUS_PASS_NAMES) - {"CodeVirtualization", "PatternSubstitution"})
 _EXPECTED_MISSING_EXTENDED_PASSES = sorted(EXTENDED_MATURITY_PASS_NAMES)
 _EXPECTED_CORPUS_PASS_COVERAGE_PERCENT = 20.0
@@ -850,6 +851,12 @@ def test_render_multi_pass_result_keeps_cpp_corpus_gap_open() -> None:
 
 def test_generated_corpus_includes_branch_memory_and_lookup_shapes() -> None:
     expect(tuple(sorted(_GENERATED_CORPUS_SOURCES)) == _EXPECTED_GENERATED_CORPUS_SOURCES)
+
+
+def test_generated_cpp_exception_source_preserves_unwind_shape() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_cpp_exceptions"]
+
+    expect("throw std::runtime_error" in source and "catch (const std::runtime_error&)" in source)
 
 
 def test_generated_calls_source_preserves_direct_and_indirect_call_shapes() -> None:
