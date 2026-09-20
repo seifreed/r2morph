@@ -57,19 +57,42 @@ def populate_cfg_blocks(
     for r2_block in r2_blocks:
         addr = r2_block.get("addr", 0)
         size = r2_block.get("size", 0)
+        block_instructions = [
+            instruction for instruction in function_instructions if addr <= instruction.get("offset", 0) < addr + size
+        ]
+        if not block_instructions:
+            block_instructions = _read_block_instructions(binary, addr, size)
         block = BasicBlock(
             address=addr,
             size=size,
-            instructions=[
-                instruction
-                for instruction in function_instructions
-                if addr <= instruction.get("offset", 0) < addr + size
-            ],
+            instructions=block_instructions,
             successors=[],
             predecessors=[],
             block_type=classify_block_type(r2_block),
         )
         cfg.add_block(block)
+
+
+def _read_block_instructions(binary: Binary, address: int, size: int) -> list[dict[str, Any]]:
+    """Recover a block omitted by radare2's whole-function disassembly."""
+    if size <= 0 or getattr(binary, "r2", None) is None:
+        return []
+    try:
+        instructions = binary.r2.cmdj(f"pdbj {size} @ {address}") or []
+    except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Could not recover block at 0x%x: %s", address, exc)
+        return []
+    if not isinstance(instructions, list):
+        return []
+    recovered: list[dict[str, Any]] = []
+    for instruction in instructions:
+        if not isinstance(instruction, dict):
+            continue
+        offset = instruction.get("offset", instruction.get("addr"))
+        if not isinstance(offset, int) or not address <= offset < address + size:
+            continue
+        recovered.append(instruction if "offset" in instruction else {**instruction, "offset": offset})
+    return recovered
 
 
 def populate_cfg_edges(cfg: ControlFlowGraph, r2_blocks: list[dict[str, Any]]) -> None:

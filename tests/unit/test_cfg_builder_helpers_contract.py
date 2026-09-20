@@ -28,6 +28,18 @@ class _Binary:
         ]
 
 
+class _BinaryWithMissingBlock:
+    class _R2:
+        @staticmethod
+        def cmdj(command: str):
+            return [{"addr": 0x1010, "type": "ret"}] if command.startswith("pdbj") else []
+
+    r2 = _R2()
+
+    def get_function_disasm(self, _function_address: int):
+        return [{"offset": 0x1000, "type": "jmp", "jump": 0x1010}]
+
+
 def test_cfg_builder_helpers_contract() -> None:
     binary = _Binary()
     cfg = ControlFlowGraph(function_address=0x1000, function_name="main")
@@ -70,3 +82,16 @@ def test_cfg_builder_still_builds_cfgs_with_helpers() -> None:
     cfg = CFGBuilder(binary).build_cfg(0x1000, "main")
     expect(cfg.function_address == _EXPECTED_CFG_FUNCTION_ADDRESS_4096)
     expect(cfg.get_block(0x1000) is not None)
+
+
+def test_cfg_builder_recovers_block_missing_from_function_disassembly() -> None:
+    cfg = ControlFlowGraph(function_address=0x1000, function_name="main")
+
+    populate_cfg_blocks(
+        cfg,
+        _BinaryWithMissingBlock(),
+        0x1000,
+        [{"addr": 0x1000, "size": 0x10}, {"addr": 0x1010, "size": 0x4}],
+    )
+
+    expect([instruction["type"] for instruction in cfg.get_block(0x1010).instructions] == ["ret"])
