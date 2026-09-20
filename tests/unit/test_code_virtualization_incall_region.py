@@ -213,6 +213,25 @@ def test_extract_region_keeps_out_of_function_call_as_native_bridge() -> None:
     expect(not (any(item[0] in ("vcall", "vret") for item in region.instructions)))
 
 
+def test_extract_region_keeps_known_helper_call_native_when_function_range_overlaps() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 2, "type": "push", "opcode": "push rbx"},
+        {"addr": 0x1002, "size": 5, "type": "call", "opcode": "call 0x1050", "jump": 0x1050},
+        {"addr": 0x1007, "size": 1, "type": "pop", "opcode": "pop rbx"},
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+
+    region = extract_region(
+        instructions,
+        randomness.Random(1),
+        function_range=(0x1000, 0x1100),
+        known_function_ranges=((0x1000, 0x1100), (0x1050, 0x1060)),
+    )
+
+    expect(any(item[0] == "call" for item in region.instructions))
+    expect(not (any(item[0] in ("vcall", "vret") for item in region.instructions)))
+
+
 def test_extract_region_virtualizes_static_local_indirect_call() -> None:
     """A statically proven local indirect target gets a virtual return path."""
     region = extract_region(_in_function_indirect_call_instructions(), randomness.Random(1))

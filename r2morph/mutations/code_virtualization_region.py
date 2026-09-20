@@ -751,7 +751,41 @@ def _build_region_items(
     return _RegionBuild(items, item_index_of, exit_addrs, tail_exit_targets, ret_addrs, body, call_site_item_of)
 
 
-def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, Any]]) -> bool:
+def _resolve_call_targets(
+    build: _RegionBuild,
+    instructions: list[dict[str, Any]],
+    function_start: int,
+    function_end: int,
+    known_function_starts: set[int],
+) -> bool:
+    instruction_ranges = tuple(
+        (int(instruction["addr"]), int(instruction["addr"]) + int(instruction.get("size", 0)))
+        for instruction in instructions
+        if int(instruction.get("size", 0)) > 0
+    )
+    for item in build.items:
+        if (
+            item[0] != "call"
+            or not function_start <= item[1] < function_end
+            or item[1] in build.ret_addrs
+            or item[1] in known_function_starts
+        ):
+            continue
+        resolved = build.item_index_of.get(item[1])
+        if resolved is None:
+            if any(start < item[1] < end for start, end in instruction_ranges):
+                return False
+            continue
+        item[0] = "vcall"
+        item[1] = resolved
+    return True
+
+
+def _resolve_region_targets(
+    build: _RegionBuild,
+    instructions: list[dict[str, Any]],
+    known_function_ranges: tuple[tuple[int, int], ...] | None = None,
+) -> bool:
     exit_index_of = {int(item[1]): index for index, item in enumerate(build.items) if item[0] == "exit"}
     try:
         exit_index_of.update({source: exit_index_of[target] for source, target in build.tail_exit_targets.items()})
@@ -775,16 +809,12 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
             item[target_index] = resolved
     function_start = min(instruction["addr"] for instruction in instructions)
     function_end = max(instruction["addr"] + instruction.get("size", 0) for instruction in instructions)
-    has_internal_call = False
-    for item in build.items:
-        if item[0] == "call" and function_start <= item[1] < function_end and item[1] not in build.ret_addrs:
-            resolved = build.item_index_of.get(item[1])
-            if resolved is None:
-                return False
-            item[0] = "vcall"
-            item[1] = resolved
-            has_internal_call = True
-    if has_internal_call:
+    known_function_starts = {
+        start for start, end in known_function_ranges or () if start != function_start and start < end
+    }
+    if not _resolve_call_targets(build, instructions, function_start, function_end, known_function_starts):
+        return False
+    if any(item[0] == "vcall" for item in build.items):
         for item in build.items:
             if item[0] == "exit" and item[1] in build.ret_addrs:
                 item[0] = "vret"
@@ -810,7 +840,7 @@ def extract_region(
     default so the straight-line contract and its guards are unchanged.
     """
     build = _build_region_items(instructions, allow_computed_jump, function_range, known_function_ranges)
-    if build is None or not _resolve_region_targets(build, instructions):
+    if build is None or not _resolve_region_targets(build, instructions, known_function_ranges):
         return None
     has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)
     if has_internal_indirect_call:
