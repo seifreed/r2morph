@@ -63,6 +63,7 @@ _GENERATED_FIXTURE_CATEGORIES = {
     "generated_stack_strings_": ("memory_addressing",),
     "generated_string_": ("memory_addressing",),
     "generated_simd_": ("floating_point_and_simd",),
+    "generated_threads_": ("thread_safety",),
     "generated_xlat_": ("memory_addressing",),
 }
 _QEMU_NON_COMPLETED_EQUIVALENT_STATUSES = frozenset({"unavailable", "timeout"})

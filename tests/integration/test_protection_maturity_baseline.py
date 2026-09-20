@@ -97,6 +97,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_simd",
     "generated_stack_strings",
     "generated_string",
+    "generated_threads",
     "generated_xlat",
 )
 _EXPECTED_MERGED_GENERATED_FIXTURE_COUNT = 2
@@ -871,6 +872,17 @@ def test_generated_corpus_simd_shape_is_explicit() -> None:
     source = _GENERATED_CORPUS_SOURCES["generated_simd"]
 
     expect("vector_size(16)" in source and "simd_u32" in source and "input >> 3" in source)
+
+
+def test_generated_threads_source_exercises_joined_atomic_worker() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_threads"]
+
+    expect(
+        "pthread_create" in source
+        and "pthread_join" in source
+        and "atomic_fetch_add_explicit" in source
+        and "memory_order_seq_cst" in source
+    )
 
 
 def test_generated_cpp_exception_source_preserves_unwind_shape() -> None:

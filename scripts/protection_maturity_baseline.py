@@ -336,6 +336,36 @@ int main(int argc, char **argv) {
     return (int)((total + (long)thread_value) & 127L);
 }
 """,
+    "generated_threads": r"""
+#include <pthread.h>
+#include <stdatomic.h>
+#include <stdint.h>
+
+static _Atomic uint32_t thread_total;
+
+__attribute__((noinline)) static void *thread_worker(void *argument) {
+    const uint32_t value = *(const uint32_t *)argument;
+    atomic_fetch_add_explicit(&thread_total, value, memory_order_seq_cst);
+    return NULL;
+}
+
+__attribute__((noinline)) static int threaded_mix(int seed) {
+    pthread_t thread;
+    const uint32_t value = (uint32_t)seed + 17u;
+    if (pthread_create(&thread, NULL, thread_worker, (void *)&value) != 0) {
+        return 111;
+    }
+    if (pthread_join(thread, NULL) != 0) {
+        return 112;
+    }
+    return (int)((atomic_load_explicit(&thread_total, memory_order_seq_cst) ^ value) & 127u);
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    return threaded_mix(argc);
+}
+""",
     "generated_lookup": r"""
 #include <stdint.h>
 
@@ -1265,10 +1295,12 @@ def build_generated_corpus(output_dir: Path, include_unwind_sources: bool = True
             exception_source = name in _GENERATED_CPP_UNWIND_SOURCES
             unwind_flags = () if exception_source else ("-fno-unwind-tables", "-fno-asynchronous-unwind-tables")
             cxx_flags = ("-fno-exceptions",) if cpp_source and not exception_source else ()
+            thread_flags = ("-pthread",) if name == "generated_threads" else ()
             command = [
                 compiler,
                 optimization,
                 *linker_flags,
+                *thread_flags,
                 *cxx_flags,
                 *unwind_flags,
                 "-fno-stack-protector",

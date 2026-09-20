@@ -206,15 +206,15 @@ executable mode in a temporary copy, requires one applied virtualization, and
 compares return code, termination signal, hashed stdout/stderr, and bounded
 created-file hashes, sizes, and modes before and after the mutation. The
 workflow also compiles the reproducible C and C++ generated corpus used by the
-differential campaign: 160 additional Linux ELF x86-64 fixtures. The scheduled
-campaign repeats the combined 311-fixture set across three deterministic seeds,
-for 933 fixture runs (453 repository fixtures and 480 generated-corpus runs),
+differential campaign: 172 additional Linux ELF x86-64 fixtures. The scheduled
+campaign repeats the combined 323-fixture set across three deterministic seeds,
+for 969 fixture runs (453 repository fixtures and 516 generated-corpus runs),
 records the family counts in the JSON artifact, and fails on any missing,
 non-virtualized, or divergent fixture. The latest passing campaign is retained in
 [`protection-vm-semantic-2026-09-18-1d0b69e4.json`](protection-vm-semantic-2026-09-18-1d0b69e4.json).
 Each fixture row now also carries a paired QEMU x86-64 observation; the report
 summary counts completed, unavailable, divergent, and missing independent pairs.
-The scheduled Linux CI contract requires all 933 pairs to complete with no
+The scheduled Linux CI contract requires all 969 pairs to complete with no
 divergence; the archived report above predates the six newly added C++ compiler
 profiles and the dedicated SIMD family, producing twelve additional
 exception/non-exception variants plus twelve SIMD variants.
@@ -228,8 +228,8 @@ unsupported ABIs, or cross-platform parity.
 The archived local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
 completed 150 fixtures with zero failures for the official Linux ELF x86-64
-target; it predates the current scheduled inventory of 311 fixtures per seed
-(151 repository fixtures and 160 generated variants).
+target; it predates the current scheduled inventory of 323 fixtures per seed
+(151 repository fixtures and 172 generated variants).
 
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)
