@@ -28,7 +28,6 @@ from r2morph.mutations.base import MutationRecord
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
-from scripts.protection_adversary import analyze as run_adversary
 from scripts.protection_bytecode_grammar import measure as measure_grammar
 from scripts.protection_handler_clustering import measure as measure_handlers
 from tests.integration.elf_emulator import emulate_exit_code
@@ -48,6 +47,8 @@ _TRAMPOLINE_SIZE = 5
 _JMP_REL32_OPCODE = 0xE9
 _TAMPER_OFFSETS = (0x10, 0x18, 0x20, 0x28, 0x30, 0x40, 0x50, 0x60)
 _NATIVE_EXECUTION_TIMEOUT_SECONDS = 5
+_ADVERSARIAL_RECOVERY_TIMEOUT_SECONDS = 120
+_ADVERSARIAL_RECOVERY_SCRIPT = Path(__file__).with_name("protection_adversary.py")
 _GENERATED_RESISTANCE_FIXTURE_NAMES = (
     "generated_calls_gcc-o0",
     "generated_cpp_gxx-o2",
@@ -146,7 +147,21 @@ def _native_execution(path: Path) -> dict[str, object]:
 
 def _adversarial_recovery_probe(path: Path) -> dict[str, object]:
     """Run the bounded recovery adversary and retain only summary metrics."""
-    report = run_adversary(path, limit=3)
+    try:
+        result = run_process(
+            [sys.executable, _ADVERSARIAL_RECOVERY_SCRIPT, path, "--limit", "3"],
+            timeout=_ADVERSARIAL_RECOVERY_TIMEOUT_SECONDS,
+        )
+    except (OSError, ProcessTimeoutError) as error:
+        return {"status": "error", "error_type": type(error).__name__}
+    if result.returncode != 0:
+        return {"status": "error", "return_code": result.returncode}
+    try:
+        report = json.loads(result.stdout_text)
+    except json.JSONDecodeError:
+        return {"status": "error", "error_type": "invalid-json"}
+    if not isinstance(report, dict):
+        return {"status": "error", "error_type": "invalid-report"}
     results = report.get("results")
     dynamic = report.get("dynamic_recovery")
     if not isinstance(results, list) or not isinstance(dynamic, dict):
