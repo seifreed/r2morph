@@ -15,9 +15,10 @@ hand-built instruction dicts - no r2, no mocks.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_engine import GP_REGISTERS
+from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, VirtualizedOp
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_dataflow import has_static_internal_indirect_call
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
@@ -91,3 +92,29 @@ def test_ijmp_item_size_matches_indirect_call() -> None:
 def test_ijmpmemrip_item_has_opcode_and_relative_displacement() -> None:
     """A RIP-relative computed jump encodes as one opcode plus four displacement bytes."""
     expect(_item_size(("ijmpmemrip", 0x3000)) == _EXPECTED_ITEM_SIZE_IJMPMEMRIP)
+
+
+def test_indirect_call_target_in_branch_does_not_prove_local_target() -> None:
+    """A store from an exclusive branch must not prove a call target."""
+    items = [
+        ["jcc", "je", 4],
+        ["op", VirtualizedOp("mov", 0, 0x1010, True, 64)],
+        ["store", 0, 1, 8, 64],
+        ["jmp", 6],
+        ["op", VirtualizedOp("mov", 0, 0x1020, True, 64)],
+        ["store", 0, 1, 8, 64],
+        ["callmem", 1, 8, 0],
+        ["exit", 0],
+    ]
+    expect(not has_static_internal_indirect_call(items, {0x1020: 4}))
+
+
+def test_indirect_call_target_from_dominating_store_proves_local_target() -> None:
+    """A matching store that dominates the call still proves the local target."""
+    items = [
+        ["op", VirtualizedOp("mov", 0, 0x1020, True, 64)],
+        ["store", 0, 1, 8, 64],
+        ["callmem", 1, 8, 0],
+        ["exit", 0],
+    ]
+    expect(has_static_internal_indirect_call(items, {0x1020: 0}))

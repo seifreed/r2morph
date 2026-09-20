@@ -162,6 +162,38 @@ def _constant_register_states(items: list[list[Any]]) -> list[dict[int, int] | N
     return states
 
 
+def _dominators(items: list[list[Any]]) -> list[set[int]]:
+    predecessors = [set[int]() for _ in items]
+    for index in range(len(items)):
+        for successor in _successors(items, index):
+            predecessors[successor].add(index)
+    reachable = {0}
+    work = [0] if items else []
+    while work:
+        index = work.pop()
+        for successor in _successors(items, index):
+            if successor not in reachable:
+                reachable.add(successor)
+                work.append(successor)
+
+    all_indices = set(range(len(items)))
+    dominators = [
+        {0} if index == 0 else ({index} if index not in reachable else set(all_indices)) for index in range(len(items))
+    ]
+    changed = True
+    while changed:
+        changed = False
+        for index in sorted(reachable - {0}):
+            incoming = [dominators[pred] for pred in predecessors[index] if pred in reachable]
+            candidate = {index}
+            if incoming:
+                candidate.update(set.intersection(*incoming))
+            if candidate != dominators[index]:
+                dominators[index] = candidate
+                changed = True
+    return dominators
+
+
 def _matches_memory_store(store: list[Any], call: list[Any]) -> bool:
     pairs = {
         "callmem": ("store", (2, 3), (1, 2)),
@@ -177,11 +209,12 @@ def _matches_memory_store(store: list[Any], call: list[Any]) -> bool:
 
 def _memory_call_target(items: list[list[Any]], states: list[dict[int, int] | None], call_index: int) -> int | None:
     call = items[call_index]
+    dominators = _dominators(items)
     for store_index in range(call_index - 1, -1, -1):
         store = items[store_index]
         if store[0] in _BOUNDARY_KINDS:
             break
-        if _matches_memory_store(store, call):
+        if store_index in dominators[call_index] and _matches_memory_store(store, call):
             state = states[store_index]
             return None if state is None else state.get(int(store[1]))
     return None
