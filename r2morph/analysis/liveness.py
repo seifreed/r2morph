@@ -262,19 +262,28 @@ class LivenessAnalysis:
             self._live_ranges[reg_name].append(lr)
 
     def _build_interference_graph(self) -> None:
-        """Build interference graph from live ranges."""
-        for reg_name in self._live_ranges:
+        """Build interference from registers live at the same CFG point.
+
+        Numeric live intervals over-approximate control-flow joins: values that
+        live on mutually exclusive branches can have overlapping addresses while
+        never being live together.  The instruction-level sets already contain
+        the precise CFG fixpoint, so use them as the interference source.
+        """
+        live_registers = set(self._live_ranges)
+        live_registers.update(
+            register.name
+            for liveness in self._instruction_liveness.values()
+            for register in liveness.live_before | liveness.live_after
+        )
+        for reg_name in live_registers:
             self._interference_graph.add_node(reg_name)
 
-        all_ranges: list[tuple[str, LiveRange]] = []
-        for reg_name, ranges in self._live_ranges.items():
-            for lr in ranges:
-                all_ranges.append((reg_name, lr))
-
-        for i, (reg1, range1) in enumerate(all_ranges):
-            for reg2, range2 in all_ranges[i + 1 :]:
-                if reg1 != reg2 and range1.overlaps(range2):
-                    self._interference_graph.add_edge(reg1, reg2)
+        for liveness in self._instruction_liveness.values():
+            live = tuple(liveness.live_before | liveness.live_after)
+            for index, first in enumerate(live):
+                for second in live[index + 1 :]:
+                    if not first.aliases().isdisjoint(second.aliases()):
+                        self._interference_graph.add_edge(first.name, second.name)
 
     def _extract_registers_used(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers used by an instruction."""

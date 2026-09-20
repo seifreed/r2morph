@@ -172,6 +172,58 @@ def create_deep_backward_cfg() -> ControlFlowGraph:
     return cfg
 
 
+def create_disjoint_branch_cfg() -> ControlFlowGraph:
+    """Create branches whose live values never coexist at runtime."""
+    cfg = ControlFlowGraph(function_address=0x6000, function_name="disjoint_branches")
+    blocks = (
+        BasicBlock(
+            address=0x6000,
+            size=4,
+            instructions=[{"offset": 0x6000, "type": "test", "disasm": "test eax, eax"}],
+            successors=[0x6010, 0x6020],
+            predecessors=[],
+            block_type=BlockType.CONDITIONAL,
+        ),
+        BasicBlock(
+            address=0x6010,
+            size=4,
+            instructions=[{"offset": 0x6010, "type": "mov", "disasm": "mov eax, 1"}],
+            successors=[0x6040],
+            predecessors=[0x6000],
+            block_type=BlockType.NORMAL,
+        ),
+        BasicBlock(
+            address=0x6020,
+            size=4,
+            instructions=[{"offset": 0x6020, "type": "mov", "disasm": "mov ebx, 1"}],
+            successors=[0x6050],
+            predecessors=[0x6000],
+            block_type=BlockType.NORMAL,
+        ),
+        BasicBlock(
+            address=0x6040,
+            size=4,
+            instructions=[{"offset": 0x6040, "type": "add", "disasm": "add eax, 2"}],
+            successors=[],
+            predecessors=[0x6010],
+            block_type=BlockType.RETURN,
+        ),
+        BasicBlock(
+            address=0x6050,
+            size=4,
+            instructions=[{"offset": 0x6050, "type": "add", "disasm": "add ebx, 2"}],
+            successors=[],
+            predecessors=[0x6020],
+            block_type=BlockType.RETURN,
+        ),
+    )
+    for block in blocks:
+        cfg.add_block(block)
+    for source, target in ((0x6000, 0x6010), (0x6000, 0x6020), (0x6010, 0x6040), (0x6020, 0x6050)):
+        cfg.add_edge(source, target)
+    return cfg
+
+
 class TestLiveRange:
     """Tests for LiveRange class."""
 
@@ -490,6 +542,15 @@ class TestLivenessAnalysis:
         head_address = _DEEP_CFG_START_ADDRESS + (_DEEP_CFG_BLOCK_COUNT - 1) * _DEEP_CFG_BLOCK_STRIDE
         live_names = {register.name for register in analyzer._block_live_in[head_address]}
         expect("rax" in live_names)
+
+    def test_interference_graph_ignores_mutually_exclusive_branch_values(self):
+        """Branch-local values do not interfere when no path holds both."""
+        analyzer = LivenessAnalysis(create_disjoint_branch_cfg())
+        analyzer.compute()
+
+        graph = analyzer.get_interference_graph()
+
+        expect(not graph.interfere("eax", "ebx"))
 
     def test_register_extraction(self):
         """Test register extraction from instruction."""
