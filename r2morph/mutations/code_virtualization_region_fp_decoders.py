@@ -592,6 +592,12 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "packssdw",
         "punpcklbw",
         "punpcklwd",
+        "punpckldq",
+        "punpcklqdq",
+        "punpckhbw",
+        "punpckhwd",
+        "punpckhdq",
+        "punpckhqdq",
         "pand",
         "pandn",
         "por",
@@ -857,6 +863,27 @@ def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
     except ValueError:
         return None
     return ("fppackedimm", mnemonic, destination, immediate) if 0 <= immediate <= _PACKED_IMMEDIATE_MAX else None
+
+
+def _decode_fp_legacy_packed_shuffle_immediate(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode the three-operand legacy ``pshufd`` form."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "pshufd":
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    source = _parse_xmm_operand(operands[1])
+    if destination is None or source is None:
+        return None
+    try:
+        immediate = int(operands[2], 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
+        return None
+    return ("fppackedveximm", "pshufd", destination, source, immediate)
 
 
 def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int] | None:

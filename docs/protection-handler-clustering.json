@@ -19,7 +19,7 @@
   "cross_seed_nearest_similarity_above_threshold_percent": 17.47276688453159,
   "cross_seed_nearest_similarity_comparisons": 2295,
   "cross_seed_nearest_similarity_max": 0.9523809523809523,
-  "cross_seed_nearest_similarity_mean": 0.6596279981402522,
+  "cross_seed_nearest_similarity_mean": 0.6596274996282119,
   "cross_seed_normalised_cluster_count": 0,
   "first_seed": 20260820,
   "schema_version": 2,

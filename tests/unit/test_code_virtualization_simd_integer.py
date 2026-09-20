@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_arith_idx,
     _decode_fp_compare,
     _decode_fp_compare_idx,
+    _decode_fp_legacy_packed_shuffle_immediate,
     _decode_fp_packed_arith,
     _decode_fp_packed_arith_idx,
     _decode_fp_packed_immediate,
@@ -28,6 +29,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_scalar_arith,
 )
 from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
+from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_vex_packed_shift_immediate_handler_asm
 from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
 from tests.utils.assertions import expect
 
@@ -40,6 +42,29 @@ _EXPECTED_RIP_TARGET = 0x401108
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pxor xmm0, xmm1") == ("fppacked", "pxor", 0, 1))
+
+
+def test_decode_legacy_packed_shuffle_returns_non_destructive_vector_item() -> None:
+    expect(
+        _decode_fp_legacy_packed_shuffle_immediate("pshufd xmm2, xmm0, 0x50")
+        == ("fppackedveximm", "pshufd", 2, 0, 0x50)
+    )
+
+
+def test_classify_legacy_packed_shuffle_uses_immediate_region_item() -> None:
+    item = classification._classify(
+        {"type": "mov", "family": "vec", "opcode": "pshufd xmm2, xmm0, 0x50", "addr": 0x401000, "size": 5}
+    )
+    expect(item == ["fppackedveximm", "pshufd", 2, 0, 0x50])
+
+
+def test_legacy_packed_shuffle_handler_preserves_sse_mnemonic() -> None:
+    assembly = _fp_vex_packed_shift_immediate_handler_asm("fppackedveximm_pshufd_80", "7", preserve_ymm=True)
+    expect("pshufd xmm0, xmm0, 80" in assembly and "vpshufd" not in assembly)
+
+
+def test_decode_legacy_unpack_dword_returns_vector_item() -> None:
+    expect(_decode_fp_packed_arith("punpckldq xmm0, xmm1") == ("fppacked", "punpckldq", 0, 1))
 
 
 def test_decode_packed_integer_add_returns_vector_item() -> None:
