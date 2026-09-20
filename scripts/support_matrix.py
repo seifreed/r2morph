@@ -126,6 +126,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             ".github/workflows/adversarial-benchmark.yml",
             "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_code_virtualization_real.py",
@@ -139,6 +140,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence": [
             "docs/protection-bytecode-grammar.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_vm_resistance_adversarial.py",
         ],
@@ -149,6 +151,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence": [
             "docs/protection-handler-clustering.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             "scripts/vm_resistance_adversarial.py",
         ],
     },
@@ -158,6 +161,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence": [
             "docs/protection-handler-clustering.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             "scripts/vm_resistance_adversarial.py",
         ],
     },
@@ -168,6 +172,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/protection-maturity.md",
             ".github/workflows/adversarial-benchmark.yml",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             "tests/integration/test_code_virtualization_real.py",
             "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_vm_resistance_adversarial.py",
@@ -180,6 +185,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
             "docs/protection-bytecode-grammar.json",
             ".github/workflows/adversarial-benchmark.yml",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
+            "docs/protection-vm-resistance-2026-09-20.json",
             "tests/integration/test_code_virtualization_real.py",
             "tests/integration/test_code_virtualization_diversification_real.py",
             "scripts/vm_resistance_adversarial.py",

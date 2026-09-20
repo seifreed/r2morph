@@ -62,7 +62,11 @@ review. It is not a feature roadmap and must not be read as a support claim.
   blocker.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
-  Evidence map: [protection-handler-clustering.json](protection-handler-clustering.json),
+  The latest automated campaign covers five fixtures across ten seeds and records
+  semantic parity, opcode/handler/dispatcher diversity, anti-tamper divergence,
+  and progressive bytecode growth; it does not constitute human signoff.
+  Evidence map: [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
+  [protection-handler-clustering.json](protection-handler-clustering.json),
   [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
   `adversarial_validation` and `vm_resistance_blocker_totals`, plus the automated
   tamper/progressive smoke in

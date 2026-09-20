@@ -654,6 +654,14 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
     )
 
 
+def test_support_matrix_records_latest_vm_resistance_campaign() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    evidence = matrix["matrix"]["summary"]["vm_resistance_gap_evidence"]
+    latest = "docs/protection-vm-resistance-2026-09-20.json"
+
+    expect(all(latest in row["evidence"] for row in evidence.values()))
+
+
 def test_release_contract_rejects_stale_vm_resistance_blocker_totals() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] += 1
