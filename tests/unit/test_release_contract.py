@@ -1705,14 +1705,14 @@ def test_windows_pe_differential_covers_three_native_mutation_passes() -> None:
     )
 
 
-def test_adversarial_workflow_covers_nine_vm_resistance_shapes() -> None:
+def test_adversarial_workflow_covers_ten_vm_resistance_shapes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     resistance_job = workflow.split("      - name: Run VM tamper and progressive protection smoke\n", 1)[1].split(
         "      - name: Validate VM tamper and progressive protection smoke\n", 1
     )[0]
 
     expect(
-        'report["fixture_count"] != 9' in workflow
+        'report["fixture_count"] != 10' in workflow
         and all(
             f"--fixture fixtures/dataset/{name}" in resistance_job
             for name in (

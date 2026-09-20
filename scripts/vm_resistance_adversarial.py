@@ -53,6 +53,7 @@ _GENERATED_RESISTANCE_FIXTURE_NAMES = (
     "generated_calls_gcc-o0",
     "generated_cpp_gxx-o2",
     "generated_memory_gcc-o2",
+    "generated_threads_gcc-o2",
     "generated_xlat_gcc-o2",
 )
 _HUMAN_REVIEW = {

@@ -314,7 +314,7 @@ jobs:
               raise SystemExit("automated VM resistance validation did not complete")
           if report["seed_count"] != 10:
               raise SystemExit(f"unexpected VM resistance seed count: {report['seed_count']}")
-          if report["fixture_count"] != 9:
+          if report["fixture_count"] != 10:
               raise SystemExit(f"unexpected VM resistance fixture count: {report['fixture_count']}")
           if not report["semantic_parity"] or not report["cross_fixture_distinct_artifacts"]:
               raise SystemExit("VM fixture campaign lost semantic parity or artifact diversity")
