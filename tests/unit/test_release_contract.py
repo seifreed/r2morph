@@ -1598,6 +1598,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "cross-format-differential.xml" in differential
         and "Validate cross-format differential evidence" in differential
         and "cross-format smoke coverage drift" in differential
+        and "platform_requirements" in differential
+        and "cross-format platform coverage drift" in differential
         and "Upload cross-format differential evidence" in differential
         and "cross-format-differential" in differential
         and "Run composition regression smoke" in differential

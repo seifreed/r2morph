@@ -232,6 +232,45 @@ jobs:
             }
           if not all(any(name.startswith(prefix) for name in names) for prefix in required):
               raise SystemExit(f"cross-format smoke coverage drift: {sorted(names)}")
+          platform_requirements = {
+              "PE": (
+                  "test_pe_handler_checksum",
+                  "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
+                  "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
+              ),
+              "Mach-O": (
+                  "test_macho_handler_repair_and_codesign",
+                  "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
+              ),
+              "ARM32": (
+                  "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
+                  "test_elf_arm32_nop_insertion_preserves_emulated_exit_code",
+                  "test_elf_arm32_register_substitution_preserves_emulated_exit_code",
+                  "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
+                  "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+              ),
+              "AArch64": (
+                  "test_elf_arm64_instruction_substitution_preserves_native_exit_code",
+                  "test_elf_arm64_nop_insertion_preserves_native_exit_code",
+                  "test_elf_arm64_register_substitution_preserves_native_exit_code",
+                  "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code",
+                  "test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code",
+              ),
+              "x86-32": (
+                  "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
+                  "test_elf_x86_32_nop_insertion_preserves_native_exit_code",
+                  "test_elf_x86_32_register_substitution_preserves_native_exit_code",
+                  "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
+                  "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+              ),
+          }
+          missing_by_platform = {
+              platform: [prefix for prefix in prefixes if not any(name.startswith(prefix) for name in names)]
+              for platform, prefixes in platform_requirements.items()
+          }
+          missing_by_platform = {platform: missing for platform, missing in missing_by_platform.items() if missing}
+          if missing_by_platform:
+              raise SystemExit(f"cross-format platform coverage drift: {missing_by_platform}")
           Path("cross-format-differential.xml").stat()
           PY
 
