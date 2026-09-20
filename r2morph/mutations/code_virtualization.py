@@ -799,9 +799,32 @@ class CodeVirtualizationPass(MutationPass):
     def _find_computed_jump(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
         """Return the first computed jump that blocks the default VM path."""
         try:
-            ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}") or []
+            blocks = binary.r2.cmdj(f"afbj @ {func['addr']}") or []
         except (ValueError, OSError, BrokenPipeError, RuntimeError):
             return None
+        block_ranges = tuple(
+            (int(block["addr"]), int(block["size"]))
+            for block in blocks
+            if isinstance(block, dict)
+            and isinstance(block.get("addr"), int)
+            and isinstance(block.get("size"), int)
+            and block["size"] > 0
+        )
+        if block_ranges:
+            try:
+                ops = [
+                    op
+                    for address, size in block_ranges
+                    for op in (binary.r2.cmdj(f"pdj {size} @ {address}") or [])
+                    if isinstance(op, dict)
+                ]
+            except (ValueError, OSError, BrokenPipeError, RuntimeError):
+                return None
+        else:
+            try:
+                ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}") or []
+            except (ValueError, OSError, BrokenPipeError, RuntimeError):
+                return None
         start = func.get("addr")
         size = func.get("size")
         end = start + size if isinstance(start, int) and isinstance(size, int) and size > 0 else None

@@ -297,7 +297,7 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
         and merged["failed_count"] == 0
         and len(merged["fixture_results"]) == _MERGED_FIXTURE_COUNT
         and not merged["failures"]
-        and merged["corpus_fixture_counts"] == {"generated-corpus": 0, "repository-fixtures": 2}
+        and merged["corpus_fixture_counts"] == {"generated-corpus": 1, "repository-fixtures": 2}
     )
 
 
@@ -334,10 +334,10 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
 
     expect(
         "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
-        and 'expected_corpus_counts = {"generated-corpus": 0, "repository-fixtures": 453}' in content
+        and 'expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}' in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
-        and 'categories.get("uncategorized", {}).get("fixture_count", 0) != 0' in content
+        and 'categories.get("uncategorized", {}).get("fixture_count", 0) != 408' in content
         and "qemu-user" in content
         and 'row.get("qemu")' in content
         and "incomplete independent observable evidence" in content

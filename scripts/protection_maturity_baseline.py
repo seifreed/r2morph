@@ -1232,18 +1232,14 @@ def build_generated_corpus(output_dir: Path, include_unwind_sources: bool = True
             if shutil.which(compiler) is None:
                 raise RuntimeError(f"required generated corpus compiler is unavailable: {compiler}")
             binary = output_dir / f"{name}_{profile}"
-            unwind_flags = (
-                ()
-                if name in _GENERATED_CPP_UNWIND_SOURCES
-                else (
-                    "-fno-unwind-tables",
-                    "-fno-asynchronous-unwind-tables",
-                )
-            )
+            exception_source = name in _GENERATED_CPP_UNWIND_SOURCES
+            unwind_flags = () if exception_source else ("-fno-unwind-tables", "-fno-asynchronous-unwind-tables")
+            cxx_flags = ("-fno-exceptions",) if cpp_source and not exception_source else ()
             command = [
                 compiler,
                 optimization,
                 *linker_flags,
+                *cxx_flags,
                 *unwind_flags,
                 "-fno-stack-protector",
                 source.as_posix(),

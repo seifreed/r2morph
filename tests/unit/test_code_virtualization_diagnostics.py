@@ -44,6 +44,19 @@ class _TerminalSyscallBinary:
     r2 = _Disassembler()
 
 
+class _BlockScopedComputedJumpBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(command: str) -> list[dict[str, Any]]:
+            if command == "afbj @ 4096":
+                return [{"addr": 4096, "size": 4}]
+            if command == "pdj 4 @ 4096":
+                return [{"addr": 4096, "type": "ret", "opcode": "ret"}]
+            return [{"addr": 4352, "type": "rjmp", "opcode": "jmp rax"}]
+
+    r2 = _Disassembler()
+
+
 class _NonTerminalSyscallBinary:
     class _Disassembler:
         @staticmethod
@@ -135,6 +148,12 @@ def test_runtime_entrypoint_is_skipped_only_with_ordinary_unwind_metadata() -> N
         and not _is_runtime_entrypoint({"name": "entry0"}, None)
         and not _is_runtime_entrypoint({"name": "_start"}, ".eh_frame")
     )
+
+
+def test_computed_jump_detection_stays_inside_analyzed_cfg_blocks() -> None:
+    pass_instance = CodeVirtualizationPass(config={})
+
+    expect(pass_instance._find_computed_jump(_BlockScopedComputedJumpBinary(), {"addr": 4096}) is None)
 
 
 def test_entrypoint_addresses_are_read_from_the_binary_adapter() -> None:

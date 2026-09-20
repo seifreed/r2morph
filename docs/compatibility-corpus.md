@@ -40,12 +40,11 @@ separate exception/unwinding family compiled with native unwind metadata; this
 keeps exception-bearing functions in the corpus while requiring the
 virtualizer to preserve or reject them explicitly instead of treating a
 partially transformed function as successful evidence. The VM semantic parity
-campaign deliberately uses the 151 repository fixtures whose functions stay
-inside the declared virtualization scope. The generated compiler corpus remains
-part of differential and per-pass maturity evidence, where unsupported runtime
-helpers are recorded as bounded omissions; it is not counted as VM parity
-evidence. The unwind-bearing family is validated through the dedicated
-exception-gate regressions.
+campaign includes the generated compiler corpus and the repository fixtures;
+the exception/unwinding family remains covered by the dedicated exception gate
+and is excluded from the fully virtualized parity set. Stripped compiler
+runtime helpers outside analyzed CFG blocks are ignored, while unsupported user
+functions remain fail-closed and visible in the campaign report.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
