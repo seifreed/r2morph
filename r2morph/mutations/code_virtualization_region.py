@@ -205,6 +205,7 @@ _DIRECT_STACK_LAYOUTS: dict[str, tuple[int, int, int | None]] = {
     "imulmem": (3, 4, 5),
     "opmemdst": (3, 4, 5),
     "cmpmem": (2, 3, 4),
+    "testmemimm": (2, 3, 4),
     "btmem": (1, 2, 5),
     "divmem": (2, 3, 4),
     "notmem": (1, 2, 3),
@@ -577,6 +578,9 @@ _FLAG_KILLER_KINDS = frozenset(
         "atomicmemimmidxnb",
         "syscall",
         "neg",
+        "shld",
+        "shrd",
+        "vdouble_shift",
     }
 )
 

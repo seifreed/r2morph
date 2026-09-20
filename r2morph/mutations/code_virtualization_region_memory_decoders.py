@@ -380,12 +380,12 @@ def _memory_immediate_item(kind: str, text: str, width: int, operands: Any) -> t
     accepted_width = 32 if width == _QWORD_WIDTH_BITS else width
     if not immediate_fits_width(value, accepted_width):
         return None
-    if kind in ("storei", "cmpmemimm", "opmemimm"):
+    if kind in ("storei", "cmpmemimm", "testmemimm", "opmemimm"):
         base_slot, displacement = operands
         return kind, value, base_slot, displacement, width
-    if kind in ("storeirip", "cmpriprelimm", "opmemimmrip"):
+    if kind in ("storeirip", "cmpriprelimm", "testriprelimm", "opmemimmrip"):
         return kind, value, operands, width
-    if kind in ("storeiidxnb", "cmpmemimmidxnb", "opmemimmidxnb"):
+    if kind in ("storeiidxnb", "cmpmemimmidxnb", "testmemimmidxnb", "opmemimmidxnb"):
         index_slot, shift, displacement = operands
         return kind, value, index_slot, shift, displacement, width
     base_slot, index_slot, shift, displacement = operands
@@ -667,10 +667,16 @@ def _decode_cmp_mem(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...
     )
 
 
-def _decode_cmp_memory_immediate(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
-    """Decode ``cmp [memory], immediate`` for direct and indexed addresses."""
+def _decode_cmp_memory_immediate(
+    text: str,
+    insn_addr: int,
+    insn_size: int,
+    mnemonic: str = "cmp",
+    item_prefix: str = "cmp",
+) -> tuple[Any, ...] | None:
+    """Decode a compare-style memory/immediate operation."""
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "cmp" or "," not in parts[1]:
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != mnemonic or "," not in parts[1]:
         return None
     memory_text, immediate_text = (token.strip() for token in parts[1].split(",", 1))
     if "[" not in memory_text or "[" in immediate_text:
@@ -679,20 +685,24 @@ def _decode_cmp_memory_immediate(text: str, insn_addr: int, insn_size: int) -> t
     if direct is not None:
         base_slot, displacement, width = direct
         return (
-            _memory_immediate_item("cmpmemimm", immediate_text, width, (base_slot, displacement))
+            _memory_immediate_item(f"{item_prefix}memimm", immediate_text, width, (base_slot, displacement))
             if width is not None
             else None
         )
     rip_relative = _parse_riprel_operand(memory_text, insn_addr, insn_size)
     if rip_relative is not None:
         target, width = rip_relative
-        return _memory_immediate_item("cmpriprelimm", immediate_text, width, target) if width is not None else None
+        return (
+            _memory_immediate_item(f"{item_prefix}riprelimm", immediate_text, width, target)
+            if width is not None
+            else None
+        )
     width = _explicit_memory_width(memory_text)
     indexed = _parse_indexed_operand(memory_text, base_optional=True)
     if width is None or indexed is None:
         return None
     base_slot, index_slot, shift, displacement = indexed
-    kind = "cmpmemimmidxnb" if base_slot < 0 else "cmpmemimmidx"
+    kind = f"{item_prefix}memimmidxnb" if base_slot < 0 else f"{item_prefix}memimmidx"
     operands = (index_slot, shift, displacement) if base_slot < 0 else (base_slot, index_slot, shift, displacement)
     return _memory_immediate_item(kind, immediate_text, width, operands)
 

@@ -402,6 +402,8 @@ def _transform_function(
 ) -> dict[str, Any]:
     """Transform one function after preflight checks have passed."""
     unsupported, partial = records
+    if _has_materialized_instructions(binary, func) is False:
+        return {"skipped": 1, "unsupported": 0, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
     cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
     if (unwind.unproven and unwind.frame is None) or not _static_dataflow_is_complete(cfg):
         capability, reason = _preflight_rejection_diagnostic(unwind)
@@ -460,8 +462,18 @@ def _transform_function(
             skipped_count = 0
     else:
         result, partial_count, skipped_count = region_result, 0, 0
-    if result is not None:
-        return {
+    if result is None:
+        pass_instance._record_unsupported_function(unsupported, func, None)
+        outcome = {
+            "skipped": skipped_count,
+            "unsupported": 1,
+            "virtualized": 0,
+            "instructions": 0,
+            "bytecode": 0,
+            "partial": 0,
+        }
+    else:
+        outcome = {
             "skipped": 0,
             "unsupported": 0,
             "virtualized": 1,
@@ -470,15 +482,7 @@ def _transform_function(
             "partial": partial_count,
             "body_ranges": result.get("body_ranges", ()),
         }
-    pass_instance._record_unsupported_function(unsupported, func, None)
-    return {
-        "skipped": skipped_count,
-        "unsupported": 1,
-        "virtualized": 0,
-        "instructions": 0,
-        "bytecode": 0,
-        "partial": 0,
-    }
+    return outcome
 
 
 def _function_has_unproven_unwind_metadata(
@@ -555,6 +559,17 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
         logger.debug("Static dataflow failed: %s", exc)
         return False
     return set(ssa_blocks) == set(cfg.blocks) and analyzer.has_complete_liveness_coverage()
+
+
+def _has_materialized_instructions(binary: Any, function: dict[str, Any]) -> bool | None:
+    """Return whether r2 exposed executable instructions for a candidate."""
+    try:
+        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+        return None
+    if not isinstance(disassembly, dict):
+        return None
+    return any(isinstance(instruction, dict) for instruction in disassembly.get("ops", []))
 
 
 def _ordered_functions(

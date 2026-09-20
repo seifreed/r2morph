@@ -250,6 +250,26 @@ def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
     return (mnemonic, slot, count, width)
 
 
+def _decode_double_shift(disasm: str) -> tuple[str, int, int, int, int] | None:
+    """Decode immediate ``shld``/``shrd`` register forms."""
+    parts = disasm.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    operands = [token.strip().lower() for token in parts[1].split(",")]
+    if mnemonic not in ("shld", "shrd") or len(operands) != _TERNARY_OPERAND_COUNT:
+        return None
+    destination = _register_operand(operands[0])
+    source = _register_operand(operands[1])
+    if destination is None or source is None or destination[1] != source[1] or destination[1] not in (32, 64):
+        return None
+    try:
+        count = int(operands[2], 0)
+    except ValueError:
+        return None
+    return (mnemonic, destination[0], source[0], count, destination[1]) if 0 <= count <= _MAX_SHIFT_COUNT else None
+
+
 def _decode_shift_reg(disasm: str) -> tuple[Any, ...] | None:
     """Decode a variable-count shift or rotate ``reg, cl`` into a shiftreg item.
 

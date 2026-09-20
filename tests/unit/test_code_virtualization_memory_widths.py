@@ -7,7 +7,7 @@ from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, encode_bytecode
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress, VirtualizedMemOp
-from r2morph.mutations.code_virtualization_region import _writes_register, extract_region
+from r2morph.mutations.code_virtualization_region import _lower_arith_to_microops, _writes_register, extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
@@ -91,6 +91,27 @@ def test_memory_classifier_decodes_absolute_load_as_fixed_address() -> None:
             }
         )
         == ["riprel_load", 0, 0x402000, 64]
+    )
+
+
+def test_memory_test_immediate_decodes_rsp_relative_operand() -> None:
+    expect(
+        _classify(
+            {
+                "type": "acmp",
+                "opcode": "test dword ptr [rsp - 4], 1",
+                "addr": 0x1000,
+                "size": 8,
+            }
+        )
+        == ["testmemimm", 1, 4, -4, 32]
+    )
+
+
+def test_memory_test_immediate_lowers_to_logic_flag_synthesis() -> None:
+    expect(
+        _lower_arith_to_microops([["testmemimm", 1, 4, -4, 32]])
+        == [["vload", 4, -4, 32], ["vpushi", 1, 32], ["vcmpsynth", "test", 32]]
     )
 
 

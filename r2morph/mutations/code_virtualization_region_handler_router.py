@@ -96,6 +96,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vbinop_handler_asm,
     _vbinopsynth_handler_asm,
     _vcmpsynth_handler_asm,
+    _vdouble_shift_handler_asm,
     _vimul_handler_asm,
     _vlea_handler_asm,
     _vleaidx_handler_asm,
@@ -366,6 +367,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _vshift_handler_asm(key, self.context.key, shift)
         elif key.startswith("vshiftreg_"):
             body = _vshiftreg_handler_asm(key, self.context.key)
+        elif key.startswith("vdouble_shift_"):
+            body = _vdouble_shift_handler_asm(key, self.context.key)
         return body
 
     def _microop_arithmetic(self, key: str, flag: int, arithmetic: int) -> str:

@@ -526,6 +526,31 @@ def _vmovxidx_handler_asm(
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _vdouble_shift_handler_asm(handler_key: str, key: str) -> str:
+    """Apply ``shld``/``shrd`` to the top two virtual-stack values."""
+    _, _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov r11, qword ptr [rsp+r9+{_VBASE}]\n  xor r11, {_VKEY}\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  movzx ecx, byte ptr [rsi+1]\n"
+        f"  xor cl, {key}\n  xor cl, r13b\n"
+        f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+    )
+    body += f"  {mnemonic} rax, r11, cl\n" if width == _QWORD_WIDTH_BITS else f"  {mnemonic} eax, r11d, cl\n"
+    return (
+        body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        f"  xor rax, {_VKEY}\n  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
+        "  add r9, 8\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
     """Pop the top vstack cell, shift/rotate it by the runtime ``cl``, capture, push.
 

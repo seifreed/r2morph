@@ -4,6 +4,7 @@ from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.mutations.code_virtualization_apply import (
     _exceeds_function_size_budget,
+    _has_materialized_instructions,
     _ordered_functions,
     _preflight_rejection_diagnostic,
     _static_dataflow_is_complete,
@@ -59,6 +60,18 @@ def test_static_dataflow_budget_rejects_oversized_function_before_cfg() -> None:
 
 def test_static_dataflow_budget_accepts_function_at_limit() -> None:
     expect(not _exceeds_function_size_budget({"size": 65536}, 65536))
+
+
+def test_empty_disassembly_is_not_reported_as_incomplete_dataflow() -> None:
+    class FunctionSource:
+        class _Disassembler:
+            @staticmethod
+            def cmdj(_command: str) -> dict[str, list[dict[str, object]]]:
+                return {"ops": []}
+
+        r2 = _Disassembler()
+
+    expect(_has_materialized_instructions(FunctionSource(), {"addr": 0x1000}) is False)
 
 
 def test_ordered_functions_prioritize_lowest_image_address() -> None:

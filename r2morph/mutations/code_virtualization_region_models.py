@@ -364,13 +364,15 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
     if kind in ("op", "opmba", "opsynth", "vsuper"):
         operation: VirtualizedOp = item[1]
         operand_kind = "i" if operation.is_immediate else "r"
-        return f"{kind}_{operation.mnemonic}_{operand_kind}_{operation.width}"
-    if kind in ("cmp", "test", "bt"):
+        key = f"{kind}_{operation.mnemonic}_{operand_kind}_{operation.width}"
+    elif kind in ("cmp", "test", "bt"):
         operand_kind = "i" if item[3] else "r"
-        return f"{kind}_{operand_kind}_{item[4]}"
-    if kind == "shift":
-        return f"{item[1]}_{item[4]}"
-    if kind in (
+        key = f"{kind}_{operand_kind}_{item[4]}"
+    elif kind == "shift":
+        key = f"{item[1]}_{item[4]}"
+    elif kind == "vdouble_shift":
+        key = f"vdouble_shift_{item[1]}_{item[3]}"
+    elif kind in (
         "atomicmem",
         "atomicmemrip",
         "atomicmemidx",
@@ -385,11 +387,12 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
         "btmemidxnb",
     ):
         suffix = f"{'i' if item[-2] else 'r'}_{item[-1]}" if kind.startswith("btmem") else f"{item[1]}_{item[-1]}"
-        return f"{kind}_{suffix}"
-    if kind in _IDENTITY_KEYS:
-        return f"rspalign_{item[1]}" if kind == "rspalign" else kind
-
-    return None
+        key = f"{kind}_{suffix}"
+    elif kind in _IDENTITY_KEYS:
+        key = f"rspalign_{item[1]}" if kind == "rspalign" else kind
+    else:
+        key = None
+    return key
 
 
 def _op_key(item: tuple[Any, ...]) -> str | None:

@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_atomic_immediate import (
 )
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmov,
+    _decode_double_shift,
     _decode_enter,
     _decode_imul,
     _decode_imul3,
@@ -387,7 +388,18 @@ def _classify_compare(text: str, address: int, size: int) -> list[Any] | None:
     )
 
 
+def _classify_test(text: str, address: int, size: int) -> list[Any] | None:
+    memory = _decode_cmp_memory_immediate(text, address, size, mnemonic="test", item_prefix="test")
+    if memory is not None:
+        return list(memory)
+    register = _decode_two_operand(text, "test")
+    return ["test", *register] if register is not None else None
+
+
 def _classify_shift(text: str, address: int, size: int) -> list[Any] | None:
+    double_shift = _decode_double_shift(text)
+    if double_shift is not None:
+        return list(double_shift)
     memory = _decode_shift_memory(text, address, size)
     if memory is not None:
         return list(memory)
@@ -406,7 +418,7 @@ def _classify_mul(text: str, address: int, size: int) -> list[Any] | None:
 def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any] | None:
     classifiers: dict[str, Callable[[], list[Any] | None]] = {
         "cmp": lambda: _classify_compare(text, address, size),
-        "acmp": lambda: _first_item((lambda: _decode_two_operand(text, "test"),), ("test",)),
+        "acmp": lambda: _classify_test(text, address, size),
         "shl": lambda: _classify_shift(text, address, size),
         "shr": lambda: _classify_shift(text, address, size),
         "sar": lambda: _classify_shift(text, address, size),

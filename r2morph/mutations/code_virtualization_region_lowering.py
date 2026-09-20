@@ -205,46 +205,60 @@ def _lower_memory_imul(item: list[Any]) -> list[list[Any]]:
 
 def _lower_compare_memory_immediate(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
-    if kind == "cmpmemimm":
+    operation = "test" if kind.startswith("test") else "cmp"
+    if kind in ("cmpmemimm", "testmemimm"):
         _, value, base, displacement, width = item
-        return [["vload", base, displacement, width], ["vpushi", value, width], ["vcmpsynth", "cmp", width]]
-    if kind == "cmpmemimmidx":
+        load = ["vload", base, displacement, width]
+    elif kind in ("cmpmemimmidx", "testmemimmidx"):
         _, value, base, index, shift, displacement, width = item
-        return [
-            ["vloadidx", base, index, shift, displacement, width],
-            ["vpushi", value, width],
-            ["vcmpsynth", "cmp", width],
-        ]
-    if kind == "cmpmemimmidxnb":
+        load = ["vloadidx", base, index, shift, displacement, width]
+    elif kind in ("cmpmemimmidxnb", "testmemimmidxnb"):
         _, value, index, shift, displacement, width = item
-        return [
-            ["vloadidxnb", index, shift, displacement, width],
-            ["vpushi", value, width],
-            ["vcmpsynth", "cmp", width],
-        ]
-    _, value, target, width = item
-    return [["vloadrip", target, width], ["vpushi", value, width], ["vcmpsynth", "cmp", width]]
+        load = ["vloadidxnb", index, shift, displacement, width]
+    else:
+        _, value, target, width = item
+        load = ["vloadrip", target, width]
+    return [load, ["vpushi", value, width], ["vcmpsynth", operation, width]]
 
 
 def _lower_shift_compare(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
     if kind == "shift":
         _, mnemonic, register, count, width = item
-        return [["vpush", register], ["vshift", mnemonic, count, width], ["vpop", register]]
-    if kind == "shiftreg":
+        result = [["vpush", register], ["vshift", mnemonic, count, width], ["vpop", register]]
+    elif kind == "shiftreg":
         _, mnemonic, register, width = item
-        return [["vpush", register], ["vshiftreg", mnemonic, width], ["vpop", register]]
-    if kind in ("cmp", "test"):
+        result = [["vpush", register], ["vshiftreg", mnemonic, width], ["vpop", register]]
+    elif kind in ("shld", "shrd"):
+        _, destination, source, count, width = item
+        result = [
+            ["vpush", destination],
+            ["vpush", source],
+            ["vdouble_shift", kind, count, width],
+            ["vpop", destination],
+        ]
+    elif kind in ("cmp", "test"):
         _, register, value, immediate, width = item
         right = ["vpushi", value, width] if immediate else ["vpush", value]
-        return [["vpush", register], right, ["vcmpsynth", kind, width]]
-    if kind == "cmpmem":
+        result = [["vpush", register], right, ["vcmpsynth", kind, width]]
+    elif kind == "cmpmem":
         _, register, base, displacement, width = item
-        return [["vpush", register], ["vload", base, displacement, width], ["vcmpsynth", "cmp", width]]
-    if kind in ("cmpmemimm", "cmpmemimmidx", "cmpmemimmidxnb", "cmpriprelimm"):
-        return _lower_compare_memory_immediate(item)
-    _, register, target, width = item
-    return [["vpush", register], ["vloadrip", target, width], ["vcmpsynth", "cmp", width]]
+        result = [["vpush", register], ["vload", base, displacement, width], ["vcmpsynth", "cmp", width]]
+    elif kind in (
+        "cmpmemimm",
+        "cmpmemimmidx",
+        "cmpmemimmidxnb",
+        "cmpriprelimm",
+        "testmemimm",
+        "testmemimmidx",
+        "testmemimmidxnb",
+        "testriprelimm",
+    ):
+        result = _lower_compare_memory_immediate(item)
+    else:
+        _, register, target, width = item
+        result = [["vpush", register], ["vloadrip", target, width], ["vcmpsynth", "cmp", width]]
+    return result
 
 
 def _lower_movx_address(item: list[Any]) -> list[list[Any]]:
@@ -313,6 +327,8 @@ _LOWERERS: dict[str, _Lowerer] = {
         for kind in (
             "shift",
             "shiftreg",
+            "shld",
+            "shrd",
             "cmp",
             "test",
             "cmpmem",
@@ -321,6 +337,10 @@ _LOWERERS: dict[str, _Lowerer] = {
             "cmpmemimmidx",
             "cmpmemimmidxnb",
             "cmpriprelimm",
+            "testmemimm",
+            "testmemimmidx",
+            "testmemimmidxnb",
+            "testriprelimm",
         )
     },
     **{kind: _lower_movx_address for kind in ("movx", "movxidx", "movxidxnb", "lea", "learip", "leaidx", "leaidxnb")},

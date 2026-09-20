@@ -192,7 +192,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         elif kind == "vpushi":
             position = self._opcode(item)
             self._imm(item[1], item[2], position)
-        elif kind == "vshift":
+        elif kind in ("vshift", "vdouble_shift"):
             self.plain.append(item[2] ^ self._opcode(item))
         elif kind == "vshiftreg":
             self.plain.append(self.slot_of[1] ^ self._opcode(item))

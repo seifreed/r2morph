@@ -44,6 +44,7 @@ _FIXED_SIZE_GROUPS = {
         "vpop16",
         "vshift",
         "vshiftreg",
+        "vdouble_shift",
         "not",
         "bswap",
         "push",
