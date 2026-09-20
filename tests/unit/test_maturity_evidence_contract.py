@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.maturity_evidence import build_evidence, merge_decompiler_evidence, read_composition_evidence
+from scripts.maturity_evidence import (
+    _required_composition_pairs,
+    build_evidence,
+    merge_decompiler_evidence,
+    read_composition_evidence,
+)
 from tests.utils.assertions import expect
 
 _EXPECTED_DECOMPILER_BLOCKERS = 2
 _EXPECTED_DIRECTIONAL_PAIR_COUNT = 4
 _EXPECTED_DECOMPILER_GATE_COUNT = 2
+_EXPECTED_SCOPED_DIRECTIONAL_PAIR_COUNT = 44
+_EXPECTED_NOP_DIRECTIONAL_PAIR_COUNT = 42
+_EXPECTED_SIMPLE_PASS_DIRECTIONAL_PAIR_COUNT = 4
+_EXPECTED_EXTENDED_PASS_DIRECTIONAL_PAIR_COUNT = 2
 
 
 def _summary(applied_runs: int, *, incomplete_observations: int = 0) -> dict[str, object]:
@@ -89,6 +98,23 @@ def test_maturity_evidence_requires_nop_composition_pairs_for_all_simple_passes(
     evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
 
     expect(evidence["passes"]["NopInsertion"]["composition"]["status"] == "incomplete")
+
+
+def test_maturity_evidence_requires_the_declared_44_direction_composition_contract() -> None:
+    expect(
+        len(_required_composition_pairs("NopInsertion")) == _EXPECTED_NOP_DIRECTIONAL_PAIR_COUNT
+        and len(_required_composition_pairs("InstructionSubstitution")) == _EXPECTED_SIMPLE_PASS_DIRECTIONAL_PAIR_COUNT
+        and len(_required_composition_pairs("AntiDisassembly")) == _EXPECTED_EXTENDED_PASS_DIRECTIONAL_PAIR_COUNT
+        and len(
+            {
+                *_required_composition_pairs("NopInsertion"),
+                *_required_composition_pairs("InstructionSubstitution"),
+                *_required_composition_pairs("ConstantUnfolding"),
+                *_required_composition_pairs("AntiDisassembly"),
+            }
+        )
+        == _EXPECTED_SCOPED_DIRECTIONAL_PAIR_COUNT
+    )
 
 
 def test_composition_evidence_keeps_simple_pair_direction(tmp_path: Path) -> None:

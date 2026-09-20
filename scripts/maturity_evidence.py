@@ -43,6 +43,10 @@ _SIMPLE_COMPOSITION_LABELS = {
 _SIMPLE_COMPOSITION_PAIR_RE = re.compile(
     r"\[(?P<first>nop|constant|substitution)_then_(?P<second>nop|constant|substitution)\]"
 )
+_SIMPLE_COMPOSITION_PASSES = frozenset(_SIMPLE_COMPOSITION_LABELS.values())
+_SCOPED_COMPOSITION_PASSES = frozenset(
+    {"NopInsertion", *_COMPOSITION_PARAMETER_MAP.values(), *_SIMPLE_COMPOSITION_PASSES}
+)
 _PERFORMANCE_FIELDS = (
     "output_size_coverage_percent",
     "transform_duration_coverage_percent",
@@ -54,15 +58,21 @@ _MIN_COMPARABLE_DECOMPILER_TOOLS = 2
 
 
 def _required_composition_pairs(mutation_name: str) -> set[str]:
-    """Return the directional smoke pairs required for a pass."""
+    """Return every pair in the declared 44-direction composition contract."""
     if mutation_name == "NopInsertion":
         return {
-            "NopInsertion->InstructionSubstitution",
-            "InstructionSubstitution->NopInsertion",
-            "NopInsertion->ConstantUnfolding",
-            "ConstantUnfolding->NopInsertion",
-        }
-    return {f"NopInsertion->{mutation_name}", f"{mutation_name}->NopInsertion"}
+            f"{first}->{second}"
+            for first in ("NopInsertion",)
+            for second in _SCOPED_COMPOSITION_PASSES
+            if second != "NopInsertion"
+        } | {f"{second}->NopInsertion" for second in _SCOPED_COMPOSITION_PASSES if second != "NopInsertion"}
+    pairs = {f"NopInsertion->{mutation_name}", f"{mutation_name}->NopInsertion"}
+    if mutation_name in _SIMPLE_COMPOSITION_PASSES:
+        other_simple_passes = _SIMPLE_COMPOSITION_PASSES - {mutation_name}
+        pairs.update(
+            pair for other in other_simple_passes for pair in (f"{mutation_name}->{other}", f"{other}->{mutation_name}")
+        )
+    return pairs
 
 
 def _read_json(path: Path) -> dict[str, Any]:
