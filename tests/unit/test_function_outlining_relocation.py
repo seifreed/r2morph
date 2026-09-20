@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.mutations.function_outlining import FunctionOutliningPass, OutlinedChunk
+from r2morph.analysis.exception_models import ExceptionFrame
+from r2morph.mutations.function_outlining import (
+    FunctionOutliningPass,
+    OutlinedChunk,
+    _function_overlaps_unwind_frame,
+)
 from r2morph.relocations.cave_finder import CodeCave
 from tests.utils.assertions import expect
 
@@ -120,3 +125,10 @@ def test_relocate_chunk_rejects_internal_branch_target() -> None:
     relocated, _ = FunctionOutliningPass()._relocate_chunk(_ChunkBinary(), 0, chunk, caves, 0)
 
     expect(not relocated)
+
+
+def test_function_outlining_rejects_function_covered_by_unwind_frame() -> None:
+    function = {"addr": _CHUNK_ADDRESS, "size": 0x20}
+    frames = {0x0FF0: ExceptionFrame(function_start=0x0FF0, function_end=0x1010)}
+
+    expect(_function_overlaps_unwind_frame(function, frames))

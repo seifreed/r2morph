@@ -54,6 +54,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.relocation_safety import instructions_are_relocatable
@@ -65,6 +66,48 @@ _MIN_OUTLINE_BLOCKS = 2
 _RELATIVE_JUMP_SIZE_BYTES = 5
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
+_UNWIND_SECTION_NAMES = frozenset(
+    {
+        ".ARM.exidx",
+        ".ARM.extab",
+        ".eh_frame",
+        ".gcc_except_table",
+        ".pdata",
+        ".xdata",
+        "__unwind_info",
+    }
+)
+
+
+def _read_unwind_frames(binary: Any) -> tuple[dict[int, Any] | None, str | None]:
+    """Read unwind metadata when the binary adapter exposes it."""
+    if not hasattr(binary, "get_arch_info"):
+        return {}, None
+    try:
+        sections = binary.get_sections()
+        has_unwind_section = any(
+            str(section.get("name", "")).rstrip("\x00") in _UNWIND_SECTION_NAMES
+            for section in sections
+            if isinstance(section, dict)
+        )
+        if not has_unwind_section:
+            return {}, None
+        reader = ExceptionInfoReader(binary)
+        frames = reader.read_exception_frames()
+        return frames, reader.read_error
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to read unwind metadata before outlining: %s", exc)
+        return None, "failed to read unwind metadata"
+
+
+def _function_overlaps_unwind_frame(function: dict[str, Any], frames: dict[int, Any]) -> bool:
+    """Return whether a function range overlaps a parsed unwind frame."""
+    address = function.get("addr")
+    size = function.get("size")
+    if not isinstance(address, int):
+        return False
+    function_end = address + max(size, 1) if isinstance(size, int) else address + 1
+    return any(frame.function_start < function_end and address < frame.function_end for frame in frames.values())
 
 
 @dataclass
@@ -402,6 +445,17 @@ class FunctionOutliningPass(MutationPass):
         cave_idx = 0
         self._relocated_ranges = []
 
+        unwind_frames, unwind_error = _read_unwind_frames(binary)
+        if unwind_error is not None:
+            logger.warning("Skipping function outlining: %s", unwind_error)
+            return {
+                "functions_outlined": 0,
+                "chunks_relocated": 0,
+                "total_chunks": 0,
+                "total_blocks": 0,
+                "average_chunks_per_function": 0,
+            }
+
         if self._session is not None:
             self._create_mutation_checkpoint("function_outlining")
 
@@ -415,6 +469,10 @@ class FunctionOutliningPass(MutationPass):
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
             if random.random() > self.probability:
+                continue
+
+            if unwind_frames and _function_overlaps_unwind_frame(func, unwind_frames):
+                logger.debug("Cannot outline %s: unwind metadata covers function", func_name)
                 continue
 
             blocks = self._get_basic_blocks(binary, func_addr)
