@@ -10,7 +10,7 @@ import os
 import shutil
 import stat
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
@@ -38,6 +38,8 @@ _MAX_CREATED_FILES = 256
 _MAX_FUNCTION_ANALYSIS_COUNT = 2048
 _HASH_CHUNK_BYTES = 1024 * 1024
 _MAX_ERROR_MESSAGE_LENGTH = 240
+_MAX_TRANSFORMATION_RECORDS = 64
+_MAX_TRANSFORMATION_MNEMONICS = 128
 _CAPABILITY_CATEGORIES = {
     "memory": ("memory_addressing",),
     "direct-calls": ("direct_calls",),
@@ -186,6 +188,38 @@ def _error_result(error: BaseException) -> dict[str, str]:
     }
 
 
+def _transformation_evidence(records: Iterable[object]) -> list[dict[str, Any]]:
+    """Expose bounded instruction evidence for each applied VM region."""
+    evidence: list[dict[str, Any]] = []
+    for record in records:
+        if len(evidence) >= _MAX_TRANSFORMATION_RECORDS:
+            break
+        metadata = getattr(record, "metadata", None)
+        if not isinstance(metadata, Mapping):
+            continue
+        raw_mnemonics = metadata.get("affected_instruction_mnemonics", [])
+        if not isinstance(raw_mnemonics, list):
+            continue
+        mnemonics = sorted(
+            {
+                mnemonic
+                for mnemonic in raw_mnemonics[:_MAX_TRANSFORMATION_MNEMONICS]
+                if isinstance(mnemonic, str) and mnemonic
+            }
+        )
+        evidence.append(
+            {
+                "function_address": getattr(record, "function_address", None),
+                "start_address": getattr(record, "start_address", None),
+                "end_address": getattr(record, "end_address", None),
+                "instructions_count": metadata.get("instructions_count", 0),
+                "bytecode_size": metadata.get("bytecode_size", 0),
+                "affected_instruction_mnemonics": mnemonics,
+            }
+        )
+    return evidence
+
+
 def _unsupported_functions_result(
     result: Mapping[str, Any],
     functions_virtualized: int,
@@ -296,20 +330,25 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
     try:
         with Binary(destination, writable=True) as binary:
             binary.analyze("aa")
-            result = CodeVirtualizationPass(
+            pass_instance = CodeVirtualizationPass(
                 config={
                     "probability": 1.0,
                     "seed": seed,
                     "max_function_analysis_count": _MAX_FUNCTION_ANALYSIS_COUNT,
                 }
-            ).apply(binary)
+            )
+            result = pass_instance.apply(binary)
+            transformation_evidence = _transformation_evidence(pass_instance.get_records())
             binary.save()
     except (OSError, RuntimeError, TypeError, ValueError) as exc:
         return _error_result(exc)
 
     functions_virtualized = result.get("functions_virtualized", 0)
     if not isinstance(functions_virtualized, int) or functions_virtualized < 1:
-        return _not_virtualized_result(result, functions_virtualized)
+        return {
+            **_not_virtualized_result(result, functions_virtualized),
+            "transformation_records": transformation_evidence,
+        }
     mutated = _execution_observation(destination, timeout, execution_root / "mutated")
     if mutated.get("status") != "completed":
         return {
@@ -317,6 +356,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
             "functions_virtualized": functions_virtualized,
             "original": original,
             "mutated": mutated,
+            "transformation_records": transformation_evidence,
         }
     mutated_qemu = _qemu_semantic_artifacts(destination)
     qemu_evidence = {
@@ -328,6 +368,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
     if unsupported_functions or original != mutated or not qemu_evidence["observables_equal"]:
         failure = _semantic_failure_result(result, functions_virtualized, original, mutated)
         failure["qemu"] = qemu_evidence
+        failure["transformation_records"] = transformation_evidence
         return failure
     return {
         "status": "passed",
@@ -338,6 +379,7 @@ def _run_fixture(source: Path, destination: Path, seed: int, timeout: float, exe
         "original": original,
         "mutated": mutated,
         "qemu": qemu_evidence,
+        "transformation_records": transformation_evidence,
     }
 
 
