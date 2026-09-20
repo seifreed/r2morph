@@ -411,9 +411,7 @@ __attribute__((noinline)) static int consume_stack_string(const char *value) {
 }
 
 __attribute__((noinline)) static int build_stack_string(void) {
-    const char *value = "stack-string-native";
-    int result = consume_stack_string(value);
-    return result + observed_result - observed_result;
+    return consume_stack_string("stack-string-native");
 }
 
 int main(int argc, char **argv) {
