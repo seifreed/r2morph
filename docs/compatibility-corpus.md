@@ -28,6 +28,10 @@ NOP insertion, instruction substitution, register substitution, constant zero
 unfolding, and a composed pass sequence. ARM32 executes under QEMU and AArch64
 runs on native ARM64. This is execution evidence only, not per-pass or
 full-format parity.
+The cross-format matrix additionally exercises `basic` and `complex` CFG
+variants for those three ELF targets across the same four individual passes.
+The workflow pins the collected matrix at 62 cases so loss of a preview corpus
+variant is treated as evidence drift rather than silently reducing coverage.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static

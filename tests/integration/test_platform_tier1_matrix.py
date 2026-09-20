@@ -59,10 +59,15 @@ def _require_x86_32_execution() -> None:
         pytest.skip("ELF x86 32-bit differential execution requires clang")
 
 
-def _build_target(target: str, tmp_path: Path, mutation_name: str) -> tuple[Path, Callable[[Path], object]]:
+def _build_target(
+    target: str,
+    tmp_path: Path,
+    mutation_name: str,
+    complex_fixture: bool,
+) -> tuple[Path, Callable[[Path], object]]:
     if target == "arm32":
         _require_arm32_execution()
-        if mutation_name == "ConstantUnfolding":
+        if mutation_name == "ConstantUnfolding" and not complex_fixture:
             source = tmp_path / "arm32_constant.S"
             source.write_text(
                 ".text\n.global _start\n_start:\n"
@@ -88,11 +93,11 @@ def _build_target(target: str, tmp_path: Path, mutation_name: str) -> tuple[Path
                 text=True,
             )
         else:
-            binary_path = _build_arm32_elf(tmp_path)
+            binary_path = _build_arm32_elf(tmp_path, complex_fixture=complex_fixture)
         return binary_path, lambda path: run_command(["qemu-arm", path], text=True, timeout=30)
     if target == "arm64":
         _require_arm64_execution()
-        if mutation_name == "ConstantUnfolding":
+        if mutation_name == "ConstantUnfolding" and not complex_fixture:
             source = tmp_path / "arm64_constant.S"
             source.write_text(
                 ".text\n"
@@ -121,21 +126,25 @@ def _build_target(target: str, tmp_path: Path, mutation_name: str) -> tuple[Path
                 text=True,
             )
             return binary_path, _run_arm64
-        return _build_arm64_elf(tmp_path), _run_arm64
+        return _build_arm64_elf(tmp_path, complex_fixture=complex_fixture), _run_arm64
     if target == "x86-32":
         _require_x86_32_execution()
-        return _build_x86_32_elf(tmp_path), lambda path: run_command([path], text=True, timeout=30)
+        return _build_x86_32_elf(tmp_path, complex_fixture=complex_fixture), lambda path: run_command(
+            [path], text=True, timeout=30
+        )
     raise ValueError(f"unknown preview target: {target}")
 
 
 @pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
 @pytest.mark.parametrize("mutation_name", _TIER1_PASS_NAMES)
+@pytest.mark.parametrize("complex_fixture", (False, True), ids=("basic", "complex"))
 def test_tier1_pass_preview_target_preserves_exit_code(
     target: str,
     mutation_name: str,
+    complex_fixture: bool,
     tmp_path: Path,
 ) -> None:
-    binary_path, execute = _build_target(target, tmp_path, mutation_name)
+    binary_path, execute = _build_target(target, tmp_path, mutation_name, complex_fixture)
     original = execute(binary_path)
 
     with Binary(binary_path, writable=True) as binary:
