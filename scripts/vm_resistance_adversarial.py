@@ -28,6 +28,7 @@ from r2morph.mutations.base import MutationRecord
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
+from scripts.protection_adversary import analyze as run_adversary
 from scripts.protection_bytecode_grammar import measure as measure_grammar
 from scripts.protection_handler_clustering import measure as measure_handlers
 from tests.integration.elf_emulator import emulate_exit_code
@@ -143,6 +144,31 @@ def _native_execution(path: Path) -> dict[str, object]:
     return {"status": "completed", "return_code": result.returncode}
 
 
+def _adversarial_recovery_probe(path: Path) -> dict[str, object]:
+    """Run the bounded recovery adversary and retain only summary metrics."""
+    report = run_adversary(path, limit=3)
+    results = report.get("results")
+    dynamic = report.get("dynamic_recovery")
+    if not isinstance(results, list) or not isinstance(dynamic, dict):
+        raise ValueError("adversarial recovery probe returned an incomplete report")
+    classifications = [
+        row.get("classification")
+        for row in results
+        if isinstance(row, dict) and isinstance(row.get("classification"), str)
+    ]
+    return {
+        "status": "completed",
+        "functions_examined": len(results),
+        "vm_candidate_count": sum(classification != "no_vm_candidate" for classification in classifications),
+        "unsupported_indirect_dispatch_count": sum(
+            classification == "unsupported_indirect_dispatch" for classification in classifications
+        ),
+        "dynamic_recovery": dynamic.get("recovered") is True,
+        "state_encoding_detected": dynamic.get("state_encoding_detected") is True,
+        "correlated_dispatch_count": dynamic.get("correlated_dispatch_count", 0),
+    }
+
+
 def _required_bytecode_size(stats: dict[str, object]) -> int:
     value = stats.get("total_bytecode_bytes")
     if not isinstance(value, int):
@@ -199,6 +225,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
     stats = _virtualize_fixture(source, protected, seed, depth)
     original_exit = emulate_exit_code(protected)
     native_original = _native_execution(protected)
+    adversarial_recovery = _adversarial_recovery_probe(protected)
     data = bytearray(protected.read_bytes())
     vm_entries = stats.get("vm_entries")
     if not isinstance(vm_entries, tuple) or not vm_entries or not isinstance(vm_entries[0], dict):
@@ -249,6 +276,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         "all_tamper_probes_diverged": all(probe["diverged"] for probe in probes),
         "native_original": native_original,
         "native_execution_available": native_original.get("status") == "completed",
+        "adversarial_recovery": adversarial_recovery,
         "all_native_tamper_probes_diverged": (
             native_original.get("status") == "completed" and all(probe["native_diverged"] for probe in probes)
         ),
@@ -352,7 +380,7 @@ def measure(source: Path, first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT
     }
 
 
-def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, bool, bool, bool, bool, bool]:
+def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, bool, bool, bool, bool, bool, bool]:
     campaign = report.get("seed_campaign")
     tamper = report.get("anti_tamper")
     progressive = report.get("progressive_bytecode")
@@ -375,6 +403,12 @@ def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, boo
         raise ValueError("VM resistance report is missing diversity sections")
     nested_regions = progressive.get("depth_2_nested_regions")
     progressive_passed = progressive.get("growth_observed") is True or nested_regions == 0
+    adversarial_probe_passed = all(
+        isinstance(layer_report := tamper.get(layer), dict)
+        and isinstance(probe := layer_report.get("adversarial_recovery"), dict)
+        and probe.get("status") == "completed"
+        for layer in ("single_layer", "nested")
+    )
     return (
         campaign.get("semantic_parity") is True,
         tamper_diverged,
@@ -384,6 +418,7 @@ def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, boo
         handlers.get("cross_seed_has_exact_normalised_matches") is False
         and handlers.get("cross_seed_largest_normalised_cluster") == 1,
         grammar.get("target_stride_diverse") is True and grammar.get("seeds_without_target_handlers") == 0,
+        adversarial_probe_passed,
     )
 
 
@@ -424,6 +459,7 @@ def measure_corpus(
         "opcode_assignment_diversity_observed": all(flags[4] for flags in validation_flags),
         "handler_diversity_observed": all(flags[5] for flags in validation_flags),
         "bytecode_grammar_diversity_observed": all(flags[6] for flags in validation_flags),
+        "adversarial_recovery_probe_observed": all(flags[7] for flags in validation_flags),
         "automated_validation": {
             "status": "completed",
             "evidence_quality": "automated-adversarial-smoke",
@@ -436,6 +472,7 @@ def measure_corpus(
                 "bytecode-grammar-diversity",
                 "single-and-nested-anti-tamper",
                 "progressive-bytecode-growth",
+                "bounded-adversarial-recovery-probe",
             ],
         },
         "human_adversarial_review": _HUMAN_REVIEW,

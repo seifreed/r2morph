@@ -49,6 +49,8 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
     grammar_report = cast(dict[str, object], diversity["bytecode_grammar_report"])
     single_layer = cast(dict[str, object], tamper["single_layer"])
     nested = cast(dict[str, object], tamper["nested"])
+    single_adversary = cast(dict[str, object], single_layer["adversarial_recovery"])
+    nested_adversary = cast(dict[str, object], nested["adversarial_recovery"])
 
     expect(
         validation["status"] == "completed"
@@ -63,6 +65,8 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and nested["tamper_diverged"] is True
         and single_layer["all_tamper_probes_diverged"] is True
         and nested["all_tamper_probes_diverged"] is True
+        and single_adversary["status"] == "completed"
+        and nested_adversary["status"] == "completed"
         and (single_layer["native_execution_available"] is (sys.platform.startswith("linux")))
         and single_layer["tamper_probe_count"] == nested["tamper_probe_count"] == _EXPECTED_TAMPER_PROBE_COUNT
         and progressive["growth_observed"] is True
@@ -90,5 +94,6 @@ def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
         and report["opcode_assignment_diversity_observed"] is True
         and report["handler_diversity_observed"] is True
         and report["bytecode_grammar_diversity_observed"] is True
+        and report["adversarial_recovery_probe_observed"] is True
         and report["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
     )

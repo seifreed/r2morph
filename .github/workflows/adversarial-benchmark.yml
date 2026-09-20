@@ -312,6 +312,10 @@ jobs:
                       raise SystemExit(f"VM {layer} native tamper baseline did not execute")
                   if not fixture["anti_tamper"][layer]["all_native_tamper_probes_diverged"]:
                       raise SystemExit(f"VM {layer} native tamper probes did not diverge")
+                  if fixture["anti_tamper"][layer]["adversarial_recovery"]["status"] != "completed":
+                      raise SystemExit(f"VM {layer} bounded adversarial recovery probe did not complete")
+          if not report["adversarial_recovery_probe_observed"]:
+              raise SystemExit("bounded adversarial recovery evidence is incomplete")
           if report["human_adversarial_review"]["status"] != "pending-human-adversarial-review":
               raise SystemExit("automated evidence must not imply human adversarial signoff")
           PY

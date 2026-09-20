@@ -5,8 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from itertools import pairwise
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
