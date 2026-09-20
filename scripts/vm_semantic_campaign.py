@@ -430,6 +430,7 @@ def run_campaign(
         "target": _TARGET,
         "seed": seed,
         "fixture_count": len(fixtures),
+        "fixture_names": sorted(path.name for path in fixtures),
         "corpus_fixture_counts": _corpus_fixture_counts(fixtures),
         "passed_count": passed,
         "failed_count": len(failures),
@@ -440,6 +441,16 @@ def run_campaign(
         "fixture_results": fixture_results,
         "failures": failures,
     }
+
+
+def _report_fixture_names(report: Mapping[str, Any]) -> list[str]:
+    names = report.get("fixture_names")
+    if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
+        raise ValueError("VM semantic campaign report is missing fixture names")
+    fixture_count = report.get("fixture_count")
+    if not isinstance(fixture_count, int) or len(names) != fixture_count:
+        raise ValueError("VM semantic campaign fixture name count does not match fixture count")
+    return names
 
 
 def merge_campaign_reports(
@@ -455,6 +466,7 @@ def merge_campaign_reports(
     category_summary: dict[str, dict[str, int]] = {}
     fixture_results: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
+    fixture_names: set[str] = set()
     fixture_count = passed_count = failed_count = 0
     corpus_fixture_counts = {"generated-corpus": 0, "repository-fixtures": 0}
     for report in reports:
@@ -465,6 +477,7 @@ def merge_campaign_reports(
             raise ValueError("VM semantic campaign reports must have unique integer seeds")
         seeds.append(seed)
         fixture_count += int(report["fixture_count"])
+        fixture_names.update(_report_fixture_names(report))
         for family, count in report.get("corpus_fixture_counts", {}).items():
             if family in corpus_fixture_counts:
                 corpus_fixture_counts[family] += int(count)
@@ -495,6 +508,7 @@ def merge_campaign_reports(
         "seeds": list(dict.fromkeys(seeds)),
         "seed_count": len(dict.fromkeys(seeds)),
         "fixture_count": fixture_count,
+        "fixture_names": sorted(fixture_names),
         "corpus_fixture_counts": corpus_fixture_counts,
         "passed_count": passed_count,
         "failed_count": failed_count,

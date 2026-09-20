@@ -784,8 +784,22 @@ jobs:
               raise SystemExit(f"VM semantic seed shard coverage is incomplete: {by_seed}")
           report = merge_campaign_reports(tuple(reports), allow_duplicate_seeds=True)
           expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
+          expected_generated = sorted(
+              f"{source}_{profile}"
+              for source in ("generated_abi", "generated_branch", "generated_calls", "generated_extended", "generated_lookup", "generated_memory", "generated_pointers", "generated_recursive", "generated_stack_strings", "generated_string", "generated_xlat")
+              for profile in ("gcc-o0", "gcc-o1", "gcc-o2", "gcc-o3", "gcc-os", "gcc-pie-o2", "gcc-static-o2", "gcc-stripped-o2", "clang-o0", "clang-o2", "clang-o3", "clang-pie-o2")
+          )
+          expected_generated += [
+              "generated_cpp_gxx-o0", "generated_cpp_gxx-o2", "generated_cpp_clangxx-o0", "generated_cpp_clangxx-o2",
+          ]
+          expected_generated.sort()
+          expected_fixture_names = sorted(
+              [path.name for path in Path("fixtures/dataset").glob("elf_vm_*_x86_64")] + expected_generated
+          )
           if report["status"] != "passed" or report["seed_count"] != 3:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")
+          if report["fixture_names"] != expected_fixture_names:
+              raise SystemExit(f"VM semantic fixture manifest drift: {report['fixture_names']}")
           if report["corpus_fixture_counts"] != expected_corpus_counts:
               raise SystemExit(f"VM semantic corpus coverage is incomplete: {report}")
           if report["fixture_count"] != sum(expected_corpus_counts.values()):
