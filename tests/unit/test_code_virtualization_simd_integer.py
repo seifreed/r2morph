@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpPackedOp,
 )
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_arith_idx,
     _decode_fp_compare,
@@ -31,6 +32,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_vex_packed_shift_immediate_handler_asm
 from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
+from r2morph.mutations.code_virtualization_region_models import RegionScheme
 from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
@@ -204,6 +206,15 @@ def test_decode_packed_integer_unsigned_maximum_returns_vector_item() -> None:
 
 def test_decode_packed_integer_immediate_shift_returns_item() -> None:
     expect(_decode_fp_packed_immediate("pslld xmm2, 5") == ("fppackedimm", "pslld", 2, 5))
+
+
+def test_encode_packed_integer_immediate_follows_permuted_operand_order() -> None:
+    item = ("fppackedimm", "pslld", 2, 5)
+    identity_scheme = RegionScheme({"fppackedimm_pslld_5": (7,)}, 0, 0, tuple(range(16)), 0)
+    permuted_scheme = RegionScheme({"fppackedimm_pslld_5": (7,)}, 0, 0, tuple(range(16)), 0, field_perm=1)
+    identity = RegionEncoder(identity_scheme, [0], 0, 0).encode([item])
+    permuted = RegionEncoder(permuted_scheme, [0], 0, 0).encode([item])
+    expect(permuted == bytes((identity[0], identity[2], identity[1])))
 
 
 def test_decode_engine_packed_integer_immediate_shift_returns_item() -> None:

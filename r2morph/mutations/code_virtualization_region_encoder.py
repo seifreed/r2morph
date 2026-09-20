@@ -373,8 +373,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             return False
         position = self._opcode(item)
         if kind == "fppackedimm":
-            self.plain.append(item[2] ^ position)
-            self.plain.append(item[3] ^ position)
+            self._pair(position, item[2], item[3])
         elif kind in ("fppackedvexcmp", "fppackedvex256cmp", "fppackedvex256permimm", "fppackedvexpermimm"):
             self._triple(position, item[2], item[3], item[4])
             self.plain.append(item[5] ^ position)
