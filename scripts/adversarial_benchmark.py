@@ -16,7 +16,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from importlib import import_module
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -1053,6 +1053,24 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
         raise ValueError("adversarial report is missing pass names")
     corpus = reports[0].get("corpus")
     corpus_scope = reports[0].get("corpus_scope")
+    shard_metadata = [report.get("fixture_shard") for report in reports]
+    if any(metadata is not None for metadata in shard_metadata):
+        if not all(
+            isinstance(metadata, dict)
+            and isinstance(metadata.get("index"), int)
+            and isinstance(metadata.get("count"), int)
+            and metadata["count"] > 0
+            and 0 <= metadata["index"] < metadata["count"]
+            for metadata in shard_metadata
+        ):
+            raise ValueError("adversarial reports have incomplete fixture shard metadata")
+        valid_shards = cast(list[dict[str, int]], shard_metadata)
+        shard_count = valid_shards[0]["count"]
+        shard_indices = [metadata["index"] for metadata in valid_shards]
+        if any(metadata["count"] != shard_count for metadata in valid_shards):
+            raise ValueError("adversarial reports use different fixture shard counts")
+        if len(set(shard_indices)) != len(shard_indices) or set(shard_indices) != set(range(shard_count)):
+            raise ValueError("adversarial reports do not cover every fixture shard")
     samples: list[dict[str, object]] = []
     seen_samples: set[str] = set()
     for report in reports:

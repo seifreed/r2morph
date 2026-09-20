@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
@@ -364,6 +366,26 @@ def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:
         merged["sample_count"] == _EXPECTED_MERGED_SAMPLE_COUNT
         and merged["summary"]["expected_pass_runs"] == _EXPECTED_MERGED_SAMPLE_COUNT
     )
+
+
+def test_merge_adversarial_reports_rejects_missing_fixture_shards() -> None:
+    reports = [
+        {
+            "corpus": "dataset",
+            "pass_names": ["CodeVirtualization"],
+            "fixture_shard": {"index": 0, "count": 3},
+            "samples": [],
+        },
+        {
+            "corpus": "dataset",
+            "pass_names": ["CodeVirtualization"],
+            "fixture_shard": {"index": 2, "count": 3},
+            "samples": [],
+        },
+    ]
+
+    with pytest.raises(ValueError, match="do not cover every fixture shard"):
+        merge_adversarial_reports(reports)
 
 
 def test_adversarial_benchmark_cli_honors_single_fixture_pass_selection(tmp_path: Path) -> None:
