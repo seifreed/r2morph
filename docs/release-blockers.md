@@ -46,9 +46,11 @@ review. It is not a feature roadmap and must not be read as a support claim.
   [pass-maturity.md](pass-maturity.md). Exit criteria: preview targets either
   reach equivalent evidence to Linux ELF x86-64 or remain explicitly
   non-official in the support matrix.
-- RB-005: The adversarial benchmark still needs comparable continuous campaigns across
-  analyzers. Binary Ninja is an explicit slot, but unavailable environments are
-  non-passing evidence rather than completion. Evidence map:
+- RB-005: The adversarial benchmark has complete local `angr` evidence for the
+  current 162-fixture CodeVirtualization corpus, but still needs comparable
+  continuous campaigns across all analyzer slots. Binary Ninja is an explicit
+  slot, and unavailable environments are non-passing evidence rather than
+  completion. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
   `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
