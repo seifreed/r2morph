@@ -1,6 +1,8 @@
 """Regression contract for complete analyzer benchmark reporting."""
 
 import json
+import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,6 +23,7 @@ from scripts.adversarial_benchmark import (
     _pass_result,
     _pass_summary,
     _passes_without_applications,
+    _prepare_optional_module_path,
     _protected_copy,
     _tool_failure_result,
     _tool_summary,
@@ -98,6 +101,23 @@ def test_adversarial_benchmark_separates_capability_gaps_from_adapter_errors() -
 
 def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:
     expect(_is_binary_ninja_license_error(RuntimeError("License is not valid")))
+
+
+def test_binary_ninja_bundle_path_is_added_only_when_present(tmp_path: Path) -> None:
+    module_path = tmp_path / "binaryninja"
+    module_path.mkdir()
+    original = list(sys.path)
+    previous = os.environ.get("BINARY_NINJA_PYTHON_PATH")
+    try:
+        os.environ["BINARY_NINJA_PYTHON_PATH"] = str(module_path)
+        _prepare_optional_module_path("binary-ninja")
+        expect(str(module_path) in sys.path)
+    finally:
+        sys.path[:] = original
+        if previous is None:
+            os.environ.pop("BINARY_NINJA_PYTHON_PATH", None)
+        else:
+            os.environ["BINARY_NINJA_PYTHON_PATH"] = previous
 
 
 def test_binary_ninja_decompiler_metrics_bound_hlil_output() -> None:

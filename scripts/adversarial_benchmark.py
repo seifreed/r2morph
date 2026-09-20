@@ -45,6 +45,8 @@ _PYTHON_MODULES = {
     "triton": "triton",
     "unicorn": "unicorn",
 }
+_BINARY_NINJA_PYTHON_PATH_ENV = "BINARY_NINJA_PYTHON_PATH"
+_BINARY_NINJA_PYTHON_PATHS = (Path("/Applications/Binary Ninja.app/Contents/Resources/python"),)
 _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "triton", "ida-pro", "ghidra")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
@@ -93,10 +95,25 @@ def _configured_executable(tool: str) -> str | None:
     return shutil.which(_COMMANDS[tool])
 
 
+def _prepare_optional_module_path(tool: str) -> None:
+    """Expose an installed analyzer bundle before probing its Python module."""
+    if tool != "binary-ninja":
+        return
+    candidates = []
+    configured = os.environ.get(_BINARY_NINJA_PYTHON_PATH_ENV)
+    if configured:
+        candidates.append(Path(configured))
+    candidates.extend(_BINARY_NINJA_PYTHON_PATHS)
+    for candidate in candidates:
+        if candidate.is_dir() and str(candidate) not in sys.path:
+            sys.path.insert(0, str(candidate))
+
+
 def _availability(tool: str) -> tuple[bool, str]:
     if tool in _COMMANDS:
         command = _configured_executable(tool)
         return (True, command) if command else (False, f"executable {_COMMANDS[tool]!r} is unavailable")
+    _prepare_optional_module_path(tool)
     module = _PYTHON_MODULES[tool]
     if importlib.util.find_spec(module) is None:
         return False, f"module {module!r} is unavailable"

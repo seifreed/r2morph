@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from scripts.protection_maturity_baseline import (
     _parse_pass_names,
     _render_multi_pass_result,
     _render_result,
+    _run_runtime,
     _runtime_artifacts,
     _runtime_observables_equal,
     _select_fixture_shard,
@@ -205,6 +207,17 @@ def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
     result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
 
     expect(result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
+def test_runtime_observation_allows_slow_runner_startup(tmp_path: Path) -> None:
+    result = asyncio.run(
+        _run_runtime(
+            [sys.executable, "-c", "import time; time.sleep(5.25)"],
+            tmp_path,
+        )
+    )
+
+    expect(result["status"] == "completed" and result["return_code"] == 0)
 
 
 def test_varargs_fixture_preserves_vector_abi_exit_code() -> None:
