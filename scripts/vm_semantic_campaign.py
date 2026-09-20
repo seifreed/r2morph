@@ -502,7 +502,9 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="r2morph-vm-semantic-corpus-") as temp_dir:
         fixtures = tuple(sorted(args.dataset.glob("elf_vm_*_x86_64")))
         if args.generated_corpus:
-            fixtures += tuple(build_generated_corpus(Path(temp_dir) / "generated-corpus"))
+            # Exception-bearing functions are covered by the unwind gate; the
+            # full-parity campaign only admits functions proven fully virtualizable.
+            fixtures += tuple(build_generated_corpus(Path(temp_dir) / "generated-corpus", include_unwind_sources=False))
         if args.fixture_shard_count > 1:
             fixtures = _select_fixture_shard(
                 fixtures,

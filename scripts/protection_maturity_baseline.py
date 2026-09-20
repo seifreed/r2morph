@@ -1215,13 +1215,15 @@ def discover_executables(dataset: Path) -> list[Path]:
     return executables
 
 
-def build_generated_corpus(output_dir: Path) -> list[Path]:
+def build_generated_corpus(output_dir: Path, include_unwind_sources: bool = True) -> list[Path]:
     """Build compiler and relocation variants of synthetic ELF x86-64 fixtures."""
     if not sys.platform.startswith("linux"):
         raise RuntimeError("generated ELF corpus requires a Linux x86-64 toolchain")
     output_dir.mkdir(parents=True, exist_ok=True)
     fixtures: list[Path] = []
     for name, source_text in _GENERATED_CORPUS_SOURCES.items():
+        if not include_unwind_sources and name in _GENERATED_CPP_UNWIND_SOURCES:
+            continue
         cpp_source = name.startswith("generated_cpp")
         source = output_dir / f"{name}{'.cpp' if cpp_source else '.c'}"
         source.write_text(f"{_GENERATED_UNREACHABLE_PADDING}\n{source_text}", encoding="utf-8")

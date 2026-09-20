@@ -39,7 +39,9 @@ ELF x86-64 fixtures across those compiler profiles. The C++ subset includes a
 separate exception/unwinding family compiled with native unwind metadata; this
 keeps exception-bearing functions in the corpus while requiring the
 virtualizer to preserve or reject them explicitly instead of treating a
-partially transformed function as successful evidence.
+partially transformed function as successful evidence. The complete VM parity
+campaign deliberately excludes this unwind-bearing family and validates its
+fail-closed behavior through the dedicated exception-gate regressions.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
