@@ -783,11 +783,7 @@ jobs:
               len(seed_reports) != 4 for seed_reports in by_seed.values()
           ):
               raise SystemExit(f"VM semantic seed shard coverage is incomplete: {by_seed}")
-          merged_seeds = tuple(
-              merge_campaign_reports(tuple(seed_reports), allow_duplicate_seeds=True)
-              for seed_reports in (by_seed[seed] for seed in sorted(by_seed))
-          )
-          report = merge_campaign_reports(merged_seeds)
+          report = merge_campaign_reports(tuple(reports), allow_duplicate_seeds=True)
           expected_corpus_counts = {"generated-corpus": 408, "repository-fixtures": 453}
           if report["status"] != "passed" or report["seed_count"] != 3:
               raise SystemExit(f"VM semantic campaign incomplete: {report}")

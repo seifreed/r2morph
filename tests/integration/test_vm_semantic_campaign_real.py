@@ -301,6 +301,29 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
     )
 
 
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
+def test_vm_semantic_campaign_merges_disjoint_shards_with_duplicate_seed() -> None:
+    coverage = _load_coverage(Path("docs/virtualization-coverage.json"))
+    reports = tuple(
+        run_campaign(
+            Path("fixtures/dataset"),
+            coverage,
+            seed=20260916,
+            fixture_selection=(fixture,),
+        )
+        for fixture in ("elf_vm_shift_x86_64", "elf_vm_memwidth_x86_64")
+    )
+    merged = merge_campaign_reports(reports, allow_duplicate_seeds=True)
+
+    expect(
+        merged["status"] == "passed"
+        and merged["seed_count"] == 1
+        and merged["fixture_count"] == _MERGED_FIXTURE_COUNT
+        and merged["passed_count"] == _MERGED_FIXTURE_COUNT
+        and merged["failed_count"] == 0
+    )
+
+
 def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
     workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
     content = workflow.read_text(encoding="utf-8")
@@ -311,6 +334,7 @@ def test_vm_semantic_workflow_requires_per_fixture_function_evidence() -> None:
         and 'row.get("status") != "passed"' in content
         and 'row.get("unsupported_function_details", [])' in content
         and '"termination_signal" not in row["original"]' in content
+        and "merge_campaign_reports(tuple(reports), allow_duplicate_seeds=True)" in content
     )
 
 
