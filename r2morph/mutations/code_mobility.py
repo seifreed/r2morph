@@ -52,6 +52,7 @@ import logging
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_mobility_helpers import (
@@ -73,6 +74,53 @@ logger = logging.getLogger(__name__)
 _RELATIVE_JUMP_SIZE_BYTES = 5
 _SIGNED_32_MIN = -(1 << 31)
 _SIGNED_32_MAX = (1 << 31) - 1
+_UNWIND_SECTION_NAMES = frozenset(
+    {
+        ".ARM.exidx",
+        ".ARM.extab",
+        ".eh_frame",
+        ".gcc_except_table",
+        ".pdata",
+        ".xdata",
+        "__unwind_info",
+    }
+)
+
+
+def _read_unwind_frames(binary: Any) -> tuple[dict[int, Any] | None, str | None]:
+    """Read exception metadata before relocating code blocks."""
+    if not hasattr(binary, "get_arch_info"):
+        return {}, None
+    try:
+        sections = binary.get_sections()
+        has_unwind_section = any(
+            str(section.get("name", "")).rstrip("\x00") in _UNWIND_SECTION_NAMES
+            for section in sections
+            if isinstance(section, dict)
+        )
+        if not has_unwind_section:
+            return {}, None
+        reader = ExceptionInfoReader(binary)
+        frames = reader.read_exception_frames()
+        return frames, reader.read_error
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to read unwind metadata before code mobility: %s", exc)
+        return None, "failed to read unwind metadata"
+
+
+def _function_overlaps_exception_frame(function: dict[str, Any], frames: dict[int, Any]) -> bool:
+    """Return whether a function with exception metadata would be relocated."""
+    address = function.get("addr")
+    size = function.get("size")
+    if not isinstance(address, int):
+        return False
+    function_end = address + max(size, 1) if isinstance(size, int) else address + 1
+    return any(
+        (frame.lsda_address is not None or frame.landing_pads)
+        and frame.function_start < function_end
+        and address < frame.function_end
+        for frame in frames.values()
+    )
 
 
 def _relocation_bytes(block: MobileBlock, cave_addr: int) -> tuple[bytes, bytes, bytes] | None:
@@ -137,13 +185,22 @@ class CodeMobilityPass(MutationPass):
     def _select_target_section(self, block_id: int, num_sections: int) -> str:
         return select_target_section(block_id, num_sections, self.section_prefix)
 
-    def _create_mobility_plan(self, binary: Any, functions: list[dict[str, Any]]) -> MobilityPlan:
+    def _create_mobility_plan(
+        self,
+        binary: Any,
+        functions: list[dict[str, Any]],
+        exception_frames: dict[int, Any] | None = None,
+    ) -> MobilityPlan:
         """Create plan for moving blocks."""
         plan = MobilityPlan()
         block_id = 0
 
         for func in functions:
             func_addr = func.get("addr", 0)
+
+            if exception_frames and _function_overlaps_exception_frame(func, exception_frames):
+                logger.debug("Skipping function at 0x%x because it has exception metadata", func_addr)
+                continue
 
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
@@ -185,6 +242,14 @@ class CodeMobilityPass(MutationPass):
 
         return plan
 
+    def _safe_mobility_plan(self, binary: Any, functions: list[dict[str, Any]]) -> MobilityPlan:
+        """Create a mobility plan only when exception metadata is readable."""
+        exception_frames, unwind_error = _read_unwind_frames(binary)
+        if unwind_error is not None:
+            logger.warning("Skipping code mobility: %s", unwind_error)
+            return MobilityPlan()
+        return self._create_mobility_plan(binary, functions, exception_frames)
+
     def _interleave_blocks(self, blocks: list[MobileBlock], seed: int | None = None) -> list[MobileBlock]:
         return interleave_blocks(blocks, preserve_order=self.preserve_order, seed=seed)
 
@@ -220,7 +285,7 @@ class CodeMobilityPass(MutationPass):
         logger.info("Applying code mobility")
 
         functions = binary.get_functions()
-        plan = self._create_mobility_plan(binary, functions)
+        plan = self._safe_mobility_plan(binary, functions)
 
         if not plan.blocks:
             logger.info("No blocks selected for mobility")
