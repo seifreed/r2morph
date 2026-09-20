@@ -103,8 +103,15 @@ def test_indexed_layout_identity_and_polymorphism() -> None:
 def test_some_seed_reorders_the_operand_fields() -> None:
     # The layout is genuinely polymorphic: at least one build order differs from
     # the identity order, so the field offsets are not fixed across samples.
-    layouts = {tuple(sorted(field_offsets("op_add_i_32", seed).items())) for seed in range(1, 40)}
+    layouts = {tuple(sorted(field_offsets("op_add_r_32", seed).items())) for seed in range(1, 40)}
     expect(not (len(layouts) <= 1))
+
+
+def test_immediate_operand_layout_keeps_destination_before_variable_width_field() -> None:
+    # The current handler contract keeps the destination before the variable-
+    # width immediate while the register form remains polymorphic.
+    for key in ("op_add_i_32", "op_add_i_64", "opmba_sub_i_32"):
+        expect(field_offsets(key, 170023850) == {"dst": 1, "imm": 2})
 
 
 def test_opcode_stays_first_and_fields_pack_contiguously() -> None:

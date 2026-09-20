@@ -48,7 +48,8 @@ def op_permuted_fields(is_immediate: bool, width: int, field_perm: int) -> list[
     The engine keys handlers by ``(is_immediate, width)`` rather than a string, so
     it uses this directly; the region's string-key wrappers share the same core.
     """
-    return _permute(_op_fields(is_immediate, width), field_perm)
+    fields = _op_fields(is_immediate, width)
+    return fields if is_immediate else _permute(fields, field_perm)
 
 
 def op_offsets(is_immediate: bool, width: int, field_perm: int) -> dict[str, int]:
@@ -88,7 +89,8 @@ def _offsets(fields: list[Field]) -> dict[str, int]:
 
 def permuted_fields(handler_key: str, field_perm: int) -> list[Field]:
     """The item's operand fields in this build's order (identity when 0)."""
-    return _permute(_OPERAND_FIELDS[handler_key.split("_", 1)[0]](handler_key), field_perm)
+    fields = _OPERAND_FIELDS[handler_key.split("_", 1)[0]](handler_key)
+    return fields if fields[1][0] == "imm" else _permute(fields, field_perm)
 
 
 def field_offsets(handler_key: str, field_perm: int) -> dict[str, int]:
