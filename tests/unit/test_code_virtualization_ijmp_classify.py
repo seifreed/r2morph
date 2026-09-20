@@ -118,3 +118,27 @@ def test_indirect_call_target_from_dominating_store_proves_local_target() -> Non
         ["exit", 0],
     ]
     expect(has_static_internal_indirect_call(items, {0x1020: 0}))
+
+
+def test_indirect_call_target_is_rejected_after_overlapping_memory_store() -> None:
+    """An overlapping later store invalidates the earlier pointer proof."""
+    items = [
+        ["op", VirtualizedOp("mov", 0, 0x1020, True, 64)],
+        ["store", 0, 1, 0, 64],
+        ["store", 0, 1, 4, 64],
+        ["callmem", 1, 0, 0],
+        ["exit", 0],
+    ]
+    expect(not has_static_internal_indirect_call(items, {0x1020: 0}))
+
+
+def test_indirect_call_target_survives_non_overlapping_memory_store() -> None:
+    """A later store outside the pointer bytes does not invalidate the proof."""
+    items = [
+        ["op", VirtualizedOp("mov", 0, 0x1020, True, 64)],
+        ["store", 0, 1, 0, 64],
+        ["store", 0, 1, 8, 64],
+        ["callmem", 1, 0, 0],
+        ["exit", 0],
+    ]
+    expect(has_static_internal_indirect_call(items, {0x1020: 0}))

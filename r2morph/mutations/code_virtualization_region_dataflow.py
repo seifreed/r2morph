@@ -11,6 +11,13 @@ _RDX_SLOT = GP_REGISTERS.index("rdx")
 _RCX_SLOT = GP_REGISTERS.index("rcx")
 _RSI_SLOT = GP_REGISTERS.index("rsi")
 _RDI_SLOT = GP_REGISTERS.index("rdi")
+_POINTER_WIDTH_BYTES = 8
+_MEMORY_ALIAS_SPECS = {
+    "callmem": ("store", (2,), (1,), 3, 2, 4),
+    "callmemrip": ("riprel_store", (2,), (1,), 2, 1, 3),
+    "callmemidx": ("storeidx", (2, 3, 4), (1, 2, 3), 5, 4, 6),
+    "callmemidxnb": ("storeidxnb", (2, 3), (1, 2), 4, 3, 5),
+}
 _CALL_KINDS = frozenset({"call", "vcall", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "syscall"})
 _BOUNDARY_KINDS = _CALL_KINDS | {"jmp", "jcc", "exit", "vret"}
 _DIRECT_WRITE_KINDS = frozenset(
@@ -194,6 +201,20 @@ def _dominators(items: list[list[Any]]) -> list[set[int]]:
     return dominators
 
 
+def _can_reach(items: list[list[Any]], start: int, target: int) -> bool:
+    work = [start]
+    visited: set[int] = set()
+    while work:
+        index = work.pop()
+        if index == target:
+            return True
+        if index in visited:
+            continue
+        visited.add(index)
+        work.extend(_successors(items, index))
+    return False
+
+
 def _matches_memory_store(store: list[Any], call: list[Any]) -> bool:
     pairs = {
         "callmem": ("store", (2, 3), (1, 2)),
@@ -207,6 +228,22 @@ def _matches_memory_store(store: list[Any], call: list[Any]) -> bool:
     return tuple(store[index] for index in spec[1]) == tuple(call[index] for index in spec[2])
 
 
+def _memory_store_may_alias_call(store: list[Any], call: list[Any]) -> bool:
+    spec = _MEMORY_ALIAS_SPECS.get(call[0])
+    if spec is None or store[0] != spec[0]:
+        return False
+    if tuple(store[index] for index in spec[1]) != tuple(call[index] for index in spec[2]):
+        return False
+    store_start, call_start = store[spec[3]], call[spec[4]]
+    width_value = store[spec[5]]
+    width = width_value if isinstance(width_value, int) and width_value > 0 else 64
+    if not isinstance(store_start, int) or not isinstance(call_start, int):
+        return True
+    store_end = store_start + max(1, (width + 7) // 8)
+    call_end = call_start + _POINTER_WIDTH_BYTES
+    return store_start < call_end and call_start < store_end
+
+
 def _memory_call_target(items: list[list[Any]], states: list[dict[int, int] | None], call_index: int) -> int | None:
     call = items[call_index]
     dominators = _dominators(items)
@@ -214,9 +251,18 @@ def _memory_call_target(items: list[list[Any]], states: list[dict[int, int] | No
         store = items[store_index]
         if store[0] in _BOUNDARY_KINDS:
             break
-        if store_index in dominators[call_index] and _matches_memory_store(store, call):
+        if (
+            0 not in dominators[store_index]
+            or not _can_reach(items, store_index, call_index)
+            or not _memory_store_may_alias_call(store, call)
+        ):
+            continue
+        if _matches_memory_store(store, call):
+            if store_index not in dominators[call_index]:
+                return None
             state = states[store_index]
             return None if state is None else state.get(int(store[1]))
+        return None
     return None
 
 
