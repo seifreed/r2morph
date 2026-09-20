@@ -284,6 +284,26 @@ __attribute__((noinline)) static int table_lookup(unsigned int value) {
 
 int main(void) { return table_lookup(42) == 73 ? 42 : 1; }
 """,
+    "generated_simd": r"""
+#include <stdint.h>
+
+typedef uint32_t simd_u32 __attribute__((vector_size(16)));
+
+__attribute__((noinline)) static int simd_mix(int value) {
+    const simd_u32 input = {value, value + 1, value + 2, value + 3};
+    const simd_u32 salt = {0x13579bdf, 0x13579bdf, 0x13579bdf, 0x13579bdf};
+    const simd_u32 mixed = (input + salt) ^ (input >> 3);
+    uint32_t lanes[4];
+    __builtin_memcpy(lanes, &mixed, sizeof(mixed));
+    return (int)((lanes[0] ^ lanes[1] ^ lanes[2] ^ lanes[3]) & 127u);
+}
+
+int main(int argc, char **argv) {
+    (void)argv;
+    const int result = simd_mix(argc);
+    return result == 42 ? 42 : result;
+}
+""",
     "generated_abi": r"""
 #include <stdarg.h>
 #include <stdint.h>

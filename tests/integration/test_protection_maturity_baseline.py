@@ -94,6 +94,7 @@ _EXPECTED_GENERATED_CORPUS_SOURCES = (
     "generated_memory",
     "generated_pointers",
     "generated_recursive",
+    "generated_simd",
     "generated_stack_strings",
     "generated_string",
     "generated_xlat",
@@ -864,6 +865,12 @@ def test_render_multi_pass_result_keeps_cpp_corpus_gap_open() -> None:
 
 def test_generated_corpus_includes_branch_memory_and_lookup_shapes() -> None:
     expect(tuple(sorted(_GENERATED_CORPUS_SOURCES)) == _EXPECTED_GENERATED_CORPUS_SOURCES)
+
+
+def test_generated_corpus_simd_shape_is_explicit() -> None:
+    source = _GENERATED_CORPUS_SOURCES["generated_simd"]
+
+    expect("vector_size(16)" in source and "simd_u32" in source and "input >> 3" in source)
 
 
 def test_generated_cpp_exception_source_preserves_unwind_shape() -> None:
