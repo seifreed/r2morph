@@ -452,8 +452,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _pushi_handler_asm(self.context.key_qword, self.context.rsp_off)
         elif key.startswith("rspadj_"):
             body = _rspadj_handler_asm(key, self.context.key_dword, self.context.rsp_off)
-        elif key == "rspalign":
-            body = _rspalign_handler_asm(self.context.rsp_off)
+        elif key.startswith("rspalign_"):
+            body = _rspalign_handler_asm(self.context.rsp_off, int(key.rsplit("_", 1)[1]))
         elif key == "enter":
             body = _enter_handler_asm(self.context.key, self.context.key_dword, self.context.rsp_off)
         elif key == "movfromrsp":

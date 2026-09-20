@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_packed_compare_memory_handler_asm,
     _fp_vex_packed_immediate_memory_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
+    _fp_vex_permute_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
     _fp_vex_scalar_memory_move_handler_asm,
@@ -208,6 +209,8 @@ class FPHandlerRouterMixin:
             return _fp_vex_256_permute_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         if key.startswith("fppackedvex256permilimm_"):
             return _fp_vex_256_permute_lane_immediate_handler_asm(key, self.context.key, self.context.field_perm)
+        if key.startswith("fppackedvexpermimm_"):
+            return _fp_vex_permute_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         return None
 
     def _fp_vex_packed_compare(self, key: str, variants: tuple[int, ...]) -> str | None:

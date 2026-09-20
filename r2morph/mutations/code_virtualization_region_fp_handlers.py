@@ -514,6 +514,25 @@ def _fp_vex_256_variable_permute_handler_asm(handler_key: str, key: str, field_p
     return body + _store_ymm_to_frame("r8") + "  add rsi, 4\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_permute_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Permute packed XMM lanes with a VEX immediate operation."""
+    _, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = triple_offsets("dst", "src1", "src2", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['src2']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
+        f"  v{instruction} xmm0, xmm0, xmm1, {immediate}\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        + _clear_ymm_upper_slot_asm("r8")
+        + "  add rsi, 5\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_vex_256_permute_lane_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Permute packed lanes in one YMM source using an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")

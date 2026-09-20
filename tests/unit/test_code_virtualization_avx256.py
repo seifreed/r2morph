@@ -258,6 +258,19 @@ def test_vex_256_float_shuffle_handler_uses_native_instruction() -> None:
     expect("vshufps ymm0, ymm0, ymm1, 27" in assembly)
 
 
+def test_vex_128_float_shuffle_immediate_classifies_with_cpu_radare_type() -> None:
+    item = classification._classify(
+        {
+            "type": "null",
+            "family": "cpu",
+            "opcode": "vshufps xmm0, xmm0, xmm0, 0xff",
+            "addr": 0x1000,
+            "size": 5,
+        }
+    )
+    expect(item == ["fppackedvexpermimm", "shufps", 0, 0, 0, 0xFF])
+
+
 def test_vex_256_double_shuffle_decoder_preserves_sources_and_immediate() -> None:
     decoded = _decode_fp_vex_256_permute_immediate("vshufpd ymm0, ymm1, ymm2, 0x05")
 

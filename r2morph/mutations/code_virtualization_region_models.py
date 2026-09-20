@@ -191,6 +191,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "fppackedvex": (1,),
     "fppackedvexcmp": (1, 5),
     "fppackedveximm": (1, 4),
+    "fppackedvexpermimm": (1, 5),
     "fppackedvex256": (1,),
     "fppackedvex256cmp": (1, 5),
     "fppackedvexcmpmem": (1, 6),
@@ -386,7 +387,7 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
         suffix = f"{'i' if item[-2] else 'r'}_{item[-1]}" if kind.startswith("btmem") else f"{item[1]}_{item[-1]}"
         return f"{kind}_{suffix}"
     if kind in _IDENTITY_KEYS:
-        return kind
+        return f"rspalign_{item[1]}" if kind == "rspalign" else kind
 
     return None
 

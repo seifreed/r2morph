@@ -27,9 +27,7 @@ _QWORD_WIDTH_BITS = 64
 _MAX_SHIFT_COUNT = 63
 _REGISTER_COUNT = 16
 _MAX_ENTER_ALLOCATION = 0xFFFF
-_SYSV_STACK_ALIGNMENT = 16
-_SYSV_ENTRY_RSP_MODULO = 8
-_RSP_ALIGNMENT_MASK = -_SYSV_STACK_ALIGNMENT
+_MIN_RSP_ALIGNMENT = 16
 
 
 def _signed_64(value: int) -> int:
@@ -323,7 +321,7 @@ def _decode_push(disasm: str) -> tuple[Any, ...] | None:
 
 
 def _decode_rsp_arith(disasm: str) -> tuple[Any, ...] | None:
-    """Decode stack allocation and the SysV ``and rsp, -16`` prologue."""
+    """Decode stack allocation and power-of-two ``rsp`` alignment prologues."""
     parts = disasm.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
@@ -341,7 +339,9 @@ def _decode_rsp_arith(disasm: str) -> tuple[Any, ...] | None:
         value -= 1 << 64
     result: tuple[Any, ...] | None
     if mnemonic == "and":
-        result = ("rspalign",) if value == _RSP_ALIGNMENT_MASK else None
+        alignment = -value
+        valid_alignment = alignment >= _MIN_RSP_ALIGNMENT and alignment & (alignment - 1) == 0
+        result = ("rspalign", alignment) if valid_alignment else None
     elif value < 0 or not immediate_fits_width(value, 32):
         result = None
     else:

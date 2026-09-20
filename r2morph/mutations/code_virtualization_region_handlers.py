@@ -681,11 +681,11 @@ def _rspadj_handler_asm(handler_key: str, key_dword: str, rsp_off: int) -> str:
     )
 
 
-def _rspalign_handler_asm(rsp_off: int) -> str:
-    """Align the program's relocated stack for the SysV function prologue."""
+def _rspalign_handler_asm(rsp_off: int, alignment: int = 16) -> str:
+    """Align the program's relocated stack for the function prologue."""
     return (
         f"  mov r11, qword ptr [rsp+{rsp_off}]\n"
-        "  and r11, -16\n"
+        f"  and r11, -{alignment}\n"
         f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
         f"  mov qword ptr [rsp+{rsp_off}], r11\n"
         "  add rsi, 1\n  jmp vm_dispatch\n"

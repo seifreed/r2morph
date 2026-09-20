@@ -437,7 +437,7 @@ def _stack_depth_transition(item: list[Any], depth: int, snapshot: tuple[int, in
     elif kind == "rspalign":
         # SysV x86-64 function entry has rsp % 16 == 8. The virtual stack depth
         # therefore grows by the current rsp remainder when aligning down.
-        out_depth = depth + ((8 - depth) % 16)
+        out_depth = depth + ((8 - depth) % int(item[1]))
     elif kind == "movtorsp":
         if snapshot is None or item[1] != snapshot[0]:
             return None

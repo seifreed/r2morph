@@ -126,9 +126,30 @@ def test_region_models_sysv_rsp_alignment_and_restores_stack_depth() -> None:
     )
 
 
+def test_region_models_thirty_two_byte_rsp_alignment() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 4, "type": "and", "opcode": "and rsp, 0xffffffffffffffe0"},
+        {"addr": 0x1004, "size": 4, "type": "add", "opcode": "add rsp, 8"},
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(region is not None and region.instructions[0] == ("rspalign", 32))
+
+
 def test_region_codegen_emits_sysv_rsp_alignment_handler() -> None:
     instructions = [
         {"addr": 0x1000, "size": 4, "type": "and", "opcode": "and rsp, 0xfffffffffffffff0"},
+        {"addr": 0x1004, "size": 4, "type": "add", "opcode": "add rsp, 8"},
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    blob = build_region_blob(region, 0x500000, build_region_scheme(region, randomness.Random(3))) if region else None
+    expect(blob is not None)
+
+
+def test_region_codegen_emits_thirty_two_byte_rsp_alignment_handler() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 4, "type": "and", "opcode": "and rsp, 0xffffffffffffffe0"},
         {"addr": 0x1004, "size": 4, "type": "add", "opcode": "add rsp, 8"},
         {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
     ]

@@ -103,6 +103,7 @@ _FIXED_SIZE_GROUPS = {
         "vcall",
         "call",
         "fppackedvex256var",
+        "fppackedvexpermimm",
         "fppackedvex256permimm",
         "fppackedvexcmp",
         "fppackedvex256cmp",
@@ -314,6 +315,8 @@ _VEX_PACKED_COMPARE_MEMORY_SIZES = {
 
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
+    if kind == "rspalign":
+        return 1
     size: int | None = None
     if kind == "vpushi":
         size = 1 + (8 if item[2] == ARCH_BITS_64 else 4)

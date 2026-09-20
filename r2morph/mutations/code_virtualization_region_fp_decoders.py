@@ -613,7 +613,9 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
 _FP_PACKED_IMMEDIATE: frozenset[str] = frozenset(
     {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "pshufd"}
 )
-_FP_VEX_PACKED_IMMEDIATE: frozenset[str] = _FP_PACKED_IMMEDIATE | frozenset({"pshuflw", "pshufhw"})
+_FP_VEX_PACKED_IMMEDIATE: frozenset[str] = _FP_PACKED_IMMEDIATE | frozenset(
+    {"pshuflw", "pshufhw", "shufps", "shufpd", "blendps", "blendpd"}
+)
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vaddps": "addps",
@@ -640,6 +642,10 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpandn": "pandn",
     "vpor": "por",
     "vpxor": "pxor",
+    "vshufps": "shufps",
+    "vshufpd": "shufpd",
+    "vblendps": "blendps",
+    "vblendpd": "blendpd",
     "vpaddd": "paddd",
     "vpsubd": "psubd",
     "vpaddb": "paddb",
@@ -708,6 +714,12 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
 _FP_VEX_PACKED_UNARY_ARITH: dict[str, str] = {"vsqrtps": "sqrtps", "vsqrtpd": "sqrtpd"}
 _FP_VEX_256_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vperm2f128": "perm2f128",
+    "vshufps": "shufps",
+    "vshufpd": "shufpd",
+    "vblendps": "blendps",
+    "vblendpd": "blendpd",
+}
+_FP_VEX_128_PERMUTE_IMMEDIATE: dict[str, str] = {
     "vshufps": "shufps",
     "vshufpd": "shufpd",
     "vblendps": "blendps",
@@ -974,6 +986,28 @@ def _decode_fp_vex_256_permute_immediate(text: str) -> tuple[str, str, int, int,
     if not 0 <= immediate <= _PACKED_IMMEDIATE_MAX:
         return None
     return ("fppackedvex256permimm", operation, destination, first_source, second_source, immediate)
+
+
+def _decode_fp_vex_128_permute_immediate(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode a VEX.128 packed floating-point operation with an immediate."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    operation = _FP_VEX_128_PERMUTE_IMMEDIATE.get(parts[0].lower())
+    if operation is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _VEX_256_PERMUTE_OPERAND_COUNT:
+        return None
+    registers = tuple(_parse_xmm_operand(operand) for operand in operands[:3])
+    destination, first_source, second_source = registers
+    if destination is None or first_source is None or second_source is None:
+        return None
+    try:
+        immediate = int(operands[3], 0)
+    except ValueError:
+        return None
+    return ("fppackedvexpermimm", operation, destination, first_source, second_source, immediate)
 
 
 def _decode_fp_vex_256_variable_blend(text: str) -> tuple[str, str, int, int, int, int] | None:
