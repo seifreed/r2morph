@@ -163,6 +163,23 @@ def test_maturity_evidence_marks_missing_behavioral_observation_as_incomplete(tm
     expect(evidence["passes"]["NopInsertion"]["behavioral_false_positive"]["status"] == "incomplete")
 
 
+def test_maturity_evidence_requires_a_nonempty_affected_instruction_catalogue(tmp_path: Path) -> None:
+    composition = tmp_path / "composition.xml"
+    composition.write_text(
+        "<testsuite><testcase name='test_composed_real_passes_preserve_exit_code[nop_then_substitution]'/>"
+        "</testsuite>",
+        encoding="utf-8",
+    )
+    summary = _summary(1)
+    summary["affected_instruction_mnemonics"] = []
+    summary["affected_instruction_record_count"] = 0
+    report = {"pass_names": ["NopInsertion"], "summary": {"NopInsertion": summary}}
+
+    evidence = build_evidence(report, {"pass_names": [], "summary": {}}, read_composition_evidence((composition,)))
+
+    expect(evidence["passes"]["NopInsertion"]["affected_instructions"]["status"] == "incomplete")
+
+
 def test_maturity_evidence_requires_independent_semantic_observation(tmp_path: Path) -> None:
     composition = tmp_path / "composition.xml"
     composition.write_text(

@@ -216,13 +216,23 @@ def _behavioral_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
 def _instruction_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
     applied = summary.get("affected_instruction_applied_runs", 0)
     missing = summary.get("affected_instruction_missing_runs", 0)
-    complete = isinstance(applied, int) and applied > 0 and missing == 0
+    mnemonics = summary.get("affected_instruction_mnemonics", [])
+    record_count = summary.get("affected_instruction_record_count", 0)
+    complete = (
+        isinstance(applied, int)
+        and applied > 0
+        and missing == 0
+        and isinstance(mnemonics, list)
+        and bool(mnemonics)
+        and isinstance(record_count, int)
+        and record_count > 0
+    )
     return {
         "status": "measured" if complete else "incomplete",
         "applied_runs": applied,
         "missing_runs": missing,
-        "mnemonics": summary.get("affected_instruction_mnemonics", []),
-        "record_count": summary.get("affected_instruction_record_count", 0),
+        "mnemonics": mnemonics,
+        "record_count": record_count,
     }
 
 
