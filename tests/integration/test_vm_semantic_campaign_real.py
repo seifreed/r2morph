@@ -333,12 +333,11 @@ def test_vm_semantic_workflow_requires_campaign_coverage_for_unwind_and_ssa() ->
     content = workflow.read_text(encoding="utf-8")
 
     expect(
-        "--generated-corpus" in content
-        and "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
+        "matrix:\n        seed: [20260916, 20260917, 20260918]" in content
+        and 'expected_corpus_counts = {"generated-corpus": 0, "repository-fixtures": 453}' in content
         and 'report["corpus_fixture_counts"]' in content
         and 'report["fixture_count"] != sum(expected_corpus_counts.values())' in content
-        and 'if not categories or categories.get("uncategorized", {}).get("fixture_count", 0)' in content
-        and 'categories["uncategorized"]["fixture_count"]' in content
+        and 'categories.get("uncategorized", {}).get("fixture_count", 0) != 0' in content
         and "qemu-user" in content
         and 'row.get("qemu")' in content
         and "incomplete independent observable evidence" in content

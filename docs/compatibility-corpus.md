@@ -39,9 +39,13 @@ ELF x86-64 fixtures across those compiler profiles. The C++ subset includes a
 separate exception/unwinding family compiled with native unwind metadata; this
 keeps exception-bearing functions in the corpus while requiring the
 virtualizer to preserve or reject them explicitly instead of treating a
-partially transformed function as successful evidence. The complete VM parity
-campaign deliberately excludes this unwind-bearing family and validates its
-fail-closed behavior through the dedicated exception-gate regressions.
+partially transformed function as successful evidence. The VM semantic parity
+campaign deliberately uses the 151 repository fixtures whose functions stay
+inside the declared virtualization scope. The generated compiler corpus remains
+part of differential and per-pass maturity evidence, where unsupported runtime
+helpers are recorded as bounded omissions; it is not counted as VM parity
+evidence. The unwind-bearing family is validated through the dedicated
+exception-gate regressions.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
