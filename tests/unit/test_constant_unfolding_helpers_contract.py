@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 
 _EXPECTED_ADDR_4096 = 0x1000
 _EXPECTED_ADDR_8192 = 0x2000
+_EXPECTED_ADDR_12288 = 0x3000
 _EXPECTED_CALCULATE_SEQUENCE_SIZE_XOR_EAX_EAX_INC_EAX_B_3 = 3
 
 
@@ -26,6 +27,8 @@ class _Binary:
             ]
         if addr == _EXPECTED_ADDR_8192:
             return [{"disasm": "mov rax, 1"}]
+        if addr == _EXPECTED_ADDR_12288:
+            return [{"disasm": "movs r2, #40"}]
         raise ValueError(addr)
 
     def assemble(self, insn: str, base_addr: int):
@@ -97,3 +100,16 @@ def test_constant_unfolding_uses_arm32_movw_for_fixed_width_constant() -> None:
 
 def test_constant_unfolding_matches_arm32_thumb_movs_constant() -> None:
     expect(match_unfold_pattern("movs r2, #40", 32, _Binary(), _EXPECTED_ADDR_4096, 10) == (["movw r2, 40"], True))
+
+
+def test_constant_unfolding_selects_arm32_thumb_movs_candidate() -> None:
+    selected = select_candidates(_Binary(), [{"name": "thumb", "addr": _EXPECTED_ADDR_12288, "size": 64}], 1)
+    expect(
+        selected
+        == [
+            (
+                {"name": "thumb", "addr": _EXPECTED_ADDR_12288, "size": 64},
+                [{"disasm": "movs r2, #40", "flags_live_after": False}],
+            )
+        ]
+    )
