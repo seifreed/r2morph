@@ -186,6 +186,8 @@ The earlier focused `angr` fixture remains available in
 That focused fixture records 5 completed analyzer slots and 4 unavailable analyzer slots.
 Binary Ninja is an explicit analyzer slot; the focused local
 fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
+The current installed API is importable, but the headless benchmark reports
+`analyzer license is unavailable`; the slot therefore remains a release blocker.
 The VM review packet still has `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
 flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths
