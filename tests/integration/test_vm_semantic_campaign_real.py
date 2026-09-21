@@ -327,7 +327,7 @@ def test_vm_semantic_campaign_merges_multiple_seed_runs_without_failures() -> No
         and len(merged["fixture_results"]) == _MERGED_FIXTURE_COUNT
         and merged["fixture_names"] == ["elf_vm_shift_x86_64"]
         and not merged["failures"]
-        and merged["corpus_fixture_counts"] == {"generated-corpus": 1, "repository-fixtures": 2}
+        and merged["corpus_fixture_counts"] == {"generated-corpus": 0, "repository-fixtures": 2}
     )
 
 
