@@ -57,6 +57,7 @@ _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 _NONRETURNING_SYSCALLS = frozenset({15, 60, 231})
 _CALL_SITE_ITEM_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"})
 _FPMOV_MEMORY_ITEM_WITHOUT_SOURCE_FIELDS = 7
+_VRET_CLEANUP_FIELD = 2
 
 
 @dataclass
@@ -493,6 +494,27 @@ def _stack_successors(item: list[Any], index: int) -> tuple[list[int], int | Non
     return [index + 1], None
 
 
+def _vcall_return_cleanup(items: list[list[Any]], start: int) -> int | None:
+    """Return one cleanup amount for every return reachable from a virtual call."""
+    pending = [start]
+    visited: set[int] = set()
+    cleanups: set[int] = set()
+    while pending:
+        index = pending.pop()
+        if index in visited or not 0 <= index < len(items):
+            continue
+        visited.add(index)
+        item = items[index]
+        if item[0] == "vret":
+            cleanups.add(int(item[_VRET_CLEANUP_FIELD]) if len(item) > _VRET_CLEANUP_FIELD else 0)
+            continue
+        if item[0] == "exit":
+            return None
+        successors, _ = _stack_successors(item, index)
+        pending.extend(successors)
+    return next(iter(cleanups)) if len(cleanups) == 1 else None
+
+
 def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | None] | None] | None:
     """Verify the region's virtual stack is balanced on every path.
 
@@ -530,7 +552,14 @@ def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | N
         if call_target is not None and not _merge_stack_state(state, work, call_target, 0, None):
             return None
         for nxt in successors:
-            if not _merge_stack_state(state, work, nxt, out_depth, out_snapshot):
+            caller_depth = out_depth
+            if item[0] == "vcall":
+                cleanup = _vcall_return_cleanup(items, call_target)
+                if cleanup is None:
+                    return None
+                if cleanup <= caller_depth:
+                    caller_depth -= cleanup
+            if not _merge_stack_state(state, work, nxt, caller_depth, out_snapshot):
                 return None
     return state
 

@@ -188,6 +188,20 @@ def test_extract_region_preserves_ret_immediate_for_internal_return() -> None:
     expect(("vret", 0x100C, 16) in region.instructions)
 
 
+def test_extract_region_accounts_for_internal_ret_immediate_stack_cleanup() -> None:
+    instructions = [
+        _insn(0x1000, 2, "push", "push 0"),
+        _insn(0x1002, 5, "call", "call 0x100a", jump=0x100A),
+        _insn(0x1007, 2, "sub", "sub eax, ebx"),
+        _insn(0x1009, 1, "ret", "ret"),
+        _insn(0x100A, 2, "add", "add ecx, edx"),
+        _insn(0x100C, 2, "ret", "ret 8"),
+    ]
+    region = extract_region(instructions, randomness.Random(1))
+    expect(region is not None)
+    expect(("vret", 0x100C, 8) in region.instructions)
+
+
 def test_extract_region_in_function_call_assembles_to_real_bytes() -> None:
     """The lowered region builds a full interpreter blob end to end."""
     region = extract_region(_in_function_call_instructions(), randomness.Random(1))
