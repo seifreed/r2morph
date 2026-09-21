@@ -855,7 +855,13 @@ class CodeVirtualizationPass(MutationPass):
             opcode_mnemonic = opcode_parts[0] if opcode_parts else ""
             if kind == "ret" and (
                 not opcode_mnemonic
-                or (opcode_mnemonic in {"ret", "retq", "retn", "retl", "retw"} and len(opcode_parts) == 1)
+                or (
+                    opcode_mnemonic in {"ret", "retq", "retn", "retl", "retw"}
+                    and (
+                        len(opcode_parts) == 1
+                        or classification._decode_ret_cleanup(str(instruction.get("opcode", ""))) is not None
+                    )
+                )
             ):
                 continue
             if _is_syscall_instruction(instruction):

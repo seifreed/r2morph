@@ -197,7 +197,7 @@ class ConstantUnfoldingPass(MutationPass):
         bits: int,
     ) -> tuple[bool, bool, int]:
         disasm = insn.get("disasm", "").lower()
-        addr = insn.get("addr", 0)
+        addr = insn.get("addr", insn.get("offset", 0))
         orig_size = insn.get("size", 0)
         if addr == 0 or orig_size == 0:
             return False, False, 0

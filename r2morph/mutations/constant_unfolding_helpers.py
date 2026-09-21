@@ -183,7 +183,16 @@ def select_candidates(
             candidate["flags_live_after"] = flags_live_after(disasms, index)
             candidates.append(candidate)
 
-        selected = random.sample(candidates, min(max_unfolds, len(candidates)))
+        numeric_candidates = [
+            candidate
+            for candidate in candidates
+            if any(
+                token.lstrip("#-").isdigit() or token.lower().startswith("0x")
+                for token in candidate.get("disasm", "").replace(",", " ").split()[2:]
+            )
+        ]
+        selected_pool = numeric_candidates or candidates
+        selected = random.sample(selected_pool, min(max_unfolds, len(selected_pool)))
         if selected:
             result.append((func, selected))
     return result

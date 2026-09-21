@@ -273,10 +273,12 @@ def _call_bridge_asm(
     stack_load = f"  mov r11, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n" f"  xor r11, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
     r12_load = _call_frame_load_asm("r12", slot[GP_REGISTERS.index("r12")] * 8)
     if bridge.canonical_stack:
+        copy_qwords = (max(bridge.stack_copy_bytes, 0) + 7) // 8
         target_save = f"  mov qword ptr [rsp+{_CALL_TARGET_OFFSET}], r10\n"
         stack_transfer = (
-            f"  lea r10, [r12+{bridge.frame_size - bridge.stack_guard - 8}]\n"
-            f"  mov ecx, {(max(bridge.stack_copy_bytes, 0) + 7) // 8}\n"
+            f"  lea r10, [r11-{(copy_qwords + 2) * 8}]\n"
+            f"  mov qword ptr [r10+{(copy_qwords + 1) * 8}], r12\n"
+            f"  mov ecx, {copy_qwords}\n"
             "  test ecx, ecx\n"
             f"  jz call_stack_copy_done_{index}\n"
             "  cmp r10, r11\n"
@@ -284,8 +286,8 @@ def _call_bridge_asm(
             "  mov rsi, r11\n  mov rdi, r10\n  rep movsq\n"
             f"  jmp call_stack_copy_done_{index}\n"
             f"call_stack_copy_backward_{index}:\n"
-            f"  lea rsi, [r11+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
-            f"  lea rdi, [r10+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
+            f"  lea rsi, [r11+{(copy_qwords - 1) * 8}]\n"
+            f"  lea rdi, [r10+{(copy_qwords - 1) * 8}]\n"
             "  std\n  rep movsq\n  cld\n"
             f"call_stack_copy_done_{index}:\n"
         )
@@ -313,7 +315,11 @@ def _call_bridge_asm(
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  mov r11d, {hex(_CALL_UNWIND_START_MAGIC | index)}\n"
-        + f"  lea r12, [rsp+{resume_frame}]\n"
+        + (
+            f"  mov r12, qword ptr [rsp+{(copy_qwords + 1) * 8}]\n"
+            if bridge.canonical_stack
+            else f"  lea r12, [rsp+{resume_frame}]\n"
+        )
         + _call_frame_spills_asm(slot, bridge.flags_offset, bridge.preserve_ymm)
         + f"  mov r11d, {hex(_CALL_UNWIND_END_MAGIC | index)}\n"
         + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

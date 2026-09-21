@@ -13,6 +13,7 @@ from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT, MINIMUM_FUNCTION_SIZE
 from r2morph.core.support import _normalize_architecture_name
+from r2morph.mutations import code_virtualization_region_classification as classification
 
 logger = logging.getLogger(__name__)
 
@@ -547,6 +548,20 @@ def _unwind_blocking_instruction(frame: Any | None, function_address: int) -> di
     return {"addr": function_address}
 
 
+def _has_compact_ret_cleanup(binary: Any, function: dict[str, Any]) -> bool:
+    """Keep a small callee when its return cleanup is part of the VM contract."""
+    try:
+        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    return any(
+        instruction.get("type") == "ret"
+        and classification._decode_ret_cleanup(str(instruction.get("opcode", ""))) not in (None, 0)
+        for instruction in (disassembly or {}).get("ops", [])
+        if isinstance(instruction, dict)
+    )
+
+
 def _static_dataflow_is_complete(cfg: Any) -> bool:
     """Require CFG, liveness, and SSA coverage before lowering a function."""
     try:
@@ -585,7 +600,11 @@ def _ordered_functions(
     viable = [
         function
         for function in functions
-        if not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
+        if not (
+            isinstance(function.get("size"), int)
+            and function["size"] < MINIMUM_FUNCTION_SIZE
+            and not _has_compact_ret_cleanup(binary, function)
+        )
         and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
 
@@ -654,7 +673,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             continue
         if _address_in_ranges(function_address, covered_ranges):
             continue
-        if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+        if func.get("size", 0) < MINIMUM_FUNCTION_SIZE and not _has_compact_ret_cleanup(binary, func):
             continue
         if _exceeds_function_size_budget(func, pass_instance.max_function_size):
             skipped, unsupported_total = _skip_oversized_function(

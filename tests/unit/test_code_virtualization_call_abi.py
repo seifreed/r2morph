@@ -88,7 +88,7 @@ def test_call_bridge_uses_canonical_stack_for_dynamic_alignment() -> None:
     expect(
         "call_stack_copy_backward_0:" in assembly
         and "mov qword ptr [rsp+736], r10" in assembly
-        and "lea r12, [rsp+1032]" in assembly
+        and "mov r12, qword ptr [rsp+928]" in assembly
     )
 
 
