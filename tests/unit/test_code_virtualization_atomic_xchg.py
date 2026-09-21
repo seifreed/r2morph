@@ -99,6 +99,13 @@ def test_locked_memory_rmw_decoder_accepts_rip_relative_source() -> None:
     )
 
 
+def test_locked_memory_rmw_decoder_accepts_absolute_memory_source() -> None:
+    expect(
+        _decode_locked_memory_rmw("lock xadd dword ptr [0x4024], eax", 0x401000, 8)
+        == ("atomicmemrip", "xadd", 0, 0x4024, 32)
+    )
+
+
 def test_locked_memory_rmw_handler_emits_native_atomic_operation() -> None:
     assembly = _atomic_memory_rmw_handler_asm("atomicmemrip_add_32", "0x12", "0x11223344")
     expect("lock add dword ptr [r10], eax" in assembly)
@@ -113,7 +120,7 @@ def test_locked_memory_rmw_decoder_accepts_xadd_register_result() -> None:
 def test_locked_memory_xadd_handler_writes_previous_memory_value_back() -> None:
     assembly = _atomic_memory_rmw_handler_asm("atomicmem_xadd_32", "0x12", "0x11223344")
     expect("lock xadd dword ptr [r10], eax" in assembly)
-    expect("mov qword ptr [rsp+r8*8], eax" in assembly)
+    expect("mov dword ptr [rsp+r8*8], eax" in assembly)
 
 
 def test_locked_memory_rmw_items_have_stable_handler_key_and_size() -> None:

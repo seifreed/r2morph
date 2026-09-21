@@ -390,7 +390,8 @@ def _atomic_memory_rmw_handler_asm(
         f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
     )
     if mnemonic == "xadd":
-        body += f"  mov qword ptr [rsp+r8*8], {register}\n"
+        slot_width = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+        body += f"  mov {slot_width} ptr [rsp+r8*8], {register}\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
