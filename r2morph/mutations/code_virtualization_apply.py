@@ -597,6 +597,28 @@ def _ordered_functions(
     """Visit viable functions in stable image order before applying the budget."""
     functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
     plt_ranges = _plt_ranges(binary)
+
+    def is_runtime_entrypoint(function: dict[str, Any]) -> bool:
+        address = function.get("addr")
+        return address not in dispatch_entrypoint_addresses and _is_runtime_entrypoint(
+            function, unwind_section, entrypoint_addresses
+        )
+
+    non_tiny = [
+        function
+        for function in functions
+        if not _address_in_ranges(function.get("addr"), plt_ranges)
+        and not (isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE)
+        and not is_runtime_entrypoint(function)
+    ]
+    if len(non_tiny) > analysis_budget:
+        logger.warning(
+            "Skipping code virtualization: non-tiny function population exceeds the VM analysis budget (%d > %d)",
+            len(non_tiny),
+            analysis_budget,
+        )
+        return None
+
     viable = [
         function
         for function in functions
@@ -607,12 +629,6 @@ def _ordered_functions(
         )
         and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
-
-    def is_runtime_entrypoint(function: dict[str, Any]) -> bool:
-        address = function.get("addr")
-        return address not in dispatch_entrypoint_addresses and _is_runtime_entrypoint(
-            function, unwind_section, entrypoint_addresses
-        )
 
     runtime_free = [function for function in viable if not is_runtime_entrypoint(function)]
     if runtime_free:

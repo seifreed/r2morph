@@ -82,6 +82,33 @@ def test_code_virtualization_keeps_sole_runtime_function_candidate() -> None:
     expect(candidates == [{"addr": 0x401000, "name": "entry0", "size": 53}])
 
 
+def test_code_virtualization_rejects_large_non_tiny_population_before_ret_scan() -> None:
+    class _BinaryWithSmallFunctions:
+        class _R2:
+            def __init__(self) -> None:
+                self.commands = 0
+
+            def cmdj(self, _command: str) -> list[dict[str, Any]]:
+                self.commands += 1
+                return []
+
+        def __init__(self) -> None:
+            self.r2 = self._R2()
+
+        def get_sections(self) -> list[dict[str, Any]]:
+            return []
+
+        def get_functions(self) -> list[dict[str, int]]:
+            return [{"addr": index * 32, "size": 32} for index in range(257)] + [
+                {"addr": 0x10000 + index * 8, "size": 1} for index in range(64)
+            ]
+
+    binary = _BinaryWithSmallFunctions()
+    candidates = _ordered_functions(binary, analysis_budget=256)
+
+    expect(candidates is None and binary.r2.commands == 0)
+
+
 def test_code_virtualization_filters_runtime_entrypoint_when_user_function_exists() -> None:
     class _BinaryWithLoaderAndUserFunction:
         def get_functions(self) -> list[dict[str, int | str]]:
