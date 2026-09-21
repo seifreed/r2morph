@@ -69,8 +69,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   campaign rows, including Binary Ninja; unavailable rows remain blockers with
   reasons until completed. The campaign is partitioned into eight deterministic
   fixture shards and merged before the corpus-wide gate runs; this addresses
-  campaign sustainability but does not close the Binary Ninja availability
-  blocker.
+  campaign sustainability. In-process analyzers are isolated with bounded
+  workers so a timeout is retained as an error row; this does not close the
+  Binary Ninja availability blocker.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
   The next scheduled automated campaign is configured to cover fifteen fixtures

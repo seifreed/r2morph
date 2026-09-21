@@ -293,6 +293,10 @@ The scheduled differential workflow uses the same eight-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,
 and the aggregate artifact rechecks that all 200 generated variants and all
 pass/fixture/seed rows are present before publishing the campaign evidence.
+The secondary JUnit evidence therefore contains 24 reports (eight shards across
+three seeds). In-process analyzer adapters run in isolated workers with a
+bounded 90-second pair budget; a timeout is retained as an analyzer error row,
+never silently converted into an unavailable or missing row.
 Each VM semantic fixture runs in an isolated worker with a bounded
 transformation timeout; a stuck or killed worker is recorded as failed
 evidence and cannot leave the scheduled job running indefinitely.
