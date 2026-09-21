@@ -24,6 +24,7 @@ static call_target volatile selected_target = indirect_target;
 __attribute__((noinline)) static int composed(int value) {
     uint32_t table[4] = {3, 5, 7, 11};
     int loaded = (int)table[value & 3];
+    __asm__ volatile("mov x9, x9" ::: "x9");
     int result = selected_target(direct_target(value + loaded));
     for (int index = 0; index < 2; ++index) {
         result += index;
