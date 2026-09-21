@@ -3,7 +3,7 @@
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization import _build_unwind_payload
-from r2morph.mutations.code_virtualization_region import build_region_scheme
+from r2morph.mutations.code_virtualization_region import _STATE_SLOT_CANDIDATES, build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import (
     _relocate_flags_slot,
     build_region_blob,
@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     CallBridgeConfig,
     _call_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_handlers import _MXCSR_SAVE_OFFSET
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
@@ -57,6 +58,10 @@ def test_call_bridge_restores_mxcsr_after_native_return() -> None:
     expect("stmxcsr dword ptr [rsp+528]" in assembly and "ldmxcsr dword ptr [r12+528]" in assembly)
 
 
+def test_region_state_slots_do_not_overlap_native_mxcsr_spill() -> None:
+    expect(_MXCSR_SAVE_OFFSET not in _STATE_SLOT_CANDIDATES)
+
+
 def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)))
 
@@ -69,6 +74,21 @@ def test_call_bridge_reconstructs_frame_after_native_return() -> None:
     expect(
         f"call_resume_0:\n  mov r11d, 0x135c0000\n  lea r12, [rsp+{_GUARD - 0x340}]" in assembly
         and "mov r11d, 0x12ac0000" in assembly
+    )
+
+
+def test_call_bridge_uses_canonical_stack_for_dynamic_alignment() -> None:
+    assembly = _call_handler_asm(
+        0,
+        "0x12345678",
+        tuple(range(16)),
+        CallBridgeConfig(frame_size=0x400, canonical_stack=True),
+    )
+
+    expect(
+        "call_stack_copy_backward_0:" in assembly
+        and "mov qword ptr [rsp+736], r10" in assembly
+        and "lea r12, [rsp+1032]" in assembly
     )
 
 

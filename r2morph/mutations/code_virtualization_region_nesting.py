@@ -65,6 +65,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _STACK_ARGUMENT_COPY_BYTES,
+    _STACK_GUARD_ALIGNMENT,
     _VSP_OFFSET,
     frame_size_for_seed,
     stack_argument_copy_asm,
@@ -740,6 +741,11 @@ def _build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Rando
                         scheme.body_seed,
                         scheme.isa_seed,
                         stack_guard=_region_stack_guard(region, schemes[0].junk_seed),
+                        stack_copy_bytes=max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes),
+                        canonical_call_stack=any(
+                            item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT
+                            for item in region.instructions
+                        ),
                     ),
                     junk_rng,
                     extra,

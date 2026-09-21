@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _KEY_QWORD_SLOT,
     _MXCSR_SAVE_OFFSET,
+    _STACK_ARGUMENT_COPY_BYTES,
     _XMM_SAVE_OFFSET,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
@@ -170,6 +171,7 @@ _CALL_ARG_REGISTERS: tuple[str, ...] = ("rdi", "rsi", "rdx", "rcx", "r8", "r9", 
 _XMM_REGISTERS = tuple(range(16))
 _CALL_VPC_OFFSET = 0x2D0
 _CALL_BASE_OFFSET = 0x2D8
+_CALL_TARGET_OFFSET = 0x2E0
 _CALL_CALLEE_SAVED_REGISTERS: tuple[str, ...] = ("rbx", "rbp", "r13", "r14", "r15", "r12")
 _CALL_UNWIND_START_MAGIC = 0x135C0000
 _CALL_UNWIND_END_MAGIC = 0x12AC0000
@@ -182,6 +184,8 @@ class CallBridgeConfig:
     stack_depth: int = 0
     preserve_ymm: bool = False
     stack_guard: int = _GUARD
+    stack_copy_bytes: int = _STACK_ARGUMENT_COPY_BYTES
+    canonical_stack: bool = False
 
 
 def _call_frame_load_asm(register: str, offset: int) -> str:
@@ -268,21 +272,45 @@ def _call_bridge_asm(
     )
     stack_load = f"  mov r11, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n" f"  xor r11, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
     r12_load = _call_frame_load_asm("r12", slot[GP_REGISTERS.index("r12")] * 8)
+    if bridge.canonical_stack:
+        target_save = f"  mov qword ptr [rsp+{_CALL_TARGET_OFFSET}], r10\n"
+        stack_transfer = (
+            f"  lea r10, [r12+{bridge.frame_size - bridge.stack_guard - 8}]\n"
+            f"  mov ecx, {(max(bridge.stack_copy_bytes, 0) + 7) // 8}\n"
+            "  test ecx, ecx\n"
+            f"  jz call_stack_copy_done_{index}\n"
+            "  cmp r10, r11\n"
+            f"  ja call_stack_copy_backward_{index}\n"
+            "  mov rsi, r11\n  mov rdi, r10\n  rep movsq\n"
+            f"  jmp call_stack_copy_done_{index}\n"
+            f"call_stack_copy_backward_{index}:\n"
+            f"  lea rsi, [r11+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
+            f"  lea rdi, [r10+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
+            "  std\n  rep movsq\n  cld\n"
+            f"call_stack_copy_done_{index}:\n  mov rsp, r10\n"
+            f"  mov r10, qword ptr [r12+{_CALL_TARGET_OFFSET}]\n"
+        )
+        resume_frame = bridge.stack_guard - bridge.frame_size + 8
+    else:
+        target_save = ""
+        stack_transfer = "  mov rsp, r11\n"
+        resume_frame = bridge.stack_guard - bridge.frame_size + bridge.stack_depth
     return (
         target_asm
         + f"  mov r12, rsp\n  mov rbx, rsi\n  mov qword ptr [rsp+{_CALL_VPC_OFFSET}], rsi\n"
         + f"  mov qword ptr [rsp+{_CALL_BASE_OFFSET}], r15\n"
+        + target_save
         + f"  stmxcsr dword ptr [rsp+{_MXCSR_SAVE_OFFSET}]\n"
         + loads
         + xmm_loads
         + ymm_loads
         + callee_saved_loads
         + stack_load
-        + "  mov rsp, r11\n"
+        + stack_transfer
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  mov r11d, {hex(_CALL_UNWIND_START_MAGIC | index)}\n"
-        + f"  lea r12, [rsp+{bridge.stack_guard - bridge.frame_size + bridge.stack_depth}]\n"
+        + f"  lea r12, [rsp+{resume_frame}]\n"
         + _call_frame_spills_asm(slot, bridge.flags_offset, bridge.preserve_ymm)
         + f"  mov r11d, {hex(_CALL_UNWIND_END_MAGIC | index)}\n"
         + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -487,6 +515,8 @@ class CallMemoryHandlerConfig:
     stack_depth: int = 0
     preserve_ymm: bool = False
     stack_guard: int = _GUARD
+    stack_copy_bytes: int = _STACK_ARGUMENT_COPY_BYTES
+    canonical_stack: bool = False
 
 
 def _vret_handler_asm(config: VRetHandlerConfig) -> str:
@@ -535,6 +565,8 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool, interna
             config.stack_depth,
             config.preserve_ymm,
             config.stack_guard,
+            config.stack_copy_bytes,
+            config.canonical_stack,
         ),
     )
     if not internal_target_map:
@@ -574,6 +606,8 @@ def _call_mem_idx_handler_asm(
             config.stack_depth,
             config.preserve_ymm,
             config.stack_guard,
+            config.stack_copy_bytes,
+            config.canonical_stack,
         ),
     )
     if not internal_target_map:

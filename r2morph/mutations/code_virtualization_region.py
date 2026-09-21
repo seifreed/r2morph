@@ -50,7 +50,8 @@ from r2morph.mutations.code_virtualization_region_models import (
 )
 
 _CANONICAL_FLAGS_OFFSET = 0x80
-_STATE_SLOT_CANDIDATES = tuple(range(0x210, 0x280, 8))
+# Keep the runtime state word clear of the native-call MXCSR spill at 0x210.
+_STATE_SLOT_CANDIDATES = tuple(range(0x218, 0x280, 8))
 _TRAILING_PADDING_TYPES = frozenset({"nop", "trap"})
 _TRAILING_PADDING_MNEMONICS = frozenset({"nop", "int3", "ud2"})
 _NONRETURNING_SYSCALLS = frozenset({15, 60, 231})

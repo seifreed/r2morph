@@ -63,6 +63,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _STACK_ARGUMENT_COPY_BYTES,
+    _STACK_GUARD_ALIGNMENT,
     _VSP_OFFSET,
     frame_size_for_seed,
     stack_argument_copy_asm,
@@ -257,6 +258,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
     stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    canonical_call_stack = any(
+        item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT for item in region.instructions
+    )
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     # Preserve XMM state for every FP operation and every native-call bridge. Calls
     # need the saved vector arguments and must write back caller-clobbered results.
@@ -435,6 +439,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     _region_has_ymm(region),
                     region.has_internal_indirect_call,
                     stack_guard,
+                    stack_copy_bytes,
+                    canonical_call_stack,
                 ),
                 junk_rng,
                 entry_prefix=state_decode,

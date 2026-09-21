@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_router_fp import FPHandlerRouterMixin
 from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
+    _STACK_ARGUMENT_COPY_BYTES,
     IntegerHandlerConfig,
     _bswap_handler_asm,
     _bt_handler_asm,
@@ -144,6 +145,8 @@ class HandlerContext:
     has_ymm: bool = False
     has_internal_indirect_call: bool = False
     stack_guard: int = _GUARD
+    stack_copy_bytes: int = _STACK_ARGUMENT_COPY_BYTES
+    canonical_call_stack: bool = False
 
 
 class HandlerBodyRouter(FPHandlerRouterMixin):
@@ -206,6 +209,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                     stack_depth,
                     self.context.has_ymm,
                     stack_guard=self.context.stack_guard,
+                    stack_copy_bytes=self.context.stack_copy_bytes,
+                    canonical_stack=self.context.canonical_call_stack,
                 ),
             )
         elif key.startswith("icall_"):
@@ -219,6 +224,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                     stack_depth,
                     self.context.has_ymm,
                     stack_guard=self.context.stack_guard,
+                    stack_copy_bytes=self.context.stack_copy_bytes,
+                    canonical_stack=self.context.canonical_call_stack,
                 ),
                 self.context.has_internal_indirect_call,
             )
@@ -235,6 +242,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                 stack_depth,
                 self.context.has_ymm,
                 self.context.stack_guard,
+                self.context.stack_copy_bytes,
+                self.context.canonical_call_stack,
             )
             body = _call_mem_handler_asm(
                 config,
@@ -254,6 +263,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
                 stack_depth,
                 self.context.has_ymm,
                 self.context.stack_guard,
+                self.context.stack_copy_bytes,
+                self.context.canonical_call_stack,
             )
             body = _call_mem_idx_handler_asm(
                 config,
