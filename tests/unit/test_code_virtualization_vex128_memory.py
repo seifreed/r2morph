@@ -335,6 +335,21 @@ def test_vex128_packed_memory_immediate_routes_to_native_handler() -> None:
     expect("vpshuflw xmm0, xmm0, 27" in assembly and "add rsi, 8" in assembly)
 
 
+def test_vex256_packed_memory_immediate_uses_memory_source_register() -> None:
+    item = ("fppackedvex256immmem", "pshufd", 0, 2, 32, 0x1B)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 8)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect("vmovups ymm1" in assembly and "vpshufd ymm0, ymm1, 27" in assembly)
+
+
 def test_vex128_region_spills_ymm_upper_state_for_existing_vex_arithmetic() -> None:
     region = Region(
         [("fppackedvex", "addps", 0, 1, 2), ("exit", 0x2000)],

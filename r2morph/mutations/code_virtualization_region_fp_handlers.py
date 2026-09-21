@@ -478,8 +478,8 @@ def _fp_vex_packed_immediate_memory_handler_asm(
         body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
     body += "  shl r8, 4\n"
     if is_ymm:
-        body += "  vmovups ymm0, [r10]\n"
-        body += f"  v{instruction} ymm0, ymm0, {immediate}\n"
+        body += "  vmovups ymm1, [r10]\n"
+        body += f"  v{instruction} ymm0, ymm1, {immediate}\n"
         body += _store_ymm_to_frame("r8")
     else:
         body += f"  movups xmm0, [r10]\n  v{instruction} xmm0, xmm0, {immediate}\n"
