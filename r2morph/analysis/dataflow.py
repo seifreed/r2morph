@@ -70,6 +70,8 @@ DataFlowDirection = _DataFlowDirection
 
 logger = logging.getLogger(__name__)
 
+_MAX_KILL_COMPARISONS = 100_000
+
 
 class DataFlowAnalyzer:
     """
@@ -87,6 +89,13 @@ class DataFlowAnalyzer:
         self.cfg = cfg
         self._abi = abi
         self._result = DataFlowResult()
+        self._analysis_complete = True
+        self._kill_comparisons = 0
+
+    @property
+    def analysis_complete(self) -> bool:
+        """Return whether all bounded dataflow work completed."""
+        return self._analysis_complete
 
     def analyze(self) -> DataFlowResult:
         """
@@ -96,6 +105,8 @@ class DataFlowAnalyzer:
             DataFlowResult with liveness, reaching definitions, and def-use chains
         """
         self._compute_liveness()
+        if not self._analysis_complete:
+            return self._result
         self._compute_reaching_definitions()
         self._build_def_use_chains()
 
@@ -105,6 +116,8 @@ class DataFlowAnalyzer:
         """Compute liveness analysis (backward data flow)."""
         self._result.live_in.clear()
         self._result.live_out.clear()
+        self._analysis_complete = True
+        self._kill_comparisons = 0
 
         block_addresses = set(self.cfg.blocks)
         for addr in block_addresses:
@@ -291,7 +304,7 @@ class DataFlowAnalyzer:
 
     def _get_block_kill(self, block: BasicBlock, gen: set[Definition]) -> set[Definition]:
         """Get definitions killed by a block."""
-        kill = set()
+        kill: set[Definition] = set()
 
         defined_regs = set()
         for defn in gen:
@@ -301,6 +314,10 @@ class DataFlowAnalyzer:
         for reg in defined_regs:
             for definitions in self._result.reaching_in.values():
                 for defn in definitions:
+                    self._kill_comparisons += 1
+                    if self._kill_comparisons > _MAX_KILL_COMPARISONS:
+                        self._analysis_complete = False
+                        return kill
                     if defn.register and register_definition_covers_use(reg, defn.register):
                         kill.add(defn)
 

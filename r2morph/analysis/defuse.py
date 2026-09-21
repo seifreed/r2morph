@@ -296,6 +296,8 @@ class DefUseAnalyzer:
 
     def has_complete_liveness_coverage(self) -> bool:
         """Return whether liveness exists for every materialized instruction."""
+        if not self._dataflow.analysis_complete:
+            return False
         instruction_addresses = (
             int(instruction.get("offset", 0))
             for block in self.cfg.blocks.values()

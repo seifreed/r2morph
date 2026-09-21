@@ -4,6 +4,7 @@ Unit tests for data flow analysis module.
 
 from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.dataflow import (
+    _MAX_KILL_COMPARISONS,
     DataFlowAnalyzer,
     DataFlowDirection,
     DataFlowResult,
@@ -483,6 +484,18 @@ class TestDataFlowAnalyzer:
 
         expect(not (analyzer.cfg is not cfg))
         expect(isinstance(analyzer._result, DataFlowResult))
+
+    def test_kill_comparison_budget_marks_analysis_incomplete(self):
+        analyzer = DataFlowAnalyzer(create_test_cfg())
+        block = analyzer.cfg.blocks[0x1000]
+        generated = analyzer._get_block_gen(block)
+        analyzer._result.reaching_in[0x1000] = {
+            Definition(address=index, register=Register("rax")) for index in range(_MAX_KILL_COMPARISONS + 1)
+        }
+
+        analyzer._get_block_kill(block, generated)
+
+        expect(not analyzer.analysis_complete)
 
     def test_analyze_basic(self):
         """Test basic analysis."""
