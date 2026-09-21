@@ -12,6 +12,30 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
+_COMPILED_SEQUENCE_SOURCE = """#include <stdint.h>
+typedef int (*call_target)(int);
+__attribute__((noinline)) static int direct_target(int value) {
+    return value * 3 + 5;
+}
+__attribute__((noinline)) static int indirect_target(int value) {
+    return (value ^ 21) - 2;
+}
+static call_target volatile selected_target = indirect_target;
+__attribute__((noinline)) static int composed(int value) {
+    uint32_t table[4] = {3, 5, 7, 11};
+    int loaded = (int)table[value & 3];
+    int result = selected_target(direct_target(value + loaded));
+    for (int index = 0; index < 2; ++index) {
+        result += index;
+    }
+    return (result ^ 42) & 127;
+}
+int main(int argc, char **argv) {
+    (void)argv;
+    return composed(argc);
+}
+"""
+
 
 def _build_arm64_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
@@ -86,6 +110,24 @@ def _run_arm64(binary_path: Path):
             raise RuntimeError("qemu-aarch64 is required for the ELF AArch64 differential fixture")
         return run_command([emulator, binary_path], text=True, timeout=30)
     return run_command([binary_path], text=True, timeout=30)
+
+
+def _build_arm64_compiled_sequence(tmp_path: Path) -> Path:
+    source = tmp_path / "arm64_compiled_sequence.c"
+    source.write_text(_COMPILED_SEQUENCE_SOURCE, encoding="ascii")
+    if platform.system() == "Linux" and platform.machine().lower() in {"x86_64", "amd64"}:
+        compiler = shutil.which("aarch64-linux-gnu-gcc")
+    else:
+        compiler = shutil.which("cc") or shutil.which("clang")
+    if compiler is None:
+        raise RuntimeError("a native AArch64 C compiler is required for the compiled differential fixture")
+    binary_path = tmp_path / "arm64_compiled_sequence"
+    run_command(
+        [compiler, "-O0", "-static", "-fno-pie", "-no-pie", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
+    return binary_path
 
 
 def _require_arm64_execution() -> None:
@@ -244,4 +286,34 @@ def test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code(tmp_path: 
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         f"ARM64 constant unfolding changed native execution: {result=}",
+    )
+
+
+def test_elf_arm64_compiled_memory_and_call_sequence_preserves_native_exit_code(tmp_path: Path) -> None:
+    _require_arm64_execution()
+
+    binary_path = _build_arm64_compiled_sequence(tmp_path)
+    original = _run_arm64(binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        results = (
+            NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0, "seed": 20260921}).apply(binary),
+            InstructionSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260921}
+            ).apply(binary),
+            RegisterSubstitutionPass(
+                config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": 20260921}
+            ).apply(binary),
+            ConstantUnfoldingPass(config={"probability": 1.0, "seed": 20260921}).apply(binary),
+        )
+
+    mutated = _run_arm64(binary_path)
+    expect(
+        all(result["mutations_applied"] > 0 for result in results)
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr),
+        "compiled ELF ARM64 memory/call composition changed native execution: "
+        f"original={original.returncode, original.stdout, original.stderr!r}; "
+        f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; results={results!r}",
     )
