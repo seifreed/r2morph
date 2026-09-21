@@ -5,11 +5,13 @@ from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_movmskb,
     _decode_fp_vex_gp_move,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_arith_mem,
+    _decode_fp_vex_packed_mem,
     _decode_fp_vex_scalar_arith_mem,
     _decode_fp_vex_scalar_move,
 )
@@ -19,6 +21,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_gp_move_handler_asm,
     _fp_vex_packed_arith_mem_handler_asm,
+    _fp_vex_packed_memory_move_handler_asm,
     _fp_vex_scalar_arith_mem_handler_asm,
     _fp_vex_scalar_memory_move_handler_asm,
     _fp_vex_scalar_merge_handler_asm,
@@ -37,6 +40,29 @@ def test_decode_vex128_packed_memory_arithmetic_preserves_base_shape() -> None:
     item = _decode_fp_vex_packed_arith_mem("vaddps xmm0, xmm1, xmmword ptr [rax + 32]", 0x1000, 8)
 
     expect(item == ("fppackedvexmem", "addps", 0, 1, 0, 32))
+
+
+def test_decode_vex128_packed_memory_moves_preserves_address_shapes() -> None:
+    load = _decode_fp_vex_packed_mem("vmovups xmm0, xmmword ptr [rip + 16]", 0x1000, 8)
+    store = _decode_fp_vex_packed_mem("vmovdqa xmmword ptr [rax + rcx*4 + 64], xmm2", 0x1000, 8)
+
+    expect(load == ("fploadvexpackedrip", 0, 0x1018) and store == ("fpstorevexpackedidx", 2, 0, 1, 2, 64))
+
+
+def test_classify_vex128_packed_memory_move_routes_to_dedicated_handler() -> None:
+    item = _classify(
+        {"type": "vec", "family": "vec", "opcode": "vmovaps xmm0, xmmword ptr [rax]", "addr": 0x1000, "size": 8}
+    )
+
+    expect(item == ["fploadvexpacked", 0, 0, 0])
+
+
+def test_vex128_packed_memory_move_handler_clears_vex_upper_state() -> None:
+    assembly = _fp_vex_packed_memory_move_handler_asm(
+        "fploadvexpackedrip", "0xAA", "0x01010101", VexMemoryHandlerConfig(preserve_ymm=True)
+    )
+
+    expect("movups xmm0, [r10]" in assembly and "pxor xmm2, xmm2" in assembly)
 
 
 def test_decode_vex128_variable_integer_shifts_preserves_three_operand_shape() -> None:
@@ -308,6 +334,23 @@ def test_vex128_scalar_memory_handler_preserves_source_lanes_and_clears_upper_st
         and "vaddss xmm0, xmm0, dword ptr [r10]" in assembly
         and "pxor xmm2, xmm2" in assembly
     )
+
+
+def test_vex128_memory_encoder_keeps_vector_indices_outside_gp_slot_permutation() -> None:
+    item = ("fparithvexmem", "add", 0, 1, 2, 32, 32)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 8)],
+    )
+    scheme = build_region_scheme(region, randomness.Random(5))
+    encoder = RegionEncoder(scheme, [0, 8], 0x3000, 0)
+
+    encoder._mem_with_source(0, 0, 1, 2, 32)
+
+    expect(scheme.slot_perm[1] != 1 and encoder.plain[-1] == 1)
 
 
 def test_vex128_scalar_move_handlers_preserve_vex_zero_and_merge_semantics() -> None:

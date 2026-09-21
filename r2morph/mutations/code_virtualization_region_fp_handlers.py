@@ -220,6 +220,31 @@ def _fp_vex_256_memory_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_packed_memory_move_handler_asm(
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    config: VexMemoryHandlerConfig | None = None,
+) -> str:
+    """Move a complete VEX.128 value between memory and an XMM frame slot."""
+    config = config or VexMemoryHandlerConfig()
+    if handler_key.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, config.field_perm, config.addr_variant)
+    elif handler_key.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, config.field_perm, config.addr_variant)
+    else:
+        body, advance = _mem_address_asm(
+            handler_key.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant
+        )
+    body += "  shl r8, 4\n"
+    if handler_key.startswith("fploadvexpacked"):
+        body += f"  movups xmm0, [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        body += _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
+    else:
+        body += f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups [r10], xmm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _fp_vex_256_packed_arith_mem_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

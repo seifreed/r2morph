@@ -111,6 +111,14 @@ _YMM_HANDLER_KINDS = frozenset(
         "fploadvexrip",
         "fploadvexidx",
         "fploadvexidxnb",
+        "fploadvexpacked",
+        "fploadvexpackedrip",
+        "fploadvexpackedidx",
+        "fploadvexpackedidxnb",
+        "fpstorevexpacked",
+        "fpstorevexpackedrip",
+        "fpstorevexpackedidx",
+        "fpstorevexpackedidxnb",
         "fpmovvexmem",
         "fpmovvexmemrip",
         "fpmovvexmemidx",
@@ -149,7 +157,18 @@ _YMM_HANDLER_KINDS = frozenset(
         "vzeroall",
     }
 )
-_VEX_LOAD_KINDS = frozenset({"fploadvex", "fploadvexrip", "fploadvexidx", "fploadvexidxnb"})
+_VEX_LOAD_KINDS = frozenset(
+    {
+        "fploadvex",
+        "fploadvexrip",
+        "fploadvexidx",
+        "fploadvexidxnb",
+        "fploadvexpacked",
+        "fploadvexpackedrip",
+        "fploadvexpackedidx",
+        "fploadvexpackedidxnb",
+    }
+)
 
 
 def _region_has_ymm(region: Region) -> bool:
@@ -201,6 +220,10 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
             "fploadvexrip",
             "fploadvexidx",
             "fploadvexidxnb",
+            "fploadvexpacked",
+            "fploadvexpackedrip",
+            "fploadvexpackedidx",
+            "fploadvexpackedidxnb",
             "fpmovvexmem",
             "fpmovvexmemrip",
             "fpmovvexmemidx",

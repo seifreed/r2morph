@@ -390,6 +390,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             return self._emit_vex_packed_compare_memory(item)
         if item[0].startswith(("fppackedveximmmem", "fppackedvex256immmem")):
             return self._emit_vex_packed_immediate_memory(item)
+        if item[0].startswith(("fploadvexpacked", "fpstorevexpacked")):
+            return self._emit_vex_packed_memory_move(item)
         if item[0] in (
             "fploadvex",
             "fploadvexrip",
@@ -498,9 +500,31 @@ class RegionEncoder(RegionEncoderMemoryMixin):
                 base, disp = operands
                 self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
             return True
+        if kind.startswith("fpmovvexmem"):
+            return self._emit_vex_scalar_memory_merge(item)
+        return False
+
+    def _emit_vex_packed_memory_move(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind.endswith("idxnb"):
+            _, xmm, index, shift, disp = item
+            self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
+        elif kind.endswith("idx"):
+            _, xmm, base, index, shift, disp = item
+            self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind.endswith("rip"):
+            _, xmm, target = item
+            self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
+        else:
+            _, xmm, base, disp = item
+            self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
+        return True
+
+    def _emit_vex_scalar_memory_merge(self, item: RegionItem) -> bool:
+        kind = item[0]
         if kind == "fpmovvexmem":
             _, destination, source, base, disp, _width = item
-            self._mem_with_source(self._opcode(item), destination, source, self.slot_of[base], disp)
+            self._mem_with_source(self._opcode(item), destination, source, base, disp)
         elif kind == "fpmovvexmemrip":
             _, destination, source, target, _width = item
             self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)
@@ -561,7 +585,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         kind = item[0]
         if kind == "fparithvexmem":
             _, _operation, destination, source, base, disp, _width = item
-            self._mem_with_source(self._opcode(item), destination, source, self.slot_of[base], disp)
+            self._mem_with_source(self._opcode(item), destination, source, base, disp)
         elif kind == "fparithvexmemrip":
             _, _operation, destination, source, target, _width = item
             self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)

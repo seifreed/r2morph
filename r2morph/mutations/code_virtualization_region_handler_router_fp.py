@@ -43,6 +43,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_packed_compare_handler_asm,
     _fp_vex_packed_compare_memory_handler_asm,
     _fp_vex_packed_immediate_memory_handler_asm,
+    _fp_vex_packed_memory_move_handler_asm,
     _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_permute_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
@@ -93,6 +94,13 @@ class FPHandlerRouterMixin:
                 self.context.key_dword,
                 self.context.field_perm,
                 address,
+            )
+        if key.startswith(("fploadvexpacked", "fpstorevexpacked")):
+            return _fp_vex_packed_memory_move_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                VexMemoryHandlerConfig(self.context.field_perm, address, self.context.has_ymm),
             )
         return self._fp_standard(key, address)
 

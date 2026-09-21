@@ -73,6 +73,10 @@ def test_decode_packed_integer_add_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("paddd xmm0, xmm1") == ("fppacked", "paddd", 0, 1))
 
 
+def test_decode_vex_packed_float_unpack_returns_vector_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vunpckhps xmm1, xmm0, xmm0") == ("fppackedvex", "unpckhps", 1, 0, 0))
+
+
 def test_decode_packed_integer_subtract_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("psubd xmm0, xmm1") == ("fppacked", "psubd", 0, 1))
 
