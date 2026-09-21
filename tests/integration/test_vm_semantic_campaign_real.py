@@ -12,6 +12,7 @@ import pytest
 
 from scripts.vm_semantic_campaign import (
     _DEFAULT_SEEDS,
+    _DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS,
     _PASSABLE_FIXTURE_STATUSES,
     _corpus_fixture_counts,
     _error_result,
@@ -21,6 +22,7 @@ from scripts.vm_semantic_campaign import (
     _load_coverage,
     _qemu_observables_equal,
     _qemu_summary,
+    _run_selected_fixture_bounded,
     _select_fixture_shard,
     _semantic_failure_result,
     merge_campaign_reports,
@@ -37,6 +39,24 @@ _MAX_ERROR_MESSAGE_LENGTH = 240
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
     expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
+
+
+def test_vm_semantic_campaign_declares_a_positive_fixture_timeout() -> None:
+    expect(_DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS > 0)
+
+
+def test_vm_semantic_campaign_bounds_a_real_fixture_worker(tmp_path: Path) -> None:
+    fixture = Path("fixtures/dataset/elf_vm_memwidth_x86_64")
+
+    _, result = _run_selected_fixture_bounded(
+        fixture,
+        tmp_path,
+        seed=20260916,
+        timeout=5.0,
+        transformation_timeout=0.001,
+    )
+
+    expect(result["status"] == "transformation_timeout")
 
 
 def test_vm_semantic_campaign_uses_qemu_for_non_linux_hosts_when_available() -> None:

@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        fixture_shard: [0, 1, 2, 3]
+        fixture_shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -100,7 +100,7 @@ jobs:
             --require-applied \
             --require-tool-slots \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 4 \
+            --fixture-shard-count 8 \
             --output "$GITHUB_WORKSPACE/adversarial-benchmark.json"
 
       - name: Validate adversarial campaign summary
@@ -467,8 +467,8 @@ jobs:
           from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES, discover_executables
 
           paths = sorted(Path("adversarial-reports").glob("*/adversarial-benchmark.json"))
-          if len(paths) != 4:
-              raise SystemExit(f"expected 4 adversarial shard reports, found {len(paths)}")
+          if len(paths) != 8:
+              raise SystemExit(f"expected 8 adversarial shard reports, found {len(paths)}")
           report = merge_adversarial_reports(
               [json.loads(path.read_text(encoding="utf-8")) for path in paths]
           )

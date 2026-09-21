@@ -180,7 +180,7 @@ runtime-observable failure reasons, omission/error reasons, and severities by
 pass. Complete-evidence coverage requires the same run to have runtime, size,
 transform-duration, runtime-duration, and static analyzer evidence.
 The scheduled and main-push differential workflow validates this campaign summary before
-uploading the artifact. It runs four deterministic fixture shards across three
+uploading the artifact. It runs eight deterministic fixture shards across three
 seeds in parallel, so the full 161-fixture repository corpus and all selected
 passes remain covered without a monolithic job timing out. Each shard records
 its `fixture_shard` index and count in `corpus_scope`; shard reports are not
@@ -261,13 +261,13 @@ Decompiler effectiveness is counted twice: the full sample pair remains
 visible, while the release gate also requires complete `radare2` and `angr`
 pairs for every fixture where the pass actually applied. No-op fixtures cannot
 inflate per-pass decompiler evidence.
-The campaign now runs as four deterministic fixture shards. Each shard retains
-all analyzer slots, while the aggregate job merges the four reports, rejects
+The campaign now runs as eight deterministic fixture shards. Each shard retains
+all analyzer slots, while the aggregate job merges the eight reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
 the full corpus. This keeps the evidence continuous without treating a
 per-shard omission as a corpus-wide pass. The aggregate gate also requires
 both generated corpus families after merging all shards.
-The current four-shard 22-pass aggregate
+The archived four-shard 22-pass aggregate
 [`35021131440`](https://github.com/seifreed/r2morph/actions/runs/35021131440)
 completed 11,682 pass rows (5,310 core and 6,372 extended) with zero missing or
 error rows across the repository and generated ELF x86-64 fixtures. All
@@ -289,10 +289,13 @@ analyzer errors. Binary Ninja, IDA Pro, and Ghidra remained unavailable, while
 132 Unicorn rows reported explicit ISA-capability gaps. The unavailable and
 partial-ISA rows remain release blockers.
 
-The scheduled differential workflow uses the same four-shard model across
+The scheduled differential workflow uses the same eight-shard model across
 three seeds. Generated ELF fixtures are partitioned with repository fixtures,
 and the aggregate artifact rechecks that all 200 generated variants and all
 pass/fixture/seed rows are present before publishing the campaign evidence.
+Each VM semantic fixture runs in an isolated worker with a bounded
+transformation timeout; a stuck or killed worker is recorded as failed
+evidence and cannot leave the scheduled job running indefinitely.
 
 The latest repository-fixture campaign against `8b6cfb40` covered 159 fixtures
 and the six selected passes available at that commit. Its per-pass summary is committed in

@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        fixture_shard: [0, 1, 2, 3]
+        fixture_shard: [0, 1, 2, 3, 4, 5, 6, 7]
         seed: [20260901, 20260902, 20260903]
     steps:
       - name: Checkout
@@ -83,7 +83,7 @@ jobs:
             --first-seed "${{ matrix.seed }}" \
             --count 1 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 4 \
+            --fixture-shard-count 8 \
             --output "$GITHUB_WORKSPACE/differential-corpus.json"
           mv "$GITHUB_WORKSPACE/differential-corpus.json" "$GITHUB_WORKSPACE/$REPORT_NAME"
 
@@ -141,7 +141,7 @@ jobs:
               "dataset": "fixtures/dataset",
               "fixture_shard": {
                   "index": int(os.environ["REPORT_NAME"].split("-")[2]),
-                  "count": 4,
+                  "count": 8,
               },
           }:
               raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
@@ -508,7 +508,7 @@ jobs:
             --generated-inputs \
             --generated-corpus \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 4 \
+            --fixture-shard-count 8 \
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
@@ -657,7 +657,7 @@ jobs:
       fail-fast: false
       matrix:
         seed: [20260916, 20260917, 20260918]
-        fixture_shard: [0, 1, 2, 3]
+        fixture_shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -689,7 +689,7 @@ jobs:
             --generated-corpus \
             --seed "${{ matrix.seed }}" \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 4 \
+            --fixture-shard-count 8 \
             --output vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}.json
 
       - name: Validate VM semantic campaign
@@ -830,7 +830,7 @@ jobs:
                   raise SystemExit(f"VM semantic shard is missing its seed: {seed_report}")
               by_seed.setdefault(seed, []).append(seed_report)
           if set(by_seed) != {20260916, 20260917, 20260918} or any(
-              len(seed_reports) != 4 for seed_reports in by_seed.values()
+              len(seed_reports) != 8 for seed_reports in by_seed.values()
           ):
               raise SystemExit(f"VM semantic seed shard coverage is incomplete: {by_seed}")
           report = merge_campaign_reports(tuple(reports), allow_duplicate_seeds=True)

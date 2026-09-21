@@ -67,7 +67,7 @@ review. It is not a feature roadmap and must not be read as a support claim.
   `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
   Exit criteria: every analyzer slot has completed comparable scheduled
   campaign rows, including Binary Ninja; unavailable rows remain blockers with
-  reasons until completed. The campaign is partitioned into four deterministic
+  reasons until completed. The campaign is partitioned into eight deterministic
   fixture shards and merged before the corpus-wide gate runs; this addresses
   campaign sustainability but does not close the Binary Ninja availability
   blocker.

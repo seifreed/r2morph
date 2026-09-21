@@ -1559,6 +1559,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "adversarial fixture manifest drift" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
+        and "--fixture-shard-count 8" in adversarial
         and "Run VM resistance seed-diversity smoke" in adversarial
         and "scripts/protection_handler_clustering.py" in adversarial
         and '--output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"' in adversarial
@@ -1587,7 +1588,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--generated-inputs" in differential
         and "--generated-corpus" in differential
         and "--count 1" in differential
-        and "--fixture-shard-count 4" in differential
+        and "--fixture-shard-count 8" in differential
         and "--fixture-shard-index" in differential
         and "Validate differential campaign summary" in differential
         and "platform_scope" in differential

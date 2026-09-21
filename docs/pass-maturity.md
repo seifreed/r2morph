@@ -181,7 +181,7 @@ That run completed `angr`, radare2, objdump, and the custom analyzer across all
 remains an explicit unavailable-tool blocker; IDA, Ghidra, and Triton have
 separate corpus evidence, but the full comparable campaign scope remains a
 release blocker.
-The aggregate jobs of the current four-shard 22-pass campaign
+The aggregate jobs of the archived four-shard 22-pass campaign
 [`35021131440`](https://github.com/seifreed/r2morph/actions/runs/35021131440)
 completed 11,682 pass runs (5,310 core and 6,372 extended) with no
 transformation, semantic, or runtime-observable errors. It provides continuous

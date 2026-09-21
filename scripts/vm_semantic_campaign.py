@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import multiprocessing
 import os
 import shutil
 import stat
@@ -15,6 +16,7 @@ from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
+from queue import Empty
 from typing import Any
 
 from r2morph.adapters.process import ProcessContext, ProcessTimeoutError, run_process
@@ -29,6 +31,7 @@ else:
 _MAX_FIXTURES = 512
 _MAX_FIXTURE_SHARDS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
+_DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS = 30.0
 # CodeVirtualizationPass uses the process-global random generator during codegen;
 # serial workers keep each seeded campaign deterministic.
 _CAMPAIGN_WORKERS = 1
@@ -41,6 +44,7 @@ _HASH_CHUNK_BYTES = 1024 * 1024
 _MAX_ERROR_MESSAGE_LENGTH = 240
 _MAX_TRANSFORMATION_RECORDS = 64
 _MAX_TRANSFORMATION_MNEMONICS = 128
+_WORKER_RESULT_SIZE = 2
 _CAPABILITY_CATEGORIES = {
     "memory": ("memory_addressing",),
     "direct-calls": ("direct_calls",),
@@ -410,6 +414,79 @@ def _run_selected_fixture(
     return source, result
 
 
+def _run_selected_fixture_worker(
+    source: str,
+    temp_dir: str,
+    seed: int,
+    timeout: float,
+    result_queue: Any,
+) -> None:
+    """Run one fixture in a child process so a stuck transformation is killable."""
+    try:
+        result_queue.put(
+            _run_selected_fixture(
+                Path(source),
+                Path(temp_dir),
+                seed,
+                timeout,
+            )
+        )
+    except BaseException as error:
+        result_queue.put((Path(source), _error_result(error)))
+
+
+def _run_selected_fixture_bounded(
+    source: Path,
+    temp_dir: Path,
+    seed: int,
+    timeout: float,
+    transformation_timeout: float,
+) -> tuple[Path, dict[str, Any]]:
+    """Bound the complete fixture process, including binary transformation."""
+    context = multiprocessing.get_context("spawn")
+    result_queue = context.Queue(maxsize=1)
+    process = context.Process(
+        target=_run_selected_fixture_worker,
+        args=(str(source), str(temp_dir), seed, timeout, result_queue),
+    )
+    process.start()
+    process.join(transformation_timeout)
+    if process.is_alive():
+        process.terminate()
+        process.join(5.0)
+        if process.is_alive():
+            process.kill()
+            process.join()
+        result_queue.close()
+        result_queue.join_thread()
+        return source, {
+            "status": "transformation_timeout",
+            "error_type": "ProcessTimeoutError",
+            "error_message": f"fixture exceeded {transformation_timeout} seconds",
+        }
+    try:
+        result = result_queue.get(timeout=1.0)
+    except Empty:
+        result = (
+            source,
+            {
+                "status": "error",
+                "error_type": "ProcessExitWithoutResult",
+                "error_message": f"fixture worker exited with status {process.exitcode}",
+            },
+        )
+    finally:
+        result_queue.close()
+        result_queue.join_thread()
+    if not isinstance(result, tuple) or len(result) != _WORKER_RESULT_SIZE or not isinstance(result[1], dict):
+        return source, {
+            "status": "error",
+            "error_type": "InvalidWorkerResult",
+            "error_message": "fixture worker returned an invalid result",
+        }
+    return source, result[1]
+
+
 def _select_fixture_shard(
     fixtures: tuple[Path, ...],
     shard_index: int,
@@ -430,6 +507,7 @@ def run_campaign(
     dataset: Path,
     coverage: Mapping[str, set[str]],
     seed: int,
+    *,
     timeout: float = _DEFAULT_TIMEOUT_SECONDS,
     fixture_selection: tuple[str | Path, ...] | None = None,
 ) -> dict[str, Any]:
@@ -453,10 +531,11 @@ def run_campaign(
     passed = 0
     with tempfile.TemporaryDirectory(prefix="r2morph-vm-semantic-") as temp_dir:
         run_fixture = partial(
-            _run_selected_fixture,
+            _run_selected_fixture_bounded,
             temp_dir=Path(temp_dir),
             seed=seed,
             timeout=timeout,
+            transformation_timeout=_DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS,
         )
         with ThreadPoolExecutor(max_workers=_CAMPAIGN_WORKERS) as executor:
             results = executor.map(run_fixture, fixtures)
@@ -610,7 +689,7 @@ def main() -> None:
                 args.dataset,
                 coverage,
                 seed,
-                args.timeout,
+                timeout=args.timeout,
                 fixture_selection=fixtures,
             )
             for seed in seeds
