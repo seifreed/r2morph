@@ -283,6 +283,18 @@
       ],
       "evidence_cells": [
         {
+          "format": "ELF",
+          "architecture": "ARM"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86"
+        },
+        {
           "format": "Mach-O",
           "architecture": "AArch64"
         },
@@ -884,35 +896,35 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 40,
-      "not_supported_cells": 224,
+      "evidenced_cells": 43,
+      "not_supported_cells": 221,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 18,
-      "non_official_not_supported_cells": 224,
-      "non_official_evidence_percent": 7.44,
+      "non_official_evidenced_cells": 21,
+      "non_official_not_supported_cells": 221,
+      "non_official_evidence_percent": 8.68,
       "non_official_gap_targets": [
         {
           "format": "ELF",
           "architecture": "AArch64",
-          "evidenced_cells": 3,
-          "not_supported_cells": 19,
-          "evidence_percent": 13.64
+          "evidenced_cells": 4,
+          "not_supported_cells": 18,
+          "evidence_percent": 18.18
         },
         {
           "format": "ELF",
           "architecture": "ARM",
-          "evidenced_cells": 3,
-          "not_supported_cells": 19,
-          "evidence_percent": 13.64
+          "evidenced_cells": 4,
+          "not_supported_cells": 18,
+          "evidence_percent": 18.18
         },
         {
           "format": "ELF",
           "architecture": "x86",
-          "evidenced_cells": 3,
-          "not_supported_cells": 19,
-          "evidence_percent": 13.64
+          "evidenced_cells": 4,
+          "not_supported_cells": 18,
+          "evidence_percent": 18.18
         },
         {
           "format": "Mach-O",
@@ -987,23 +999,23 @@
           {
             "format": "ELF",
             "architecture": "AArch64",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "ELF",
             "architecture": "ARM",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "ELF",
             "architecture": "x86",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "Mach-O",
@@ -1070,23 +1082,23 @@
           {
             "format": "ELF",
             "architecture": "AArch64",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "ELF",
             "architecture": "ARM",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "ELF",
             "architecture": "x86",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           },
           {
             "format": "Mach-O",
@@ -1158,7 +1170,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 224,
+        "non_official_missing_evidence_cells": 221,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -3052,22 +3064,46 @@
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "x86",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py"
+        ]
       },
       {
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "AArch64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py"
+        ]
       },
       {
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "ARM",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py"
+        ]
       },
       {
         "pass": "constant-unfolding",

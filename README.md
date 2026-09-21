@@ -103,8 +103,8 @@ x86-64 or equivalent CodeVirtualization support.
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
-ELF x86-64 target (100.0% evidence) and 18/242 evidenced cells for non-official
-targets (7.44% evidence). It currently classifies 3 passes as Tier 1 and
+ELF x86-64 target (100.0% evidence) and 21/242 evidenced cells for non-official
+targets (8.68% evidence). It currently classifies 3 passes as Tier 1 and
 19 passes as experimental.
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every

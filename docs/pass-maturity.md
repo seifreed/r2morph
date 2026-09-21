@@ -58,12 +58,12 @@ including official and non-official targets, so the Linux ELF x86-64 baseline
 and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
 cell. It also records evidence percentages for official and non-official targets
 so preview coverage cannot look equivalent to the supported baseline. The
-current matrix records 100.0% official evidence, 7.44% non-official evidence,
-18 non-official evidenced cells, and 224 non-official not-supported cells. It
+current matrix records 100.0% official evidence, 8.68% non-official evidence,
+21 non-official evidenced cells, and 221 non-official not-supported cells. It
 also lists 11 non-official format/architecture targets in
 `non_official_gap_targets`; Mach-O AArch64, Mach-O x86-64, PE x86-64, and ELF
-ARM currently have preview evidence, while ELF AArch64/x86, Mach-O ARM/x86,
-and PE AArch64/ARM/x86 remain at 0.0% evidence. The generated
+ARM/AArch64/x86 currently have preview evidence, while Mach-O ARM/x86 and PE
+AArch64/ARM/x86 remain at 0.0% evidence. The generated
 `total_parity_blockers` count is currently 16 total parity blockers. It
 also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,
