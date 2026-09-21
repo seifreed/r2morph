@@ -3,6 +3,7 @@ import io
 import os
 import platform
 import runpy
+import shutil
 import signal
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ from scripts.vm_semantic_campaign import (
     _PASSABLE_FIXTURE_STATUSES,
     _corpus_fixture_counts,
     _error_result,
+    _execution_command,
     _execution_observation,
     _fixture_categories,
     _load_coverage,
@@ -35,6 +37,18 @@ _MAX_ERROR_MESSAGE_LENGTH = 240
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
     expect(_DEFAULT_SEEDS == (20260916, 20260917, 20260918))
+
+
+def test_vm_semantic_campaign_uses_qemu_for_non_linux_hosts_when_available() -> None:
+    fixture = Path("fixtures/dataset/elf_vm_memwidth_x86_64")
+    command = _execution_command(fixture)
+
+    if sys.platform.startswith("linux"):
+        expect(command == (fixture.resolve(),))
+    elif shutil.which("qemu-x86_64") is not None:
+        expect(command[0] == shutil.which("qemu-x86_64") and command[1] == fixture.resolve())
+    else:
+        expect(command == (fixture.resolve(),))
 
 
 def test_vm_semantic_campaign_only_counts_fully_virtualized_fixtures_as_passed() -> None:

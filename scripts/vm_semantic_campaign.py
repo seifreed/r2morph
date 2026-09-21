@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import stat
+import sys
 import tempfile
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -70,6 +71,15 @@ _GENERATED_FIXTURE_CATEGORIES = {
     "generated_xlat_": ("memory_addressing",),
 }
 _QEMU_NON_COMPLETED_EQUIVALENT_STATUSES = frozenset({"unavailable", "timeout"})
+_QEMU_EXECUTABLE = "qemu-x86_64"
+
+
+def _execution_command(path: Path) -> tuple[str | Path, ...]:
+    """Run target ELF files natively, or through QEMU on non-Linux hosts."""
+    if sys.platform.startswith("linux"):
+        return (path.resolve(),)
+    qemu = shutil.which(_QEMU_EXECUTABLE)
+    return (qemu, path.resolve()) if qemu is not None else (path.resolve(),)
 
 
 def _load_coverage(path: Path) -> dict[str, set[str]]:
@@ -159,7 +169,7 @@ def _created_file_observations(directory: Path) -> dict[str, dict[str, int | str
 def _execution_observation(path: Path, timeout: float, workdir: Path) -> dict[str, Any]:
     workdir.mkdir(parents=True, exist_ok=True)
     try:
-        completed = run_process([path.resolve()], timeout=timeout, context=ProcessContext(cwd=workdir))
+        completed = run_process(_execution_command(path), timeout=timeout, context=ProcessContext(cwd=workdir))
     except ProcessTimeoutError:
         result: dict[str, Any] = {"status": "timeout"}
     except OSError as exc:

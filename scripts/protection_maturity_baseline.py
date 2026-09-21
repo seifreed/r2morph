@@ -850,8 +850,6 @@ def _qemu_semantic_artifacts(path: Path) -> dict[str, object]:
         "reason": "qemu-x86_64 is unavailable for this host or fixture",
         "exit_code": None,
     }
-    if not sys.platform.startswith("linux"):
-        return unavailable
     qemu = shutil.which(_QEMU_EXECUTABLE)
     if qemu is None:
         return unavailable
