@@ -531,6 +531,10 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
 
 
 def _measure_tool_unbounded(tool: str, original: Path, protected: Path) -> dict[str, object]:
+    if tool == "custom":
+        before = _binary_metric(original)
+        after = _binary_metric(protected)
+        return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
     available, reason = _availability(tool)
     if not available:
         return {"tool": tool, "status": "unavailable", "reason": reason}
@@ -1033,16 +1037,7 @@ def _missing_tool_slot_error(report: dict[str, object]) -> str | None:
 
 
 def _measure_pair_tools(original: Path, protected: Path) -> list[dict[str, object]]:
-    tools = [_measure_tool(tool, original, protected) for tool in _EXPECTED_TOOLS]
-    tools.append(
-        {
-            "tool": "custom",
-            "status": "completed",
-            "original": _binary_metric(original),
-            "protected": _binary_metric(protected),
-        }
-    )
-    return tools
+    return [_measure_tool(tool, original, protected) for tool in (*_EXPECTED_TOOLS, "custom")]
 
 
 def benchmark_pair(

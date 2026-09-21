@@ -108,6 +108,13 @@ def test_adversarial_benchmark_bounds_an_in_process_analyzer() -> None:
     expect(result["status"] == "error" and result["error_type"] == "ProcessTimeoutError")
 
 
+def test_adversarial_benchmark_reports_the_bounded_custom_adapter() -> None:
+    result = benchmark_pair(_FIXTURE, _FIXTURE)
+    custom = next(row for row in result["tools"] if row["tool"] == "custom")
+
+    expect(custom["status"] == "completed" and "original" in custom and "protected" in custom)
+
+
 def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:
     expect(_is_binary_ninja_license_error(RuntimeError("License is not valid")))
 
