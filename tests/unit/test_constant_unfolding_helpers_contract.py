@@ -93,3 +93,7 @@ def test_constant_unfolding_uses_arm64_movz_for_non_logical_immediate() -> None:
 
 def test_constant_unfolding_uses_arm32_movw_for_fixed_width_constant() -> None:
     expect(unfold_constant_move("r2", 40, 32, _Binary(), _EXPECTED_ADDR_4096) == ["movw r2, 40"])
+
+
+def test_constant_unfolding_matches_arm32_thumb_movs_constant() -> None:
+    expect(match_unfold_pattern("movs r2, #40", 32, _Binary(), _EXPECTED_ADDR_4096, 10) == (["movw r2, 40"], True))

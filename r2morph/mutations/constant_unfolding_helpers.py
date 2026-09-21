@@ -176,7 +176,7 @@ def select_candidates(
             disasm = insn.get("disasm", "").lower()
             mnemonic = disasm.split()[0] if disasm else ""
 
-            if mnemonic not in ["mov", "add", "sub", "push", "xor"]:
+            if mnemonic not in ["mov", "movs", "add", "sub", "push", "xor"]:
                 continue
 
             candidate = dict(insn)
@@ -214,11 +214,11 @@ def match_unfold_pattern(
     value = int(value_str, 0)
 
     instructions = None
-    if mnemonic == "mov" and value == 0:
+    if mnemonic in {"mov", "movs"} and value == 0:
         instructions = unfold_zero(reg, bits, binary, func_addr)
-    elif mnemonic == "mov" and value == 1:
+    elif mnemonic in {"mov", "movs"} and value == 1:
         instructions = unfold_one(reg, bits, binary, func_addr)
-    elif mnemonic == "mov":
+    elif mnemonic in {"mov", "movs"}:
         instructions = unfold_constant_move(reg, value, bits, binary, func_addr)
     elif (
         mnemonic == "add"
