@@ -60,7 +60,7 @@ _EXPECTED_RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8)
 _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "Per-pass maturity remains incomplete",
     "Differential corpus coverage remains incomplete",
-    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
+    "VM semantic coverage is complete for the declared ELF x86-64 scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "Binary Ninja is an explicit slot",
     "anti-tamper and progressive bytecode protection",
@@ -198,7 +198,7 @@ def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:
     return _check(
         "vm_semantic_gap_scope",
         passed,
-        "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness gaps remain tracked",
+        "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness campaign evidence is complete",
     )
 
 

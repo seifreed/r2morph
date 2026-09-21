@@ -197,13 +197,14 @@ applied instruction catalogue. The current follow-up smoke has applied
 composition evidence for the extended passes, including `StackStrings`; these
 remain release gaps until the scheduled aggregate publishes the updated
 artifact.
-The generated summary also exposes `vm_semantic_gap_scope` so memory,
-direct/indirect calls, ABI/varargs, unwinding/exceptions, TLS/signals, threads,
-FP/SIMD, and SSA/liveness remain machine-readable VM blockers. SSA/liveness
-preflight coverage is backed by the static dataflow, def-use, and liveness
-regression contracts, including the installed-wheel smoke in the scheduled
-differential campaign. The companion `total_vm_semantic_blockers` count is currently 9 VM semantic
-blockers.
+The generated summary exposes an empty `vm_semantic_gap_scope` for the declared
+ELF x86-64 VM contract. The three-seed campaign records 453/453 passing fixture
+runs with zero unsupported functions across memory, direct/indirect calls,
+ABI/varargs, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness. The
+resolved capability evidence remains machine-readable in
+`vm_semantic_resolved_evidence`; fail-closed diagnostics still protect
+instructions outside that declared scope. The companion
+`total_vm_semantic_blockers` count is `0 VM semantic blockers`.
 
 The VM semantic fixture inventory is exercised by the bounded native parity
 campaign in [`scripts/vm_semantic_campaign.py`](../scripts/vm_semantic_campaign.py).

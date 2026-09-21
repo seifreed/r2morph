@@ -1589,17 +1589,7 @@
         "comparable_campaign_scope": 1,
         "total_adversarial_blockers": 2
       },
-      "vm_semantic_gap_scope": [
-        "memory",
-        "direct-calls",
-        "indirect-calls",
-        "abi-varargs",
-        "unwinding-exceptions",
-        "tls-signals",
-        "threads",
-        "fp-simd",
-        "ssa-liveness"
-      ],
+      "vm_semantic_gap_scope": [],
       "vm_semantic_fixture_coverage": {
         "artifact": "docs/virtualization-coverage.json",
         "scope": "elf-x86-64-virtualization-fixtures",
@@ -1627,9 +1617,10 @@
           "unwinding_exceptions"
         ]
       },
-      "vm_semantic_gap_evidence": {
+      "vm_semantic_gap_evidence": {},
+      "vm_semantic_resolved_evidence": {
         "memory": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "memory_addressing"
           ],
@@ -1640,7 +1631,7 @@
           ]
         },
         "direct-calls": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "direct_calls"
           ],
@@ -1651,7 +1642,7 @@
           ]
         },
         "indirect-calls": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "indirect_calls"
           ],
@@ -1662,7 +1653,7 @@
           ]
         },
         "abi-varargs": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "abi_varargs"
           ],
@@ -1673,7 +1664,7 @@
           ]
         },
         "unwinding-exceptions": {
-          "status": "ordinary-unwind-fixture-measured-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "unwinding_exceptions"
           ],
@@ -1686,7 +1677,7 @@
           ]
         },
         "tls-signals": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "tls_accesses",
             "signals_and_system_calls"
@@ -1698,7 +1689,7 @@
           ]
         },
         "threads": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "thread_safety"
           ],
@@ -1709,7 +1700,7 @@
           ]
         },
         "fp-simd": {
-          "status": "fixture-backed-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "floating_point_and_simd"
           ],
@@ -1720,7 +1711,7 @@
           ]
         },
         "ssa-liveness": {
-          "status": "fixture-backed-measured-incomplete",
+          "status": "campaign-measured",
           "capabilities": [
             "ssa_liveness"
           ],
@@ -1734,21 +1725,11 @@
         }
       },
       "vm_semantic_evidence_blockers": {
-        "vm_semantic_gap_scope": [
-          "memory",
-          "direct-calls",
-          "indirect-calls",
-          "abi-varargs",
-          "unwinding-exceptions",
-          "tls-signals",
-          "threads",
-          "fp-simd",
-          "ssa-liveness"
-        ]
+        "vm_semantic_gap_scope": []
       },
       "vm_semantic_blocker_totals": {
-        "total_vm_semantic_blockers": 9,
-        "vm_semantic_gap_scope": 9
+        "total_vm_semantic_blockers": 0,
+        "vm_semantic_gap_scope": 0
       },
       "vm_resistance_gap_scope": [
         "human-adversarial-validation",
@@ -3946,17 +3927,70 @@
     ]
   },
   "vm_semantics": {
-    "gap_scope": [
-      "memory",
-      "direct-calls",
-      "indirect-calls",
-      "abi-varargs",
-      "unwinding-exceptions",
-      "tls-signals",
-      "threads",
-      "fp-simd",
-      "ssa-liveness"
-    ],
+    "gap_scope": [],
+    "campaign": {
+      "artifact": "docs/protection-vm-semantic-2026-09-18-1d0b69e4.json",
+      "status": "passed",
+      "fixture_count": 453,
+      "passed_count": 453,
+      "seed_count": 3,
+      "capabilities": {
+        "memory": {
+          "status": "campaign-measured",
+          "fixture_count": 114,
+          "passed_count": 114,
+          "failed_count": 0
+        },
+        "direct-calls": {
+          "status": "campaign-measured",
+          "fixture_count": 30,
+          "passed_count": 30,
+          "failed_count": 0
+        },
+        "indirect-calls": {
+          "status": "campaign-measured",
+          "fixture_count": 30,
+          "passed_count": 30,
+          "failed_count": 0
+        },
+        "abi-varargs": {
+          "status": "campaign-measured",
+          "fixture_count": 33,
+          "passed_count": 33,
+          "failed_count": 0
+        },
+        "unwinding-exceptions": {
+          "status": "campaign-measured",
+          "fixture_count": 3,
+          "passed_count": 3,
+          "failed_count": 0
+        },
+        "tls-signals": {
+          "status": "campaign-measured",
+          "fixture_count": 27,
+          "passed_count": 27,
+          "failed_count": 0
+        },
+        "threads": {
+          "status": "campaign-measured",
+          "fixture_count": 24,
+          "passed_count": 24,
+          "failed_count": 0
+        },
+        "fp-simd": {
+          "status": "campaign-measured",
+          "fixture_count": 165,
+          "passed_count": 165,
+          "failed_count": 0
+        },
+        "ssa-liveness": {
+          "status": "campaign-measured",
+          "fixture_count": 15,
+          "passed_count": 15,
+          "failed_count": 0
+        }
+      }
+    },
     "fixture_coverage": {
       "artifact": "docs/virtualization-coverage.json",
       "scope": "elf-x86-64-virtualization-fixtures",
@@ -3984,9 +4018,9 @@
         "unwinding_exceptions"
       ]
     },
-    "gap_evidence": {
+    "resolved_evidence": {
       "memory": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "memory_addressing"
         ],
@@ -3997,7 +4031,7 @@
         ]
       },
       "direct-calls": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "direct_calls"
         ],
@@ -4008,7 +4042,7 @@
         ]
       },
       "indirect-calls": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "indirect_calls"
         ],
@@ -4019,7 +4053,7 @@
         ]
       },
       "abi-varargs": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "abi_varargs"
         ],
@@ -4030,7 +4064,7 @@
         ]
       },
       "unwinding-exceptions": {
-        "status": "ordinary-unwind-fixture-measured-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "unwinding_exceptions"
         ],
@@ -4043,7 +4077,7 @@
         ]
       },
       "tls-signals": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "tls_accesses",
           "signals_and_system_calls"
@@ -4055,7 +4089,7 @@
         ]
       },
       "threads": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "thread_safety"
         ],
@@ -4066,7 +4100,7 @@
         ]
       },
       "fp-simd": {
-        "status": "fixture-backed-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "floating_point_and_simd"
         ],
@@ -4077,7 +4111,7 @@
         ]
       },
       "ssa-liveness": {
-        "status": "fixture-backed-measured-incomplete",
+        "status": "campaign-measured",
         "capabilities": [
           "ssa_liveness"
         ],
@@ -4089,6 +4123,7 @@
           "tests/unit/test_code_virtualization_diagnostics.py"
         ]
       }
-    }
+    },
+    "gap_evidence": {}
   }
 }

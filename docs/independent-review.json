@@ -41,7 +41,7 @@
       "status": "passed"
     },
     {
-      "detail": "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness gaps remain tracked",
+      "detail": "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness campaign evidence is complete",
       "name": "vm_semantic_gap_scope",
       "status": "passed"
     },

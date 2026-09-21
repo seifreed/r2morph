@@ -391,6 +391,14 @@ def _vm_semantic_gap_evidence(document: dict[str, Any]) -> dict[str, object]:
     return evidence if isinstance(evidence, dict) else {}
 
 
+def _vm_semantic_resolved_evidence(document: dict[str, Any]) -> dict[str, object]:
+    vm_semantics = document.get("vm_semantics")
+    if not isinstance(vm_semantics, dict):
+        return {}
+    evidence = vm_semantics.get("resolved_evidence")
+    return evidence if isinstance(evidence, dict) else {}
+
+
 def _vm_semantic_evidence_blockers(gap_scope: list[str]) -> dict[str, object]:
     return {"vm_semantic_gap_scope": gap_scope}
 
@@ -721,6 +729,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     vm_semantic_gap_scope = _vm_semantic_gap_scope(document)
     vm_semantic_fixture_coverage = _vm_semantic_fixture_coverage(document)
     vm_semantic_gap_evidence = _vm_semantic_gap_evidence(document)
+    vm_semantic_resolved_evidence = _vm_semantic_resolved_evidence(document)
     return {
         "dimensions": {
             "passes": [mutation_pass["name"] for mutation_pass in document.get("passes", [])],
@@ -777,6 +786,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "vm_semantic_gap_scope": vm_semantic_gap_scope,
             "vm_semantic_fixture_coverage": vm_semantic_fixture_coverage,
             "vm_semantic_gap_evidence": vm_semantic_gap_evidence,
+            "vm_semantic_resolved_evidence": vm_semantic_resolved_evidence,
             "vm_semantic_evidence_blockers": _vm_semantic_evidence_blockers(vm_semantic_gap_scope),
             "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(vm_semantic_gap_scope),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),

@@ -138,7 +138,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "continuous_evidence_blocker_totals",
     "extended_maturity_evidence_blockers",
     "extended_maturity_evidence_blocker_totals",
-    "VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals, threads, FP/SIMD, and SSA/liveness",
+    "VM semantic coverage is complete for the declared ELF x86-64 scope",
     "vm_semantic_gap_scope",
     "vm_semantic_blocker_totals",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
@@ -245,6 +245,55 @@ def _check_vm_semantic_gap_evidence(matrix: dict[str, object]) -> None:
                 and not (ROOT / evidence_path).exists()
             ):
                 raise ValueError(f"vm semantic gap evidence path is missing: {gap}.{evidence_path}")
+
+
+def _check_vm_semantic_campaign_capabilities(
+    matrix: dict[str, object],
+    campaign: dict[str, object],
+    report: dict[str, object],
+) -> None:
+    vm_semantics = matrix["vm_semantics"]
+    capabilities = campaign.get("capabilities")
+    report_capabilities = report.get("capability_summary")
+    resolved = vm_semantics.get("resolved_evidence")
+    summary = matrix["matrix"]["summary"]
+    if not isinstance(resolved, dict) or summary.get("vm_semantic_resolved_evidence") != resolved:
+        raise ValueError("vm semantic resolved evidence summary is stale")
+    if not isinstance(capabilities, dict) or not isinstance(report_capabilities, dict):
+        raise ValueError("vm semantic campaign capability summary is missing")
+    if set(resolved) != set(capabilities):
+        raise ValueError("vm semantic resolved evidence scope changed")
+    if set(capabilities) != set(report_capabilities):
+        raise ValueError("vm semantic campaign capability scope changed")
+    for name, expected in capabilities.items():
+        actual = report_capabilities.get(name)
+        resolved_row = resolved.get(name)
+        if not isinstance(expected, dict) or not isinstance(actual, dict):
+            raise ValueError(f"vm semantic campaign capability is invalid: {name}")
+        if not isinstance(resolved_row, dict) or resolved_row.get("status") != "campaign-measured":
+            raise ValueError(f"vm semantic resolved evidence is incomplete: {name}")
+        if expected.get("status") != "campaign-measured":
+            raise ValueError(f"vm semantic campaign capability is not complete: {name}")
+        for field in ("fixture_count", "passed_count", "failed_count"):
+            if expected.get(field) != actual.get(field):
+                raise ValueError(f"vm semantic campaign capability metadata is stale: {name}.{field}")
+
+
+def _check_vm_semantic_campaign(matrix: dict[str, object]) -> None:
+    vm_semantics = matrix["vm_semantics"]
+    campaign = vm_semantics.get("campaign")
+    if not isinstance(campaign, dict):
+        raise ValueError("vm semantic campaign metadata is missing")
+    artifact = campaign.get("artifact")
+    if not isinstance(artifact, str) or not (ROOT / artifact).exists():
+        raise ValueError("vm semantic campaign artifact is missing")
+    report = json.loads((ROOT / artifact).read_text(encoding="utf-8"))
+    if report.get("status") != "passed" or report.get("failed_count") != 0:
+        raise ValueError("vm semantic campaign did not pass")
+    for field in ("fixture_count", "passed_count", "seed_count"):
+        if report.get(field) != campaign.get(field):
+            raise ValueError(f"vm semantic campaign metadata is stale: {field}")
+    _check_vm_semantic_campaign_capabilities(matrix, campaign, report)
 
 
 def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
@@ -466,6 +515,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     _check_maturity_gap_evidence(matrix)
     _check_parity_gap_evidence(matrix)
     _check_vm_semantic_fixture_coverage(matrix)
+    _check_vm_semantic_campaign(matrix)
     _check_vm_semantic_gap_evidence(matrix)
     _check_vm_resistance_gap_evidence(matrix)
 

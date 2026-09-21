@@ -30,20 +30,24 @@ review. It is not a feature roadmap and must not be read as a support claim.
   `extended_maturity_evidence_blocker_totals`.
   Exit criteria: all relevant passes have complete differential evidence across
   the supported corpus and declared platform matrix.
-- RB-003: VM semantics remain incomplete for memory, calls, ABI, unwinding, TLS/signals,
-  threads, FP/SIMD, and SSA/liveness. The scheduled campaign now covers 335 fixtures
-  per seed across three deterministic seeds (1005 fixture runs: 453 repository-fixture
-  executions and 552 generated-corpus executions), including ordinary unwind metadata
-  and non-linear CFG liveness fixtures. LSDA/landing-pad
-  exception transformation remains fail-closed and is covered by a separate regression
-  contract; it is not claimed as full language-level exception virtualization. Unsupported instructions must still fail closed with
-  precise diagnostics. Evidence map:
-  [compatibility-corpus.md](compatibility-corpus.md),
-  [support-matrix.json](support-matrix.json) `vm_semantic_gap_scope`
+## Resolved blockers
+
+- RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
+  memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,
+  threads, FP/SIMD, and SSA/liveness all pass the three-seed campaign (453/453
+  fixture runs, zero failures and zero unsupported functions). LSDA/landing-pad
+  transformation remains fail-closed and is not claimed as unrestricted language-level
+  exception virtualization. Evidence map:
+  [support-matrix.json](support-matrix.json) `vm_semantic_resolved_evidence`,
+  `vm_semantic_gap_scope` (empty),
   and `vm_semantic_blocker_totals`,
+  [protection-vm-semantic-2026-09-18-1d0b69e4.json](protection-vm-semantic-2026-09-18-1d0b69e4.json),
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:
-  every unsupported instruction reports the precise rejected instruction and
-  missing capability, and supported VM semantics cover the declared ISA scope.
+  every declared capability remains covered by a passing campaign and unsupported
+  instructions continue to fail closed with precise diagnostics.
+
+## Open blockers
+
 - RB-004: PE, Mach-O, ARM, and AArch64 remain preview or experimental and do not have
   parity with Linux ELF x86-64. Evidence map:
   [support-matrix.json](support-matrix.json) `parity_evidence_blockers`

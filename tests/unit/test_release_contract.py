@@ -29,6 +29,7 @@ from scripts.check_release_contract import (
     _check_readme_vm_review_scope,
     _check_release_blockers,
     _check_vm_resistance_gap_evidence,
+    _check_vm_semantic_campaign,
     _check_vm_semantic_fixture_coverage,
     _check_vm_semantic_gap_evidence,
     _forbidden_release_claims,
@@ -571,6 +572,7 @@ def test_support_matrix_names_vm_semantic_gap_evidence_without_signoff() -> None
     summary = matrix["matrix"]["summary"]
     evidence = summary["vm_semantic_gap_evidence"]
     gap_scope = summary["vm_semantic_gap_scope"]
+    resolved = summary["vm_semantic_resolved_evidence"]
 
     evidence_paths = [
         item
@@ -582,22 +584,29 @@ def test_support_matrix_names_vm_semantic_gap_evidence_without_signoff() -> None
     expect(
         sorted(evidence) == sorted(gap_scope)
         and evidence == matrix["vm_semantics"]["gap_evidence"]
-        and all(row["status"].endswith("-incomplete") for row in evidence.values())
+        and all(row["status"] == "campaign-measured" for row in resolved.values())
+        and resolved == matrix["vm_semantics"]["resolved_evidence"]
         and all((_ROOT / path).exists() for path in evidence_paths)
-        and summary["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] == len(gap_scope)
+        and summary["vm_semantic_blocker_totals"]["total_vm_semantic_blockers"] == 0
     )
 
 
-def test_release_contract_rejects_missing_vm_semantic_gap_evidence() -> None:
+def test_release_contract_validates_vm_semantic_campaign_artifact() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    del matrix["vm_semantics"]["gap_evidence"]["ssa-liveness"]
+
+    _check_vm_semantic_campaign(matrix)
+
+
+def test_release_contract_rejects_missing_vm_semantic_resolved_evidence() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    del matrix["vm_semantics"]["resolved_evidence"]["ssa-liveness"]
     matrix["matrix"] = build_matrix(matrix)
 
     rejected = False
     try:
-        _check_matrix(matrix, matrix["release"])
+        _check_vm_semantic_campaign(matrix)
     except ValueError as error:
-        rejected = "vm semantic gap evidence" in str(error)
+        rejected = "vm semantic resolved evidence" in str(error)
 
     expect(rejected)
 
