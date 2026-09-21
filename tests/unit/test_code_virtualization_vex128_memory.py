@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_scalar_arith_mem,
     _decode_fp_vex_scalar_move,
 )
+from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_gp_extract
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
     _fp_movmskb_handler_asm,
@@ -27,6 +28,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_vex_scalar_merge_handler_asm,
     _fp_vex_scalar_move_handler_asm,
 )
+from r2morph.mutations.code_virtualization_region_fp_lane_handlers import _fp_vex_gp_extract_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from tests.utils.assertions import expect
 
@@ -131,6 +133,16 @@ def test_decode_vex128_vmovq_preserves_gp_transfer_slots() -> None:
     xmm_to_gp = _decode_fp_vex_gp_move("vmovq rdx, xmm3")
 
     expect(gp_to_xmm == ("fpmovvexgp", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgp", "xmm_to_gp", 3, 2))
+
+
+def test_decode_vex_packed_lane_extract_preserves_width_and_immediate() -> None:
+    expect(_decode_fp_vex_gp_extract("vpextrq rax, xmm0, 1") == ("fpmovvexextract", 64, 0, 0, 1))
+
+
+def test_vex_packed_lane_extract_handler_emits_width_specific_instruction() -> None:
+    assembly = _fp_vex_gp_extract_handler_asm("fpmovvexextract_64_1", "0xAA")
+
+    expect("vpextrq rax, xmm0, 1" in assembly and "qword ptr [rsp + r9*8]" in assembly)
 
 
 def test_decode_vex128_vmovd_preserves_dword_transfer_slots() -> None:

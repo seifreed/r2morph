@@ -79,6 +79,7 @@ _FIXED_SIZE_GROUPS = {
         "fpmovvexscalar3",
         "fpmovvexgp",
         "fpmovvexgpd",
+        "fpmovvexextract",
         "fpmovmskb",
         "fpmovmskbvex",
         "fpmovmskbvex256",

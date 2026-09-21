@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_region import _stack_transition
+from r2morph.mutations.code_virtualization_region import _stack_states, _stack_transition
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_decoders import _decode_enter, _decode_push
@@ -123,3 +123,16 @@ def test_enter_item_has_immediate_encoding_size() -> None:
 
 def test_enter_stack_transition_records_frame_pointer_snapshot() -> None:
     expect(_stack_transition(["enter", 5, 32], 0, None) == (40, (5, 8)))
+
+
+def test_stack_balance_retains_frame_pointer_snapshot_across_argument_setup() -> None:
+    items = [
+        ["push", 5, 64],
+        ["movfromrsp", 5],
+        ["rspadj", "sub", 32],
+        ["movfromrsp", 7],
+        ["leave", 5],
+        ["exit", 0x2000],
+    ]
+
+    expect(_stack_states(items) is not None)

@@ -6,6 +6,8 @@ from r2morph.mutations.code_virtualization_layout import pair_offsets
 from r2morph.mutations.code_virtualization_region_handlers import _XMM_SAVE_OFFSET
 
 _LANE_WIDTH_BYTES = 16
+_DWORD_WIDTH_BITS = 32
+_QWORD_WIDTH_BITS = 64
 _YMM_UPPER_SAVE_OFFSET = 0x300
 
 
@@ -37,4 +39,27 @@ def _fp_vex_lane_extract_handler_asm(
         f"  movups [rsp + r8 + {_YMM_UPPER_SAVE_OFFSET}], xmm1\n"
         "  add rsi, 3\n"
         "  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_gp_extract_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Extract one packed dword or qword from an XMM save slot into a GP slot."""
+    _, width_text, immediate_text = handler_key.split("_")
+    width = int(width_text)
+    immediate = int(immediate_text)
+    instruction = "vpextrq" if width == _QWORD_WIDTH_BITS else "vpextrd"
+    gp_width = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    offsets = pair_offsets("xmm", "gp", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{offsets['xmm']}]\n"
+        f"  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{offsets['gp']}]\n"
+        f"  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  movzx r10d, byte ptr [rsi+3]\n"
+        f"  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n"
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instruction} rax, xmm0, {immediate}\n"
+        f"  mov {gp_width} ptr [rsp + r9*8], rax\n"
+        "  add rsi, 4\n  jmp vm_dispatch\n"
     )

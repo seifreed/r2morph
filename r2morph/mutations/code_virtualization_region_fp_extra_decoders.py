@@ -12,9 +12,12 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 
 _PART_COUNT = 2
 _OPERAND_COUNT = 3
+_DWORD_WIDTH_BITS = 32
+_QWORD_WIDTH_BITS = 64
 _EXTRA_VEX_OPERATIONS = {"vpackusdw": "packusdw", "vpshufb": "pshufb", "vpmaxub": "pmaxub"}
 _VEX_LANE_EXTRACT = frozenset({"vextractf128", "vextracti128"})
-_VEX_FP_TO_INT = {"vcvttsd2si": 64, "vcvttss2si": 32}
+_VEX_FP_TO_INT = {"vcvttsd2si": _QWORD_WIDTH_BITS, "vcvttss2si": _DWORD_WIDTH_BITS}
+_VEX_GP_EXTRACT = {"vpextrd": _DWORD_WIDTH_BITS, "vpextrq": _QWORD_WIDTH_BITS}
 
 
 def _decode_fp_vex_convert(text: str) -> tuple[Any, ...] | None:
@@ -52,6 +55,29 @@ def _decode_fp_vex_lane_extract(text: str) -> tuple[Any, ...] | None:
     if lane not in (0, 1):
         return None
     return ("fpmovvex", f"extract{lane}", destination, source)
+
+
+def _decode_fp_vex_gp_extract(text: str) -> tuple[Any, ...] | None:
+    """Decode a VEX packed-lane extraction into a GP register."""
+    parts = text.split(None, 1)
+    if len(parts) != _PART_COUNT or parts[0].lower() not in _VEX_GP_EXTRACT:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _OPERAND_COUNT:
+        return None
+    destination = _register_operand(operands[0].lower())
+    source = _parse_xmm_operand(operands[1])
+    if destination is None or source is None:
+        return None
+    width = _VEX_GP_EXTRACT[parts[0].lower()]
+    if destination[1] != width:
+        return None
+    try:
+        immediate = int(operands[2], 0)
+    except ValueError:
+        return None
+    limit = 2 if width == _QWORD_WIDTH_BITS else 4
+    return ("fpmovvexextract", width, destination[0], source, immediate) if 0 <= immediate < limit else None
 
 
 def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:

@@ -43,6 +43,7 @@ _DIRECT_WRITE_KINDS = frozenset(
         "neg",
         "movsub",
         "imulmem",
+        "fpmovvexextract",
     }
 )
 _THIRD_FIELD_WRITE_KINDS = frozenset(

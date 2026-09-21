@@ -277,13 +277,22 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             return False
         return True
 
+    def _emit_vex_gp_transfer(self, item: RegionItem) -> bool:
+        kind = item[0]
+        position = self._opcode(item)
+        if kind == "fpmovvexextract":
+            self._pair(position, item[3], self.slot_of[item[2]])
+            self.plain.append(item[4] ^ position)
+        else:
+            self._pair(position, item[2], self.slot_of[item[3]])
+        return True
+
     def _emit_fp_scalar(self, item: RegionItem) -> bool:
         kind = item[0]
         if kind in ("fpmovvexscalar", "fpmovvexscalar3"):
             return self._emit_vex_scalar_register_move(item)
-        if kind in ("fpmovvexgp", "fpmovvexgpd"):
-            self._pair(self._opcode(item), item[2], self.slot_of[item[3]])
-            return True
+        if kind in ("fpmovvexgp", "fpmovvexgpd", "fpmovvexextract"):
+            return self._emit_vex_gp_transfer(item)
         if kind in ("fpmovmskb", "fpmovmskbvex", "fpmovmskbvex256"):
             self._pair(self._opcode(item), item[2], self.slot_of[item[1]])
             return True

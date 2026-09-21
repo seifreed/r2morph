@@ -468,8 +468,10 @@ def _stack_transition(
     if out_depth < 0 or (kind in ("exit", "vret") and depth != 0):
         return None
     out_snapshot: tuple[int, int] | None
-    if kind in ("enter", "movfromrsp"):
-        out_snapshot = (int(item[1]), depth + 8 if kind == "enter" else depth)
+    if kind == "enter":
+        out_snapshot = (int(item[1]), depth + 8)
+    elif kind == "movfromrsp" and (snapshot is None or snapshot[0] == int(item[1])):
+        out_snapshot = (int(item[1]), depth)
     else:
         written = _writes_register(tuple(item))
         out_snapshot = None if snapshot is not None and snapshot[0] in written else snapshot

@@ -156,6 +156,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "fpmovvexscalar3": (1,),
     "fpmovvexgp": (1,),
     "fpmovvexgpd": (1,),
+    "fpmovvexextract": (1, 4),
     "fpmovmskb": (1,),
     "fpmovmskbvex": (1,),
     "fpmovmskbvex256": (1,),
