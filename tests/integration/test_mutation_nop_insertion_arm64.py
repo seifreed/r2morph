@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.platform.codesign import CodeSigner
@@ -95,6 +96,29 @@ def test_nop_insertion_arm64_preserves_native_output(tmp_path: Path):
         == (original.returncode, original.stdout, original.stderr)
         == (0, "hello\n", ""),
         "ARM64 Mach-O NOP insertion changed native execution",
+    )
+
+
+def test_constant_unfolding_arm64_preserves_native_output(tmp_path: Path) -> None:
+    """Record real Mach-O ARM64 evidence for the fixed-width zeroing rule."""
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_return_binary(tmp_path, 0)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = ConstantUnfoldingPass({"probability": 1.0, "seed": 20260921}).apply(bin_obj)
+
+    expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(
+        result["mutations_applied"] > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (0, "", ""),
+        "ARM64 Mach-O constant unfolding changed native execution",
     )
 
 

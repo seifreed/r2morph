@@ -39,7 +39,7 @@ contract until they have equivalent real-fixture coverage.
 | Anti-disassembly | Experimental | ELF x86-64 | No independent review evidence | `README.md` |
 | Data-flow mutation | Experimental | ELF x86-64 | Narrow instruction family | `README.md` |
 | Short-jump patching | Experimental | ELF x86-64 | Needs more relocation coverage | `README.md` |
-| Constant unfolding | Experimental | ELF x86-64; PE x86-64 preview | Selected by the compatibility corpus; x86 add/sub rules and analyzer-effectiveness evidence remain incomplete; PE and ARM32/ARM64 evidence covers only focused real fixtures | `tests/integration/test_protection_maturity_baseline.py`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_elf_x86_32_native.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S`, `docs/compatibility-corpus.md` |
+| Constant unfolding | Experimental | ELF x86-64; PE x86-64 and Mach-O AArch64 preview | Selected by the compatibility corpus; x86 add/sub rules and analyzer-effectiveness evidence remain incomplete; PE, Mach-O AArch64, ARM32, ARM64, and x86-32 evidence covers focused real fixtures only | `tests/integration/test_protection_maturity_baseline.py`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_elf_x86_32_native.py`, `fixtures/dataset/elf_constant_unfold_x86_64.S`, `docs/compatibility-corpus.md` |
 | Code mobility | Experimental | ELF x86-64 | Code-cave geometry is input-dependent | `README.md` |
 | Function outlining | Experimental | ELF x86-64 | ABI and exception edges need more evidence | `README.md` |
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
@@ -58,8 +58,8 @@ including official and non-official targets, so the Linux ELF x86-64 baseline
 and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
 cell. It also records evidence percentages for official and non-official targets
 so preview coverage cannot look equivalent to the supported baseline. The
-current matrix records 100.0% official evidence, 7.02% non-official evidence,
-17 non-official evidenced cells, and 225 non-official not-supported cells. It
+current matrix records 100.0% official evidence, 7.44% non-official evidence,
+18 non-official evidenced cells, and 224 non-official not-supported cells. It
 also lists 11 non-official format/architecture targets in
 `non_official_gap_targets`; Mach-O AArch64, Mach-O x86-64, PE x86-64, and ELF
 ARM currently have preview evidence, while ELF AArch64/x86, Mach-O ARM/x86,
