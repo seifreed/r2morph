@@ -92,6 +92,20 @@ def test_call_bridge_uses_canonical_stack_for_dynamic_alignment() -> None:
     )
 
 
+def test_call_bridge_reloads_integer_arguments_after_canonical_stack_copy() -> None:
+    assembly = _call_handler_asm(
+        0,
+        "0x12345678",
+        tuple(range(16)),
+        CallBridgeConfig(frame_size=0x400, canonical_stack=True),
+    )
+    copy_end = assembly.rindex("call_stack_copy_done_0:")
+    argument_load = assembly.rindex("mov rdi, qword ptr [rsp+56]")
+    stack_switch = assembly.index("mov rsp, r10")
+
+    expect(copy_end < argument_load < stack_switch)
+
+
 def test_flags_slot_relocation_preserves_call_resume_frame_base() -> None:
     assembly = "call_resume_0:\n" "  lea r12, [rsp+128]\n" "  pushfq\n" "  pop qword ptr [rsp+128]\n"
 

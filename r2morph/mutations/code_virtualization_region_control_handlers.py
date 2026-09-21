@@ -287,13 +287,14 @@ def _call_bridge_asm(
             f"  lea rsi, [r11+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
             f"  lea rdi, [r10+{((max(bridge.stack_copy_bytes, 0) + 7) // 8 - 1) * 8}]\n"
             "  std\n  rep movsq\n  cld\n"
-            f"call_stack_copy_done_{index}:\n  mov rsp, r10\n"
-            f"  mov r10, qword ptr [r12+{_CALL_TARGET_OFFSET}]\n"
+            f"call_stack_copy_done_{index}:\n"
         )
+        stack_switch = f"  mov rsp, r10\n  mov r10, qword ptr [r12+{_CALL_TARGET_OFFSET}]\n"
         resume_frame = bridge.stack_guard - bridge.frame_size + 8
     else:
         target_save = ""
-        stack_transfer = "  mov rsp, r11\n"
+        stack_transfer = ""
+        stack_switch = "  mov rsp, r11\n"
         resume_frame = bridge.stack_guard - bridge.frame_size + bridge.stack_depth
     return (
         target_asm
@@ -307,6 +308,8 @@ def _call_bridge_asm(
         + callee_saved_loads
         + stack_load
         + stack_transfer
+        + loads
+        + stack_switch
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  mov r11d, {hex(_CALL_UNWIND_START_MAGIC | index)}\n"
