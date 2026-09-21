@@ -7,6 +7,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
+import capstone
+
 import r2morph.core.randomness as random
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
@@ -551,15 +553,20 @@ def _unwind_blocking_instruction(frame: Any | None, function_address: int) -> di
 def _has_compact_ret_cleanup(binary: Any, function: dict[str, Any]) -> bool:
     """Keep a small callee when its return cleanup is part of the VM contract."""
     try:
-        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
-    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+        address = function["addr"]
+        size = function["size"]
+        raw_bytes = binary.read_bytes(address, size)
+        decoder = capstone.Cs(capstone.CS_ARCH_X86, capstone.CS_MODE_64)
+        instructions = decoder.disasm(raw_bytes, address)
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError, capstone.CsError):
         return False
-    return any(
-        instruction.get("type") == "ret"
-        and classification._decode_ret_cleanup(str(instruction.get("opcode", ""))) not in (None, 0)
-        for instruction in (disassembly or {}).get("ops", [])
-        if isinstance(instruction, dict)
-    )
+    for instruction in instructions:
+        if instruction.mnemonic.lower() not in ("ret", "retn"):
+            continue
+        cleanup = classification._decode_ret_cleanup(f"{instruction.mnemonic} {instruction.op_str}".strip())
+        if cleanup not in (None, 0):
+            return True
+    return False
 
 
 def _static_dataflow_is_complete(cfg: Any) -> bool:

@@ -4,6 +4,7 @@ from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.mutations.code_virtualization_apply import (
     _exceeds_function_size_budget,
+    _has_compact_ret_cleanup,
     _has_materialized_instructions,
     _ordered_functions,
     _preflight_rejection_diagnostic,
@@ -72,6 +73,14 @@ def test_empty_disassembly_is_not_reported_as_incomplete_dataflow() -> None:
         r2 = _Disassembler()
 
     expect(_has_materialized_instructions(FunctionSource(), {"addr": 0x1000}) is False)
+
+
+def test_compact_ret_cleanup_is_decoded_without_disassembler_round_trip() -> None:
+    class FunctionSource:
+        def read_bytes(self, _address: int, _size: int) -> bytes:
+            return b"\xc2\x10\x00"
+
+    expect(_has_compact_ret_cleanup(FunctionSource(), {"addr": 0x1000, "size": 3}))
 
 
 def test_ordered_functions_prioritize_lowest_image_address() -> None:
