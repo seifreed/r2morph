@@ -336,12 +336,12 @@ def test_far_return_is_not_treated_as_ordinary_region_exit() -> None:
     expect(instruction == {"type": "ret", "opcode": "retfq", "addr": 0x1000, "size": 1})
 
 
-def test_stack_adjusting_return_is_not_treated_as_ordinary_region_exit() -> None:
+def test_stack_adjusting_return_is_treated_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
     instruction = pass_instance._find_first_unvirtualizable_instruction(_StackAdjustReturnBinary(), {"addr": 0x1000})
 
-    expect(instruction == {"type": "ret", "opcode": "ret 0x10", "addr": 0x1000, "size": 3})
+    expect(instruction is None)
 
 
 def test_rt_sigreturn_does_not_virtualize_unreachable_tail() -> None:

@@ -5,26 +5,46 @@ This module provides the main interface to Frida for instrumenting
 target processes and collecting runtime information.
 """
 
+import importlib
 import json
 import logging
+import multiprocessing
+import os
 import time
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    import frida
-    import frida.core
-else:
+_FRIDA_PROBE_CHILD = "R2MORPH_FRIDA_PROBE_CHILD"
+
+
+def _probe_frida_import() -> None:
+    importlib.import_module("frida")
+
+
+def _frida_import_available() -> bool:
+    """Probe the optional native module outside the application process."""
+    if _FRIDA_PROBE_CHILD in os.environ:
+        return False
+    os.environ[_FRIDA_PROBE_CHILD] = "1"
+    process = multiprocessing.get_context("spawn").Process(target=_probe_frida_import)
     try:
-        import frida
-        import frida.core
-    except ImportError:
-        frida = None
+        process.start()
+        process.join(10)
+        if process.is_alive():
+            process.terminate()
+            process.join()
+        return process.exitcode == 0
+    except (OSError, RuntimeError):
+        return False
+    finally:
+        os.environ.pop(_FRIDA_PROBE_CHILD, None)
 
-FRIDA_AVAILABLE = frida is not None
+
+FRIDA_AVAILABLE = _frida_import_available()
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +52,16 @@ logger = logging.getLogger(__name__)
 # reached so a long instrumentation session cannot grow memory without limit.
 # Running totals are kept separately in self.stats, unaffected by this cap.
 MAX_RUNTIME_EVENTS = 10000
+
+
+@lru_cache(maxsize=1)
+def _load_frida() -> Any:
+    try:
+        return importlib.import_module("frida")
+    except ImportError as exc:
+        raise ImportError(
+            "Frida is required for dynamic instrumentation. Install with: pip install frida frida-tools"
+        ) from exc
 
 
 class InstrumentationMode(Enum):
@@ -73,11 +103,6 @@ class FridaEngine:
         Args:
             timeout: Default timeout for operations
         """
-        if not FRIDA_AVAILABLE:
-            raise ImportError(
-                "Frida is required for dynamic instrumentation. Install with: pip install frida frida-tools"
-            )
-
         self.timeout = timeout
         self.device: Any | None = None
         self.session: Any | None = None
@@ -103,11 +128,15 @@ class FridaEngine:
         Returns:
             True if initialization successful
         """
+        if not FRIDA_AVAILABLE:
+            logger.warning("Frida backend is unavailable in this environment")
+            return False
         try:
+            frida_module = _load_frida()
             if device_id:
-                self.device = frida.get_device(device_id)
+                self.device = frida_module.get_device(device_id)
             else:
-                self.device = frida.get_local_device()
+                self.device = frida_module.get_local_device()
 
             logger.info(f"Connected to Frida device: {self.device.name}")
             return True
@@ -139,6 +168,9 @@ class FridaEngine:
         result = InstrumentationResult()
 
         try:
+            if mode not in {InstrumentationMode.SPAWN, InstrumentationMode.ATTACH}:
+                result.error_message = f"Unsupported instrumentation mode: {mode}"
+                return result
             if not self.device and not self.initialize():
                 result.error_message = "Failed to initialize Frida device"
                 return result
@@ -149,10 +181,6 @@ class FridaEngine:
                 pid = self._spawn_process(binary_path, arguments, environment)
             elif mode == InstrumentationMode.ATTACH:
                 pid = self._find_and_attach_process(binary_path.name)
-            else:
-                result.error_message = f"Unsupported instrumentation mode: {mode}"
-                return result
-
             if not pid:
                 result.error_message = "Failed to get target process ID"
                 return result

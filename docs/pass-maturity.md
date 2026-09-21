@@ -167,6 +167,10 @@ architectures, preconditions, invariants, affected instructions, false-positive
 risk, unit and end-to-end tests, performance, decompiler effectiveness, and
 pass-composition compatibility. Entries marked as not measured are deliberate
 release gaps, not implied support.
+New `MutationRecord` instances derive an affected-instruction mnemonic catalogue
+from the original and mutated disassembly when a pass does not provide one.
+Historical reports remain historical evidence and must be regenerated before
+they can claim that catalogue coverage.
 The Tier 1 native profile now links a focused adversarial corpus summary for
 NopInsertion, InstructionSubstitution, and RegisterSubstitution:
 [`protection-adversarial-tier1-2026-09-13-400c2a48-summary.json`](protection-adversarial-tier1-2026-09-13-400c2a48-summary.json).

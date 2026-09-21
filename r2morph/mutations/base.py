@@ -5,6 +5,7 @@ Base class for mutation passes.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
@@ -18,6 +19,24 @@ import r2morph.core.randomness as random
 # enforced structurally via the methods called on binary.
 
 logger = logging.getLogger(__name__)
+
+_DISASSEMBLY_PREFIXES = frozenset({"lock", "rep", "repe", "repz", "repne", "repnz"})
+_HEX_TOKEN = re.compile(r"^(?:0x)?[0-9a-f]+$", re.IGNORECASE)
+
+
+def _disassembly_mnemonics(*disassemblies: str) -> list[str]:
+    """Extract stable instruction names from recorded disassembly text."""
+    mnemonics: set[str] = set()
+    for disassembly in disassemblies:
+        for line in disassembly.splitlines():
+            tokens = line.strip().replace(";", " ").split()
+            while tokens and (_HEX_TOKEN.fullmatch(tokens[0]) or tokens[0].rstrip(":").isdigit()):
+                tokens.pop(0)
+            if tokens and tokens[0].lower() in _DISASSEMBLY_PREFIXES:
+                tokens.pop(0)
+            if tokens:
+                mnemonics.add(tokens[0].lower())
+    return sorted(mnemonics)
 
 
 @dataclass(frozen=True)
@@ -349,6 +368,11 @@ class MutationPass(ABC):
 
     def _record_mutation(self, **details: Unpack[MutationRecordArgs]) -> MutationRecord:
         """Append a structured mutation record to the pass."""
+        metadata = dict(details.get("metadata") or {})
+        metadata.setdefault(
+            "affected_instruction_mnemonics",
+            _disassembly_mnemonics(details["original_disasm"], details["mutated_disasm"]),
+        )
         record = MutationRecord(
             pass_name=self.name,
             function_address=details["function_address"],
@@ -359,7 +383,7 @@ class MutationPass(ABC):
             original_disasm=details["original_disasm"],
             mutated_disasm=details["mutated_disasm"],
             mutation_kind=details["mutation_kind"],
-            metadata=details.get("metadata") or {},
+            metadata=metadata,
             status=details.get("status", "applied"),
             recorded_after_seconds=(
                 round(time.perf_counter() - self._run_started_at, 6) if self._run_started_at is not None else None
