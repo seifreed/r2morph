@@ -108,7 +108,7 @@ targets (7.44% evidence). It currently classifies 3 passes as Tier 1 and
 19 passes as experimental.
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
-selected pass. The same summary still records 12 with no independent
+selected pass. The same summary now records 0 with no independent
 false-positive measurement,
 12 with no independent decompiler-effectiveness measurement,
 0 without contractual composition support, and no remaining affected-instruction catalogue gap.

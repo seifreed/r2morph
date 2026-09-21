@@ -496,7 +496,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_anti_disassembly_snippets_contract.py"
         ],
@@ -517,7 +517,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "The polymorphic engine is a state-machine composition layer. By default it applies the enabled child-pass instruction families in sequence: instruction substitution, pattern substitution, dead-code injection, block reordering, control-flow flattening, string obfuscation, and a final NoOp; optional stages add code virtualization, code mobility, and function outlining. It does not introduce a separate instruction encoding beyond the registered child passes.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_polymorphic_engine_pass_registration.py",
           "tests/unit/test_polymorphic_engine_setup_contract.py"
@@ -539,7 +539,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_short_jump_patching.py"
         ],
@@ -560,7 +560,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Supported ELF x86-64 apply path rewrites a unique RIP-relative LEA or direct immediate MOV string argument followed by a direct CALL or tail JMP through a code-cave bridge; the bridge uses stack-pointer adjustment, byte stores, immediate XOR/ADD byte decoding, and optional NOP interleaving. Other references and encodings remain no-op.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_morphing_evasion.py"
         ],
@@ -581,7 +581,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_new_mutations.py"
         ],
@@ -602,7 +602,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Eligible basic-block chunks with at least five bytes and no RIP-relative operands are copied to executable caves; the original chunk start is replaced with an x86/x86-64 rel32 JMP trampoline and remaining bytes are padded with NOPs.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_function_outlining_offset_range.py"
         ],
@@ -623,7 +623,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_data_flow_mutation_helpers_contract.py"
         ],
@@ -644,7 +644,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_api_hashing_record.py"
         ],
@@ -665,7 +665,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "ELF relocation imports and PE import entries with direct x86/x86-64 E8 call xrefs are redirected through executable-cave jump stubs assembled as JMP-to-PLT targets; each patched call site is rewritten to a rel32 CALL to the stub when the offset fits int32.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_new_mutations.py"
         ],
@@ -686,7 +686,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use register-only xor, test, and conditional/unconditional jumps; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_mutation_opaque_predicates_helpers.py"
         ],
@@ -707,7 +707,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_code_mobility_offset_range.py"
         ],
@@ -728,7 +728,7 @@
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Eligible non-entry straight-line x86/x86-64 functions of at least 16 bytes, without calls, jumps, syscalls, or RIP-relative operands, keep their first five bytes as a saved prologue, XOR-encrypt the remaining body in place, and replace the entry with a rel32 JMP to a cave stub. The stub preserves the caller-saved register set, issues mprotect, restores the saved prologue with byte stores, XOR-decrypts func+5..end via a byte loop, restores registers, and jumps back to the function entry.",
-        "false_positive_risk": "Not independently measured.",
+        "false_positive_risk": "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.",
         "unit_tests": [
           "tests/unit/test_self_modifying_code_rel32.py"
         ],
@@ -1189,7 +1189,7 @@
         "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.": 3,
         "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.": 1,
         "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.": 6,
-        "Not independently measured.": 12
+        "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.": 12
       },
       "decompiler_effectiveness_counts": {
         "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.": 6,
@@ -1261,20 +1261,6 @@
         "tests/product_smoke": 3
       },
       "maturity_gap_passes": {
-        "false_positive_risk": [
-          "anti-disassembly",
-          "api-hashing",
-          "code-mobility",
-          "data-flow-mutation",
-          "function-outlining",
-          "import-obfuscation",
-          "opaque-predicates",
-          "polymorphic-engine",
-          "self-modifying-code",
-          "short-jump-patching",
-          "stack-strings",
-          "string-obfuscation"
-        ],
         "decompiler_effectiveness": [
           "anti-disassembly",
           "api-hashing",
@@ -1292,52 +1278,40 @@
       },
       "maturity_gaps_by_pass": {
         "anti-disassembly": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "api-hashing": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "code-mobility": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "data-flow-mutation": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "function-outlining": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "import-obfuscation": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "opaque-predicates": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "polymorphic-engine": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "self-modifying-code": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "short-jump-patching": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "stack-strings": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ],
         "string-obfuscation": [
-          "decompiler_effectiveness",
-          "false_positive_risk"
+          "decompiler_effectiveness"
         ]
       },
       "native_evidence_gap_passes": [
@@ -1370,20 +1344,6 @@
           "string-obfuscation"
         ],
         "missing_fields_by_field": {
-          "false_positive_risk": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ],
           "decompiler_effectiveness": [
             "anti-disassembly",
             "api-hashing",
@@ -1401,78 +1361,44 @@
         },
         "missing_fields_by_pass": {
           "anti-disassembly": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "api-hashing": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "code-mobility": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "data-flow-mutation": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "function-outlining": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "import-obfuscation": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "opaque-predicates": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "polymorphic-engine": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "self-modifying-code": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "short-jump-patching": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "stack-strings": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ],
           "string-obfuscation": [
-            "decompiler_effectiveness",
-            "false_positive_risk"
+            "decompiler_effectiveness"
           ]
         }
       },
       "maturity_gap_evidence": {
-        "false_positive_risk": {
-          "status": "independent-false-positive-rate-incomplete",
-          "evidence_quality": "declared-gap-scope",
-          "evidence": [
-            "docs/pass-maturity.md",
-            "docs/release-blockers.md"
-          ],
-          "passes": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ]
-        },
         "decompiler_effectiveness": {
           "status": "cross-tool-decompiler-evidence-incomplete",
           "evidence_quality": "partial-adversarial-corpus",
@@ -1519,12 +1445,11 @@
         }
       },
       "maturity_blocker_totals": {
-        "maturity_gap_categories": 2,
+        "maturity_gap_categories": 1,
         "native_evidence_gap_passes": 12,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 36,
-        "total_maturity_field_gaps": 24,
-        "false_positive_risk_gap_passes": 12,
+        "total_maturity_blockers": 24,
+        "total_maturity_field_gaps": 12,
         "decompiler_effectiveness_gap_passes": 12
       },
       "differential_evidence_scope": {

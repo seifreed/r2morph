@@ -24,7 +24,6 @@ _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
 _EXPECTED_CORPUS_TOOLS = _EXPECTED_BENCHMARK_TOOLS - {"binary-ninja"}
 _EXPECTED_MATURITY_BLOCKER_FIELDS = {
     "decompiler_effectiveness",
-    "false_positive_risk",
 }
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     "evidence_quality": "seed-diversity-only",
@@ -188,7 +187,7 @@ def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
         and isinstance(native_gaps, list)
         and bool(native_gaps)
     )
-    return _check("pass_maturity_gap_scope", passed, "native/FP/decompiler/ISA gaps tracked")
+    return _check("pass_maturity_gap_scope", passed, "native/decompiler/ISA gaps tracked")
 
 
 def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:

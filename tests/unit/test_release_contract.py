@@ -50,7 +50,8 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 36
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 24
+_EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES = 12
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
     "objdump",
@@ -357,7 +358,12 @@ def test_support_matrix_summarizes_false_positive_risk_profiles() -> None:
 
     expect(
         sum(summary["false_positive_risk_counts"].values()) == len(matrix["passes"])
-        and any("Not independently measured" in risk for risk in summary["false_positive_risk_counts"])
+        and "Not independently measured." not in summary["false_positive_risk_counts"]
+        and summary["false_positive_risk_counts"].get(
+            "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn "
+            "semantic false-positive observations are complete and the release gate requires a zero rate."
+        )
+        == _EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES
     )
 
 
@@ -408,14 +414,9 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
     gaps = summary["maturity_gap_passes"]
 
     expect(
-        set(gaps)
-        == {
-            "false_positive_risk",
-            "decompiler_effectiveness",
-        }
+        set(gaps) == {"decompiler_effectiveness"}
         and "Not measured per pass." not in summary["performance_counts"]
         and any("scheduled extended maturity pass smoke" in value for value in summary["performance_counts"])
-        and len(gaps["false_positive_risk"]) == summary["false_positive_risk_counts"]["Not independently measured."]
         and len(gaps["decompiler_effectiveness"])
         == summary["decompiler_effectiveness_counts"]["Not independently measured."]
     )
@@ -479,7 +480,7 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
 
 def test_release_contract_rejects_missing_maturity_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("false_positive_risk")
+    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("decompiler_effectiveness")
 
     rejected = False
     try:

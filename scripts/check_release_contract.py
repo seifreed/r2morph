@@ -498,11 +498,11 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         f"{stability_counts['experimental']} passes as experimental",
         performance_fragment,
         (
-            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
+            f"{summary['false_positive_risk_counts'].get('Not independently measured.', 0)} with no independent "
             "false-positive measurement"
         ),
         (
-            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
+            f"{summary['decompiler_effectiveness_counts'].get('Not independently measured.', 0)} with no independent "
             "decompiler-effectiveness measurement"
         ),
         (f"{compatibility_gap_count} " "without contractual composition support"),
@@ -598,6 +598,8 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
     compatibility_gap_count = summary["compatibility_counts"].get(
         "Composition with other passes is not contractually supported.", 0
     )
+    maturity_gap_category_count = summary["maturity_blocker_totals"]["maturity_gap_categories"]
+    maturity_gap_category_label = "category" if maturity_gap_category_count == 1 else "categories"
     fragments = [
         f"{summary['official_evidence_percent']}% official evidence",
         f"{summary['non_official_evidence_percent']}% non-official evidence",
@@ -609,16 +611,16 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         f"{maturity_profile_counts['code-virtualization']} code-virtualization profile pass",
         performance_fragment,
         (
-            f"{summary['false_positive_risk_counts']['Not independently measured.']} with no independent "
+            f"{summary['false_positive_risk_counts'].get('Not independently measured.', 0)} with no independent "
             "false-positive measurement"
         ),
         (
-            f"{summary['decompiler_effectiveness_counts']['Not independently measured.']} with no independent "
+            f"{summary['decompiler_effectiveness_counts'].get('Not independently measured.', 0)} with no independent "
             "decompiler-effectiveness measurement"
         ),
         (f"{compatibility_gap_count} " "without contractual composition support"),
         f"{summary['maturity_blocker_totals']['total_maturity_field_gaps']} total per-pass maturity field gaps",
-        f"{summary['maturity_blocker_totals']['maturity_gap_categories']} maturity gap categories",
+        f"{maturity_gap_category_count} maturity gap {maturity_gap_category_label}",
         f"{summary['vm_semantic_blocker_totals']['total_vm_semantic_blockers']} VM semantic blockers",
         f"{summary['vm_resistance_blocker_totals']['total_vm_resistance_blockers']} VM resistance blockers",
         f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",

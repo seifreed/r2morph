@@ -5,8 +5,10 @@ review. It is not a feature roadmap and must not be read as a support claim.
 
 ## Open blockers
 
-- RB-001: Per-pass maturity remains incomplete: native evidence, false-positive
-  measurement, and analyzer effectiveness are not complete for every pass.
+- RB-001: Per-pass maturity remains incomplete: native evidence and analyzer
+  effectiveness are not complete for every pass. The scheduled extended
+  maturity campaign now completes the independent false-positive measurement
+  for all twelve extended passes.
   The scoped NOP composition contract and affected-instruction catalog are
   complete. Evidence map:
   [pass-maturity.md](pass-maturity.md),

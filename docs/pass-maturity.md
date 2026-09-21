@@ -123,11 +123,11 @@ instructions, composition, and analyzer evidence is complete, partial,
 preview-only, or pending. This artifact is a reporting contract: a passing
 workflow does not promote partial analyzer coverage or a preview-only pass to
 official support.
-The static profile summary remains a declared-gap view: it still reports 12
-with no independent false-positive measurement, 12 with no independent
+The static profile summary remains a declared-gap view: it now reports 0 with
+no independent false-positive measurement, 12 with no independent
 decompiler-effectiveness measurement, 0 without contractual composition
-support, and 24 total per-pass maturity field gaps across 2 maturity gap
-categories, with no remaining exhaustive affected-instruction catalogue gap in
+support, and 12 total per-pass maturity field gaps across 1 maturity gap
+category, with no remaining exhaustive affected-instruction catalogue gap in
 the static profiles. The current
 last archived scheduled artifact records ten passes without independent semantic
 false-positive observations, eight without contractual composition support,

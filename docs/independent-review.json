@@ -36,7 +36,7 @@
       "status": "passed"
     },
     {
-      "detail": "native/FP/decompiler/ISA gaps tracked",
+      "detail": "native/decompiler/ISA gaps tracked",
       "name": "pass_maturity_gap_scope",
       "status": "passed"
     },
