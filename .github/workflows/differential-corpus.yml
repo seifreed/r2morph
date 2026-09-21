@@ -1072,7 +1072,7 @@ jobs:
           ):
               raise SystemExit("public static recovery benchmark is incomplete")
 
-          expected_shards = 12
+          expected_shards = 24
 
           def require_files(pattern: str, expected: int) -> list[Path]:
               paths = sorted(Path(pattern.split("/*")[0]).glob("*/*"))

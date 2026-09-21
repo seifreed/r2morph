@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import multiprocessing
 import os
 import re
 import shutil
@@ -16,6 +17,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from importlib import import_module
 from pathlib import Path
+from queue import Empty
 from typing import Any, cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -52,6 +54,8 @@ _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "tri
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
+_IN_PROCESS_TOOL_TIMEOUT_SECONDS = 90
+_IN_PROCESS_TOOLS = frozenset({"angr", "binary-ninja", "unicorn", "triton", "custom"})
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
@@ -526,7 +530,7 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
 }
 
 
-def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, object]:
+def _measure_tool_unbounded(tool: str, original: Path, protected: Path) -> dict[str, object]:
     available, reason = _availability(tool)
     if not available:
         return {"tool": tool, "status": "unavailable", "reason": reason}
@@ -539,6 +543,76 @@ def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, objec
     except Exception as error:  # Tool boundary records failures without hiding the campaign result.
         return _tool_failure_result(tool, error)
     return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
+
+
+def _measure_tool_worker(
+    tool: str,
+    original: str,
+    protected: str,
+    result_queue: Any,
+) -> None:
+    """Run an in-process analyzer in a killable child process."""
+    try:
+        result_queue.put(_measure_tool_unbounded(tool, Path(original), Path(protected)))
+    except Exception as error:
+        result_queue.put(_tool_failure_result(tool, error))
+
+
+def _measure_tool_bounded(
+    tool: str,
+    original: Path,
+    protected: Path,
+    timeout: float = _IN_PROCESS_TOOL_TIMEOUT_SECONDS,
+) -> dict[str, object]:
+    """Preserve a tool row even when an in-process analyzer hangs."""
+    if tool not in _IN_PROCESS_TOOLS:
+        return _measure_tool_unbounded(tool, original, protected)
+    context = multiprocessing.get_context("spawn")
+    result_queue = context.Queue(maxsize=1)
+    process = context.Process(
+        target=_measure_tool_worker,
+        args=(tool, str(original), str(protected), result_queue),
+    )
+    process.start()
+    process.join(timeout)
+    if process.is_alive():
+        process.terminate()
+        process.join(5.0)
+        if process.is_alive():
+            process.kill()
+            process.join()
+        result_queue.close()
+        result_queue.join_thread()
+        return {
+            "tool": tool,
+            "status": "error",
+            "error_type": "ProcessTimeoutError",
+            "detail": f"analyzer exceeded {timeout} seconds",
+        }
+    try:
+        result = result_queue.get(timeout=1.0)
+    except Empty:
+        result = {
+            "tool": tool,
+            "status": "error",
+            "error_type": "ProcessExitWithoutResult",
+            "detail": f"analyzer worker exited with status {process.exitcode}",
+        }
+    finally:
+        result_queue.close()
+        result_queue.join_thread()
+    if not isinstance(result, dict) or result.get("tool") != tool:
+        return {
+            "tool": tool,
+            "status": "error",
+            "error_type": "InvalidWorkerResult",
+            "detail": "analyzer worker returned an invalid result",
+        }
+    return result
+
+
+def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, object]:
+    return _measure_tool_bounded(tool, original, protected)
 
 
 def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Path, dict[str, object]]:
