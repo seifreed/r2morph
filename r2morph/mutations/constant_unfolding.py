@@ -91,7 +91,7 @@ class ConstantUnfoldingPass(MutationPass):
                 "unfolds constants into sequences",
                 "may increase code size",
                 "preserves register semantics",
-                "ARM32 and ARM64 currently cover zeroing only",
+                "ARM32 and ARM64 cover zeroing and fixed-width constant moves",
             ),
         )
 

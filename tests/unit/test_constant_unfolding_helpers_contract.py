@@ -35,6 +35,8 @@ class _Binary:
             "dec eax": b"\x48",
             "add eax, 1": b"\x83\xc0\x01",
             "orr w1, wzr, 64": b"\x21\x00\x01\x32",
+            "movz w8, 93": b"\xa8\x0b\x80\x52",
+            "movw r2, 40": b"\x28\x20\x00\xe3",
         }.get(insn)
 
 
@@ -83,3 +85,11 @@ def test_constant_unfolding_uses_arm64_alternate_constant_encoding() -> None:
         unfold_constant_move("w1", 0x40, 64, binary, _EXPECTED_ADDR_4096) == ["orr w1, wzr, 64"]
         and match_unfold_pattern("mov w1, #0x40", 64, binary, _EXPECTED_ADDR_4096, 10) == (["orr w1, wzr, 64"], True)
     )
+
+
+def test_constant_unfolding_uses_arm64_movz_for_non_logical_immediate() -> None:
+    expect(unfold_constant_move("w8", 93, 64, _Binary(), _EXPECTED_ADDR_4096) == ["movz w8, 93"])
+
+
+def test_constant_unfolding_uses_arm32_movw_for_fixed_width_constant() -> None:
+    expect(unfold_constant_move("r2", 40, 32, _Binary(), _EXPECTED_ADDR_4096) == ["movw r2, 40"])

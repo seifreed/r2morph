@@ -20,6 +20,7 @@ _BITS_32 = 32
 _ALTERNATE_ONE_PROBABILITY = 0.5
 _MAX_UNIT_OPERATION_COUNT = 3
 _MIN_INSTRUCTION_TOKEN_COUNT = 2
+_ARM32_MOVW_MAXIMUM = 0xFFFF
 
 
 def _is_arm64_register(register: str) -> bool:
@@ -91,11 +92,24 @@ def unfold_one(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | 
 
 
 def unfold_constant_move(reg: str, value: int, bits: int, binary: Any, base_addr: int) -> list[str] | None:
-    """Use an alternate fixed-width ARM encoding for a materialized constant."""
-    if not _is_arm64_register(reg) or value in (0, 1):
+    """Use a fixed-width ARM encoding for a materialized constant.
+
+    AArch64 ``orr`` accepts only logical-immediate masks, so arbitrary values
+    must use ``movz``. ARM32 uses ``movw`` when the target ISA supports it;
+    both forms preserve flags and remain one instruction wide.
+    """
+    if _is_arm64_register(reg) and value not in (0, 1):
+        logical_candidate = f"orr {reg}, wzr, {value}"
+        if binary.assemble(logical_candidate, base_addr):
+            return [logical_candidate]
+        movz_candidate = f"movz {reg}, {value}"
+        if binary.assemble(movz_candidate, base_addr):
+            return [movz_candidate]
         return None
-    candidate = f"orr {reg}, wzr, {value}"
-    return [candidate] if binary.assemble(candidate, base_addr) else None
+    if _is_arm32_register(reg, bits) and 0 <= value <= _ARM32_MOVW_MAXIMUM:
+        candidate = f"movw {reg}, {value}"
+        return [candidate] if binary.assemble(candidate, base_addr) else None
+    return None
 
 
 def _unfold_constant_step(reg: str, value: int, max_sequence: int, unit_op: str, bulk_op: str) -> list[str] | None:
