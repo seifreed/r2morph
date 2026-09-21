@@ -174,7 +174,7 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
         "  cell = 0U;\n"
         "  return (int)(cell + (uint32_t)value);\n"
         "}\n"
-        "int main(void) { return transform(41) == 0 ? 0 : 1; }\n",
+        "int main(void) { return transform(41) != 84; }\n",
         encoding="ascii",
     )
     binary_path = tmp_path / "constant_unfolding_sample.exe"
