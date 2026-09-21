@@ -26,6 +26,8 @@ _EXPANDED_STACK_ARGUMENT_OFFSET = 928
 _CONSTANT_INDEX_COPY_BYTES = 16
 _ZERO_INDEX_COPY_BYTES = 8
 _LOCAL_COPY_BYTES = 32
+_LOCAL_GUARD_FRAME_SIZE = 0x400
+_LOCAL_GUARD_COPY_BYTES = 0x3000
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
@@ -61,6 +63,12 @@ def test_stack_local_copy_uses_the_same_relative_offset() -> None:
 def test_stack_guard_reserves_async_signal_frame() -> None:
     guard = stack_guard_for_copy(0x400, _STACK_ARGUMENT_COPY_BYTES)
     expect(guard >= 0x400 + _SIGNAL_FRAME_RESERVE)
+
+
+def test_stack_guard_reserves_copied_local_storage() -> None:
+    guard = stack_guard_for_copy(_LOCAL_GUARD_FRAME_SIZE, _LOCAL_GUARD_COPY_BYTES)
+    expect(guard >= _LOCAL_GUARD_FRAME_SIZE + _LOCAL_GUARD_COPY_BYTES)
+    expect(guard % 16 == 0)
 
 
 def test_region_stack_argument_window_covers_direct_rsp_access() -> None:

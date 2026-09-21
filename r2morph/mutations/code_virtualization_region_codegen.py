@@ -258,7 +258,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
-    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, max(stack_copy_bytes, region.stack_local_copy_bytes))
     canonical_call_stack = any(
         item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT for item in region.instructions
     )
@@ -505,7 +505,7 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
     """Locate native-call resume ranges and their relocated-stack CFA offsets."""
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
-    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, max(stack_copy_bytes, region.stack_local_copy_bytes))
     ranges: list[tuple[int, int, int]] = []
     call_prefixes = ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb")
 
@@ -538,7 +538,7 @@ def call_unwind_ranges_with_sites(
     """Return relocated call ranges paired with their native source ranges."""
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
-    stack_guard = stack_guard_for_copy(frame_size, stack_copy_bytes)
+    stack_guard = stack_guard_for_copy(frame_size, max(stack_copy_bytes, region.stack_local_copy_bytes))
     call_items = {item_index: (start, end) for start, end, item_index in region.call_site_items}
     if not call_items:
         return ()

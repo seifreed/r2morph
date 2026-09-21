@@ -126,7 +126,9 @@ def _has_subword_operation(region: Region) -> bool:
 
 
 def _region_stack_guard(region: Region, junk_seed: int) -> int:
-    return stack_guard_for_copy(frame_size_for_seed(junk_seed), _stack_copy_bytes(region))
+    return stack_guard_for_copy(
+        frame_size_for_seed(junk_seed), max(_stack_copy_bytes(region), region.stack_local_copy_bytes)
+    )
 
 
 @dataclass(frozen=True)
