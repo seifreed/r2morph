@@ -109,6 +109,80 @@ def test_code_virtualization_rejects_large_non_tiny_population_before_ret_scan()
     expect(candidates is None and binary.r2.commands == 0)
 
 
+def test_code_virtualization_bounds_compact_return_probe_for_large_tiny_population() -> None:
+    class _BinaryWithTinyFunctions:
+        def __init__(self) -> None:
+            self.reads = 0
+
+        def get_sections(self) -> list[dict[str, int | str]]:
+            return []
+
+        def get_functions(self) -> list[dict[str, int]]:
+            return [{"addr": index * 8, "size": 1} for index in range(129)]
+
+        def read_bytes(self, _address: int, _size: int) -> bytes:
+            self.reads += 1
+            return b"\xc2\x08\x00"
+
+    binary = _BinaryWithTinyFunctions()
+
+    candidates = _ordered_functions(binary, analysis_budget=256)
+
+    expect(candidates == [] and binary.reads == 0)
+
+
+def test_code_virtualization_keeps_compact_return_function_under_probe_cap() -> None:
+    class _CompactReturnBinary:
+        def get_sections(self) -> list[dict[str, int | str]]:
+            return []
+
+        def get_functions(self) -> list[dict[str, int]]:
+            return [{"addr": 0x1000, "size": 3}]
+
+        def read_bytes(self, _address: int, _size: int) -> bytes:
+            return b"\xc2\x08\x00"
+
+    candidates = _ordered_functions(_CompactReturnBinary(), analysis_budget=1)
+
+    expect(candidates == [{"addr": 0x1000, "size": 3}])
+
+
+def test_code_virtualization_prioritizes_named_application_symbols() -> None:
+    class _NamedFunctionBinary:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x1000, "size": 16, "name": "fcn.00001000"},
+                {"addr": 0x2000, "size": 16, "name": "sym.user_function"},
+            ]
+
+    candidates = _ordered_functions(_NamedFunctionBinary(), analysis_budget=2)
+
+    expect([function["name"] for function in candidates or []] == ["sym.user_function", "fcn.00001000"])
+
+
+def test_code_virtualization_prioritizes_main_jump_target() -> None:
+    class _R2:
+        @staticmethod
+        def cmdj(command: str) -> dict[str, list[dict[str, int | str]]]:
+            if command == "pdfj @ 4096":
+                return {"ops": [{"type": "jmp", "jump": 0x3000}]}
+            return {"ops": []}
+
+    class _BinaryWithMainJump:
+        r2 = _R2()
+
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x1000, "name": "main", "size": 5},
+                {"addr": 0x2000, "name": "fcn.00002000", "size": 16},
+                {"addr": 0x3000, "name": "fcn.00003000", "size": 16},
+            ] + [{"addr": 0x4000 + index * 16, "name": f"fcn.{index:08x}", "size": 16} for index in range(1022)]
+
+    candidates = _ordered_functions(_BinaryWithMainJump(), analysis_budget=2048)
+
+    expect([function["addr"] for function in candidates or []] == [0x3000])
+
+
 def test_code_virtualization_filters_runtime_entrypoint_when_user_function_exists() -> None:
     class _BinaryWithLoaderAndUserFunction:
         def get_functions(self) -> list[dict[str, int | str]]:

@@ -63,6 +63,7 @@ _READ_MODIFY_WRITE_MNEMONICS = frozenset(
     }
 )
 _READ_BOTH_OPERANDS_MNEMONICS = _READ_MODIFY_WRITE_MNEMONICS | {"cmp", "test"}
+_MAX_REGISTER_COMPARISONS = 100_000
 logger = logging.getLogger(__name__)
 
 
@@ -87,14 +88,26 @@ class LivenessAnalysis:
         self._interference_graph: InterferenceGraph = InterferenceGraph()
         self._block_live_in: dict[int, set[Register]] = {}
         self._block_live_out: dict[int, set[Register]] = {}
+        self._analysis_complete = True
+        self._comparison_count = 0
+
+    @property
+    def analysis_complete(self) -> bool:
+        """Return whether liveness finished within its comparison budget."""
+        return self._analysis_complete
 
     def compute(self) -> None:
         """Compute liveness analysis."""
         self._instruction_liveness.clear()
         self._live_ranges.clear()
         self._interference_graph = InterferenceGraph()
+        self._analysis_complete = True
+        self._comparison_count = 0
         self._compute_block_liveness()
-        self._compute_instruction_liveness()
+        if not self._analysis_complete:
+            return
+        if not self._compute_instruction_liveness():
+            return
         self._compute_live_ranges()
         self._build_interference_graph()
 
@@ -143,6 +156,8 @@ class LivenessAnalysis:
             for reg in regs_used:
                 if not self._register_in_set(reg, defined):
                     used.add(reg)
+                if not self._analysis_complete:
+                    return used
 
             regs_defined = self._extract_registers_defined(insn)
             defined.update(regs_defined)
@@ -157,9 +172,12 @@ class LivenessAnalysis:
             defined.update(regs_def)
         return defined
 
-    @staticmethod
-    def _definition_kills_use(definition: Register, use: Register) -> bool:
+    def _definition_kills_use(self, definition: Register, use: Register) -> bool:
         """Return whether an x86 definition covers a later register use."""
+        self._comparison_count += 1
+        if self._comparison_count > _MAX_REGISTER_COMPARISONS:
+            self._analysis_complete = False
+            return False
         if definition.name == use.name:
             return True
         if definition.aliases().isdisjoint(use.aliases()):
@@ -170,9 +188,14 @@ class LivenessAnalysis:
 
     def _register_in_set(self, reg: Register, reg_set: set[Register]) -> bool:
         """Check whether a definition set covers a register use."""
-        return any(self._definition_kills_use(defined, reg) for defined in reg_set)
+        for defined in reg_set:
+            if self._definition_kills_use(defined, reg):
+                return True
+            if not self._analysis_complete:
+                return False
+        return False
 
-    def _compute_instruction_liveness(self) -> None:
+    def _compute_instruction_liveness(self) -> bool:
         """Compute liveness at instruction level."""
         for block_addr, block in self.cfg.blocks.items():
             block_live_out = self._block_live_out.get(block_addr, set())
@@ -197,19 +220,24 @@ class LivenessAnalysis:
                 insn_live.defined = defined
                 insn_live.used = used
 
-                current_live = {
-                    live_reg
-                    for live_reg in current_live
-                    if not any(self._definition_kills_use(reg, live_reg) for reg in defined)
-                }
+                remaining_live: set[Register] = set()
+                for live_reg in current_live:
+                    if not any(self._definition_kills_use(reg, live_reg) for reg in defined):
+                        remaining_live.add(live_reg)
+                    if not self._analysis_complete:
+                        return False
+                current_live = remaining_live
 
                 for reg in used:
                     if not self._register_in_set(reg, current_live):
                         current_live.add(reg)
+                    if not self._analysis_complete:
+                        return False
 
                 insn_live.live_before = current_live.copy()
 
                 self._instruction_liveness[addr] = insn_live
+        return True
 
     def _compute_live_ranges(self) -> None:
         """Compute live ranges for each register."""

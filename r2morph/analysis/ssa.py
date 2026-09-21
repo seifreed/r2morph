@@ -87,6 +87,7 @@ _RMW_MNEMONICS = frozenset(
 )
 _SSA_VECTOR_REGISTER_NAMES = frozenset(register for index in range(16) for register in (f"xmm{index}", f"ymm{index}"))
 _SSA_READ_BOTH_OPERANDS_MNEMONICS = _RMW_MNEMONICS | {"cmp", "test"}
+_MAX_LIVE_VERSION_COMPARISONS = 100_000
 
 
 @dataclass
@@ -115,6 +116,13 @@ class SSAConverter:
         self._instruction_definitions: dict[int, dict[str, list[SSAVariable]]] = {}
         self._sealed_blocks: set[int] = set()
         self._incomplete_phis: dict[int, list[tuple[str, SSAVariable]]] = {}
+        self._analysis_complete = True
+        self._comparison_count = 0
+
+    @property
+    def analysis_complete(self) -> bool:
+        """Return whether SSA liveness finished within its comparison budget."""
+        return self._analysis_complete
 
     def convert_to_ssa(
         self,
@@ -626,6 +634,8 @@ class SSAConverter:
             Dictionary mapping block address to (live_in, live_out)
         """
         live_info = self._seed_block_liveness(ssa_blocks)
+        if not self._analysis_complete:
+            return live_info
         self._propagate_liveness(ssa_blocks, live_info)
         for block_addr, (live_in, live_out) in live_info.items():
             ssa_blocks[block_addr].live_in = live_in.copy()
@@ -666,6 +676,8 @@ class SSAConverter:
                     dominators,
                 )
                 live_in.add(SSAVariable(base_name=reg, version=version))
+                if not self._analysis_complete:
+                    return live_info
 
             live_info[block_addr] = (live_in, set())
 
@@ -686,6 +698,10 @@ class SSAConverter:
                 continue
             instruction_definitions = self._instruction_definitions.get(definition_block_addr, {})
             for definition_name, definition_variables in instruction_definitions.items():
+                self._comparison_count += 1
+                if self._comparison_count > _MAX_LIVE_VERSION_COMPARISONS:
+                    self._analysis_complete = False
+                    return self._get_current_version(register)
                 if not self._definition_covers_use(definition_name, register):
                     continue
                 for variable in definition_variables:
@@ -699,6 +715,10 @@ class SSAConverter:
                             )
                         )
             for definition_name, final_variable in definition_block.definitions.items():
+                self._comparison_count += 1
+                if self._comparison_count > _MAX_LIVE_VERSION_COMPARISONS:
+                    self._analysis_complete = False
+                    return self._get_current_version(register)
                 if (
                     self._definition_covers_use(definition_name, register)
                     and final_variable.definition_address is not None

@@ -31,7 +31,10 @@ _UNWIND_SECTION_NAMES = frozenset(
     }
 )
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
+_MAX_COMPACT_RET_SCAN = 128
+_LARGE_APPLICATION_POPULATION = 1024
 _TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
+_INTERNAL_SYMBOL_MARKERS = (".cold", ".constprop", ".isra", ".part")
 _RUNTIME_INITIALIZATION_NAMES = frozenset(
     {
         "sym._init",
@@ -59,6 +62,42 @@ def _is_runtime_entrypoint(
         or address in entrypoint_addresses
         or (unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry.")))
     )
+
+
+def _function_order_key(function: dict[str, Any]) -> tuple[int, int]:
+    """Prefer named application symbols while retaining deterministic ordering."""
+    name = str(function.get("name", "")).strip().lower()
+    named_application = name in {"main", "_main", "sym.main"} or (
+        name.startswith("sym.")
+        and not name.startswith(("sym._", "sym.__"))
+        and not any(marker in name for marker in _INTERNAL_SYMBOL_MARKERS)
+    )
+    address = function.get("addr")
+    return (0 if named_application else 1, int(address) if isinstance(address, int) else 0)
+
+
+def _application_target_addresses(binary: Any, functions: list[dict[str, Any]]) -> frozenset[int]:
+    """Prefer direct targets from the application's conventional entry symbol."""
+    entry_functions = [
+        function
+        for function in functions
+        if str(function.get("name", "")).strip().lower() in {"main", "_main", "sym.main"}
+    ]
+    targets: set[int] = set()
+    for function in entry_functions:
+        try:
+            disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
+        except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+            continue
+        if not isinstance(disassembly, dict):
+            continue
+        for instruction in disassembly.get("ops", []):
+            if not isinstance(instruction, dict) or instruction.get("type") not in {"call", "jmp"}:
+                continue
+            target = instruction.get("jump")
+            if isinstance(target, int):
+                targets.add(target)
+    return frozenset(targets)
 
 
 @dataclass(frozen=True, slots=True)
@@ -588,6 +627,27 @@ def _has_compact_ret_cleanup(binary: Any, function: dict[str, Any]) -> bool:
     return False
 
 
+def _compact_ret_addresses(binary: Any, functions: list[dict[str, Any]]) -> frozenset[int]:
+    """Find small callee-cleanup functions without unbounded byte reads."""
+    tiny_functions = [
+        function
+        for function in functions
+        if isinstance(function.get("size"), int) and function["size"] < MINIMUM_FUNCTION_SIZE
+    ]
+    if len(tiny_functions) > _MAX_COMPACT_RET_SCAN:
+        logger.warning(
+            "Skipping compact-return probing for %d tiny functions; cap is %d",
+            len(tiny_functions),
+            _MAX_COMPACT_RET_SCAN,
+        )
+        return frozenset()
+    return frozenset(
+        int(function["addr"])
+        for function in tiny_functions
+        if isinstance(function.get("addr"), int) and _has_compact_ret_cleanup(binary, function)
+    )
+
+
 def _static_dataflow_is_complete(cfg: Any) -> bool:
     """Require CFG, liveness, and SSA coverage before lowering a function."""
     try:
@@ -595,6 +655,8 @@ def _static_dataflow_is_complete(cfg: Any) -> bool:
             return False
         analyzer = DefUseAnalyzer(cfg)
         analyzer.analyze()
+        if not analyzer.has_complete_liveness_coverage():
+            return False
         ssa_blocks = analyzer.build_ssa_form()
     except (AttributeError, OSError, BrokenPipeError, RuntimeError, TypeError, ValueError) as exc:
         logger.debug("Static dataflow failed: %s", exc)
@@ -620,8 +682,28 @@ def _ordered_functions(
     entrypoint_addresses: frozenset[int] = frozenset(),
     dispatch_entrypoint_addresses: frozenset[int] = frozenset(),
 ) -> list[dict[str, Any]] | None:
-    """Visit viable functions in stable image order before applying the budget."""
-    functions = sorted(binary.get_functions(), key=lambda function: int(function.get("addr", 0)))
+    """Visit viable functions in stable application-first order before the budget."""
+
+    raw_functions = binary.get_functions()
+    application_entry_addresses = frozenset(
+        int(function["addr"])
+        for function in raw_functions
+        if str(function.get("name", "")).strip().lower() in {"main", "_main", "sym.main"}
+        and isinstance(function.get("addr"), int)
+    )
+    application_targets = _application_target_addresses(binary, raw_functions)
+
+    def function_order_key(function: dict[str, Any]) -> tuple[int, int]:
+        if function.get("addr") in dispatch_entrypoint_addresses:
+            address = function.get("addr")
+            return (-1, int(address) if isinstance(address, int) else 0)
+        if function.get("addr") in application_targets:
+            address = function.get("addr")
+            return (0, int(address) if isinstance(address, int) else 0)
+        named_priority, address = _function_order_key(function)
+        return (named_priority + 1, address)
+
+    functions = sorted(raw_functions, key=function_order_key)
     plt_ranges = _plt_ranges(binary)
 
     def is_runtime_entrypoint(function: dict[str, Any]) -> bool:
@@ -645,16 +727,23 @@ def _ordered_functions(
         )
         return None
 
+    compact_ret_addresses = _compact_ret_addresses(binary, functions)
     viable = [
         function
         for function in functions
         if not (
             isinstance(function.get("size"), int)
             and function["size"] < MINIMUM_FUNCTION_SIZE
-            and not _has_compact_ret_cleanup(binary, function)
+            and function.get("addr") not in compact_ret_addresses
         )
         and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
+
+    application_addresses = application_entry_addresses | application_targets | dispatch_entrypoint_addresses
+    if len(raw_functions) > _LARGE_APPLICATION_POPULATION and application_addresses:
+        application_functions = [function for function in viable if function.get("addr") in application_addresses]
+        if application_functions:
+            viable = application_functions
 
     runtime_free = [function for function in viable if not is_runtime_entrypoint(function)]
     if runtime_free:

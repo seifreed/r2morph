@@ -4,6 +4,7 @@ Unit tests for liveness analysis module.
 
 from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.liveness import (
+    _MAX_REGISTER_COMPARISONS,
     InstructionLiveness,
     InterferenceGraph,
     LivenessAnalysis,
@@ -658,6 +659,15 @@ class TestLivenessAnalysis:
         use = Register("rax", 64)
 
         expect(analyzer._definition_kills_use(defined, use))
+
+    def test_register_comparison_budget_marks_analysis_incomplete(self):
+        """Register alias analysis fails closed after its bounded comparison budget."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+        analyzer._comparison_count = _MAX_REGISTER_COMPARISONS
+
+        analyzer._definition_kills_use(Register("rax"), Register("rbx"))
+
+        expect(not analyzer.analysis_complete)
 
     def test_x86_partial_definition_preserves_wider_alias(self):
         """A narrow sub-register write does not define the parent register."""

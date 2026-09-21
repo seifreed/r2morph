@@ -4,7 +4,13 @@ Unit tests for SSA (Static Single Assignment) form generation.
 
 import pytest
 
-from r2morph.analysis.ssa import PhiFunction, SSABlock, SSAConverter, SSAVariable
+from r2morph.analysis.ssa import (
+    _MAX_LIVE_VERSION_COMPARISONS,
+    PhiFunction,
+    SSABlock,
+    SSAConverter,
+    SSAVariable,
+)
 from tests.utils.assertions import expect
 
 _EXPECTED_BLOCK_ADDRESS_4096 = 0x1000
@@ -153,6 +159,19 @@ class TestSSAConverter:
         expect(converter._version_counter == {})
         expect(converter._current_def == {})
         expect(len(converter._sealed_blocks) == 0)
+
+    def test_live_version_comparison_budget_marks_analysis_incomplete(self, converter):
+        converter._comparison_count = _MAX_LIVE_VERSION_COMPARISONS
+        blocks = {
+            0x1000: SSABlock(
+                address=0x1000,
+                definitions={"eax": SSAVariable(base_name="eax", version=1, definition_address=0x1000)},
+            )
+        }
+
+        converter._resolve_live_version("eax", 0x1000, 0x1001, blocks, {0x1000: {0x1000}})
+
+        expect(not converter.analysis_complete)
 
     def test_convert_simple_cfg(self, converter):
         blocks = {
