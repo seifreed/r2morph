@@ -15,7 +15,10 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_scalar_arith_mem,
     _decode_fp_vex_scalar_move,
 )
-from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_gp_extract
+from r2morph.mutations.code_virtualization_region_fp_extra_decoders import (
+    _decode_fp_vex_extra,
+    _decode_fp_vex_gp_extract,
+)
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
     VexMemoryHandlerConfig,
     _fp_movmskb_handler_asm,
@@ -137,6 +140,19 @@ def test_decode_vex128_vmovq_preserves_gp_transfer_slots() -> None:
 
 def test_decode_vex_packed_lane_extract_preserves_width_and_immediate() -> None:
     expect(_decode_fp_vex_gp_extract("vpextrq rax, xmm0, 1") == ("fpmovvexextract", 64, 0, 0, 1))
+
+
+def test_decode_fp_vex_byte_extract_zero_extends_gp_destination() -> None:
+    expect(_decode_fp_vex_gp_extract("vpextrb edx, xmm0, 2") == ("fpmovvexextract", 8, 2, 0, 2))
+
+
+def test_decode_vex256_qword_broadcast_preserves_two_register_shape() -> None:
+    expect(_decode_fp_vex_extra("vpbroadcastq ymm0, xmm0") == ("fpmovvex256", "broadcastq", 0, 0))
+
+
+def test_classify_vex256_qword_broadcast_uses_ymm_move_shape() -> None:
+    item = _classify({"type": "vec", "family": "vec", "opcode": "vpbroadcastq ymm0, xmm0"})
+    expect(item == ["fpmovvex256", "broadcastq", 0, 0])
 
 
 def test_vex_packed_lane_extract_handler_emits_width_specific_instruction() -> None:

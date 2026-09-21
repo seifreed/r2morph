@@ -133,13 +133,17 @@ def _fp_packed_vex_256_arith_handler_asm(handler_key: str, key: str, field_perm:
 
 def _fp_vex_256_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Copy a complete VEX.256 register into the destination frame slot."""
+    operation = handler_key.split("_", 1)[1]
     off = pair_offsets("dst", "src", field_perm)
     body = (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
     )
-    body += _load_ymm_from_frame("r9", 0)
+    if operation == "broadcastq":
+        body += f"  vmovq xmm0, qword ptr [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  vpbroadcastq ymm0, xmm0\n"
+    else:
+        body += _load_ymm_from_frame("r9", 0)
     body += _store_ymm_to_frame("r8")
     return body + "  add rsi, 3\n  jmp vm_dispatch\n"
 

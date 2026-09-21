@@ -72,6 +72,7 @@ def _build_target(
             source.write_text(
                 ".text\n.global _start\n_start:\n"
                 "bl compute\nmov r7, #1\nsvc #0\n"
+                ".type compute,%function\n"
                 "compute:\nmov r2, #0\nadd r2, r2, #42\nmov r0, r2\nbx lr\n",
                 encoding="ascii",
             )

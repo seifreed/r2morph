@@ -12,12 +12,14 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 
 _PART_COUNT = 2
 _OPERAND_COUNT = 3
+_BROADCAST_OPERAND_COUNT = 2
+_BYTE_WIDTH_BITS = 8
 _DWORD_WIDTH_BITS = 32
 _QWORD_WIDTH_BITS = 64
 _EXTRA_VEX_OPERATIONS = {"vpackusdw": "packusdw", "vpshufb": "pshufb", "vpmaxub": "pmaxub"}
 _VEX_LANE_EXTRACT = frozenset({"vextractf128", "vextracti128"})
 _VEX_FP_TO_INT = {"vcvttsd2si": _QWORD_WIDTH_BITS, "vcvttss2si": _DWORD_WIDTH_BITS}
-_VEX_GP_EXTRACT = {"vpextrd": _DWORD_WIDTH_BITS, "vpextrq": _QWORD_WIDTH_BITS}
+_VEX_GP_EXTRACT = {"vpextrb": 8, "vpextrd": _DWORD_WIDTH_BITS, "vpextrq": _QWORD_WIDTH_BITS}
 
 
 def _decode_fp_vex_convert(text: str) -> tuple[Any, ...] | None:
@@ -70,13 +72,14 @@ def _decode_fp_vex_gp_extract(text: str) -> tuple[Any, ...] | None:
     if destination is None or source is None:
         return None
     width = _VEX_GP_EXTRACT[parts[0].lower()]
-    if destination[1] != width:
+    expected_destination_width = _QWORD_WIDTH_BITS if width == _QWORD_WIDTH_BITS else _DWORD_WIDTH_BITS
+    if destination[1] != expected_destination_width:
         return None
     try:
         immediate = int(operands[2], 0)
     except ValueError:
         return None
-    limit = 2 if width == _QWORD_WIDTH_BITS else 4
+    limit = 2 if width == _QWORD_WIDTH_BITS else 16 if width == _BYTE_WIDTH_BITS else 4
     return ("fpmovvexextract", width, destination[0], source, immediate) if 0 <= immediate < limit else None
 
 
@@ -85,16 +88,32 @@ def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:
     parts = text.split(None, 1)
     if len(parts) != _PART_COUNT:
         return None
+    broadcast = _decode_fp_vex_broadcast(text)
+    if broadcast is not None:
+        return broadcast
     operation = _EXTRA_VEX_OPERATIONS.get(parts[0].lower())
     operands = [token.strip() for token in parts[1].split(",")]
     if operation is None or len(operands) != _OPERAND_COUNT:
         return None
-    if operands[0].lower().startswith("ymm"):
-        registers = tuple(_parse_ymm_operand(operand) for operand in operands)
-        if any(register is None for register in registers):
-            return None
-        return ("fppackedvex256", operation, *registers)
-    registers = tuple(_parse_xmm_operand(operand) for operand in operands)
-    if any(register is None for register in registers):
+    is_ymm = operands[0].lower().startswith("ymm")
+    registers = tuple((_parse_ymm_operand if is_ymm else _parse_xmm_operand)(operand) for operand in operands)
+    return (
+        ("fppackedvex256" if is_ymm else "fppackedvex", operation, *registers)
+        if not any(register is None for register in registers)
+        else None
+    )
+
+
+def _decode_fp_vex_broadcast(text: str) -> tuple[str, str, int, int] | None:
+    """Decode the two-register YMM qword broadcast form."""
+    parts = text.split(None, 1)
+    if len(parts) != _PART_COUNT or parts[0].lower() != "vpbroadcastq":
         return None
-    return ("fppackedvex", operation, *registers)
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _BROADCAST_OPERAND_COUNT:
+        return None
+    destination = _parse_ymm_operand(operands[0])
+    source = _parse_xmm_operand(operands[1])
+    if destination is None or source is None:
+        return None
+    return ("fpmovvex256", "broadcastq", destination, source)
