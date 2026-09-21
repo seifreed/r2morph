@@ -84,7 +84,7 @@ def unfold_one(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | 
     if _is_arm64_register(reg):
         return [f"orr {reg}, wzr, 1"]
     if _is_arm32_register(reg, bits):
-        return [f"adds {reg}, {reg}, 0"]
+        return None
     if random.random() < _ALTERNATE_ONE_PROBABILITY:
         return [f"xor {reg}, {reg}", f"inc {reg}"]
     return [f"mov {reg}, 1"]

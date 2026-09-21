@@ -73,8 +73,8 @@ def test_constant_unfolding_accepts_flag_neutral_mov_when_flags_are_live() -> No
     expect(flags_preserved_for_unfold("mov eax, 1", ["mov eax, 1"], True))
 
 
-def test_constant_unfolding_uses_arm32_fixed_width_one_encoding() -> None:
-    expect(unfold_one("r7", 32, _Binary(), _EXPECTED_ADDR_4096) == ["adds r7, r7, 0"])
+def test_constant_unfolding_rejects_arm32_one_without_in_place_equivalent() -> None:
+    expect(unfold_one("r7", 32, _Binary(), _EXPECTED_ADDR_4096) is None)
 
 
 def test_constant_unfolding_uses_arm64_alternate_constant_encoding() -> None:
