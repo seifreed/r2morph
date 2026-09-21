@@ -281,9 +281,16 @@
       "architectures": [
         "x86-64"
       ],
+      "evidence_cells": [
+        {
+          "format": "PE",
+          "architecture": "x86-64"
+        }
+      ],
       "evidence": [
         "README.md",
-        "tests/integration"
+        "tests/integration",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ]
     },
     {
@@ -869,14 +876,14 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 38,
-      "not_supported_cells": 226,
+      "evidenced_cells": 39,
+      "not_supported_cells": 225,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 16,
-      "non_official_not_supported_cells": 226,
-      "non_official_evidence_percent": 6.61,
+      "non_official_evidenced_cells": 17,
+      "non_official_not_supported_cells": 225,
+      "non_official_evidence_percent": 7.02,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -951,9 +958,9 @@
         {
           "format": "PE",
           "architecture": "x86-64",
-          "evidenced_cells": 3,
-          "not_supported_cells": 19,
-          "evidence_percent": 13.64
+          "evidenced_cells": 4,
+          "not_supported_cells": 18,
+          "evidence_percent": 18.18
         }
       ],
       "parity_gap_scope": {
@@ -1007,9 +1014,9 @@
           {
             "format": "PE",
             "architecture": "x86-64",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           }
         ],
         "zero_evidence_targets": [
@@ -1125,9 +1132,9 @@
           {
             "format": "PE",
             "architecture": "x86-64",
-            "evidenced_cells": 3,
-            "not_supported_cells": 19,
-            "evidence_percent": 13.64
+            "evidenced_cells": 4,
+            "not_supported_cells": 18,
+            "evidence_percent": 18.18
           }
         ],
         "parity_gap_scope": {
@@ -1143,7 +1150,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 226,
+        "non_official_missing_evidence_cells": 225,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -3168,7 +3175,8 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration"
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -3196,8 +3204,12 @@
         "pass": "constant-unfolding",
         "format": "PE",
         "architecture": "x86-64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "constant-unfolding",
