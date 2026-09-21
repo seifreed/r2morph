@@ -62,7 +62,7 @@ jobs:
             mv "$extracted"/ghidra_* "$ghidra_dir"
           fi
           echo "GHIDRA_HEADLESS=$ghidra_dir/support/analyzeHeadless" >> "$GITHUB_ENV"
-          "$ghidra_dir/support/analyzeHeadless" -version
+          test -x "$ghidra_dir/support/analyzeHeadless"
 
       - name: Install system dependencies
         run: |
