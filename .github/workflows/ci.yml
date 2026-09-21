@@ -128,7 +128,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget cmake qemu-user
+            git build-essential gcc-arm-linux-gnueabihf pkg-config wget cmake qemu-user
 
       - name: Install radare2
         run: |
