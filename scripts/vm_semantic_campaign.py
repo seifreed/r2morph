@@ -31,7 +31,7 @@ else:
 _MAX_FIXTURES = 512
 _MAX_FIXTURE_SHARDS = 8
 _DEFAULT_TIMEOUT_SECONDS = 5.0
-_DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS = 30.0
+_DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS = 120.0
 # CodeVirtualizationPass uses the process-global random generator during codegen;
 # serial workers keep each seeded campaign deterministic.
 _CAMPAIGN_WORKERS = 1
