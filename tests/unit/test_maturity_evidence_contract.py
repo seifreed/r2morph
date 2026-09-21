@@ -385,6 +385,43 @@ def test_maturity_evidence_rejects_partial_decompiler_corpus_coverage() -> None:
     )
 
 
+def test_maturity_evidence_rejects_missing_observed_decompiler_pairs() -> None:
+    evidence = merge_decompiler_evidence(
+        {
+            "passes": {"NopInsertion": {"decompiler": {"status": "pending"}}},
+            "summary": {"blockers": {}, "blocker_totals": {}},
+        },
+        {
+            "sample_count": 2,
+            "summary": {
+                "analyzer_effectiveness_by_pass": {
+                    "NopInsertion": {
+                        "radare2": {
+                            "decompiler": {
+                                "observed_pairs": 1,
+                                "completed_pairs": 1,
+                                "completion_percent": 100.0,
+                            }
+                        },
+                        "angr": {
+                            "decompiler": {
+                                "observed_pairs": 1,
+                                "completed_pairs": 1,
+                                "completion_percent": 100.0,
+                            }
+                        },
+                    }
+                }
+            },
+        },
+    )
+
+    expect(
+        evidence["passes"]["NopInsertion"]["decompiler"]["status"] == "pending"
+        and evidence["summary"]["blocker_totals"]["decompiler"] == 1
+    )
+
+
 def test_maturity_evidence_rejects_completed_non_decompiler_tool_as_decompiler_proof() -> None:
     evidence = merge_decompiler_evidence(
         {

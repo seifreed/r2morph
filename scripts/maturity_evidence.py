@@ -294,7 +294,10 @@ def _decompiler_evidence(
     completed = sorted(
         name
         for name, value in observed_tools.items()
-        if value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
+        if (
+            value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
+            and (expected_pair_count is None or value["decompiler"].get("observed_pairs") == expected_pair_count)
+        )
         and (expected_pair_count is None or value["decompiler"].get("completed_pairs") == expected_pair_count)
         and (
             not isinstance(value["decompiler"].get("applied_observed_pairs"), int)
