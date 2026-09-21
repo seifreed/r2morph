@@ -278,7 +278,12 @@ jobs:
             --fixture fixtures/dataset/elf_vm_shift_x86_64 \
             --fixture fixtures/dataset/elf_vm_bigimm_x86_64 \
             --fixture fixtures/dataset/elf_vm_call_x86_64 \
+            --fixture fixtures/dataset/elf_vm_icall_x86_64 \
+            --fixture fixtures/dataset/elf_vm_varargs_x86_64 \
             --fixture fixtures/dataset/elf_vm_memwidth_x86_64 \
+            --fixture fixtures/dataset/elf_vm_tls_x86_64 \
+            --fixture fixtures/dataset/elf_vm_unwind_x86_64 \
+            --fixture fixtures/dataset/elf_vm_multiexit_x86_64 \
             --fixture fixtures/dataset/elf_vm_simdint_x86_64 \
             --generated-corpus \
             --first-seed 20260820 \
@@ -318,7 +323,7 @@ jobs:
               raise SystemExit("automated VM resistance validation did not complete")
           if report["seed_count"] != 10:
               raise SystemExit(f"unexpected VM resistance seed count: {report['seed_count']}")
-          if report["fixture_count"] != 10:
+          if report["fixture_count"] != 15:
               raise SystemExit(f"unexpected VM resistance fixture count: {report['fixture_count']}")
           if not report["semantic_parity"] or not report["cross_fixture_distinct_artifacts"]:
               raise SystemExit("VM fixture campaign lost semantic parity or artifact diversity")

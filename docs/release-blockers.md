@@ -63,7 +63,8 @@ review. It is not a feature roadmap and must not be read as a support claim.
   blocker.
 - RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
   dispatchers, handlers, anti-tamper and progressive bytecode protection.
-  The latest automated campaign covers ten fixtures across ten seeds and records
+  The next scheduled automated campaign is configured to cover fifteen fixtures
+  across ten seeds and record
   semantic parity, opcode/handler/dispatcher diversity, anti-tamper divergence,
   and progressive bytecode growth; it does not constitute human signoff.
   Evidence map: [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
