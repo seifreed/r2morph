@@ -30,10 +30,18 @@ __attribute__((noinline)) static int composed(int value) {
     }
     return (result ^ 42) & 127;
 }
-int main(int argc, char **argv) {
-    (void)argv;
-    return composed(argc);
+int main(void) {
+    return composed(1);
 }
+"""
+_AARCH64_LINUX_STARTUP_SOURCE = """.text
+.global _start
+.type _start,%function
+.extern main
+_start:
+    bl main
+    mov x8, #93
+    svc #0
 """
 
 
@@ -122,6 +130,37 @@ def _build_arm64_compiled_sequence(tmp_path: Path) -> Path:
     if compiler is None:
         raise RuntimeError("a native AArch64 C compiler is required for the compiled differential fixture")
     binary_path = tmp_path / "arm64_compiled_sequence"
+    if platform.system() == "Linux":
+        object_path = tmp_path / "arm64_compiled_sequence.o"
+        startup_source = tmp_path / "arm64_startup.S"
+        startup_object = tmp_path / "arm64_startup.o"
+        startup_source.write_text(_AARCH64_LINUX_STARTUP_SOURCE, encoding="ascii")
+        compile_flags = [
+            "-O0",
+            "-ffreestanding",
+            "-fno-pie",
+            "-fno-stack-protector",
+            "-fno-asynchronous-unwind-tables",
+            "-ffunction-sections",
+            "-fdata-sections",
+        ]
+        run_command([compiler, *compile_flags, "-c", "-o", object_path, source], check=True, text=True)
+        run_command([compiler, "-c", "-o", startup_object, startup_source], check=True, text=True)
+        run_command(
+            [
+                compiler,
+                "-nostdlib",
+                "-static",
+                "-Wl,-e,_start,--gc-sections",
+                "-o",
+                binary_path,
+                startup_object,
+                object_path,
+            ],
+            check=True,
+            text=True,
+        )
+        return binary_path
     run_command(
         [
             compiler,
