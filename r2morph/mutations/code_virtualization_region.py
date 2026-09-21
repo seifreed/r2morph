@@ -554,7 +554,7 @@ def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | N
         for nxt in successors:
             caller_depth = out_depth
             if item[0] == "vcall":
-                cleanup = _vcall_return_cleanup(items, call_target)
+                cleanup = _vcall_return_cleanup(items, call_target if call_target is not None else -1)
                 if cleanup is None:
                     return None
                 if cleanup <= caller_depth:
