@@ -18,12 +18,14 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _STACK_ARGUMENT_COPY_BYTES,
     stack_argument_copy_asm,
     stack_guard_for_copy,
+    stack_local_copy_asm,
 )
 from tests.utils.assertions import expect
 
 _EXPANDED_STACK_ARGUMENT_OFFSET = 928
 _CONSTANT_INDEX_COPY_BYTES = 16
 _ZERO_INDEX_COPY_BYTES = 8
+_LOCAL_COPY_BYTES = 32
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
@@ -35,6 +37,25 @@ def test_stack_argument_copy_is_bounded_and_relocated() -> None:
     assembly = stack_argument_copy_asm(0x400)
     expect(f"mov ecx, {_STACK_ARGUMENT_COPY_BYTES // 8}" in assembly)
     expect("rep movsq" in assembly and "lea rdi, [rsp - 1016]" in assembly)
+
+
+def test_stack_local_copy_tracks_negative_rsp_accesses() -> None:
+    instructions = [
+        {
+            "addr": 0x1000,
+            "size": 8,
+            "type": "mov",
+            "opcode": f"mov rax, qword ptr [rsp-{_LOCAL_COPY_BYTES}]",
+        },
+        {"addr": 0x1008, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    region = extract_region(instructions)
+    expect(region is not None and region.stack_local_copy_bytes == _LOCAL_COPY_BYTES)
+
+
+def test_stack_local_copy_uses_the_same_relative_offset() -> None:
+    assembly = stack_local_copy_asm(0x400, _LOCAL_COPY_BYTES)
+    expect("lea rsi, [rsp + 992]" in assembly and "lea rdi, [rsp - 1056]" in assembly)
 
 
 def test_stack_guard_reserves_async_signal_frame() -> None:

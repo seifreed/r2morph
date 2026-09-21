@@ -70,6 +70,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     frame_size_for_seed,
     stack_argument_copy_asm,
     stack_guard_for_copy,
+    stack_local_copy_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
@@ -265,6 +266,7 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
         {k for it in outer_items if (k := _op_key(it)) is not None},
         region.body_ranges,
         stack_argument_copy_bytes=region.stack_argument_copy_bytes,
+        stack_local_copy_bytes=region.stack_local_copy_bytes,
     )
     inner = Region(
         inner_items,
@@ -273,6 +275,7 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
         {k for it in inner_items if (k := _op_key(it)) is not None},
         [],
         stack_argument_copy_bytes=region.stack_argument_copy_bytes,
+        stack_local_copy_bytes=region.stack_local_copy_bytes,
     )
     return outer, inner
 
@@ -658,6 +661,11 @@ def _build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Rando
         + stack_argument_copy_asm(
             frame_size_for_seed(schemes[0].junk_seed),
             _stack_copy_bytes(region),
+            _region_stack_guard(region, schemes[0].junk_seed),
+        )
+        + stack_local_copy_asm(
+            frame_size_for_seed(schemes[0].junk_seed),
+            region.stack_local_copy_bytes,
             _region_stack_guard(region, schemes[0].junk_seed),
         )
         + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n"

@@ -365,12 +365,12 @@ def _indexed_memory_fields(item: list[Any]) -> tuple[int | None, int, int, int, 
     )
 
 
-def _stack_argument_copy_bytes(
+def _stack_access_ranges(
     items: list[list[Any]], stack_states: list[tuple[int, tuple[int, int] | None] | None]
-) -> int | None:
-    """Find the largest incoming stack range directly addressed by a region."""
-    required_end = _STACK_ARGUMENT_START
+) -> list[tuple[int, int]] | None:
+    """Return stack-relative accesses, rejecting unresolved indexed addresses."""
     constant_states = _constant_register_states(items)
+    ranges: list[tuple[int, int]] = []
     for index, item in enumerate(items):
         access = _direct_stack_access(item)
         state = stack_states[index]
@@ -398,9 +398,32 @@ def _stack_argument_copy_bytes(
                 continue
             _base_slot, displacement, width = access
         original_offset = displacement - state[0]
-        if original_offset >= _STACK_ARGUMENT_START:
-            required_end = max(required_end, original_offset + width)
+        ranges.append((original_offset, width))
+    return ranges
+
+
+def _stack_argument_copy_bytes(
+    items: list[list[Any]], stack_states: list[tuple[int, tuple[int, int] | None] | None]
+) -> int | None:
+    """Find the largest incoming stack range directly addressed by a region."""
+    ranges = _stack_access_ranges(items, stack_states)
+    if ranges is None:
+        return None
+    required_end = max(
+        (_STACK_ARGUMENT_START, *(offset + width for offset, width in ranges if offset >= _STACK_ARGUMENT_START))
+    )
     required_bytes = required_end - _STACK_ARGUMENT_START
+    return (required_bytes + _STACK_WORD_BYTES - 1) // _STACK_WORD_BYTES * _STACK_WORD_BYTES
+
+
+def _stack_local_copy_bytes(
+    items: list[list[Any]], stack_states: list[tuple[int, tuple[int, int] | None] | None]
+) -> int | None:
+    """Find the local stack range that must follow the relocated virtual stack."""
+    ranges = _stack_access_ranges(items, stack_states)
+    if ranges is None:
+        return None
+    required_bytes = max((0, *(-offset for offset, _width in ranges if offset < 0)))
     return (required_bytes + _STACK_WORD_BYTES - 1) // _STACK_WORD_BYTES * _STACK_WORD_BYTES
 
 
@@ -891,9 +914,11 @@ def extract_region(
                 item[0] = "vret"
     items = build.items
     call_site_item_of = dict(build.call_site_item_of)
-    if (stack_states := _stack_states(items)) is None or (
-        stack_argument_copy_bytes := _stack_argument_copy_bytes(items, stack_states)
-    ) is None:
+    if (
+        (stack_states := _stack_states(items)) is None
+        or (stack_argument_copy_bytes := _stack_argument_copy_bytes(items, stack_states)) is None
+        or (stack_local_copy_bytes := _stack_local_copy_bytes(items, stack_states)) is None
+    ):
         return None
     for index, item in enumerate(items):
         if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"):
@@ -956,6 +981,7 @@ def extract_region(
         target_map if target_map is not None else {},
         has_internal_indirect_call,
         stack_argument_copy_bytes,
+        stack_local_copy_bytes,
         call_site_items,
     )
 

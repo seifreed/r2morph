@@ -68,6 +68,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     frame_size_for_seed,
     stack_argument_copy_asm,
     stack_guard_for_copy,
+    stack_local_copy_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     ChecksumPrologue,
@@ -360,6 +361,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
     entry_setup = (
         stack_argument_copy_asm(frame_size, stack_copy_bytes, stack_guard)
+        + stack_local_copy_asm(frame_size, region.stack_local_copy_bytes, stack_guard)
         + f"  lea rax, [rsp+{frame_size}]\n  sub rax, {stack_guard}\n{floor_cell}"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"

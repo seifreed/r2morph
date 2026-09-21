@@ -122,6 +122,20 @@ def stack_argument_copy_asm(
     )
 
 
+def stack_local_copy_asm(frame_size: int, copy_bytes: int, stack_guard: int = _GUARD) -> str:
+    """Copy local stack storage to the corresponding relocated stack addresses."""
+    copy_qwords = (max(copy_bytes, 0) + 7) // 8
+    if copy_qwords == 0:
+        return ""
+    return (
+        "  cld\n"
+        f"  lea rsi, [rsp + {frame_size - copy_qwords * 8}]\n"
+        f"  lea rdi, [rsp - {stack_guard - frame_size + copy_qwords * 8}]\n"
+        f"  mov ecx, {copy_qwords}\n"
+        "  rep movsq\n"
+    )
+
+
 def _unmask_dword(scratch: str) -> str:
     """Un-mask a dword immediate/displacement (in eax) with the item's stream
     position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``
