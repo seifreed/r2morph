@@ -144,10 +144,14 @@ def test_virtualized_vex256_memory_shuffle_preserves_native_result(tmp_path: Pat
     transformed_result = run_command([mutated], timeout=30)
     diagnostic = ""
     if transformed_result.returncode != _EXPECTED_EXIT_CODE:
-        disassembly = run_command(
+        main_disassembly = run_command(
             ["objdump", "-d", "-M", "intel", "--disassemble=main", mutated], text=True, timeout=30
         )
-        diagnostic = f"\nmain disassembly:\n{disassembly.stdout[-12000:]}"
+        helper_disassembly = run_command(
+            ["objdump", "-d", "-M", "intel", "--disassemble=reverse_lanes", mutated], text=True, timeout=30
+        )
+        diagnostic = f"\nmain disassembly:\n{main_disassembly.stdout[-12000:]}"
+        diagnostic += f"\nreverse_lanes disassembly:\n{helper_disassembly.stdout[-4000:]}"
     expect(
         stats["total_instructions"] >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
