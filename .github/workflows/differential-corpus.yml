@@ -1551,14 +1551,15 @@ jobs:
             tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity `
             tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_fixture_preserves_windows_exit_code `
             tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution `
-            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or register_substitution_pe_x86_64_preserves_native_execution"
+            tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution `
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 7) { throw "Windows PE smoke ran $($cases.Count) cases; expected 7" }
+          if ($cases.Count -ne 8) { throw "Windows PE smoke ran $($cases.Count) cases; expected 8" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1575,7 +1576,8 @@ jobs:
             "test_pe_handler_real_binary",
             "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
             "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
-            "test_register_substitution_pe_x86_64_preserves_native_execution"
+            "test_register_substitution_pe_x86_64_preserves_native_execution",
+            "test_constant_unfolding_pe_x86_64_preserves_native_execution"
           )
           foreach ($name in $required) {
             if (-not ($cases | Where-Object { $_.name -like "$name*" })) {

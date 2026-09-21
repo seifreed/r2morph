@@ -1693,15 +1693,16 @@ def test_release_contract_validates_corpus_workflows() -> None:
     expect(_check_corpus_workflows() is None)
 
 
-def test_windows_pe_differential_covers_three_native_mutation_passes() -> None:
+def test_windows_pe_differential_covers_four_native_mutation_passes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
 
     expect(
-        "$cases.Count -ne 7" in windows_job
+        "$cases.Count -ne 8" in windows_job
         and "test_nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "test_register_substitution_pe_x86_64_preserves_native_execution" in windows_job
+        and "test_constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
     )
 
 
@@ -1854,7 +1855,8 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "test_platform_handlers_real.py" in windows_job
         and "nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
         and "register_substitution_pe_x86_64_preserves_native_execution" in windows_job
-        and "expected 7" in windows_job
+        and "constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
+        and "expected 8" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "windows-format-differential.xml" in windows_job
