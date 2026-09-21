@@ -479,7 +479,7 @@ def test_decode_vex128_unsigned_word_pack_returns_three_operand_item() -> None:
 
 
 def test_decode_vex256_byte_shuffle_returns_three_operand_item() -> None:
-    expect(_decode_fp_vex_extra("vpshufb ymm2, ymm0, ymm1") == ("fppackedvex256", "pshufb", 2, 0, 1))
+    expect(_decode_fp_vex_extra("vpshufb ymm2, ymm0, ymm1") is None)
 
 
 def test_classify_vex128_byte_shuffle_selects_region_item() -> None:
@@ -489,11 +489,8 @@ def test_classify_vex128_byte_shuffle_selects_region_item() -> None:
     )
 
 
-def test_classify_vex256_byte_shuffle_selects_region_item() -> None:
-    expect(
-        classification._classify({"type": "vec", "family": "vec", "opcode": "vpshufb ymm2, ymm0, ymm1"})
-        == ["fppackedvex256", "pshufb", 2, 0, 1]
-    )
+def test_classify_vex256_byte_shuffle_rejects_unsupported_region_item() -> None:
+    expect(classification._classify({"type": "vec", "family": "vec", "opcode": "vpshufb ymm2, ymm0, ymm1"}) is None)
 
 
 def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:

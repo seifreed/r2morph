@@ -96,6 +96,8 @@ def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:
     if operation is None or len(operands) != _OPERAND_COUNT:
         return None
     is_ymm = operands[0].lower().startswith("ymm")
+    if is_ymm and operation == "pshufb":
+        return None
     registers = tuple((_parse_ymm_operand if is_ymm else _parse_xmm_operand)(operand) for operand in operands)
     return (
         ("fppackedvex256" if is_ymm else "fppackedvex", operation, *registers)

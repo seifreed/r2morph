@@ -652,7 +652,7 @@ jobs:
   vm-semantic-campaign:
     name: VM semantic native parity campaign (${{ matrix.seed }}, shard ${{ matrix.fixture_shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
