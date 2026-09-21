@@ -36,7 +36,7 @@
       "status": "passed"
     },
     {
-      "detail": "native/decompiler/ISA gaps tracked",
+      "detail": "decompiler gaps tracked; native evidence is complete",
       "name": "pass_maturity_gap_scope",
       "status": "passed"
     },

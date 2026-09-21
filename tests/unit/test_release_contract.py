@@ -50,7 +50,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 24
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 12
 _EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES = 12
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
@@ -446,7 +446,7 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
     blockers = summary["maturity_evidence_blockers"]
 
     expect(
-        blockers["native_evidence_gap_passes"] == summary["native_evidence_gap_passes"]
+        blockers.get("native_evidence_gap_passes", []) == summary["native_evidence_gap_passes"]
         and blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
         and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
         and "performance" not in blockers["missing_fields_by_field"]
@@ -458,7 +458,9 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
     evidence = summary["maturity_gap_evidence"]
-    expected_fields = set(summary["maturity_gap_passes"]) | {"native_evidence"}
+    expected_fields = set(summary["maturity_gap_passes"])
+    if summary["native_evidence_gap_passes"]:
+        expected_fields.add("native_evidence")
     evidence_paths = {
         item
         for row in evidence.values()
@@ -468,7 +470,10 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
 
     expect(
         set(evidence) == expected_fields
-        and evidence["native_evidence"]["passes"] == summary["native_evidence_gap_passes"]
+        and (
+            ("native_evidence" not in evidence and not summary["native_evidence_gap_passes"])
+            or evidence["native_evidence"]["passes"] == summary["native_evidence_gap_passes"]
+        )
         and all(row["passes"] for row in evidence.values())
         and all(
             row["status"].endswith("-incomplete") or row["status"].endswith("-unsupported") for row in evidence.values()

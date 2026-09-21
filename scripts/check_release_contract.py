@@ -349,10 +349,12 @@ def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
     summary = matrix["matrix"]["summary"]
     evidence = summary["maturity_gap_evidence"]
     blockers = summary["maturity_evidence_blockers"]
-    expected_fields = set(summary["maturity_gap_passes"]) | {"native_evidence"}
+    expected_fields = set(summary["maturity_gap_passes"])
+    if summary["native_evidence_gap_passes"]:
+        expected_fields.add("native_evidence")
     if set(evidence) != expected_fields:
         raise ValueError("maturity gap evidence must cover every declared maturity gap")
-    if blockers["native_evidence_gap_passes"] != summary["native_evidence_gap_passes"]:
+    if blockers.get("native_evidence_gap_passes", []) != summary["native_evidence_gap_passes"]:
         raise ValueError("maturity native evidence blockers must match summary")
     if blockers["missing_fields_by_field"] != summary["maturity_gap_passes"]:
         raise ValueError("maturity field blockers must match summary")

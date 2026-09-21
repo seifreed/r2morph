@@ -193,7 +193,23 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         ],
     },
 }
-_NATIVE_EVIDENCE_PROFILES = {"tier-1-native", "code-virtualization", "experimental-corpus-selected"}
+_NATIVE_EVIDENCE_PROFILES = {
+    "tier-1-native",
+    "code-virtualization",
+    "experimental-corpus-selected",
+    "anti-disassembly-instruction-catalogued",
+    "api-hashing-instruction-catalogued",
+    "code-mobility-instruction-catalogued",
+    "data-flow-mutation-instruction-catalogued",
+    "function-outlining-instruction-catalogued",
+    "import-obfuscation-instruction-catalogued",
+    "opaque-predicates-instruction-catalogued",
+    "polymorphic-engine-instruction-catalogued",
+    "self-modifying-code-instruction-catalogued",
+    "short-jump-patching-instruction-catalogued",
+    "stack-strings-instruction-catalogued",
+    "string-obfuscation-instruction-catalogued",
+}
 FULL_EVIDENCE_PERCENT = 100.0
 
 

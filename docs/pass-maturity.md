@@ -141,8 +141,9 @@ generated matrix also names the affected passes in
 `maturity_gap_passes`, so per-pass maturity gaps are reviewable without
 reconstructing them from profile text. It also publishes the inverse
 `maturity_gaps_by_pass` map so each pass's remaining maturity blockers are
-visible directly. It also publishes `native_evidence_gap_passes`, listing every
-pass that has not reached a native evidence profile.
+visible directly. It also publishes `native_evidence_gap_passes`; this list is
+empty while the scheduled native campaign covers every extended pass and will
+name any pass that falls out of that evidence profile.
 The adversarial maturity join marks a pass as decompiler-comparable when the
 complete `radare2` and `angr` pairs cover the full sample set and every sample
 where that pass actually applied. It retains

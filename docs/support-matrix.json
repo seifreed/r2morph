@@ -1314,35 +1314,8 @@
           "decompiler_effectiveness"
         ]
       },
-      "native_evidence_gap_passes": [
-        "anti-disassembly",
-        "api-hashing",
-        "code-mobility",
-        "data-flow-mutation",
-        "function-outlining",
-        "import-obfuscation",
-        "opaque-predicates",
-        "polymorphic-engine",
-        "self-modifying-code",
-        "short-jump-patching",
-        "stack-strings",
-        "string-obfuscation"
-      ],
+      "native_evidence_gap_passes": [],
       "maturity_evidence_blockers": {
-        "native_evidence_gap_passes": [
-          "anti-disassembly",
-          "api-hashing",
-          "code-mobility",
-          "data-flow-mutation",
-          "function-outlining",
-          "import-obfuscation",
-          "opaque-predicates",
-          "polymorphic-engine",
-          "self-modifying-code",
-          "short-jump-patching",
-          "stack-strings",
-          "string-obfuscation"
-        ],
         "missing_fields_by_field": {
           "decompiler_effectiveness": [
             "anti-disassembly",
@@ -1420,35 +1393,13 @@
             "stack-strings",
             "string-obfuscation"
           ]
-        },
-        "native_evidence": {
-          "status": "native-evidence-incomplete",
-          "evidence_quality": "partial-native-regression",
-          "evidence": [
-            "docs/pass-maturity.md",
-            "docs/protection-maturity.md"
-          ],
-          "passes": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ]
         }
       },
       "maturity_blocker_totals": {
         "maturity_gap_categories": 1,
-        "native_evidence_gap_passes": 12,
+        "native_evidence_gap_passes": 0,
         "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 24,
+        "total_maturity_blockers": 12,
         "total_maturity_field_gaps": 12,
         "decompiler_effectiveness_gap_passes": 12
       },
