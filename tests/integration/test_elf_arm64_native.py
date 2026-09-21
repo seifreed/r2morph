@@ -123,7 +123,19 @@ def _build_arm64_compiled_sequence(tmp_path: Path) -> Path:
         raise RuntimeError("a native AArch64 C compiler is required for the compiled differential fixture")
     binary_path = tmp_path / "arm64_compiled_sequence"
     run_command(
-        [compiler, "-O0", "-static", "-fno-pie", "-no-pie", "-o", binary_path, source],
+        [
+            compiler,
+            "-O0",
+            "-static",
+            "-fno-pie",
+            "-no-pie",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-Wl,--gc-sections",
+            "-o",
+            binary_path,
+            source,
+        ],
         check=True,
         text=True,
     )
