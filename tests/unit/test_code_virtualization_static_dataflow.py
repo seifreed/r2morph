@@ -2,6 +2,7 @@
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
+from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _exceeds_function_size_budget,
     _has_compact_ret_cleanup,
@@ -9,6 +10,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _ordered_functions,
     _preflight_rejection_diagnostic,
     _static_dataflow_is_complete,
+    _transform_function,
     _UnwindContext,
 )
 from tests.utils.assertions import expect
@@ -125,6 +127,36 @@ def test_incomplete_static_dataflow_reports_ssa_liveness_capability() -> None:
     capability, reason = _preflight_rejection_diagnostic(_UnwindContext(unproven=False, frame=None))
 
     expect(capability == "ssa_liveness" and "SSA" in reason and "liveness" in reason)
+
+
+def test_unvirtualizable_call_is_rejected_before_cfg_analysis() -> None:
+    class FunctionSource:
+        class _R2:
+            @staticmethod
+            def cmdj(command: str) -> object:
+                if command.startswith("afbj") or command.startswith("pdj"):
+                    return []
+                return {
+                    "ops": [
+                        {"addr": 0x1000, "type": "call", "opcode": "call 0x2000"},
+                    ]
+                }
+
+        r2 = _R2()
+
+        def get_basic_blocks(self, _address: int) -> list[dict[str, int]]:
+            raise AssertionError("CFG analysis must not run for an unvirtualizable call")
+
+    records: tuple[list[dict[str, object]], list[dict[str, object]]] = ([], [])
+    result = _transform_function(
+        CodeVirtualizationPass({"probability": 1.0}),
+        FunctionSource(),
+        {"addr": 0x1000, "size": 5},
+        records,
+        _UnwindContext(unproven=False, frame=None),
+    )
+
+    expect(result["unsupported"] == 1 and bool(records[0]))
 
 
 def test_unwind_parse_error_preserves_precise_rejection_reason() -> None:

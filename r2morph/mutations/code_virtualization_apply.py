@@ -396,6 +396,26 @@ def _preflight_rejection_diagnostic(unwind: _UnwindContext) -> tuple[str, str]:
     return "ssa_liveness", "CFG, liveness, and SSA coverage was not proven for the function"
 
 
+def _preflight_function(
+    pass_instance: Any,
+    binary: Any,
+    func: dict[str, Any],
+    unwind: _UnwindContext,
+) -> tuple[str, dict[str, Any] | None]:
+    """Classify a function before running expensive CFG and dataflow analysis."""
+    if unwind.unproven and unwind.frame is None:
+        return "reject", None
+    if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
+        return "dispatch", None
+    unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
+    if unsupported_instruction is not None:
+        return "unsupported", unsupported_instruction
+    cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
+    if not _static_dataflow_is_complete(cfg):
+        return "reject", None
+    return "transform", None
+
+
 def _transform_function(
     pass_instance: Any,
     binary: Any,
@@ -407,8 +427,18 @@ def _transform_function(
     unsupported, partial = records
     if _has_materialized_instructions(binary, func) is False:
         return {"skipped": 1, "unsupported": 0, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
-    cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
-    if (unwind.unproven and unwind.frame is None) or not _static_dataflow_is_complete(cfg):
+    preflight_status, unsupported_instruction = _preflight_function(pass_instance, binary, func, unwind)
+    if preflight_status == "dispatch":
+        return _transform_dispatch_function(pass_instance, binary, func, unsupported, unwind.frame)
+    if preflight_status == "unsupported":
+        return _transform_unsupported_function(
+            pass_instance,
+            binary,
+            func,
+            (unsupported_instruction, unwind.frame),
+            records,
+        )
+    if preflight_status == "reject":
         capability, reason = _preflight_rejection_diagnostic(unwind)
         pass_instance._record_diagnostic(
             unsupported,
@@ -417,17 +447,6 @@ def _transform_function(
             ("error", capability, reason),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
-    if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
-        return _transform_dispatch_function(pass_instance, binary, func, unsupported, unwind.frame)
-    unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
-    if unsupported_instruction is not None:
-        return _transform_unsupported_function(
-            pass_instance,
-            binary,
-            func,
-            (unsupported_instruction, unwind.frame),
-            records,
-        )
 
     region_result = pass_instance._virtualize_function(binary, func, unwind.frame)
     if region_result is None:
