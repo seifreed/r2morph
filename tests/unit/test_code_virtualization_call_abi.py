@@ -3,12 +3,14 @@
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
 from r2morph.core import randomness
 from r2morph.mutations.code_virtualization import _build_unwind_payload
+from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region import _STATE_SLOT_CANDIDATES, build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import (
     _relocate_flags_slot,
     build_region_blob,
     call_unwind_ranges,
     call_unwind_ranges_with_sites,
+    region_entry_vaddrs,
 )
 from r2morph.mutations.code_virtualization_region_control_handlers import (
     _GUARD,
@@ -61,6 +63,27 @@ def test_call_bridge_restores_mxcsr_after_native_return() -> None:
 
 def test_region_state_slots_do_not_overlap_native_mxcsr_spill() -> None:
     expect(_MXCSR_SAVE_OFFSET not in _STATE_SLOT_CANDIDATES)
+
+
+def test_region_blob_exposes_distinct_vm_entries_for_landing_pads() -> None:
+    items = [
+        ("op", VirtualizedOp("mov", 0, 0, False, 64)),
+        ("op", VirtualizedOp("mov", 1, 1, False, 64)),
+        ("exit", 0x2000),
+    ]
+    region = Region(
+        items,
+        0x2000,
+        0x1000,
+        {key for item in items if (key := _op_key(item)) is not None},
+        [(0x1000, 3), (0x1003, 3)],
+        entry_map={0x1000: 0, 0x1003: 1},
+    )
+    scheme = build_region_scheme(region, randomness.Random(7))
+    blob = build_region_blob(region, 0x500000, scheme)
+    entries = region_entry_vaddrs(blob or b"", 0x500000, region, scheme)
+
+    expect(blob is not None and set(entries) == {0x1000, 0x1003} and len(set(entries.values())) == len(entries))
 
 
 def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:

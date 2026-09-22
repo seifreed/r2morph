@@ -172,10 +172,28 @@ _VEX_LOAD_KINDS = frozenset(
         "fploadvexpackedidxnb",
     }
 )
+_ENTRY_STUB_SIZE = 10
 
 
 def _region_has_ymm(region: Region) -> bool:
     return any(item[0] in _YMM_HANDLER_KINDS for item in region.instructions)
+
+
+def _entry_stubs_asm(region: Region) -> str:
+    """Emit fixed-size entry stubs for exception landing pads."""
+    if not region.entry_map:
+        return ""
+    entry_offsets: dict[int, int] = {}
+    bytecode_offset = 0
+    for index, item in enumerate(region.instructions):
+        for address, item_index in region.entry_map.items():
+            if item_index == index:
+                entry_offsets[address] = bytecode_offset
+        bytecode_offset += _item_size(item)
+    return "".join(
+        f"vm_landing_pad_{index}:\n  mov r11d, {entry_offsets[address]}\n  jmp vm_entry_body\n"
+        for index, address in enumerate(sorted(entry_offsets))
+    )
 
 
 def _fp_state_asm(region: Region) -> tuple[str, str]:
@@ -270,12 +288,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
     lines = [
         f"vm_entry:\n"
+        "  mov r11d, 0\n"
+        "vm_entry_body:\n"
         "  pushfq\n  pop qword ptr [rsp-8]\n"
         f"  sub rsp, {frame_size}\n"
-        f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"
     ]
     for index in save_order:
         lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n")
+    lines.append(
+        f"  mov r10, qword ptr [rsp+{slot[GP_REGISTERS.index('r11')] * 8}]\n"
+        f"  mov qword ptr [rsp+{_VSP_OFFSET}], r10\n"
+    )
     lines.append(
         f"  mov r11, qword ptr [rsp+{frame_size - 8}]\n"
         f"  mov qword ptr [rsp+{_CANONICAL_FLAGS_OFFSET}], r11\n" + fp_spill
@@ -346,26 +369,33 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # the spilled context. rsp is only ever a memory base or a push/pop target, so
     # this constant shift stays self-consistent. r13/r14 are free scratch between
     # handlers; r15 holds the bytecode base.
-    has_in_function_call = any(
-        item[0] == "vcall"
-        or (
-            item[0] in ("icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb")
-            and region.has_internal_indirect_call
-        )
-        for item in region.instructions
-    )
     # A region with an in-function call reserves one floor cell below the relocated
     # program stack and zeroes it: a vret that unwinds to the outermost frame finds
     # this non-bytecode value on top (no vcall resume is pending there) and returns
     # natively, instead of reading uninitialized memory that might alias the bytecode
     # range. rax is free scratch here (every GP register was already spilled).
-    floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
+    floor_cell = (
+        "  sub rax, 8\n  mov qword ptr [rax], 0\n"
+        if any(
+            item[0] == "vcall"
+            or (
+                item[0] in ("icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb")
+                and region.has_internal_indirect_call
+            )
+            for item in region.instructions
+        )
+        else ""
+    )
     entry_setup = (
         stack_argument_copy_asm(frame_size, stack_copy_bytes, stack_guard)
         + stack_local_copy_asm(frame_size, region.stack_local_copy_bytes, stack_guard)
         + f"  lea rax, [rsp+{frame_size}]\n  sub rax, {stack_guard}\n{floor_cell}"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
+        "  lea rsi, [rip+bytecode]\n"
+        f"  mov r10, qword ptr [rsp+{_VSP_OFFSET}]\n"
+        "  add rsi, r10\n"
+        "  mov r15, rsi\n"
+        f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"
     )
     key_setup = (
         checksum_prologue_asm(
@@ -478,7 +508,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     lines.append(
         f"vm_exit:\n{cipher_register_slots(reload_seq, frozenset(index * 8 for index in slot))}"
         f"  add rsp, {frame_size}\n  jmp {hex(region.exit_vaddr)}\n"
-        f"{ijmp_map}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
+        f"{ijmp_map}{_entry_stubs_asm(region)}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
     )
     # Select between the inline threaded decoder and the central encrypted decoder.
     # Both use the same position mask, checksum and relative-offset table.
@@ -640,3 +670,18 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         logger.debug("rip-relative target out of 32-bit range; leaving function native")
         return None
     return bytes(data) + bytecode
+
+
+def region_entry_vaddrs(blob: bytes, cave_vaddr: int, region: Region, scheme: RegionScheme) -> dict[int, int]:
+    """Return VM landing-pad stub addresses for a fully assembled region blob."""
+    if not region.entry_map:
+        return {}
+    bytecode_size = sum(_item_size(item) for item in region.instructions)
+    interpreter_size = len(blob) - bytecode_size
+    total = sum(len(indices) for indices in scheme.dup.values())
+    table_start = interpreter_size - _TRACER_ISLAND_LEN - BOOTSTRAP_TABLE_SIZE - total * 4
+    stub_start = table_start - len(region.entry_map) * _ENTRY_STUB_SIZE
+    return {
+        address: cave_vaddr + stub_start + index * _ENTRY_STUB_SIZE
+        for index, address in enumerate(sorted(region.entry_map))
+    }

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.utils.assertions import expect
@@ -56,6 +57,11 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
             function for function in binary.get_functions() if int(function["addr"]) == protected_address
         )
         original_protected_bytes = binary.read_bytes(protected_address, int(protected_function["size"]))
+        exception_frame = ExceptionInfoReader(binary).read_exception_frames()[protected_address]
+        landing_pad_bytes = {
+            landing_pad.address: binary.read_bytes(landing_pad.address, 5)
+            for landing_pad in exception_frame.landing_pads
+        }
         stats = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
@@ -67,6 +73,9 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         protected_was_transformed = (
             binary.read_bytes(protected_address, int(protected_function["size"])) != original_protected_bytes
         )
+        landing_pad_was_transformed = all(
+            binary.read_bytes(address, 5) != original_bytes for address, original_bytes in landing_pad_bytes.items()
+        )
 
     runtime_result = run_command([executable], timeout=30)
     unwind_failure_addresses = {
@@ -77,6 +86,7 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
     expect(
         stats["functions_virtualized"] > 0
         and protected_was_transformed
+        and landing_pad_was_transformed
         and protected_address not in unwind_failure_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "an LSDA-bearing function did not preserve its native landing pad: "

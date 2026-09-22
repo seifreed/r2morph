@@ -76,6 +76,7 @@ class Region:
     stack_argument_copy_bytes: int = 0
     stack_local_copy_bytes: int = 0
     call_site_items: tuple[tuple[int, int, int], ...] = ()
+    entry_map: dict[int, int] = field(default_factory=dict)
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

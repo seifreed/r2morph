@@ -69,6 +69,7 @@ from r2morph.mutations.code_virtualization_region_codegen import (
     build_region_blob,
     call_unwind_ranges,
     call_unwind_ranges_with_sites,
+    region_entry_vaddrs,
 )
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     FpIndexedItem,
@@ -179,6 +180,7 @@ class _UnwindPayload:
 def _remap_lsda_call_sites(
     frame: Any,
     site_ranges: tuple[tuple[int, int, int, int, int], ...],
+    landing_pad_targets: dict[int, int] | None = None,
 ) -> (
     tuple[
         tuple[int, int, int | None, int, bytes, int, int | None],
@@ -211,7 +213,12 @@ def _remap_lsda_call_sites(
             return None
         for vm_start, vm_end, _cfa, source_start, source_end in site_ranges:
             if source_start < native_end and native_start < source_end:
-                mapped.add((vm_start, vm_end, landing_pad, action_index))
+                target = landing_pad
+                if landing_pad_targets is not None:
+                    target = landing_pad_targets.get(landing_pad, 0)
+                    if target == 0:
+                        return None
+                mapped.add((vm_start, vm_end, target, action_index))
     if not mapped:
         return None
     return (
@@ -305,6 +312,36 @@ def _landing_pad_native_ranges(
     )
 
 
+def _landing_pad_ops(
+    instructions: list[dict[str, Any]], landing_pad_address: int, other_pad_addresses: frozenset[int]
+) -> list[dict[str, Any]] | None:
+    """Collect one landing-pad path without crossing into a sibling pad."""
+    by_address = {int(instruction["addr"]): instruction for instruction in instructions}
+    if landing_pad_address not in by_address:
+        return None
+    selected: set[int] = set()
+    pending = [landing_pad_address]
+    while pending:
+        address = pending.pop()
+        if address in selected or address not in by_address:
+            continue
+        if address != landing_pad_address and address in other_pad_addresses:
+            continue
+        instruction = by_address[address]
+        selected.add(address)
+        kind = str(instruction.get("type", "")).lower()
+        if kind == "cjmp":
+            for key in ("jump", "fail"):
+                target = instruction.get(key)
+                if isinstance(target, int):
+                    pending.append(target)
+        elif kind not in _LANDING_PAD_TERMINATORS:
+            next_address = address + int(instruction.get("size", 0))
+            if next_address in by_address:
+                pending.append(next_address)
+    return [by_address[address] for address in sorted(selected)]
+
+
 def _extend_landing_pad_ops(
     binary: Any,
     instructions: list[dict[str, Any]],
@@ -362,6 +399,7 @@ def _build_unwind_payload(
     scheme: Any,
     region: Any,
     frame: Any,
+    landing_pad_targets: dict[int, int] | None = None,
 ) -> _UnwindPayload | None:
     frame_size = frame_size_for_seed(scheme.junk_seed)
     if getattr(frame, "lsda_template", None) is None:
@@ -371,7 +409,7 @@ def _build_unwind_payload(
     if ranges_with_sites is None:
         return None
     call_ranges = tuple(item[:3] for item in ranges_with_sites)
-    lsda_info = _remap_lsda_call_sites(frame, ranges_with_sites)
+    lsda_info = _remap_lsda_call_sites(frame, ranges_with_sites, landing_pad_targets)
     if lsda_info is None:
         if _region_has_protected_call_site(region, frame):
             return None
@@ -884,7 +922,12 @@ class CodeVirtualizationPass(MutationPass):
             )
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
             known_function_ranges = None
-        native_ranges = _landing_pad_native_ranges(complete_ops, unwind_frame)
+        landing_pad_addresses = tuple(
+            landing_pad.address
+            for landing_pad in getattr(unwind_frame, "landing_pads", ())
+            if isinstance(landing_pad.address, int)
+        )
+        native_ranges = () if landing_pad_addresses else _landing_pad_native_ranges(complete_ops, unwind_frame)
         if native_ranges is None:
             return None
         region = extract_region(
@@ -893,10 +936,48 @@ class CodeVirtualizationPass(MutationPass):
             function_range=function_range,
             known_function_ranges=known_function_ranges,
             native_ranges=native_ranges,
+            entry_addresses=landing_pad_addresses,
         )
-        if region is None:
-            return None
-        return self._emit_region(binary, func, region, RegionOptions(rng, True, unwind_frame))
+        if region is not None:
+            result = self._emit_region(binary, func, region, RegionOptions(rng, True, unwind_frame))
+            if result is not None:
+                return result
+        if landing_pad_addresses and not self._virtualize_landing_pads(
+            binary,
+            func,
+            complete_ops,
+            landing_pad_addresses,
+            rng,
+        ):
+            logger.debug("Landing-pad VM construction was incomplete for 0x%x", func["addr"])
+        return None
+
+    def _virtualize_landing_pads(
+        self,
+        binary: Any,
+        func: dict[str, Any],
+        instructions: list[dict[str, Any]],
+        landing_pad_addresses: tuple[int, ...],
+        rng: random.Random,
+    ) -> bool:
+        """Virtualize each exception entry while retaining its native LSDA address."""
+        pad_addresses = frozenset(landing_pad_addresses)
+        for address in landing_pad_addresses:
+            pad_ops = _landing_pad_ops(instructions, address, pad_addresses)
+            if not pad_ops:
+                return False
+            region = extract_region(
+                pad_ops,
+                rng,
+                function_range=None,
+                known_function_ranges=None,
+                native_ranges=(),
+            )
+            if region is None or region.entry_vaddr != address:
+                return False
+            if self._emit_region(binary, func, region, RegionOptions(rng, False)) is None:
+                return False
+        return True
 
     def _gather_dispatch_ops(self, binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
         """Linear instruction list of a dispatch-shaped function.
@@ -1546,7 +1627,8 @@ class CodeVirtualizationPass(MutationPass):
         if complete_unwind:
             if scheme is None:
                 raise RuntimeError("complete unwind payload was built without a region scheme")
-            unwind = _build_unwind_payload(blob, scheme, region, unwind_frame)
+            landing_pad_targets = region_entry_vaddrs(blob, blob_vaddr, region, scheme)
+            unwind = _build_unwind_payload(blob, scheme, region, unwind_frame, landing_pad_targets)
             if unwind is None:
                 return None
         else:
@@ -1664,6 +1746,7 @@ class CodeVirtualizationPass(MutationPass):
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None
         return {
+            "blob_vaddr": blob_vaddr,
             "instructions": instruction_count,
             "bytecode": len(blob),
             "body_ranges": tuple(region.body_ranges),

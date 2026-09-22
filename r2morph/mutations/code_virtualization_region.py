@@ -812,6 +812,13 @@ def _build_region_items(
     )
 
 
+def _entry_item_map(build: _RegionBuild, entry_addresses: tuple[int, ...]) -> dict[int, int] | None:
+    try:
+        return {address: build.item_index_of[address] for address in entry_addresses}
+    except KeyError:
+        return None
+
+
 def _prepare_region(
     instructions: list[dict[str, Any]],
     function_range: tuple[int, int] | None,
@@ -1012,6 +1019,7 @@ def extract_region(
     makes VM control flow exit to their original addresses.
     """
     native_ranges = cast(tuple[tuple[int, int], ...], options.get("native_ranges", ()))
+    entry_addresses = cast(tuple[int, ...], options.get("entry_addresses", ()))
     build = _build_region_items(
         instructions,
         allow_computed_jump,
@@ -1028,8 +1036,10 @@ def extract_region(
                 item[0] = "vret"
     items = build.items
     call_site_item_of = dict(build.call_site_item_of)
+    entry_map = _entry_item_map(build, entry_addresses)
     if (
-        (stack_states := _stack_states(items)) is None
+        entry_map is None
+        or (stack_states := _stack_states(items)) is None
         or (stack_argument_copy_bytes := _stack_argument_copy_bytes(items, stack_states)) is None
         or (stack_local_copy_bytes := _stack_local_copy_bytes(items, stack_states)) is None
     ):
@@ -1068,12 +1078,17 @@ def extract_region(
     )
 
     use_superinstructions = rng is not None and bool(rng.randrange(2))
-    items = _lower_arith_to_microops(items, target_map, use_superinstructions, call_site_item_of)
+    source_index_map = {**call_site_item_of, **entry_map}
+    items = _lower_arith_to_microops(items, target_map, use_superinstructions, source_index_map)
+    call_site_item_of = {address: source_index_map[address] for address in call_site_item_of}
+    entry_map = {address: source_index_map[address] for address in entry_map}
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.
     if rng is not None:
-        items = _inject_junk_movs(items, rng, target_map, call_site_item_of)
+        items = _inject_junk_movs(items, rng, target_map, source_index_map)
+        call_site_item_of = {address: source_index_map[address] for address in call_site_item_of}
+        entry_map = {address: source_index_map[address] for address in entry_map}
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
     body_ranges = [(instruction["addr"], instruction.get("size", 0)) for instruction in build.body]
     sizes = {int(instruction["addr"]): int(instruction.get("size", 0)) for instruction in build.body}
@@ -1097,6 +1112,7 @@ def extract_region(
         stack_argument_copy_bytes,
         stack_local_copy_bytes,
         call_site_items,
+        entry_map,
     )
 
 
@@ -1180,7 +1196,10 @@ def region_supports_unwind_contract(region: Region, frame: Any) -> bool:
         call_site_ranges = _landing_pad_call_sites(landing_pad)
         return (
             isinstance(landing_pad.address, int)
-            and not overlaps(landing_pad.address, max(1, landing_pad.size))
+            and (
+                not overlaps(landing_pad.address, max(1, landing_pad.size))
+                or landing_pad.address in getattr(region, "entry_map", {})
+            )
             and call_site_ranges is not None
             and all(
                 not overlaps(start, end - start)
