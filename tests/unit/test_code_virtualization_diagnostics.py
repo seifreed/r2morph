@@ -411,6 +411,14 @@ def test_unavailable_unwind_frames_fail_closed() -> None:
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
 
 
+def test_unavailable_ordinary_eh_frame_without_native_call_is_safe() -> None:
+    expect(not _function_has_unproven_unwind_metadata(".eh_frame", 0x401000, None))
+
+
+def test_unavailable_eh_frame_with_native_call_fails_closed() -> None:
+    expect(_function_has_unproven_unwind_metadata(".eh_frame", 0x401000, None, True))
+
+
 def test_unmapped_eh_frame_with_native_call_fails_closed() -> None:
     frame = ExceptionFrame(
         function_start=0x401000,

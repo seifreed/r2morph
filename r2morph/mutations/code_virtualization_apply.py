@@ -666,7 +666,7 @@ def _function_has_unproven_unwind_metadata(
     if unwind_section is None:
         return False
     if exception_frames is None:
-        return True
+        return unwind_section != ".eh_frame" or has_native_call
     frame = exception_frames.get(function_address)
     if frame is None:
         frame = next(
