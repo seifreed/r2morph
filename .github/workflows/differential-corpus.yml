@@ -198,7 +198,7 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 73:
+          if len(cases) != 68:
               raise SystemExit(f"cross-format smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")

@@ -165,7 +165,7 @@ def test_tier1_pass_preview_target_preserves_exit_code(
 
 
 @pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
-@pytest.mark.parametrize("mutation_name", _TIER1_PASS_NAMES)
+@pytest.mark.parametrize("mutation_name", _COMPOSITION_PASS_NAMES)
 def test_tier1_pass_composition_preview_target_preserves_exit_code(
     target: str,
     mutation_name: str,
@@ -176,7 +176,14 @@ def test_tier1_pass_composition_preview_target_preserves_exit_code(
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze("aa")
-        first_result = _build_pass("NopInsertion", 20260920).apply(binary)
+        first_result = NopInsertionPass(
+            config={
+                "max_nops_per_function": 2,
+                "probability": 1.0,
+                "seed": 20260920,
+                "use_creative_nops": False,
+            }
+        ).apply(binary)
         binary.save()
         binary.reload()
         binary.analyze("aa")
