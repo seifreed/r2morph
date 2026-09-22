@@ -292,3 +292,36 @@ def test_nop_insertion_arm64_preserves_compiled_control_flow_and_memory(
         == (0, "", ""),
         "ARM64 NOP insertion changed compiled control-flow or memory semantics",
     )
+
+
+def test_nop_then_instruction_substitution_arm64_preserves_native_output(tmp_path: Path):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_control_flow_binary(tmp_path)
+    temp_binary = tmp_path / "macho_arm64_composed_runtime"
+    shutil.copy(binary_path, temp_binary)
+    command = [temp_binary]
+    original = run_command(command, text=True, timeout=30)
+
+    with Binary(temp_binary, writable=True) as bin_obj:
+        bin_obj.analyze("aaa")
+        first_result = NopInsertionPass({"max_nops_per_function": 2, "probability": 1.0, "seed": 1337}).apply(bin_obj)
+        bin_obj.save()
+        bin_obj.reload()
+        bin_obj.analyze("aaa")
+        second_result = InstructionSubstitutionPass(
+            {"max_substitutions_per_function": 1, "probability": 1.0, "seed": 1338}
+        ).apply(bin_obj)
+
+    expect(CodeSigner().sign(temp_binary, adhoc=True), "failed to re-sign composed Mach-O")
+    mutated = run_command(command, text=True, timeout=30)
+    expect(
+        first_result["mutations_applied"] > 0
+        and second_result["mutations_applied"] > 0
+        and (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (0, "", ""),
+        f"Mach-O ARM64 pass composition changed native execution: "
+        f"{first_result=}, {second_result=}, {original=}, {mutated=}",
+    )
