@@ -599,6 +599,8 @@ def _header_table_relocation(placement: _Placement, table_size: int) -> tuple[in
         return None
     next_offset = min((load.offset for load in loads if load.offset > 0), default=None)
     current_table_end = placement.e_phoff + placement.e_phnum * _PHDR_ENTRY_SIZE
+    # The original table starts at the ELF header; growing it can overwrite
+    # relocations or other data in the header load, so only reuse our relocation.
     if (
         placement.e_phoff != _ELF64_HEADER_SIZE
         and header.offset <= placement.e_phoff
