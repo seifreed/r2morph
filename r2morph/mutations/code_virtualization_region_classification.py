@@ -458,12 +458,35 @@ def _classify_stack(kind: str, text: str, address: int, size: int, allow_compute
     return None
 
 
+def _classify_generic_call_operand(text: str, insn: dict[str, Any]) -> list[Any] | None:
+    """Normalize indirect calls whose disassembler type is only ``call``."""
+    operand = text.split(None, 1)[1] if " " in text else ""
+    if operand in GP_REGISTERS and operand != "rsp":
+        return ["icall", GP_REGISTERS.index(operand)]
+    memory = _parse_mem_operand(operand)
+    rip_relative = _parse_riprel_operand(operand, insn.get("addr", 0), insn.get("size", 0))
+    indexed = _parse_indexed_operand(operand, base_optional=True)
+    if memory is not None:
+        return ["callmem", memory[0], memory[1]]
+    if rip_relative is not None:
+        return ["callmemrip", rip_relative[0]]
+    if indexed is None:
+        return None
+    base_slot, index_slot, scale_shift, displacement = indexed
+    return (
+        ["callmemidxnb", index_slot, scale_shift, displacement]
+        if base_slot < 0
+        else ["callmemidx", base_slot, index_slot, scale_shift, displacement]
+    )
+
+
 def _classify_call(kind: str, text: str, insn: dict[str, Any]) -> list[Any] | None:
     result: list[Any] | None = None
     if kind == "call":
         target = insn.get("jump", -1)
-        if isinstance(target, int) and target > 0:
-            result = ["call", target]
+        result = (
+            ["call", target] if isinstance(target, int) and target > 0 else _classify_generic_call_operand(text, insn)
+        )
     elif kind == "rcall":
         parts = text.split()
         if len(parts) == _DIRECT_REGISTER_CALL_PART_COUNT and parts[1] in GP_REGISTERS and parts[1] != "rsp":

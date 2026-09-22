@@ -63,6 +63,23 @@ def test_classify_no_base_memory_indirect_call_lowered_to_callmemidxnb() -> None
     expect(_classify(insn) == ["callmemidxnb", 0, 3, 8192])
 
 
+def test_classify_generic_call_type_with_register_operand_lowered_to_icall() -> None:
+    """A disassembler that reports ``call rax`` as a generic call still lowers it."""
+    expect(_classify({"type": "call", "opcode": "call rax"}) == ["icall", GP_REGISTERS.index("rax")])
+
+
+def test_classify_generic_call_type_with_rip_memory_operand_lowered_to_callmemrip() -> None:
+    """A generic RIP-relative call keeps its absolute target address."""
+    instruction = {"type": "call", "addr": 0x1000, "size": 6, "opcode": "call qword [rip + 0x1ffa]"}
+    expect(_classify(instruction) == ["callmemrip", 0x3000])
+
+
+def test_classify_generic_call_type_with_indexed_memory_operand_lowered_to_callmemidx() -> None:
+    """A generic indexed call retains base, index, scale, and displacement."""
+    instruction = {"type": "call", "opcode": "call qword [rbx + rax*8 + 0x20]"}
+    expect(_classify(instruction) == ["callmemidx", 3, 0, 3, 32])
+
+
 def test_callmemidxnb_has_eight_byte_encoded_item() -> None:
     """The no-base call omits the one-byte base slot from its indexed layout."""
     expect(_item_size(("callmemidxnb", 0, 3, 8192, 0)) == _EXPECTED_ITEM_SIZE_CALLMEMIDXNB)
