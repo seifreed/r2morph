@@ -54,7 +54,7 @@ _PERFORMANCE_FIELDS = (
     "static_metric_coverage_percent",
 )
 _FULL_COVERAGE_PERCENT = 100.0
-_MIN_COMPARABLE_DECOMPILER_TOOLS = 2
+_REQUIRED_COMPARABLE_DECOMPILER_TOOLS = frozenset({"angr", "ghidra", "radare2"})
 
 
 def _required_composition_pairs(mutation_name: str) -> set[str]:
@@ -309,14 +309,15 @@ def _decompiler_evidence(
         )
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
-    status = (
-        "comparable" if len(completed) >= _MIN_COMPARABLE_DECOMPILER_TOOLS else "partial" if completed else "pending"
-    )
+    completed_set = set(completed)
+    missing_required = sorted(_REQUIRED_COMPARABLE_DECOMPILER_TOOLS - completed_set)
+    status = "comparable" if not missing_required else "partial" if completed else "pending"
     return {
         "status": status if completed else "pending",
         "completed_tools": completed,
         "completed_tool_count": len(completed),
-        "minimum_comparable_tool_count": _MIN_COMPARABLE_DECOMPILER_TOOLS,
+        "required_comparable_tools": sorted(_REQUIRED_COMPARABLE_DECOMPILER_TOOLS),
+        "missing_required_tools": missing_required,
         "expected_pair_count": expected_pair_count,
         "observed_pair_counts": {
             name: value["decompiler"].get("completed_pairs", 0) for name, value in observed_tools.items()

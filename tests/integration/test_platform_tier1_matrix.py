@@ -29,6 +29,7 @@ _TIER1_PASS_NAMES = (
     "RegisterSubstitution",
     "ConstantUnfolding",
 )
+_COMPOSITION_PASS_NAMES = tuple(name for name in _TIER1_PASS_NAMES if name != "NopInsertion")
 
 
 def _build_pass(mutation_name: str, seed: int) -> MutationPass:
@@ -137,7 +138,7 @@ def _build_target(
 
 
 @pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
-@pytest.mark.parametrize("mutation_name", _TIER1_PASS_NAMES)
+@pytest.mark.parametrize("mutation_name", _COMPOSITION_PASS_NAMES)
 @pytest.mark.parametrize("complex_fixture", (False, True), ids=("basic", "complex"))
 def test_tier1_pass_preview_target_preserves_exit_code(
     target: str,
@@ -160,4 +161,33 @@ def test_tier1_pass_preview_target_preserves_exit_code(
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (_EXPECTED_EXIT_CODE, "", ""),
         f"{mutation_name} changed {target} execution: {result=}",
+    )
+
+
+@pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
+@pytest.mark.parametrize("mutation_name", _TIER1_PASS_NAMES)
+def test_tier1_pass_composition_preview_target_preserves_exit_code(
+    target: str,
+    mutation_name: str,
+    tmp_path: Path,
+) -> None:
+    binary_path, execute = _build_target(target, tmp_path, mutation_name, complex_fixture=True)
+    original = execute(binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        first_result = _build_pass("NopInsertion", 20260920).apply(binary)
+        binary.save()
+        binary.reload()
+        binary.analyze("aa")
+        second_result = _build_pass(mutation_name, 20260921).apply(binary)
+
+    mutated = execute(binary_path)
+    expect(
+        first_result.get("mutations_applied", 0) > 0
+        and second_result.get("mutations_applied", 0) > 0
+        and (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (_EXPECTED_EXIT_CODE, "", ""),
+        f"{mutation_name} composition changed {target} execution: " f"{first_result=}, {second_result=}",
     )

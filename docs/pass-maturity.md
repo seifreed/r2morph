@@ -144,12 +144,12 @@ reconstructing them from profile text. It also publishes the inverse
 visible directly. It also publishes `native_evidence_gap_passes`; this list is
 empty while the scheduled native campaign covers every extended pass and will
 name any pass that falls out of that evidence profile.
-The adversarial maturity join marks a pass as decompiler-comparable when the
-complete `radare2` and `angr` pairs cover the full sample set and every sample
-where that pass actually applied. It retains
+The adversarial maturity join marks a pass as decompiler-comparable only when
+complete `radare2`, `angr`, and `ghidra` pairs cover the full sample set and
+every sample where that pass actually applied. It retains
 `incomplete_tools` in every pass row, so unavailable Binary Ninja and other
-optional analyzers remain visible under RB-005 without removing the two-tool
-per-pass measurement.
+optional analyzers remain visible under RB-005 without removing the required
+three-tool per-pass measurement.
 
 The generated summary also exposes `parity_gap_scope`, naming Mach-O and PE as
 format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile

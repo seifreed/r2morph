@@ -271,6 +271,10 @@ def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
                         "completion_percent": 100.0,
                         "decompiler": {"observed_pairs": 1, "completion_percent": 100.0},
                     },
+                    "ghidra": {
+                        "completion_percent": 100.0,
+                        "decompiler": {"observed_pairs": 1, "completion_percent": 100.0},
+                    },
                 }
             }
         }
@@ -285,7 +289,7 @@ def test_merge_decompiler_evidence_recomputes_decompiler_blockers() -> None:
     )
 
 
-def test_maturity_evidence_requires_two_decompiler_tools_for_comparison() -> None:
+def test_maturity_evidence_requires_all_required_decompiler_tools() -> None:
     evidence = merge_decompiler_evidence(
         {
             "passes": {"NopInsertion": {"decompiler": {"status": "pending"}}},
@@ -328,6 +332,9 @@ def test_maturity_evidence_keeps_comparable_tools_when_optional_slots_are_unavai
                         "angr": {
                             "decompiler": {"observed_pairs": 1, "completed_pairs": 1, "completion_percent": 100.0}
                         },
+                        "ghidra": {
+                            "decompiler": {"observed_pairs": 1, "completed_pairs": 1, "completion_percent": 100.0}
+                        },
                         "binary-ninja": {
                             "decompiler": {"observed_pairs": 1, "completed_pairs": 0, "completion_percent": 0.0}
                         },
@@ -340,8 +347,9 @@ def test_maturity_evidence_keeps_comparable_tools_when_optional_slots_are_unavai
     decompiler = evidence["passes"]["NopInsertion"]["decompiler"]
     expect(
         decompiler["status"] == "comparable"
-        and decompiler["completed_tools"] == ["angr", "radare2"]
+        and decompiler["completed_tools"] == ["angr", "ghidra", "radare2"]
         and decompiler["incomplete_tools"] == ["binary-ninja"]
+        and decompiler["missing_required_tools"] == []
         and evidence["summary"]["blocker_totals"]["decompiler"] == 0
     )
 

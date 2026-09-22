@@ -33,8 +33,10 @@ direct and indirect calls, a loop, and the same four-pass composition; the
 compiled case is an additional evidence point, not a support promotion.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
-The workflow pins the collected matrix at 63 cases so loss of a preview corpus
-variant is treated as evidence drift rather than silently reducing coverage.
+The workflow pins the collected matrix at 73 cases so loss of a preview corpus
+variant or a Tier 1 composition case is treated as evidence drift rather than
+silently reducing coverage. The added composition cases apply NOP insertion
+before each other Tier 1 pass on ARM32, AArch64, and x86 32-bit fixtures.
 
 The matrix covers GCC and Clang, `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, PIE and
 non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static
@@ -258,9 +260,9 @@ x86-64 variants used by the differential campaign, records the distinct
 and partitions generated fixtures together with repository fixtures. Extended-
 pass application gaps remain published as explicit evidence blockers.
 Decompiler effectiveness is counted twice: the full sample pair remains
-visible, while the release gate also requires complete `radare2` and `angr`
-pairs for every fixture where the pass actually applied. No-op fixtures cannot
-inflate per-pass decompiler evidence.
+visible, while the release gate also requires complete `radare2`, `angr`, and
+`ghidra` pairs for every fixture where the pass actually applied. No-op
+fixtures cannot inflate per-pass decompiler evidence.
 The campaign now runs as eight deterministic fixture shards. Each shard retains
 all analyzer slots, while the aggregate job merges the eight reports, rejects
 overlapping samples, and applies the application and row-completeness gates to
