@@ -221,7 +221,7 @@ def _remap_lsda_call_sites(
             template.type_table_offset,
             template.action_table_offset,
             template.action_and_type_bytes,
-            template.call_site_encoding,
+            _LSDA_REMAP_CALL_SITE_ENCODING,
             template.type_table_delta,
         ),
         tuple(sorted(mapped)),
@@ -305,6 +305,44 @@ def _landing_pad_native_ranges(
     )
 
 
+def _extend_landing_pad_ops(
+    binary: Any,
+    instructions: list[dict[str, Any]],
+    frame: Any | None,
+    function_range: tuple[int, int] | None,
+) -> list[dict[str, Any]] | None:
+    """Add exception-only blocks omitted by radare2's function disassembly."""
+    landing_pads = tuple(getattr(frame, "landing_pads", ())) if frame is not None else ()
+    if not landing_pads:
+        return instructions
+    if function_range is None:
+        return None
+    by_address = {int(instruction["addr"]): instruction for instruction in instructions}
+    for landing_pad in landing_pads:
+        address = getattr(landing_pad, "address", None)
+        if not isinstance(address, int) or not function_range[0] <= address < function_range[1]:
+            return None
+        try:
+            disassembled = binary.r2.cmdj(f"pdj {_LANDING_PAD_DISASSEMBLY_LIMIT} @ {address}")
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            return None
+        if not isinstance(disassembled, list):
+            return None
+        for instruction in disassembled:
+            if not isinstance(instruction, dict):
+                continue
+            instruction_address = instruction.get("addr")
+            instruction_size = instruction.get("size")
+            if (
+                isinstance(instruction_address, int)
+                and isinstance(instruction_size, int)
+                and instruction_size > 0
+                and function_range[0] <= instruction_address < function_range[1]
+            ):
+                by_address[instruction_address] = instruction
+    return [by_address[address] for address in sorted(by_address)]
+
+
 def _region_has_protected_call_site(region: Any, frame: Any) -> bool:
     call_sites = tuple(getattr(frame, "lsda_call_sites", ()))
     native_ranges = (
@@ -347,6 +385,9 @@ _MIN_RUN_LENGTH = 2
 # A relative trampoline jump needs 5 bytes in the run's byte span.
 _TRAMPOLINE_SIZE = 5
 _EH_FRAME_ALIGNMENT = 4
+# Signed absolute offsets keep native landing pads below the injected blob valid.
+_LSDA_REMAP_CALL_SITE_ENCODING = 0x0B
+_LANDING_PAD_DISASSEMBLY_LIMIT = 256
 # Upper bound on instructions read when gathering a dispatch-shaped function
 # linearly (its analysis stops at the computed jump, so there is no function size).
 _MAX_DISPATCH_INSNS = 256
@@ -829,6 +870,10 @@ class CodeVirtualizationPass(MutationPass):
             )
         )
         complete_ops = complete_direct_branch_ops(binary, disasm["ops"], function_range)
+        extended_ops = _extend_landing_pad_ops(binary, complete_ops, unwind_frame, function_range)
+        if extended_ops is None:
+            return None
+        complete_ops = extended_ops
         try:
             known_function_ranges = tuple(
                 (int(candidate["addr"]), int(candidate["addr"]) + int(candidate["size"]))
@@ -1522,6 +1567,10 @@ class CodeVirtualizationPass(MutationPass):
             return None
         metadata_vaddr = (blob_vaddr + len(blob) + _EH_FRAME_ALIGNMENT - 1) & ~(_EH_FRAME_ALIGNMENT - 1)
         if unwind.lsda_template is not None:
+            lsda_call_sites = tuple(
+                (blob_vaddr + start, blob_vaddr + end, landing_pad, action_index)
+                for start, end, landing_pad, action_index in unwind.lsda_call_sites
+            )
             return build_vm_eh_frame_with_lsda(
                 VmEhFrameSpec(
                     blob_vaddr,
@@ -1530,7 +1579,7 @@ class CodeVirtualizationPass(MutationPass):
                     metadata_vaddr,
                     unwind.call_ranges,
                     unwind.lsda_template,
-                    unwind.lsda_call_sites,
+                    lsda_call_sites,
                     unwind.personality,
                 )
             )

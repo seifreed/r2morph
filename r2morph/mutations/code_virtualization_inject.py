@@ -535,13 +535,6 @@ def _merge_eh_frame_metadata(
         and suffix[augmentation_length_offset] == _S_DATA4_BYTES
         and augmentation_length_offset + 5 <= len(suffix)
     ):
-        lsda_pointer = struct.unpack_from("<i", suffix, augmentation_length_offset + 1)[0]
-        struct.pack_into(
-            "<i",
-            suffix,
-            augmentation_length_offset + 1,
-            lsda_pointer - relocation_delta,
-        )
         lsda_offset = fde_suffix_offset + 4 + fde_length + 4
         if lsda_offset + 5 <= len(suffix) and suffix[lsda_offset] == _DW_EH_PE_PCREL_SDATA4:
             landing_pad_base = struct.unpack_from("<i", suffix, lsda_offset + 1)[0]

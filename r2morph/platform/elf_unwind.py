@@ -310,7 +310,7 @@ def _fde(spec: _FdeSpec) -> bytes:
     cie_pointer = content_start - spec.eh_frame_vaddr
     instructions = _advance_loc(_SUB_RSP_IMMEDIATE_BYTES) + _def_cfa_offset(spec.frame_size + 8)
     current_offset = _SUB_RSP_IMMEDIATE_BYTES
-    for start_offset, end_offset, cfa_offset in sorted(spec.call_ranges):
+    for start_offset, end_offset, cfa_offset in sorted(set(spec.call_ranges)):
         if not current_offset <= start_offset < end_offset <= spec.blob_size:
             raise ValueError("call unwind range is outside the VM blob")
         instructions += _advance_loc(start_offset - current_offset) + _def_cfa_offset(cfa_offset)
