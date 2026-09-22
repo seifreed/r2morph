@@ -130,6 +130,26 @@ def test_ordered_functions_excludes_runtime_helper_aliases_before_function_budge
     expect(functions == [{"addr": 0x2000, "size": 16, "name": "sym.user_function"}])
 
 
+def test_ordered_functions_excludes_unreferenced_auto_function_chunk() -> None:
+    referenced_address = 0x2000
+
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x1000, "size": 16, "name": "sym.parent"},
+                {"addr": 0x1010, "size": 16, "name": "fcn.00001010"},
+                {"addr": referenced_address, "size": 16, "name": "fcn.00002000"},
+            ]
+
+        @staticmethod
+        def get_xrefs_to(address: int) -> list[dict[str, str]]:
+            return [{"type": "CALL"}] if address == referenced_address else []
+
+    functions = _ordered_functions(FunctionSource())
+
+    expect([function["addr"] for function in functions or []] == [0x1000, referenced_address])
+
+
 def test_ordered_functions_recovers_unlisted_application_target_function() -> None:
     class FunctionSource:
         def get_functions(self) -> list[dict[str, int | str]]:

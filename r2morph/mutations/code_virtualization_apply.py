@@ -212,6 +212,31 @@ def _application_target_functions(
     return functions + additions
 
 
+def _is_unreferenced_function_chunk(binary: Any, function: dict[str, Any], functions: list[dict[str, Any]]) -> bool:
+    """Exclude r2 auto-functions that are unreferenced tails of a prior function."""
+    name = str(function.get("name", "")).strip()
+    address = function.get("addr")
+    if not name.startswith("fcn.") or not isinstance(address, int):
+        return False
+    predecessor = next(
+        (
+            candidate
+            for candidate in functions
+            if isinstance(candidate.get("addr"), int)
+            and isinstance(candidate.get("size"), int)
+            and candidate["addr"] + candidate["size"] == address
+        ),
+        None,
+    )
+    if predecessor is None:
+        return False
+    try:
+        xrefs = binary.get_xrefs_to(address)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    return not any(str(xref.get("type", "")).upper() in {"CALL", "CODE", "JUMP"} for xref in xrefs)
+
+
 @dataclass(frozen=True, slots=True)
 class _UnwindContext:
     """Preflight result passed to one complete-region transformation."""
@@ -897,6 +922,9 @@ def _ordered_functions(
     """Visit viable functions in stable application-first order before the budget."""
 
     raw_functions = list(binary.get_functions())
+    raw_functions = [
+        function for function in raw_functions if not _is_unreferenced_function_chunk(binary, function, raw_functions)
+    ]
     application_entry_addresses = frozenset(
         int(function["addr"])
         for function in raw_functions
