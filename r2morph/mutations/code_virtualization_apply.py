@@ -10,7 +10,6 @@ from typing import Any
 import capstone
 
 import r2morph.core.randomness as random
-from r2morph.analysis.call_graph_parsing import extract_call_target
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
@@ -656,7 +655,7 @@ def _function_has_unproven_unwind_metadata(
     unwind_section: str | None,
     function_address: int,
     exception_frames: dict[int, Any] | None,
-    protected_callee_addresses: frozenset[int] = frozenset(),
+    has_native_call: bool = False,
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
@@ -666,8 +665,6 @@ def _function_has_unproven_unwind_metadata(
     """
     if unwind_section is None:
         return False
-    if function_address in protected_callee_addresses:
-        return True
     if exception_frames is None:
         return True
     frame = exception_frames.get(function_address)
@@ -683,50 +680,22 @@ def _function_has_unproven_unwind_metadata(
     if frame is None:
         # A linked ELF may carry .eh_frame entries for startup/runtime code
         # while a target function intentionally has no unwind contract.
-        return unwind_section != ".eh_frame"
+        return unwind_section != ".eh_frame" or has_native_call
     if frame.lsda_address is None and not frame.landing_pads:
         return False
     return frame.lsda_template is None or not isinstance(frame.personality, int)
 
 
-def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | None) -> frozenset[int]:
-    """Find direct callees reached by LSDA-protected call sites."""
-    if not exception_frames:
-        return frozenset()
-    protected_callees: set[int] = set()
-    for frame in exception_frames.values():
-        protected_sites = tuple(
-            site for site in getattr(frame, "lsda_call_sites", ()) if site.landing_pad or site.action_index
-        )
-        if not protected_sites:
-            continue
-        try:
-            instructions = binary.get_function_disasm(frame.function_start)
-        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
-            continue
-        for instruction in instructions:
-            address = instruction.get("offset", instruction.get("addr"))
-            if not isinstance(address, int) or not any(
-                site.start_address <= address < site.end_address for site in protected_sites
-            ):
-                continue
-            disassembly = str(instruction.get("disasm") or instruction.get("opcode") or "")
-            if not disassembly.lower().startswith("call"):
-                continue
-            target = instruction.get("jump")
-            if not isinstance(target, int):
-                target = extract_call_target(disassembly)
-            if isinstance(target, int):
-                protected_callees.add(target)
-    return frozenset(protected_callees)
-
-
-def _read_exception_context(
-    binary: Any, unwind_section: str | None
-) -> tuple[dict[int, Any] | None, str | None, frozenset[int]]:
-    """Read unwind metadata and derive protected direct-call targets."""
-    exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
-    return exception_frames, unwind_read_error, _protected_callee_addresses(binary, exception_frames)
+def _function_has_native_call(binary: Any, function: dict[str, Any]) -> bool:
+    """Return whether a candidate contains a native call needing unwind data."""
+    try:
+        instructions = binary.get_function_disasm(int(function["addr"]))
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    return any(
+        str(instruction.get("disasm") or instruction.get("opcode") or "").lower().startswith("call")
+        for instruction in instructions
+    )
 
 
 def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:
@@ -951,7 +920,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
-    exception_frames, unwind_read_error, protected_callee_addresses = _read_exception_context(binary, unwind_section)
+    exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 
     for func in ordered_functions:
         if virtualized >= pass_instance.max_functions:
@@ -1007,15 +976,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     unwind_section,
                     int(func["addr"]),
                     exception_frames,
-                    protected_callee_addresses,
+                    _function_has_native_call(binary, func),
                 )
                 or unwind_read_error is not None,
                 _exception_frame_for_function(int(func["addr"]), exception_frames),
-                (
-                    "function is called from an LSDA-protected call site; exception propagation crosses the VM boundary"
-                    if int(func["addr"]) in protected_callee_addresses
-                    else unwind_read_error
-                ),
+                unwind_read_error,
             ),
         )
         skipped += outcome["skipped"]

@@ -18,7 +18,8 @@ _DW_CFA_DEF_CFA_OFFSET = 0x0E
 _DW_CFA_OFFSET_RIP = 0x90
 _X86_64_RSP = 7
 _X86_64_RIP = 16
-_SUB_RSP_IMMEDIATE_BYTES = 7
+VM_PROLOGUE_BYTES = 7
+_SUB_RSP_IMMEDIATE_BYTES = VM_PROLOGUE_BYTES
 _EH_FRAME_HEADER_SIZE = 20
 _MAX_U32 = (1 << 32) - 1
 _MIN_S32 = -(1 << 31)
@@ -299,4 +300,10 @@ def build_vm_eh_frame_with_lsda(spec: VmEhFrameSpec) -> bytes:
     return _build_vm_eh_frame(spec)
 
 
-__all__ = ["_PT_GNU_EH_FRAME", "VmEhFrameSpec", "build_vm_eh_frame", "build_vm_eh_frame_with_lsda"]
+__all__ = [
+    "VM_PROLOGUE_BYTES",
+    "_PT_GNU_EH_FRAME",
+    "VmEhFrameSpec",
+    "build_vm_eh_frame",
+    "build_vm_eh_frame_with_lsda",
+]

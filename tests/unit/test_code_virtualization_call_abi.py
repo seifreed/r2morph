@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_handlers import _MXCSR_SAVE_OFFSET
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
+from r2morph.platform.elf_unwind import VM_PROLOGUE_BYTES
 from tests.utils.assertions import expect
 
 
@@ -129,7 +130,12 @@ def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
     expect(blob is not None)
     ranges = call_unwind_ranges(blob, scheme, region) if blob is not None else None
     expect(ranges is not None and len(ranges) == len(scheme.dup["call"]))
-    expect(all(start >= 0 and start < end and cfa_offset > _GUARD for start, end, cfa_offset in ranges or ()))
+    expect(
+        all(
+            start >= VM_PROLOGUE_BYTES and start < end and cfa_offset > _GUARD
+            for start, end, cfa_offset in ranges or ()
+        )
+    )
 
 
 def test_call_blob_pairs_native_call_site_with_vm_handler_range() -> None:

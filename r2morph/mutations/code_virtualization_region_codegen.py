@@ -82,6 +82,7 @@ from r2morph.mutations.code_virtualization_region_models import (
     _required_key,
 )
 from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
+from r2morph.platform.elf_unwind import VM_PROLOGUE_BYTES
 
 logger = logging.getLogger(__name__)
 
@@ -521,14 +522,15 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
             end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | index)
             start = blob.find(start_pattern)
             end = blob.find(end_pattern)
+            range_start = max(VM_PROLOGUE_BYTES, start)
             if (
                 start < 0
-                or end <= start
+                or end <= range_start
                 or blob.find(start_pattern, start + 1) >= 0
                 or blob.find(end_pattern, end + 1) >= 0
             ):
                 return None
-            ranges.append((start, end, stack_guard + stack_depth + 8))
+            ranges.append((range_start, end, stack_guard + stack_depth + 8))
     return tuple(sorted(ranges))
 
 
@@ -566,14 +568,15 @@ def call_unwind_ranges_with_sites(
         end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | opcode)
         start = blob.find(start_pattern)
         end = blob.find(end_pattern)
+        range_start = max(VM_PROLOGUE_BYTES, start)
         if (
             start < 0
-            or end <= start
+            or end <= range_start
             or blob.find(start_pattern, start + 1) >= 0
             or blob.find(end_pattern, end + 1) >= 0
         ):
             return None
-        ranges.append((start, end, stack_guard + stack_depth + 8, native_start, native_end))
+        ranges.append((range_start, end, stack_guard + stack_depth + 8, native_start, native_end))
     return tuple(sorted(ranges))
 
 
