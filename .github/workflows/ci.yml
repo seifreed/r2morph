@@ -10,7 +10,7 @@ name: CI
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 env:
   PYTHONUNBUFFERED: "1"

@@ -2,7 +2,7 @@ name: Differential Corpus By Pass
 
 concurrency:
   group: differential-corpus-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 "on":
   push:
