@@ -181,7 +181,7 @@ jobs:
                   )
               if any(row["runs"] != report["sample_count"] for row in tools.values()):
                   raise SystemExit(f"analyzer effectiveness run coverage drift for {pass_name}: {tools}")
-              for decompiler_tool in ("radare2", "angr"):
+              for decompiler_tool in ("radare2", "angr", "ghidra"):
                   decompiler = tools[decompiler_tool].get("decompiler")
                   applied_pairs = report["pass_summary"][pass_name]["applied"]
                   if not isinstance(decompiler, dict):
@@ -533,7 +533,7 @@ jobs:
                   )
               if any(row["runs"] != report["sample_count"] for row in tools.values()):
                   raise SystemExit(f"merged analyzer effectiveness run coverage drift for {pass_name}")
-              for decompiler_tool in ("radare2", "angr"):
+              for decompiler_tool in ("radare2", "angr", "ghidra"):
                   decompiler = tools[decompiler_tool].get("decompiler")
                   applied_pairs = report["pass_summary"][pass_name]["applied"]
                   if not isinstance(decompiler, dict):
