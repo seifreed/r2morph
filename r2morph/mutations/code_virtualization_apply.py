@@ -13,6 +13,7 @@ import r2morph.core.randomness as random
 from r2morph.analysis.call_graph_parsing import extract_call_target
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
+from r2morph.analysis.exception_models import ExceptionFrame
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MAX_FUNCTION_ANALYSIS_COUNT, MINIMUM_FUNCTION_SIZE
 from r2morph.core.support import _normalize_architecture_name
@@ -657,7 +658,7 @@ def _function_has_unproven_unwind_metadata(
     function_address: int,
     exception_frames: dict[int, Any] | None,
     has_native_call: bool = False,
-    protected_callee_addresses: frozenset[int] = frozenset(),
+    ordinary_frame_available: bool = False,
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
@@ -667,8 +668,6 @@ def _function_has_unproven_unwind_metadata(
     """
     if unwind_section is None:
         return False
-    if function_address in protected_callee_addresses:
-        return True
     if exception_frames is None:
         return unwind_section != ".eh_frame" or has_native_call
     frame = exception_frames.get(function_address)
@@ -684,7 +683,7 @@ def _function_has_unproven_unwind_metadata(
     if frame is None:
         # A linked ELF may carry .eh_frame entries for startup/runtime code
         # while a target function intentionally has no unwind contract.
-        return unwind_section != ".eh_frame" or has_native_call
+        return not ordinary_frame_available and (unwind_section != ".eh_frame" or has_native_call)
     if frame.lsda_address is None and not frame.landing_pads:
         return False
     return frame.lsda_template is None or not isinstance(frame.personality, int)
@@ -768,6 +767,36 @@ def _exception_frame_for_function(function_address: int, exception_frames: dict[
         ),
         None,
     )
+
+
+def _ordinary_unwind_frame_for_function(
+    unwind_section: str | None,
+    function: dict[str, Any],
+    exception_frames: dict[int, Any] | None,
+) -> ExceptionFrame | None:
+    """Build an ordinary ELF frame when valid metadata has no mapped FDE."""
+    if unwind_section != ".eh_frame" or exception_frames is None:
+        return None
+    address = function.get("addr")
+    size = function.get("size")
+    if not isinstance(address, int) or not isinstance(size, int) or size <= 0:
+        return None
+    if _exception_frame_for_function(address, exception_frames) is not None:
+        return None
+    return ExceptionFrame(function_start=address, function_end=address + size)
+
+
+def _unwind_frame_for_function(
+    unwind_section: str | None,
+    function: dict[str, Any],
+    exception_frames: dict[int, Any] | None,
+    unwind_read_error: str | None,
+) -> Any | None:
+    """Prefer parsed metadata and synthesize only after a clean ELF read."""
+    frame = _exception_frame_for_function(int(function["addr"]), exception_frames)
+    if frame is not None or unwind_read_error is not None:
+        return frame
+    return _ordinary_unwind_frame_for_function(unwind_section, function, exception_frames)
 
 
 def _unwind_blocking_instruction(frame: Any | None, function_address: int) -> dict[str, int]:
@@ -1012,8 +1041,10 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                 ),
             )
             continue
-        computed_jump = pass_instance._find_computed_jump(binary, func)
-        if not pass_instance.virtualize_dispatch and computed_jump is not None:
+        if (
+            not pass_instance.virtualize_dispatch
+            and (computed_jump := pass_instance._find_computed_jump(binary, func)) is not None
+        ):
             skipped += 1
             unsupported_total += 1
             pass_instance._record_diagnostic(
@@ -1027,6 +1058,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             skipped += 1
             continue
 
+        unwind_frame = _unwind_frame_for_function(unwind_section, func, exception_frames, unwind_read_error)
         outcome = _transform_function(
             pass_instance,
             binary,
@@ -1038,10 +1070,12 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     int(func["addr"]),
                     exception_frames,
                     _function_has_native_call(binary, func),
-                    protected_callee_addresses,
+                    unwind_frame is not None
+                    and _exception_frame_for_function(int(func["addr"]), exception_frames) is None,
                 )
+                or int(func["addr"]) in protected_callee_addresses
                 or unwind_read_error is not None,
-                _exception_frame_for_function(int(func["addr"]), exception_frames),
+                unwind_frame,
                 (
                     "function is called from an LSDA-protected call site; exception propagation crosses the VM boundary"
                     if int(func["addr"]) in protected_callee_addresses

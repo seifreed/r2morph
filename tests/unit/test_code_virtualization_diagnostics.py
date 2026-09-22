@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _field_counts,
     _function_has_unproven_unwind_metadata,
     _is_runtime_entrypoint,
+    _ordinary_unwind_frame_for_function,
     _runtime_initialization_addresses,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
@@ -426,6 +427,26 @@ def test_unmapped_eh_frame_with_native_call_fails_closed() -> None:
     )
 
     expect(_function_has_unproven_unwind_metadata(".eh_frame", 0x402000, {0x401000: frame}, True))
+
+
+def test_unmapped_elf_function_gets_an_ordinary_unwind_frame() -> None:
+    frame = ExceptionFrame(function_start=0x401000, function_end=0x401050)
+    ordinary_frame = _ordinary_unwind_frame_for_function(
+        ".eh_frame",
+        {"addr": 0x402000, "size": 0x30},
+        {0x401000: frame},
+    )
+
+    expect(
+        ordinary_frame == ExceptionFrame(function_start=0x402000, function_end=0x402030)
+        and not _function_has_unproven_unwind_metadata(
+            ".eh_frame", 0x402000, {0x401000: frame}, True, ordinary_frame_available=True
+        )
+    )
+
+
+def test_ordinary_unwind_frame_is_not_synthesized_for_other_formats() -> None:
+    expect(_ordinary_unwind_frame_for_function(".gcc_except_table", {"addr": 0x402000, "size": 0x30}, {}) is None)
 
 
 def test_partial_virtualization_with_unwind_frame_is_rejected() -> None:
