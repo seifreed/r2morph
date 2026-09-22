@@ -14,6 +14,7 @@ _MAX_DIRECT_BRANCH_TARGET_QUERIES = 64
 _MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
 _COMPUTED_SWITCH_KINDS = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 _DIRECT_BRANCH_KINDS = frozenset({"jmp", "cjmp", "jrcxz"})
+_BRANCH_PROBE_TERMINATORS = frozenset({"jmp", "rjmp", "ujmp", "ret", "swi", "syscall", "trap", "invalid"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +35,20 @@ def _direct_branch_targets(ops: list[dict[str, Any]], function_range: tuple[int,
         and isinstance(target := op.get("jump"), int)
         and start <= target < end
     }
+
+
+def _bounded_branch_probe(ops: object) -> list[dict[str, Any]]:
+    """Keep only the linear block before an unconditional terminator."""
+    if not isinstance(ops, list):
+        return []
+    bounded: list[dict[str, Any]] = []
+    for op in ops:
+        if not isinstance(op, dict):
+            continue
+        bounded.append(op)
+        if op.get("type") in _BRANCH_PROBE_TERMINATORS:
+            break
+    return bounded
 
 
 def complete_direct_branch_ops(
@@ -60,7 +75,7 @@ def complete_direct_branch_ops(
             target_ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {target}") or []
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
             continue
-        for op in target_ops:
+        for op in _bounded_branch_probe(target_ops):
             address = op.get("addr")
             if (
                 isinstance(address, int)

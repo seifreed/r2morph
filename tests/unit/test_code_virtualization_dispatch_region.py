@@ -53,8 +53,8 @@ def test_complete_direct_branch_ops_reads_missing_in_range_targets() -> None:
             0x1010: [
                 _insn(0x1010, 2, "mov", "mov eax, 1"),
                 _insn(0x1012, 2, "jmp", "jmp 0x1018", jump=0x1018),
-                _insn(0x1018, 1, "ret", "ret"),
-            ]
+            ],
+            0x1018: [_insn(0x1018, 1, "ret", "ret")],
         }
     )
     ops = [
@@ -76,6 +76,23 @@ def test_complete_direct_branch_ops_ignores_out_of_range_targets() -> None:
 
     expect([op["addr"] for op in completed] == [0x1000])
     expect(binary.r2.queries == [])
+
+
+def test_complete_direct_branch_ops_stops_probe_after_unconditional_jump() -> None:
+    binary = _FakeBinary(
+        {
+            0x1010: [
+                _insn(0x1010, 2, "mov", "mov eax, 1"),
+                _insn(0x1012, 2, "jmp", "jmp 0x1018", jump=0x1018),
+                _insn(0x1014, 1, "mov", "mov eax, 2"),
+            ],
+        }
+    )
+    ops = [_insn(0x1000, 2, "cjmp", "je 0x1010", jump=0x1010), _insn(0x1002, 1, "ret", "ret")]
+
+    completed = complete_direct_branch_ops(binary, ops, (0x1000, 0x1020))
+
+    expect([op["addr"] for op in completed] == [0x1000, 0x1002, 0x1010, 0x1012])
 
 
 def test_dispatch_region_lowers_computed_jump_to_ijmp() -> None:
