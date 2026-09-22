@@ -15,6 +15,7 @@ from scripts.adversarial_benchmark import (
     _binary_ninja_decompiler_metrics,
     _campaign_summary,
     _is_binary_ninja_license_error,
+    _measure_pair_tools,
     _measure_tool,
     _measure_tool_bounded,
     _missing_tool_slot_error,
@@ -113,6 +114,14 @@ def test_adversarial_benchmark_reports_the_bounded_custom_adapter() -> None:
     custom = next(row for row in result["tools"] if row["tool"] == "custom")
 
     expect(custom["status"] == "completed" and "original" in custom and "protected" in custom)
+
+
+def test_adversarial_benchmark_reuses_cached_original_metrics() -> None:
+    cached_original = {"status": "completed", "functions": 123}
+    rows = _measure_pair_tools(_FIXTURE, _FIXTURE, {"radare2": cached_original})
+    radare2 = next(row for row in rows if row["tool"] == "radare2")
+
+    expect(radare2["original"] == cached_original and radare2["protected"] != cached_original)
 
 
 def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:

@@ -14,7 +14,7 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from importlib import import_module
 from pathlib import Path
 from queue import Empty
@@ -530,9 +530,14 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
 }
 
 
-def _measure_tool_unbounded(tool: str, original: Path, protected: Path) -> dict[str, object]:
+def _measure_tool_unbounded(
+    tool: str,
+    original: Path,
+    protected: Path,
+    original_metric: Mapping[str, object] | None = None,
+) -> dict[str, object]:
     if tool == "custom":
-        before = _binary_metric(original)
+        before = dict(original_metric) if original_metric is not None else _binary_metric(original)
         after = _binary_metric(protected)
         return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
     available, reason = _availability(tool)
@@ -542,7 +547,7 @@ def _measure_tool_unbounded(tool: str, original: Path, protected: Path) -> dict[
     if measure is None:
         return {"tool": tool, "status": "unavailable", "reason": "no local adapter configured"}
     try:
-        before = measure(original)
+        before = dict(original_metric) if original_metric is not None else measure(original)
         after = measure(protected)
     except Exception as error:  # Tool boundary records failures without hiding the campaign result.
         return _tool_failure_result(tool, error)
@@ -554,10 +559,11 @@ def _measure_tool_worker(
     original: str,
     protected: str,
     result_queue: Any,
+    original_metric: dict[str, object] | None,
 ) -> None:
     """Run an in-process analyzer in a killable child process."""
     try:
-        result_queue.put(_measure_tool_unbounded(tool, Path(original), Path(protected)))
+        result_queue.put(_measure_tool_unbounded(tool, Path(original), Path(protected), original_metric))
     except Exception as error:
         result_queue.put(_tool_failure_result(tool, error))
 
@@ -567,15 +573,22 @@ def _measure_tool_bounded(
     original: Path,
     protected: Path,
     timeout: float = _IN_PROCESS_TOOL_TIMEOUT_SECONDS,
+    original_metric: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     """Preserve a tool row even when an in-process analyzer hangs."""
     if tool not in _IN_PROCESS_TOOLS:
-        return _measure_tool_unbounded(tool, original, protected)
+        return _measure_tool_unbounded(tool, original, protected, original_metric)
     context = multiprocessing.get_context("spawn")
     result_queue = context.Queue(maxsize=1)
     process = context.Process(
         target=_measure_tool_worker,
-        args=(tool, str(original), str(protected), result_queue),
+        args=(
+            tool,
+            str(original),
+            str(protected),
+            result_queue,
+            dict(original_metric) if original_metric is not None else None,
+        ),
     )
     process.start()
     process.join(timeout)
@@ -615,8 +628,13 @@ def _measure_tool_bounded(
     return result
 
 
-def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, object]:
-    return _measure_tool_bounded(tool, original, protected)
+def _measure_tool(
+    tool: str,
+    original: Path,
+    protected: Path,
+    original_metric: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    return _measure_tool_bounded(tool, original, protected, original_metric=original_metric)
 
 
 def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Path, dict[str, object]]:
@@ -1036,8 +1054,20 @@ def _missing_tool_slot_error(report: dict[str, object]) -> str | None:
     return "missing analyzer tool runs"
 
 
-def _measure_pair_tools(original: Path, protected: Path) -> list[dict[str, object]]:
-    return [_measure_tool(tool, original, protected) for tool in (*_EXPECTED_TOOLS, "custom")]
+def _measure_pair_tools(
+    original: Path,
+    protected: Path,
+    original_metrics: dict[str, dict[str, object]] | None = None,
+) -> list[dict[str, object]]:
+    cache = original_metrics if original_metrics is not None else {}
+    rows = []
+    for tool in (*_EXPECTED_TOOLS, "custom"):
+        row = _measure_tool(tool, original, protected, cache.get(tool))
+        metric = row.get("original")
+        if row.get("status") == "completed" and isinstance(metric, dict):
+            cache[tool] = metric
+        rows.append(row)
+    return rows
 
 
 def benchmark_pair(
@@ -1051,6 +1081,7 @@ def benchmark_pair(
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
         pass_rows: list[dict[str, object]] = []
         tools: list[dict[str, object]] = []
+        original_metrics: dict[str, dict[str, object]] = {}
         if protected is None:
             protected_path = Path(directory) / "protected"
             for pass_name in pass_names:
@@ -1072,7 +1103,7 @@ def benchmark_pair(
                         "pass_name": pass_name,
                         "pass_status": pass_row["status"],
                     }
-                    for tool in _measure_pair_tools(original, protected_path)
+                    for tool in _measure_pair_tools(original, protected_path, original_metrics)
                 )
         else:
             protected_path = protected
