@@ -1764,6 +1764,13 @@ def test_adversarial_workflow_provisions_reproducible_ghidra() -> None:
     )
 
 
+def test_adversarial_workflow_allows_full_campaign_to_finish() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    benchmark_job = workflow.split("  benchmark:\n", 1)[1].split("    steps:\n", 1)[0]
+
+    expect("timeout-minutes: 120" in benchmark_job)
+
+
 def test_differential_merge_step_closes_python_heredoc() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     merge_step = workflow.split("      - name: Merge and validate campaign evidence\n", 1)[1].split(
