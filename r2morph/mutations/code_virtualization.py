@@ -160,7 +160,18 @@ class _UnwindPayload:
 
     frame_size: int | None
     call_ranges: tuple[tuple[int, int, int], ...]
-    lsda_template: tuple[int, int, int | None, int, bytes] | None = None
+    lsda_template: (
+        tuple[
+            int,
+            int,
+            int | None,
+            int,
+            bytes,
+            int,
+            int | None,
+        ]
+        | None
+    ) = None
     lsda_call_sites: tuple[tuple[int, int, int, int], ...] = ()
     personality: int | None = None
 
@@ -168,7 +179,14 @@ class _UnwindPayload:
 def _remap_lsda_call_sites(
     frame: Any,
     site_ranges: tuple[tuple[int, int, int, int, int], ...],
-) -> tuple[tuple[int, int, int | None, int, bytes], tuple[tuple[int, int, int, int], ...], int] | None:
+) -> (
+    tuple[
+        tuple[int, int, int | None, int, bytes, int, int | None],
+        tuple[tuple[int, int, int, int], ...],
+        int,
+    ]
+    | None
+):
     """Map protected native call-sites to VM handler ranges and native pads."""
     template = getattr(frame, "lsda_template", None)
     personality = getattr(frame, "personality", None)
@@ -203,6 +221,8 @@ def _remap_lsda_call_sites(
             template.type_table_offset,
             template.action_table_offset,
             template.action_and_type_bytes,
+            template.call_site_encoding,
+            template.type_table_delta,
         ),
         tuple(sorted(mapped)),
         personality,

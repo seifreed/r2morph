@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import struct
 from dataclasses import dataclass
+from typing import cast
 
 _DW_EH_PE_PCREL_SDATA4 = 0x1B
+_LsdaTemplateData = tuple[int, int, int | None, int, bytes] | tuple[int, int, int | None, int, bytes, int, int | None]
 _DW_EH_PE_DATAREL_SDATA4 = 0x3B
 _PT_GNU_EH_FRAME = 0x6474E550
 _DW_CFA_ADVANCE_LOC1 = 0x02
@@ -26,6 +28,7 @@ _MAX_U16 = 0xFFFF
 _DW_EH_PE_OMIT = 0xFF
 _DW_EH_PE_SDATA4 = 0x0B
 _DW_EH_PE_PCREL_SDATA4 = 0x1B
+_LEGACY_LSDA_TEMPLATE_FIELDS = 5
 
 
 @dataclass(frozen=True)
@@ -37,7 +40,7 @@ class VmEhFrameSpec:
     frame_size: int
     metadata_vaddr: int
     call_ranges: tuple[tuple[int, int, int], ...] = ()
-    lsda_template: tuple[int, int, int | None, int, bytes] | None = None
+    lsda_template: _LsdaTemplateData | None = None
     lsda_call_sites: tuple[tuple[int, int, int, int], ...] = ()
     personality: int | None = None
 
@@ -112,12 +115,29 @@ def _cie_with_personality(eh_frame_vaddr: int, personality: int) -> bytes:
 def _build_lsda(
     blob_vaddr: int,
     blob_size: int,
-    template: tuple[int, int, int | None, int, bytes],
+    template: _LsdaTemplateData,
     call_sites: tuple[tuple[int, int, int, int], ...],
     lsda_vaddr: int,
 ) -> bytes:
     """Rebuild only the LSDA call-site table and retain action/type bytes."""
-    _landing_pad_encoding, type_encoding, type_table_offset, action_table_offset, suffix = template
+    if len(template) == _LEGACY_LSDA_TEMPLATE_FIELDS:
+        legacy_template = cast(tuple[int, int, int | None, int, bytes], template)
+        _landing_pad_encoding, type_encoding, type_table_offset, action_table_offset, suffix = legacy_template
+        type_table_delta = None if type_table_offset is None else type_table_offset - action_table_offset
+    else:
+        current_template = cast(
+            tuple[int, int, int | None, int, bytes, int, int | None],
+            template,
+        )
+        (
+            _landing_pad_encoding,
+            type_encoding,
+            type_table_offset,
+            action_table_offset,
+            suffix,
+            _call_site_encoding,
+            type_table_delta,
+        ) = current_template
     if type_encoding != _DW_EH_PE_OMIT and type_table_offset is None:
         raise ValueError("LSDA type encoding has no type-table offset")
     if type_table_offset is not None and type_table_offset < action_table_offset:
@@ -132,8 +152,7 @@ def _build_lsda(
             entries.extend(_sdata4(value))
         entries.extend(_uleb128(action_index))
 
-    action_delta = 0 if type_table_offset is None else type_table_offset - action_table_offset
-    if action_delta < 0:
+    if type_table_offset is not None and (type_table_delta is None or type_table_delta < 0):
         raise ValueError("LSDA type-table offset precedes the action table")
     landing_pad_base = blob_vaddr
     call_site_table = bytes((_DW_EH_PE_SDATA4,)) + _uleb128(len(entries)) + entries
@@ -143,7 +162,11 @@ def _build_lsda(
         return header + call_site_table + suffix
     type_offset_size = 1
     for _ in range(4):
-        type_offset = len(header) + type_offset_size + len(call_site_table) + action_delta
+        type_field_end = len(header) + type_offset_size
+        action_offset = type_field_end + len(call_site_table)
+        type_offset = action_offset + (type_table_delta or 0) - type_field_end
+        if type_offset < 0:
+            raise ValueError("LSDA type-table offset is negative")
         encoded_type_offset = _uleb128(type_offset)
         if len(encoded_type_offset) == type_offset_size:
             return header + encoded_type_offset + call_site_table + suffix

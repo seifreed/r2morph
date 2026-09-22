@@ -26,6 +26,8 @@ class LsdaTemplate:
     type_table_offset: int | None
     action_table_offset: int
     action_and_type_bytes: bytes
+    call_site_encoding: int = 0x0B
+    type_table_delta: int | None = None
 
 
 @dataclass

@@ -87,6 +87,7 @@ class _LsdaHeader:
     context: _LsdaContext
     type_encoding: int
     type_table_offset: int | None
+    type_table_field_end: int | None
     action_table_start: int
 
 
@@ -684,6 +685,7 @@ class ExceptionInfoReader:
         lp_start, cursor = lp_start_result
         type_encoding = data[cursor]
         type_table_offset: int | None = None
+        type_table_field_end: int | None = None
         if type_encoding == _DW_EH_PE_OMIT:
             cursor += 1
         else:
@@ -691,6 +693,7 @@ class ExceptionInfoReader:
             if type_offset is None:
                 return None
             type_table_offset, cursor = type_offset
+            type_table_field_end = cursor
         if cursor >= len(data):
             return None
         call_site_encoding = data[cursor]
@@ -716,6 +719,7 @@ class ExceptionInfoReader:
             context,
             type_encoding,
             type_table_offset,
+            type_table_field_end,
             call_site_end,
         )
 
@@ -745,12 +749,21 @@ class ExceptionInfoReader:
             return None
         if len(suffix) > _MAX_LSDA_COPY_BYTES:
             return None
+        type_table_delta: int | None = None
+        if header.type_table_offset is not None:
+            if header.type_table_field_end is None:
+                return None
+            type_table_delta = header.type_table_field_end + header.type_table_offset - header.action_table_start
+            if type_table_delta < 0:
+                return None
         return LsdaTemplate(
             header.landing_pad_encoding,
             header.type_encoding,
             header.type_table_offset,
             action_offset,
             bytes(suffix),
+            header.context.encoding,
+            type_table_delta,
         )
 
     @staticmethod

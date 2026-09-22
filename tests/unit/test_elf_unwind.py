@@ -18,6 +18,7 @@ _VM_METADATA_ADDRESS = 0x510000
 _PERSONALITY_ADDRESS = 0x401090
 _LANDING_PAD_ADDRESS = 0x401050
 _EXPECTED_LSDA_CALL_SITE_COUNT = 2
+_EXPECTED_LSDA_TYPE_TABLE_DELTA = 2
 
 
 class _GeneratedUnwindBinary:
@@ -82,7 +83,7 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
             0x400,
             _VM_METADATA_ADDRESS,
             ((0x20, 0x28, 0x123),),
-            (0xFF, 0xFF, None, 8, bytes((0x01, 0x00))),
+            (0xFF, 0x03, 17, 8, bytes((0x01, 0x00, 0x11, 0x22, 0x33, 0x44)), 0x01, 2),
             (
                 (_VM_BLOB_ADDRESS + 0x20, _VM_BLOB_ADDRESS + 0x28, _LANDING_PAD_ADDRESS, 1),
                 (_VM_BLOB_ADDRESS + 0x30, _VM_BLOB_ADDRESS + 0x38, 0, 0),
@@ -101,4 +102,6 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
         and frame.landing_pads[0].metadata["call_site_start"] == _VM_BLOB_ADDRESS + 0x20
         and len(frame.lsda_call_sites) == _EXPECTED_LSDA_CALL_SITE_COUNT
         and frame.lsda_call_sites[1].landing_pad == 0
+        and frame.lsda_template is not None
+        and frame.lsda_template.type_table_delta == _EXPECTED_LSDA_TYPE_TABLE_DELTA
     )
