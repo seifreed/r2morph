@@ -199,6 +199,50 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
     )
 
 
+def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
+    compiler = shutil.which("x86_64-w64-mingw32-gcc") or shutil.which("gcc")
+    wine = None if platform.system() == "Windows" else shutil.which("wine")
+    if compiler is None or (platform.system() != "Windows" and wine is None):
+        pytest.skip("a PE compiler and a native or Wine runtime are required")
+
+    source = tmp_path / "composition_sample.c"
+    source.write_text(
+        "#include <stdint.h>\n"
+        "__attribute__((noinline)) int transform(int value) {\n"
+        "  volatile uint32_t cell = (uint32_t)value;\n"
+        "  cell = (cell * 3U) ^ 0x55U;\n"
+        '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
+        "  return (int)(cell + (uint32_t)value);\n"
+        "}\n"
+        "int main(void) { return transform(41) == 0; }\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "composition_sample.exe"
+    run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    command = [str(binary_path)] if wine is None else [wine, str(binary_path)]
+    original_execution = run_command(command, timeout=30)
+    expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aaa")
+        first_result = NopInsertionPass({"probability": 1.0, "max_nops_per_function": 2, "seed": 1337}).apply(binary)
+        binary.save()
+        binary.reload()
+        binary.analyze("aaa")
+        second_result = RegisterSubstitutionPass({"probability": 1.0, "seed": 1338}).apply(binary)
+
+    handler = PEHandler(binary_path)
+    expect(handler.fix_checksum())
+    expect(handler.validate_integrity()[0])
+    mutated_execution = run_command(command, timeout=30)
+    expect(
+        first_result["mutations_applied"] > 0
+        and second_result["mutations_applied"] > 0
+        and mutated_execution.returncode == original_execution.returncode == 0,
+        "PE Tier 1 composition changed the native execution result",
+    )
+
+
 def test_instruction_substitution_pe_fixture_preserves_windows_exit_code(tmp_path: Path) -> None:
     if platform.system() != "Windows":
         pytest.skip("native PE fixture execution requires Windows")

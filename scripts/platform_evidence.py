@@ -33,6 +33,7 @@ _REQUIRED_CASES = {
         "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
         "test_register_substitution_pe_x86_64_preserves_native_execution",
         "test_constant_unfolding_pe_x86_64_preserves_native_execution",
+        "test_tier1_pass_composition_pe_x86_64_preserves_native_execution",
         "test_multiple_mutation_passes_on_x86_binary",
     ),
     "elf-arm64": (
@@ -69,7 +70,7 @@ _PASS_CASES = {
         "InstructionSubstitution": "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
         "RegisterSubstitution": "test_register_substitution_pe_x86_64_preserves_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_pe_x86_64_preserves_native_execution",
-        "Composition": "test_multiple_mutation_passes_on_x86_binary",
+        "Composition": "test_tier1_pass_composition_pe_x86_64_preserves_native_execution",
     },
     "elf-arm64": {
         "NopInsertion": "test_elf_arm64_nop_insertion_preserves_native_exit_code",

@@ -31,6 +31,9 @@ full-format parity.
 The AArch64 campaign also includes a compiled C fixture with stack memory,
 direct and indirect calls, a loop, and the same four-pass composition; the
 compiled case is an additional evidence point, not a support promotion.
+The Windows PE preview job also executes a real NOP-plus-register-substitution
+composition and validates the repaired PE checksum; it remains preview evidence
+and does not promote PE to the official support tier.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
 The workflow pins the collected matrix at 73 cases so loss of a preview corpus
