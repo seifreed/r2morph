@@ -79,6 +79,18 @@ def test_empty_disassembly_is_not_reported_as_incomplete_dataflow() -> None:
     expect(_has_materialized_instructions(FunctionSource(), {"addr": 0x1000}) is False)
 
 
+def test_padding_only_disassembly_is_not_a_materialized_function() -> None:
+    class FunctionSource:
+        class _Disassembler:
+            @staticmethod
+            def cmdj(_command: str) -> dict[str, list[dict[str, object]]]:
+                return {"ops": [{"type": "nop", "opcode": "nop"}]}
+
+        r2 = _Disassembler()
+
+    expect(_has_materialized_instructions(FunctionSource(), {"addr": 0x1000}) is False)
+
+
 def test_compact_ret_cleanup_is_decoded_without_disassembler_round_trip() -> None:
     class FunctionSource:
         def read_bytes(self, _address: int, _size: int) -> bytes:

@@ -777,7 +777,10 @@ def _has_materialized_instructions(binary: Any, function: dict[str, Any]) -> boo
         return None
     if not isinstance(disassembly, dict):
         return None
-    return any(isinstance(instruction, dict) for instruction in disassembly.get("ops", []))
+    return any(
+        isinstance(instruction, dict) and instruction.get("type") not in {"nop", "invalid"}
+        for instruction in disassembly.get("ops", [])
+    )
 
 
 def _ordered_functions(
