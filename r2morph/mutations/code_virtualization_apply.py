@@ -65,6 +65,7 @@ def _is_runtime_entrypoint(
     address = function.get("addr")
     return (
         name in _RUNTIME_INITIALIZATION_NAMES
+        or "__libc_start_main" in name
         or address in entrypoint_addresses
         or (unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry.")))
     )
