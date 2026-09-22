@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 EXPECTED_EXIT_CODE = 42
+EXPECTED_MINIMUM_LANDING_PADS = 2
 FIXTURE_SEED = 20260827
 
 
@@ -91,6 +92,85 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "an LSDA-bearing function did not preserve its native landing pad: "
         f"{protected_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
+    )
+
+
+def test_code_virtualization_remaps_multiple_cpp_landing_pads_without_runtime_change(tmp_path: Path) -> None:
+    """A shared C++ LSDA with multiple handlers remains executable after virtualization."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "nested_handlers.cpp"
+    executable = tmp_path / "nested_handlers"
+    source.write_text("""
+#include <stdexcept>
+
+__attribute__((noinline)) int nested_handlers(int value) {
+    try {
+        try {
+            if (value == 1) {
+                throw std::runtime_error("runtime");
+            }
+            if (value == 2) {
+                throw std::logic_error("logic");
+            }
+            return 14;
+        } catch (const std::runtime_error&) {
+            return 11;
+        } catch (const std::logic_error&) {
+            return 12;
+        }
+    } catch (...) {
+        return 13;
+    }
+}
+
+int main() {
+    return nested_handlers(1) == 11 && nested_handlers(2) == 12 && nested_handlers(0) == 14 ? 42 : 1;
+}
+""")
+    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    expect(result.returncode == 0, "failed to compile the multiple-handler fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        function = next(
+            function for function in binary.get_functions() if "nested_handlers" in function.get("name", "")
+        )
+        function_address = int(function["addr"])
+        original_bytes = binary.read_bytes(function_address, int(function["size"]))
+        exception_frame = ExceptionInfoReader(binary).read_exception_frames()[function_address]
+        landing_pad_bytes = {
+            landing_pad.address: binary.read_bytes(landing_pad.address, 5)
+            for landing_pad in exception_frame.landing_pads
+        }
+        stats = CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "max_functions": 1000,
+                "reject_partial_virtualization": False,
+                "seed": FIXTURE_SEED,
+            }
+        ).apply(binary)
+        function_was_transformed = binary.read_bytes(function_address, int(function["size"])) != original_bytes
+        landing_pads_were_transformed = all(
+            binary.read_bytes(address, 5) != original for address, original in landing_pad_bytes.items()
+        )
+
+    runtime_result = run_command([executable], timeout=30)
+    unwind_failures = {
+        record["function_address"]
+        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
+        if record["capability"] == "exceptions_and_unwinding"
+    }
+    expect(
+        len(landing_pad_bytes) >= EXPECTED_MINIMUM_LANDING_PADS
+        and stats["functions_virtualized"] > 0
+        and function_was_transformed
+        and landing_pads_were_transformed
+        and function_address not in unwind_failures
+        and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        "multiple C++ landing pads lost their runtime contract: "
+        f"{function_address=:#x}, {len(landing_pad_bytes)=}, {runtime_result.returncode=}, {stats=}",
     )
 
 
