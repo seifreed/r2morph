@@ -947,7 +947,7 @@ class CodeVirtualizationPass(MutationPass):
             func,
             complete_ops,
             landing_pad_addresses,
-            rng,
+            RegionOptions(rng, False, unwind_frame, False),
         ):
             logger.debug("Landing-pad VM construction was incomplete for 0x%x", func["addr"])
         return None
@@ -958,7 +958,7 @@ class CodeVirtualizationPass(MutationPass):
         func: dict[str, Any],
         instructions: list[dict[str, Any]],
         landing_pad_addresses: tuple[int, ...],
-        rng: random.Random,
+        options: RegionOptions,
     ) -> bool:
         """Virtualize each exception entry while retaining its native LSDA address."""
         pad_addresses = frozenset(landing_pad_addresses)
@@ -968,14 +968,14 @@ class CodeVirtualizationPass(MutationPass):
                 return False
             region = extract_region(
                 pad_ops,
-                rng,
+                options.rng,
                 function_range=None,
                 known_function_ranges=None,
                 native_ranges=(),
             )
             if region is None or region.entry_vaddr != address:
                 return False
-            if self._emit_region(binary, func, region, RegionOptions(rng, False)) is None:
+            if self._emit_region(binary, func, region, options) is None:
                 return False
         return True
 
@@ -1628,7 +1628,7 @@ class CodeVirtualizationPass(MutationPass):
             if scheme is None:
                 raise RuntimeError("complete unwind payload was built without a region scheme")
             landing_pad_targets = region_entry_vaddrs(blob, blob_vaddr, region, scheme)
-            unwind = _build_unwind_payload(blob, scheme, region, unwind_frame, landing_pad_targets)
+            unwind = _build_unwind_payload(blob, scheme, region, unwind_frame, landing_pad_targets or None)
             if unwind is None:
                 return None
         else:
@@ -1721,7 +1721,7 @@ class CodeVirtualizationPass(MutationPass):
         if installed is None:
             return None
         checkpoint = installed[0]
-        if not self._overwrite_region_body(binary, region, checkpoint):
+        if options.overwrite_body and not self._overwrite_region_body(binary, region, checkpoint):
             return None
 
         instruction_count = sum(1 for item in region.instructions if item[0] != "exit")

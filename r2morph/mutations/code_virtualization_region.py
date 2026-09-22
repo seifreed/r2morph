@@ -1199,6 +1199,7 @@ def region_supports_unwind_contract(region: Region, frame: Any) -> bool:
             and (
                 not overlaps(landing_pad.address, max(1, landing_pad.size))
                 or landing_pad.address in getattr(region, "entry_map", {})
+                or landing_pad.address == region.entry_vaddr
             )
             and call_site_ranges is not None
             and all(

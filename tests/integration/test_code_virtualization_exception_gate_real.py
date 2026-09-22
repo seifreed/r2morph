@@ -174,6 +174,74 @@ int main() {
     )
 
 
+def test_code_virtualization_preserves_nested_cpp_exception_from_landing_pad(tmp_path: Path) -> None:
+    """A second exception thrown by a virtualized landing pad reaches its outer handler."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "nested_throw.cpp"
+    executable = tmp_path / "nested_throw"
+    source.write_text("""
+#include <stdexcept>
+
+__attribute__((noinline)) int nested_throw(int value) {
+    try {
+        try {
+            throw std::runtime_error("inner");
+        } catch (const std::runtime_error&) {
+            if (value == 1) {
+                throw std::logic_error("outer");
+            }
+            return 11;
+        }
+    } catch (const std::logic_error&) {
+        return 12;
+    }
+    return 13;
+}
+
+int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
+""")
+    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    expect(result.returncode == 0, "failed to compile the nested-exception fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        function = next(function for function in binary.get_functions() if "nested_throw" in function.get("name", ""))
+        function_address = int(function["addr"])
+        exception_frame = ExceptionInfoReader(binary).read_exception_frames()[function_address]
+        landing_pad_bytes = {
+            landing_pad.address: binary.read_bytes(landing_pad.address, 5)
+            for landing_pad in exception_frame.landing_pads
+        }
+        stats = CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "max_functions": 1,
+                "reject_partial_virtualization": False,
+                "seed": FIXTURE_SEED,
+            }
+        ).apply(binary)
+        landing_pads_were_transformed = all(
+            binary.read_bytes(address, 5) != original for address, original in landing_pad_bytes.items()
+        )
+
+    runtime_result = run_command([executable], timeout=30)
+    unwind_failures = {
+        record["function_address"]
+        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
+        if record["capability"] == "exceptions_and_unwinding"
+    }
+    expect(
+        len(landing_pad_bytes) >= EXPECTED_MINIMUM_LANDING_PADS
+        and stats["functions_virtualized"] > 0
+        and landing_pads_were_transformed
+        and function_address not in unwind_failures
+        and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        "a nested exception escaped the virtualized landing-pad contract: "
+        f"{function_address=:#x}, {len(landing_pad_bytes)=}, {runtime_result.returncode=}, {stats=}",
+    )
+
+
 def test_code_virtualization_does_not_globally_degrade_unwind_free_function(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")

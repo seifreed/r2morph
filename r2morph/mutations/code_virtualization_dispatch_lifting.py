@@ -24,6 +24,7 @@ class RegionOptions:
     rng: random.Random
     use_nesting: bool
     unwind_frame: Any | None = None
+    overwrite_body: bool = True
 
 
 def _direct_branch_targets(ops: list[dict[str, Any]], function_range: tuple[int, int]) -> set[int]:
