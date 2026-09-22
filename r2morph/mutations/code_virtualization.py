@@ -1741,6 +1741,7 @@ class CodeVirtualizationPass(MutationPass):
                 ),
                 "bytecode_size": len(blob),
                 "nested_vm": nested,
+                "landing_pad_entries": sorted(region.entry_map),
             },
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):

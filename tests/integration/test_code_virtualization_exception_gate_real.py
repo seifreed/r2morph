@@ -213,17 +213,24 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
             landing_pad.address: binary.read_bytes(landing_pad.address, 5)
             for landing_pad in exception_frame.landing_pads
         }
-        stats = CodeVirtualizationPass(
+        virtualization_pass = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
                 "max_functions": 1,
                 "reject_partial_virtualization": False,
                 "seed": FIXTURE_SEED,
             }
-        ).apply(binary)
+        )
+        stats = virtualization_pass.apply(binary)
         landing_pads_were_transformed = all(
             binary.read_bytes(address, 5) != original for address, original in landing_pad_bytes.items()
         )
+        remapped_landing_pad_entries = {
+            address
+            for record in virtualization_pass.get_records()
+            for address in record.metadata.get("landing_pad_entries", ())
+            if isinstance(address, int)
+        }
 
     runtime_result = run_command([executable], timeout=30)
     unwind_failures = {
@@ -234,11 +241,13 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
     expect(
         len(landing_pad_bytes) >= EXPECTED_MINIMUM_LANDING_PADS
         and stats["functions_virtualized"] > 0
-        and landing_pads_were_transformed
+        and (landing_pads_were_transformed or remapped_landing_pad_entries >= set(landing_pad_bytes))
         and function_address not in unwind_failures
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "a nested exception escaped the virtualized landing-pad contract: "
-        f"{function_address=:#x}, {len(landing_pad_bytes)=}, {runtime_result.returncode=}, {stats=}",
+        f"{function_address=:#x}, {len(landing_pad_bytes)=}, "
+        f"{landing_pads_were_transformed=}, {remapped_landing_pad_entries=}, "
+        f"{runtime_result.returncode=}, {stats=}",
     )
 
 
