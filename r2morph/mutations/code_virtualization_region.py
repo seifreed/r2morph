@@ -996,9 +996,10 @@ def region_preserves_unwind_contract(region: Region, frame: Any) -> bool:
     """
     lsda_address = getattr(frame, "lsda_address", None)
     landing_pads = getattr(frame, "landing_pads", ())
-    if lsda_address is None and not landing_pads:
+    call_sites = getattr(frame, "lsda_call_sites", ())
+    if lsda_address is None and not landing_pads and not call_sites:
         return True
-    if not landing_pads:
+    if not landing_pads and not call_sites:
         return False
 
     def overlaps(address: int, size: int) -> bool:
@@ -1008,14 +1009,14 @@ def region_preserves_unwind_contract(region: Region, frame: Any) -> bool:
         if not isinstance(landing_pad.address, int) or overlaps(landing_pad.address, max(1, landing_pad.size)):
             return False
         metadata = landing_pad.metadata
-        call_sites = [metadata, *metadata.get("call_sites", [])]
+        landing_pad_sites = [metadata, *metadata.get("call_sites", [])]
         if any(
             not isinstance(site, dict)
             or not isinstance(site.get("call_site_start"), int)
             or not isinstance(site.get("call_site_end"), int)
             or site["call_site_end"] <= site["call_site_start"]
             or overlaps(site["call_site_start"], site["call_site_end"] - site["call_site_start"])
-            for site in call_sites
+            for site in landing_pad_sites
         ):
             return False
     return True
@@ -1042,27 +1043,48 @@ def region_supports_unwind_contract(region: Region, frame: Any) -> bool:
     """Return whether protected call-sites can be remapped into this region."""
     lsda_address = getattr(frame, "lsda_address", None)
     landing_pads = getattr(frame, "landing_pads", ())
-    if lsda_address is None and not landing_pads:
+    call_sites = getattr(frame, "lsda_call_sites", ())
+    if lsda_address is None and not landing_pads and not call_sites:
         return True
-    if not landing_pads:
+    if not landing_pads and not call_sites:
         return False
 
     def overlaps(address: int, size: int) -> bool:
         return any(start < address + size and address < start + length for start, length in region.body_ranges)
 
     mapped_ranges = tuple((start, end) for start, end, _item_index in region.call_site_items)
-    protected_site_in_region = False
-    for landing_pad in landing_pads:
-        if not isinstance(landing_pad.address, int) or overlaps(landing_pad.address, max(1, landing_pad.size)):
-            return False
+    call_sites_valid = all(
+        not overlaps(call_site.start_address, call_site.end_address - call_site.start_address)
+        or any(
+            call_start < call_site.end_address and call_site.start_address < call_end
+            for call_start, call_end in mapped_ranges
+        )
+        for call_site in call_sites
+    )
+
+    def landing_pad_is_valid(landing_pad: Any) -> bool:
         call_site_ranges = _landing_pad_call_sites(landing_pad)
-        if call_site_ranges is None:
-            return False
-        for start, end in call_site_ranges:
-            if overlaps(start, end - start):
-                protected_site_in_region = True
-                if not any(call_start < end and start < call_end for call_start, call_end in mapped_ranges):
-                    return False
+        return (
+            isinstance(landing_pad.address, int)
+            and not overlaps(landing_pad.address, max(1, landing_pad.size))
+            and call_site_ranges is not None
+            and all(
+                not overlaps(start, end - start)
+                or any(call_start < end and start < call_end for call_start, call_end in mapped_ranges)
+                for start, end in call_site_ranges
+            )
+        )
+
+    landing_pads_valid = all(landing_pad_is_valid(landing_pad) for landing_pad in landing_pads)
+    if not call_sites_valid or not landing_pads_valid:
+        return False
+    protected_site_in_region = any(
+        overlaps(call_site.start_address, call_site.end_address - call_site.start_address) for call_site in call_sites
+    ) or any(
+        overlaps(start, end - start)
+        for landing_pad in landing_pads
+        for start, end in (_landing_pad_call_sites(landing_pad) or ())
+    )
     return not protected_site_in_region or (
         getattr(frame, "lsda_template", None) is not None and isinstance(getattr(frame, "personality", None), int)
     )

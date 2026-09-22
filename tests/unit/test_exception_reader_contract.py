@@ -85,6 +85,12 @@ class _InMemoryElfExceptionBinary:
         return cie + cls._entry64(fde_body) + b"\x00\x00\x00\x00"
 
 
+class _InMemoryElfTwoCallSiteBinary(_InMemoryElfExceptionBinary):
+    def __init__(self) -> None:
+        super().__init__()
+        self._lsda = bytes((0xFF, 0xFF, 0x01, 0x08, 0x00, 0x04, 0x08, 0x01, 0x08, 0x04, 0x00, 0x00, 0x01, 0x00))
+
+
 class _InMemoryR2VaddrElfExceptionBinary(_InMemoryElfExceptionBinary):
     def get_sections(self) -> list[dict[str, int | str]]:
         return [
@@ -234,6 +240,18 @@ def test_exception_reader_classifies_elf_landing_pad_action_as_catch() -> None:
     expect(frames[_FUNCTION_ADDRESS].landing_pads[0].address == _FUNCTION_ADDRESS + 8)
     expect(frames[_FUNCTION_ADDRESS].landing_pads[0].action == ExceptionAction.CATCH)
     expect(frames[_FUNCTION_ADDRESS].landing_pads[0].metadata["call_site_start"] == _FUNCTION_ADDRESS)
+
+
+def test_exception_reader_retains_lsda_call_sites_without_landing_pad() -> None:
+    frame = ExceptionInfoReader(_InMemoryElfTwoCallSiteBinary()).read_exception_frames()[_FUNCTION_ADDRESS]
+
+    expect(
+        [(site.start_address, site.end_address, site.landing_pad, site.action_index) for site in frame.lsda_call_sites]
+        == [
+            (_FUNCTION_ADDRESS, _FUNCTION_ADDRESS + 4, _FUNCTION_ADDRESS + 8, 1),
+            (_FUNCTION_ADDRESS + 8, _FUNCTION_ADDRESS + 12, 0, 0),
+        ]
+    )
 
 
 def test_exception_reader_parses_dwarf64_eh_frame_fde_and_landing_pad() -> None:

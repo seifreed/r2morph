@@ -127,7 +127,8 @@ def _build_lsda(
     for start, end, landing_pad, action_index in call_sites:
         if not blob_vaddr <= start < end <= blob_vaddr + blob_size:
             raise ValueError("LSDA call-site range is outside the VM blob")
-        for value in (start - blob_vaddr, end - start, landing_pad - blob_vaddr):
+        landing_offset = 0 if landing_pad == 0 else landing_pad - blob_vaddr
+        for value in (start - blob_vaddr, end - start, landing_offset):
             entries.extend(_sdata4(value))
         entries.extend(_uleb128(action_index))
 

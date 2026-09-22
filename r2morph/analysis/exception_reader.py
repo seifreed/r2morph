@@ -7,7 +7,7 @@ import struct
 from dataclasses import dataclass, replace
 from typing import Any
 
-from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaCallSite, LsdaTemplate
 from r2morph.analysis.exception_reader_macho import macho_image_base, parse_macho_compact_unwind
 from r2morph.core.binary import Binary
 
@@ -754,7 +754,13 @@ class ExceptionInfoReader:
         )
 
     @staticmethod
-    def _read_lsda_offset(data: bytes, offset: int, context: _LsdaContext) -> tuple[int, int] | None:
+    def _read_lsda_offset(
+        data: bytes,
+        offset: int,
+        context: _LsdaContext,
+        *,
+        zero_is_null: bool = False,
+    ) -> tuple[int, int] | None:
         result = _read_encoded_pointer(
             data,
             offset,
@@ -764,6 +770,8 @@ class ExceptionInfoReader:
         if result is None:
             return None
         value, next_offset = result
+        if zero_is_null and value == 0:
+            return 0, next_offset
         if context.encoding & 0x70 == _DW_EH_PE_ABSPTR:
             value += context.base_address
         return value, next_offset
@@ -785,6 +793,7 @@ class ExceptionInfoReader:
             if site is None:
                 return []
             start, length, landing, action_index, cursor = site
+            frame.lsda_call_sites.append(LsdaCallSite(start, start + length, landing, action_index))
             if landing == 0:
                 continue
             pad = LandingPad(
@@ -818,7 +827,7 @@ class ExceptionInfoReader:
         length = self._read_lsda_offset(data, start[1], context.with_base(0))
         if length is None:
             return None
-        landing = self._read_lsda_offset(data, length[1], context.with_base(lp_start))
+        landing = self._read_lsda_offset(data, length[1], context.with_base(lp_start), zero_is_null=True)
         if landing is None:
             return None
         action = _read_uleb128(data, landing[1], context.end)

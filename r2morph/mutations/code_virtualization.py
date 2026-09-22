@@ -175,27 +175,25 @@ def _remap_lsda_call_sites(
     if template is None or not isinstance(personality, int):
         return None
     mapped: set[tuple[int, int, int, int]] = set()
-    for landing_pad in getattr(frame, "landing_pads", ()):
-        if not isinstance(landing_pad.address, int):
+    call_sites = tuple(getattr(frame, "lsda_call_sites", ()))
+    native_sites = (
+        tuple((site.start_address, site.end_address, site.landing_pad, site.action_index) for site in call_sites)
+        if call_sites
+        else _legacy_lsda_call_sites(frame)
+    )
+    for native_start, native_end, landing_pad, action_index in native_sites:
+        if (
+            not isinstance(native_start, int)
+            or not isinstance(native_end, int)
+            or native_end <= native_start
+            or not isinstance(landing_pad, int)
+            or not isinstance(action_index, int)
+            or action_index < 0
+        ):
             return None
-        metadata = landing_pad.metadata
-        for site in (metadata, *metadata.get("call_sites", [])):
-            if not isinstance(site, dict):
-                return None
-            native_start = site.get("call_site_start")
-            native_end = site.get("call_site_end")
-            action_index = site.get("action_index")
-            if (
-                not isinstance(native_start, int)
-                or not isinstance(native_end, int)
-                or native_end <= native_start
-                or not isinstance(action_index, int)
-                or action_index < 0
-            ):
-                return None
-            for vm_start, vm_end, _cfa, source_start, source_end in site_ranges:
-                if source_start < native_end and native_start < source_end:
-                    mapped.add((vm_start, vm_end, landing_pad.address, action_index))
+        for vm_start, vm_end, _cfa, source_start, source_end in site_ranges:
+            if source_start < native_end and native_start < source_end:
+                mapped.add((vm_start, vm_end, landing_pad, action_index))
     if not mapped:
         return None
     return (
@@ -211,14 +209,39 @@ def _remap_lsda_call_sites(
     )
 
 
+def _legacy_lsda_call_sites(frame: Any) -> tuple[tuple[int, int, int, int], ...]:
+    """Adapt synthetic frames created before the full LSDA row model existed."""
+    sites: list[tuple[int, int, int, int]] = []
+    for landing_pad in getattr(frame, "landing_pads", ()):
+        if not isinstance(landing_pad.address, int):
+            return ()
+        metadata = landing_pad.metadata
+        for site in (metadata, *metadata.get("call_sites", [])):
+            if not isinstance(site, dict):
+                return ()
+            native_start = site.get("call_site_start")
+            native_end = site.get("call_site_end")
+            action_index = site.get("action_index")
+            if (
+                not isinstance(native_start, int)
+                or not isinstance(native_end, int)
+                or not isinstance(action_index, int)
+            ):
+                return ()
+            sites.append((native_start, native_end, landing_pad.address, action_index))
+    return tuple(sites)
+
+
 def _region_has_protected_call_site(region: Any, frame: Any) -> bool:
+    call_sites = tuple(getattr(frame, "lsda_call_sites", ()))
+    native_ranges = (
+        tuple((site.start_address, site.end_address) for site in call_sites)
+        if call_sites
+        else tuple((start, end) for start, end, _pad, _action in _legacy_lsda_call_sites(frame))
+    )
     return any(
-        site["call_site_start"] < call_end and site["call_site_end"] > call_start
-        for landing_pad in getattr(frame, "landing_pads", ())
-        for site in (landing_pad.metadata, *landing_pad.metadata.get("call_sites", []))
-        if isinstance(site, dict)
-        and isinstance(site.get("call_site_start"), int)
-        and isinstance(site.get("call_site_end"), int)
+        native_start < call_end and native_end > call_start
+        for native_start, native_end in native_ranges
         for call_start, call_end, _item_index in region.call_site_items
     )
 
