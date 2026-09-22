@@ -30,6 +30,14 @@ _DW_EH_PE_OMIT = 0xFF
 _DW_EH_PE_SDATA4 = 0x0B
 _DW_EH_PE_PCREL_SDATA4 = 0x1B
 _LEGACY_LSDA_TEMPLATE_FIELDS = 5
+_DW_EH_PE_UDATA2 = 0x02
+_DW_EH_PE_UDATA4 = 0x03
+_DW_EH_PE_UDATA8 = 0x04
+_DW_EH_PE_SLEB128 = 0x09
+_DW_EH_PE_SDATA2 = 0x0A
+_DW_EH_PE_SDATA8 = 0x0C
+_DW_EH_PE_PCREL = 0x10
+_DW_EH_PE_ABSPTR = 0x00
 
 
 @dataclass(frozen=True)
@@ -86,6 +94,91 @@ def _sdata4(value: int) -> bytes:
     return struct.pack("<i", value)
 
 
+def _encode_lsda_value(value: int, encoding: int, field_vaddr: int, base_vaddr: int) -> bytes:
+    """Encode one LSDA value using the source table's pointer encoding."""
+    application = encoding & 0x70
+    if application == _DW_EH_PE_PCREL:
+        value -= field_vaddr
+    elif application == _DW_EH_PE_ABSPTR:
+        value -= base_vaddr
+    else:
+        raise ValueError(f"unsupported LSDA pointer application: 0x{application:02x}")
+
+    format_code = encoding & 0x0F
+    if format_code == 0x01:
+        if value < 0:
+            raise ValueError("LSDA ULEB128 value is negative")
+        return _uleb128(value)
+    if format_code == _DW_EH_PE_SLEB128:
+        return _sleb128(value)
+    widths = {
+        _DW_EH_PE_UDATA2: (2, False),
+        _DW_EH_PE_UDATA4: (4, False),
+        _DW_EH_PE_UDATA8: (8, False),
+        _DW_EH_PE_SDATA2: (2, True),
+        _DW_EH_PE_SDATA4: (4, True),
+        _DW_EH_PE_SDATA8: (8, True),
+        0x00: (8, False),
+    }
+    width_info = widths.get(format_code)
+    if width_info is None:
+        raise ValueError(f"unsupported LSDA pointer format: 0x{format_code:02x}")
+    width, signed = width_info
+    lower = -(1 << (width * 8 - 1)) if signed else 0
+    upper = (1 << (width * 8 - (1 if signed else 0))) - 1
+    if not lower <= value <= upper:
+        raise ValueError("LSDA value is outside its encoded range")
+    return int(value).to_bytes(width, "little", signed=signed)
+
+
+def _build_lsda_call_site_table(
+    blob_vaddr: int,
+    blob_size: int,
+    call_site_encoding: int,
+    call_sites: tuple[tuple[int, int, int, int], ...],
+    table_vaddr: int,
+) -> bytes:
+    """Build a call-site table while resolving its ULEB length field."""
+    if call_site_encoding & 0x70 not in (_DW_EH_PE_ABSPTR, _DW_EH_PE_PCREL):
+        raise ValueError("unsupported LSDA call-site pointer application")
+    if call_site_encoding & 0x70 == _DW_EH_PE_PCREL and call_site_encoding & 0x0F in {
+        0x01,
+        _DW_EH_PE_SLEB128,
+    }:
+        raise ValueError("PC-relative LEB128 LSDA call-site encoding is unsupported")
+
+    length_field_size = 1
+    for _ in range(5):
+        table_prefix = bytes((call_site_encoding,)) + b"\x00" * length_field_size
+        cursor = table_vaddr + len(table_prefix)
+        entries = bytearray()
+        for start, end, landing_pad, action_index in call_sites:
+            if not blob_vaddr <= start < end <= blob_vaddr + blob_size:
+                raise ValueError("LSDA call-site range is outside the VM blob")
+            start_bytes = _encode_lsda_value(start, call_site_encoding, cursor, blob_vaddr)
+            entries.extend(start_bytes)
+            cursor += len(start_bytes)
+            length_bytes = _encode_lsda_value(end - start, call_site_encoding, cursor, 0)
+            entries.extend(length_bytes)
+            cursor += len(length_bytes)
+            if landing_pad == 0:
+                if call_site_encoding & 0x70 != _DW_EH_PE_ABSPTR:
+                    raise ValueError("null LSDA landing pads require absolute-relative encoding")
+                landing_bytes = _encode_lsda_value(blob_vaddr, call_site_encoding, cursor, blob_vaddr)
+            else:
+                landing_bytes = _encode_lsda_value(landing_pad, call_site_encoding, cursor, blob_vaddr)
+            entries.extend(landing_bytes)
+            cursor += len(landing_bytes)
+            action_bytes = _uleb128(action_index)
+            entries.extend(action_bytes)
+            cursor += len(action_bytes)
+        encoded_length_size = len(_uleb128(len(entries)))
+        if encoded_length_size == length_field_size:
+            return bytes((call_site_encoding,)) + _uleb128(len(entries)) + entries
+        length_field_size = encoded_length_size
+    raise ValueError("LSDA call-site length did not converge")
+
+
 def _cie() -> bytes:
     instructions = bytes(
         (
@@ -136,7 +229,7 @@ def _build_lsda(
             type_table_offset,
             action_table_offset,
             suffix,
-            _call_site_encoding,
+            call_site_encoding,
             type_table_delta,
         ) = current_template
     if type_encoding != _DW_EH_PE_OMIT and type_table_offset is None:
@@ -144,33 +237,33 @@ def _build_lsda(
     if type_table_offset is not None and type_table_offset < action_table_offset:
         raise ValueError("LSDA type-table offset precedes the action table")
 
-    entries = bytearray()
-    for start, end, landing_pad, action_index in call_sites:
-        if not blob_vaddr <= start < end <= blob_vaddr + blob_size:
-            raise ValueError("LSDA call-site range is outside the VM blob")
-        landing_offset = 0 if landing_pad == 0 else landing_pad - blob_vaddr
-        for value in (start - blob_vaddr, end - start, landing_offset):
-            entries.extend(_sdata4(value))
-        entries.extend(_uleb128(action_index))
-
     if type_table_offset is not None and (type_table_delta is None or type_table_delta < 0):
         raise ValueError("LSDA type-table offset precedes the action table")
-    landing_pad_base = blob_vaddr
-    call_site_table = bytes((_DW_EH_PE_SDATA4,)) + _uleb128(len(entries)) + entries
-    header = bytes((_DW_EH_PE_PCREL_SDATA4,)) + _sdata4(landing_pad_base - (lsda_vaddr + 1))
-    header += bytes((type_encoding,))
-    if type_table_offset is None:
-        return header + call_site_table + suffix
+    header = bytearray((template[0],))
+    if template[0] != _DW_EH_PE_OMIT:
+        header.extend(_encode_lsda_value(blob_vaddr, template[0], lsda_vaddr + len(header), 0))
+    header.append(type_encoding)
     type_offset_size = 1
     for _ in range(4):
+        if type_table_offset is None:
+            type_offset_size = 0
         type_field_end = len(header) + type_offset_size
+        call_site_table = _build_lsda_call_site_table(
+            blob_vaddr,
+            blob_size,
+            call_site_encoding,
+            call_sites,
+            lsda_vaddr + type_field_end,
+        )
         action_offset = type_field_end + len(call_site_table)
         type_offset = action_offset + (type_table_delta or 0) - type_field_end
+        if type_table_offset is None:
+            return bytes(header) + call_site_table + suffix
         if type_offset < 0:
             raise ValueError("LSDA type-table offset is negative")
         encoded_type_offset = _uleb128(type_offset)
         if len(encoded_type_offset) == type_offset_size:
-            return header + encoded_type_offset + call_site_table + suffix
+            return bytes(header) + encoded_type_offset + call_site_table + suffix
         type_offset_size = len(encoded_type_offset)
     raise ValueError("LSDA type-table offset did not converge")
 

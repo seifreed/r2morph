@@ -16,7 +16,7 @@ _VM_BLOB_ADDRESS = 0x500000
 _VM_BLOB_SIZE = 0x180
 _VM_METADATA_ADDRESS = 0x510000
 _PERSONALITY_ADDRESS = 0x401090
-_LANDING_PAD_ADDRESS = 0x401050
+_LANDING_PAD_ADDRESS = _VM_BLOB_ADDRESS + 0x90
 _EXPECTED_LSDA_CALL_SITE_COUNT = 2
 _EXPECTED_LSDA_TYPE_TABLE_DELTA = 2
 
@@ -91,7 +91,7 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
             _PERSONALITY_ADDRESS,
         )
     )
-    lsda_offset = metadata.rfind(bytes((0x1B,)))
+    lsda_offset = metadata.rfind(bytes((0xFF,)))
     frames = ExceptionInfoReader(cast(Binary, _GeneratedUnwindBinary(metadata, lsda_offset))).read_exception_frames()
 
     frame = frames[_VM_BLOB_ADDRESS]
@@ -103,5 +103,6 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
         and len(frame.lsda_call_sites) == _EXPECTED_LSDA_CALL_SITE_COUNT
         and frame.lsda_call_sites[1].landing_pad == 0
         and frame.lsda_template is not None
+        and frame.lsda_template.call_site_encoding == 0x01
         and frame.lsda_template.type_table_delta == _EXPECTED_LSDA_TYPE_TABLE_DELTA
     )
