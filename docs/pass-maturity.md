@@ -252,23 +252,27 @@ are engine-only capabilities until their configuration and end-to-end workflow
 are promoted into the public CLI surface.
 
 The VM resistance workflow now covers 10 seeds with 255 handlers per seed
-across five tracked repository ELF x86-64 fixtures plus five generated
+across ten tracked repository ELF x86-64 fixtures plus five generated
 cross-family fixtures (calls, C++, memory, threads, and `xlat`). The generated subset is
 selected by name from the reproducible Linux corpus so fixture drift fails
-closed before measurement. The last committed local artifact below is
-historical and still contains five fixtures; the next scheduled workflow run
-is the authoritative ten-fixture evidence.
+closed before measurement. The committed 15-fixture artifact below is the
+authoritative local evidence for the automated campaign.
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
 artifacts also carry `adversarial_validation.status` as
-`pending-human-adversarial-review`, with seed diversity recorded as the current
-evidence quality. The scheduled adversarial workflow additionally runs six real
+`pending-human-adversarial-review`, with automated adversarial smoke recorded as
+the evidence quality. The scheduled adversarial workflow additionally runs six real
 tamper/progressive protection tests and publishes JUnit evidence, including
 single-level tamper, nested tamper, nested growth, and diversified-build
 checks. This strengthens automated evidence but does not replace the pending
 human/adversarial review. The generated `total_vm_resistance_blockers` count is
-currently 6 VM resistance blockers.
+currently 1 VM resistance blockers (the remaining gap is external human review).
+The complete local artifact
+[`protection-vm-resistance-2026-09-22-e3a491b3.json`](protection-vm-resistance-2026-09-22-e3a491b3.json)
+passes semantic parity, artifact, opcode, dispatcher, handler, grammar,
+anti-tamper, progressive-growth, and bounded recovery checks for all 15 fixtures
+and 10 seeds.
 The local refresh
 [`protection-vm-resistance-2026-09-19-3feec419.json`](protection-vm-resistance-2026-09-19-3feec419.json)
 extends that evidence across five tracked ELF x86-64 fixtures: semantic parity,

@@ -58,6 +58,7 @@ VM_ADVERSARIAL_VALIDATION = {
 }
 VM_RESISTANCE_EVIDENCE_QUALITY = {
     "anti-tamper": "automated-native-tamper-smoke",
+    "human-adversarial-validation": "automated-adversarial-smoke",
 }
 ADVERSARIAL_TOOL_SLOTS = {
     "angr",

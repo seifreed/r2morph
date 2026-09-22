@@ -74,15 +74,13 @@ review. It is not a feature roadmap and must not be read as a support claim.
   campaign sustainability. In-process analyzers are isolated with bounded
   workers so a timeout is retained as an error row; this does not close the
   Binary Ninja availability blocker.
-- RB-006: VM resistance still needs adversarial validation for ISA/opcode diversity,
-  dispatchers, handlers, anti-tamper and progressive bytecode protection.
-  The next scheduled automated campaign is configured to cover fifteen fixtures
-  across ten seeds and record
-  semantic parity, opcode/handler/dispatcher diversity, anti-tamper divergence,
-  and progressive bytecode growth; it runs once from shard zero rather than
-  duplicating the campaign across analyzer shards, and it does not constitute
-  human signoff.
-  Evidence map: [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
+- RB-006: The automated VM-resistance campaign is complete for fifteen fixtures
+  across ten seeds: semantic parity, opcode/handler/dispatcher diversity,
+  anti-tamper and progressive bytecode protection, plus bounded recovery
+  probes all passed. The remaining blocker is external human adversarial review;
+  automated evidence does not constitute human signoff.
+  Evidence map: [protection-vm-resistance-2026-09-22-e3a491b3.json](protection-vm-resistance-2026-09-22-e3a491b3.json),
+  [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
   [protection-handler-clustering.json](protection-handler-clustering.json),
   [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
   `adversarial_validation` and `vm_resistance_blocker_totals`, plus the automated
@@ -101,8 +99,8 @@ review. It is not a feature roadmap and must not be read as a support claim.
 The continuous fuzzing scope has an additional reproducible local run at
 [protection-fuzz-2026-09-22-d02bc5b2.json](protection-fuzz-2026-09-22-d02bc5b2.json):
 20,000 target runs across 5,000 deterministic cases completed with zero
-failures. This strengthens the fuzzing evidence but does not close RB-006 or
-RB-007 without adversarial and human review.
+failures. This strengthens the fuzzing evidence but does not close the
+remaining resistance and signoff blockers without adversarial and human review.
 
 ## Blocker index
 

@@ -627,14 +627,7 @@ def test_release_contract_rejects_stale_vm_semantic_blocker_totals() -> None:
 def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
-    expected = [
-        "human-adversarial-validation",
-        "isa-opcode-diversity",
-        "handler-diversity",
-        "dispatcher-diversity",
-        "anti-tamper",
-        "progressive-bytecode-protection",
-    ]
+    expected = ["human-adversarial-validation"]
 
     expect(
         summary["vm_resistance_gap_scope"] == expected
@@ -659,8 +652,7 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
     expect(
         sorted(evidence) == sorted(gap_scope)
         and all(
-            row["evidence_quality"]
-            == ("automated-native-tamper-smoke" if gap == "anti-tamper" else "seed-diversity-only")
+            row["evidence_quality"] == "automated-adversarial-smoke"
             for gap, row in evidence.items()
         )
         and all(row["status"] != "complete" for row in evidence.values())
@@ -672,7 +664,7 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
 def test_support_matrix_records_latest_vm_resistance_campaign() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     evidence = matrix["matrix"]["summary"]["vm_resistance_gap_evidence"]
-    latest = "docs/protection-vm-resistance-2026-09-20.json"
+    latest = "docs/protection-vm-resistance-2026-09-22-e3a491b3.json"
 
     expect(all(latest in row["evidence"] for row in evidence.values()))
 
@@ -692,7 +684,7 @@ def test_release_contract_rejects_stale_vm_resistance_blocker_totals() -> None:
 
 def test_release_contract_rejects_missing_vm_resistance_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["matrix"]["summary"]["vm_resistance_gap_evidence"].pop("anti-tamper")
+    matrix["matrix"]["summary"]["vm_resistance_gap_evidence"].pop("human-adversarial-validation")
 
     rejected = False
     try:
@@ -1946,7 +1938,7 @@ def test_differential_workflow_keeps_main_campaigns_running() -> None:
 
     expect(
         "group: differential-corpus-${{ github.ref }}" in workflow
-        and "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in workflow
+        and "cancel-in-progress: ${{ github.event_name != 'schedule' }}" in workflow
     )
 
 

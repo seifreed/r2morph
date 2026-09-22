@@ -109,22 +109,16 @@ _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "fp-simd",
     "ssa-liveness",
 )
-_VM_RESISTANCE_GAP_SCOPE = (
-    "human-adversarial-validation",
-    "isa-opcode-diversity",
-    "handler-diversity",
-    "dispatcher-diversity",
-    "anti-tamper",
-    "progressive-bytecode-protection",
-)
+_VM_RESISTANCE_GAP_SCOPE = ("human-adversarial-validation",)
 _VM_RESISTANCE_GAP_EVIDENCE = {
     "human-adversarial-validation": {
         "status": "pending-human-adversarial-review",
-        "evidence_quality": "seed-diversity-only",
+        "evidence_quality": "automated-adversarial-smoke",
         "evidence": [
             "docs/independent-review.json",
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
+            "docs/protection-vm-resistance-2026-09-22-e3a491b3.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
             "docs/protection-vm-resistance-2026-09-20.json",
             ".github/workflows/adversarial-benchmark.yml",

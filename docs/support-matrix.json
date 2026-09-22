@@ -1744,102 +1744,35 @@
         "vm_semantic_gap_scope": 0
       },
       "vm_resistance_gap_scope": [
-        "human-adversarial-validation",
-        "isa-opcode-diversity",
-        "handler-diversity",
-        "dispatcher-diversity",
-        "anti-tamper",
-        "progressive-bytecode-protection"
+        "human-adversarial-validation"
       ],
       "vm_resistance_gap_evidence": {
         "human-adversarial-validation": {
           "status": "pending-human-adversarial-review",
-          "evidence_quality": "seed-diversity-only",
+          "evidence_quality": "automated-adversarial-smoke",
           "evidence": [
             "docs/independent-review.json",
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
+            "docs/protection-vm-resistance-2026-09-22-e3a491b3.json",
             "docs/protection-vm-resistance-2026-09-19-3feec419.json",
             "docs/protection-vm-resistance-2026-09-20.json",
             ".github/workflows/adversarial-benchmark.yml",
             "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_code_virtualization_real.py",
             "tests/integration/test_code_virtualization_diversification_real.py",
-            "tests/integration/test_vm_resistance_adversarial.py"
-          ]
-        },
-        "isa-opcode-diversity": {
-          "status": "seed-diversity-only-incomplete",
-          "evidence_quality": "seed-diversity-only",
-          "evidence": [
-            "docs/protection-bytecode-grammar.json",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            "scripts/vm_resistance_adversarial.py",
-            "tests/integration/test_vm_resistance_adversarial.py"
-          ]
-        },
-        "handler-diversity": {
-          "status": "seed-diversity-only-incomplete",
-          "evidence_quality": "seed-diversity-only",
-          "evidence": [
-            "docs/protection-handler-clustering.json",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            "scripts/vm_resistance_adversarial.py"
-          ]
-        },
-        "dispatcher-diversity": {
-          "status": "seed-diversity-only-incomplete",
-          "evidence_quality": "seed-diversity-only",
-          "evidence": [
-            "docs/protection-handler-clustering.json",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            "scripts/vm_resistance_adversarial.py"
-          ]
-        },
-        "anti-tamper": {
-          "status": "seed-diversity-only-incomplete",
-          "evidence_quality": "automated-native-tamper-smoke",
-          "evidence": [
-            "docs/protection-maturity.md",
-            ".github/workflows/adversarial-benchmark.yml",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            "tests/integration/test_code_virtualization_real.py",
-            "scripts/vm_resistance_adversarial.py",
-            "tests/integration/test_vm_resistance_adversarial.py"
-          ]
-        },
-        "progressive-bytecode-protection": {
-          "status": "seed-diversity-only-incomplete",
-          "evidence_quality": "seed-diversity-only",
-          "evidence": [
-            "docs/protection-bytecode-grammar.json",
-            ".github/workflows/adversarial-benchmark.yml",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            "tests/integration/test_code_virtualization_real.py",
-            "tests/integration/test_code_virtualization_diversification_real.py",
-            "scripts/vm_resistance_adversarial.py",
             "tests/integration/test_vm_resistance_adversarial.py"
           ]
         }
       },
       "vm_resistance_evidence_blockers": {
         "vm_resistance_gap_scope": [
-          "human-adversarial-validation",
-          "isa-opcode-diversity",
-          "handler-diversity",
-          "dispatcher-diversity",
-          "anti-tamper",
-          "progressive-bytecode-protection"
+          "human-adversarial-validation"
         ]
       },
       "vm_resistance_blocker_totals": {
-        "total_vm_resistance_blockers": 6,
-        "vm_resistance_gap_scope": 6
+        "total_vm_resistance_blockers": 1,
+        "vm_resistance_gap_scope": 1
       }
     },
     "cells": [
