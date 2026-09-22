@@ -225,16 +225,16 @@ int main() { return caller(); }
         boundary_was_transformed = binary.read_bytes(boundary_address, 8) != original_boundary_bytes
 
     runtime_result = run_command([executable], timeout=30)
-    unwind_failure_addresses = {
-        record["function_address"]
-        for record in stats["unsupported_functions"] + stats["partial_virtualization"]
-        if record["capability"] == "exceptions_and_unwinding"
+    rejected_addresses = {
+        record["function_address"] for record in stats["unsupported_functions"] + stats["partial_virtualization"]
     }
     expect(
-        not boundary_was_transformed and unwind_failure_addresses and runtime_result.returncode == EXPECTED_EXIT_CODE,
+        not boundary_was_transformed
+        and boundary_address in rejected_addresses
+        and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "a call with an exception edge crossing the VM was not rejected safely: "
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
-        f"{unwind_failure_addresses=}, {stats=}",
+        f"{rejected_addresses=}, {stats=}",
     )
 
 
