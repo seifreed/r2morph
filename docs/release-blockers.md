@@ -78,7 +78,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
   The next scheduled automated campaign is configured to cover fifteen fixtures
   across ten seeds and record
   semantic parity, opcode/handler/dispatcher diversity, anti-tamper divergence,
-  and progressive bytecode growth; it does not constitute human signoff.
+  and progressive bytecode growth; it runs once from shard zero rather than
+  duplicating the campaign across analyzer shards, and it does not constitute
+  human signoff.
   Evidence map: [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
   [protection-handler-clustering.json](protection-handler-clustering.json),
   [protection-bytecode-grammar.json](protection-bytecode-grammar.json)

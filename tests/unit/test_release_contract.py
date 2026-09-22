@@ -1752,6 +1752,27 @@ def test_adversarial_workflow_covers_fifteen_vm_resistance_shapes() -> None:
     )
 
 
+def test_adversarial_workflow_runs_vm_resistance_once_per_campaign() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    vm_steps = (
+        "Run VM resistance seed-diversity smoke",
+        "Validate VM resistance seed-diversity evidence",
+        "Run VM tamper and progressive protection smoke",
+        "Validate VM tamper and progressive protection smoke",
+        "Upload VM tamper and progressive protection smoke",
+        "Upload VM resistance seed-diversity evidence",
+        "Upload VM resistance bytecode grammar evidence",
+    )
+
+    expect(
+        all(
+            "if: always() && matrix.fixture_shard == 0"
+            in workflow.split(f"      - name: {step}\n", maxsplit=1)[1].split("      - name:", maxsplit=1)[0]
+            for step in vm_steps
+        )
+    )
+
+
 def test_adversarial_workflow_provisions_reproducible_ghidra() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
 

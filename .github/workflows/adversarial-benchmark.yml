@@ -253,7 +253,7 @@ jobs:
           PY
 
       - name: Run VM resistance seed-diversity smoke
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cp -R docs "$wheel_root"/
@@ -273,7 +273,7 @@ jobs:
             tests/unit/test_resistance_measurement_contract.py
 
       - name: Validate VM resistance seed-diversity evidence
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         run: |
           python - <<'PY'
           import json
@@ -300,7 +300,7 @@ jobs:
           PY
 
       - name: Run VM tamper and progressive protection smoke
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check
           cd "$wheel_root"
@@ -329,7 +329,7 @@ jobs:
             tests/integration/test_vm_resistance_adversarial.py
 
       - name: Validate VM tamper and progressive protection smoke
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         run: |
           python - <<'PY'
           import json
@@ -390,7 +390,7 @@ jobs:
 
       - name: Upload VM tamper and progressive protection smoke
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         with:
           name: vm-resistance-adversarial-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -406,14 +406,14 @@ jobs:
 
       - name: Upload VM resistance seed-diversity evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         with:
           name: vm-resistance-seed-diversity-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-resistance-seed-diversity.json
 
       - name: Upload VM resistance bytecode grammar evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && matrix.fixture_shard == 0
         with:
           name: vm-resistance-bytecode-grammar-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-resistance-bytecode-grammar.json
