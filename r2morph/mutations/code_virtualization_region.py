@@ -22,7 +22,7 @@ The interpreter assembly and bytecode generation for a lowered region live in
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import r2morph.core.randomness as random
 from r2morph.mutations import code_virtualization_region_classification as classification
@@ -69,6 +69,16 @@ class _RegionBuild:
     ret_addrs: set[int]
     body: list[dict[str, Any]]
     call_site_item_of: dict[int, int]
+
+
+@dataclass(frozen=True)
+class _PreparedRegion:
+    tail_exit_targets: dict[int, int]
+    native_instruction_targets: dict[int, int]
+    ret_cleanup: dict[int, int]
+    exit_addrs: list[int]
+    ret_addrs: set[int]
+    body: list[dict[str, Any]]
 
 
 def _record_call_site_item(mapping: dict[int, int], address: int, item_kind: str, item_index: int) -> None:
@@ -765,7 +775,49 @@ def _build_region_items(
     allow_computed_jump: bool,
     function_range: tuple[int, int] | None,
     known_function_ranges: tuple[tuple[int, int], ...] | None,
+    native_ranges: tuple[tuple[int, int], ...],
 ) -> _RegionBuild | None:
+    prepared = _prepare_region(
+        instructions,
+        function_range,
+        known_function_ranges,
+        native_ranges,
+    )
+    if prepared is None:
+        return None
+    items: list[list[Any]] = []
+    item_index_of: dict[int, int] = {}
+    call_site_item_of: dict[int, int] = {}
+    exit_set = set(prepared.exit_addrs)
+    for instruction in prepared.body:
+        item = classification._classify(instruction, allow_computed_jump=allow_computed_jump)
+        if item is None:
+            return None
+        item_index_of[instruction["addr"]] = len(items)
+        _record_call_site_item(call_site_item_of, instruction["addr"], item[0], len(items))
+        items.append(item)
+        next_address = instruction["addr"] + instruction.get("size", 0)
+        if item[0] not in ("jmp", "ijmp", "ijmpmemrip") and next_address in exit_set:
+            items.append(["jmp", next_address])
+    for address in prepared.exit_addrs:
+        items.append(_exit_item(address, prepared.tail_exit_targets, prepared.ret_cleanup))
+    return _RegionBuild(
+        items,
+        item_index_of,
+        prepared.exit_addrs,
+        prepared.tail_exit_targets,
+        prepared.ret_addrs,
+        prepared.body,
+        call_site_item_of,
+    )
+
+
+def _prepare_region(
+    instructions: list[dict[str, Any]],
+    function_range: tuple[int, int] | None,
+    known_function_ranges: tuple[tuple[int, int], ...] | None,
+    native_ranges: tuple[tuple[int, int], ...],
+) -> _PreparedRegion | None:
     instructions = _trim_trailing_padding(instructions)
     instructions = [_normalize_syscall_instruction(instruction) for instruction in instructions]
     instructions = _trim_after_unreferenced_terminal_syscall(instructions)
@@ -773,6 +825,15 @@ def _build_region_items(
         return None
     instruction_addresses = {int(instruction["addr"]) for instruction in instructions}
     tail_exit_targets = _tail_exit_targets(instructions, instruction_addresses, function_range, known_function_ranges)
+    native_targets = _native_instruction_targets(instructions, native_ranges)
+    if native_targets is None:
+        return None
+    native_instruction_targets, native_entrypoints = native_targets
+    if instructions[0]["addr"] in native_instruction_targets or not _native_ranges_are_closed(
+        instructions, native_instruction_targets
+    ):
+        return None
+    tail_exit_targets.update(native_instruction_targets)
     ret_cleanup: dict[int, int] = {}
     for instruction in instructions:
         if instruction.get("type") != "ret":
@@ -790,30 +851,45 @@ def _build_region_items(
             or _is_terminal_syscall(instructions, index)
             or instruction["addr"] in tail_exit_targets
         }
+        - set(native_instruction_targets)
+        | native_entrypoints
     )
-    if not exit_addrs:
-        return None
     exit_set = set(exit_addrs)
     ret_addrs = {instruction["addr"] for instruction in instructions if instruction.get("type") == "ret"}
-    body = [instruction for instruction in instructions if instruction["addr"] not in exit_set]
-    if not body:
+    body = [
+        instruction
+        for instruction in instructions
+        if instruction["addr"] not in exit_set and instruction["addr"] not in native_instruction_targets
+    ]
+    if not exit_addrs or not body:
         return None
-    items: list[list[Any]] = []
-    item_index_of: dict[int, int] = {}
-    call_site_item_of: dict[int, int] = {}
-    for instruction in body:
-        item = classification._classify(instruction, allow_computed_jump=allow_computed_jump)
-        if item is None:
+    return _PreparedRegion(
+        tail_exit_targets,
+        native_instruction_targets,
+        ret_cleanup,
+        exit_addrs,
+        ret_addrs,
+        body,
+    )
+
+
+def _native_instruction_targets(
+    instructions: list[dict[str, Any]], native_ranges: tuple[tuple[int, int], ...]
+) -> tuple[dict[int, int], set[int]] | None:
+    targets: dict[int, int] = {}
+    for native_start, native_end in native_ranges:
+        if native_end <= native_start:
             return None
-        item_index_of[instruction["addr"]] = len(items)
-        _record_call_site_item(call_site_item_of, instruction["addr"], item[0], len(items))
-        items.append(item)
-        next_address = instruction["addr"] + instruction.get("size", 0)
-        if item[0] not in ("jmp", "ijmp", "ijmpmemrip") and next_address in exit_set:
-            items.append(["jmp", next_address])
-    for address in exit_addrs:
-        items.append(_exit_item(address, tail_exit_targets, ret_cleanup))
-    return _RegionBuild(items, item_index_of, exit_addrs, tail_exit_targets, ret_addrs, body, call_site_item_of)
+        matched = False
+        for instruction in instructions:
+            address = int(instruction["addr"])
+            end = address + int(instruction.get("size", 0))
+            if native_start <= address < native_end and end > native_start:
+                targets[address] = native_start
+                matched = True
+        if not matched:
+            return None
+    return targets, set(targets.values())
 
 
 def _resolve_call_targets(
@@ -843,6 +919,34 @@ def _resolve_call_targets(
             continue
         item[0] = "vcall"
         item[1] = resolved
+    return True
+
+
+_NATIVE_CALL_TYPES = frozenset({"call", "rcall", "ucall", "icall"})
+_NATIVE_TERMINATOR_TYPES = frozenset(
+    {"ret", "jmp", "ujmp", "rjmp", "ijmp", "mjmp", "irjmp", "swi", "trap", "invalid", "udf"}
+)
+
+
+def _native_ranges_are_closed(instructions: list[dict[str, Any]], native_instruction_targets: dict[int, int]) -> bool:
+    """Keep native landing-pad control flow out of overwritten VM bytes."""
+    if not native_instruction_targets:
+        return True
+    addresses = {int(instruction["addr"]) for instruction in instructions}
+    native_addresses = set(native_instruction_targets)
+    for instruction in instructions:
+        address = int(instruction["addr"])
+        if address not in native_addresses:
+            continue
+        kind = str(instruction.get("type", "")).lower()
+        if kind not in _NATIVE_CALL_TYPES:
+            for key in ("jump", "fail"):
+                target = instruction.get(key)
+                if isinstance(target, int) and target in addresses and target not in native_addresses:
+                    return False
+        next_address = address + int(instruction.get("size", 0))
+        if kind not in _NATIVE_TERMINATOR_TYPES and next_address in addresses and next_address not in native_addresses:
+            return False
     return True
 
 
@@ -892,6 +996,7 @@ def extract_region(
     allow_computed_jump: bool = False,
     function_range: tuple[int, int] | None = None,
     known_function_ranges: tuple[tuple[int, int], ...] | None = None,
+    **options: object,
 ) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
@@ -903,8 +1008,17 @@ def extract_region(
     indirect jump is lowered to an ``ijmp`` whose runtime target re-enters the VM
     via a target map (native address -> item index) built here. It is off by
     default so the straight-line contract and its guards are unchanged.
+    ``native_ranges`` preserves native exception-handler instruction ranges and
+    makes VM control flow exit to their original addresses.
     """
-    build = _build_region_items(instructions, allow_computed_jump, function_range, known_function_ranges)
+    native_ranges = cast(tuple[tuple[int, int], ...], options.get("native_ranges", ()))
+    build = _build_region_items(
+        instructions,
+        allow_computed_jump,
+        function_range,
+        known_function_ranges,
+        native_ranges,
+    )
     if build is None or not _resolve_region_targets(build, instructions, known_function_ranges):
         return None
     has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)

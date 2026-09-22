@@ -3,7 +3,7 @@
 from typing import Any
 
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
-from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _landing_pad_native_ranges
 from r2morph.mutations.code_virtualization_apply import (
     _empty_result,
     _entrypoint_addresses,
@@ -27,6 +27,7 @@ from tests.utils.assertions import expect
 _EXPECTED_DIAGNOSTIC_OPCODE_CHARS = 96
 _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE = 5
 _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS = 0x40100A
+_NATIVE_LANDING_PAD_ADDRESS = 0x1010
 
 
 class _SectionsBinary:
@@ -535,6 +536,53 @@ def test_unwind_region_supports_remapped_protected_call_site() -> None:
     )
 
     expect(region_supports_unwind_contract(region, frame))
+
+
+def test_extract_region_preserves_native_landing_pad_and_exits_to_it() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 5, "type": "mov", "opcode": "mov eax, 1"},
+        {"addr": 0x1005, "size": 2, "type": "cmp", "opcode": "cmp eax, 0"},
+        {"addr": 0x1007, "size": 2, "type": "cjmp", "opcode": "je 0x1010", "jump": 0x1010, "fail": 0x1009},
+        {"addr": 0x1009, "size": 3, "type": "add", "opcode": "add eax, 1"},
+        {"addr": 0x100C, "size": 5, "type": "jmp", "opcode": "jmp 0x1015", "jump": 0x1015},
+        {"addr": 0x1010, "size": 3, "type": "mov", "opcode": "mov ebx, eax"},
+        {"addr": 0x1013, "size": 1, "type": "ret", "opcode": "ret"},
+        {"addr": 0x1015, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+
+    region = extract_region(instructions, native_ranges=((_NATIVE_LANDING_PAD_ADDRESS, 0x1014),))
+
+    expect(
+        region is not None
+        and all(address != _NATIVE_LANDING_PAD_ADDRESS for address, _size in region.body_ranges)
+        and any(item == ("exit", _NATIVE_LANDING_PAD_ADDRESS) for item in region.instructions)
+    )
+
+
+def test_landing_pad_native_ranges_follow_handler_control_flow() -> None:
+    instructions = [
+        {"addr": _NATIVE_LANDING_PAD_ADDRESS, "size": 3, "type": "mov", "opcode": "mov ebx, eax"},
+        {"addr": 0x1013, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+    frame = ExceptionFrame(
+        function_start=0x1000,
+        function_end=0x1020,
+        landing_pads=[LandingPad(_NATIVE_LANDING_PAD_ADDRESS, 1, ExceptionAction.CATCH)],
+    )
+
+    expect(_landing_pad_native_ranges(instructions, frame) == ((_NATIVE_LANDING_PAD_ADDRESS, 0x1013), (0x1013, 0x1014)))
+
+
+def test_extract_region_rejects_native_landing_pad_that_reenters_vm_body() -> None:
+    instructions = [
+        {"addr": 0x1000, "size": 5, "type": "mov", "opcode": "mov eax, 1"},
+        {"addr": 0x1005, "size": 2, "type": "jmp", "opcode": "jmp 0x1010", "jump": 0x1010},
+        {"addr": 0x1007, "size": 3, "type": "add", "opcode": "add eax, 1"},
+        {"addr": 0x100A, "size": 1, "type": "ret", "opcode": "ret"},
+        {"addr": 0x1010, "size": 5, "type": "jmp", "opcode": "jmp 0x1007", "jump": 0x1007},
+    ]
+
+    expect(extract_region(instructions, native_ranges=((_NATIVE_LANDING_PAD_ADDRESS, 0x1015),)) is None)
 
 
 def test_unwind_diagnostic_points_to_call_site() -> None:

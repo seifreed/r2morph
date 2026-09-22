@@ -252,6 +252,57 @@ def _legacy_lsda_call_sites(frame: Any) -> tuple[tuple[int, int, int, int], ...]
     return tuple(sites)
 
 
+_LANDING_PAD_TERMINATORS = frozenset(
+    {"ret", "jmp", "ujmp", "rjmp", "ijmp", "mjmp", "irjmp", "swi", "trap", "invalid", "udf"}
+)
+_LANDING_PAD_CALLS = frozenset({"call", "rcall", "ucall", "icall"})
+
+
+def _landing_pad_native_ranges(
+    instructions: list[dict[str, Any]], frame: Any | None
+) -> tuple[tuple[int, int], ...] | None:
+    """Return the instruction ranges that must remain native for LSDA handlers."""
+    landing_pads = tuple(getattr(frame, "landing_pads", ())) if frame is not None else ()
+    if not landing_pads:
+        return ()
+    by_address = {int(instruction["addr"]): instruction for instruction in instructions}
+    native_addresses: set[int] = set()
+    for landing_pad in landing_pads:
+        start = getattr(landing_pad, "address", None)
+        if not isinstance(start, int) or start not in by_address:
+            return None
+        pending = [start]
+        while pending:
+            address = pending.pop()
+            if address in native_addresses:
+                continue
+            instruction = by_address.get(address)
+            if instruction is None:
+                return None
+            native_addresses.add(address)
+            kind = str(instruction.get("type", "")).lower()
+            if kind not in _LANDING_PAD_CALLS:
+                for key in ("jump", "fail"):
+                    target = instruction.get(key)
+                    if isinstance(target, int) and target in by_address:
+                        pending.append(target)
+            if kind in _LANDING_PAD_TERMINATORS:
+                continue
+            next_address = address + int(instruction.get("size", 0))
+            if next_address in by_address:
+                pending.append(next_address)
+    return tuple(
+        sorted(
+            (
+                address,
+                address + int(by_address[address].get("size", 0)),
+            )
+            for address in native_addresses
+            if int(by_address[address].get("size", 0)) > 0
+        )
+    )
+
+
 def _region_has_protected_call_site(region: Any, frame: Any) -> bool:
     call_sites = tuple(getattr(frame, "lsda_call_sites", ()))
     native_ranges = (
@@ -786,11 +837,15 @@ class CodeVirtualizationPass(MutationPass):
             )
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
             known_function_ranges = None
+        native_ranges = _landing_pad_native_ranges(complete_ops, unwind_frame)
+        if native_ranges is None:
+            return None
         region = extract_region(
             complete_ops,
             rng,
             function_range=function_range,
             known_function_ranges=known_function_ranges,
+            native_ranges=native_ranges,
         )
         if region is None:
             return None
