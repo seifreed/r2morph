@@ -1780,6 +1780,15 @@ def test_differential_merge_step_closes_python_heredoc() -> None:
     expect(merge_step.rstrip().endswith("          PY"))
 
 
+def test_vm_semantic_merge_step_closes_python_heredoc() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    merge_step = workflow.split("      - name: Merge and validate VM semantic campaign\n", 1)[1].split(
+        "      - name: Upload merged VM semantic campaign evidence\n", 1
+    )[0]
+
+    expect(merge_step.rstrip().endswith("          PY"))
+
+
 def test_continuous_fuzz_workflow_runs_against_installed_wheel() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
 

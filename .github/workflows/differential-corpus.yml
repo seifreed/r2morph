@@ -903,6 +903,7 @@ jobs:
               json.dumps(report, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
+          PY
 
       - name: Upload merged VM semantic campaign evidence
         uses: actions/upload-artifact@v7
