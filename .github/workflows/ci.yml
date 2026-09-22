@@ -90,12 +90,7 @@ jobs:
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies
         run: |
@@ -131,12 +126,7 @@ jobs:
             git build-essential gcc-arm-linux-gnueabihf pkg-config wget cmake qemu-user
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install Python dependencies
         run: |
@@ -177,12 +167,7 @@ jobs:
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install Python dependencies
         run: |
@@ -215,12 +200,7 @@ jobs:
             git build-essential clang lld gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake gdb
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install Python dependencies
         run: |
@@ -253,12 +233,7 @@ jobs:
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install Python dependencies
         run: |
@@ -307,12 +282,7 @@ jobs:
 
       - name: Install radare2 (Linux/macOS)
         if: runner.os != 'Windows'
-        run: |
-          git clone --depth 1 \
-            --branch 6.2.0 \
-            https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install radare2 (Windows)
         if: runner.os == 'Windows'

@@ -47,9 +47,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential clang lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf pkg-config wget cmake binutils qemu-user
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies
         run: |
@@ -675,9 +673,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential pkg-config wget cmake binutils qemu-user
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install package
         run: |
@@ -1427,10 +1423,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install radare2
-        run: |
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+        run: bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies and package
         run: |
@@ -1628,9 +1621,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential pkg-config wget cmake binutils
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies and r2morph wheel
         run: |
@@ -1840,9 +1831,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential pkg-config wget cmake binutils
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies
         run: |
@@ -1933,9 +1922,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential clang lld pkg-config wget cmake binutils
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies and package
         run: |
@@ -2009,9 +1996,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential clang lld gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake binutils
-          git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
-          cd /tmp/radare2
-          sys/install.sh
+          bash .github/scripts/install_radare2.sh
 
       - name: Install dependencies and package
         run: |
