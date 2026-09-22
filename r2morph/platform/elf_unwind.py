@@ -234,6 +234,7 @@ def _build_lsda(
     if len(template) == _LEGACY_LSDA_TEMPLATE_FIELDS:
         legacy_template = cast(tuple[int, int, int | None, int, bytes], template)
         _landing_pad_encoding, type_encoding, type_table_offset, action_table_offset, suffix = legacy_template
+        call_site_encoding = _DW_EH_PE_SDATA4
         type_table_delta = None if type_table_offset is None else type_table_offset - action_table_offset
     else:
         current_template = cast(
