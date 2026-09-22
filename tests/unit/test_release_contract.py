@@ -1865,6 +1865,9 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and 'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")' in cross_platform_job
         and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in cross_platform_job
         and "test_targets = [" in cross_platform_job
+        and 'if platform.system() != "Windows":' in cross_platform_job
+        and '"tests/integration/test_binary_rewriter_formats_real.py"' in cross_platform_job
+        and '"tests/integration/test_platform_deeper.py"' in cross_platform_job
         and "x64_assembler_targets = [" in cross_platform_job
         and 'if platform.machine().lower() in {"amd64", "x86_64"}:' in cross_platform_job
         and '"tests/unit/test_circular_imports.py"' in cross_platform_job
