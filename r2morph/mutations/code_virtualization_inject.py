@@ -427,6 +427,41 @@ def _header_load_index(table: bytes, e_phnum: int) -> int | None:
     return None
 
 
+def _ensure_header_load_spans_table(table: bytearray, e_phoff: int, e_phnum: int) -> bool:
+    """Keep an in-place program-header table mapped by the header load."""
+    header_index = _header_load_index(bytes(table), e_phnum)
+    if header_index is None:
+        return True
+    header_base = header_index * _PHDR_ENTRY_SIZE
+    header_offset = struct.unpack_from("<Q", table, header_base + _P_OFFSET)[0]
+    table_end = e_phoff + e_phnum * _PHDR_ENTRY_SIZE
+    header_filesz = struct.unpack_from("<Q", table, header_base + _P_FILESZ)[0]
+    if table_end <= header_offset + header_filesz:
+        return True
+    next_offset = min(
+        (
+            struct.unpack_from("<Q", table, index * _PHDR_ENTRY_SIZE + _P_OFFSET)[0]
+            for index in range(e_phnum)
+            if (
+                struct.unpack_from("<I", table, index * _PHDR_ENTRY_SIZE + _P_TYPE)[0] == _PT_LOAD
+                and struct.unpack_from("<Q", table, index * _PHDR_ENTRY_SIZE + _P_OFFSET)[0] > header_offset
+            )
+        ),
+        default=None,
+    )
+    if next_offset is not None and table_end > next_offset:
+        return False
+    new_size = table_end - header_offset
+    struct.pack_into("<Q", table, header_base + _P_FILESZ, new_size)
+    struct.pack_into(
+        "<Q",
+        table,
+        header_base + _P_MEMSZ,
+        max(struct.unpack_from("<Q", table, header_base + _P_MEMSZ)[0], new_size),
+    )
+    return True
+
+
 def _eh_frame_entry(offset: int, vaddr: int, size: int) -> bytes:
     """Describe an appended searchable ``.eh_frame_hdr`` range."""
     entry = bytearray(_PHDR_ENTRY_SIZE)
@@ -571,6 +606,13 @@ def _header_table_relocation(placement: _Placement, table_size: int) -> tuple[in
     table_offset = _align_up(max(placement.file_size, header.offset + header.filesz), _PHDR_TABLE_ALIGNMENT)
     table_vaddr = header.vaddr + table_offset - header.offset
     if next_vaddr is not None and table_vaddr + table_size > next_vaddr:
+        # The initial load has no room once the table grows past its first
+        # page. Put the table in the reserved prefix of the next RX load;
+        # that load is created by the caller and maps the table explicitly.
+        table_offset = placement.append_offset
+        table_vaddr = placement.segment_vaddr
+        if table_offset + table_size <= placement.blob_offset:
+            return table_offset, table_vaddr
         return None
     return table_offset, table_vaddr
 
@@ -598,17 +640,6 @@ def _relocated_phdr_table(
         base = index * _PHDR_ENTRY_SIZE
         if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_PHDR:
             _retarget_phdr_entry(table, base, table_offset, table_vaddr, table_size)
-    header_index = _header_load_index(bytes(table), placement.e_phnum)
-    if header_index is not None:
-        header_base = header_index * _PHDR_ENTRY_SIZE
-        header_end = table_offset + table_size
-        struct.pack_into("<Q", table, header_base + _P_FILESZ, header_end)
-        struct.pack_into(
-            "<Q",
-            table,
-            header_base + _P_MEMSZ,
-            max(struct.unpack_from("<Q", table, header_base + _P_MEMSZ)[0], header_end),
-        )
     consumed = 0
     for index, size in enumerate(fragment_sizes):
         if index == 0:
@@ -640,6 +671,17 @@ def _relocated_phdr_table(
         else:
             base = eh_frame_index * _PHDR_ENTRY_SIZE
             table[base : base + _PHDR_ENTRY_SIZE] = eh_frame_entry
+    header_index = _header_load_index(bytes(table), placement.e_phnum)
+    if header_index is not None and table_offset < placement.append_offset:
+        header_base = header_index * _PHDR_ENTRY_SIZE
+        header_end = table_offset + len(table)
+        struct.pack_into("<Q", table, header_base + _P_FILESZ, header_end)
+        struct.pack_into(
+            "<Q",
+            table,
+            header_base + _P_MEMSZ,
+            max(struct.unpack_from("<Q", table, header_base + _P_MEMSZ)[0], header_end),
+        )
     return bytes(table), table_offset
 
 
@@ -687,11 +729,10 @@ def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes, metadat
         struct.pack_into("<Q", table, eh_base + _P_PADDR, placement.blob_vaddr + metadata_offset)
         struct.pack_into("<Q", table, eh_base + _P_FILESZ, len(payload_metadata))
         struct.pack_into("<Q", table, eh_base + _P_MEMSZ, len(payload_metadata))
+    if not _ensure_header_load_spans_table(table, placement.e_phoff, placement.e_phnum):
+        return None
     _write_physical(binary, placement.blob_offset, payload)
-    _write_physical(binary, placement.e_phoff + base, bytes(table[base : base + _PHDR_ENTRY_SIZE]))
-    if eh_frame_index is not None:
-        eh_base = eh_frame_index * _PHDR_ENTRY_SIZE
-        _write_physical(binary, placement.e_phoff + eh_base, bytes(table[eh_base : eh_base + _PHDR_ENTRY_SIZE]))
+    _write_physical(binary, placement.e_phoff, bytes(table))
     if _read_physical(binary, placement.blob_offset, len(payload)) != payload:
         logger.warning("VM blob read-back mismatch at inline offset 0x%x; injection failed", placement.blob_offset)
         return None
@@ -750,12 +791,13 @@ def _inject_replacement_blob(binary: Any, placement: _Placement, blob: bytes, me
         struct.pack_into("<Q", table, eh_base + _P_PADDR, placement.blob_vaddr + metadata_offset)
         struct.pack_into("<Q", table, eh_base + _P_FILESZ, len(payload_metadata))
         struct.pack_into("<Q", table, eh_base + _P_MEMSZ, len(payload_metadata))
-    _write_physical(binary, placement.append_offset, payload)
-    _write_physical(binary, placement.e_phoff, bytes(table))
-    if _read_physical(binary, placement.blob_offset, len(payload)) != payload:
+    if _ensure_header_load_spans_table(table, placement.e_phoff, placement.e_phnum):
+        _write_physical(binary, placement.append_offset, payload)
+        _write_physical(binary, placement.e_phoff, bytes(table))
+        if _read_physical(binary, placement.blob_offset, len(payload)) == payload:
+            return placement.blob_vaddr
         logger.warning("VM blob read-back mismatch at replacement offset 0x%x; injection failed", placement.blob_offset)
-        return None
-    return placement.blob_vaddr
+    return None
 
 
 def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, metadata: bytes) -> int | None:
@@ -768,7 +810,8 @@ def _inject_fragmented_blob(binary: Any, placement: _Placement, blob: bytes, met
         payload_metadata = merged_metadata
     payload = blob + bytes(metadata_offset - len(blob)) + payload_metadata
     fragment_sizes = _fragment_sizes(payload)
-    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if payload_metadata else 0)
+    existing_eh_frame = _eh_frame_index(placement.table, placement.e_phnum) is not None
+    new_phnum = placement.e_phnum + len(fragment_sizes) + (1 if payload_metadata and not existing_eh_frame else 0)
     if not fragment_sizes or new_phnum > _MAX_PHDR_ENTRIES:
         return None
     padding = bytes(placement.append_offset - placement.file_size)

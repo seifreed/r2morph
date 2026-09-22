@@ -69,6 +69,7 @@ _FIXTURE_DYN = _DATASET / "elf_switch_pie_x86_64"
 _FIXTURE_LARGE_WRITE = _DATASET / "elf_vm_arith_x86_64"
 _FIXTURE_COMPACT = _DATASET / "elf_vm_movd_x86_64"
 _FIXTURE_UNWIND = _DATASET / "elf_vm_unwind_x86_64"
+_REPEATED_INJECTION_COUNT = 5
 
 # ELF64 header field offsets used by the verification oracle.
 _E_PHOFF = 0x20
@@ -375,6 +376,31 @@ def test_second_fragmented_blob_preserves_strict_loader_invariants(tmp_path: Pat
 
     _inject_into(target, _BLOB[::-1])
 
+    assert_loadable(target)
+
+
+def test_repeated_unwind_blob_injection_relocates_table_into_new_rx_prefix(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    injected_addresses: list[int] = []
+
+    for index in range(_REPEATED_INJECTION_COUNT):
+        blob = bytes((offset * (index + 7) + index) & 0xFF for offset in range(_BLOB_SIZE))
+        binary = Binary(str(target), writable=True)
+        binary.open()
+        try:
+            blob_vaddr = predict_blob_vaddr(binary, allow_inline=False)
+            if blob_vaddr is None:
+                raise AssertionError("unwind-enabled injection did not produce a placement")
+            metadata = build_vm_eh_frame(blob_vaddr, len(blob), 0x400, blob_vaddr + len(blob))
+            injected = inject_blob(binary, blob, unwind_metadata=metadata)
+        finally:
+            binary.close()
+        if injected is None:
+            raise AssertionError(f"unwind-enabled injection failed on iteration {index}")
+        injected_addresses.append(injected)
+        expect(_blob_at(target, injected, len(blob)) == blob)
+
+    expect(len(set(injected_addresses)) == _REPEATED_INJECTION_COUNT)
     assert_loadable(target)
 
 
