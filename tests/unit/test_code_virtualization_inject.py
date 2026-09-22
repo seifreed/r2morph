@@ -379,8 +379,8 @@ def test_second_fragmented_blob_preserves_strict_loader_invariants(tmp_path: Pat
     assert_loadable(target)
 
 
-def test_repeated_unwind_blob_injection_relocates_table_into_new_rx_prefix(tmp_path: Path) -> None:
-    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+def test_repeated_unwind_blob_injection_reuses_mapped_table_slack(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_EXEC, tmp_path)
     injected_addresses: list[int] = []
 
     for index in range(_REPEATED_INJECTION_COUNT):
@@ -401,6 +401,10 @@ def test_repeated_unwind_blob_injection_relocates_table_into_new_rx_prefix(tmp_p
         expect(_blob_at(target, injected, len(blob)) == blob)
 
     expect(len(set(injected_addresses)) == _REPEATED_INJECTION_COUNT)
+    raw = target.read_bytes()
+    e_phoff = struct.unpack_from("<Q", raw, _E_PHOFF)[0]
+    header_segment = next(entry for entry in program_headers(target) if entry.p_type == PT_LOAD and entry.p_offset == 0)
+    expect(header_segment.p_offset <= e_phoff < header_segment.p_offset + header_segment.p_filesz)
     assert_loadable(target)
 
 

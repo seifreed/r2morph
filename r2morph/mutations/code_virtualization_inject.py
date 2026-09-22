@@ -598,6 +598,14 @@ def _header_table_relocation(placement: _Placement, table_size: int) -> tuple[in
     if header is None:
         return None
     next_offset = min((load.offset for load in loads if load.offset > 0), default=None)
+    current_table_end = placement.e_phoff + placement.e_phnum * _PHDR_ENTRY_SIZE
+    if (
+        placement.e_phoff != _ELF64_HEADER_SIZE
+        and header.offset <= placement.e_phoff
+        and current_table_end <= header.offset + header.filesz
+        and (next_offset is None or placement.e_phoff + table_size <= next_offset)
+    ):
+        return placement.e_phoff, header.vaddr + placement.e_phoff - header.offset
     table_offset = _align_up(header.offset + header.filesz, _PHDR_TABLE_ALIGNMENT)
     if next_offset is None or table_offset + table_size <= next_offset:
         return table_offset, header.vaddr + table_offset - header.offset
