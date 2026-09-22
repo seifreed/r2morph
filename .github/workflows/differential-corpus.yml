@@ -1,8 +1,8 @@
 name: Differential Corpus By Pass
 
 concurrency:
-  group: differential-corpus-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: differential-corpus-${{ github.ref }}
+  cancel-in-progress: true
 
 "on":
   push:
