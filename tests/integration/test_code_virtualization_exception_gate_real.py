@@ -16,8 +16,8 @@ EXPECTED_EXIT_CODE = 42
 FIXTURE_SEED = 20260827
 
 
-def test_code_virtualization_rejects_lsda_function_without_mutation(tmp_path: Path) -> None:
-    """An LSDA-bearing function is rejected until its call sites can be mapped."""
+def test_code_virtualization_remaps_lsda_function_without_runtime_change(tmp_path: Path) -> None:
+    """An LSDA-bearing function is virtualized with its native landing pad."""
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
     source = tmp_path / "unwind.cpp"
@@ -71,10 +71,10 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
     }
     expect(
         stats["functions_virtualized"] > 0
-        and not protected_was_transformed
-        and protected_address in unwind_failure_addresses
+        and protected_was_transformed
+        and protected_address not in unwind_failure_addresses
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
-        "an LSDA-bearing function was not rejected safely: "
+        "an LSDA-bearing function did not preserve its native landing pad: "
         f"{protected_address=:#x}, {runtime_result.returncode=}, {unwind_failure_addresses=}, {stats=}",
     )
 

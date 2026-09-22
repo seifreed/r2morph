@@ -658,9 +658,9 @@ def _function_has_unproven_unwind_metadata(
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
-    The VM metadata writer covers ordinary FDEs only. An LSDA or landing pad
-    also requires remapping protected ranges and preserving handler bodies;
-    reject it even when the candidate-region call detector did not find a call.
+    LSDA-bearing regions are safe only after the parsed template and personality
+    are available. Region construction then verifies protected ranges and
+    remaps them into the injected VM metadata.
     """
     if unwind_section is None:
         return False
@@ -680,7 +680,9 @@ def _function_has_unproven_unwind_metadata(
         # A linked ELF may carry .eh_frame entries for startup/runtime code
         # while a target function intentionally has no unwind contract.
         return unwind_section != ".eh_frame"
-    return frame.lsda_address is not None or bool(frame.landing_pads)
+    if frame.lsda_address is None and not frame.landing_pads:
+        return False
+    return frame.lsda_template is None or not isinstance(frame.personality, int)
 
 
 def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:
