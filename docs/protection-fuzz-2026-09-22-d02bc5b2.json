@@ -1,0 +1,18 @@
+{
+  "cases": 5000,
+  "commit": "d02bc5b2",
+  "failure_count": 0,
+  "failure_limit": 128,
+  "failures": [],
+  "max_payload": 4096,
+  "schema_version": 1,
+  "seed": 20260922,
+  "target_runs": {
+    "binary_parsers": 5000,
+    "binary_rewriter": 5000,
+    "relocations": 5000,
+    "vm_dispatcher": 5000
+  },
+  "total_target_runs": 20000,
+  "status": "complete"
+}

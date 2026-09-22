@@ -98,6 +98,12 @@ review. It is not a feature roadmap and must not be read as a support claim.
   external human review records signoff for the VM milestone and the release
   decision no longer blocks the VM milestone.
 
+The continuous fuzzing scope has an additional reproducible local run at
+[protection-fuzz-2026-09-22-d02bc5b2.json](protection-fuzz-2026-09-22-d02bc5b2.json):
+20,000 target runs across 5,000 deterministic cases completed with zero
+failures. This strengthens the fuzzing evidence but does not close RB-006 or
+RB-007 without adversarial and human review.
+
 ## Blocker index
 
 | ID | Area | Evidence |
