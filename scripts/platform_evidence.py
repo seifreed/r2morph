@@ -17,6 +17,7 @@ _REQUIRED_CASES = {
         "test_macho_handler_repair_and_codesign",
         "test_nop_insertion_arm64_preserves_native_output",
         "test_instruction_substitution_arm64_preserves_native_output",
+        "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "test_register_substitution_arm64_preserves_generated_native_execution",
         "test_constant_unfolding_arm64_preserves_native_output",
         "test_x86_mutation_sequence_preserves_native_exit_code",
@@ -62,6 +63,7 @@ _PASS_CASES = {
     "macos-arm64": {
         "NopInsertion": "test_nop_insertion_arm64_preserves_native_output",
         "InstructionSubstitution": "test_instruction_substitution_arm64_preserves_native_output",
+        "Composition": "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "RegisterSubstitution": "test_register_substitution_arm64_preserves_generated_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_arm64_preserves_native_output",
     },

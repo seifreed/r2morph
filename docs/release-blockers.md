@@ -50,8 +50,9 @@ review. It is not a feature roadmap and must not be read as a support claim.
 
 - RB-004: PE, Mach-O, ARM, and AArch64 remain preview or experimental and do not have
   parity with Linux ELF x86-64. Evidence map:
-  [support-matrix.json](support-matrix.json) `parity_evidence_blockers`
-  and `parity_blocker_totals`,
+  [support-matrix.json](support-matrix.json) `parity_evidence_blockers`,
+  `parity_blocker_totals`, and the native per-platform aggregation in
+  `scripts/platform_evidence.py`,
   [pass-maturity.md](pass-maturity.md). Exit criteria: preview targets either
   reach equivalent evidence to Linux ELF x86-64 or remain explicitly
   non-official in the support matrix.

@@ -224,7 +224,9 @@ PE integrity checks, format-preserving rewriter checks, and fail-closed
 virtualization target checks, then uploads
 `cross-platform-differential-macos-arm64`. This is additional native
 cross-platform evidence; it does not promote PE, Mach-O, ARM, or AArch64 to
-the official Linux ELF x86-64 support tier.
+the official Linux ELF x86-64 support tier. The platform evidence aggregator
+also records that composition as a distinct macOS ARM64 pass-level row, so it
+cannot disappear when the per-platform reports are merged.
 
 The successful run [34790660315](https://github.com/seifreed/r2morph/actions/runs/34790660315)
 at commit `4ffa6647` is the current continuous-evidence record. Its official

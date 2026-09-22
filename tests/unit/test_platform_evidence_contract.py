@@ -63,6 +63,7 @@ def test_platform_evidence_publishes_pass_level_status(tmp_path: Path) -> None:
             for row in platform["pass_evidence"].values()
         )
         and set(report["platforms"]["elf-arm64"]["pass_evidence"]) == set(_PASS_CASES["elf-arm64"])
+        and report["platforms"]["macos-arm64"]["pass_evidence"]["Composition"]["status"] == "complete"
     )
 
 
