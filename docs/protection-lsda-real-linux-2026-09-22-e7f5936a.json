@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "measurement": "code-virtualization-lsda-real-linux",
+  "generated_at": "2026-09-22",
+  "commit": "e7f5936a110611b92d91589e5d385c6e29bc165e",
+  "environment": {
+    "platform": "linux-x86_64",
+    "runner": "r2morph-debug:deps",
+    "python": "3.14.7"
+  },
+  "command": "python -W error -m pytest -q --no-cov tests/integration/test_code_virtualization_exception_gate_real.py",
+  "scope": {
+    "tests": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "cases": [
+      "LSDA-bearing function with native landing pad",
+      "unwind-free function isolation",
+      "ordinary EH-frame native call",
+      "exception crossing a rejected VM boundary",
+      "exception propagation through a virtualized native call"
+    ]
+  },
+  "status": "complete-for-declared-linux-x86-64-exception-gate"
+}
