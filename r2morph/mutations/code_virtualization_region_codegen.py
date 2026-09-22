@@ -522,7 +522,7 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
             end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | index)
             start = blob.find(start_pattern)
             end = blob.find(end_pattern)
-            range_start = max(VM_PROLOGUE_BYTES, start)
+            range_start = max(VM_PROLOGUE_BYTES, start - 1)
             if (
                 start < 0
                 or end <= range_start
@@ -568,7 +568,7 @@ def call_unwind_ranges_with_sites(
         end_pattern = b"\x41\xbb" + struct.pack("<I", _CALL_UNWIND_END_MAGIC | opcode)
         start = blob.find(start_pattern)
         end = blob.find(end_pattern)
-        range_start = max(VM_PROLOGUE_BYTES, start)
+        range_start = max(VM_PROLOGUE_BYTES, start - 1)
         if (
             start < 0
             or end <= range_start

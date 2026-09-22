@@ -40,7 +40,12 @@ from r2morph.mutations.code_virtualization_inject import (
     inject_blob,
     predict_blob_vaddr,
 )
-from r2morph.platform.elf_unwind import _PT_GNU_EH_FRAME, build_vm_eh_frame
+from r2morph.platform.elf_unwind import (
+    _PT_GNU_EH_FRAME,
+    VmEhFrameSpec,
+    build_vm_eh_frame,
+    build_vm_eh_frame_with_lsda,
+)
 from tests.utils.assertions import expect
 from tests.utils.elf_load_invariants import (
     ELF64_HEADER_SIZE,
@@ -85,6 +90,7 @@ _SYNTHETIC_PHNUM = 2
 # xor edi, edi; mov eax, 60; syscall - never executed, it only gives the
 # synthetic executable segment a plausible non-empty body.
 _SYNTHETIC_CODE = b"\x31\xff\xb8\x3c\x00\x00\x00\x0f\x05"
+_TEST_PERSONALITY_ADDRESS = 0x401090
 
 _BLOB_SIZE = 256
 _BLOB = bytes((index * 13 + 5) & 0xFF for index in range(_BLOB_SIZE))
@@ -469,6 +475,48 @@ def test_inject_blob_with_existing_unwind_metadata_keeps_the_table_loadable(tmp_
     _inject_into(target, _BLOB)
 
     expect(not load_invariant_violations(target))
+
+
+def test_inject_blob_relocates_lsda_personality_pointer(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_UNWIND, tmp_path)
+    binary = Binary(str(target), writable=True)
+    binary.open()
+    try:
+        blob_vaddr = predict_blob_vaddr(binary, allow_inline=False)
+        if blob_vaddr is None:
+            raise AssertionError("unwind-enabled injection did not produce a placement")
+        metadata_vaddr = _align_up(blob_vaddr + len(_BLOB), 4)
+        metadata = build_vm_eh_frame_with_lsda(
+            VmEhFrameSpec(
+                blob_vaddr,
+                len(_BLOB),
+                0x400,
+                metadata_vaddr,
+                lsda_template=(0xFF, 0xFF, None, 0, bytes((0x00,))),
+                personality=_TEST_PERSONALITY_ADDRESS,
+            )
+        )
+        injected = inject_blob(binary, _BLOB, unwind_metadata=metadata)
+    finally:
+        binary.close()
+
+    headers = program_headers(target)
+    eh_frame = next(header for header in headers if header.p_type == _PT_GNU_EH_FRAME)
+    raw = target.read_bytes()[eh_frame.p_offset : eh_frame.p_offset + eh_frame.p_filesz]
+    count = struct.unpack_from("<I", raw, 8)[0]
+    entry_offset = next(
+        12 + index * 8
+        for index in range(count)
+        if eh_frame.p_vaddr + struct.unpack_from("<i", raw, 12 + index * 8)[0] == blob_vaddr
+    )
+    fde_vaddr = eh_frame.p_vaddr + struct.unpack_from("<i", raw, entry_offset + 4)[0]
+    fde_offset = fde_vaddr - eh_frame.p_vaddr
+    cie_pointer = struct.unpack_from("<I", raw, fde_offset + 4)[0]
+    cie_vaddr = fde_vaddr + 4 - cie_pointer
+    personality_field = cie_vaddr - eh_frame.p_vaddr + 19
+    personality = personality_field + struct.unpack_from("<i", raw, personality_field)[0] + eh_frame.p_vaddr
+
+    expect(injected == blob_vaddr and personality == _TEST_PERSONALITY_ADDRESS)
 
 
 def test_inject_blob_handles_compact_load_layout_without_rejecting_the_image(tmp_path: Path) -> None:

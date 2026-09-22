@@ -85,6 +85,8 @@ _MAX_INLINE_TAIL_GAP = 1 << 20
 _EH_FRAME_BASE_BYTES = 12
 _EH_FRAME_HEADER_BYTES = 20
 _EH_FRAME_ALIGNMENT = 4
+_DW_EH_PE_PCREL_SDATA4 = 0x1B
+_S_DATA4_BYTES = 4
 
 # r2 truncates a single command past its line buffer (~4 KiB), so each `wx`/`p8`
 # carries at most this many bytes (2x hex chars); larger blobs are chunked. A VM
@@ -514,6 +516,41 @@ def _merge_eh_frame_metadata(
         initial_field,
         placement.blob_vaddr - (new_metadata_vaddr + new_fde_file_offset + 8),
     )
+    relocation_delta = new_header_size - _EH_FRAME_HEADER_BYTES
+    personality_cie_prefix = b"\x00\x00\x00\x00\x01zPLR\x00\x01\x78\x10"
+    if suffix[4 : 4 + len(personality_cie_prefix)] == personality_cie_prefix:
+        personality_field = 4 + len(personality_cie_prefix) + 2
+        personality_pointer = struct.unpack_from("<i", suffix, personality_field)[0]
+        struct.pack_into(
+            "<i",
+            suffix,
+            personality_field,
+            personality_pointer - relocation_delta,
+        )
+    fde_suffix_offset = fde_offset - _EH_FRAME_HEADER_BYTES
+    fde_length = struct.unpack_from("<I", suffix, fde_suffix_offset)[0]
+    augmentation_length_offset = fde_suffix_offset + 16
+    if (
+        augmentation_length_offset < len(suffix)
+        and suffix[augmentation_length_offset] == _S_DATA4_BYTES
+        and augmentation_length_offset + 5 <= len(suffix)
+    ):
+        lsda_pointer = struct.unpack_from("<i", suffix, augmentation_length_offset + 1)[0]
+        struct.pack_into(
+            "<i",
+            suffix,
+            augmentation_length_offset + 1,
+            lsda_pointer - relocation_delta,
+        )
+        lsda_offset = fde_suffix_offset + 4 + fde_length + 4
+        if lsda_offset + 5 <= len(suffix) and suffix[lsda_offset] == _DW_EH_PE_PCREL_SDATA4:
+            landing_pad_base = struct.unpack_from("<i", suffix, lsda_offset + 1)[0]
+            struct.pack_into(
+                "<i",
+                suffix,
+                lsda_offset + 1,
+                landing_pad_base - relocation_delta,
+            )
     entries = [*old_entries, (placement.blob_vaddr, new_metadata_vaddr + new_fde_file_offset)]
     entries.sort()
 

@@ -10,6 +10,7 @@ from typing import Any
 import capstone
 
 import r2morph.core.randomness as random
+from r2morph.analysis.call_graph_parsing import extract_call_target
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.analysis.exception_reader import ExceptionInfoReader
@@ -547,7 +548,7 @@ def _preflight_function(
     unwind: _UnwindContext,
 ) -> tuple[str, dict[str, Any] | None]:
     """Classify a function before running expensive CFG and dataflow analysis."""
-    if unwind.unproven and unwind.frame is None:
+    if unwind.unproven and (unwind.frame is None or unwind.reason is not None):
         return "reject", None
     if pass_instance.virtualize_dispatch and pass_instance._has_computed_jump(binary, func):
         return "dispatch", None
@@ -656,6 +657,7 @@ def _function_has_unproven_unwind_metadata(
     function_address: int,
     exception_frames: dict[int, Any] | None,
     has_native_call: bool = False,
+    protected_callee_addresses: frozenset[int] = frozenset(),
 ) -> bool:
     """Return whether unwind safety for a function remains unproven.
 
@@ -665,6 +667,8 @@ def _function_has_unproven_unwind_metadata(
     """
     if unwind_section is None:
         return False
+    if function_address in protected_callee_addresses:
+        return True
     if exception_frames is None:
         return unwind_section != ".eh_frame" or has_native_call
     frame = exception_frames.get(function_address)
@@ -696,6 +700,57 @@ def _function_has_native_call(binary: Any, function: dict[str, Any]) -> bool:
         str(instruction.get("disasm") or instruction.get("opcode") or "").lower().startswith("call")
         for instruction in instructions
     )
+
+
+def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | None) -> frozenset[int]:
+    """Find direct callees reached by LSDA-protected call sites."""
+    if not exception_frames:
+        return frozenset()
+    protected_ranges = tuple(
+        (site.start_address, site.end_address)
+        for frame in exception_frames.values()
+        for site in getattr(frame, "lsda_call_sites", ())
+        if site.landing_pad or site.action_index
+    )
+    if not protected_ranges:
+        return frozenset()
+    try:
+        functions = binary.get_functions()
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return frozenset()
+    protected_callees: set[int] = set()
+    function_sizes = {
+        function.get("addr"): function.get("size") for function in functions if isinstance(function.get("addr"), int)
+    }
+    for function in functions:
+        function_address = function.get("addr")
+        if not isinstance(function_address, int):
+            continue
+        try:
+            instructions = binary.get_function_disasm(function_address)
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            continue
+        for instruction in instructions:
+            address = instruction.get("offset", instruction.get("addr"))
+            if not isinstance(address, int) or not any(start <= address < end for start, end in protected_ranges):
+                continue
+            disassembly = str(instruction.get("disasm") or instruction.get("opcode") or "")
+            if instruction.get("type") != "call" and not disassembly.lower().startswith("call"):
+                continue
+            target = instruction.get("jump")
+            if not isinstance(target, int):
+                target = extract_call_target(disassembly)
+            if isinstance(target, int) and function_sizes.get(target, MINIMUM_FUNCTION_SIZE) < MINIMUM_FUNCTION_SIZE:
+                protected_callees.add(target)
+    return frozenset(protected_callees)
+
+
+def _read_exception_context(
+    binary: Any, unwind_section: str | None
+) -> tuple[dict[int, Any] | None, str | None, frozenset[int]]:
+    """Read unwind metadata and derive protected direct-call targets."""
+    exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
+    return exception_frames, unwind_read_error, _protected_callee_addresses(binary, exception_frames)
 
 
 def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:
@@ -861,6 +916,7 @@ def _ordered_functions(
             and function["size"] < MINIMUM_FUNCTION_SIZE
             and function.get("addr") not in compact_ret_addresses
             and function.get("addr") not in application_candidates
+            and function.get("addr") not in dispatch_entrypoint_addresses
         )
         and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
@@ -903,6 +959,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     covered_ranges: list[tuple[int, int]] = []
     executable_ranges = _executable_ranges(binary)
     unwind_section = _unwind_metadata_name(binary)
+    exception_frames, unwind_read_error, protected_callee_addresses = _read_exception_context(binary, unwind_section)
     ordered_functions = _ordered_functions(
         binary,
         pass_instance.max_function_analysis_count,
@@ -916,11 +973,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                 and function["addr"] in _entrypoint_addresses(binary)
                 and (pass_instance._has_computed_jump(binary, function) or _has_terminal_system_call(binary, function))
             )
-        ),
+        )
+        | protected_callee_addresses,
     )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
-    exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
 
     for func in ordered_functions:
         if virtualized >= pass_instance.max_functions:
@@ -930,7 +987,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             continue
         if _address_in_ranges(function_address, covered_ranges):
             continue
-        if func.get("size", 0) < MINIMUM_FUNCTION_SIZE and not _has_compact_ret_cleanup(binary, func):
+        if (
+            func.get("size", 0) < MINIMUM_FUNCTION_SIZE
+            and func.get("addr") not in protected_callee_addresses
+            and not _has_compact_ret_cleanup(binary, func)
+        ):
             continue
         if _exceeds_function_size_budget(func, pass_instance.max_function_size):
             skipped, unsupported_total = _skip_oversized_function(
@@ -977,10 +1038,15 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     int(func["addr"]),
                     exception_frames,
                     _function_has_native_call(binary, func),
+                    protected_callee_addresses,
                 )
                 or unwind_read_error is not None,
                 _exception_frame_for_function(int(func["addr"]), exception_frames),
-                unwind_read_error,
+                (
+                    "function is called from an LSDA-protected call site; exception propagation crosses the VM boundary"
+                    if int(func["addr"]) in protected_callee_addresses
+                    else unwind_read_error
+                ),
             ),
         )
         skipped += outcome["skipped"]

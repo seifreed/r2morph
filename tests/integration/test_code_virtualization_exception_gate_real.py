@@ -52,7 +52,10 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
             for function in binary.get_functions()
             if "protected_function" in function.get("name", "")
         )
-        original_protected_bytes = binary.read_bytes(protected_address, 8)
+        protected_function = next(
+            function for function in binary.get_functions() if int(function["addr"]) == protected_address
+        )
+        original_protected_bytes = binary.read_bytes(protected_address, int(protected_function["size"]))
         stats = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
@@ -61,7 +64,9 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
                 "seed": FIXTURE_SEED,
             }
         ).apply(binary)
-        protected_was_transformed = binary.read_bytes(protected_address, 8) != original_protected_bytes
+        protected_was_transformed = (
+            binary.read_bytes(protected_address, int(protected_function["size"])) != original_protected_bytes
+        )
 
     runtime_result = run_command([executable], timeout=30)
     unwind_failure_addresses = {
