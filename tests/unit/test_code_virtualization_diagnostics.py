@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
+from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaCallSite, LsdaTemplate
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _empty_result,
@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _field_counts,
     _function_has_unproven_unwind_metadata,
     _is_runtime_entrypoint,
+    _protected_callee_addresses,
     _runtime_initialization_addresses,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
@@ -34,6 +35,11 @@ class _SectionsBinary:
 
     def get_sections(self) -> list[dict[str, Any]]:
         return self._sections
+
+
+class _ProtectedCallBinary:
+    def get_function_disasm(self, _address: int) -> list[dict[str, Any]]:
+        return [{"offset": 0x401010, "disasm": "call 0x402000"}]
 
 
 class _TerminalSyscallBinary:
@@ -409,6 +415,20 @@ def test_unmapped_ordinary_eh_frame_is_not_an_unwind_failure() -> None:
 
 def test_unavailable_unwind_frames_fail_closed() -> None:
     expect(_function_has_unproven_unwind_metadata(".gcc_except_table", 0x401000, None))
+
+
+def test_protected_call_target_is_rejected_before_vm_preflight() -> None:
+    frame = ExceptionFrame(
+        function_start=0x401000,
+        function_end=0x401050,
+        lsda_call_sites=[LsdaCallSite(0x401010, 0x401015, 0x401030, 1)],
+    )
+    protected = _protected_callee_addresses(_ProtectedCallBinary(), {0x401000: frame})
+
+    expect(
+        protected == frozenset({0x402000})
+        and _function_has_unproven_unwind_metadata(".eh_frame", 0x402000, {0x401000: frame}, protected)
+    )
 
 
 def test_partial_virtualization_with_unwind_frame_is_rejected() -> None:

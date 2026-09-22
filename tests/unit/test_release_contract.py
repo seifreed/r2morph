@@ -1823,6 +1823,9 @@ def test_continuous_fuzz_workflow_runs_against_installed_wheel() -> None:
         and 'cd "$wheel_root"' in workflow
         and 'python -c "import r2morph; print(r2morph.__file__)"' in workflow
         and '--output "$GITHUB_WORKSPACE/fuzz-campaign.json"' in workflow
+        and "Validate continuous fuzz campaign" in workflow
+        and "CASES: ${{ inputs.cases || '5000' }}" in workflow
+        and "if: always()" in workflow
     )
 
 

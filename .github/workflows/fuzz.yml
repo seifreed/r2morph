@@ -53,8 +53,34 @@ jobs:
             --seed "$seed" \
             --output "$GITHUB_WORKSPACE/fuzz-campaign.json"
 
+      - name: Validate continuous fuzz campaign
+        env:
+          CASES: ${{ inputs.cases || '5000' }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(Path("fuzz-campaign.json").read_text(encoding="utf-8"))
+          cases = int(os.environ["CASES"])
+          expected_targets = {
+              "binary_parsers": cases,
+              "vm_dispatcher": cases,
+              "relocations": cases,
+              "binary_rewriter": cases,
+          }
+          if report["schema_version"] != 1:
+              raise SystemExit(f"unexpected fuzz report schema: {report['schema_version']}")
+          if report["cases"] != cases or report["target_runs"] != expected_targets:
+              raise SystemExit(f"unexpected fuzz campaign scope: {report}")
+          if report["failure_count"] != 0 or report["failures"]:
+              raise SystemExit(f"continuous fuzz campaign failures: {report['failures']}")
+          PY
+
       - name: Upload campaign report
         uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: continuous-fuzz-report
           path: fuzz-campaign.json

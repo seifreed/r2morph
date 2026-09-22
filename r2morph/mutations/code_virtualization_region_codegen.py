@@ -528,7 +528,7 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
                 or blob.find(end_pattern, end + 1) >= 0
             ):
                 return None
-            ranges.append((start - 1, end, stack_guard + stack_depth + 8))
+            ranges.append((start, end, stack_guard + stack_depth + 8))
     return tuple(sorted(ranges))
 
 
@@ -573,7 +573,7 @@ def call_unwind_ranges_with_sites(
             or blob.find(end_pattern, end + 1) >= 0
         ):
             return None
-        ranges.append((start - 1, end, stack_guard + stack_depth + 8, native_start, native_end))
+        ranges.append((start, end, stack_guard + stack_depth + 8, native_start, native_end))
     return tuple(sorted(ranges))
 
 
