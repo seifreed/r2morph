@@ -389,6 +389,8 @@ class ExceptionInfoReader:
                 else:
                     pointer_encoding = data[cursor]
                 cursor += 1
+            elif marker == "S":
+                continue
             else:
                 return None
         return _CieInfo(pointer_encoding, lsda_encoding, personality, True)

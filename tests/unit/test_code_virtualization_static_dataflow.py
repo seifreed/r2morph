@@ -4,6 +4,8 @@ from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
+    _application_candidate_addresses,
+    _application_target_addresses,
     _exceeds_function_size_budget,
     _has_compact_ret_cleanup,
     _has_materialized_instructions,
@@ -114,6 +116,65 @@ def test_ordered_functions_excludes_runtime_helper_aliases_before_function_budge
     functions = _ordered_functions(FunctionSource(), analysis_budget=1, entrypoint_addresses=frozenset({0x1000}))
 
     expect(functions == [{"addr": 0x2000, "size": 16, "name": "sym.user_function"}])
+
+
+def test_ordered_functions_recovers_unlisted_application_target_function() -> None:
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [{"addr": 0x1000, "size": 3, "name": "main"}]
+
+        class _R2:
+            @staticmethod
+            def cmd(_command: str) -> str:
+                return ""
+
+            @staticmethod
+            def cmdj(command: str) -> object:
+                if command.startswith("pdfj"):
+                    return {"ops": []}
+                if command.startswith("pdj"):
+                    return [{"addr": 0x1000, "type": "jmp", "jump": 0x2000}]
+                if command.startswith("afij"):
+                    return [{"addr": 0x2000, "size": 16, "name": "fcn.00002000"}]
+                return []
+
+        r2 = _R2()
+
+    functions = _ordered_functions(FunctionSource())
+
+    expect(functions[0] == {"addr": 0x2000, "size": 16, "name": "fcn.00002000"})
+
+
+def test_application_target_addresses_collect_direct_entry_targets() -> None:
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": 0x1000, "size": 16, "name": "main"},
+                {"addr": 0x2000, "size": 16, "name": "sym.application"},
+            ]
+
+        class _R2:
+            @staticmethod
+            def cmdj(command: str) -> object:
+                if command == "pdfj @ 4096":
+                    return {"ops": [{"type": "call", "jump": 0x2000}]}
+                return {"ops": []}
+
+        r2 = _R2()
+
+    targets = _application_target_addresses(FunctionSource(), FunctionSource().get_functions())
+
+    expect(targets == frozenset({0x2000}))
+
+
+def test_application_candidate_addresses_exclude_entry_internal_targets() -> None:
+    functions = [
+        {"addr": 0x1000, "minaddr": 0x1000, "maxaddr": 0x1010, "size": 16, "name": "main"},
+    ]
+
+    candidates = _application_candidate_addresses(functions, frozenset({0x1008, 0x1100, 0x1110}))
+
+    expect(candidates == frozenset({0x1100, 0x1110}))
 
 
 def test_defuse_analyzer_reports_complete_liveness_for_materialized_instructions() -> None:

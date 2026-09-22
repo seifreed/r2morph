@@ -32,8 +32,12 @@ _UNWIND_SECTION_NAMES = frozenset(
 )
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 _MAX_COMPACT_RET_SCAN = 128
+# ponytail: bounded local target cluster; replace with linker provenance if wider layouts matter.
+_MAX_APPLICATION_ENTRY_SCAN_INSNS = 256
+_MAX_APPLICATION_TARGET_GAP = 0x2000
 _LARGE_APPLICATION_POPULATION = 1024
 _TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
+_APPLICATION_BRANCH_TYPES = frozenset({"call", "jmp", "cjmp", "jrcxz"})
 _INTERNAL_SYMBOL_MARKERS = (".cold", ".constprop", ".isra", ".part")
 _RUNTIME_INITIALIZATION_NAMES = frozenset(
     {
@@ -76,6 +80,22 @@ def _function_order_key(function: dict[str, Any]) -> tuple[int, int]:
     return (0 if named_application else 1, int(address) if isinstance(address, int) else 0)
 
 
+def _direct_branch_targets(disassembly: object, stop_on_unconditional_jump: bool = False) -> frozenset[int]:
+    instructions = disassembly.get("ops", []) if isinstance(disassembly, dict) else disassembly
+    if not isinstance(instructions, list):
+        return frozenset()
+    targets: set[int] = set()
+    for instruction in instructions:
+        if not isinstance(instruction, dict) or instruction.get("type") not in _APPLICATION_BRANCH_TYPES:
+            continue
+        target = instruction.get("jump")
+        if isinstance(target, int):
+            targets.add(target)
+        if stop_on_unconditional_jump and instruction.get("type") == "jmp":
+            break
+    return frozenset(targets)
+
+
 def _application_target_addresses(binary: Any, functions: list[dict[str, Any]]) -> frozenset[int]:
     """Prefer direct targets from the application's conventional entry symbol."""
     entry_functions = [
@@ -85,19 +105,104 @@ def _application_target_addresses(binary: Any, functions: list[dict[str, Any]]) 
     ]
     targets: set[int] = set()
     for function in entry_functions:
+        address = function.get("addr")
+        if not isinstance(address, int):
+            continue
+        commands = (f"pdfj @ {address}", f"pdj {_MAX_APPLICATION_ENTRY_SCAN_INSNS} @ {address}")
+        for command in commands:
+            try:
+                disassembly = binary.r2.cmdj(command) or []
+            except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+                continue
+            branch_targets = _direct_branch_targets(disassembly, command.startswith("pdj"))
+            if branch_targets:
+                targets.update(branch_targets)
+                break
+    for target in tuple(sorted(targets)):
+        target_function = next((function for function in functions if function.get("addr") == target), None)
+        if (
+            not target_function
+            or not isinstance(target_function.get("size"), int)
+            or target_function["size"] >= MINIMUM_FUNCTION_SIZE
+        ):
+            continue
         try:
-            disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
+            wrapper = binary.r2.cmdj(f"pdfj @ {target}") or {}
         except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
             continue
-        if not isinstance(disassembly, dict):
-            continue
-        for instruction in disassembly.get("ops", []):
-            if not isinstance(instruction, dict) or instruction.get("type") not in {"call", "jmp"}:
-                continue
-            target = instruction.get("jump")
-            if isinstance(target, int):
-                targets.add(target)
+        targets.update(_direct_branch_targets(wrapper))
     return frozenset(targets)
+
+
+def _application_candidate_addresses(
+    functions: list[dict[str, Any]], target_addresses: frozenset[int]
+) -> frozenset[int]:
+    """Keep the first local target cluster after the application entry."""
+    entry_addresses = sorted(
+        int(function["addr"])
+        for function in functions
+        if str(function.get("name", "")).strip().lower() in {"main", "_main", "sym.main"}
+        and isinstance(function.get("addr"), int)
+    )
+    if not entry_addresses:
+        return target_addresses
+    entry_ranges = tuple(
+        (
+            int(function.get("minaddr", function["addr"])),
+            int(function.get("maxaddr", function["addr"] + int(function.get("size", 0) or 0) - 1))
+            - int(function.get("minaddr", function["addr"]))
+            + 1,
+        )
+        for function in functions
+        if str(function.get("name", "")).strip().lower() in {"main", "_main", "sym.main"}
+        and isinstance(function.get("addr"), int)
+    )
+    forward_targets = sorted(
+        target
+        for target in target_addresses
+        if target >= entry_addresses[0] and not _address_in_ranges(target, entry_ranges)
+    )
+    if not forward_targets:
+        return frozenset()
+    cluster = [forward_targets[0]]
+    for target in forward_targets[1:]:
+        if target - cluster[-1] > _MAX_APPLICATION_TARGET_GAP:
+            break
+        cluster.append(target)
+    return frozenset(cluster)
+
+
+def _application_target_functions(
+    binary: Any,
+    functions: list[dict[str, Any]],
+    target_addresses: frozenset[int],
+) -> list[dict[str, Any]]:
+    """Recover exact target functions that analysis did not enumerate."""
+    known_addresses = {function.get("addr") for function in functions}
+    additions: list[dict[str, Any]] = []
+    for address in sorted(target_addresses):
+        if address in known_addresses:
+            continue
+        try:
+            binary.r2.cmd(f"af @ {address}")
+            candidates = binary.r2.cmdj(f"afij @ {address}") or []
+        except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+            continue
+        candidate = next(
+            (
+                function
+                for function in candidates
+                if isinstance(function, dict)
+                and function.get("addr") == address
+                and isinstance(function.get("size"), int)
+                and function["size"] > 0
+            ),
+            None,
+        )
+        if candidate is not None:
+            additions.append(candidate)
+            known_addresses.add(address)
+    return functions + additions
 
 
 @dataclass(frozen=True, slots=True)
@@ -684,7 +789,7 @@ def _ordered_functions(
 ) -> list[dict[str, Any]] | None:
     """Visit viable functions in stable application-first order before the budget."""
 
-    raw_functions = binary.get_functions()
+    raw_functions = list(binary.get_functions())
     application_entry_addresses = frozenset(
         int(function["addr"])
         for function in raw_functions
@@ -692,6 +797,8 @@ def _ordered_functions(
         and isinstance(function.get("addr"), int)
     )
     application_targets = _application_target_addresses(binary, raw_functions)
+    application_candidates = _application_candidate_addresses(raw_functions, application_targets)
+    raw_functions = _application_target_functions(binary, raw_functions, application_candidates)
 
     def function_order_key(function: dict[str, Any]) -> tuple[int, int]:
         if function.get("addr") in dispatch_entrypoint_addresses:
@@ -735,11 +842,12 @@ def _ordered_functions(
             isinstance(function.get("size"), int)
             and function["size"] < MINIMUM_FUNCTION_SIZE
             and function.get("addr") not in compact_ret_addresses
+            and function.get("addr") not in application_candidates
         )
         and not _address_in_ranges(function.get("addr"), plt_ranges)
     ]
 
-    application_addresses = application_entry_addresses | application_targets | dispatch_entrypoint_addresses
+    application_addresses = application_entry_addresses | application_candidates | dispatch_entrypoint_addresses
     if len(raw_functions) > _LARGE_APPLICATION_POPULATION and application_addresses:
         application_functions = [function for function in viable if function.get("addr") in application_addresses]
         if application_functions:

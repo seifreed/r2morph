@@ -118,6 +118,13 @@ class _InMemoryMalformedElfExceptionBinary(_InMemoryElfExceptionBinary):
         self._eh_frame = struct.pack("<I", len(self._eh_frame) + 16) + self._eh_frame[4:]
 
 
+class _InMemorySignalFrameCieBinary(_InMemoryElfExceptionBinary):
+    @classmethod
+    def _build_eh_frame(cls) -> bytes:
+        cie_body = struct.pack("<I", 0) + b"\x01zRS\x00" + b"\x01\x78\x10" + bytes((1, 0x1B))
+        return cls._entry(cie_body + b"\x00" * 6) + b"\x00\x00\x00\x00"
+
+
 class _InMemoryMachoExceptionBinary(_InMemoryElfExceptionBinary):
     def get_arch_info(self) -> dict[str, int | str]:
         return {"format": "Mach-O-64", "bits": 64}
@@ -237,6 +244,14 @@ def test_exception_reader_parses_dwarf64_eh_frame_fde_and_landing_pad() -> None:
         (frame.function_end, frame.lsda_address, len(frame.landing_pads))
         == (_FUNCTION_ADDRESS + 0x40, _LSDA_ADDRESS, 1)
     )
+
+
+def test_exception_reader_accepts_signal_frame_cie_augmentation() -> None:
+    reader = ExceptionInfoReader(_InMemorySignalFrameCieBinary())
+
+    reader.read_exception_frames()
+
+    expect(reader.read_error is None)
 
 
 def test_exception_reader_parses_macho_regular_compact_unwind_function() -> None:

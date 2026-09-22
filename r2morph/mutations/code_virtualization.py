@@ -721,10 +721,16 @@ class CodeVirtualizationPass(MutationPass):
         rng = random.Random(random.getrandbits(64))
         function_start = func.get("addr")
         function_size = func.get("size")
+        function_min = func.get("minaddr", function_start)
+        function_max = func.get("maxaddr")
         function_range = (
-            (int(function_start), int(function_start) + int(function_size))
-            if isinstance(function_start, int) and isinstance(function_size, int) and function_size > 0
-            else None
+            (int(function_min), int(function_max))
+            if isinstance(function_min, int) and isinstance(function_max, int) and function_max >= function_min
+            else (
+                (int(function_start), int(function_start) + int(function_size))
+                if isinstance(function_start, int) and isinstance(function_size, int) and function_size > 0
+                else None
+            )
         )
         complete_ops = complete_direct_branch_ops(binary, disasm["ops"], function_range)
         try:
