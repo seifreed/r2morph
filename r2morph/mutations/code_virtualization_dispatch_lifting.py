@@ -10,8 +10,10 @@ from r2morph.analysis.switch_table import SwitchTableAnalyzer
 from r2morph.mutations.code_virtualization_region import extract_region
 
 _MAX_DISPATCH_INSNS = 256
+_MAX_DIRECT_BRANCH_TARGET_QUERIES = 64
 _MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
 _COMPUTED_SWITCH_KINDS = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
+_DIRECT_BRANCH_KINDS = frozenset({"jmp", "cjmp", "jrcxz"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +23,54 @@ class RegionOptions:
     rng: random.Random
     use_nesting: bool
     unwind_frame: Any | None = None
+
+
+def _direct_branch_targets(ops: list[dict[str, Any]], function_range: tuple[int, int]) -> set[int]:
+    start, end = function_range
+    return {
+        target
+        for op in ops
+        if op.get("type") in _DIRECT_BRANCH_KINDS
+        and isinstance(target := op.get("jump"), int)
+        and start <= target < end
+    }
+
+
+def complete_direct_branch_ops(
+    binary: Any, ops: list[dict[str, Any]], function_range: tuple[int, int] | None
+) -> list[dict[str, Any]]:
+    """Fill missing in-range direct branch targets from bounded disassembly reads."""
+    if function_range is None:
+        return ops
+
+    ops_by_addr = {
+        op["addr"]: op
+        for op in ops
+        if isinstance(op.get("addr"), int) and function_range[0] <= op["addr"] < function_range[1]
+    }
+    pending = _direct_branch_targets(list(ops_by_addr.values()), function_range)
+    queried: set[int] = set()
+    # ponytail: cap target probes; a malformed CFG must not turn one function into an unbounded scan.
+    while pending and len(queried) < _MAX_DIRECT_BRANCH_TARGET_QUERIES:
+        target = pending.pop()
+        if target in queried:
+            continue
+        queried.add(target)
+        try:
+            target_ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {target}") or []
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            continue
+        for op in target_ops:
+            address = op.get("addr")
+            if (
+                isinstance(address, int)
+                and function_range[0] <= address < function_range[1]
+                and address not in ops_by_addr
+            ):
+                ops_by_addr[address] = op
+        pending.update(_direct_branch_targets(list(ops_by_addr.values()), function_range) - queried)
+
+    return [ops_by_addr[address] for address in sorted(ops_by_addr)]
 
 
 def gather_dispatch_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:

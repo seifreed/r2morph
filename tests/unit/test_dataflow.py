@@ -497,6 +497,18 @@ class TestDataFlowAnalyzer:
 
         expect(not analyzer.analysis_complete)
 
+    def test_block_kill_uses_current_reaching_definitions_only(self):
+        analyzer = DataFlowAnalyzer(create_test_cfg())
+        block = analyzer.cfg.blocks[0x1000]
+        generated = analyzer._get_block_gen(block)
+        analyzer._result.reaching_in[0x1010] = {
+            Definition(address=index, register=Register("rax")) for index in range(_MAX_KILL_COMPARISONS + 1)
+        }
+
+        analyzer._get_block_kill(block, generated, set())
+
+        expect(analyzer.analysis_complete)
+
     def test_analyze_basic(self):
         """Test basic analysis."""
         cfg = create_test_cfg()

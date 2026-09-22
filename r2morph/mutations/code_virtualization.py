@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_apply import _DEFAULT_MAX_FUNCTION_SI
 from r2morph.mutations.code_virtualization_dispatch_lifting import (
     RegionOptions,
     block_ops,
+    complete_direct_branch_ops,
     gather_cfg_ops,
     gather_dispatch_ops,
     reachable_blocks,
@@ -725,6 +726,7 @@ class CodeVirtualizationPass(MutationPass):
             if isinstance(function_start, int) and isinstance(function_size, int) and function_size > 0
             else None
         )
+        complete_ops = complete_direct_branch_ops(binary, disasm["ops"], function_range)
         try:
             known_function_ranges = tuple(
                 (int(candidate["addr"]), int(candidate["addr"]) + int(candidate["size"]))
@@ -736,7 +738,7 @@ class CodeVirtualizationPass(MutationPass):
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
             known_function_ranges = None
         region = extract_region(
-            disasm["ops"],
+            complete_ops,
             rng,
             function_range=function_range,
             known_function_ranges=known_function_ranges,

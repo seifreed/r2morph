@@ -13,6 +13,7 @@ no mocks.
 from __future__ import annotations
 
 from r2morph.core import randomness
+from r2morph.mutations.code_virtualization_dispatch_lifting import complete_direct_branch_ops
 from r2morph.mutations.code_virtualization_region import extract_region
 from tests.utils.assertions import expect
 
@@ -28,6 +29,53 @@ def _dispatch_instructions() -> list[dict[str, object]]:
         _insn(0x1003, 2, "rjmp", "jmp rdx"),
         _insn(0x1005, 1, "ret", "ret"),
     ]
+
+
+class _FakeR2:
+    def __init__(self, responses: dict[int, list[dict[str, object]]]) -> None:
+        self.responses = responses
+        self.queries: list[int] = []
+
+    def cmdj(self, command: str) -> list[dict[str, object]]:
+        target = int(command.rsplit("@ ", 1)[1])
+        self.queries.append(target)
+        return self.responses.get(target, [])
+
+
+class _FakeBinary:
+    def __init__(self, responses: dict[int, list[dict[str, object]]]) -> None:
+        self.r2 = _FakeR2(responses)
+
+
+def test_complete_direct_branch_ops_reads_missing_in_range_targets() -> None:
+    binary = _FakeBinary(
+        {
+            0x1010: [
+                _insn(0x1010, 2, "mov", "mov eax, 1"),
+                _insn(0x1012, 2, "jmp", "jmp 0x1018", jump=0x1018),
+                _insn(0x1018, 1, "ret", "ret"),
+            ]
+        }
+    )
+    ops = [
+        _insn(0x1000, 2, "cjmp", "je 0x1010", jump=0x1010),
+        _insn(0x1002, 1, "ret", "ret"),
+    ]
+
+    completed = complete_direct_branch_ops(binary, ops, (0x1000, 0x1020))
+
+    expect([op["addr"] for op in completed] == [0x1000, 0x1002, 0x1010, 0x1012, 0x1018])
+    expect(binary.r2.queries == [0x1010, 0x1018])
+
+
+def test_complete_direct_branch_ops_ignores_out_of_range_targets() -> None:
+    binary = _FakeBinary({0x2000: [_insn(0x2000, 1, "ret", "ret")]})
+    ops = [_insn(0x1000, 2, "jmp", "jmp 0x2000", jump=0x2000)]
+
+    completed = complete_direct_branch_ops(binary, ops, (0x1000, 0x1010))
+
+    expect([op["addr"] for op in completed] == [0x1000])
+    expect(binary.r2.queries == [])
 
 
 def test_dispatch_region_lowers_computed_jump_to_ijmp() -> None:

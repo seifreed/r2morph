@@ -264,7 +264,7 @@ class DataFlowAnalyzer:
             for predecessor in block.predecessors:
                 reaching_in.update(self._result.reaching_out.get(predecessor, set()))
             gen = self._get_block_gen(block)
-            new_out = gen | (reaching_in - self._get_block_kill(block, gen))
+            new_out = gen | (reaching_in - self._get_block_kill(block, gen, reaching_in))
 
             if reaching_in == self._result.reaching_in[addr] and new_out == self._result.reaching_out[addr]:
                 continue
@@ -302,7 +302,12 @@ class DataFlowAnalyzer:
         """Public API to get all def-use chains."""
         return self._result.def_use_chains
 
-    def _get_block_kill(self, block: BasicBlock, gen: set[Definition]) -> set[Definition]:
+    def _get_block_kill(
+        self,
+        block: BasicBlock,
+        gen: set[Definition],
+        reaching_in: set[Definition] | None = None,
+    ) -> set[Definition]:
         """Get definitions killed by a block."""
         kill: set[Definition] = set()
 
@@ -311,15 +316,19 @@ class DataFlowAnalyzer:
             if defn.register:
                 defined_regs.add(defn.register)
 
+        candidate_definitions = (
+            reaching_in
+            if reaching_in is not None
+            else {definition for definitions in self._result.reaching_in.values() for definition in definitions}
+        )
         for reg in defined_regs:
-            for definitions in self._result.reaching_in.values():
-                for defn in definitions:
-                    self._kill_comparisons += 1
-                    if self._kill_comparisons > _MAX_KILL_COMPARISONS:
-                        self._analysis_complete = False
-                        return kill
-                    if defn.register and register_definition_covers_use(reg, defn.register):
-                        kill.add(defn)
+            for defn in candidate_definitions:
+                self._kill_comparisons += 1
+                if self._kill_comparisons > _MAX_KILL_COMPARISONS:
+                    self._analysis_complete = False
+                    return kill
+                if defn.register and register_definition_covers_use(reg, defn.register):
+                    kill.add(defn)
 
         return kill
 
