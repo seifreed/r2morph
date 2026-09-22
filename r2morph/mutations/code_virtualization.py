@@ -269,8 +269,10 @@ def _landing_pad_native_ranges(
     native_addresses: set[int] = set()
     for landing_pad in landing_pads:
         start = getattr(landing_pad, "address", None)
-        if not isinstance(start, int) or start not in by_address:
+        if not isinstance(start, int):
             return None
+        if start not in by_address:
+            continue
         pending = [start]
         while pending:
             address = pending.pop()

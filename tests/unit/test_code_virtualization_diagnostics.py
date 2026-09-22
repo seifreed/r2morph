@@ -573,6 +573,17 @@ def test_landing_pad_native_ranges_follow_handler_control_flow() -> None:
     expect(_landing_pad_native_ranges(instructions, frame) == ((_NATIVE_LANDING_PAD_ADDRESS, 0x1013), (0x1013, 0x1014)))
 
 
+def test_landing_pad_native_ranges_ignore_pads_outside_materialized_function() -> None:
+    instructions = [{"addr": 0x1000, "size": 1, "type": "ret", "opcode": "ret"}]
+    frame = ExceptionFrame(
+        function_start=0x1000,
+        function_end=0x2000,
+        landing_pads=[LandingPad(0x3000, 1, ExceptionAction.CATCH)],
+    )
+
+    expect(_landing_pad_native_ranges(instructions, frame) == ())
+
+
 def test_extract_region_rejects_native_landing_pad_that_reenters_vm_body() -> None:
     instructions = [
         {"addr": 0x1000, "size": 5, "type": "mov", "opcode": "mov eax, 1"},
