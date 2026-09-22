@@ -131,6 +131,25 @@ def _encode_lsda_value(value: int, encoding: int, field_vaddr: int, base_vaddr: 
     return int(value).to_bytes(width, "little", signed=signed)
 
 
+def _encode_lsda_null(encoding: int) -> bytes:
+    """Encode a null LSDA pointer before applying its relative base."""
+    format_code = encoding & 0x0F
+    if format_code in (0x01, _DW_EH_PE_SLEB128):
+        return b"\x00"
+    width = {
+        _DW_EH_PE_UDATA2: 2,
+        _DW_EH_PE_UDATA4: 4,
+        _DW_EH_PE_UDATA8: 8,
+        _DW_EH_PE_SDATA2: 2,
+        _DW_EH_PE_SDATA4: 4,
+        _DW_EH_PE_SDATA8: 8,
+        0x00: 8,
+    }.get(format_code)
+    if width is None:
+        raise ValueError(f"unsupported LSDA pointer format: 0x{format_code:02x}")
+    return bytes(width)
+
+
 def _build_lsda_call_site_table(
     blob_vaddr: int,
     blob_size: int,
@@ -162,9 +181,7 @@ def _build_lsda_call_site_table(
             entries.extend(length_bytes)
             cursor += len(length_bytes)
             if landing_pad == 0:
-                if call_site_encoding & 0x70 != _DW_EH_PE_ABSPTR:
-                    raise ValueError("null LSDA landing pads require absolute-relative encoding")
-                landing_bytes = _encode_lsda_value(blob_vaddr, call_site_encoding, cursor, blob_vaddr)
+                landing_bytes = _encode_lsda_null(call_site_encoding)
             else:
                 landing_bytes = _encode_lsda_value(landing_pad, call_site_encoding, cursor, blob_vaddr)
             entries.extend(landing_bytes)

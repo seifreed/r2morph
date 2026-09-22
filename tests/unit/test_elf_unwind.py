@@ -106,3 +106,32 @@ def test_vm_eh_frame_round_trips_remapped_lsda_call_site() -> None:
         and frame.lsda_template.call_site_encoding == 0x01
         and frame.lsda_template.type_table_delta == _EXPECTED_LSDA_TYPE_TABLE_DELTA
     )
+
+
+def test_vm_eh_frame_round_trips_pc_relative_null_lsda_landing_pad() -> None:
+    metadata = build_vm_eh_frame_with_lsda(
+        VmEhFrameSpec(
+            _VM_BLOB_ADDRESS,
+            _VM_BLOB_SIZE,
+            0x400,
+            _VM_METADATA_ADDRESS,
+            (),
+            (0xFF, 0xFF, None, 8, bytes((0x01, 0x00)), 0x1B, None),
+            (
+                (_VM_BLOB_ADDRESS + 0x20, _VM_BLOB_ADDRESS + 0x28, _LANDING_PAD_ADDRESS, 1),
+                (_VM_BLOB_ADDRESS + 0x30, _VM_BLOB_ADDRESS + 0x38, 0, 0),
+            ),
+            _PERSONALITY_ADDRESS,
+        )
+    )
+    lsda_offset = metadata.find(bytes((0xFF, 0xFF, 0x1B)))
+    frames = ExceptionInfoReader(cast(Binary, _GeneratedUnwindBinary(metadata, lsda_offset))).read_exception_frames()
+
+    frame = frames[_VM_BLOB_ADDRESS]
+    expect(
+        len(frame.lsda_call_sites) == _EXPECTED_LSDA_CALL_SITE_COUNT
+        and frame.lsda_call_sites[0].landing_pad == _LANDING_PAD_ADDRESS
+        and frame.lsda_call_sites[1].landing_pad == 0
+        and len(frame.landing_pads) == 1,
+        "PC-relative LSDA null landing pad did not round-trip",
+    )

@@ -172,6 +172,26 @@ def _read_encoded_pointer(
     return value, next_offset
 
 
+def _encoded_value_is_zero(
+    data: bytes,
+    offset: int,
+    encoding: int,
+    context: _EncodedPointerContext,
+) -> bool | None:
+    """Return whether an encoded field contains the DWARF null value."""
+    format_code = encoding & 0x0F
+    if format_code == 0x01:
+        result = _read_uleb128(data, offset, context.end)
+        return None if result is None else result[0] == 0
+    if format_code == _DW_EH_PE_SLEB128:
+        result = _read_sleb128(data, offset, context.end)
+        return None if result is None else result[0] == 0
+    width = _encoded_width(encoding, context.pointer_size)
+    if width is None or offset + width > context.end:
+        return None
+    return not any(data[offset : offset + width])
+
+
 class ExceptionInfoReader:
     """
     Reader for exception handling information from binary files.
@@ -783,8 +803,17 @@ class ExceptionInfoReader:
         if result is None:
             return None
         value, next_offset = result
-        if zero_is_null and value == 0:
-            return 0, next_offset
+        if zero_is_null:
+            encoded_zero = _encoded_value_is_zero(
+                data,
+                offset,
+                context.encoding,
+                _EncodedPointerContext(context.end, context.pointer_size, context.section_address + offset),
+            )
+            if encoded_zero is None:
+                return None
+            if encoded_zero:
+                return 0, next_offset
         if context.encoding & 0x70 == _DW_EH_PE_ABSPTR:
             value += context.base_address
         return value, next_offset
