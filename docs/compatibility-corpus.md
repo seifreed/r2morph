@@ -219,6 +219,7 @@ missing runtime observations. It does not promote those passes until their
 applied-run, behavioral-validation, and complete-evidence blockers are zero.
 The same scheduled workflow now runs a native ARM64 macOS differential job on
 `macos-14`. It executes the Mach-O ARM64 NOP and register substitutions,
+including a native NOP-plus-instruction-substitution composition,
 PE integrity checks, format-preserving rewriter checks, and fail-closed
 virtualization target checks, then uploads
 `cross-platform-differential-macos-arm64`. This is additional native
