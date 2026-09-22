@@ -34,6 +34,7 @@ _UNWIND_SECTION_NAMES = frozenset(
 )
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 _MAX_COMPACT_RET_SCAN = 128
+_MAX_ENTRYPOINT_PROLOGUE_BYTES = 4
 # ponytail: bounded local target cluster; replace with linker provenance if wider layouts matter.
 _MAX_APPLICATION_ENTRY_SCAN_INSNS = 256
 _MAX_APPLICATION_TARGET_GAP = 0x2000
@@ -63,10 +64,13 @@ def _is_runtime_entrypoint(
     """Exclude a compiler-generated loader entry stub from VM candidates."""
     name = str(function.get("name", "")).strip()
     address = function.get("addr")
+    entrypoint_nearby = isinstance(address, int) and any(
+        0 <= address - entrypoint <= _MAX_ENTRYPOINT_PROLOGUE_BYTES for entrypoint in entrypoint_addresses
+    )
     return (
         name in _RUNTIME_INITIALIZATION_NAMES
         or "__libc_start_main" in name
-        or address in entrypoint_addresses
+        or entrypoint_nearby
         or (unwind_section == ".eh_frame" and (name == "entry0" or name.startswith("entry.")))
     )
 
