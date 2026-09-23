@@ -856,7 +856,6 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
     protected_callees: set[int] = set()
     application_targets = _application_target_addresses(binary, functions)
     application_candidates = _application_candidate_addresses(functions, application_targets)
-    application_addresses = application_candidates or application_targets
     function_sizes = {
         function.get("addr"): function.get("size") for function in functions if isinstance(function.get("addr"), int)
     }
@@ -883,7 +882,7 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
                 isinstance(target, int)
                 and isinstance(target_size, int)
                 and target_size >= MINIMUM_FUNCTION_SIZE
-                and (not application_addresses or target in application_addresses)
+                and target in application_candidates
             ):
                 protected_callees.add(target)
     return frozenset(protected_callees)

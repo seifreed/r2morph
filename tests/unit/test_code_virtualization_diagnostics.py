@@ -98,6 +98,15 @@ class _ProtectedCalleeBinary:
         ]
 
 
+class _UnresolvedApplicationCalleeBinary(_ProtectedCalleeBinary):
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, int | str]]]:
+            return {"ops": []}
+
+    r2 = _Disassembler()
+
+
 class _TerminalSyscallBinary:
     class _Disassembler:
         @staticmethod
@@ -484,6 +493,25 @@ def test_protected_landing_pad_callee_is_rejected_before_virtualization() -> Non
     protected = _protected_callee_addresses(_ProtectedCalleeBinary(), {_PROTECTED_CALLER_ADDRESS: frame})
 
     expect(protected == frozenset({_PROTECTED_CALLEE_ADDRESS}))
+
+
+def test_unresolved_application_targets_do_not_protect_runtime_callees() -> None:
+    frame = ExceptionFrame(
+        function_start=_PROTECTED_CALLER_ADDRESS,
+        function_end=_PROTECTED_CALLER_END_ADDRESS,
+        lsda_call_sites=[
+            LsdaCallSite(
+                _PROTECTED_CALL_ADDRESS,
+                _PROTECTED_CALL_END_ADDRESS,
+                _PROTECTED_LANDING_PAD_ADDRESS,
+                1,
+            )
+        ],
+    )
+
+    protected = _protected_callee_addresses(_UnresolvedApplicationCalleeBinary(), {_PROTECTED_CALLER_ADDRESS: frame})
+
+    expect(protected == frozenset())
 
 
 def test_parsed_landing_pad_frame_fails_closed_without_lsda_remap() -> None:
