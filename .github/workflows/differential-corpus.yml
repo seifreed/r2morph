@@ -207,7 +207,7 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 69:
+          if len(cases) != 71:
               raise SystemExit(f"cross-format smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
@@ -239,6 +239,7 @@ jobs:
               "test_elf_arm64_register_substitution_preserves_native_exit_code",
               "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code",
               "test_elf_arm64_compiled_memory_and_call_sequence_preserves_native_exit_code",
+              "test_elf_arm64_instruction_expansion_preserves_native_exit_code",
               "test_tier1_pass_composition_preview_target_preserves_exit_code",
               "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
               "test_elf_x86_32_nop_insertion_preserves_native_exit_code",
@@ -248,6 +249,7 @@ jobs:
               "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
               "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
               "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+              "test_elf_arm32_instruction_expansion_preserves_emulated_exit_code",
               "test_tier1_pass_preview_target_preserves_exit_code",
               "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
               "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
@@ -270,6 +272,7 @@ jobs:
                   "test_elf_arm32_register_substitution_preserves_emulated_exit_code",
                   "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
                   "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+                  "test_elf_arm32_instruction_expansion_preserves_emulated_exit_code",
                   "test_tier1_pass_composition_preview_target_preserves_exit_code",
               ),
               "AArch64": (
@@ -279,6 +282,7 @@ jobs:
                   "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code",
                   "test_elf_arm64_compiled_memory_and_call_sequence_preserves_native_exit_code",
                   "test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code",
+                  "test_elf_arm64_instruction_expansion_preserves_native_exit_code",
                   "test_tier1_pass_composition_preview_target_preserves_exit_code",
               ),
               "x86-32": (
@@ -1865,7 +1869,7 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 6:
+          if len(cases) != 7:
               raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
@@ -1909,6 +1913,13 @@ jobs:
               for case in cases
           ):
               raise SystemExit("native ELF ARM64 compiled corpus test name is missing")
+          if not any(
+              case.attrib.get("name", "").startswith(
+                  "test_elf_arm64_instruction_expansion_preserves_native_exit_code"
+              )
+              for case in cases
+          ):
+              raise SystemExit("native ELF ARM64 instruction-expansion test name is missing")
           PY
 
       - name: Upload native ELF ARM64 evidence
@@ -2033,7 +2044,7 @@ jobs:
 
           suite = ET.parse("elf-arm-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 5:
+          if len(cases) != 6:
               raise SystemExit(f"unexpected ELF ARM32 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM32 evidence is incomplete")
@@ -2048,6 +2059,7 @@ jobs:
               "test_elf_arm32_nop_insertion_preserves_emulated_exit_code",
               "test_elf_arm32_register_substitution_preserves_emulated_exit_code",
               "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
+              "test_elf_arm32_instruction_expansion_preserves_emulated_exit_code",
           }
           names = {case.attrib.get("name", "") for case in cases}
           missing = [name for name in required if not any(value.startswith(name) for value in names)]

@@ -157,12 +157,22 @@
       "evidence_cells": [
         {
           "format": "ELF",
+          "architecture": "AArch64"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM"
+        },
+        {
+          "format": "ELF",
           "architecture": "x86"
         }
       ],
       "evidence": [
         "README.md",
         "tests/integration",
+        "tests/integration/test_elf_arm32_native.py",
+        "tests/integration/test_elf_arm64_native.py",
         "tests/integration/test_elf_x86_32_native.py"
       ]
     },
@@ -903,28 +913,28 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 44,
-      "not_supported_cells": 220,
+      "evidenced_cells": 46,
+      "not_supported_cells": 218,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 22,
-      "non_official_not_supported_cells": 220,
-      "non_official_evidence_percent": 9.09,
+      "non_official_evidenced_cells": 24,
+      "non_official_not_supported_cells": 218,
+      "non_official_evidence_percent": 9.92,
       "non_official_gap_targets": [
         {
           "format": "ELF",
           "architecture": "AArch64",
-          "evidenced_cells": 4,
-          "not_supported_cells": 18,
-          "evidence_percent": 18.18
+          "evidenced_cells": 5,
+          "not_supported_cells": 17,
+          "evidence_percent": 22.73
         },
         {
           "format": "ELF",
           "architecture": "ARM",
-          "evidenced_cells": 4,
-          "not_supported_cells": 18,
-          "evidence_percent": 18.18
+          "evidenced_cells": 5,
+          "not_supported_cells": 17,
+          "evidence_percent": 22.73
         },
         {
           "format": "ELF",
@@ -1006,16 +1016,16 @@
           {
             "format": "ELF",
             "architecture": "AArch64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "ELF",
             "architecture": "ARM",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "ELF",
@@ -1089,16 +1099,16 @@
           {
             "format": "ELF",
             "architecture": "AArch64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "ELF",
             "architecture": "ARM",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "ELF",
@@ -1177,7 +1187,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 220,
+        "non_official_missing_evidence_cells": 218,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2210,6 +2220,8 @@
         "evidence": [
           "README.md",
           "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2221,6 +2233,8 @@
         "evidence": [
           "README.md",
           "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2228,15 +2242,27 @@
         "pass": "instruction-expansion",
         "format": "ELF",
         "architecture": "AArch64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_elf_x86_32_native.py"
+        ]
       },
       {
         "pass": "instruction-expansion",
         "format": "ELF",
         "architecture": "ARM",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_elf_x86_32_native.py"
+        ]
       },
       {
         "pass": "instruction-expansion",

@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -108,6 +109,40 @@ def _build_arm64_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
         str(source),
     ]
     run_command(command, check=True, text=True)
+    return binary_path
+
+
+def _build_arm64_expansion_elf(tmp_path: Path) -> Path:
+    compiler = shutil.which("aarch64-linux-gnu-gcc")
+    if compiler is None:
+        raise RuntimeError("an AArch64 assembler compiler is required for the expansion fixture")
+    source = tmp_path / "arm64_expansion.S"
+    source.write_text(
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov w8, #93\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov w1, #20\n"
+        "    mov w2, w1\n"
+        "    lsl w1, w1, #1\n"
+        "    add w1, w1, #2\n"
+        "    mov w3, w2\n"
+        "    mov w0, w1\n"
+        "    ret\n"
+        ".size compute, .-compute\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "arm64_expansion"
+    run_command(
+        [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
     return binary_path
 
 
@@ -367,4 +402,26 @@ def test_elf_arm64_compiled_memory_and_call_sequence_preserves_native_exit_code(
         "compiled ELF ARM64 memory/call composition changed native execution: "
         f"original={original.returncode, original.stdout, original.stderr!r}; "
         f"mutated={mutated.returncode, mutated.stdout, mutated.stderr!r}; results={results!r}",
+    )
+
+
+def test_elf_arm64_instruction_expansion_preserves_native_exit_code(tmp_path: Path) -> None:
+    _require_arm64_execution()
+
+    binary_path = _build_arm64_expansion_elf(tmp_path)
+    original = _run_arm64(binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = InstructionExpansionPass(
+            config={"max_expansions_per_function": 1, "probability": 1.0, "seed": 20260923}
+        ).apply(binary)
+
+    mutated = _run_arm64(binary_path)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF ARM64 instruction expansion changed native execution",
     )

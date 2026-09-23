@@ -95,15 +95,17 @@ def _parse_supported_immediate(operand: str) -> int | None:
 def _second_operand_matches(pattern: str, operand: str) -> bool:
     if pattern == "reg":
         return _is_register_operand(operand)
-    if pattern == "0":
-        return operand in {"0", "0x0"}
-    if not _is_immediate_operand(operand):
+    normalized_pattern = pattern.removeprefix("#")
+    normalized_operand = operand.removeprefix("#")
+    if normalized_pattern == "0":
+        return normalized_operand in {"0", "0x0"}
+    if not _is_immediate_operand(normalized_operand):
         return False
-    value = _parse_supported_immediate(operand)
-    if pattern == "small_imm":
+    value = _parse_supported_immediate(normalized_operand)
+    if normalized_pattern == "small_imm":
         return value is not None and 0 <= value <= _MAX_BYTE_VALUE
-    if pattern.isdigit() or pattern.startswith("-"):
-        return value == int(pattern)
+    if normalized_pattern.isdigit() or normalized_pattern.startswith("-"):
+        return value == int(normalized_pattern)
     return True
 
 

@@ -23,3 +23,11 @@ def test_instruction_expansion_helpers_cover_core_paths() -> None:
     expect(not (is_safe_to_expand({"type": "jmp"}, 100) is not False))
     expect(not (is_safe_to_expand({"type": "mov"}, 2000) is not False))
     expect(not (is_safe_to_expand({"type": "mov"}, 100) is not True))
+
+
+def test_arm_zero_expansion_does_not_match_nonzero_immediate() -> None:
+    expect(not match_expansion_pattern({"disasm": "mov r2, 0x14"}, "arm"))
+
+
+def test_arm_zero_expansion_matches_zero_immediate() -> None:
+    expect(match_expansion_pattern({"disasm": "mov r2, 0"}, "arm"))
