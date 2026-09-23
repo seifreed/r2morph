@@ -50,6 +50,7 @@ _REQUIRED_CASES = {
         "test_elf_x86_32_register_substitution_preserves_native_exit_code",
         "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
         "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+        "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
     ),
     "elf-arm-32": (
         "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
@@ -86,6 +87,7 @@ _PASS_CASES = {
         "InstructionSubstitution": "test_elf_x86_32_instruction_substitution_preserves_native_exit_code",
         "RegisterSubstitution": "test_elf_x86_32_register_substitution_preserves_native_exit_code",
         "ConstantUnfolding": "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+        "InstructionExpansion": "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
         "Composition": "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
     },
     "elf-arm-32": {

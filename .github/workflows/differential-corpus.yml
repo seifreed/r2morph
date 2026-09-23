@@ -207,7 +207,7 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 68:
+          if len(cases) != 69:
               raise SystemExit(f"cross-format smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
@@ -245,6 +245,7 @@ jobs:
               "test_elf_x86_32_register_substitution_preserves_native_exit_code",
               "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+              "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
               "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
               "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
               "test_tier1_pass_preview_target_preserves_exit_code",
@@ -286,6 +287,7 @@ jobs:
                   "test_elf_x86_32_register_substitution_preserves_native_exit_code",
                   "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
                   "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+                  "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
                   "test_tier1_pass_composition_preview_target_preserves_exit_code",
               ),
           }
@@ -1956,7 +1958,7 @@ jobs:
 
           suite = ET.parse("elf-x86-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 5:
+          if len(cases) != 6:
               raise SystemExit(f"unexpected ELF x86 32-bit case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF x86 32-bit evidence is incomplete")
@@ -1971,6 +1973,7 @@ jobs:
               "test_elf_x86_32_nop_insertion_preserves_native_exit_code",
               "test_elf_x86_32_register_substitution_preserves_native_exit_code",
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
+              "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
           }
           names = {case.attrib.get("name", "") for case in cases}
           missing = [name for name in required if not any(value.startswith(name) for value in names)]

@@ -10,6 +10,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -18,9 +19,10 @@ from tests.utils.process import run_command
 
 
 def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
-    compiler = shutil.which("clang")
+    compiler = shutil.which("clang") or shutil.which("gcc")
     if compiler is None:
-        raise RuntimeError("clang is required for the ELF x86 32-bit differential fixture")
+        raise RuntimeError("clang or gcc is required for the ELF x86 32-bit differential fixture")
+    target_flags = ["-target", "i386-linux-gnu"] if Path(compiler).name == "clang" else ["-m32"]
     source = tmp_path / "x86_32_exit.S"
     basic_source = (
         ".text\n"
@@ -72,8 +74,56 @@ def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     run_command(
         [
             compiler,
-            "-target",
-            "i386-linux-gnu",
+            *target_flags,
+            "-nostdlib",
+            "-static",
+            "-Wl,-e,_start",
+            "-x",
+            "assembler",
+            "-o",
+            binary_path,
+            source,
+        ],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
+def _build_x86_32_expansion_elf(tmp_path: Path) -> Path:
+    compiler = shutil.which("clang") or shutil.which("gcc")
+    if compiler is None:
+        raise RuntimeError("clang or gcc is required for the ELF x86 32-bit expansion fixture")
+    target_flags = ["-target", "i386-linux-gnu"] if Path(compiler).name == "clang" else ["-m32"]
+    source = tmp_path / "x86_32_expansion.S"
+    source.write_text(
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    call compute\n"
+        "    movl %eax, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".type compute,@function\n"
+        "compute:\n"
+        "    movl $20, %ecx\n"
+        "    movl %ecx, %edx\n"
+        "    xorl %edx, %edx\n"
+        "    movl %ecx, %edx\n"
+        "    shll $1, %ecx\n"
+        "    addl $2, %ecx\n"
+        "    movl %ecx, %eax\n"
+        "    nop\n"
+        "    ret\n"
+        ".size compute, .-compute\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "x86_32_expansion"
+    run_command(
+        [
+            compiler,
+            *target_flags,
             "-nostdlib",
             "-static",
             "-Wl,-e,_start",
@@ -193,9 +243,10 @@ def test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code(tmp_path:
     if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
 
-    compiler = shutil.which("clang")
+    compiler = shutil.which("clang") or shutil.which("gcc")
     if compiler is None:
-        raise RuntimeError("clang is required for the ELF x86 32-bit differential fixture")
+        raise RuntimeError("clang or gcc is required for the ELF x86 32-bit differential fixture")
+    target_flags = ["-target", "i386-linux-gnu"] if Path(compiler).name == "clang" else ["-m32"]
     source = tmp_path / "x86_32_constant.S"
     binary_path = tmp_path / "x86_32_constant"
     source.write_text(
@@ -219,8 +270,7 @@ def test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code(tmp_path:
     run_command(
         [
             compiler,
-            "-target",
-            "i386-linux-gnu",
+            *target_flags,
             "-nostdlib",
             "-static",
             "-Wl,-e,_start",
@@ -246,4 +296,27 @@ def test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code(tmp_path:
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         f"x86 32-bit constant unfolding changed native execution: {result=}",
+    )
+
+
+def test_elf_x86_32_instruction_expansion_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
+
+    binary_path = _build_x86_32_expansion_elf(tmp_path)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = InstructionExpansionPass(
+            config={"max_expansions_per_function": 1, "probability": 1.0, "seed": 20260923}
+        ).apply(binary)
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF x86 32-bit instruction expansion changed native execution",
     )
