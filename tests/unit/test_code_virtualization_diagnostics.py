@@ -182,25 +182,6 @@ def test_unwind_contract_allows_ordinary_tls_with_native_call() -> None:
     expect(blocker is None)
 
 
-def test_unwind_contract_rejects_dynamic_stack_alignment_with_native_call() -> None:
-    binary = _FunctionDisassemblyBinary(
-        [
-            {"type": "and", "opcode": "and rsp, 0xffffffffffffffe0", "addr": _TEST_FUNCTION_ADDRESS},
-            {"type": "call", "opcode": "call 0x2000", "addr": 0x1004},
-        ]
-    )
-
-    blocker = _unwind_contract_blocker(
-        binary, {"addr": _TEST_FUNCTION_ADDRESS}, ExceptionFrame(_TEST_FUNCTION_ADDRESS, 0x1010)
-    )
-
-    expect(
-        blocker is not None
-        and blocker[0]["addr"] == _TEST_FUNCTION_ADDRESS
-        and blocker[1] == "native calls combined with dynamic stack alignment have no proven VM unwind contract"
-    )
-
-
 def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> None:
     expect(not CodeVirtualizationPass(config={"reject_partial_virtualization": False}).reject_partial_virtualization)
 

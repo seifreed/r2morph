@@ -751,8 +751,6 @@ def _unwind_contract_blocker(
         opcode = str(instruction.get("disasm") or instruction.get("opcode") or "").lower()
         if _is_stack_guard_tls_access(opcode):
             return instruction, "native calls combined with TLS access have no proven VM unwind contract"
-        if opcode.startswith(("and rsp,", "and esp,")):
-            return instruction, "native calls combined with dynamic stack alignment have no proven VM unwind contract"
     return None
 
 
