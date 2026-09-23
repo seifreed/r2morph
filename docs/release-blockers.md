@@ -103,6 +103,9 @@ The continuous fuzzing scope has an additional reproducible local run at
 20,000 target runs across 5,000 deterministic cases completed with zero
 failures. This strengthens the fuzzing evidence but does not close the
 remaining resistance and signoff blockers without adversarial and human review.
+The current scheduled workflow also passed 20,000 target runs on commit
+`0933d50c`; its retained summary is
+[protection-fuzz-2026-09-23-0933d50c.json](protection-fuzz-2026-09-23-0933d50c.json).
 
 ## Blocker index
 
