@@ -201,7 +201,10 @@ __attribute__((noinline)) int nested_throw(int value) {
 
 int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
 """)
-    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    result = run_command(
+        ["g++", "-O0", "-fcf-protection=branch", "-fno-pie", "-no-pie", "-o", executable, source],
+        timeout=30,
+    )
     expect(result.returncode == 0, "failed to compile the nested-exception fixture")
 
     with Binary(executable, writable=True) as binary:

@@ -1023,7 +1023,7 @@ class CodeVirtualizationPass(MutationPass):
                 native_ranges=(),
                 entry_addresses=(address,),
             )
-            if region is None or region.entry_vaddr != address:
+            if region is None or address not in region.entry_map:
                 return None
             result = self._emit_region(binary, func, region, options)
             if result is None:

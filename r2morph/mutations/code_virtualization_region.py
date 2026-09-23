@@ -885,6 +885,23 @@ def _mark_indirect_returns(build: _RegionBuild) -> bool:
     return has_internal_indirect_call
 
 
+def _strip_cet_entry_markers(
+    instructions: list[dict[str, Any]], entry_addresses: tuple[int, ...]
+) -> tuple[list[dict[str, Any]], dict[int, int]]:
+    entry_aliases: dict[int, int] = {}
+    while instructions and str(instructions[0].get("opcode", "")).split(" ", 1)[0].lower() in {
+        "endbr32",
+        "endbr64",
+    }:
+        marker_address = instructions[0].get("addr")
+        instructions = instructions[1:]
+        if isinstance(marker_address, int) and marker_address in entry_addresses and instructions:
+            next_address = instructions[0].get("addr")
+            if isinstance(next_address, int):
+                entry_aliases[marker_address] = next_address
+    return instructions, entry_aliases
+
+
 def _prepare_region(
     instructions: list[dict[str, Any]],
     function_range: tuple[int, int] | None,
@@ -1097,6 +1114,7 @@ def extract_region(
     native_ranges = cast(tuple[tuple[int, int], ...], options.get("native_ranges", ()))
     entry_addresses = cast(tuple[int, ...], options.get("entry_addresses", ()))
     entry_stack_sources = cast(tuple[tuple[int, int], ...], options.get("entry_stack_sources", ()))
+    instructions, entry_aliases = _strip_cet_entry_markers(instructions, entry_addresses)
     build = _build_region_items(
         instructions,
         allow_computed_jump,
@@ -1109,7 +1127,16 @@ def extract_region(
     has_internal_indirect_call = _mark_indirect_returns(build)
     items = build.items
     call_site_item_of = dict(build.call_site_item_of)
-    entry_map = _entry_item_map(build, entry_addresses)
+    mapped_entry_addresses = tuple(entry_aliases.get(address, address) for address in entry_addresses)
+    mapped_entry_map = _entry_item_map(build, mapped_entry_addresses)
+    entry_map = (
+        None
+        if mapped_entry_map is None
+        else {
+            address: mapped_entry_map[mapped_address]
+            for address, mapped_address in zip(entry_addresses, mapped_entry_addresses, strict=True)
+        }
+    )
     entry_stack_depths: dict[int, int] = {}
     if (
         entry_map is None

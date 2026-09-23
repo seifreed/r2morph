@@ -30,6 +30,8 @@ _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE = 5
 _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS = 0x40100A
 _TEST_FUNCTION_ADDRESS = 0x1000
 _NATIVE_LANDING_PAD_ADDRESS = 0x1010
+_CET_MARKER_ADDRESS = 0x1000
+_CET_FIRST_REAL_ADDRESS = 0x1004
 
 
 class _SectionsBinary:
@@ -600,6 +602,20 @@ def test_extract_region_preserves_native_landing_pad_and_exits_to_it() -> None:
         region is not None
         and all(address != _NATIVE_LANDING_PAD_ADDRESS for address, _size in region.body_ranges)
         and any(item == ("exit", _NATIVE_LANDING_PAD_ADDRESS) for item in region.instructions)
+    )
+
+
+def test_extract_region_aliases_cet_landing_pad_to_first_real_instruction() -> None:
+    instructions = [
+        {"addr": _CET_MARKER_ADDRESS, "size": 4, "type": "null", "opcode": "endbr64"},
+        {"addr": _CET_FIRST_REAL_ADDRESS, "size": 5, "type": "mov", "opcode": "mov eax, 1"},
+        {"addr": _CET_FIRST_REAL_ADDRESS + 5, "size": 1, "type": "ret", "opcode": "ret"},
+    ]
+
+    region = extract_region(instructions, entry_addresses=(_CET_MARKER_ADDRESS,))
+
+    expect(
+        region is not None and region.entry_vaddr == _CET_FIRST_REAL_ADDRESS and _CET_MARKER_ADDRESS in region.entry_map
     )
 
 
