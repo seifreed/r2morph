@@ -23,8 +23,11 @@ _R2PIPE_CLOSE_POLL_INTERVAL_SECONDS = 0.01
 def _close_r2pipe(r2: Any) -> None:
     process = getattr(r2, "process", None)
     if process is None:
-        if hasattr(r2, "quit"):
-            r2.quit()
+        for method_name in ("quit", "close"):
+            close_method = getattr(r2, method_name, None)
+            if callable(close_method):
+                close_method()
+                break
         return
 
     for stream in (process.stdin, process.stdout):

@@ -61,7 +61,7 @@ class ObfuscationDetector:
         cf_analyzer = ControlFlowAnalyzer(binary)
         pattern_matcher = PatternMatcher(binary)
 
-        entropy_result = self.entropy_analyzer.analyze_file(Path(binary.path))
+        entropy_result = self.entropy_analyzer.analyze_file(Path(binary.path), binary)
         result.packer_detected = self.packer_db.detect(binary, self.entropy_analyzer, entropy_result)
         result.analysis_details["entropy"] = entropy_result
 

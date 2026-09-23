@@ -27,7 +27,7 @@ class EntropyAnalyzer:
         """Initialize entropy analyzer."""
         pass
 
-    def analyze_file(self, path: Path) -> EntropyResult:
+    def analyze_file(self, path: Path, binary: Binary | None = None) -> EntropyResult:
         """
         Analyze entropy of entire file.
 
@@ -41,7 +41,7 @@ class EntropyAnalyzer:
 
         overall = self._calculate_file_entropy(path)
 
-        section_entropies = self._analyze_sections(path)
+        section_entropies = self._analyze_sections(path, binary)
 
         suspicious = [
             name for name, entropy in section_entropies.items() if entropy > self.SUSPICIOUS_ENTROPY_THRESHOLD
@@ -79,7 +79,7 @@ class EntropyAnalyzer:
         """
         return calculate_file_entropy(path)
 
-    def _analyze_sections(self, path: Path) -> dict[str, float]:
+    def _analyze_sections(self, path: Path, binary: Binary | None = None) -> dict[str, float]:
         """
         Analyze entropy of individual sections.
 
@@ -89,35 +89,35 @@ class EntropyAnalyzer:
         Returns:
             Dict of section -> entropy
         """
-        section_entropies = {}
-
+        if binary is not None:
+            return self._analyze_open_sections(binary)
         try:
-            with Binary(path) as binary:
-                binary.analyze()
-                sections = binary.get_sections()
-
-                for section in sections:
-                    name = section.get("name", "unknown")
-                    vaddr = section.get("vaddr", 0)
-                    size = section.get("vsize", 0)
-
-                    if size == 0:
-                        continue
-
-                    try:
-                        if binary.r2 is None:
-                            continue
-                        data_hex = binary.r2.cmd(f"p8 {size} @ 0x{vaddr:x}")
-                        data = bytes.fromhex(data_hex.strip())
-
-                        entropy = self._calculate_entropy(data)
-                        section_entropies[name] = entropy
-
-                    except Exception as e:
-                        logger.debug(f"Could not analyze section {name}: {e}")
-
+            with Binary(path) as opened_binary:
+                opened_binary.analyze()
+                return self._analyze_open_sections(opened_binary)
         except Exception as e:
             logger.error(f"Failed to analyze sections: {e}")
+
+        return {}
+
+    def _analyze_open_sections(self, binary: Binary) -> dict[str, float]:
+        section_entropies: dict[str, float] = {}
+        for section in binary.get_sections():
+            name = section.get("name", "unknown")
+            vaddr = section.get("vaddr", 0)
+            size = section.get("vsize", 0)
+
+            if size == 0:
+                continue
+
+            try:
+                if binary.r2 is None:
+                    continue
+                data_hex = binary.r2.cmd(f"p8 {size} @ 0x{vaddr:x}")
+                data = bytes.fromhex(data_hex.strip())
+                section_entropies[name] = self._calculate_entropy(data)
+            except Exception as e:
+                logger.debug(f"Could not analyze section {name}: {e}")
 
         return section_entropies
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+from r2morph.adapters.mock_disassembler import MockDisassembler
+from r2morph.core.binary import Binary
 from r2morph.validation.benchmark_runners import (
     benchmark_detection,
     benchmark_devirtualization,
@@ -42,10 +44,23 @@ def test_detection_runner_builds_result() -> None:
     def measure_performance(func):
         return _performance(), func()
 
+    def binary_factory(path: str) -> Binary:
+        disassembler = MockDisassembler(
+            responses={
+                "ij": {"core": {"format": "pe"}, "bin": {"baddr": 0, "size": 1024}},
+                "aflj": [],
+                "iSj": [],
+                "iij": [],
+                "izz": "",
+            }
+        )
+        return Binary(path, disassembler=disassembler)
+
     result = benchmark_detection(
         sample,
         measure_performance=measure_performance,
         calculate_accuracy_metrics=lambda expected, actual: SimpleNamespace(accuracy=1.0),
+        binary_factory=binary_factory,
     )
 
     expect(result.category == BenchmarkCategory.DETECTION)
