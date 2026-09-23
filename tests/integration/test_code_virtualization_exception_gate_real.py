@@ -230,6 +230,19 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
             for operation in candidate_disassembly.get("ops", [])
             if isinstance(operation, dict) and isinstance(operation.get("addr"), int)
         )
+        exception_frame_summary = (
+            exception_frame.function_start,
+            exception_frame.function_end,
+            tuple(
+                (
+                    landing_pad.address,
+                    landing_pad.size,
+                    landing_pad.metadata.get("call_site_start"),
+                    landing_pad.metadata.get("call_site_end"),
+                )
+                for landing_pad in exception_frame.landing_pads
+            ),
+        )
         virtualization_pass = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
@@ -265,7 +278,7 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
         f"{function_address=:#x}, {len(landing_pad_bytes)=}, "
         f"{landing_pads_were_transformed=}, {remapped_landing_pad_entries=}, "
         f"{runtime_result.returncode=}, {candidate_function_summary=}, "
-        f"{candidate_op_addresses=}, {stats=}",
+        f"{candidate_op_addresses=}, {exception_frame_summary=}, {stats=}",
     )
 
 
