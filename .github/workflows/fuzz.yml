@@ -1,6 +1,22 @@
 name: Continuous Fuzzing
 
+concurrency:
+  group: continuous-fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
 "on":
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fuzz.yml"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "r2morph/**"
+      - "scripts/continuous_fuzz.py"
+      - "tests/property/**"
+      - "tests/unit/test_fuzzer_inputs_contract.py"
+      - "tests/unit/test_mutation_fuzzer_campaign_contract.py"
+      - "tests/unit/test_mutation_fuzzer_continuous_contract.py"
   schedule:
     - cron: "17 3 * * 1"
   workflow_dispatch:
