@@ -893,6 +893,14 @@ def _prepare_region(
 ) -> _PreparedRegion | None:
     instructions = _trim_trailing_padding(instructions)
     instructions = [_normalize_syscall_instruction(instruction) for instruction in instructions]
+    # CET landing markers belong to the native function-entry contract. Keep
+    # them in place and start the VM at the first real instruction; treating
+    # endbr64/endbr32 as a VM nop changes the entry layout for some interpreters.
+    while instructions and str(instructions[0].get("opcode", "")).split(" ", 1)[0].lower() in {
+        "endbr32",
+        "endbr64",
+    }:
+        instructions = instructions[1:]
     instructions = _trim_after_unreferenced_terminal_syscall(instructions)
     if not instructions:
         return None

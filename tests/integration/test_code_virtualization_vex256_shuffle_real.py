@@ -73,6 +73,7 @@ def test_virtualized_vex256_shuffle_preserves_native_result(tmp_path: Path) -> N
             "gcc",
             "-O2",
             "-mavx2",
+            "-fcf-protection=branch",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",
