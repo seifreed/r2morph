@@ -9,7 +9,6 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _HEX_PREFIX_LENGTH = 2
-_BINARY_OPERAND_COUNT = 2
 _MAX_BYTE_VALUE = 255
 _MAX_EXPANDABLE_FUNCTION_SIZE_BYTES = 1000
 
@@ -97,8 +96,8 @@ def _second_operand_matches(pattern: str, operand: str) -> bool:
         return _is_register_operand(operand)
     normalized_pattern = pattern.removeprefix("#")
     normalized_operand = operand.removeprefix("#")
-    if normalized_pattern == "0":
-        return normalized_operand in {"0", "0x0"}
+    if normalized_pattern in {"xzr", "0"}:
+        return normalized_operand == "xzr" if normalized_pattern == "xzr" else normalized_operand in {"0", "0x0"}
     if not _is_immediate_operand(normalized_operand):
         return False
     value = _parse_supported_immediate(normalized_operand)
@@ -117,11 +116,12 @@ def _pattern_matches(pattern: tuple[str, ...], mnemonic: str, operands: list[str
         return True
     if pattern_operands[0] != "reg" or not operands or not _is_register_operand(operands[0]):
         return False
-    if len(pattern_operands) == 1:
-        return True
-    if len(pattern_operands) != _BINARY_OPERAND_COUNT:
-        return True
-    return len(operands) >= _BINARY_OPERAND_COUNT and _second_operand_matches(pattern_operands[1], operands[1])
+    if len(operands) < len(pattern_operands):
+        return False
+    return all(
+        _second_operand_matches(pattern_operand, operand)
+        for pattern_operand, operand in zip(pattern_operands[1:], operands[1:], strict=True)
+    )
 
 
 def match_expansion_pattern(

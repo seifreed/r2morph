@@ -92,6 +92,10 @@
         {
           "format": "PE",
           "architecture": "x86-64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64"
         }
       ],
       "evidence": [
@@ -178,6 +182,7 @@
         "tests/integration/test_elf_arm32_native.py",
         "tests/integration/test_elf_arm64_native.py",
         "tests/integration/test_nop_insertion_pe_real.py",
+        "tests/integration/test_mutation_nop_insertion_arm64.py",
         "tests/integration/test_elf_x86_32_native.py"
       ]
     },
@@ -2228,6 +2233,7 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2242,6 +2248,7 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2256,6 +2263,7 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2270,6 +2278,7 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },
@@ -2284,6 +2293,7 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_arm64_native.py",
           "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
           "tests/integration/test_elf_x86_32_native.py"
         ]
       },

@@ -31,3 +31,11 @@ def test_arm_zero_expansion_does_not_match_nonzero_immediate() -> None:
 
 def test_arm_zero_expansion_matches_zero_immediate() -> None:
     expect(match_expansion_pattern({"disasm": "mov r2, 0"}, "arm"))
+
+
+def test_arm64_three_operand_expansion_rejects_different_immediate() -> None:
+    expect(not match_expansion_pattern({"disasm": "sub sp, sp, 0x20"}, "arm64"))
+
+
+def test_arm64_three_operand_expansion_matches_shift_by_one() -> None:
+    expect(match_expansion_pattern({"disasm": "lsl w1, w1, 1"}, "arm64"))

@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.platform.codesign import CodeSigner
@@ -48,6 +49,28 @@ def _build_arm64_control_flow_binary(tmp_path: Path) -> Path:
         "int main(void) { return transform(7) == 77 ? 0 : 1; }\n"
     )
     binary_path = tmp_path / "arm64_control_flow"
+    run_command(
+        [clang, "-arch", "arm64", "-O0", "-fno-inline", "-o", str(binary_path), str(source)],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
+def _build_arm64_expansion_binary(tmp_path: Path) -> Path:
+    clang = shutil.which("clang")
+    if clang is None:
+        pytest.skip("clang not available")
+    source = tmp_path / "arm64_expansion.c"
+    source.write_text(
+        "__attribute__((noinline)) int transform(int value) {\n"
+        '    __asm__ volatile("lsl %w0, %w0, #1" : "+r"(value));\n'
+        "    return value + 2;\n"
+        "}\n"
+        "int main(void) { return transform(20) == 42 ? 0 : 1; }\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "arm64_expansion"
     run_command(
         [clang, "-arch", "arm64", "-O0", "-fno-inline", "-o", str(binary_path), str(source)],
         check=True,
@@ -119,6 +142,30 @@ def test_constant_unfolding_arm64_preserves_native_output(tmp_path: Path) -> Non
         == (original.returncode, original.stdout, original.stderr)
         == (0, "", ""),
         "ARM64 Mach-O constant unfolding changed native execution",
+    )
+
+
+def test_instruction_expansion_arm64_preserves_native_output(tmp_path: Path) -> None:
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O arm64 execution requires macOS")
+
+    binary_path = _build_arm64_expansion_binary(tmp_path)
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as bin_obj:
+        bin_obj.analyze()
+        result = InstructionExpansionPass(
+            {"probability": 1.0, "max_expansions_per_function": 1, "seed": 20260923}
+        ).apply(bin_obj)
+
+    expect(CodeSigner().sign(binary_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+        == (0, "", ""),
+        "ARM64 Mach-O instruction expansion changed native execution",
     )
 
 
