@@ -27,6 +27,7 @@ from r2morph.detection.packer_signature_models import PackerSignature, PackerTyp
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
     from r2morph.detection.entropy_analyzer import EntropyAnalyzer
+    from r2morph.detection.entropy_analyzer_models import EntropyResult
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,12 @@ class PackerSignatureDatabase:
             *other_signatures(),
         ]
 
-    def detect(self, binary: Binary, entropy_analyzer: EntropyAnalyzer) -> PackerType:
+    def detect(
+        self,
+        binary: Binary,
+        entropy_analyzer: EntropyAnalyzer,
+        entropy_result: EntropyResult | None = None,
+    ) -> PackerType:
         """
         Detect specific packer type using signatures.
 
@@ -72,9 +78,17 @@ class PackerSignatureDatabase:
             sections = binary.get_sections()
             entry_point = binary.info.get("bin", {}).get("baddr", 0)
             entry_bytes = get_entry_bytes(binary, entry_point)
+            if entropy_result is None:
+                entropy_result = entropy_analyzer.analyze_file(binary.path)
 
             for signature in self.signatures:
-                confidence = calculate_signature_confidence(signature, sections, entry_bytes, binary, entropy_analyzer)
+                confidence = calculate_signature_confidence(
+                    signature,
+                    sections,
+                    entry_bytes,
+                    binary,
+                    entropy_result,
+                )
 
                 if confidence > best_confidence and confidence >= signature.confidence_threshold:
                     best_confidence = confidence

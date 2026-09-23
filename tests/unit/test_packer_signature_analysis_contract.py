@@ -34,8 +34,10 @@ class _FakeEntropyResult:
 class _FakeEntropyAnalyzer:
     def __init__(self, overall_entropy: float) -> None:
         self._overall_entropy = overall_entropy
+        self.calls = 0
 
     def analyze_file(self, _path):
+        self.calls += 1
         return _FakeEntropyResult(self._overall_entropy)
 
 
@@ -83,10 +85,32 @@ def test_signature_confidence_accounts_for_matching_signals() -> None:
         binary.get_sections(),
         get_entry_bytes(binary, 0x401000),
         binary,
-        _FakeEntropyAnalyzer(7.5),
+        _FakeEntropyResult(7.5),
     )
 
     expect(confidence == 1.0)
+
+
+def test_signature_confidence_reuses_precomputed_entropy() -> None:
+    analyzer = _FakeEntropyAnalyzer(7.5)
+    signature = PackerSignature(
+        name="TestPacker",
+        packer_type=PackerType.UPX,
+        entropy_threshold=7.0,
+        confidence_threshold=0.5,
+    )
+    binary = _FakeBinary()
+
+    confidence = calculate_signature_confidence(
+        signature,
+        binary.get_sections(),
+        b"",
+        binary,
+        _FakeEntropyResult(7.5),
+    )
+
+    expect(confidence == 1.0)
+    expect(analyzer.calls == 0)
 
 
 def test_detect_packing_layers_reports_multiple_high_entropy_sections() -> None:

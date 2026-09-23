@@ -12,6 +12,7 @@ from r2morph.utils.entropy import calculate_entropy
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
     from r2morph.detection.entropy_analyzer import EntropyAnalyzer
+    from r2morph.detection.entropy_analyzer_models import EntropyResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def calculate_signature_confidence(
     sections: list[dict[str, Any]],
     entry_bytes: bytes,
     binary: Binary,
-    entropy_analyzer: EntropyAnalyzer,
+    entropy_result: EntropyResult,
 ) -> float:
     """Calculate confidence for one packer signature."""
     confidence = 0.0
@@ -64,7 +65,6 @@ def calculate_signature_confidence(
         except Exception as e:
             logger.debug(f"Failed to check string patterns: {e}")
 
-    entropy_result = entropy_analyzer.analyze_file(Path(binary.path))
     if entropy_result.overall_entropy >= signature.entropy_threshold:
         total_checks += 1
         confidence += 1.0
@@ -88,6 +88,7 @@ def detect_packing_layers(
     try:
         sections = binary.get_sections()
         high_entropy_sections = []
+        entropy_result = entropy_analyzer.analyze_file(Path(binary.path))
 
         for section in sections:
             if section.get("size", 0) > 0:
@@ -123,7 +124,13 @@ def detect_packing_layers(
         entry_bytes = get_entry_bytes(binary, binary.info.get("bin", {}).get("baddr", 0))
 
         for signature in signatures:
-            confidence = calculate_signature_confidence(signature, sections_list, entry_bytes, binary, entropy_analyzer)
+            confidence = calculate_signature_confidence(
+                signature,
+                sections_list,
+                entry_bytes,
+                binary,
+                entropy_result,
+            )
 
             if confidence > _SIGNATURE_CONFIDENCE_THRESHOLD:
                 result["packers"].append(
