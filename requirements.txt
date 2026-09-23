@@ -30,7 +30,7 @@ pygments>=2.20.0
 requests>=2.33.0
 urllib3>=2.7.0
 protobuf>=6.33.5
-unicorn>=2.0.0
+unicorn>=2.0.0; platform_system != "Darwin" or platform_machine != "arm64"
 
 # Analysis/test extras exercised by the suite
 angr>=9.3.2; platform_system != "Windows"
