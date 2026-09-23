@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 EXPECTED_EXIT_CODE = 42
+EXPECTED_CATCH_RETURN_CODE = 99
 EXPECTED_MINIMUM_LANDING_PADS = 2
 FIXTURE_SEED = 20260827
 
@@ -492,4 +493,55 @@ int main() { return caller(); }
         boundary_was_transformed and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "an exception did not propagate through the virtualized native-call bridge: "
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, {stats=}",
+    )
+
+
+def test_code_virtualization_dynamic_elf_preserves_cpp_catch_after_virtualization(tmp_path: Path) -> None:
+    """A dynamic ELF keeps its C++ catch path after VM metadata injection."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "dynamic_exception.cpp"
+    executable = tmp_path / "dynamic_exception"
+    source.write_text("""
+#include <stdexcept>
+
+__attribute__((noinline)) int checked(int value) {
+    if (value < 0) {
+        throw std::runtime_error("negative");
+    }
+    return value + 1;
+}
+
+int main(int argc, char**) {
+    try {
+        return checked(argc > 1 ? -11 : 1);
+    } catch (const std::runtime_error&) {
+        return 99;
+    }
+}
+""")
+    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    expect(result.returncode == 0, "failed to compile the dynamic C++ unwinding fixture")
+
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        main_function = next(function for function in binary.get_functions() if function.get("name") == "main")
+        main_address = int(main_function["addr"])
+        main_size = int(main_function["size"])
+        original_main_bytes = binary.read_bytes(main_address, main_size)
+        stats = CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "max_functions": 1000,
+                "reject_partial_virtualization": False,
+                "seed": FIXTURE_SEED,
+            }
+        ).apply(binary)
+        main_was_transformed = binary.read_bytes(main_address, main_size) != original_main_bytes
+
+    runtime_result = run_command([executable, "throw"], timeout=30)
+    expect(
+        main_was_transformed and runtime_result.returncode == EXPECTED_CATCH_RETURN_CODE,
+        "a dynamic ELF lost its C++ catch path after VM metadata injection: "
+        f"{main_address=:#x}, {main_was_transformed=}, {runtime_result.returncode=}, {stats=}",
     )

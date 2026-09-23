@@ -534,7 +534,7 @@ def _merge_eh_frame_metadata(
     if old_entries is None or old_eh_frame_vaddr is None or len(metadata) < _EH_FRAME_HEADER_BYTES:
         return None
 
-    new_metadata_vaddr = placement.blob_vaddr + metadata_offset
+    new_metadata_vaddr = placement.blob_segment_vaddr + metadata_offset
     if len(metadata) < _EH_FRAME_HEADER_BYTES + 4:
         return None
     cie_length = struct.unpack_from("<I", metadata, _EH_FRAME_HEADER_BYTES)[0]
@@ -549,9 +549,10 @@ def _merge_eh_frame_metadata(
         "<i",
         suffix,
         initial_field,
-        placement.blob_vaddr - (new_metadata_vaddr + new_fde_file_offset + 8),
+        placement.blob_segment_vaddr - (new_metadata_vaddr + new_fde_file_offset + 8),
     )
     relocation_delta = new_header_size - _EH_FRAME_HEADER_BYTES
+    image_address_delta = placement.blob_segment_vaddr - placement.blob_vaddr
     personality_cie_prefix = b"\x00\x00\x00\x00\x01zPLR\x00\x01\x78\x10"
     if suffix[4 : 4 + len(personality_cie_prefix)] == personality_cie_prefix:
         personality_field = 4 + len(personality_cie_prefix) + 2
@@ -560,7 +561,7 @@ def _merge_eh_frame_metadata(
             "<i",
             suffix,
             personality_field,
-            personality_pointer - relocation_delta,
+            personality_pointer - relocation_delta - image_address_delta,
         )
     fde_suffix_offset = fde_offset - _EH_FRAME_HEADER_BYTES
     fde_length = struct.unpack_from("<I", suffix, fde_suffix_offset)[0]
@@ -579,7 +580,7 @@ def _merge_eh_frame_metadata(
                 lsda_offset + 1,
                 landing_pad_base - relocation_delta,
             )
-    entries = [*old_entries, (placement.blob_vaddr, new_metadata_vaddr + new_fde_file_offset)]
+    entries = [*old_entries, (placement.blob_segment_vaddr, new_metadata_vaddr + new_fde_file_offset)]
     entries.sort()
 
     header = bytearray(bytes((1, 0x1B, 0x03, 0x3B)))
@@ -672,7 +673,7 @@ def _relocated_phdr_table(
     if unwind_size:
         eh_frame_entry = _eh_frame_entry(
             placement.blob_offset + metadata_offset,
-            placement.blob_vaddr + metadata_offset,
+            placement.blob_segment_vaddr + metadata_offset,
             unwind_size,
         )
         eh_frame_index = _eh_frame_index(bytes(table), placement.e_phnum + len(fragment_sizes))
@@ -735,8 +736,9 @@ def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes, metadat
     if eh_frame_index is not None:
         eh_base = eh_frame_index * _PHDR_ENTRY_SIZE
         struct.pack_into("<Q", table, eh_base + _P_OFFSET, placement.blob_offset + metadata_offset)
-        struct.pack_into("<Q", table, eh_base + _P_VADDR, placement.blob_vaddr + metadata_offset)
-        struct.pack_into("<Q", table, eh_base + _P_PADDR, placement.blob_vaddr + metadata_offset)
+        metadata_vaddr = placement.blob_segment_vaddr + metadata_offset
+        struct.pack_into("<Q", table, eh_base + _P_VADDR, metadata_vaddr)
+        struct.pack_into("<Q", table, eh_base + _P_PADDR, metadata_vaddr)
         struct.pack_into("<Q", table, eh_base + _P_FILESZ, len(payload_metadata))
         struct.pack_into("<Q", table, eh_base + _P_MEMSZ, len(payload_metadata))
     if not _ensure_header_load_spans_table(table, placement.e_phoff, placement.e_phnum):
@@ -797,8 +799,9 @@ def _inject_replacement_blob(binary: Any, placement: _Placement, blob: bytes, me
             return None
         eh_base = eh_frame_index * _PHDR_ENTRY_SIZE
         struct.pack_into("<Q", table, eh_base + _P_OFFSET, placement.blob_offset + metadata_offset)
-        struct.pack_into("<Q", table, eh_base + _P_VADDR, placement.blob_vaddr + metadata_offset)
-        struct.pack_into("<Q", table, eh_base + _P_PADDR, placement.blob_vaddr + metadata_offset)
+        metadata_vaddr = placement.blob_segment_vaddr + metadata_offset
+        struct.pack_into("<Q", table, eh_base + _P_VADDR, metadata_vaddr)
+        struct.pack_into("<Q", table, eh_base + _P_PADDR, metadata_vaddr)
         struct.pack_into("<Q", table, eh_base + _P_FILESZ, len(payload_metadata))
         struct.pack_into("<Q", table, eh_base + _P_MEMSZ, len(payload_metadata))
     if _ensure_header_load_spans_table(table, placement.e_phoff, placement.e_phnum):
