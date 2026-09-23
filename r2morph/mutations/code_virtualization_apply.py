@@ -103,25 +103,45 @@ def _direct_branch_targets(disassembly: object, stop_on_unconditional_jump: bool
     return frozenset(targets)
 
 
-def _has_direct_call_to_known_function(
+def _has_direct_call_to_multi_return_function(
     binary: Any,
     function: dict[str, Any],
     known_function_addresses: frozenset[int],
 ) -> bool:
-    """Recognize an entry wrapper that delegates to another analyzed function."""
+    """Recognize an entry wrapper that delegates to a multi-return function."""
     try:
         disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}") or {}
     except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
         return False
     instructions = disassembly.get("ops", []) if isinstance(disassembly, dict) else []
-    return any(
-        isinstance(instruction, dict)
-        and instruction.get("type") in {"call", "rcall"}
-        and isinstance(instruction.get("jump"), int)
-        and instruction["jump"] in known_function_addresses
-        and instruction["jump"] != function.get("addr")
+    call_targets = {
+        instruction["jump"]
         for instruction in instructions
-    )
+        if (
+            isinstance(instruction, dict)
+            and instruction.get("type") in {"call", "rcall"}
+            and isinstance(instruction.get("jump"), int)
+            and instruction["jump"] in known_function_addresses
+            and instruction["jump"] != function.get("addr")
+        )
+    }
+    for target in call_targets:
+        try:
+            target_disassembly = binary.r2.cmdj(f"pdfj @ {target}") or {}
+        except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+            continue
+        target_instructions = target_disassembly.get("ops", []) if isinstance(target_disassembly, dict) else []
+        return_count = sum(
+            isinstance(instruction, dict)
+            and (
+                instruction.get("type") in {"ret", "retn"}
+                or str(instruction.get("opcode", "")).split(maxsplit=1)[0].lower() in {"ret", "retn"}
+            )
+            for instruction in target_instructions
+        )
+        if return_count > 1:
+            return True
+    return False
 
 
 def _dispatch_entrypoint_addresses(pass_instance: Any, binary: Any) -> frozenset[int]:
@@ -141,7 +161,7 @@ def _dispatch_entrypoint_addresses(pass_instance: Any, binary: Any) -> frozenset
                 pass_instance._has_computed_jump(binary, function)
                 or (
                     _has_terminal_system_call(binary, function)
-                    and not _has_direct_call_to_known_function(binary, function, known_function_addresses)
+                    and not _has_direct_call_to_multi_return_function(binary, function, known_function_addresses)
                 )
             )
         )
