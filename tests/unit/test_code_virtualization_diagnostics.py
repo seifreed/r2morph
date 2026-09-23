@@ -46,7 +46,7 @@ _PROTECTED_CALL_END_ADDRESS = 0x401015
 _PROTECTED_CALLER_END_ADDRESS = 0x401050
 _PROTECTED_LANDING_PAD_ADDRESS = 0x401030
 _PROTECTED_CALLEE_ADDRESS = 0x402000
-_RUNTIME_CALLEE_ADDRESS = 0x403000
+_RUNTIME_CALLEE_ADDRESS = 0x405000
 _APPLICATION_ENTRY_ADDRESS = 0x400000
 
 
@@ -79,7 +79,12 @@ class _ProtectedCalleeBinary:
         @staticmethod
         def cmdj(command: str) -> dict[str, list[dict[str, int | str]]]:
             if command == f"pdfj @ {_APPLICATION_ENTRY_ADDRESS}":
-                return {"ops": [{"type": "call", "jump": _PROTECTED_CALLEE_ADDRESS}]}
+                return {
+                    "ops": [
+                        {"type": "call", "jump": _PROTECTED_CALLEE_ADDRESS},
+                        {"type": "call", "jump": _RUNTIME_CALLEE_ADDRESS},
+                    ]
+                }
             return {"ops": []}
 
     r2 = _Disassembler()
