@@ -17,6 +17,7 @@ from scripts.protection_maturity_baseline import (
     _GENERATED_CPP_CORPUS_FAMILY,
     _GENERATED_CPP_CORPUS_PROFILES,
     _GENERATED_RUNTIME_INPUTS,
+    _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT,
     _PASS_TYPES,
     _PREVIEW_BYTES,
     CORPUS_PASS_NAMES,
@@ -24,6 +25,7 @@ from scripts.protection_maturity_baseline import (
     _affected_instruction_evidence,
     _ArtifactAccumulator,
     _behavioral_false_positive_metrics,
+    _build_mutation_pass,
     _complete_evidence_error,
     _diagnostic_counts,
     _independent_semantic_pair,
@@ -1405,3 +1407,9 @@ def test_generated_fixture_metadata_follows_fixture_shard() -> None:
     names, count = _selected_generated_fixture_names(shard, generated, {"index": 1, "count": 2})
 
     expect(names == ["generated-b"] and count == 1)
+
+
+def test_maturity_runner_expands_code_virtualization_analysis_budget() -> None:
+    mutation_pass = _build_mutation_pass("CodeVirtualization", 20260923)
+
+    expect(mutation_pass.max_function_analysis_count == _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT)

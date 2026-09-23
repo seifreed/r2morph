@@ -58,6 +58,7 @@ _PIE_LOAD_BIAS = 0x5555_5555_4000
 _RUNTIME_TIMEOUT_SECONDS = 15.0
 _QEMU_EXECUTABLE = "qemu-x86_64"
 _PREVIEW_BYTES = 32
+_MATURITY_MAX_FUNCTION_ANALYSIS_COUNT = 2048
 _MAX_AFFECTED_INSTRUCTION_MNEMONICS = 256
 _FULL_COVERAGE_PERCENT = 100.0
 _COMPLETE_RUN_FIELD = 0
@@ -1057,6 +1058,14 @@ def _build_mutation_pass(pass_name: str, seed: int) -> MutationPass:
     pass_type = _PASS_TYPES.get(pass_name)
     if pass_type is None:
         raise ValueError(f"unsupported corpus pass: {pass_name}")
+    if pass_type is CodeVirtualizationPass:
+        return CodeVirtualizationPass(
+            config={
+                "probability": 1.0,
+                "seed": seed,
+                "max_function_analysis_count": _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT,
+            }
+        )
     return pass_type(config={"probability": 1.0, "seed": seed})
 
 
