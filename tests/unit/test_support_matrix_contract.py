@@ -9,11 +9,11 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 43
-_EXPECTED_NOT_SUPPORTED_CELLS = 221
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 21
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 221
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 221
+_EXPECTED_EVIDENCED_CELLS = 48
+_EXPECTED_NOT_SUPPORTED_CELLS = 216
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 26
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 216
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 216
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
