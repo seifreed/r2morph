@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import subprocess
 import time
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
@@ -18,6 +17,7 @@ logger = logging.getLogger(__name__)
 _R2PIPE_OPEN_ATTEMPTS = 3
 _R2PIPE_OPEN_RETRY_BACKOFF_SECONDS = 0.25
 _R2PIPE_CLOSE_TIMEOUT_SECONDS = 1.0
+_R2PIPE_CLOSE_POLL_INTERVAL_SECONDS = 0.01
 
 
 def _close_r2pipe(r2: Any) -> None:
@@ -38,11 +38,13 @@ def _close_r2pipe(r2: Any) -> None:
         return
 
     try:
-        process.wait(timeout=_R2PIPE_CLOSE_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired:
-        logger.warning("r2pipe did not terminate cleanly; killing the process")
-        process.kill()
-        process.wait(timeout=_R2PIPE_CLOSE_TIMEOUT_SECONDS)
+        deadline = time.monotonic() + _R2PIPE_CLOSE_TIMEOUT_SECONDS
+        while process.poll() is None and time.monotonic() < deadline:
+            time.sleep(_R2PIPE_CLOSE_POLL_INTERVAL_SECONDS)
+        if process.poll() is None:
+            logger.warning("r2pipe did not terminate cleanly; killing the process")
+            process.kill()
+        process.wait()
     finally:
         if hasattr(r2, "process"):
             delattr(r2, "process")
@@ -54,7 +56,7 @@ def _discard_failed_r2(binary: Any) -> None:
     if r2 is not None:
         try:
             _close_r2pipe(r2)
-        except (BrokenPipeError, OSError, subprocess.TimeoutExpired) as exc:
+        except (BrokenPipeError, OSError) as exc:
             logger.debug("Ignoring teardown error on broken r2 pipe: %s", exc)
 
 
