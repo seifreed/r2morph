@@ -1579,6 +1579,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--count 1" in differential
         and "--fixture-shard-count 8" in differential
         and "expected_shards = 24" in differential
+        and "if len(paths) != 24:" in differential
         and "--fixture-shard-index" in differential
         and "Validate differential campaign summary" in differential
         and "platform_scope" in differential

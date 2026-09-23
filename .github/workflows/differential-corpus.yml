@@ -820,8 +820,8 @@ jobs:
           from scripts.vm_semantic_campaign import merge_campaign_reports
 
           paths = sorted(Path("vm-semantic-reports").glob("*/vm-semantic-campaign-*.json"))
-          if len(paths) != 12:
-              raise SystemExit(f"expected twelve VM semantic shard reports, found {paths}")
+          if len(paths) != 24:
+              raise SystemExit(f"expected twenty-four VM semantic shard reports, found {paths}")
           reports = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
           by_seed: dict[int, list[dict[str, object]]] = {}
           for seed_report in reports:

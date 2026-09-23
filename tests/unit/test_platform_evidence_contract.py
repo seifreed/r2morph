@@ -70,6 +70,17 @@ def test_platform_evidence_publishes_pass_level_status(tmp_path: Path) -> None:
     )
 
 
+def test_platform_evidence_uses_native_composition_contracts() -> None:
+    expect(
+        {platform: _PASS_CASES[platform]["Composition"] for platform in ("elf-arm64", "elf-x86-32", "elf-arm-32")}
+        == {
+            "elf-arm64": "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code",
+            "elf-x86-32": "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
+            "elf-arm-32": "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
+        }
+    )
+
+
 def test_platform_evidence_rejects_report_missing_required_case(tmp_path: Path) -> None:
     for platform_name in _REQUIRED_CASES:
         (tmp_path / platform_name).mkdir()
