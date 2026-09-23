@@ -247,6 +247,13 @@ class _UnwindContext:
     blocking_instruction: dict[str, Any] | None = None
 
 
+def _has_language_unwind_contract(frame: Any | None) -> bool:
+    """Return whether a frame carries language-level exception metadata."""
+    return frame is not None and (
+        getattr(frame, "lsda_address", None) is not None or bool(getattr(frame, "landing_pads", ()))
+    )
+
+
 def _normalise_loader_format(raw_format: object) -> str:
     lowered = str(raw_format).strip().lower()
     if lowered.startswith("elf"):
@@ -588,7 +595,7 @@ def _preflight_function(
     if unsupported_instruction is not None:
         return "unsupported", unsupported_instruction
     cfg = CFGBuilder(binary).build_cfg(int(func["addr"]))
-    if not _static_dataflow_is_complete(cfg):
+    if not _static_dataflow_is_complete(cfg) and not _has_language_unwind_contract(unwind.frame):
         return "reject", None
     return "transform", None
 
@@ -627,7 +634,7 @@ def _transform_function(
 
     region_result = pass_instance._virtualize_function(binary, func, unwind.frame)
     if region_result is None:
-        if unwind.unproven:
+        if unwind.unproven or _has_language_unwind_contract(unwind.frame):
             pass_instance._record_diagnostic(
                 unsupported,
                 func,

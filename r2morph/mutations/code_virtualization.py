@@ -891,6 +891,19 @@ class CodeVirtualizationPass(MutationPass):
         build = self._build_run(binary, run)
         return None if build is None else self._install_run(binary, run, build)
 
+    def _emit_region_with_landing_pad_contract(
+        self,
+        binary: Any,
+        func: dict[str, Any],
+        region: Any,
+        landing_pad_addresses: tuple[int, ...],
+        options: RegionOptions,
+    ) -> dict[str, Any] | None:
+        """Emit a complete region only when every LSDA entry is represented."""
+        if landing_pad_addresses and not set(landing_pad_addresses).issubset(getattr(region, "entry_map", {})):
+            return None
+        return self._emit_region(binary, func, region, options)
+
     def _virtualize_function(
         self, binary: Any, func: dict[str, Any], unwind_frame: Any | None = None
     ) -> dict[str, Any] | None:
@@ -898,7 +911,7 @@ class CodeVirtualizationPass(MutationPass):
         try:
             disasm = binary.r2.cmdj(f"pdfj @ {func['addr']}")
         except Exception:
-            return None
+            disasm = None
         if not disasm or "ops" not in disasm:
             return None
         function_start = func.get("addr")
@@ -966,17 +979,23 @@ class CodeVirtualizationPass(MutationPass):
             entry_stack_sources=landing_pad_stack_sources,
         )
         if region is not None:
-            result = self._emit_region(binary, func, region, RegionOptions(rng, True, unwind_frame))
+            result = self._emit_region_with_landing_pad_contract(
+                binary,
+                func,
+                region,
+                landing_pad_addresses,
+                RegionOptions(rng, True, unwind_frame),
+            )
             if result is not None:
                 return result
-        if landing_pad_addresses and not self._virtualize_landing_pads(
-            binary,
-            func,
-            complete_ops,
-            landing_pad_addresses,
-            RegionOptions(rng, False, unwind_frame, False),
-        ):
-            logger.debug("Landing-pad VM construction was incomplete for 0x%x", func["addr"])
+        if landing_pad_addresses:
+            return self._virtualize_landing_pads(
+                binary,
+                func,
+                complete_ops,
+                landing_pad_addresses,
+                RegionOptions(rng, False, unwind_frame, False),
+            )
         return None
 
     def _virtualize_landing_pads(
@@ -986,13 +1005,16 @@ class CodeVirtualizationPass(MutationPass):
         instructions: list[dict[str, Any]],
         landing_pad_addresses: tuple[int, ...],
         options: RegionOptions,
-    ) -> bool:
+    ) -> dict[str, Any] | None:
         """Virtualize each exception entry while retaining its native LSDA address."""
         pad_addresses = frozenset(landing_pad_addresses)
+        total_instructions = 0
+        total_bytecode = 0
+        body_ranges: list[tuple[int, int]] = []
         for address in landing_pad_addresses:
             pad_ops = _landing_pad_ops(instructions, address, pad_addresses)
             if not pad_ops:
-                return False
+                return None
             region = extract_region(
                 pad_ops,
                 options.rng,
@@ -1002,10 +1024,18 @@ class CodeVirtualizationPass(MutationPass):
                 entry_addresses=(address,),
             )
             if region is None or region.entry_vaddr != address:
-                return False
-            if self._emit_region(binary, func, region, options) is None:
-                return False
-        return True
+                return None
+            result = self._emit_region(binary, func, region, options)
+            if result is None:
+                return None
+            total_instructions += result["instructions"]
+            total_bytecode += result["bytecode"]
+            body_ranges.extend(result.get("body_ranges", ()))
+        return {
+            "instructions": total_instructions,
+            "bytecode": total_bytecode,
+            "body_ranges": tuple(body_ranges),
+        }
 
     def _gather_dispatch_ops(self, binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
         """Linear instruction list of a dispatch-shaped function.
