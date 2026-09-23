@@ -244,6 +244,7 @@ class _UnwindContext:
     unproven: bool
     frame: Any | None
     reason: str | None = None
+    blocking_instruction: dict[str, Any] | None = None
 
 
 def _normalise_loader_format(raw_format: object) -> str:
@@ -619,7 +620,7 @@ def _transform_function(
         pass_instance._record_diagnostic(
             unsupported,
             func,
-            _unwind_blocking_instruction(unwind.frame, int(func["addr"])),
+            unwind.blocking_instruction or _unwind_blocking_instruction(unwind.frame, int(func["addr"])),
             ("error", capability, reason),
         )
         return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
@@ -731,6 +732,30 @@ def _function_has_native_call(binary: Any, function: dict[str, Any]) -> bool:
     )
 
 
+def _unwind_contract_blocker(
+    binary: Any, function: dict[str, Any], unwind_frame: Any | None
+) -> tuple[dict[str, Any], str] | None:
+    """Find ABI shapes whose native-call unwind contract is not proven."""
+    if unwind_frame is None:
+        return None
+    try:
+        instructions = binary.get_function_disasm(int(function["addr"]))
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return None
+    if not any(
+        str(instruction.get("disasm") or instruction.get("opcode") or "").lower().startswith("call")
+        for instruction in instructions
+    ):
+        return None
+    for instruction in instructions:
+        opcode = str(instruction.get("disasm") or instruction.get("opcode") or "").lower()
+        if "fs:" in opcode or "gs:" in opcode:
+            return instruction, "native calls combined with TLS access have no proven VM unwind contract"
+        if opcode.startswith(("and rsp,", "and esp,")):
+            return instruction, "native calls combined with dynamic stack alignment have no proven VM unwind contract"
+    return None
+
+
 def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | None) -> frozenset[int]:
     """Find direct callees reached by LSDA-protected call sites."""
     if not exception_frames:
@@ -780,6 +805,40 @@ def _read_exception_context(
     """Read unwind metadata and derive protected direct-call targets."""
     exception_frames, unwind_read_error = _read_exception_frames(binary, unwind_section)
     return exception_frames, unwind_read_error, _protected_callee_addresses(binary, exception_frames)
+
+
+def _unwind_context_for_function(
+    binary: Any,
+    function: dict[str, Any],
+    unwind_inputs: tuple[str | None, dict[int, Any] | None, str | None, frozenset[int]],
+) -> _UnwindContext:
+    """Build one function's unwind preflight context and precise blocker."""
+    unwind_section, exception_frames, unwind_read_error, protected_callee_addresses = unwind_inputs
+    function_address = int(function["addr"])
+    unwind_frame = _unwind_frame_for_function(unwind_section, function, exception_frames, unwind_read_error)
+    unwind_blocker = _unwind_contract_blocker(binary, function, unwind_frame)
+    unwind_reason = (
+        "function is called from an LSDA-protected call site; exception propagation crosses the VM boundary"
+        if function_address in protected_callee_addresses
+        else unwind_read_error
+    )
+    if unwind_reason is None and unwind_blocker is not None:
+        unwind_reason = unwind_blocker[1]
+    return _UnwindContext(
+        _function_has_unproven_unwind_metadata(
+            unwind_section,
+            function_address,
+            exception_frames,
+            _function_has_native_call(binary, function),
+            unwind_frame is not None and _exception_frame_for_function(function_address, exception_frames) is None,
+        )
+        or function_address in protected_callee_addresses
+        or unwind_read_error is not None
+        or unwind_blocker is not None,
+        unwind_frame,
+        unwind_reason,
+        unwind_blocker[0] if unwind_blocker is not None else None,
+    )
 
 
 def _exception_frame_for_function(function_address: int, exception_frames: dict[int, Any] | None) -> Any | None:
@@ -1091,29 +1150,15 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             skipped += 1
             continue
 
-        unwind_frame = _unwind_frame_for_function(unwind_section, func, exception_frames, unwind_read_error)
         outcome = _transform_function(
             pass_instance,
             binary,
             func,
             (unsupported, partial),
-            unwind=_UnwindContext(
-                _function_has_unproven_unwind_metadata(
-                    unwind_section,
-                    int(func["addr"]),
-                    exception_frames,
-                    _function_has_native_call(binary, func),
-                    unwind_frame is not None
-                    and _exception_frame_for_function(int(func["addr"]), exception_frames) is None,
-                )
-                or int(func["addr"]) in protected_callee_addresses
-                or unwind_read_error is not None,
-                unwind_frame,
-                (
-                    "function is called from an LSDA-protected call site; exception propagation crosses the VM boundary"
-                    if int(func["addr"]) in protected_callee_addresses
-                    else unwind_read_error
-                ),
+            unwind=_unwind_context_for_function(
+                binary,
+                func,
+                (unwind_section, exception_frames, unwind_read_error, protected_callee_addresses),
             ),
         )
         skipped += outcome["skipped"]

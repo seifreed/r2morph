@@ -14,6 +14,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _runtime_initialization_addresses,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
+    _unwind_contract_blocker,
     _unwind_metadata_name,
 )
 from r2morph.mutations.code_virtualization_region import (
@@ -27,6 +28,7 @@ from tests.utils.assertions import expect
 _EXPECTED_DIAGNOSTIC_OPCODE_CHARS = 96
 _EXPECTED_DIAGNOSTIC_INSTRUCTION_SIZE = 5
 _EXPECTED_OFFSET_ONLY_INSTRUCTION_ADDRESS = 0x40100A
+_TEST_FUNCTION_ADDRESS = 0x1000
 _NATIVE_LANDING_PAD_ADDRESS = 0x1010
 
 
@@ -36,6 +38,14 @@ class _SectionsBinary:
 
     def get_sections(self) -> list[dict[str, Any]]:
         return self._sections
+
+
+class _FunctionDisassemblyBinary:
+    def __init__(self, instructions: list[dict[str, Any]]) -> None:
+        self._instructions = instructions
+
+    def get_function_disasm(self, _address: int) -> list[dict[str, Any]]:
+        return self._instructions
 
 
 class _TerminalSyscallBinary:
@@ -136,6 +146,44 @@ class _RecordingPass:
 
 def test_partial_virtualization_is_rejected_by_default() -> None:
     expect(CodeVirtualizationPass(config={}).reject_partial_virtualization)
+
+
+def test_unwind_contract_rejects_tls_with_native_call() -> None:
+    binary = _FunctionDisassemblyBinary(
+        [
+            {"type": "mov", "opcode": "mov rax, qword [fs:0x28]", "addr": _TEST_FUNCTION_ADDRESS},
+            {"type": "call", "opcode": "call 0x2000", "addr": 0x1009},
+        ]
+    )
+
+    blocker = _unwind_contract_blocker(
+        binary, {"addr": _TEST_FUNCTION_ADDRESS}, ExceptionFrame(_TEST_FUNCTION_ADDRESS, 0x1010)
+    )
+
+    expect(
+        blocker is not None
+        and blocker[0]["addr"] == _TEST_FUNCTION_ADDRESS
+        and blocker[1] == "native calls combined with TLS access have no proven VM unwind contract"
+    )
+
+
+def test_unwind_contract_rejects_dynamic_stack_alignment_with_native_call() -> None:
+    binary = _FunctionDisassemblyBinary(
+        [
+            {"type": "and", "opcode": "and rsp, 0xffffffffffffffe0", "addr": _TEST_FUNCTION_ADDRESS},
+            {"type": "call", "opcode": "call 0x2000", "addr": 0x1004},
+        ]
+    )
+
+    blocker = _unwind_contract_blocker(
+        binary, {"addr": _TEST_FUNCTION_ADDRESS}, ExceptionFrame(_TEST_FUNCTION_ADDRESS, 0x1010)
+    )
+
+    expect(
+        blocker is not None
+        and blocker[0]["addr"] == _TEST_FUNCTION_ADDRESS
+        and blocker[1] == "native calls combined with dynamic stack alignment have no proven VM unwind contract"
+    )
 
 
 def test_partial_virtualization_can_be_enabled_for_regression_reproduction() -> None:
