@@ -853,14 +853,19 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
     """Find direct callees reached by LSDA-protected call sites."""
     if not exception_frames:
         return frozenset()
-    protected_ranges = tuple(
+    protected_call_ranges = tuple(
         (site.start_address, site.end_address)
         for frame in exception_frames.values()
         for site in getattr(frame, "lsda_call_sites", ())
         if site.landing_pad or site.action_index
     )
-    if not protected_ranges:
+    if not protected_call_ranges:
         return frozenset()
+    protected_function_ranges = tuple(
+        (frame.function_start, frame.function_end)
+        for frame in exception_frames.values()
+        if any(site.landing_pad or site.action_index for site in getattr(frame, "lsda_call_sites", ()))
+    )
     try:
         functions = binary.get_functions()
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
@@ -875,7 +880,7 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
         function_address = function.get("addr")
         if not isinstance(function_address, int):
             continue
-        if not _function_overlaps_protected_range(function, protected_ranges):
+        if not _function_overlaps_protected_range(function, protected_function_ranges):
             continue
         try:
             instructions = binary.get_function_disasm(function_address)
@@ -883,7 +888,7 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
             continue
         for instruction in instructions:
             address = instruction.get("offset", instruction.get("addr"))
-            if not isinstance(address, int) or not any(start <= address < end for start, end in protected_ranges):
+            if not isinstance(address, int) or not any(start <= address < end for start, end in protected_call_ranges):
                 continue
             disassembly = str(instruction.get("disasm") or instruction.get("opcode") or "")
             if instruction.get("type") != "call" and not disassembly.lower().startswith("call"):
