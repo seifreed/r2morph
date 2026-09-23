@@ -26,9 +26,11 @@ def benchmark_full_pipeline(
     *,
     measure_performance: Callable[[Callable[[], dict[str, Any]]], tuple[PerformanceMetrics, Any]],
     calculate_accuracy_metrics: Callable[[dict[str, Any], dict[str, Any]], AccuracyMetrics],
+    binary_factory: Callable[[str], Binary] | None = None,
 ) -> BenchmarkResult:
     def run_full_pipeline() -> dict[str, Any]:
-        with Binary(sample.file_path) as bin_obj:
+        binary = binary_factory(sample.file_path) if binary_factory else Binary(sample.file_path)
+        with binary as bin_obj:
             bin_obj.analyze()
 
             detector = ObfuscationDetector()

@@ -26,6 +26,19 @@ def _performance() -> PerformanceMetrics:
     )
 
 
+def _binary_factory(path: str) -> Binary:
+    disassembler = MockDisassembler(
+        responses={
+            "ij": {"core": {"format": "pe"}, "bin": {"baddr": 0, "size": 1024}},
+            "aflj": [],
+            "iSj": [],
+            "iij": [],
+            "izz": "",
+        }
+    )
+    return Binary(path, disassembler=disassembler)
+
+
 def test_detection_runner_builds_result() -> None:
     sample_file = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
     sample = TestSample(
@@ -44,23 +57,11 @@ def test_detection_runner_builds_result() -> None:
     def measure_performance(func):
         return _performance(), func()
 
-    def binary_factory(path: str) -> Binary:
-        disassembler = MockDisassembler(
-            responses={
-                "ij": {"core": {"format": "pe"}, "bin": {"baddr": 0, "size": 1024}},
-                "aflj": [],
-                "iSj": [],
-                "iij": [],
-                "izz": "",
-            }
-        )
-        return Binary(path, disassembler=disassembler)
-
     result = benchmark_detection(
         sample,
         measure_performance=measure_performance,
         calculate_accuracy_metrics=lambda expected, actual: SimpleNamespace(accuracy=1.0),
-        binary_factory=binary_factory,
+        binary_factory=_binary_factory,
     )
 
     expect(result.category == BenchmarkCategory.DETECTION)
@@ -90,6 +91,7 @@ def test_full_pipeline_runner_builds_result(tmp_path) -> None:
         sample,
         measure_performance=measure_performance,
         calculate_accuracy_metrics=lambda expected, actual: SimpleNamespace(accuracy=1.0),
+        binary_factory=_binary_factory,
     )
 
     expect(result.category == BenchmarkCategory.FULL_PIPELINE)
@@ -115,7 +117,7 @@ def test_devirtualization_runner_builds_result(tmp_path) -> None:
     def measure_performance(func):
         return _performance(), {}
 
-    result = benchmark_devirtualization(sample, measure_performance=measure_performance)
+    result = benchmark_devirtualization(sample, measure_performance=measure_performance, binary_factory=_binary_factory)
 
     expect(result.category == BenchmarkCategory.DEVIRTUALIZATION)
     expect(not (result.performance.success is not True))
