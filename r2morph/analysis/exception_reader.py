@@ -205,6 +205,7 @@ class ExceptionInfoReader:
     def __init__(self, binary: Binary):
         self.binary = binary
         self._frames: dict[int, ExceptionFrame] | None = None
+        self._sections: list[dict[str, Any]] | None = None
         self._cies: dict[int, _CieInfo] = {}
         self._lsda_templates: dict[int, LsdaTemplate | None] = {}
         self._read_error: str | None = None
@@ -616,12 +617,16 @@ class ExceptionInfoReader:
 
     def _get_sections(self) -> list[dict[str, Any]]:
         """Get sections from the binary."""
+        if self._sections is not None:
+            return self._sections
         try:
-            return self.binary.get_sections()
+            sections = self.binary.get_sections()
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
             self._mark_read_error("exception metadata sections could not be read")
             logger.debug("Failed to read exception metadata sections: %s", exc)
-            return []
+            sections = []
+        self._sections = sections
+        return sections
 
     def _pointer_size(self) -> int:
         return _POINTER_SIZE_64_BYTES if self.binary.get_arch_info().get("bits", _BITS_64) == _BITS_64 else 4

@@ -837,6 +837,18 @@ def _is_stack_guard_tls_access(opcode: str) -> bool:
     return False
 
 
+def _function_overlaps_protected_range(function: dict[str, Any], protected_ranges: tuple[tuple[int, int], ...]) -> bool:
+    """Keep disassembly queries limited to functions containing protected call sites."""
+    function_address = function.get("addr")
+    function_size = function.get("size")
+    return (
+        not isinstance(function_address, int)
+        or not isinstance(function_size, int)
+        or function_size <= 0
+        or any(start < function_address + function_size and function_address < end for start, end in protected_ranges)
+    )
+
+
 def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | None) -> frozenset[int]:
     """Find direct callees reached by LSDA-protected call sites."""
     if not exception_frames:
@@ -862,6 +874,8 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
     for function in functions:
         function_address = function.get("addr")
         if not isinstance(function_address, int):
+            continue
+        if not _function_overlaps_protected_range(function, protected_ranges):
             continue
         try:
             instructions = binary.get_function_disasm(function_address)

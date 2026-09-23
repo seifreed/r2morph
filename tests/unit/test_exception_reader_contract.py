@@ -85,6 +85,16 @@ class _InMemoryElfExceptionBinary:
         return cie + cls._entry64(fde_body) + b"\x00\x00\x00\x00"
 
 
+class _CountingSectionsElfExceptionBinary(_InMemoryElfExceptionBinary):
+    def __init__(self) -> None:
+        super().__init__()
+        self.section_reads = 0
+
+    def get_sections(self) -> list[dict[str, int | str]]:
+        self.section_reads += 1
+        return super().get_sections()
+
+
 class _InMemoryElfTwoCallSiteBinary(_InMemoryElfExceptionBinary):
     def __init__(self) -> None:
         super().__init__()
@@ -226,6 +236,14 @@ def test_exception_reader_accepts_radare2_vaddr_sections() -> None:
     frames = ExceptionInfoReader(_InMemoryR2VaddrElfExceptionBinary()).read_exception_frames()
 
     expect(frames[_FUNCTION_ADDRESS].lsda_address == _LSDA_ADDRESS)
+
+
+def test_exception_reader_caches_sections_during_lsda_parse() -> None:
+    binary = _CountingSectionsElfExceptionBinary()
+
+    ExceptionInfoReader(binary).read_exception_frames()
+
+    expect(binary.section_reads == 1)
 
 
 def test_exception_reader_normalizes_rebased_elf_lsda_pointer() -> None:
