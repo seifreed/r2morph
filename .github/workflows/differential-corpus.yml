@@ -10,6 +10,7 @@ concurrency:
     paths:
       - ".github/workflows/differential-corpus.yml"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/adversarial-benchmark.yml"
       - "docs/compatibility-corpus.md"
       - "docs/pass-maturity.md"
       - "docs/release-blockers.md"
