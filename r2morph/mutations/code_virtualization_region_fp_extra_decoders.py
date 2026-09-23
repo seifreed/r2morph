@@ -14,12 +14,19 @@ _PART_COUNT = 2
 _OPERAND_COUNT = 3
 _BROADCAST_OPERAND_COUNT = 2
 _BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _QWORD_WIDTH_BITS = 64
 _EXTRA_VEX_OPERATIONS = {"vpackusdw": "packusdw", "vpshufb": "pshufb", "vpmaxub": "pmaxub"}
 _VEX_LANE_EXTRACT = frozenset({"vextractf128", "vextracti128"})
 _VEX_FP_TO_INT = {"vcvttsd2si": _QWORD_WIDTH_BITS, "vcvttss2si": _DWORD_WIDTH_BITS}
-_VEX_GP_EXTRACT = {"vpextrb": 8, "vpextrd": _DWORD_WIDTH_BITS, "vpextrq": _QWORD_WIDTH_BITS}
+_VEX_GP_EXTRACT = {
+    "vpextrb": _BYTE_WIDTH_BITS,
+    "vpextrw": _WORD_WIDTH_BITS,
+    "vpextrd": _DWORD_WIDTH_BITS,
+    "vpextrq": _QWORD_WIDTH_BITS,
+}
+_VEX_BROADCAST = {"vpbroadcastd": "broadcastd", "vpbroadcastq": "broadcastq"}
 
 
 def _decode_fp_vex_convert(text: str) -> tuple[Any, ...] | None:
@@ -79,7 +86,12 @@ def _decode_fp_vex_gp_extract(text: str) -> tuple[Any, ...] | None:
         immediate = int(operands[2], 0)
     except ValueError:
         return None
-    limit = 2 if width == _QWORD_WIDTH_BITS else 16 if width == _BYTE_WIDTH_BITS else 4
+    limit = {
+        _BYTE_WIDTH_BITS: 16,
+        _WORD_WIDTH_BITS: 8,
+        _DWORD_WIDTH_BITS: 4,
+        _QWORD_WIDTH_BITS: 2,
+    }[width]
     return ("fpmovvexextract", width, destination[0], source, immediate) if 0 <= immediate < limit else None
 
 
@@ -109,7 +121,8 @@ def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:
 def _decode_fp_vex_broadcast(text: str) -> tuple[str, str, int, int] | None:
     """Decode the two-register YMM qword broadcast form."""
     parts = text.split(None, 1)
-    if len(parts) != _PART_COUNT or parts[0].lower() != "vpbroadcastq":
+    operation = _VEX_BROADCAST.get(parts[0].lower())
+    if len(parts) != _PART_COUNT or operation is None:
         return None
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _BROADCAST_OPERAND_COUNT:
@@ -118,4 +131,4 @@ def _decode_fp_vex_broadcast(text: str) -> tuple[str, str, int, int] | None:
     source = _parse_xmm_operand(operands[1])
     if destination is None or source is None:
         return None
-    return ("fpmovvex256", "broadcastq", destination, source)
+    return ("fpmovvex256", operation, destination, source)

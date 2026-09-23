@@ -142,6 +142,8 @@ def _fp_vex_256_move_handler_asm(handler_key: str, key: str, field_perm: int = 0
     )
     if operation == "broadcastq":
         body += f"  vmovq xmm0, qword ptr [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  vpbroadcastq ymm0, xmm0\n"
+    elif operation == "broadcastd":
+        body += f"  vmovd xmm0, dword ptr [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  vpbroadcastd ymm0, xmm0\n"
     else:
         body += _load_ymm_from_frame("r9", 0)
     body += _store_ymm_to_frame("r8")

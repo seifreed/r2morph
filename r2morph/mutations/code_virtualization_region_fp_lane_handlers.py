@@ -7,6 +7,7 @@ from r2morph.mutations.code_virtualization_region_handlers import _XMM_SAVE_OFFS
 
 _LANE_WIDTH_BYTES = 16
 _BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
 _DWORD_WIDTH_BITS = 32
 _QWORD_WIDTH_BITS = 64
 _YMM_UPPER_SAVE_OFFSET = 0x300
@@ -48,7 +49,12 @@ def _fp_vex_gp_extract_handler_asm(handler_key: str, key: str, field_perm: int =
     _, width_text, immediate_text = handler_key.split("_")
     width = int(width_text)
     immediate = int(immediate_text)
-    instruction = "vpextrq" if width == _QWORD_WIDTH_BITS else "vpextrb" if width == _BYTE_WIDTH_BITS else "vpextrd"
+    instruction = {
+        _BYTE_WIDTH_BITS: "vpextrb",
+        _WORD_WIDTH_BITS: "vpextrw",
+        _DWORD_WIDTH_BITS: "vpextrd",
+        _QWORD_WIDTH_BITS: "vpextrq",
+    }[width]
     offsets = pair_offsets("xmm", "gp", field_perm)
     return (
         f"  movzx r8d, byte ptr [rsi+{offsets['xmm']}]\n"
