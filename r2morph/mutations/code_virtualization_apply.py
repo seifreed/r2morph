@@ -875,7 +875,8 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
             target = instruction.get("jump")
             if not isinstance(target, int):
                 target = extract_call_target(disassembly)
-            if isinstance(target, int) and function_sizes.get(target, MINIMUM_FUNCTION_SIZE) < MINIMUM_FUNCTION_SIZE:
+            target_size = function_sizes.get(target)
+            if isinstance(target, int) and isinstance(target_size, int) and target_size >= MINIMUM_FUNCTION_SIZE:
                 protected_callees.add(target)
     return frozenset(protected_callees)
 

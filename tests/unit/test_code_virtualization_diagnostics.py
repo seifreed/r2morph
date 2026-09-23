@@ -2,7 +2,14 @@
 
 from typing import Any
 
-from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad, LsdaTemplate
+from r2morph.analysis.exception_models import (
+    ExceptionAction,
+    ExceptionFrame,
+    LandingPad,
+    LsdaCallSite,
+    LsdaTemplate,
+)
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _landing_pad_native_ranges
 from r2morph.mutations.code_virtualization_apply import (
     _empty_result,
@@ -11,6 +18,7 @@ from r2morph.mutations.code_virtualization_apply import (
     _function_has_unproven_unwind_metadata,
     _is_runtime_entrypoint,
     _ordinary_unwind_frame_for_function,
+    _protected_callee_addresses,
     _runtime_initialization_addresses,
     _transform_unsupported_function,
     _unwind_blocking_instruction,
@@ -32,6 +40,12 @@ _TEST_FUNCTION_ADDRESS = 0x1000
 _NATIVE_LANDING_PAD_ADDRESS = 0x1010
 _CET_MARKER_ADDRESS = 0x1000
 _CET_FIRST_REAL_ADDRESS = 0x1004
+_PROTECTED_CALLER_ADDRESS = 0x401000
+_PROTECTED_CALL_ADDRESS = 0x401010
+_PROTECTED_CALL_END_ADDRESS = 0x401015
+_PROTECTED_CALLER_END_ADDRESS = 0x401050
+_PROTECTED_LANDING_PAD_ADDRESS = 0x401030
+_PROTECTED_CALLEE_ADDRESS = 0x402000
 
 
 class _SectionsBinary:
@@ -48,6 +62,19 @@ class _FunctionDisassemblyBinary:
 
     def get_function_disasm(self, _address: int) -> list[dict[str, Any]]:
         return self._instructions
+
+
+class _ProtectedCalleeBinary:
+    def get_functions(self) -> list[dict[str, Any]]:
+        return [
+            {"addr": _PROTECTED_CALLER_ADDRESS, "size": MINIMUM_FUNCTION_SIZE},
+            {"addr": _PROTECTED_CALLEE_ADDRESS, "size": MINIMUM_FUNCTION_SIZE},
+        ]
+
+    def get_function_disasm(self, address: int) -> list[dict[str, Any]]:
+        if address != _PROTECTED_CALLER_ADDRESS:
+            return []
+        return [{"offset": _PROTECTED_CALL_ADDRESS, "type": "call", "jump": _PROTECTED_CALLEE_ADDRESS}]
 
 
 class _TerminalSyscallBinary:
@@ -417,6 +444,25 @@ def test_populated_eh_frame_is_unwind_metadata() -> None:
 
 def test_exception_table_is_rejected_before_virtualization() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".gcc_except_table"])) == ".gcc_except_table")
+
+
+def test_protected_landing_pad_callee_is_rejected_before_virtualization() -> None:
+    frame = ExceptionFrame(
+        function_start=_PROTECTED_CALLER_ADDRESS,
+        function_end=_PROTECTED_CALLER_END_ADDRESS,
+        lsda_call_sites=[
+            LsdaCallSite(
+                _PROTECTED_CALL_ADDRESS,
+                _PROTECTED_CALL_END_ADDRESS,
+                _PROTECTED_LANDING_PAD_ADDRESS,
+                1,
+            )
+        ],
+    )
+
+    protected = _protected_callee_addresses(_ProtectedCalleeBinary(), {_PROTECTED_CALLER_ADDRESS: frame})
+
+    expect(protected == frozenset({_PROTECTED_CALLEE_ADDRESS}))
 
 
 def test_parsed_landing_pad_frame_fails_closed_without_lsda_remap() -> None:
