@@ -810,6 +810,13 @@ def _unwind_contract_blocker(
     """Find ABI shapes whose native-call unwind contract is not proven."""
     if unwind_frame is None:
         return None
+    landing_pads = tuple(getattr(unwind_frame, "landing_pads", ()))
+    if landing_pads and all(str(getattr(pad, "action", "")).lower().endswith("cleanup") for pad in landing_pads):
+        pad = landing_pads[0]
+        return (
+            {"addr": getattr(pad, "address", int(function["addr"]))},
+            "cleanup-only landing pads require native exception propagation",
+        )
     try:
         instructions = binary.get_function_disasm(int(function["addr"]))
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):

@@ -545,3 +545,57 @@ int main(int argc, char**) {
         "a dynamic ELF lost its C++ catch path after VM metadata injection: "
         f"{main_address=:#x}, {main_was_transformed=}, {runtime_result.returncode=}, {stats=}",
     )
+
+
+def test_code_virtualization_stack_guarded_cleanup_preserves_caller_catch(tmp_path: Path) -> None:
+    """A stack-guarded caller keeps native cleanup-only propagation intact."""
+    if platform.system().lower() != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the stack-guarded ELF regression is Linux x86-64 specific")
+    source = tmp_path / "stack_guarded_cleanup.cpp"
+    executable = tmp_path / "stack_guarded_cleanup"
+    source.write_text(
+        """
+#include <stdexcept>
+
+static int recurse(int value) {
+    if (value <= 1) return value;
+    return recurse(value - 1) + recurse(value - 2);
+}
+
+__attribute__((noinline)) static int checked(int value) {
+    if (value < 0) throw std::runtime_error("negative");
+    return value * 3 + recurse(value % 5);
+}
+
+int main(int argc, char**) {
+    int values[] = {1, 4, 7};
+    try {
+        int input = argc > 1 ? -11 : 0;
+        int total = checked(input);
+        for (int value : values) total += checked(value);
+        return total & 0x7f;
+    } catch (const std::exception&) {
+        return 99;
+    }
+}
+""",
+        encoding="utf-8",
+    )
+    result = run_command(
+        ["g++", "-O0", "-g", "-fstack-protector-strong", "-fno-pie", "-no-pie", "-o", executable, source],
+        timeout=30,
+    )
+    expect(result.returncode == 0, "failed to compile the stack-guarded cleanup fixture")
+
+    original_result = run_command([executable, "throw"], timeout=30)
+    with Binary(executable, writable=True) as binary:
+        binary.analyze()
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": FIXTURE_SEED}).apply(binary)
+
+    transformed_result = run_command([executable, "throw"], timeout=30)
+    expect(
+        original_result.returncode == EXPECTED_CATCH_RETURN_CODE
+        and transformed_result.returncode == EXPECTED_CATCH_RETURN_CODE,
+        "stack-guarded cleanup propagation changed after virtualization: "
+        f"{original_result.returncode=}, {transformed_result.returncode=}, {stats=}",
+    )

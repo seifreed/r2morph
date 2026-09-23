@@ -1114,6 +1114,7 @@ def extract_region(
     native_ranges = cast(tuple[tuple[int, int], ...], options.get("native_ranges", ()))
     entry_addresses = cast(tuple[int, ...], options.get("entry_addresses", ()))
     entry_stack_sources = cast(tuple[tuple[int, int], ...], options.get("entry_stack_sources", ()))
+    standalone_entry = bool(options.get("standalone_entry", False))
     instructions, entry_aliases = _strip_cet_entry_markers(instructions, entry_addresses)
     build = _build_region_items(
         instructions,
@@ -1219,6 +1220,7 @@ def extract_region(
         call_site_items,
         entry_map,
         entry_stack_depths,
+        standalone_entry,
     )
 
 

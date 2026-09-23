@@ -182,7 +182,7 @@ def _region_has_ymm(region: Region) -> bool:
 
 def _entry_stubs_asm(region: Region) -> str:
     """Emit fixed-size entry stubs for exception landing pads."""
-    if not region.entry_map:
+    if not region.entry_map or region.standalone_entry:
         return ""
     entry_offsets: dict[int, int] = {}
     bytecode_offset = 0
@@ -563,6 +563,10 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
     stack_guard = stack_guard_for_copy(frame_size, max(stack_copy_bytes, region.stack_local_copy_bytes))
+    canonical_stack = any(
+        item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT for item in region.instructions
+    )
+    cfa_base = stack_guard if canonical_stack else 0
     ranges: list[tuple[int, int, int]] = []
     call_prefixes = ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb")
 
@@ -586,7 +590,7 @@ def call_unwind_ranges(blob: bytes, scheme: RegionScheme, region: Region) -> tup
                 or blob.find(end_pattern, end + 1) >= 0
             ):
                 return None
-            ranges.append((range_start, end, stack_guard + stack_depth + 8))
+            ranges.append((range_start, end, cfa_base + stack_depth + 8))
     return tuple(sorted(ranges))
 
 
@@ -597,6 +601,10 @@ def call_unwind_ranges_with_sites(
     frame_size = frame_size_for_seed(scheme.junk_seed)
     stack_copy_bytes = max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes)
     stack_guard = stack_guard_for_copy(frame_size, max(stack_copy_bytes, region.stack_local_copy_bytes))
+    canonical_stack = any(
+        item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT for item in region.instructions
+    )
+    cfa_base = stack_guard if canonical_stack else 0
     call_items = {item_index: (start, end) for start, end, item_index in region.call_site_items}
     if not call_items:
         return ()
@@ -634,7 +642,7 @@ def call_unwind_ranges_with_sites(
             or blob.find(end_pattern, end + 1) >= 0
         ):
             return None
-        ranges.append((range_start, end, stack_guard + stack_depth + 8, native_start, native_end))
+        ranges.append((range_start, end, cfa_base + stack_depth + 8, native_start, native_end))
     return tuple(sorted(ranges))
 
 
@@ -704,6 +712,8 @@ def region_entry_vaddrs(blob: bytes, cave_vaddr: int, region: Region, scheme: Re
     """Return VM landing-pad stub addresses for a fully assembled region blob."""
     if not region.entry_map:
         return {}
+    if region.standalone_entry:
+        return {address: cave_vaddr for address in region.entry_map}
     bytecode_size = sum(_item_size(item) for item in region.instructions)
     interpreter_size = len(blob) - bytecode_size
     total = sum(len(indices) for indices in scheme.dup.values())

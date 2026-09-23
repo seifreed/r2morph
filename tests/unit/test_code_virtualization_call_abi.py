@@ -22,6 +22,8 @@ from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from r2morph.platform.elf_unwind import VM_PROLOGUE_BYTES
 from tests.utils.assertions import expect
 
+_NATIVE_CALL_CFA_OFFSET = 8
+
 
 def test_call_bridge_loads_all_xmm_arguments_before_native_call() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)))
@@ -155,7 +157,7 @@ def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
     expect(ranges is not None and len(ranges) == len(scheme.dup["call"]))
     expect(
         all(
-            start >= VM_PROLOGUE_BYTES and start < end and cfa_offset > _GUARD
+            start >= VM_PROLOGUE_BYTES and start < end and cfa_offset == _NATIVE_CALL_CFA_OFFSET
             for start, end, cfa_offset in ranges or ()
         )
     )

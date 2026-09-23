@@ -437,6 +437,18 @@ _MAX_DIAGNOSTIC_OPCODE_CHARS = 96
 _COMPUTED_JUMP_TYPES = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
+def _is_stack_guard_tls_access(opcode: str) -> bool:
+    """Keep stack-canary landing pads native until their ABI bridge is proven."""
+    lowered = opcode.lower()
+    for segment, offset in (("fs:", "0x28"), ("gs:", "0x14")):
+        if segment not in lowered:
+            continue
+        operand = lowered.split(segment, 1)[1].lstrip(" [")
+        if operand.split("]", 1)[0].split(",", 1)[0].strip() in {offset, f"+{offset}"}:
+            return True
+    return False
+
+
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
 _MOVX_MEMORY_SUFFIXES = {
     ("z", _BYTE_WIDTH_BITS): "b",
@@ -1015,6 +1027,8 @@ class CodeVirtualizationPass(MutationPass):
             pad_ops = _landing_pad_ops(instructions, address, pad_addresses)
             if not pad_ops:
                 return None
+            if any(_is_stack_guard_tls_access(str(item.get("opcode", ""))) for item in pad_ops):
+                return None
             region = extract_region(
                 pad_ops,
                 options.rng,
@@ -1022,6 +1036,7 @@ class CodeVirtualizationPass(MutationPass):
                 known_function_ranges=None,
                 native_ranges=(),
                 entry_addresses=(address,),
+                standalone_entry=True,
             )
             if region is None or address not in region.entry_map:
                 return None
