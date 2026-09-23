@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.validation.benchmark_runners import (
@@ -23,9 +24,8 @@ def _performance() -> PerformanceMetrics:
     )
 
 
-def test_detection_runner_builds_result(tmp_path) -> None:
-    sample_file = tmp_path / "sample.bin"
-    sample_file.write_bytes(b"abc")
+def test_detection_runner_builds_result() -> None:
+    sample_file = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
     sample = TestSample(
         file_path=str(sample_file),
         sample_hash="hash",
