@@ -1091,6 +1091,26 @@ def test_baseline_script_runs_directly_from_the_repository(tmp_path: Path) -> No
     expect(result.returncode == 0 and output.is_file() and result.stdout == b"")
 
 
+def test_baseline_script_retains_transformed_outputs_when_requested(tmp_path: Path) -> None:
+    output = tmp_path / "baseline.json"
+    retained = tmp_path / "retained"
+    result = run_process(
+        [
+            sys.executable,
+            str(_BASELINE_SCRIPT),
+            str(_FIXTURE),
+            "--count",
+            "1",
+            "--retain-output-root",
+            str(retained),
+            "--output",
+            str(output),
+        ]
+    )
+
+    expect(result.returncode == 0 and (retained / "code-virtualization").is_dir())
+
+
 def test_baseline_script_rejects_a_selected_pass_without_mutations(tmp_path: Path) -> None:
     output = tmp_path / "baseline.json"
     result = run_process(

@@ -2344,6 +2344,11 @@ def main() -> None:
     )
     parser.add_argument("--output", type=Path)
     parser.add_argument(
+        "--retain-output-root",
+        type=Path,
+        help="keep transformed binaries under this directory for post-failure inspection",
+    )
+    parser.add_argument(
         "--require-applied",
         action="store_true",
         help="fail when a selected pass does not apply; sharded campaigns defer this to aggregation",
@@ -2410,7 +2415,7 @@ def main() -> None:
             fixtures,
             pass_names,
             args,
-            Path(temp_dir),
+            args.retain_output_root or Path(temp_dir),
         )
     report = _render_result(measurements[pass_names[0]], pass_names[0])
     if len(pass_names) > 1:

@@ -82,6 +82,7 @@ jobs:
             --count 1 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 8 \
+            --retain-output-root "$RUNNER_TEMP/differential-output" \
             --output "$GITHUB_WORKSPACE/differential-corpus.json"
           mv "$GITHUB_WORKSPACE/differential-corpus.json" "$GITHUB_WORKSPACE/$REPORT_NAME"
 
@@ -169,6 +170,15 @@ jobs:
                   f"{unexpected}; runtime failure reasons by pass: {reasons}"
               )
           PY
+
+      - name: Upload transformed outputs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: differential-transformed-${{ matrix.fixture_shard }}-${{ matrix.seed }}
+          path: ${{ runner.temp }}/differential-output
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Run cross-format differential smoke
         if: always()
