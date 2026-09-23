@@ -31,7 +31,7 @@ from r2morph.mutations.code_virtualization_engine import (
     RSP_INDEX,
     VirtualizedOp,
 )
-from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
+from r2morph.mutations.code_virtualization_engine_common import _OPCODE_BUDGET, _assign_opcode_multiplicity
 from r2morph.mutations.code_virtualization_region_dataflow import (
     _constant_register_states,
     has_static_internal_indirect_call,
@@ -47,6 +47,7 @@ from r2morph.mutations.code_virtualization_region_models import (
     Region,
     RegionScheme,
     _op_key,
+    _required_key,
 )
 
 _CANONICAL_FLAGS_OFFSET = 0x80
@@ -548,26 +549,27 @@ def _vcall_return_cleanup(items: list[list[Any]], start: int) -> int | None:
     return next(iter(cleanups)) if len(cleanups) == 1 else None
 
 
-def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | None] | None] | None:
-    """Verify the region's virtual stack is balanced on every path.
+def _seed_stack_states(
+    state: list[tuple[int, tuple[int, int] | None] | None],
+    work: list[int],
+    initial_states: dict[int, tuple[int, tuple[int, int] | None]],
+    item_count: int,
+) -> bool:
+    for index, initial_state in initial_states.items():
+        if not 0 <= index < item_count:
+            return False
+        if index == 0:
+            if state[index] != initial_state:
+                return False
+            continue
+        state[index] = initial_state
+        work.append(index)
+    return True
 
-    The VM force-restores the hardware rsp on exit, and the function's virtual
-    stack traffic happens in a relocated scratch region, so a region is only safe
-    if every path reaches each terminator with the stack at its entry depth and
-    never underflows (which would read caller stack the VM never modelled). A
-    forward dataflow tracks, per item, a byte depth and the frame-pointer
-    snapshot ``(register, depth)`` taken by ``mov reg, rsp``: push/pop move 8
-    bytes, ``add``/``sub rsp,imm`` move imm, and ``mov rsp,reg``/``leave`` restore
-    the depth captured when ``reg`` last copied rsp (rejecting if that register
-    was overwritten meanwhile). Conflicting depths, an underflow, or a non-zero
-    depth at a terminator rejects the region (left native).
-    """
-    if not items:
-        return None
-    # Per item: (byte depth, frame-pointer snapshot (register, depth) or None).
-    state: list[tuple[int, tuple[int, int] | None] | None] = [None] * len(items)
-    state[0] = (0, None)
-    work = [0]
+
+def _walk_stack_states(
+    items: list[list[Any]], state: list[tuple[int, tuple[int, int] | None] | None], work: list[int]
+) -> list[tuple[int, tuple[int, int] | None] | None] | None:
     while work:
         i = work.pop()
         current = state[i]
@@ -595,6 +597,34 @@ def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | N
             if not _merge_stack_state(state, work, nxt, caller_depth, out_snapshot):
                 return None
     return state
+
+
+def _stack_states(
+    items: list[list[Any]],
+    initial_states: dict[int, tuple[int, tuple[int, int] | None]] | None = None,
+) -> list[tuple[int, tuple[int, int] | None] | None] | None:
+    """Verify the region's virtual stack is balanced on every path.
+
+    The VM force-restores the hardware rsp on exit, and the function's virtual
+    stack traffic happens in a relocated scratch region, so a region is only safe
+    if every path reaches each terminator with the stack at its entry depth and
+    never underflows (which would read caller stack the VM never modelled). A
+    forward dataflow tracks, per item, a byte depth and the frame-pointer
+    snapshot ``(register, depth)`` taken by ``mov reg, rsp``: push/pop move 8
+    bytes, ``add``/``sub rsp,imm`` move imm, and ``mov rsp,reg``/``leave`` restore
+    the depth captured when ``reg`` last copied rsp (rejecting if that register
+    was overwritten meanwhile). Conflicting depths, an underflow, or a non-zero
+    depth at a terminator rejects the region (left native).
+    """
+    if not items:
+        return None
+    # Per item: (byte depth, frame-pointer snapshot (register, depth) or None).
+    state: list[tuple[int, tuple[int, int] | None] | None] = [None] * len(items)
+    state[0] = (0, None)
+    work = [0]
+    if initial_states and not _seed_stack_states(state, work, initial_states, len(items)):
+        return None
+    return _walk_stack_states(items, state, work)
 
 
 def _stack_balanced(items: list[list[Any]]) -> bool:
@@ -819,6 +849,42 @@ def _entry_item_map(build: _RegionBuild, entry_addresses: tuple[int, ...]) -> di
         return None
 
 
+def _exception_entry_stack_data(
+    items: list[list[Any]],
+    entry_map: dict[int, int],
+    call_site_item_of: dict[int, int],
+    stack_states: list[tuple[int, tuple[int, int] | None] | None],
+    entry_stack_sources: tuple[tuple[int, int], ...],
+) -> tuple[list[tuple[int, tuple[int, int] | None] | None], int, int, dict[int, int]] | None:
+    exceptional_states: dict[int, tuple[int, tuple[int, int] | None]] = {}
+    entry_stack_depths: dict[int, int] = {}
+    for entry_address, call_site_address in entry_stack_sources:
+        entry_index = entry_map.get(entry_address)
+        call_site_index = call_site_item_of.get(call_site_address)
+        call_site_state = None if call_site_index is None else stack_states[call_site_index]
+        if entry_index is None or call_site_state is None:
+            return None
+        exceptional_states[entry_index] = call_site_state
+        entry_stack_depths[entry_address] = call_site_state[0]
+    seeded_states = _stack_states(items, exceptional_states)
+    if seeded_states is None:
+        return None
+    stack_argument_copy_bytes = _stack_argument_copy_bytes(items, seeded_states)
+    stack_local_copy_bytes = _stack_local_copy_bytes(items, seeded_states)
+    if stack_argument_copy_bytes is None or stack_local_copy_bytes is None:
+        return None
+    return seeded_states, stack_argument_copy_bytes, stack_local_copy_bytes, entry_stack_depths
+
+
+def _mark_indirect_returns(build: _RegionBuild) -> bool:
+    has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)
+    if has_internal_indirect_call:
+        for item in build.items:
+            if item[0] == "exit" and item[1] in build.ret_addrs:
+                item[0] = "vret"
+    return has_internal_indirect_call
+
+
 def _prepare_region(
     instructions: list[dict[str, Any]],
     function_range: tuple[int, int] | None,
@@ -1017,9 +1083,12 @@ def extract_region(
     default so the straight-line contract and its guards are unchanged.
     ``native_ranges`` preserves native exception-handler instruction ranges and
     makes VM control flow exit to their original addresses.
+    ``entry_stack_sources`` seeds exceptional entries from the stack state at
+    their LSDA-protected call sites.
     """
     native_ranges = cast(tuple[tuple[int, int], ...], options.get("native_ranges", ()))
     entry_addresses = cast(tuple[int, ...], options.get("entry_addresses", ()))
+    entry_stack_sources = cast(tuple[tuple[int, int], ...], options.get("entry_stack_sources", ()))
     build = _build_region_items(
         instructions,
         allow_computed_jump,
@@ -1029,14 +1098,11 @@ def extract_region(
     )
     if build is None or not _resolve_region_targets(build, instructions, known_function_ranges):
         return None
-    has_internal_indirect_call = has_static_internal_indirect_call(build.items, build.item_index_of)
-    if has_internal_indirect_call:
-        for item in build.items:
-            if item[0] == "exit" and item[1] in build.ret_addrs:
-                item[0] = "vret"
+    has_internal_indirect_call = _mark_indirect_returns(build)
     items = build.items
     call_site_item_of = dict(build.call_site_item_of)
     entry_map = _entry_item_map(build, entry_addresses)
+    entry_stack_depths: dict[int, int] = {}
     if (
         entry_map is None
         or (stack_states := _stack_states(items)) is None
@@ -1044,6 +1110,10 @@ def extract_region(
         or (stack_local_copy_bytes := _stack_local_copy_bytes(items, stack_states)) is None
     ):
         return None
+    exception_data = _exception_entry_stack_data(items, entry_map, call_site_item_of, stack_states, entry_stack_sources)
+    if exception_data is None:
+        return None
+    stack_states, stack_argument_copy_bytes, stack_local_copy_bytes, entry_stack_depths = exception_data
     for index, item in enumerate(items):
         if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"):
             state = stack_states[index]
@@ -1113,6 +1183,7 @@ def extract_region(
         stack_local_copy_bytes,
         call_site_items,
         entry_map,
+        entry_stack_depths,
     )
 
 
@@ -1224,6 +1295,49 @@ def region_supports_unwind_contract(region: Region, frame: Any) -> bool:
     )
 
 
+def _call_site_requirements(region: Region) -> tuple[set[int], dict[str, int]]:
+    indexes = {item_index for _start, _end, item_index in region.call_site_items}
+    counts: dict[str, int] = {}
+    for item_index in indexes:
+        key = _required_key(tuple(region.instructions[item_index]))
+        counts[key] = counts.get(key, 0) + 1
+    return indexes, counts
+
+
+def _fit_call_multiplicity(multiplicity: dict[str, int], keys: list[str], call_counts: dict[str, int]) -> int | None:
+    for key, count in call_counts.items():
+        multiplicity[key] = max(multiplicity[key], count)
+    total = sum(multiplicity.values())
+    for key in keys:
+        while total > _OPCODE_BUDGET and key not in call_counts and multiplicity[key] > 1:
+            multiplicity[key] -= 1
+            total -= 1
+    return None if total > _OPCODE_BUDGET else total
+
+
+def _call_opcode_assignments(
+    region: Region, dup: dict[str, tuple[int, ...]], junk_seed: int, call_item_indexes: set[int]
+) -> tuple[tuple[int, int], ...]:
+    if not call_item_indexes:
+        return ()
+    picker = random.Random(junk_seed)
+    available = {key: list(opcodes) for key, opcodes in dup.items()}
+    assignments: list[tuple[int, int]] = []
+    for item_index, item in enumerate(region.instructions):
+        key = _required_key(tuple(item))
+        if item_index in call_item_indexes:
+            choices = available[key]
+            if choices:
+                opcode = picker.choice(choices)
+                choices.remove(opcode)
+            else:
+                opcode = picker.choice(dup[key])
+            assignments.append((item_index, opcode))
+        else:
+            picker.choice(dup[key])
+    return tuple(assignments)
+
+
 def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: int | None = None) -> RegionScheme:
     """Assign each handler a dense opcode index plus a bytecode key.
 
@@ -1238,7 +1352,10 @@ def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: in
     # and a value remains above it for the dispatch bounds-guard exit. Shares the
     # engine VM's assignment so both interpreters duplicate handlers identically.
     multiplicity = _assign_opcode_multiplicity(keys, rng)
-    total = sum(multiplicity.values())
+    call_item_indexes, call_counts = _call_site_requirements(region)
+    total = _fit_call_multiplicity(multiplicity, keys, call_counts)
+    if total is None:
+        raise ValueError("call-site handler multiplicity exceeds the region opcode budget")
     indices = rng.sample(range(total), total)
     dup: dict[str, tuple[int, ...]] = {}
     cursor = 0
@@ -1280,6 +1397,7 @@ def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: in
     state_offset = rng.choice(_STATE_SLOT_CANDIDATES)
     if dispatch_variant is None:
         dispatch_variant = rng.randrange(2)
+    call_opcode_by_item = _call_opcode_assignments(region, dup, junk_seed, call_item_indexes)
     return RegionScheme(
         dup,
         xor_key,
@@ -1295,4 +1413,5 @@ def build_region_scheme(region: Region, rng: random.Random, dispatch_variant: in
         state_offset,
         checksum_reverse,
         dispatch_variant,
+        tuple(call_opcode_by_item),
     )

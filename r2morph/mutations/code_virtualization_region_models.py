@@ -50,6 +50,7 @@ class RegionScheme:
     state_offset: int = 0x218
     checksum_reverse: bool = False
     dispatch_variant: int = 0
+    call_opcode_by_item: tuple[tuple[int, int], ...] = ()
 
 
 @dataclass(eq=False, repr=False, slots=True)
@@ -77,6 +78,7 @@ class Region:
     stack_local_copy_bytes: int = 0
     call_site_items: tuple[tuple[int, int, int], ...] = ()
     entry_map: dict[int, int] = field(default_factory=dict)
+    entry_stack_depths: dict[int, int] = field(default_factory=dict)
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

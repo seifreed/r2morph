@@ -940,6 +940,13 @@ class CodeVirtualizationPass(MutationPass):
             for landing_pad in getattr(unwind_frame, "landing_pads", ())
             if isinstance(landing_pad.address, int)
         )
+        landing_pad_stack_sources = tuple(
+            (landing_pad.address, landing_pad.metadata["call_site_start"])
+            for landing_pad in getattr(unwind_frame, "landing_pads", ())
+            if isinstance(landing_pad.address, int)
+            and isinstance(landing_pad.metadata, dict)
+            and isinstance(landing_pad.metadata.get("call_site_start"), int)
+        )
         native_ranges = () if landing_pad_addresses else _landing_pad_native_ranges(complete_ops, unwind_frame)
         if native_ranges is None:
             return None
@@ -950,6 +957,7 @@ class CodeVirtualizationPass(MutationPass):
             known_function_ranges=known_function_ranges,
             native_ranges=native_ranges,
             entry_addresses=landing_pad_addresses,
+            entry_stack_sources=landing_pad_stack_sources,
         )
         if region is not None:
             result = self._emit_region(binary, func, region, RegionOptions(rng, True, unwind_frame))

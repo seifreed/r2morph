@@ -44,6 +44,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         self.checksum = checksum
         self.slot_of = scheme.slot_perm
         self.pick = random.Random(scheme.junk_seed).choice
+        self.call_opcode_by_item = dict(scheme.call_opcode_by_item)
+        self.item_index = -1
         self.plain = bytearray()
 
     def encode(self, items: list[RegionItem]) -> bytes:
@@ -67,7 +69,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_calls,
             self._emit_branches,
         )
-        for item in items:
+        for self.item_index, item in enumerate(items):
             for emit in emitters:
                 if emit(item):
                     break
@@ -83,7 +85,13 @@ class RegionEncoder(RegionEncoderMemoryMixin):
 
     def _opcode(self, item: RegionItem, key: str | None = None) -> int:
         position = bytecode_position_mask(len(self.plain))
-        opcode = self.pick(self.scheme.dup[key or _required_key(item)])
+        handler_key = key or _required_key(item)
+        selected_opcode = self.call_opcode_by_item.get(self.item_index)
+        if selected_opcode is None:
+            opcode = self.pick(self.scheme.dup[handler_key])
+        else:
+            self.pick(self.scheme.dup[handler_key])
+            opcode = selected_opcode
         self.plain.append(opcode ^ position)
         return position
 

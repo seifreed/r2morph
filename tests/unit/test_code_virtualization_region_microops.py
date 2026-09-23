@@ -69,6 +69,26 @@ def _flag_dead_arith_region(second: dict[str, object]) -> list[tuple[object, ...
     return list(region.instructions)
 
 
+def test_region_seeds_exception_entry_stack_from_its_call_site() -> None:
+    instructions = [
+        _insn(0x1000, 5, "call", "call 0x2000", jump=0x2000),
+        _insn(0x1005, 5, "jmp", "jmp 0x1015", jump=0x1015),
+        _insn(0x100A, 5, "call", "call 0x3000", jump=0x3000),
+        _insn(0x100F, 1, "ret", "ret"),
+        _insn(0x1015, 1, "ret", "ret"),
+    ]
+
+    region = extract_region(
+        instructions,
+        randomness.Random(1),
+        function_range=(0x1000, 0x1016),
+        entry_addresses=(0x100A,),
+        entry_stack_sources=((0x100A, 0x1000),),
+    )
+
+    expect(region is not None)
+
+
 def test_flag_dead_reg_reg_arith_lowers_to_shared_microop_sequence() -> None:
     items = _flag_dead_arith_region(_insn(0x1003, 3, "xor", "xor eax, ecx"))
     kinds = [item[0] for item in items]

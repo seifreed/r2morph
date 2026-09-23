@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
     encode_region,
 )
 from r2morph.mutations.code_virtualization_region_control_handlers import (
+    _CALL_BASE_OFFSET,
     _CALL_UNWIND_END_MAGIC,
     _CALL_UNWIND_START_MAGIC,
 )
@@ -172,7 +173,7 @@ _VEX_LOAD_KINDS = frozenset(
         "fploadvexpackedidxnb",
     }
 )
-_ENTRY_STUB_SIZE = 10
+_ENTRY_STUB_SIZE = 17
 
 
 def _region_has_ymm(region: Region) -> bool:
@@ -191,8 +192,33 @@ def _entry_stubs_asm(region: Region) -> str:
                 entry_offsets[address] = bytecode_offset
         bytecode_offset += _item_size(item)
     return "".join(
-        f"vm_landing_pad_{index}:\n  mov r11d, {entry_offsets[address]}\n  jmp vm_entry_body\n"
+        f"vm_landing_pad_{index}:\n"
+        f"  mov r11d, {entry_offsets[address]}\n"
+        f"  mov r10d, {region.entry_stack_depths.get(address, 0)}\n"
+        "  jmp vm_exception_entry\n"
         for index, address in enumerate(sorted(entry_offsets))
+    )
+
+
+def _exception_entry_asm(
+    frame_size: int,
+    stack_guard: int,
+    slot: tuple[int, ...],
+    decode: str,
+) -> str:
+    return (
+        "vm_exception_entry:\n"
+        "  movsxd r10, r10d\n"
+        f"  add rsp, r10\n  add rsp, {stack_guard - frame_size}\n"
+        f"  mov r10, rax\n  xor r10, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+        f"  mov qword ptr [rsp+{slot[GP_REGISTERS.index('rax')] * 8}], r10\n"
+        f"  mov r10, rdx\n  xor r10, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+        f"  mov qword ptr [rsp+{slot[GP_REGISTERS.index('rdx')] * 8}], r10\n"
+        f"  mov r15, qword ptr [rsp+{_CALL_BASE_OFFSET}]\n"
+        "  lea rsi, [r15+r11]\n"
+        "  jmp vm_exception_dispatch\n"
+        "vm_exception_dispatch:\n"
+        f"{decode}"
     )
 
 
@@ -431,7 +457,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         scheme.junk_seed,
         key_setup + encrypt_slots + entry_setup + dispatch_entry,
     )
-    lines.append(f"vm_bootstrap:\n{bootstrap}")
+    lines.extend((f"vm_bootstrap:\n{bootstrap}", _exception_entry_asm(frame_size, stack_guard, slot, make_decode())))
 
     reload_seq = "".join(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n" for index in save_order)
     reload_seq += fp_reload
@@ -575,13 +601,15 @@ def call_unwind_ranges_with_sites(
     if not call_items:
         return ()
 
-    picker = random.Random(scheme.junk_seed)
-    opcode_by_item: dict[int, int] = {}
-    for item_index, item in enumerate(region.instructions):
-        key = _required_key(tuple(item))
-        opcode = picker.choice(scheme.dup[key])
-        if item_index in call_items:
-            opcode_by_item[item_index] = opcode
+    opcode_by_item = dict(scheme.call_opcode_by_item)
+    if not opcode_by_item:
+        picker = random.Random(scheme.junk_seed)
+        opcode_by_item = {}
+        for item_index, item in enumerate(region.instructions):
+            key = _required_key(tuple(item))
+            opcode = picker.choice(scheme.dup[key])
+            if item_index in call_items:
+                opcode_by_item[item_index] = opcode
 
     ranges: list[tuple[int, int, int, int, int]] = []
     for item_index, (native_start, native_end) in call_items.items():
