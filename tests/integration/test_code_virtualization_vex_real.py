@@ -708,9 +708,8 @@ def test_virtualized_vex128_integer_compares_preserve_native_result(tmp_path: Pa
     compile_result = run_command(
         [
             "gcc",
-            "-O2",
+            "-O1",
             "-mavx2",
-            "-mno-vzeroupper",
             "-fno-pie",
             "-no-pie",
             "-fno-unwind-tables",

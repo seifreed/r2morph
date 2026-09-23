@@ -39,6 +39,11 @@ _VEX128_MEMORY_ITEM_SIZE = 8
 _VEX128_IMMEDIATE_MEMORY_ITEM_SIZE = 8
 _VEX128_IMMEDIATE_MEMORY_RIP_ITEM_SIZE = 7
 _VEX128_REGISTER_ITEM_SIZE = 3
+_VEX128_GP_EXTRACT_ITEM_SIZE = 4
+
+
+def test_vex_gp_extract_item_size_includes_immediate() -> None:
+    expect(_item_size(("fpmovvexextract", 64, 0, 0, 1)) == _VEX128_GP_EXTRACT_ITEM_SIZE)
 
 
 def test_decode_vex128_packed_memory_arithmetic_preserves_base_shape() -> None:

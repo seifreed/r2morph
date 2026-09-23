@@ -341,15 +341,8 @@ def _set_layer_slots(layer: int, count: int) -> str:
     )
 
 
-def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, str]:
-    """Preserve vector state for nested regions and native-call bridges."""
-    has_fp = any(
-        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", "vzeroupper", "vzeroall", *_XMM_CALL_KINDS)
-        for item in region.instructions
-    )
-    if not has_fp:
-        return "", ""
-    has_ymm = any(
+def _nested_has_ymm(region: Region, layers: list[Region]) -> bool:
+    return any(
         item[0]
         in (
             "fparithvex",
@@ -400,6 +393,17 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         for layer in layers
         for item in layer.instructions
     )
+
+
+def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, str]:
+    """Preserve vector state for nested regions and native-call bridges."""
+    has_fp = any(
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", "vzeroupper", "vzeroall", *_XMM_CALL_KINDS)
+        for item in region.instructions
+    )
+    if not has_fp:
+        return "", ""
+    has_ymm = _nested_has_ymm(region, layers)
     vex_destinations = {
         int(item[1] if item[0] in _VEX_LOAD_KINDS else item[2])
         for layer in layers
@@ -752,6 +756,7 @@ def _build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Rando
                         scheme.body_seed,
                         scheme.isa_seed,
                         stack_guard=_region_stack_guard(region, schemes[0].junk_seed),
+                        has_ymm=_nested_has_ymm(region, layers),
                         stack_copy_bytes=max(_STACK_ARGUMENT_COPY_BYTES, region.stack_argument_copy_bytes),
                         canonical_call_stack=any(
                             item[0] == "rspalign" and int(item[1]) > _STACK_GUARD_ALIGNMENT
