@@ -215,9 +215,11 @@ def _remap_lsda_call_sites(
             if source_start < native_end and native_start < source_end:
                 target = landing_pad
                 if landing_pad_targets is not None:
-                    target = landing_pad_targets.get(landing_pad, 0)
-                    if target == 0:
-                        return None
+                    # Isolated landing-pad regions may be emitted one at a time.
+                    # Keep sibling LSDA targets at their native addresses until
+                    # their own trampoline is installed; those addresses remain
+                    # valid exception entries throughout the sequence.
+                    target = landing_pad_targets.get(landing_pad, landing_pad)
                 mapped.add((vm_start, vm_end, target, action_index))
     if not mapped:
         return None
@@ -972,6 +974,7 @@ class CodeVirtualizationPass(MutationPass):
                 function_range=None,
                 known_function_ranges=None,
                 native_ranges=(),
+                entry_addresses=(address,),
             )
             if region is None or region.entry_vaddr != address:
                 return False
