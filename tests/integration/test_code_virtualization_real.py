@@ -324,6 +324,26 @@ def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> No
     )
 
 
+def test_apply_virtualized_multiret_fixture_preserves_exit_code(tmp_path: Path) -> None:
+    """Applying the pass must leave the entry wrapper native when it calls classify."""
+    if not FIXTURE_MULTIRET.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_MULTIRET}")
+
+    mutated = tmp_path / "mutated_apply"
+    shutil.copy(FIXTURE_MULTIRET, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260901}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(_emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_MULTIRET_17)
+
+
 def _find_vm_entry(data: bytes) -> int:
     frame_encoding_size = 7
     minimum_frame_size = 0x200

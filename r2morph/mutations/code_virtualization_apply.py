@@ -103,6 +103,51 @@ def _direct_branch_targets(disassembly: object, stop_on_unconditional_jump: bool
     return frozenset(targets)
 
 
+def _has_direct_call_to_known_function(
+    binary: Any,
+    function: dict[str, Any],
+    known_function_addresses: frozenset[int],
+) -> bool:
+    """Recognize an entry wrapper that delegates to another analyzed function."""
+    try:
+        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}") or {}
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    instructions = disassembly.get("ops", []) if isinstance(disassembly, dict) else []
+    return any(
+        isinstance(instruction, dict)
+        and instruction.get("type") in {"call", "rcall"}
+        and isinstance(instruction.get("jump"), int)
+        and instruction["jump"] in known_function_addresses
+        and instruction["jump"] != function.get("addr")
+        for instruction in instructions
+    )
+
+
+def _dispatch_entrypoint_addresses(pass_instance: Any, binary: Any) -> frozenset[int]:
+    """Keep only standalone or computed-jump loader entries in the VM set."""
+    functions = binary.get_functions()
+    known_function_addresses = frozenset(
+        int(function["addr"]) for function in functions if isinstance(function.get("addr"), int)
+    )
+    entrypoint_addresses = _entrypoint_addresses(binary)
+    return frozenset(
+        int(function["addr"])
+        for function in functions
+        if (
+            isinstance(function.get("addr"), int)
+            and function["addr"] in entrypoint_addresses
+            and (
+                pass_instance._has_computed_jump(binary, function)
+                or (
+                    _has_terminal_system_call(binary, function)
+                    and not _has_direct_call_to_known_function(binary, function, known_function_addresses)
+                )
+            )
+        )
+    )
+
+
 def _application_target_addresses(binary: Any, functions: list[dict[str, Any]]) -> frozenset[int]:
     """Prefer direct targets from the application's conventional entry symbol."""
     entry_functions = [
@@ -1138,16 +1183,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
         pass_instance.max_function_analysis_count,
         unwind_section,
         _entrypoint_addresses(binary) | _runtime_initialization_addresses(binary),
-        frozenset(
-            int(function["addr"])
-            for function in binary.get_functions()
-            if (
-                isinstance(function.get("addr"), int)
-                and function["addr"] in _entrypoint_addresses(binary)
-                and (pass_instance._has_computed_jump(binary, function) or _has_terminal_system_call(binary, function))
-            )
-        )
-        | protected_callee_addresses,
+        _dispatch_entrypoint_addresses(pass_instance, binary) | protected_callee_addresses,
     )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
