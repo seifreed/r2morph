@@ -213,6 +213,23 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
             landing_pad.address: binary.read_bytes(landing_pad.address, 5)
             for landing_pad in exception_frame.landing_pads
         }
+        candidate_function_summary = tuple(
+            (
+                int(candidate["addr"]),
+                candidate.get("size"),
+                candidate.get("minaddr"),
+                candidate.get("maxaddr"),
+                candidate.get("name"),
+            )
+            for candidate in binary.get_functions()
+            if "nested_throw" in candidate.get("name", "")
+        )
+        candidate_disassembly = binary.r2.cmdj(f"pdfj @ {function_address}") or {}
+        candidate_op_addresses = tuple(
+            int(operation["addr"])
+            for operation in candidate_disassembly.get("ops", [])
+            if isinstance(operation, dict) and isinstance(operation.get("addr"), int)
+        )
         virtualization_pass = CodeVirtualizationPass(
             config={
                 "probability": 1.0,
@@ -247,7 +264,8 @@ int main() { return nested_throw(1) == 12 && nested_throw(0) == 11 ? 42 : 1; }
         "a nested exception escaped the virtualized landing-pad contract: "
         f"{function_address=:#x}, {len(landing_pad_bytes)=}, "
         f"{landing_pads_were_transformed=}, {remapped_landing_pad_entries=}, "
-        f"{runtime_result.returncode=}, {stats=}",
+        f"{runtime_result.returncode=}, {candidate_function_summary=}, "
+        f"{candidate_op_addresses=}, {stats=}",
     )
 
 
