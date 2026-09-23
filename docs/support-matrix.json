@@ -92,10 +92,6 @@
         {
           "format": "PE",
           "architecture": "x86-64"
-        },
-        {
-          "format": "Mach-O",
-          "architecture": "AArch64"
         }
       ],
       "evidence": [
@@ -174,6 +170,10 @@
         {
           "format": "PE",
           "architecture": "x86-64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64"
         }
       ],
       "evidence": [
@@ -923,14 +923,14 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 47,
-      "not_supported_cells": 217,
+      "evidenced_cells": 48,
+      "not_supported_cells": 216,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 25,
-      "non_official_not_supported_cells": 217,
-      "non_official_evidence_percent": 10.33,
+      "non_official_evidenced_cells": 26,
+      "non_official_not_supported_cells": 216,
+      "non_official_evidence_percent": 10.74,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -956,9 +956,9 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64",
-          "evidenced_cells": 4,
-          "not_supported_cells": 18,
-          "evidence_percent": 18.18
+          "evidenced_cells": 5,
+          "not_supported_cells": 17,
+          "evidence_percent": 22.73
         },
         {
           "format": "Mach-O",
@@ -1047,9 +1047,9 @@
           {
             "format": "Mach-O",
             "architecture": "AArch64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "Mach-O",
@@ -1130,9 +1130,9 @@
           {
             "format": "Mach-O",
             "architecture": "AArch64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "Mach-O",
@@ -1197,7 +1197,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 217,
+        "non_official_missing_evidence_cells": 216,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2336,8 +2336,16 @@
         "pass": "instruction-expansion",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_x86_32_native.py"
+        ]
       },
       {
         "pass": "instruction-expansion",
