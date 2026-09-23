@@ -1907,10 +1907,11 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "test_platform_handlers_extended.py" in windows_job
         and "test_platform_handlers_real.py" in windows_job
         and "nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
+        and "instruction_expansion_pe_x86_64_preserves_native_execution" in windows_job
         and "register_substitution_pe_x86_64_preserves_native_execution" in windows_job
         and "constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
-        and "expected 10" in windows_job
+        and "expected 11" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "test_multiple_mutation_passes_on_x86_binary" in windows_job
