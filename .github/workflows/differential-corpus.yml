@@ -11,6 +11,7 @@ concurrency:
       - ".github/workflows/differential-corpus.yml"
       - ".github/workflows/ci.yml"
       - ".github/workflows/adversarial-benchmark.yml"
+      - ".github/scripts/install_radare2.sh"
       - "docs/compatibility-corpus.md"
       - "docs/pass-maturity.md"
       - "docs/release-blockers.md"
