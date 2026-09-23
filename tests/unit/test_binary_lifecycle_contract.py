@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from r2morph.core.binary import Binary
 from tests.utils.assertions import expect
 
 _EXPECTED_LEN_DISASSEMBLER_OPEN_CALLS_2 = 2
+_MAX_REAL_R2_CLOSE_SECONDS = 10.0
 
 
 class _FakeDisassembler:
@@ -71,3 +73,14 @@ def test_binary_lifecycle_reload_reopens_and_reanalyzes(tmp_path: Path) -> None:
     expect(not (binary.is_analyzed() is not True))
     expect(binary.get_functions() == [{"name": "main"}])
     binary.close()
+
+
+def test_binary_lifecycle_real_r2_close_is_bounded() -> None:
+    binary_path = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
+    binary = Binary(binary_path)
+    started = time.monotonic()
+
+    binary.open()
+    binary.close()
+
+    expect(time.monotonic() - started < _MAX_REAL_R2_CLOSE_SECONDS)
