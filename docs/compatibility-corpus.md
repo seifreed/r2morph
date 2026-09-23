@@ -60,11 +60,16 @@ the exception/unwinding family remains covered by the dedicated exception gate
 and is excluded from the fully virtualized parity set. Stripped compiler
 runtime helpers outside analyzed CFG blocks are ignored, while unsupported user
 functions remain fail-closed and visible in the campaign report.
-The five real Linux x86-64 C++ exception-gate cases passed natively at commit
-`e7f5936a`; the bounded result is
-[`protection-lsda-real-linux-2026-09-22-e7f5936a.json`](protection-lsda-real-linux-2026-09-22-e7f5936a.json).
-This closes the declared LSDA/landing-pad gate for ELF x86-64, not the broader
-cross-platform parity gap.
+The seven real Linux x86-64 C++ exception-gate cases pass natively at commit
+`d48d5341`; the bounded result is covered by the existing
+[`test_code_virtualization_exception_gate_real.py`](../tests/integration/test_code_virtualization_exception_gate_real.py)
+contract. The generated exception corpus adds sixteen GCC/Clang profiles with
+one deterministic seed; all sixteen transform, preserve runtime and semantic
+observables, and provide complete evidence in
+[`protection-lsda-generated-cpp-2026-09-23-705bd5d0.json`](protection-lsda-generated-cpp-2026-09-23-705bd5d0.json).
+This closes the declared LSDA/landing-pad gate for the generated Linux ELF
+x86-64 C++ corpus, not the broader cross-platform parity gap or unsupported
+language/ABI combinations.
 
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).

@@ -34,14 +34,16 @@ review. It is not a feature roadmap and must not be read as a support claim.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,
-  threads, FP/SIMD, and SSA/liveness all pass the three-seed campaign (453/453
-  fixture runs, zero failures and zero unsupported functions). LSDA/landing-pad
-  transformation remains fail-closed and is not claimed as unrestricted language-level
-  exception virtualization. Evidence map:
+  threads, FP/SIMD, SSA/liveness, and the declared LSDA/landing-pad C++ corpus
+  all pass their campaigns. The LSDA gate now covers seven real regression cases
+  plus sixteen GCC/Clang generated profiles, with zero runtime or semantic
+  failures. Unsupported language or ABI combinations remain fail-closed and are
+  not silently treated as unrestricted exception virtualization. Evidence map:
   [support-matrix.json](support-matrix.json) `vm_semantic_resolved_evidence`,
   `vm_semantic_gap_scope` (empty),
   and `vm_semantic_blocker_totals`,
   [protection-vm-semantic-2026-09-18-1d0b69e4.json](protection-vm-semantic-2026-09-18-1d0b69e4.json),
+  [protection-lsda-generated-cpp-2026-09-23-705bd5d0.json](protection-lsda-generated-cpp-2026-09-23-705bd5d0.json),
   [independent-review-packet.md](independent-review-packet.md). Exit criteria:
   every declared capability remains covered by a passing campaign and unsupported
   instructions continue to fail closed with precise diagnostics.

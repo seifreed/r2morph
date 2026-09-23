@@ -229,9 +229,10 @@ exception/non-exception variants plus twelve SIMD variants.
 The artifact also reports each declared capability explicitly: memory, calls,
 ABI/varargs, ordinary unwind metadata, non-linear CFG SSA/liveness,
 TLS/signals, threads, and FP/SIMD are campaign-measured. LSDA/landing-pad
-exception transformation remains fail-closed and is separately covered by
-real regression contracts; the campaign does not claim full language-level
-exception virtualization. Fixture runs still do not prove arbitrary inputs,
+exception transformation is measured by dedicated real and generated C++ gates,
+including sixteen compiler profiles with complete runtime and semantic parity.
+The virtualizer remains fail-closed outside those proven contracts. Fixture runs
+still do not prove arbitrary inputs,
 unsupported ABIs, or cross-platform parity.
 The archived local run
 [`protection-vm-semantic-2026-09-16-7356a474.json`](protection-vm-semantic-2026-09-16-7356a474.json)
