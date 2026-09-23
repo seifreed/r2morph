@@ -874,6 +874,42 @@ def _exception_frame_for_function(function_address: int, exception_frames: dict[
     )
 
 
+def _canonicalize_language_unwind_functions(
+    functions: list[dict[str, Any]], exception_frames: dict[int, Any] | None
+) -> list[dict[str, Any]]:
+    """Collapse analyzer chunks inside one language-level unwind frame."""
+    if not exception_frames:
+        return functions
+    canonicalized: list[dict[str, Any]] = []
+    seen_addresses: set[int] = set()
+    for function in functions:
+        address = function.get("addr")
+        frame = _exception_frame_for_function(address, exception_frames) if isinstance(address, int) else None
+        frame_start = getattr(frame, "function_start", None)
+        frame_end = getattr(frame, "function_end", None)
+        normalized_function = function
+        if (
+            _has_language_unwind_contract(frame)
+            and isinstance(frame_start, int)
+            and isinstance(frame_end, int)
+            and frame_end > frame_start
+        ):
+            normalized_function = {
+                **function,
+                "addr": frame_start,
+                "minaddr": frame_start,
+                "maxaddr": frame_end,
+                "size": frame_end - frame_start,
+            }
+        canonical_address = normalized_function.get("addr")
+        if isinstance(canonical_address, int) and canonical_address in seen_addresses:
+            continue
+        if isinstance(canonical_address, int):
+            seen_addresses.add(canonical_address)
+        canonicalized.append(normalized_function)
+    return canonicalized
+
+
 def _ordinary_unwind_frame_for_function(
     unwind_section: str | None,
     function: dict[str, Any],
@@ -1115,6 +1151,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     )
     if ordered_functions is None:
         return _analysis_budget_result(pass_instance.max_function_analysis_count)
+    ordered_functions = _canonicalize_language_unwind_functions(ordered_functions, exception_frames)
 
     for func in ordered_functions:
         if virtualized >= pass_instance.max_functions:

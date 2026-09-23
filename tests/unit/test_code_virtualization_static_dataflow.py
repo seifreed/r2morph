@@ -2,10 +2,12 @@
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.defuse import DefUseAnalyzer
+from r2morph.analysis.exception_models import ExceptionFrame
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_apply import (
     _application_candidate_addresses,
     _application_target_addresses,
+    _canonicalize_language_unwind_functions,
     _exceeds_function_size_budget,
     _has_compact_ret_cleanup,
     _has_materialized_instructions,
@@ -105,6 +107,22 @@ def test_ordered_functions_prioritize_lowest_image_address() -> None:
             return [{"addr": 0x4000}, {"addr": 0x1000}, {"addr": 0x2000}]
 
     expect([function["addr"] for function in _ordered_functions(FunctionSource())] == [0x1000, 0x2000, 0x4000])
+
+
+def test_language_unwind_chunks_collapse_to_canonical_function_range() -> None:
+    functions = [
+        {"addr": 0x1276, "size": 32, "name": "sym.handler"},
+        {"addr": 0x2000, "size": 16, "name": "sym.other"},
+    ]
+    frame = ExceptionFrame(
+        function_start=0x1000,
+        function_end=0x1300,
+        lsda_address=0x3000,
+    )
+
+    canonicalized = _canonicalize_language_unwind_functions(functions, {0x1000: frame})
+
+    expect([function["addr"] for function in canonicalized] == [0x1000, 0x2000])
 
 
 def test_ordered_functions_excludes_tiny_functions_before_analysis_budget() -> None:
