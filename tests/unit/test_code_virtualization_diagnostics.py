@@ -46,6 +46,8 @@ _PROTECTED_CALL_END_ADDRESS = 0x401015
 _PROTECTED_CALLER_END_ADDRESS = 0x401050
 _PROTECTED_LANDING_PAD_ADDRESS = 0x401030
 _PROTECTED_CALLEE_ADDRESS = 0x402000
+_RUNTIME_CALLEE_ADDRESS = 0x403000
+_APPLICATION_ENTRY_ADDRESS = 0x400000
 
 
 class _SectionsBinary:
@@ -67,14 +69,28 @@ class _FunctionDisassemblyBinary:
 class _ProtectedCalleeBinary:
     def get_functions(self) -> list[dict[str, Any]]:
         return [
+            {"addr": _APPLICATION_ENTRY_ADDRESS, "size": MINIMUM_FUNCTION_SIZE, "name": "main"},
             {"addr": _PROTECTED_CALLER_ADDRESS, "size": MINIMUM_FUNCTION_SIZE},
             {"addr": _PROTECTED_CALLEE_ADDRESS, "size": MINIMUM_FUNCTION_SIZE},
+            {"addr": _RUNTIME_CALLEE_ADDRESS, "size": MINIMUM_FUNCTION_SIZE},
         ]
+
+    class _Disassembler:
+        @staticmethod
+        def cmdj(command: str) -> dict[str, list[dict[str, int | str]]]:
+            if command == f"pdfj @ {_APPLICATION_ENTRY_ADDRESS}":
+                return {"ops": [{"type": "call", "jump": _PROTECTED_CALLEE_ADDRESS}]}
+            return {"ops": []}
+
+    r2 = _Disassembler()
 
     def get_function_disasm(self, address: int) -> list[dict[str, Any]]:
         if address != _PROTECTED_CALLER_ADDRESS:
             return []
-        return [{"offset": _PROTECTED_CALL_ADDRESS, "type": "call", "jump": _PROTECTED_CALLEE_ADDRESS}]
+        return [
+            {"offset": _PROTECTED_CALL_ADDRESS, "type": "call", "jump": _PROTECTED_CALLEE_ADDRESS},
+            {"offset": _PROTECTED_CALL_ADDRESS + 2, "type": "call", "jump": _RUNTIME_CALLEE_ADDRESS},
+        ]
 
 
 class _TerminalSyscallBinary:

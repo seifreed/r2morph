@@ -854,6 +854,9 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
         return frozenset()
     protected_callees: set[int] = set()
+    application_targets = _application_target_addresses(binary, functions)
+    application_candidates = _application_candidate_addresses(functions, application_targets)
+    application_addresses = application_targets | application_candidates
     function_sizes = {
         function.get("addr"): function.get("size") for function in functions if isinstance(function.get("addr"), int)
     }
@@ -876,7 +879,12 @@ def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | 
             if not isinstance(target, int):
                 target = extract_call_target(disassembly)
             target_size = function_sizes.get(target)
-            if isinstance(target, int) and isinstance(target_size, int) and target_size >= MINIMUM_FUNCTION_SIZE:
+            if (
+                isinstance(target, int)
+                and isinstance(target_size, int)
+                and target_size >= MINIMUM_FUNCTION_SIZE
+                and (not application_addresses or target in application_addresses)
+            ):
                 protected_callees.add(target)
     return frozenset(protected_callees)
 
