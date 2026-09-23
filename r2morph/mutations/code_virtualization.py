@@ -909,6 +909,17 @@ class CodeVirtualizationPass(MutationPass):
                 else None
             )
         )
+        if unwind_frame is not None:
+            frame_start = getattr(unwind_frame, "function_start", None)
+            frame_end = getattr(unwind_frame, "function_end", None)
+            if isinstance(frame_start, int) and isinstance(frame_end, int) and frame_end > frame_start:
+                if function_range is None:
+                    function_range = (frame_start, frame_end)
+                else:
+                    function_range = (
+                        min(function_range[0], frame_start),
+                        max(function_range[1], frame_end),
+                    )
         complete_ops = complete_direct_branch_ops(binary, disasm["ops"], function_range)
         extended_ops = _extend_landing_pad_ops(binary, complete_ops, unwind_frame, function_range)
         if extended_ops is None:
