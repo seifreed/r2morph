@@ -1602,6 +1602,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_platform_deeper.py" in differential
         and "test_platform_tier1_matrix.py" in differential
         and "test_tier1_pass_preview_target_preserves_exit_code" in differential
+        and "if len(cases) != 72" in differential
         and "cross-format-differential.xml" in differential
         and "Validate cross-format differential evidence" in differential
         and "cross-format smoke coverage drift" in differential
