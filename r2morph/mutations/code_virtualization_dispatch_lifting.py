@@ -212,7 +212,7 @@ def virtualize_dispatch_function(
     ops = cfg_ops if cfg_ops is not None else gather_dispatch_ops(binary, func)
     if ops is None:
         return None
-    rng = random.Random(random.getrandbits(64))
+    rng = owner._rng_for_address(int(func["addr"]))
     region = extract_region(ops, rng, allow_computed_jump=True)
     if region is None:
         return None

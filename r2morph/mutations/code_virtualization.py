@@ -424,6 +424,7 @@ def _build_unwind_payload(
 _MIN_RUN_LENGTH = 2
 # A relative trampoline jump needs 5 bytes in the run's byte span.
 _TRAMPOLINE_SIZE = 5
+_FUNCTION_RNG_MIX = 0x9E3779B97F4A7C15
 _EH_FRAME_ALIGNMENT = 4
 # Signed absolute offsets keep native landing pads below the injected blob valid.
 _LSDA_REMAP_CALL_SITE_ENCODING = 0x0B
@@ -826,12 +827,17 @@ class CodeVirtualizationPass(MutationPass):
             index = end
         return None
 
-    @staticmethod
-    def _build_run(binary: Any, run: _Run) -> _RunBuild | None:
+    def _rng_for_address(self, address: int) -> random.Random:
+        """Derive one stable stream for a function or region address."""
+        if self._active_seed is None:
+            return random.Random(random.getrandbits(64))
+        return random.Random((self._active_seed ^ address ^ _FUNCTION_RNG_MIX) & ((1 << 64) - 1))
+
+    def _build_run(self, binary: Any, run: _Run) -> _RunBuild | None:
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-        rng = random.Random(random.getrandbits(64))
+        rng = self._rng_for_address(run.start)
         ops = inject_junk_ops(run.ops, rng)
         blob = build_vm_blob(ops, blob_vaddr, run.continuation, build_vm_scheme(rng))
         if blob is None:
@@ -895,8 +901,8 @@ class CodeVirtualizationPass(MutationPass):
             return None
         if not disasm or "ops" not in disasm:
             return None
-        rng = random.Random(random.getrandbits(64))
         function_start = func.get("addr")
+        rng = self._rng_for_address(int(func["addr"]))
         function_size = func.get("size")
         function_min = func.get("minaddr", function_start)
         function_max = func.get("maxaddr")

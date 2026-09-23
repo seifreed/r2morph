@@ -199,6 +199,26 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
     expect(_emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45)
 
 
+def test_virtualized_fixture_same_seed_reproduces_bytes(tmp_path: Path) -> None:
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    outputs = []
+    for label in ("first", "second"):
+        mutated = tmp_path / label
+        shutil.copy(FIXTURE, mutated)
+        binary = Binary(str(mutated), writable=True)
+        binary.open()
+        try:
+            CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260902}).apply(binary)
+            binary.save()
+        finally:
+            binary.close()
+        outputs.append(mutated.read_bytes())
+
+    expect(outputs[0] == outputs[1])
+
+
 def test_virtualized_in_function_call_preserves_exit_code(tmp_path: Path) -> None:
     # A self-recursive function whose recursive call targets its own entry is an
     # in-function call: the pass lowers it to a vcall (push a resume vIP, re-enter
