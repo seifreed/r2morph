@@ -1,5 +1,9 @@
 name: Adversarial Analysis Benchmark
 
+concurrency:
+  group: adversarial-benchmark-${{ github.ref }}
+  cancel-in-progress: true
+
 "on":
   push:
     branches: [main]
