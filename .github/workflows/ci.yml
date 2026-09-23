@@ -312,6 +312,7 @@ jobs:
 
       - name: Run broad Linux tests with coverage
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        timeout-minutes: 45
         run: |
           python -W error -m pytest -v \
             -m "not product_smoke and not slow" \
