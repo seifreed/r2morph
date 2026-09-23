@@ -167,6 +167,21 @@ def test_unwind_contract_rejects_tls_with_native_call() -> None:
     )
 
 
+def test_unwind_contract_allows_ordinary_tls_with_native_call() -> None:
+    binary = _FunctionDisassemblyBinary(
+        [
+            {"type": "mov", "opcode": "mov qword fs:[0xfffffffffffffff8], rbp", "addr": _TEST_FUNCTION_ADDRESS},
+            {"type": "call", "opcode": "call 0x2000", "addr": 0x1009},
+        ]
+    )
+
+    blocker = _unwind_contract_blocker(
+        binary, {"addr": _TEST_FUNCTION_ADDRESS}, ExceptionFrame(_TEST_FUNCTION_ADDRESS, 0x1010)
+    )
+
+    expect(blocker is None)
+
+
 def test_unwind_contract_rejects_dynamic_stack_alignment_with_native_call() -> None:
     binary = _FunctionDisassemblyBinary(
         [

@@ -749,11 +749,22 @@ def _unwind_contract_blocker(
         return None
     for instruction in instructions:
         opcode = str(instruction.get("disasm") or instruction.get("opcode") or "").lower()
-        if "fs:" in opcode or "gs:" in opcode:
+        if _is_stack_guard_tls_access(opcode):
             return instruction, "native calls combined with TLS access have no proven VM unwind contract"
         if opcode.startswith(("and rsp,", "and esp,")):
             return instruction, "native calls combined with dynamic stack alignment have no proven VM unwind contract"
     return None
+
+
+def _is_stack_guard_tls_access(opcode: str) -> bool:
+    """Recognize ABI stack-canary loads without rejecting ordinary TLS variables."""
+    for segment, offset in (("fs:", "0x28"), ("gs:", "0x14")):
+        if segment not in opcode:
+            continue
+        operand = opcode.split(segment, 1)[1].lstrip(" [")
+        if operand.split("]", 1)[0].split(",", 1)[0].strip() in {offset, f"+{offset}"}:
+            return True
+    return False
 
 
 def _protected_callee_addresses(binary: Any, exception_frames: dict[int, Any] | None) -> frozenset[int]:
