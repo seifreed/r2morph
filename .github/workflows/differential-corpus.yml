@@ -1575,7 +1575,7 @@ jobs:
             tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_tier1_pass_composition_pe_x86_64_preserves_native_execution `
             tests/integration/test_mutation_passes_end_to_end_more2.py::test_multiple_mutation_passes_on_x86_binary `
-            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or instruction_expansion_pe_x86_64_preserves_native_execution or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
