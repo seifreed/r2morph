@@ -1266,7 +1266,7 @@ def _check_corpus_workflows() -> None:
         'pyproject.toml "$wheel_root"/',
         'cd "$wheel_root"',
         "fixture_shard",
-        "--fixture-shard-count 8",
+        "--fixture-shard-count 16",
         "--fixture-shard-index",
         '--output "$GITHUB_WORKSPACE/differential-corpus.json"',
         '--output "$GITHUB_WORKSPACE/extended-maturity-passes.json"',
