@@ -1686,6 +1686,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "VM semantic campaign evidence is incomplete" in differential
         and "public corpus pass selection drift" in differential
         and "public static recovery benchmark is incomplete" in differential
+        and 'Path("public-corpus-reports").glob("**/results/matrix.json")' in differential
+        and 'Path("public-corpus-reports").glob("**/results/tools.json")' in differential
         and "aggregate-platform-differential:" in differential
         and "Aggregate platform differential evidence" in differential
         and "cross-platform-differential-macos-arm64" in differential

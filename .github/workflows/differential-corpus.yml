@@ -1056,7 +1056,7 @@ jobs:
           from scripts.protection_maturity_baseline import merge_maturity_reports
 
           public_reports = sorted(
-              Path("public-corpus-reports").glob("*/public-corpus/results/matrix.json")
+              Path("public-corpus-reports").glob("**/results/matrix.json")
           )
           if len(public_reports) != 1:
               raise SystemExit(f"expected one public corpus matrix, found {public_reports}")
@@ -1079,7 +1079,7 @@ jobs:
               if summary["differential_failed"] or summary["errors"] or not summary["applied"]:
                   raise SystemExit(f"public differential evidence is incomplete: {pass_name}")
           public_benchmarks = sorted(
-              Path("public-corpus-reports").glob("*/public-corpus/results/tools.json")
+              Path("public-corpus-reports").glob("**/results/tools.json")
           )
           if len(public_benchmarks) != 1:
               raise SystemExit(f"expected one public corpus benchmark, found {public_benchmarks}")
