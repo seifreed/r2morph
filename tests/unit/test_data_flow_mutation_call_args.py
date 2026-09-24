@@ -91,6 +91,18 @@ def test_call_instruction_is_external_abi_boundary() -> None:
     expect(pass_obj._has_external_abi_boundary(call_instruction))
 
 
+def test_external_tail_jump_is_external_abi_boundary() -> None:
+    pass_obj = DataFlowMutationPass()
+    tail_jump = {
+        "addr": 0x1000,
+        "type": "jmp",
+        "jump": 0x2000,
+        "disasm": "jmp sym.external",
+    }
+
+    expect(pass_obj._has_external_abi_boundary(tail_jump, {"addr": 0x1000, "size": 5}))
+
+
 def test_implicit_memory_instruction_is_rejected_until_operands_are_modeled() -> None:
     pass_obj = DataFlowMutationPass()
     string_instruction = {"addr": 0x2004, "next_addr": 0, "type": "string", "disasm": "rep movsb"}

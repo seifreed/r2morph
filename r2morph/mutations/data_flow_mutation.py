@@ -114,7 +114,7 @@ class DataFlowMutationPass(MutationPass):
                 instruction["next_addr"] = next_address if isinstance(next_address, int) else 0
             instructions.append(instruction)
         if any(
-            self._has_external_abi_boundary(instruction) or self._has_implicit_memory_boundary(instruction)
+            self._has_external_abi_boundary(instruction, function) or self._has_implicit_memory_boundary(instruction)
             for instruction in instructions
         ):
             return []
@@ -122,15 +122,28 @@ class DataFlowMutationPass(MutationPass):
         return self._find_safe_substitution_candidates(instructions, live_in, arch)
 
     @staticmethod
-    def _has_external_abi_boundary(instruction: dict[str, Any]) -> bool:
+    def _has_external_abi_boundary(instruction: dict[str, Any], function: dict[str, Any] | None = None) -> bool:
         """Reject functions whose call ABI is outside this pass's proof model."""
         instruction_type = str(instruction.get("type", "")).lower()
         mnemonic = str(instruction.get("disasm", "")).lower().split(maxsplit=1)[0]
-        return instruction_type in {"call", "rcall", "ucall", "icall", "syscall", "swi"} or mnemonic in {
+        if instruction_type in {"call", "rcall", "ucall", "icall", "syscall", "swi"} or mnemonic in {
             "call",
             "syscall",
             "sysenter",
-        }
+        }:
+            return True
+        if mnemonic != "jmp":
+            return False
+        jump = instruction.get("jump")
+        start = function.get("addr") if function is not None else None
+        size = function.get("size") if function is not None else None
+        return not (
+            isinstance(jump, int)
+            and isinstance(start, int)
+            and isinstance(size, int)
+            and size > 0
+            and start <= jump < start + size
+        )
 
     @staticmethod
     def _has_implicit_memory_boundary(instruction: dict[str, Any]) -> bool:
