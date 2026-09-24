@@ -1051,6 +1051,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import xml.etree.ElementTree as ET
           from pathlib import Path
 
           from scripts.protection_maturity_baseline import merge_maturity_reports
