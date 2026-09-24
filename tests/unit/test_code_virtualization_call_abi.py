@@ -17,7 +17,12 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     CallBridgeConfig,
     _call_handler_asm,
 )
-from r2morph.mutations.code_virtualization_region_handlers import _MXCSR_SAVE_OFFSET
+from r2morph.mutations.code_virtualization_region_handlers import (
+    _MXCSR_SAVE_OFFSET,
+    _STACK_ARGUMENT_COPY_BYTES,
+    frame_size_for_seed,
+    stack_guard_for_copy,
+)
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from r2morph.platform.elf_unwind import VM_PROLOGUE_BYTES
 from tests.utils.assertions import expect
@@ -153,9 +158,10 @@ def test_call_blob_exposes_relocated_cfa_ranges_for_each_handler_copy() -> None:
     expect(blob is not None)
     ranges = call_unwind_ranges(blob, scheme, region) if blob is not None else None
     expect(ranges is not None and len(ranges) == len(scheme.dup["call"]))
+    expected_cfa_offset = stack_guard_for_copy(frame_size_for_seed(scheme.junk_seed), _STACK_ARGUMENT_COPY_BYTES) + 8
     expect(
         all(
-            start >= VM_PROLOGUE_BYTES and start < end and cfa_offset > _GUARD
+            start >= VM_PROLOGUE_BYTES and start < end and cfa_offset == expected_cfa_offset
             for start, end, cfa_offset in ranges or ()
         )
     )
