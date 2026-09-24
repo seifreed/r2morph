@@ -209,13 +209,13 @@ def test_differential_workflow_publishes_maturity_evidence() -> None:
 
 def test_differential_aggregate_imports_xml_parser_at_script_scope() -> None:
     workflow = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "differential-corpus.yml"
-    aggregate_script = workflow.read_text(encoding="utf-8").split(
-        "name: Merge and validate campaign evidence", maxsplit=1
-    )[1].split("          python - <<'PY'", maxsplit=1)[1]
-
-    expect(
-        "import xml.etree.ElementTree as ET" in aggregate_script.split("def validate_junit_reports", maxsplit=1)[0]
+    aggregate_script = (
+        workflow.read_text(encoding="utf-8")
+        .split("name: Merge and validate campaign evidence", maxsplit=1)[1]
+        .split("          python - <<'PY'", maxsplit=1)[1]
     )
+
+    expect("import xml.etree.ElementTree as ET" in aggregate_script.split("def validate_junit_reports", maxsplit=1)[0])
 
 
 def test_adversarial_workflow_attaches_upstream_decompiler_evidence() -> None:
