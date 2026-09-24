@@ -1802,7 +1802,8 @@ jobs:
 
       - name: Run public static recovery benchmark
         run: |
-          python public-corpus/scripts/tool_benchmark.py \
+          python "$GITHUB_WORKSPACE/scripts/run_public_corpus_benchmark.py" \
+            public-corpus/scripts/tool_benchmark.py \
             --build public-corpus/build-selected \
             --matrix public-corpus/results/matrix.json \
             --output public-corpus/results/tools.json \
