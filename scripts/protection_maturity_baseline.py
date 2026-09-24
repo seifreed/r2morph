@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Mapping
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -1754,6 +1755,13 @@ def _parse_pass_names(value: str) -> tuple[str, ...]:
     return names
 
 
+def _positive_worker_count(value: str) -> int:
+    workers = int(value)
+    if workers < 1:
+        raise argparse.ArgumentTypeError("workers must be positive")
+    return workers
+
+
 def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
     dataset: Path | None = None,
@@ -2317,10 +2325,26 @@ def _measure_campaign(
 ) -> dict[str, list[dict[str, object]]]:
     seeds = range(args.first_seed, args.first_seed + args.count)
     runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
-    return {
-        pass_name: [measure_fixture(fixture, seeds, output_root, pass_name, runtime_inputs) for fixture in fixtures]
-        for pass_name in pass_names
-    }
+    tasks = [
+        (fixture, seeds, output_root, pass_name, runtime_inputs) for pass_name in pass_names for fixture in fixtures
+    ]
+    measurements = {pass_name: [] for pass_name in pass_names}
+    if args.workers == 1:
+        results = (_measure_fixture_worker(task) for task in tasks)
+        for pass_name, measurement in results:
+            measurements[pass_name].append(measurement)
+        return measurements
+    with ProcessPoolExecutor(max_workers=args.workers) as executor:
+        for pass_name, measurement in executor.map(_measure_fixture_worker, tasks):
+            measurements[pass_name].append(measurement)
+    return measurements
+
+
+def _measure_fixture_worker(
+    task: tuple[Path, range, Path, str, tuple[tuple[str, ...], ...]],
+) -> tuple[str, dict[str, object]]:
+    fixture, seeds, output_root, pass_name, runtime_inputs = task
+    return pass_name, measure_fixture(fixture, seeds, output_root, pass_name, runtime_inputs)
 
 
 def _emit_report(rendered: str, output: Path | None) -> None:
@@ -2379,6 +2403,12 @@ def main() -> None:
         type=int,
         default=1,
         help="number of deterministic corpus shards for parallel campaigns",
+    )
+    parser.add_argument(
+        "--workers",
+        type=_positive_worker_count,
+        default=1,
+        help="number of isolated fixture workers (default: 1)",
     )
     args = parser.parse_args()
     if args.count < 1:

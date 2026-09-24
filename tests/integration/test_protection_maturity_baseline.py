@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 from r2morph.adapters.process import run_process
 from r2morph.core.binary import Binary
@@ -29,6 +30,7 @@ from scripts.protection_maturity_baseline import (
     _complete_evidence_error,
     _diagnostic_counts,
     _independent_semantic_pair,
+    _measure_campaign,
     _measure_seed,
     _parse_pass_names,
     _render_multi_pass_result,
@@ -1433,3 +1435,16 @@ def test_maturity_runner_expands_code_virtualization_analysis_budget() -> None:
     mutation_pass = _build_mutation_pass("CodeVirtualization", 20260923)
 
     expect(mutation_pass.max_function_analysis_count == _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT)
+
+
+def test_measure_campaign_parallel_workers_preserve_applied_evidence(tmp_path: Path) -> None:
+    args = SimpleNamespace(
+        count=1,
+        first_seed=20260923,
+        generated_inputs=False,
+        workers=2,
+    )
+
+    measurements = _measure_campaign([_NOP_FIXTURE], ("NopInsertion",), args, tmp_path)
+
+    expect(measurements["NopInsertion"][0]["runs"][0]["transformation"]["status"] == "applied")

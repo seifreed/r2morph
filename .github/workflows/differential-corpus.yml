@@ -82,6 +82,7 @@ jobs:
             --generated-corpus \
             --first-seed "${{ matrix.seed }}" \
             --count 1 \
+            --workers 4 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 8 \
             --retain-output-root "$RUNNER_TEMP/differential-output" \
@@ -527,6 +528,7 @@ jobs:
             --count 1 \
             --generated-inputs \
             --generated-corpus \
+            --workers 4 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 8 \
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
