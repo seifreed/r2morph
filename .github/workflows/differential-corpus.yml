@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        fixture_shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        fixture_shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
         seed: [20260901, 20260902, 20260903]
     steps:
       - name: Checkout
@@ -84,7 +84,7 @@ jobs:
             --count 1 \
             --workers 4 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 8 \
+            --fixture-shard-count 16 \
             --retain-output-root "$RUNNER_TEMP/differential-output" \
             --output "$GITHUB_WORKSPACE/differential-corpus.json"
           mv "$GITHUB_WORKSPACE/differential-corpus.json" "$GITHUB_WORKSPACE/$REPORT_NAME"
@@ -143,7 +143,7 @@ jobs:
               "dataset": "fixtures/dataset",
               "fixture_shard": {
                   "index": int(os.environ["REPORT_NAME"].split("-")[2]),
-                  "count": 8,
+                  "count": 16,
               },
           }:
               raise SystemExit(f"unexpected corpus scope: {summary['corpus_scope']}")
@@ -530,7 +530,7 @@ jobs:
             --generated-corpus \
             --workers 4 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
-            --fixture-shard-count 8 \
+            --fixture-shard-count 16 \
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
@@ -1093,7 +1093,7 @@ jobs:
           ):
               raise SystemExit("public static recovery benchmark is incomplete")
 
-          expected_shards = 24
+          expected_shards = 48
 
           def require_files(pattern: str, expected: int) -> list[Path]:
               paths = sorted(Path(pattern.split("/*")[0]).glob("*/*"))
