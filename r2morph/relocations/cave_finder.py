@@ -98,8 +98,13 @@ class CaveFinder:
         if not callable(get_functions) or not callable(get_function_disasm):
             return ()
         try:
+            r2 = getattr(self.binary, "r2", None)
+            command_json = getattr(r2, "cmdj", None)
+            functions = command_json("aflj") if callable(command_json) else None
+            if not isinstance(functions, list):
+                functions = get_functions()
             ranges: list[tuple[int, int]] = []
-            for function in get_functions():
+            for function in functions:
                 function_address = function.get("offset", function.get("addr"))
                 if not isinstance(function_address, int):
                     continue
@@ -107,7 +112,12 @@ class CaveFinder:
                     address = instruction.get("addr", instruction.get("offset"))
                     size = instruction.get("size")
                     mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
-                    if mnemonic != "nop" and isinstance(address, int) and isinstance(size, int) and size > 0:
+                    if (
+                        (mnemonic != "nop" or size != 1)
+                        and isinstance(address, int)
+                        and isinstance(size, int)
+                        and size > 0
+                    ):
                         ranges.append((address, address + size))
         except (BrokenPipeError, OSError, RuntimeError, ValueError) as error:
             logger.warning("Failed to disassemble executable ranges for cave validation: %s", error)
