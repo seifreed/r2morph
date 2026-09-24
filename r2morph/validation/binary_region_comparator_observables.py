@@ -9,6 +9,15 @@ from typing import Any
 from r2morph.validation.binary_region_memory import collect_memory_write_signatures
 
 
+def _expressions_are_identical(left: Any, right: Any) -> bool:
+    """Avoid solver queries for equivalent symbolic ASTs."""
+    if left is right:
+        return True
+    left_key = getattr(left, "cache_key", None)
+    right_key = getattr(right, "cache_key", None)
+    return left_key is not None and left_key == right_key
+
+
 def compare_register_states(
     original_final: Any,
     mutated_final: Any,
@@ -21,12 +30,15 @@ def compare_register_states(
             continue
         left = getattr(original_final.regs, reg_name)
         right = getattr(mutated_final.regs, reg_name)
+        if _expressions_are_identical(left, right):
+            continue
         if original_final.solver.satisfiable(extra_constraints=[left != right]):
             record(reg_name)
 
     if (
         hasattr(original_final.regs, "eflags")
         and hasattr(mutated_final.regs, "eflags")
+        and not _expressions_are_identical(original_final.regs.eflags, mutated_final.regs.eflags)
         and original_final.solver.satisfiable(
             extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
         )
@@ -44,7 +56,9 @@ def compare_stack_and_memory(
     """Record stack-pointer and memory-write divergences; expose write signatures."""
     original_stack = getattr(original_final.regs, stack_reg)
     mutated_stack = getattr(mutated_final.regs, stack_reg)
-    if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
+    if not _expressions_are_identical(original_stack, mutated_stack) and original_final.solver.satisfiable(
+        extra_constraints=[original_stack != mutated_stack]
+    ):
         record("stack_delta")
 
     original_writes = collect_memory_write_signatures(original_final)
