@@ -185,6 +185,20 @@ def test_atomic_memory_and_accumulator_registers_stay_live() -> None:
     expect(not candidates)
 
 
+def test_implicit_multiply_accumulator_stays_live() -> None:
+    pass_obj = DataFlowMutationPass()
+    instructions = [
+        {"addr": 0x1000, "next_addr": 0x1007, "disasm": "mov rax, rdi"},
+        {"addr": 0x1007, "next_addr": 0x100A, "disasm": "mul r9"},
+        {"addr": 0x100A, "next_addr": 0, "disasm": "ret"},
+    ]
+
+    live_in = pass_obj._analyze_function_liveness(instructions)
+    candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
+
+    expect(not candidates)
+
+
 def test_branch_targets_keep_register_live_across_cfg_join() -> None:
     """A value used by either branch must not be treated as a dead destination."""
     pass_obj = DataFlowMutationPass()

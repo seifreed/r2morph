@@ -130,6 +130,11 @@ def _same_register_width(first: str, second: str) -> bool:
 def _implicit_register_effects(disasm: str) -> tuple[set[str], set[str]]:
     used: set[str] = set()
     defined: set[str] = set()
+    parts = disasm.lower().split()
+    mnemonic = parts[0] if parts else ""
+    if mnemonic in {"mul", "div", "idiv"} or (mnemonic == "imul" and len(parts) == _TWO_OPERANDS):
+        used.update(("rax", "rdx"))
+        defined.update(("rax", "rdx"))
     if "call" in disasm:
         used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
         defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
