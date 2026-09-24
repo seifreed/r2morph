@@ -960,7 +960,12 @@ def test_generated_branch_source_uses_stable_runtime_input() -> None:
 def test_generated_stack_string_source_preserves_direct_literal_call_shape() -> None:
     source = _GENERATED_CORPUS_SOURCES["generated_stack_strings"]
 
-    expect('consume_stack_string("stack-string-native")' in source and ".text.r2morph_stack_cave" in source)
+    expect(
+        "__attribute__((noinline)) int consume_stack_string" in source
+        and "__attribute__((noinline)) int build_stack_string" in source
+        and 'consume_stack_string("stack-string-native")' in source
+        and ".text.r2morph_stack_cave" in source
+    )
 
 
 def test_generated_string_source_preserves_implicit_memory_shape() -> None:

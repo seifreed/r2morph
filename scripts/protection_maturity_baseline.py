@@ -496,13 +496,13 @@ int main(int argc, char **argv) {
 
 static volatile int observed_result;
 
-__attribute__((noinline)) static int consume_stack_string(const char *value) {
+__attribute__((noinline)) int consume_stack_string(const char *value) {
     int result = value[0] == 's' ? 0 : 1;
     observed_result = result;
     return result;
 }
 
-__attribute__((noinline)) static int build_stack_string(void) {
+__attribute__((noinline)) int build_stack_string(void) {
     return consume_stack_string("stack-string-native");
 }
 
