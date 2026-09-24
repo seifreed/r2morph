@@ -36,3 +36,9 @@ def test_instruction_ranges_use_full_analysis_and_protect_multibyte_nops() -> No
     ranges = CaveFinder(_ScopedBinary())._instruction_ranges()
 
     expect(ranges == ((0x1001, 0x1009), (0x2000, 0x2005)))
+
+
+def test_strict_instruction_ranges_protect_single_byte_nops() -> None:
+    ranges = CaveFinder(_ScopedBinary(), protect_nop_instructions=True)._instruction_ranges()
+
+    expect(ranges == ((0x1000, 0x1001), (0x1001, 0x1009), (0x2000, 0x2005)))

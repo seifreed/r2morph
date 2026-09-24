@@ -93,7 +93,13 @@ class CodeCaveInjector:
     DEFAULT_ALIGNMENT = 16
     MIN_SECTION_SIZE = 0x200
 
-    def __init__(self, binary: Binary, min_cave_size: int = 16) -> None:
+    def __init__(
+        self,
+        binary: Binary,
+        min_cave_size: int = 16,
+        *,
+        protect_nop_instructions: bool = False,
+    ) -> None:
         """
         Initialize the code cave injector.
 
@@ -103,7 +109,11 @@ class CodeCaveInjector:
         """
         self.binary = binary
         self.min_cave_size = min_cave_size
-        self.cave_finder = CaveFinder(binary, min_cave_size)
+        self.cave_finder = CaveFinder(
+            binary,
+            min_cave_size,
+            protect_nop_instructions=protect_nop_instructions,
+        )
         self._allocations: list[CodeCaveAllocation] = []
         self._created_sections: dict[str, int] = {}
 

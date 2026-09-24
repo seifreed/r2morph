@@ -32,7 +32,7 @@ class CaveFinder:
     that can be repurposed for new code.
     """
 
-    def __init__(self, binary: Binary, min_size: int = 10):
+    def __init__(self, binary: Binary, min_size: int = 10, *, protect_nop_instructions: bool = False):
         """
         Initialize cave finder.
 
@@ -42,6 +42,7 @@ class CaveFinder:
         """
         self.binary = binary
         self.min_size = min_size
+        self.protect_nop_instructions = protect_nop_instructions
         self.caves: list[CodeCave] = []
 
     def find_caves(self, max_caves: int = 100) -> list[CodeCave]:
@@ -113,7 +114,7 @@ class CaveFinder:
                     size = instruction.get("size")
                     mnemonic = str(instruction.get("disasm", "")).split(maxsplit=1)[0].lower()
                     if (
-                        (mnemonic != "nop" or size != 1)
+                        (self.protect_nop_instructions or mnemonic != "nop" or size != 1)
                         and isinstance(address, int)
                         and isinstance(size, int)
                         and size > 0

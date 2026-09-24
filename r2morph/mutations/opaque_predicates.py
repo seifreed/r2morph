@@ -129,7 +129,7 @@ class OpaquePredicatePass(MutationPass):
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
 
-        injector = CodeCaveInjector(binary)
+        injector = CodeCaveInjector(binary, protect_nop_instructions=True)
         for _ in range(num_predicates):
             if random.random() > self.probability:
                 continue
