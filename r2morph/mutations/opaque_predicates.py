@@ -73,6 +73,7 @@ class OpaquePredicatePass(MutationPass):
         logger.info("Applying opaque predicate mutations")
 
         functions = binary.get_functions()
+        injector = CodeCaveInjector(binary, protect_nop_instructions=True)
         total_mutations = 0
         funcs_mutated = 0
 
@@ -82,7 +83,7 @@ class OpaquePredicatePass(MutationPass):
             if func.get("size", 0) < OPAQUE_PREDICATE_MIN_FUNCTION_SIZE:
                 continue
 
-            mutations = self._insert_opaque_predicates(binary, func)
+            mutations = self._insert_opaque_predicates(binary, func, injector)
 
             if mutations > 0:
                 funcs_mutated += 1
@@ -93,7 +94,7 @@ class OpaquePredicatePass(MutationPass):
             "functions_mutated": funcs_mutated,
         }
 
-    def _insert_opaque_predicates(self, binary: Any, func: dict[str, Any]) -> int:
+    def _insert_opaque_predicates(self, binary: Any, func: dict[str, Any], injector: CodeCaveInjector) -> int:
         """
         Insert opaque predicates in a function.
 
@@ -129,7 +130,6 @@ class OpaquePredicatePass(MutationPass):
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
 
-        injector = CodeCaveInjector(binary, protect_nop_instructions=True)
         for _ in range(num_predicates):
             if random.random() > self.probability:
                 continue

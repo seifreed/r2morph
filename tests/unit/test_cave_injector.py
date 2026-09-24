@@ -146,6 +146,25 @@ class TestCodeCaveInjector:
         expect(cave is not None)
         expect(not (cave.size < _EXPECTED_CAVE_SIZE_50))
 
+    def test_find_cave_for_code_after_allocation_uses_remaining_space(self):
+        """Consecutive allocations must not reuse the same cave bytes."""
+        mock_binary = _Binary()
+        mock_binary.sections = [
+            {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000, "perm": "rx"},
+        ]
+        mock_binary.r2.output = "90" * 100
+
+        injector = CodeCaveInjector(mock_binary, min_cave_size=16)
+        first_cave = injector.find_cave_for_code(50)
+        expect(first_cave is not None)
+        first_allocation = injector.allocate_from_cave(first_cave, 50, alignment=1)
+
+        second_cave = injector.find_cave_for_code(50)
+        expect(second_cave is not None)
+        second_allocation = injector.allocate_from_cave(second_cave, 50, alignment=1)
+
+        expect(first_allocation.address != second_allocation.address)
+
     def test_align_address(self):
         """Test address alignment."""
         mock_binary = _Binary()

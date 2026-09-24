@@ -16,6 +16,21 @@ class _PredicateAssembler:
         return b"\x74\x00" if instruction.startswith(("jz ", "jnz ", "je ", "jne ")) else b"\x90"
 
 
+class _FunctionBinary:
+    def get_functions(self) -> list[dict[str, int]]:
+        return [{"addr": 0x1000, "size": 32}, {"addr": 0x2000, "size": 32}]
+
+
+class _RecordingOpaquePredicatePass(OpaquePredicatePass):
+    def __init__(self) -> None:
+        super().__init__()
+        self.injector_ids: list[int] = []
+
+    def _insert_opaque_predicates(self, binary, func, injector):
+        self.injector_ids.append(id(injector))
+        return 0
+
+
 def test_opaque_predicate_generators():
     pass_obj = OpaquePredicatePass()
     x86_pred = pass_obj._generate_x86_predicate("always_true", 64)
@@ -25,6 +40,14 @@ def test_opaque_predicate_generators():
     expect(isinstance(arm_pred, list))
     expect(x86_pred)
     expect(arm_pred)
+
+
+def test_opaque_predicate_apply_reuses_one_injector_across_functions():
+    pass_obj = _RecordingOpaquePredicatePass()
+
+    pass_obj.apply(_FunctionBinary())
+
+    expect(len(set(pass_obj.injector_ids)) == 1)
 
 
 def test_x86_opaque_predicates_require_dead_registers_and_flags():

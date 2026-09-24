@@ -134,13 +134,12 @@ class CodeCaveInjector:
         Returns:
             CodeCave or None if not found
         """
-        caves = self.find_executable_caves(code_size)
+        caves = self.cave_finder.caves if self._allocations else self.find_executable_caves(code_size)
 
         for cave in sorted(caves, key=lambda c: c.size):
-            if cave.size >= code_size:
-                if require_executable and not cave.is_executable:
-                    continue
-                return cave
+            if cave.size < code_size or (require_executable and not cave.is_executable):
+                continue
+            return cave
 
         return None
 
