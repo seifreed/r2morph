@@ -16,6 +16,7 @@ import time
 from collections.abc import Mapping
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -1252,18 +1253,35 @@ def _measure_seed(
     return run
 
 
-def measure_fixture(
-    fixture: Path,
-    seeds: range,
-    output_root: Path,
-    pass_name: str = DEFAULT_MUTATION_NAME,
-    runtime_inputs: tuple[tuple[str, ...], ...] = _DEFAULT_RUNTIME_INPUTS,
-) -> dict[str, object]:
+def _fixture_baseline(fixture: Path, runtime_inputs: tuple[tuple[str, ...], ...]) -> dict[str, object]:
     baseline_runtime = _runtime_artifacts(fixture)
     baseline_runtime_inputs = _runtime_input_artifacts(fixture, runtime_inputs)
     baseline_qemu = _qemu_semantic_artifacts(fixture)
     baseline_unicorn = _semantic_artifacts(fixture)
     baseline = _safe_inspect(fixture)
+    return {
+        "baseline": baseline,
+        "baseline_runtime": baseline_runtime,
+        "baseline_runtime_inputs": baseline_runtime_inputs,
+        "baseline_qemu": baseline_qemu,
+        "baseline_unicorn": baseline_unicorn,
+        "runtime_inputs": runtime_inputs,
+    }
+
+
+def _measure_fixture_pass(
+    fixture: Path,
+    seeds: range,
+    output_root: Path,
+    pass_name: str,
+    baseline_data: Mapping[str, object],
+) -> dict[str, object]:
+    baseline_runtime = baseline_data["baseline_runtime"]
+    baseline_runtime_inputs = baseline_data["baseline_runtime_inputs"]
+    baseline_qemu = baseline_data["baseline_qemu"]
+    baseline_unicorn = baseline_data["baseline_unicorn"]
+    baseline = baseline_data["baseline"]
+    runtime_inputs = cast(tuple[tuple[str, ...], ...], baseline_data["runtime_inputs"])
     output_dir = output_root / _PASS_LABELS[pass_name] / fixture.name
     output_dir.mkdir(parents=True)
     runs = [_measure_seed(fixture, seed, output_dir, pass_name, runtime_inputs) for seed in seeds]
@@ -1291,6 +1309,22 @@ def measure_fixture(
         "successful_runs": len(semantic_runs),
         "failed_runs": len(runs) - len(semantic_runs),
     }
+
+
+def measure_fixture(
+    fixture: Path,
+    seeds: range,
+    output_root: Path,
+    pass_name: str = DEFAULT_MUTATION_NAME,
+    runtime_inputs: tuple[tuple[str, ...], ...] = _DEFAULT_RUNTIME_INPUTS,
+) -> dict[str, object]:
+    return _measure_fixture_pass(
+        fixture,
+        seeds,
+        output_root,
+        pass_name,
+        _fixture_baseline(fixture, runtime_inputs),
+    )
 
 
 def discover_executables(dataset: Path) -> list[Path]:
@@ -2325,26 +2359,36 @@ def _measure_campaign(
 ) -> dict[str, list[dict[str, object]]]:
     seeds = range(args.first_seed, args.first_seed + args.count)
     runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
-    tasks = [
-        (fixture, seeds, output_root, pass_name, runtime_inputs) for pass_name in pass_names for fixture in fixtures
-    ]
-    measurements = {pass_name: [] for pass_name in pass_names}
-    if args.workers == 1:
-        results = (_measure_fixture_worker(task) for task in tasks)
+    tasks = [(fixture, seeds, output_root, pass_names, runtime_inputs) for fixture in fixtures]
+    measurements: dict[str, list[dict[str, object]]] = {pass_name: [] for pass_name in pass_names}
+
+    def record_fixture_results(results: tuple[tuple[str, dict[str, object]], ...]) -> None:
         for pass_name, measurement in results:
             measurements[pass_name].append(measurement)
+
+    if args.workers == 1:
+        results = (_measure_fixture_worker(task) for task in tasks)
+        for fixture_results in results:
+            record_fixture_results(fixture_results)
         return measurements
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        for pass_name, measurement in executor.map(_measure_fixture_worker, tasks):
-            measurements[pass_name].append(measurement)
+        for fixture_results in executor.map(_measure_fixture_worker, tasks):
+            record_fixture_results(fixture_results)
     return measurements
 
 
 def _measure_fixture_worker(
-    task: tuple[Path, range, Path, str, tuple[tuple[str, ...], ...]],
-) -> tuple[str, dict[str, object]]:
-    fixture, seeds, output_root, pass_name, runtime_inputs = task
-    return pass_name, measure_fixture(fixture, seeds, output_root, pass_name, runtime_inputs)
+    task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...]],
+) -> tuple[tuple[str, dict[str, object]], ...]:
+    fixture, seeds, output_root, pass_names, runtime_inputs = task
+    baseline_data = _fixture_baseline(fixture, runtime_inputs)
+    return tuple(
+        (
+            pass_name,
+            _measure_fixture_pass(fixture, seeds, output_root, pass_name, baseline_data),
+        )
+        for pass_name in pass_names
+    )
 
 
 def _emit_report(rendered: str, output: Path | None) -> None:

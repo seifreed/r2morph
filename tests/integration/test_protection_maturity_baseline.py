@@ -1448,3 +1448,26 @@ def test_measure_campaign_parallel_workers_preserve_applied_evidence(tmp_path: P
     measurements = _measure_campaign([_NOP_FIXTURE], ("NopInsertion",), args, tmp_path)
 
     expect(measurements["NopInsertion"][0]["runs"][0]["transformation"]["status"] == "applied")
+
+
+def test_measure_campaign_groups_passes_per_fixture(tmp_path: Path) -> None:
+    args = SimpleNamespace(
+        count=1,
+        first_seed=20260923,
+        generated_inputs=False,
+        workers=2,
+    )
+
+    measurements = _measure_campaign(
+        [_NOP_FIXTURE],
+        ("NopInsertion", "InstructionSubstitution"),
+        args,
+        tmp_path,
+    )
+
+    expect(
+        all(
+            measurements[pass_name][0]["runs"][0]["transformation"]["status"] == "applied"
+            for pass_name in ("NopInsertion", "InstructionSubstitution")
+        )
+    )
