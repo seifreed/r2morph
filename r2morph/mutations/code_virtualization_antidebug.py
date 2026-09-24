@@ -81,6 +81,7 @@ _TRACER_ISLAND_CONSTS = (
     _AT_FDCWD,
     _TRACERPID_ZERO,
 )
+_TRACER_ISLAND_PLACEHOLDERS = tuple(0x13579BDF2468ACE0 + index for index in range(len(_TRACER_ISLAND_CONSTS)))
 _TRACER_ISLAND_LEN = 8 * len(_TRACER_ISLAND_CONSTS)
 
 
@@ -107,13 +108,13 @@ def _load_checksum_masked(reg: str, field_offset: int, slot: int) -> str:
 
 
 def tracer_const_island_asm() -> str:
-    """The appended constant island: three qword placeholders patched post-assembly.
+    """The appended constant island: qword placeholders patched post-assembly.
 
     Emitted after the encrypted offset tables (so it stays outside the checksummed
-    span) and before the bytecode. The zero placeholders are overwritten by
+    span) and before the bytecode. The placeholders are overwritten by
     :func:`patch_tracer_constants` once the build checksum is known.
     """
-    quads = "".join("  .quad 0\n" for _ in _TRACER_ISLAND_CONSTS)
+    quads = "".join(f"  .quad {value}\n" for value in _TRACER_ISLAND_PLACEHOLDERS)
     return f"{_TRACER_ISLAND_LABEL}:\n{quads}"
 
 

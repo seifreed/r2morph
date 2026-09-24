@@ -35,6 +35,7 @@ from typing import Any
 import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_antidebug import (
     _TRACER_ISLAND_LEN,
+    _TRACER_ISLAND_PLACEHOLDERS,
     patch_tracer_constants,
     tracer_const_island_asm,
 )
@@ -529,12 +530,21 @@ def _build_layers(region: Region, depth: int, rng: random.Random) -> list[Region
 def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) -> bytes | None:
     count = len(context.layers)
     data = bytearray(encoding)
-    bytecode_offsets = [0] * count
-    bytecode_offsets[-1] = len(data)
-    for layer in range(count - 2, -1, -1):
-        bytecode_offsets[layer] = bytecode_offsets[layer + 1] - context.lengths[layer]
+    island_marker = b"".join(value.to_bytes(8, "little") for value in _TRACER_ISLAND_PLACEHOLDERS)
+    island_start = data.find(island_marker)
+    if island_start < 0:
+        logger.debug("Nested VM constant island placeholder is missing")
+        return None
+    bytecode_start = island_start + _TRACER_ISLAND_LEN
+    bytecode_offsets = [bytecode_start]
+    for layer in range(1, count):
+        bytecode_offsets.append(bytecode_offsets[-1] + context.lengths[layer - 1])
+    if len(data) < bytecode_offsets[-1]:
+        data.extend(b"\x00" * (bytecode_offsets[-1] - len(data)))
+    elif len(data) > bytecode_offsets[-1]:
+        logger.debug("Nested VM bytecode layout is inconsistent")
+        return None
 
-    island_start = bytecode_offsets[0] - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - sum(context.counts) * 4
     checksum = compute_build_checksum(
