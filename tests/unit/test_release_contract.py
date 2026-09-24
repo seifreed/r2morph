@@ -1781,7 +1781,7 @@ def test_adversarial_workflow_allows_full_campaign_to_finish() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     benchmark_job = workflow.split("  benchmark:\n", 1)[1].split("    steps:\n", 1)[0]
 
-    expect("timeout-minutes: 120" in benchmark_job)
+    expect("timeout-minutes: 360" in benchmark_job)
 
 
 def test_differential_merge_step_closes_python_heredoc() -> None:
