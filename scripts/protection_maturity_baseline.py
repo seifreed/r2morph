@@ -893,9 +893,18 @@ def _command_count(binary: Binary, command: str) -> int:
     return len(value) if isinstance(value, list) else 0
 
 
+def _analyze_campaign_binary(binary: Binary) -> None:
+    """Use bounded analysis settings for statically linked campaign inputs."""
+    info = binary.info.get("bin", {})
+    if isinstance(info, Mapping) and info.get("static") is True:
+        binary.r2.cmd("e anal.vars=false")
+        binary.r2.cmd("e anal.hasnext=false")
+    binary.analyze("aa")
+
+
 def _static_metrics(binary: Binary) -> dict[str, object]:
     started = time.perf_counter()
-    binary.analyze("aa")
+    _analyze_campaign_binary(binary)
     functions = binary.get_functions()
     basic_blocks = 0
     cfg_edges = 0
@@ -1197,7 +1206,7 @@ def _measure_seed(
         binary = Binary(output, writable=True)
         binary.open()
         try:
-            binary.analyze("aa")
+            _analyze_campaign_binary(binary)
             mutation_pass = _build_mutation_pass(pass_name, seed)
             stats = mutation_pass.apply(binary)
             mutation_records = mutation_pass.get_records()

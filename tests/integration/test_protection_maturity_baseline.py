@@ -24,6 +24,7 @@ from scripts.protection_maturity_baseline import (
     CORPUS_PASS_NAMES,
     EXTENDED_MATURITY_PASS_NAMES,
     _affected_instruction_evidence,
+    _analyze_campaign_binary,
     _ArtifactAccumulator,
     _behavioral_false_positive_metrics,
     _build_mutation_pass,
@@ -214,6 +215,14 @@ def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
     result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
 
     expect(result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
+def test_static_campaign_analysis_keeps_real_functions_available() -> None:
+    with Binary(_FIXTURE) as binary:
+        _analyze_campaign_binary(binary)
+        functions = binary.get_functions()
+
+    expect(len(functions) > 0)
 
 
 def test_runtime_observation_allows_slow_runner_startup(tmp_path: Path) -> None:
