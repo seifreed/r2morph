@@ -13,6 +13,7 @@ from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
     _CAMPAIGN_MAX_ANTI_DISASSEMBLY_FUNCTIONS,
+    _CAMPAIGN_MAX_STATIC_MUTATION_FUNCTIONS,
     _GENERATED_CORPUS_FAMILY,
     _GENERATED_CORPUS_PROFILES,
     _GENERATED_CORPUS_SOURCES,
@@ -32,6 +33,7 @@ from scripts.protection_maturity_baseline import (
     _complete_evidence_error,
     _diagnostic_counts,
     _independent_semantic_pair,
+    _limit_static_mutation_scope,
     _measure_campaign,
     _measure_seed,
     _parse_pass_names,
@@ -230,6 +232,19 @@ def test_extended_campaign_bounds_anti_disassembly_function_scan() -> None:
     mutation_pass = _build_mutation_pass("AntiDisassembly", 20260924)
 
     expect(mutation_pass.max_functions == _CAMPAIGN_MAX_ANTI_DISASSEMBLY_FUNCTIONS)
+
+
+def test_static_campaign_bounds_mutation_function_scope() -> None:
+    with Binary(_FIXTURE) as binary:
+        _analyze_campaign_binary(binary)
+        scope = _limit_static_mutation_scope(binary)
+        selected_functions = binary.get_functions()
+
+    expect(
+        scope["mode"] == "bounded-static-address-scope"
+        and scope["selected_functions"] == len(selected_functions)
+        and len(selected_functions) <= _CAMPAIGN_MAX_STATIC_MUTATION_FUNCTIONS
+    )
 
 
 def test_static_anti_disassembly_campaign_produces_evidence(tmp_path: Path) -> None:

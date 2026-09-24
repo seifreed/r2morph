@@ -61,6 +61,7 @@ _RUNTIME_TIMEOUT_SECONDS = 15.0
 _QEMU_EXECUTABLE = "qemu-x86_64"
 _PREVIEW_BYTES = 32
 _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT = 2048
+_CAMPAIGN_MAX_STATIC_MUTATION_FUNCTIONS = 128
 _CAMPAIGN_MAX_ANTI_DISASSEMBLY_FUNCTIONS = 8
 _MAX_AFFECTED_INSTRUCTION_MNEMONICS = 256
 _FULL_COVERAGE_PERCENT = 100.0
@@ -903,6 +904,26 @@ def _analyze_campaign_binary(binary: Binary) -> None:
     binary.analyze("aa")
 
 
+def _limit_static_mutation_scope(binary: Binary) -> dict[str, int | str]:
+    """Bound mutation candidates without reducing full baseline metrics."""
+    functions = binary.get_functions()
+    info = binary.info.get("bin", {})
+    if not isinstance(info, Mapping) or info.get("static") is not True:
+        return {"mode": "full", "total_functions": len(functions), "selected_functions": len(functions)}
+
+    selected = sorted(
+        (function for function in functions if isinstance(function.get("addr"), int)),
+        key=lambda function: function["addr"],
+    )[:_CAMPAIGN_MAX_STATIC_MUTATION_FUNCTIONS]
+    # ponytail: bound static-library mutation scans; expand after profiling a reachable-function selector.
+    binary._functions_cache = selected
+    return {
+        "mode": "bounded-static-address-scope",
+        "total_functions": len(functions),
+        "selected_functions": len(selected),
+    }
+
+
 def _static_metrics(binary: Binary) -> dict[str, object]:
     started = time.perf_counter()
     _analyze_campaign_binary(binary)
@@ -1202,11 +1223,13 @@ def _measure_seed(
     shutil.copyfile(fixture, output)
     started = time.perf_counter()
     mutation_records: object = []
+    analysis_scope: dict[str, int | str] = {"mode": "unavailable", "total_functions": 0, "selected_functions": 0}
     try:
         binary = Binary(output, writable=True)
         binary.open()
         try:
             _analyze_campaign_binary(binary)
+            analysis_scope = _limit_static_mutation_scope(binary)
             mutation_pass = _build_mutation_pass(pass_name, seed)
             stats = mutation_pass.apply(binary)
             mutation_records = mutation_pass.get_records()
@@ -1231,6 +1254,7 @@ def _measure_seed(
         "output_sha256": sha256(output),
         "output_size": output.stat().st_size,
         "transform_duration_seconds": time.perf_counter() - started,
+        "analysis_scope": analysis_scope,
         "runtime": _runtime_artifacts(output),
         "runtime_inputs": _runtime_input_artifacts(output, runtime_inputs),
         "qemu": _qemu_semantic_artifacts(output),
