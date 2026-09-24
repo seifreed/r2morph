@@ -12,6 +12,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from scripts.protection_maturity_baseline import (
+    _CAMPAIGN_MAX_ANTI_DISASSEMBLY_FUNCTIONS,
     _GENERATED_CORPUS_FAMILY,
     _GENERATED_CORPUS_PROFILES,
     _GENERATED_CORPUS_SOURCES,
@@ -223,6 +224,18 @@ def test_static_campaign_analysis_keeps_real_functions_available() -> None:
         functions = binary.get_functions()
 
     expect(len(functions) > 0)
+
+
+def test_extended_campaign_bounds_anti_disassembly_function_scan() -> None:
+    mutation_pass = _build_mutation_pass("AntiDisassembly", 20260924)
+
+    expect(mutation_pass.max_functions == _CAMPAIGN_MAX_ANTI_DISASSEMBLY_FUNCTIONS)
+
+
+def test_static_anti_disassembly_campaign_produces_evidence(tmp_path: Path) -> None:
+    result = measure_fixture(_FIXTURE, range(20260924, 20260925), tmp_path, "AntiDisassembly")
+
+    expect(result["runs"][0]["status"] == "passed")
 
 
 def test_runtime_observation_allows_slow_runner_startup(tmp_path: Path) -> None:

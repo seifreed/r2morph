@@ -83,6 +83,7 @@ class AntiDisassemblyPass(MutationPass):
         - techniques: List of techniques to use (default: all)
         - seh_enabled: Enable SEH-based techniques (default: False, dangerous)
         - max_injections: Maximum injections per function (default: 5)
+        - max_functions: Optional maximum number of functions to inspect
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -91,6 +92,11 @@ class AntiDisassemblyPass(MutationPass):
         self.techniques = self.config.get("techniques", list(AntiDisasmType))
         self.seh_enabled = self.config.get("seh_enabled", False)
         self.max_injections = self.config.get("max_injections", 5)
+        self.max_functions = self.config.get("max_functions")
+        if self.max_functions is not None and (not isinstance(self.max_functions, int) or self.max_functions < 1):
+            raise ValueError("max_functions must be a positive integer when provided")
+        self._cave_injectors: dict[int, CodeCaveInjector] = {}
+        self._cave_cache: dict[int, list[Any]] = {}
         self.set_support(
             formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "x86"),
@@ -131,11 +137,13 @@ class AntiDisassemblyPass(MutationPass):
                 candidates.extend(SAFE_PADDING_X64)
             for candidate in candidates:
                 candidate_bytes = bytes.fromhex(candidate.bytes_hex)
-                injector = CodeCaveInjector(binary, min_cave_size=len(candidate_bytes))
-                caves = sorted(
-                    injector.find_executable_caves(len(candidate_bytes)),
-                    key=lambda cave: (cave.size, cave.address),
-                )
+                candidate_size = len(candidate_bytes)
+                injector = self._cave_injectors.get(candidate_size)
+                if injector is None:
+                    injector = CodeCaveInjector(binary, min_cave_size=candidate_size)
+                    self._cave_injectors[candidate_size] = injector
+                    self._cave_cache[candidate_size] = injector.find_executable_caves(candidate_size)
+                caves = sorted(self._cave_cache[candidate_size], key=lambda cave: (cave.size, cave.address))
                 for cave in caves:
                     allocation = injector.allocate_from_cave(cave, len(candidate_bytes), alignment=1)
                     original_bytes = binary.read_bytes(allocation.address, len(candidate_bytes))
@@ -168,8 +176,12 @@ class AntiDisassemblyPass(MutationPass):
         """
         self._reset_random()
         logger.info("Applying anti-disassembly techniques")
+        self._cave_injectors.clear()
+        self._cave_cache.clear()
 
         functions = binary.get_functions()
+        if self.max_functions is not None:
+            functions = functions[: self.max_functions]
         injected_count = 0
         injections_by_type = {t: 0 for t in AntiDisasmType}
 
