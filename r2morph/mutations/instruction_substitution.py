@@ -82,7 +82,7 @@ class InstructionSubstitutionPass(MutationPass):
         self.force_different = self.config.get("force_different", False)
         self.strict_size = self.config.get("strict_size", False)
         self.set_support(
-            formats=("ELF",),
+            formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "arm", "arm64"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",

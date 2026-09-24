@@ -83,7 +83,7 @@ class ConstantUnfoldingPass(MutationPass):
         self.max_sequence = self.config.get("max_sequence_length", 10)
         self.size_limit = self.config.get("size_limit", 3.0)
         self.set_support(
-            formats=("ELF",),
+            formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "x86", "arm", "arm64"),
             validators=("structural", "runtime"),
             stability="experimental",

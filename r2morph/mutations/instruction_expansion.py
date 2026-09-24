@@ -75,6 +75,13 @@ class InstructionExpansionPass(MutationPass):
             config: Configuration dictionary
         """
         super().__init__(name="InstructionExpansion", config=config)
+        self.set_support(
+            formats=("ELF", "PE", "Mach-O"),
+            architectures=("x86_64", "x86", "arm", "arm64"),
+            validators=("structural", "runtime"),
+            stability="experimental",
+            notes=("architecture-specific equivalent expansion rules",),
+        )
         self.probability = self.config.get("probability", 0.2)
         self.max_expansions = self.config.get("max_expansions_per_function", 5)
         self.max_expansion_size = self.config.get("max_expansion_size", 4)

@@ -17,6 +17,8 @@ from r2morph.core.support import (
     _normalize_architecture_name,
     classify_target_support,
 )
+from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -75,6 +77,22 @@ class TestArchitectureSupport:
         """Test x86_64 architecture normalization."""
         expect(_normalize_architecture_name("x86_64", 64) == "x86_64")
         expect(_normalize_architecture_name("amd64", 64) == "x86_64")
+
+
+class TestCrossFormatPassContracts:
+    """Keep declarations aligned with the real cross-format fixtures."""
+
+    def test_instruction_substitution_declares_real_cross_format_targets(self):
+        expect(InstructionSubstitutionPass().get_support().formats == ("ELF", "PE", "Mach-O"))
+
+    def test_register_substitution_declares_real_cross_format_targets(self):
+        expect(RegisterSubstitutionPass().get_support().formats == ("ELF", "PE", "Mach-O"))
+
+    def test_constant_unfolding_declares_real_cross_format_targets(self):
+        expect(ConstantUnfoldingPass().get_support().formats == ("ELF", "PE", "Mach-O"))
+
+    def test_instruction_expansion_declares_real_cross_format_targets(self):
+        expect(InstructionExpansionPass().get_support().formats == ("ELF", "PE", "Mach-O"))
 
 
 class TestNopInsertionArchitecture:

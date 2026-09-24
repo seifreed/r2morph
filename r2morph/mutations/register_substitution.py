@@ -77,7 +77,7 @@ class RegisterSubstitutionPass(MutationPass):
         self.max_substitutions = self.config.get("max_substitutions_per_function", 3)
         self.respect_calling_convention = self.config.get("respect_calling_convention", True)
         self.set_support(
-            formats=("ELF",),
+            formats=("ELF", "PE", "Mach-O"),
             architectures=("x86_64", "arm64", "arm"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
