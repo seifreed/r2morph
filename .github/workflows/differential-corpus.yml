@@ -1287,8 +1287,8 @@ jobs:
           )
 
           paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
-          if len(paths) != 12:
-              raise SystemExit(f"expected 12 shard reports, found {len(paths)}")
+          if len(paths) != expected_shards:
+              raise SystemExit(f"expected {expected_shards} shard reports, found {len(paths)}")
           report = merge_maturity_reports(
               [json.loads(path.read_text(encoding="utf-8")) for path in paths]
           )
