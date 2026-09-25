@@ -1759,7 +1759,7 @@ def test_adversarial_workflow_runs_vm_resistance_once_per_campaign() -> None:
 
     expect(
         all(
-            "if: always() && matrix.fixture_shard == 0"
+            "if: always() && !cancelled() && matrix.fixture_shard == 0"
             in workflow.split(f"      - name: {step}\n", maxsplit=1)[1].split("      - name:", maxsplit=1)[0]
             for step in vm_steps
         )
