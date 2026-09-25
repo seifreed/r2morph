@@ -1828,7 +1828,7 @@ def test_continuous_fuzz_workflow_runs_against_installed_wheel() -> None:
         and '--output "$GITHUB_WORKSPACE/fuzz-campaign.json"' in workflow
         and "Validate continuous fuzz campaign" in workflow
         and "CASES: ${{ inputs.cases || '5000' }}" in workflow
-        and "if: always()" in workflow
+        and "if: always() && !cancelled()" in workflow
     )
 
 

@@ -96,7 +96,7 @@ jobs:
 
       - name: Upload campaign report
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: continuous-fuzz-report
           path: fuzz-campaign.json
