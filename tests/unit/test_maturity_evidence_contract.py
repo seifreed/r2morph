@@ -243,10 +243,8 @@ def test_adversarial_workflow_requires_three_complete_decompiler_tools() -> None
 
     expect(
         content.count('for decompiler_tool in ("radare2", "angr", "ghidra"):') == _EXPECTED_DECOMPILER_GATE_COUNT
-        and 'decompiler.get("completed_pairs") != report["sample_count"]' in content
-        and 'decompiler.get("completion_percent") != 100.0' in content
-        and 'decompiler.get("applied_observed_pairs") != applied_pairs' in content
-        and 'decompiler.get("applied_completed_pairs") != applied_pairs' in content
+        and content.count('if not _decompiler_evidence_complete(decompiler, report["sample_count"], applied_pairs):')
+        == _EXPECTED_DECOMPILER_GATE_COUNT
     )
 
 
