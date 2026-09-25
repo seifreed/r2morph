@@ -1220,6 +1220,22 @@ def _ordered_functions(
         if str(function.get("name", "")).strip().lower() in {"main", "_main", "sym.main"}
         and isinstance(function.get("addr"), int)
     )
+    raw_non_tiny_count = sum(
+        isinstance(function.get("size"), int) and function["size"] >= MINIMUM_FUNCTION_SIZE
+        for function in raw_functions
+    )
+    if (
+        not application_entry_addresses
+        and not entrypoint_addresses
+        and not dispatch_entrypoint_addresses
+        and raw_non_tiny_count > analysis_budget
+    ):
+        logger.warning(
+            "Skipping code virtualization: non-tiny function population exceeds the VM analysis budget (%d > %d)",
+            raw_non_tiny_count,
+            analysis_budget,
+        )
+        return None
     application_targets = _application_target_addresses(binary, raw_functions)
     application_candidates = _application_candidate_addresses(raw_functions, application_targets)
     raw_functions = _application_target_functions(binary, raw_functions, application_candidates)
