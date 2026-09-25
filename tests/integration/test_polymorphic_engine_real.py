@@ -244,14 +244,16 @@ __asm__(".section .text.stack_cave,\\\"ax\\\",@progbits\\n.p2align 4\\n.fill 409
 
     with Binary(mutated, writable=True) as binary:
         binary.analyze("aa")
-        result = StackStringsPass(config={"probability": 1.0, "seed": _SEED, "interleave_junk": False}).run(binary)
+        mutation_pass = StackStringsPass(config={"probability": 1.0, "seed": _SEED, "interleave_junk": False})
+        result = mutation_pass.apply(binary)
+        mutation = mutation_pass.get_records()[0].to_dict()
         binary.save()
 
     expect(
         result["strings_transformed"] == 1
         and result["transformation_status"] == "applied"
         and result["mutations_applied"] == 1
-        and {"call", "lea", "mov", "sub"}.issubset(result["mutations"][0]["metadata"]["affected_instruction_mnemonics"])
+        and {"call", "lea", "mov", "sub"}.issubset(mutation["metadata"]["affected_instruction_mnemonics"])
         and run_command([mutated], timeout=30).returncode == baseline.returncode,
         f"result={result!r}, baseline={baseline.returncode}, mutated={mutated}",
     )

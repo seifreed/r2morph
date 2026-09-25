@@ -623,6 +623,7 @@ class StackStringsPass(MutationPass):
         return {
             "strings_found": len(all_strings),
             "strings_transformed": transformed_count,
+            "mutations_applied": transformed_count,
             "strings_previewed": 0,
             "strings_skipped": skipped_count,
             "encoding_used": self.encoding,
