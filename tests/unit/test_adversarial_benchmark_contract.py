@@ -124,6 +124,29 @@ def test_adversarial_benchmark_reuses_cached_original_metrics() -> None:
     expect(radare2["original"] == cached_original and radare2["protected"] != cached_original)
 
 
+def test_adversarial_benchmark_reuses_cached_protected_metrics_by_digest() -> None:
+    digest = "fixture-digest"
+    cached_rows = {
+        (tool, digest): {
+            "tool": tool,
+            "status": "completed",
+            "original": {"status": "completed"},
+            "protected": {"status": "completed", "functions": 3},
+            "changed": True,
+        }
+        for tool in (*_EXPECTED_TOOLS, "custom")
+    }
+
+    rows = _measure_pair_tools(
+        _FIXTURE,
+        _FIXTURE,
+        measurement_cache=cached_rows,
+        protected_digest=digest,
+    )
+
+    expect(rows == list(cached_rows.values()))
+
+
 def test_binary_ninja_license_failure_is_reported_as_unavailable() -> None:
     expect(_is_binary_ninja_license_error(RuntimeError("License is not valid")))
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import multiprocessing
@@ -637,6 +638,10 @@ def _measure_tool(
     return _measure_tool_bounded(tool, original, protected, original_metric=original_metric)
 
 
+def _file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Path, dict[str, object]]:
     protected = directory / "protected"
     shutil.copyfile(original, protected)
@@ -1058,11 +1063,17 @@ def _measure_pair_tools(
     original: Path,
     protected: Path,
     original_metrics: dict[str, dict[str, object]] | None = None,
+    measurement_cache: dict[tuple[str, str], dict[str, object]] | None = None,
+    protected_digest: str | None = None,
 ) -> list[dict[str, object]]:
     cache = original_metrics if original_metrics is not None else {}
     rows = []
     for tool in (*_EXPECTED_TOOLS, "custom"):
-        row = _measure_tool(tool, original, protected, cache.get(tool))
+        cache_key = (tool, protected_digest) if protected_digest is not None else None
+        cached_row = measurement_cache.get(cache_key) if measurement_cache is not None and cache_key else None
+        row = dict(cached_row) if cached_row is not None else _measure_tool(tool, original, protected, cache.get(tool))
+        if measurement_cache is not None and cache_key is not None and cached_row is None:
+            measurement_cache[cache_key] = dict(row)
         metric = row.get("original")
         if row.get("status") == "completed" and isinstance(metric, dict):
             cache[tool] = metric
@@ -1082,6 +1093,7 @@ def benchmark_pair(
         pass_rows: list[dict[str, object]] = []
         tools: list[dict[str, object]] = []
         original_metrics: dict[str, dict[str, object]] = {}
+        measurement_cache: dict[tuple[str, str], dict[str, object]] = {}
         if protected is None:
             protected_path = Path(directory) / "protected"
             for pass_name in pass_names:
@@ -1097,13 +1109,20 @@ def benchmark_pair(
                     )
                     continue
                 pass_rows.append(pass_row)
+                protected_digest = _file_digest(protected_path)
                 tools.extend(
                     {
                         **tool,
                         "pass_name": pass_name,
                         "pass_status": pass_row["status"],
                     }
-                    for tool in _measure_pair_tools(original, protected_path, original_metrics)
+                    for tool in _measure_pair_tools(
+                        original,
+                        protected_path,
+                        original_metrics,
+                        measurement_cache,
+                        protected_digest,
+                    )
                 )
         else:
             protected_path = protected
