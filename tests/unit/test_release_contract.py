@@ -1766,6 +1766,16 @@ def test_adversarial_workflow_runs_vm_resistance_once_per_campaign() -> None:
     )
 
 
+def test_adversarial_workflow_validates_all_vm_fixture_seed_builds() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+
+    expect(
+        'expected_seeds = list(range(report["first_seed"], report["first_seed"] + report["seed_count"]))' in workflow
+        and 'fixture["seed_campaign"]["builds"]' in workflow
+        and "!= 150" in workflow
+    )
+
+
 def test_adversarial_workflow_provisions_reproducible_ghidra() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
 

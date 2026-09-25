@@ -360,6 +360,17 @@ jobs:
               raise SystemExit(f"unexpected VM resistance seed count: {report['seed_count']}")
           if report["fixture_count"] != 15:
               raise SystemExit(f"unexpected VM resistance fixture count: {report['fixture_count']}")
+          expected_seeds = list(range(report["first_seed"], report["first_seed"] + report["seed_count"]))
+          fixtures = report["fixtures"]
+          if any(fixture["seed_count"] != 10 for fixture in fixtures):
+              raise SystemExit("VM resistance fixture lost seed coverage")
+          if any(
+              [build["seed"] for build in fixture["seed_campaign"]["builds"]] != expected_seeds
+              for fixture in fixtures
+          ):
+              raise SystemExit("VM resistance fixture seed sequence is incomplete")
+          if sum(len(fixture["seed_campaign"]["builds"]) for fixture in fixtures) != 150:
+              raise SystemExit("VM resistance campaign did not retain 150 fixture-seed builds")
           if not report["semantic_parity"] or not report["cross_fixture_distinct_artifacts"]:
               raise SystemExit("VM fixture campaign lost semantic parity or artifact diversity")
           if not report["all_tamper_probes_diverged"]:
