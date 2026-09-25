@@ -3,7 +3,7 @@
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit
-[`8bca169`](https://github.com/seifreed/r2morph-corpus/commit/8bca169321a4ead73ccc9bdcd3437acc40cc4649).
+[`5f16a6f`](https://github.com/seifreed/r2morph-corpus/commit/5f16a6f).
 It contains source programs, the build matrix, SHA-256 manifests, differential
 execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.

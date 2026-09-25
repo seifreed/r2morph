@@ -1666,7 +1666,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "extended-maturity-merged.json" in differential
         and "public-compatibility-corpus:" in differential
         and "repository: seifreed/r2morph-corpus" in differential
-        and "8bca169321a4ead73ccc9bdcd3437acc40cc4649" in differential
+        and "5f16a6f" in differential
         and "Build public compatibility corpus" in differential
         and "Run public differential matrix" in differential
         and "Validate public differential matrix" in differential
