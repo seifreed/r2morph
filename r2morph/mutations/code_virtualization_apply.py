@@ -40,6 +40,7 @@ _MAX_TAIL_WRAPPER_SETUP_INSTRUCTIONS = 4
 _MAX_APPLICATION_ENTRY_SCAN_INSNS = 256
 _MAX_APPLICATION_TARGET_GAP = 0x2000
 _LARGE_APPLICATION_POPULATION = 1024
+_STATIC_ANALYSIS_SIZE_THRESHOLD = 1024 * 1024
 _TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
 _APPLICATION_BRANCH_TYPES = frozenset({"call", "jmp", "cjmp", "jrcxz"})
 _PADDING_INSTRUCTION_TYPES = frozenset({"nop", "invalid"})
@@ -56,6 +57,39 @@ _RUNTIME_INITIALIZATION_NAMES = frozenset(
         "entry.fini0",
     }
 )
+
+
+def _bounded_static_analysis_level(binary: Any) -> str | None:
+    """Use application-only analysis for large statically linked ELF files."""
+    info = getattr(binary, "info", {})
+    bin_info = info.get("bin", {}) if isinstance(info, dict) else {}
+    core_info = info.get("core", {}) if isinstance(info, dict) else {}
+    if not isinstance(bin_info, dict) or bin_info.get("static") is not True:
+        return None
+    try:
+        binary_size = int(core_info.get("size", 0))
+    except (TypeError, ValueError):
+        binary_size = 0
+    if binary_size <= _STATIC_ANALYSIS_SIZE_THRESHOLD:
+        return None
+    try:
+        flags = binary.r2.cmdj("fj") or []
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        flags = []
+    main_names = {"main", "_main", "sym.main"}
+    if any(isinstance(flag, dict) and str(flag.get("name", "")).strip().lower() in main_names for flag in flags):
+        return "af @ main"
+    return "af @ entry0"
+
+
+def _ensure_code_virtualization_analyzed(pass_instance: Any, binary: Any) -> None:
+    """Choose bounded static analysis unless the caller supplied an override."""
+    if binary.is_analyzed():
+        return
+    if "analysis_level" not in pass_instance.config and (analysis_level := _bounded_static_analysis_level(binary)):
+        binary.analyze(analysis_level)
+        return
+    pass_instance._ensure_analyzed(binary)
 
 
 def _is_runtime_entrypoint(
@@ -1329,7 +1363,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     if target_diagnostic is not None:
         logger.warning("Skipping code virtualization for unsupported target: %s", target_diagnostic)
         return _empty_result(target_diagnostic)
-    pass_instance._ensure_analyzed(binary)
+    _ensure_code_virtualization_analyzed(pass_instance, binary)
     logger.info("Applying code virtualization")
 
     virtualized, skipped, total_insns, total_bytecode, unsupported_total, partial_total = (0, 0, 0, 0, 0, 0)

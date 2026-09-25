@@ -12,7 +12,9 @@ from r2morph.analysis.exception_models import (
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _landing_pad_native_ranges
 from r2morph.mutations.code_virtualization_apply import (
+    _bounded_static_analysis_level,
     _empty_result,
+    _ensure_code_virtualization_analyzed,
     _entrypoint_addresses,
     _field_counts,
     _function_has_unproven_unwind_metadata,
@@ -56,6 +58,28 @@ class _SectionsBinary:
 
     def get_sections(self) -> list[dict[str, Any]]:
         return self._sections
+
+
+class _StaticAnalysisBinary:
+    def __init__(self, flags: list[dict[str, object]]) -> None:
+        self.info = {"bin": {"static": True}, "core": {"size": 2 * 1024 * 1024}}
+        self.r2 = self._Disassembler(flags)
+        self._analyzed = False
+        self.analysis_levels: list[str] = []
+
+    class _Disassembler:
+        def __init__(self, flags: list[dict[str, object]]) -> None:
+            self._flags = flags
+
+        def cmdj(self, command: str) -> list[dict[str, object]]:
+            return self._flags if command == "fj" else []
+
+    def is_analyzed(self) -> bool:
+        return self._analyzed
+
+    def analyze(self, level: str = "aa") -> None:
+        self.analysis_levels.append(level)
+        self._analyzed = True
 
 
 class _FunctionDisassemblyBinary:
@@ -205,6 +229,26 @@ class _RecordingPass:
 
 def test_partial_virtualization_is_rejected_by_default() -> None:
     expect(CodeVirtualizationPass(config={}).reject_partial_virtualization)
+
+
+def test_large_static_binary_uses_named_application_analysis() -> None:
+    binary = _StaticAnalysisBinary([{"name": "sym.main"}])
+
+    expect(_bounded_static_analysis_level(binary) == "af @ main")
+
+
+def test_large_static_binary_without_main_uses_loader_entry_analysis() -> None:
+    binary = _StaticAnalysisBinary([])
+
+    expect(_bounded_static_analysis_level(binary) == "af @ entry0")
+
+
+def test_large_static_binary_applies_bounded_analysis_by_default() -> None:
+    binary = _StaticAnalysisBinary([{"name": "sym.main"}])
+
+    _ensure_code_virtualization_analyzed(CodeVirtualizationPass(config={}), binary)
+
+    expect(binary.analysis_levels == ["af @ main"])
 
 
 def test_unwind_contract_rejects_tls_with_native_call() -> None:
