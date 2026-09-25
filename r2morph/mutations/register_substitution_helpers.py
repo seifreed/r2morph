@@ -245,6 +245,7 @@ _CALL_OUTPUT_REGISTERS = frozenset({"rax", "x0"})
 _RETURN_REGISTERS = frozenset({"rax", "x0"})
 
 _SYSCALL_INT_VECTORS = frozenset({"0x80", "80h", "0x2e", "2eh"})
+_DIRECT_TAIL_TARGET_PREFIXES = ("sym.", "fcn.", "imp.")
 _PURE_WRITE_MNEMONICS = frozenset(
     {"mov", "movabs", "movzx", "movsx", "movq", "movd", "lea", "movz", "movk", "movn", "adr", "adrp", "ldr", "ldp"}
 )
@@ -401,6 +402,23 @@ def _transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
     return transfer
 
 
+def _tail_transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
+    """Return the ABI boundary for a direct interprocedural tail transfer."""
+    tokens = disasm.split(None, 1)
+    if len(tokens) != _MIN_INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic, target = tokens[0], tokens[1].strip()
+    if mnemonic == "jmp" and target.startswith(_DIRECT_TAIL_TARGET_PREFIXES):
+        return _CALL_INPUT_REGISTERS_X86, frozenset()
+    if mnemonic == "b" and target.startswith(_DIRECT_TAIL_TARGET_PREFIXES):
+        return _CALL_INPUT_REGISTERS_ARM, frozenset()
+    return None
+
+
+def _abi_transfer(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
+    return _transfer_abi(disasm) or _tail_transfer_abi(disasm)
+
+
 def _destination_register(disasm: str) -> str | None:
     """The register written by an instruction (first operand), or None."""
     parts = disasm.split(None, 1)
@@ -458,8 +476,8 @@ def _caller_live_registers(instructions: list[dict[str, Any]], call_address: int
     tracked = _register_bases(suffix)
     for instruction in suffix:
         disasm = str(instruction.get("disasm", "")).lower()
-        transfer = _transfer_abi(disasm)
-        if transfer is not None and disasm.split(None, 1)[0] in {"call", "bl", "blr", "blx"}:
+        transfer = _abi_transfer(disasm)
+        if transfer is not None and disasm.split(None, 1)[0] in {"call", "jmp", "bl", "blr", "blx", "b"}:
             tracked |= {
                 canonical for register in transfer[0] if (canonical := _CANONICAL_REGISTER.get(register)) is not None
             }
@@ -468,7 +486,7 @@ def _caller_live_registers(instructions: list[dict[str, Any]], call_address: int
     for instruction in suffix:
         disasm = str(instruction.get("disasm", "")).lower()
         source_registers = _source_registers(disasm)
-        transfer = _transfer_abi(disasm)
+        transfer = _abi_transfer(disasm)
         if transfer is not None and disasm.split(None, 1)[0] in {"call", "bl", "blr", "blx"}:
             source_registers |= set(transfer[0])
         source_registers |= set(_implicit_register_bases(disasm))
@@ -542,7 +560,7 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
     unsafe: set[str] = set()
     total = len(disasms)
     for index, disasm in enumerate(disasms):
-        transfer = _transfer_abi(disasm)
+        transfer = _abi_transfer(disasm)
         if transfer is None:
             continue
         inputs, outputs = transfer
@@ -551,7 +569,7 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
         # the previous transfer (which clobbers caller-saved registers).
         pending_inputs = set(inputs)
         for prior in range(index - 1, -1, -1):
-            if _transfer_abi(disasms[prior]) is not None:
+            if _abi_transfer(disasms[prior]) is not None:
                 break
             destination = _destination_register(disasms[prior])
             if destination is None:
@@ -566,7 +584,7 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
         # Outputs: tokens that read the return register before it is redefined.
         pending_outputs = set(outputs)
         for later in range(index + 1, total):
-            if not pending_outputs or _transfer_abi(disasms[later]) is not None:
+            if not pending_outputs or _abi_transfer(disasms[later]) is not None:
                 break
             for token in _source_registers(disasms[later]):
                 if _CANONICAL_REGISTER.get(token) in pending_outputs:
@@ -699,7 +717,7 @@ def find_substitution_candidates(
     )
     if extra_pinned_registers:
         abi_regs |= extra_pinned_registers
-    if arch == "arm64" and any(_transfer_abi(insn.get("disasm", "").lower()) is not None for insn in instructions):
+    if arch == "arm64" and any(_abi_transfer(insn.get("disasm", "").lower()) is not None for insn in instructions):
         # Keep the complete AAPCS argument bank stable around calls. Static
         # disassembly cannot prove that a caller-saved argument is dead across
         # every indirect or compiler-generated transfer.

@@ -135,6 +135,16 @@ def test_find_substitution_candidates_with_x64_call_excludes_argument_register()
     expect("rdi" not in sources)
 
 
+def test_find_substitution_candidates_with_x64_tail_call_excludes_argument_register() -> None:
+    """A direct tail jump still consumes the x86-64 argument registers."""
+    with_tail_call = [
+        {"disasm": "lea rdi, [rip + str.stack_string_native]"},
+        {"disasm": "jmp sym.consume_stack_string"},
+    ]
+    sources = {orig for orig, _ in find_substitution_candidates(with_tail_call, "x64")}
+    expect("rdi" not in sources)
+
+
 def test_caller_live_registers_pins_value_used_after_callee_call() -> None:
     live = caller_live_registers(_CallerLivenessBinary(), _CALLEE_ADDRESS)
 
