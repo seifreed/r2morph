@@ -184,7 +184,7 @@ jobs:
           retention-days: 7
 
       - name: Run cross-format differential smoke
-        if: always()
+        if: always() && !cancelled()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -201,7 +201,7 @@ jobs:
             tests/integration/test_code_virtualization_target_support_real.py
 
       - name: Validate cross-format differential evidence
-        if: always() && hashFiles('cross-format-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('cross-format-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -308,7 +308,7 @@ jobs:
           PY
 
       - name: Run composition regression smoke
-        if: always()
+        if: always() && !cancelled()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -317,7 +317,7 @@ jobs:
             tests/integration/test_polymorphic_engine_real.py
 
       - name: Validate composition differential evidence
-        if: always() && hashFiles('composition-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('composition-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -403,7 +403,7 @@ jobs:
           PY
 
       - name: Run VM semantic regression smoke
-        if: always()
+        if: always() && !cancelled()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -432,7 +432,7 @@ jobs:
             tests/integration/test_code_virtualization_xlat_real.py
 
       - name: Validate VM semantic differential evidence
-        if: always() && hashFiles('vm-semantic-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('vm-semantic-differential.xml') != ''
         run: |
           python - <<'PY'
           import xml.etree.ElementTree as ET
@@ -478,7 +478,7 @@ jobs:
           PY
 
       - name: Run parser and rewriter fuzz smoke
-        if: always()
+        if: always() && !cancelled()
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -489,7 +489,7 @@ jobs:
             --output "$GITHUB_WORKSPACE/differential-fuzz-smoke.json"
 
       - name: Validate parser and rewriter fuzz smoke
-        if: always() && hashFiles('differential-fuzz-smoke.json') != ''
+        if: always() && !cancelled() && hashFiles('differential-fuzz-smoke.json') != ''
         run: |
           python - <<'PY'
           import json
@@ -510,7 +510,7 @@ jobs:
           PY
 
       - name: Run extended maturity pass smoke
-        if: always()
+        if: always() && !cancelled()
         env:
           EXTENDED_MATURITY_PASSES: >-
             AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation,
@@ -534,7 +534,7 @@ jobs:
             --output "$GITHUB_WORKSPACE/extended-maturity-passes.json"
 
       - name: Validate extended maturity pass smoke
-        if: always() && hashFiles('extended-maturity-passes.json') != ''
+        if: always() && !cancelled() && hashFiles('extended-maturity-passes.json') != ''
         run: |
           python - <<'PY'
           import json
@@ -631,42 +631,42 @@ jobs:
 
       - name: Upload per-pass differential report
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: differential-corpus-by-pass-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: differential-corpus-${{ matrix.fixture_shard }}-${{ matrix.seed }}.json
 
       - name: Upload cross-format differential evidence
         uses: actions/upload-artifact@v7
-        if: always() && hashFiles('cross-format-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('cross-format-differential.xml') != ''
         with:
           name: cross-format-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: cross-format-differential.xml
 
       - name: Upload VM semantic differential evidence
         uses: actions/upload-artifact@v7
-        if: always() && hashFiles('vm-semantic-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('vm-semantic-differential.xml') != ''
         with:
           name: vm-semantic-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-semantic-differential.xml
 
       - name: Upload composition differential evidence
         uses: actions/upload-artifact@v7
-        if: always() && hashFiles('composition-differential.xml') != ''
+        if: always() && !cancelled() && hashFiles('composition-differential.xml') != ''
         with:
           name: composition-differential-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: composition-differential.xml
 
       - name: Upload extended maturity pass smoke
         uses: actions/upload-artifact@v7
-        if: always() && hashFiles('extended-maturity-passes.json') != ''
+        if: always() && !cancelled() && hashFiles('extended-maturity-passes.json') != ''
         with:
           name: extended-maturity-passes-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: extended-maturity-passes.json
 
       - name: Upload differential fuzz smoke
         uses: actions/upload-artifact@v7
-        if: always() && hashFiles('differential-fuzz-smoke.json') != ''
+        if: always() && !cancelled() && hashFiles('differential-fuzz-smoke.json') != ''
         with:
           name: differential-fuzz-smoke-${{ matrix.fixture_shard }}-${{ matrix.seed }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: differential-fuzz-smoke.json
@@ -798,7 +798,7 @@ jobs:
 
       - name: Upload VM semantic campaign evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-semantic-campaign-${{ matrix.seed }}-${{ matrix.fixture_shard }}.json
@@ -927,7 +927,7 @@ jobs:
 
       - name: Upload merged VM semantic campaign evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: vm-semantic-campaign-merged-${{ github.run_id }}-${{ github.run_attempt }}
           path: vm-semantic-campaign-merged.json
@@ -1507,7 +1507,7 @@ jobs:
 
       - name: Upload native cross-platform differential evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: cross-platform-differential-macos-arm64-${{ github.run_id }}-${{ github.run_attempt }}
           path: cross-platform-differential.xml
@@ -1616,7 +1616,7 @@ jobs:
 
       - name: Upload Windows PE differential evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: cross-platform-differential-windows-pe-${{ github.run_id }}-${{ github.run_attempt }}
           path: windows-format-differential.xml
@@ -1829,7 +1829,7 @@ jobs:
 
       - name: Upload public compatibility evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: public-compatibility-corpus-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -1932,7 +1932,7 @@ jobs:
 
       - name: Upload native ELF ARM64 evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: elf-arm64-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: elf-arm64-native.xml
@@ -2007,7 +2007,7 @@ jobs:
 
       - name: Upload native ELF x86 32-bit evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: elf-x86-32-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: elf-x86-32-native.xml
@@ -2082,7 +2082,7 @@ jobs:
 
       - name: Upload native ELF ARM32 evidence
         uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && !cancelled()
         with:
           name: elf-arm-32-native-${{ github.run_id }}-${{ github.run_attempt }}
           path: elf-arm-32-native.xml
