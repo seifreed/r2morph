@@ -14,6 +14,7 @@ from scripts.adversarial_benchmark import (
     _availability,
     _binary_ninja_decompiler_metrics,
     _campaign_summary,
+    _decompiler_evidence_complete,
     _is_binary_ninja_license_error,
     _measure_pair_tools,
     _measure_tool,
@@ -307,6 +308,32 @@ def test_adversarial_benchmark_separates_applied_decompiler_pairs() -> None:
         and decompiler["applied_completed_pairs"] == _EXPECTED_APPLIED_PAIR_COUNT
         and decompiler["applied_completion_percent"] == _EXPECTED_FULL_COVERAGE_PERCENT
     )
+
+
+def test_decompiler_evidence_accepts_empty_applied_subset() -> None:
+    evidence = {
+        "observed_pairs": 2,
+        "completed_pairs": 2,
+        "completion_percent": 100.0,
+        "applied_observed_pairs": 0,
+        "applied_completed_pairs": 0,
+        "applied_completion_percent": 0.0,
+    }
+
+    expect(_decompiler_evidence_complete(evidence, 2, 0))
+
+
+def test_decompiler_evidence_rejects_incomplete_applied_subset() -> None:
+    evidence = {
+        "observed_pairs": 2,
+        "completed_pairs": 2,
+        "completion_percent": 100.0,
+        "applied_observed_pairs": 1,
+        "applied_completed_pairs": 1,
+        "applied_completion_percent": 50.0,
+    }
+
+    expect(not _decompiler_evidence_complete(evidence, 2, 1))
 
 
 def test_adversarial_benchmark_pair_report_summarizes_release_signoff_blockers() -> None:

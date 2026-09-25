@@ -57,6 +57,7 @@ _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _IN_PROCESS_TOOL_TIMEOUT_SECONDS = 90
 _IN_PROCESS_TOOLS = frozenset({"angr", "binary-ninja", "unicorn", "triton", "custom"})
+_FULL_COVERAGE_PERCENT = 100.0
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 _GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
 _GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
@@ -1001,6 +1002,23 @@ def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
             decompiler.get("applied_completed_pairs", 0),
             decompiler.get("applied_observed_pairs", 0),
         )
+
+
+def _decompiler_evidence_complete(decompiler: Mapping[str, Any], sample_count: int, applied_pairs: int) -> bool:
+    """Require complete pair coverage while allowing empty applied subsets."""
+    if (
+        decompiler.get("observed_pairs") != sample_count
+        or decompiler.get("completed_pairs") != sample_count
+        or decompiler.get("completion_percent") != _FULL_COVERAGE_PERCENT
+    ):
+        return False
+    if applied_pairs == 0:
+        return True
+    return (
+        decompiler.get("applied_observed_pairs") == applied_pairs
+        and decompiler.get("applied_completed_pairs") == applied_pairs
+        and decompiler.get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
+    )
 
 
 def _analyzer_effectiveness_by_pass(samples: list[dict[str, object]]) -> dict[str, dict[str, dict[str, Any]]]:

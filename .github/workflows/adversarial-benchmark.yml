@@ -113,6 +113,8 @@ jobs:
           import json
           from pathlib import Path
 
+          from scripts.adversarial_benchmark import _decompiler_evidence_complete
+
           report = json.loads(Path("adversarial-benchmark.json").read_text(encoding="utf-8"))
           expected_generated = sorted(
               f"{source}_{profile}"
@@ -190,14 +192,7 @@ jobs:
                   applied_pairs = report["pass_summary"][pass_name]["applied"]
                   if not isinstance(decompiler, dict):
                       raise SystemExit(f"{decompiler_tool} decompiler evidence is missing for {pass_name}")
-                  if (
-                      decompiler.get("observed_pairs") != report["sample_count"]
-                      or decompiler.get("completed_pairs") != report["sample_count"]
-                      or decompiler.get("completion_percent") != 100.0
-                      or decompiler.get("applied_observed_pairs") != applied_pairs
-                      or decompiler.get("applied_completed_pairs") != applied_pairs
-                      or decompiler.get("applied_completion_percent") != 100.0
-                  ):
+                  if not _decompiler_evidence_complete(decompiler, report["sample_count"], applied_pairs):
                       raise SystemExit(
                           f"{decompiler_tool} decompiler evidence is incomplete for {pass_name}: {decompiler}"
                       )
@@ -479,6 +474,7 @@ jobs:
           from pathlib import Path
 
           from scripts.adversarial_benchmark import merge_adversarial_reports
+          from scripts.adversarial_benchmark import _decompiler_evidence_complete
           from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES, discover_executables
 
           paths = sorted(Path("adversarial-reports").glob("*/adversarial-benchmark.json"))
@@ -555,14 +551,7 @@ jobs:
                       raise SystemExit(
                           f"merged {decompiler_tool} decompiler evidence is missing for {pass_name}"
                       )
-                  if (
-                      decompiler.get("observed_pairs") != report["sample_count"]
-                      or decompiler.get("completed_pairs") != report["sample_count"]
-                      or decompiler.get("completion_percent") != 100.0
-                      or decompiler.get("applied_observed_pairs") != applied_pairs
-                      or decompiler.get("applied_completed_pairs") != applied_pairs
-                      or decompiler.get("applied_completion_percent") != 100.0
-                  ):
+                  if not _decompiler_evidence_complete(decompiler, report["sample_count"], applied_pairs):
                       raise SystemExit(
                           f"merged {decompiler_tool} decompiler evidence is incomplete for {pass_name}: "
                           f"{decompiler}"
