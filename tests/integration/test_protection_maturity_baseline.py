@@ -965,6 +965,7 @@ def test_generated_stack_string_source_preserves_direct_literal_call_shape() -> 
         and "__attribute__((noinline)) int build_stack_string" in source
         and "return value[0] == 's' ? 0 : 1;" in source
         and 'consume_stack_string("stack-string-native")' in source
+        and "volatile int result = build_stack_string();" in source
         and ".text.r2morph_stack_cave" in source
     )
 

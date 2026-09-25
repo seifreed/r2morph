@@ -505,7 +505,8 @@ __attribute__((noinline)) int build_stack_string(void) {
 int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
-    return build_stack_string();
+    volatile int result = build_stack_string();
+    return result;
 }
 
 __asm__(

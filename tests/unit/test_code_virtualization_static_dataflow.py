@@ -11,6 +11,8 @@ from r2morph.mutations.code_virtualization_apply import (
     _exceeds_function_size_budget,
     _has_compact_ret_cleanup,
     _has_materialized_instructions,
+    _is_direct_tail_jump_wrapper,
+    _is_runtime_only_helper,
     _ordered_functions,
     _preflight_rejection_diagnostic,
     _static_dataflow_is_complete,
@@ -166,6 +168,68 @@ def test_ordered_functions_excludes_unreferenced_auto_function_chunk() -> None:
     functions = _ordered_functions(FunctionSource())
 
     expect([function["addr"] for function in functions or []] == [0x1000, referenced_address])
+
+
+def test_direct_tail_jump_wrapper_is_excluded_from_virtualization_candidates() -> None:
+    class FunctionSource:
+        class _R2:
+            @staticmethod
+            def cmdj(_command: str) -> dict[str, list[dict[str, int | str]]]:
+                return {"ops": [{"type": "jmp", "jump": 0x2000}]}
+
+        r2 = _R2()
+
+    expect(_is_direct_tail_jump_wrapper(FunctionSource(), {"addr": 0x1000}))
+
+
+def test_direct_tail_jump_wrapper_with_setup_instructions_is_excluded() -> None:
+    class FunctionSource:
+        class _R2:
+            @staticmethod
+            def cmdj(_command: str) -> dict[str, list[dict[str, int | str]]]:
+                return {
+                    "ops": [
+                        {"type": "lea", "jump": None},
+                        {"type": "jmp", "jump": 0x2000},
+                    ]
+                }
+
+        r2 = _R2()
+
+    expect(_is_direct_tail_jump_wrapper(FunctionSource(), {"addr": 0x1000}))
+
+
+def test_tail_jump_with_control_flow_remains_a_candidate() -> None:
+    class FunctionSource:
+        class _R2:
+            @staticmethod
+            def cmdj(_command: str) -> dict[str, list[dict[str, int | str]]]:
+                return {
+                    "ops": [
+                        {"type": "cjmp", "jump": 0x2000},
+                        {"type": "jmp", "jump": 0x3000},
+                    ]
+                }
+
+        r2 = _R2()
+
+    expect(not _is_direct_tail_jump_wrapper(FunctionSource(), {"addr": 0x1000}))
+
+
+def test_runtime_only_helper_is_excluded_when_only_runtime_calls_it() -> None:
+    class FunctionSource:
+        def get_xrefs_to(self, _address: int) -> list[dict[str, int | str]]:
+            return [{"fcn_addr": 0x2000, "fcn_name": "entry.fini0", "type": "CALL"}]
+
+    expect(
+        _is_runtime_only_helper(
+            FunctionSource(),
+            {"addr": 0x1000, "name": "fcn.00001000"},
+            [{"addr": 0x2000, "name": "entry.fini0"}],
+            ".eh_frame",
+            frozenset(),
+        )
+    )
 
 
 def test_ordered_functions_recovers_unlisted_application_target_function() -> None:

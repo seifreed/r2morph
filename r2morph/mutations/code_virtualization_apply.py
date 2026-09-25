@@ -35,12 +35,14 @@ _UNWIND_SECTION_NAMES = frozenset(
 _DEFAULT_MAX_FUNCTION_SIZE = 64 * 1024
 _MAX_COMPACT_RET_SCAN = 128
 _MAX_ENTRYPOINT_PROLOGUE_BYTES = 4
+_MAX_TAIL_WRAPPER_SETUP_INSTRUCTIONS = 4
 # ponytail: bounded local target cluster; replace with linker provenance if wider layouts matter.
 _MAX_APPLICATION_ENTRY_SCAN_INSNS = 256
 _MAX_APPLICATION_TARGET_GAP = 0x2000
 _LARGE_APPLICATION_POPULATION = 1024
 _TERMINAL_SYSTEM_CALL_TYPES = frozenset({"syscall", "swi"})
 _APPLICATION_BRANCH_TYPES = frozenset({"call", "jmp", "cjmp", "jrcxz"})
+_PADDING_INSTRUCTION_TYPES = frozenset({"nop", "invalid"})
 _INTERNAL_SYMBOL_MARKERS = (".cold", ".constprop", ".isra", ".part")
 _RUNTIME_INITIALIZATION_NAMES = frozenset(
     {
@@ -300,6 +302,83 @@ def _is_unreferenced_function_chunk(binary: Any, function: dict[str, Any], funct
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
         return False
     return not any(str(xref.get("type", "")).upper() in {"CALL", "CODE", "JUMP"} for xref in xrefs)
+
+
+def _is_direct_tail_jump_wrapper(binary: Any, function: dict[str, Any]) -> bool:
+    """Exclude compiler-generated wrappers whose body ends in one direct jump."""
+    try:
+        address = function["addr"]
+        size = function.get("size")
+        command = f"pdj {size} @ {address}" if isinstance(size, int) and size > 0 else f"pdfj @ {address}"
+        disassembly = binary.r2.cmdj(command) or {}
+    except (AttributeError, BrokenPipeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    instructions = (
+        disassembly.get("ops", [])
+        if isinstance(disassembly, dict)
+        else disassembly if isinstance(disassembly, list) else []
+    )
+    meaningful = [
+        instruction
+        for instruction in instructions
+        if isinstance(instruction, dict) and instruction.get("type") not in _PADDING_INSTRUCTION_TYPES
+    ]
+    addressed_instructions = [instruction for instruction in meaningful if isinstance(instruction.get("addr"), int)]
+    if (
+        addressed_instructions
+        and isinstance(size, int)
+        and any(
+            instruction["addr"] < address or instruction["addr"] >= address + size
+            for instruction in addressed_instructions
+        )
+    ):
+        return False
+    if not meaningful or meaningful[-1].get("type") != "jmp" or not isinstance(meaningful[-1].get("jump"), int):
+        return False
+    setup = meaningful[:-1]
+    if len(setup) > _MAX_TAIL_WRAPPER_SETUP_INSTRUCTIONS:
+        return False
+    return not any(
+        instruction.get("type") in {"call", "cjmp", "ijmp", "jmp", "rcall", "ret", "switch"} for instruction in setup
+    )
+
+
+def _is_runtime_only_helper(
+    binary: Any,
+    function: dict[str, Any],
+    functions: list[dict[str, Any]],
+    unwind_section: str | None,
+    entrypoint_addresses: frozenset[int],
+) -> bool:
+    """Exclude unnamed linker helpers referenced exclusively by runtime code."""
+    name = str(function.get("name", "")).strip().lower()
+    if name in {"main", "_main", "sym.main"}:
+        return False
+    address = function.get("addr")
+    if not isinstance(address, int):
+        return False
+    try:
+        xrefs = binary.get_xrefs_to(address)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return False
+    if not xrefs:
+        return False
+    callers: list[dict[str, Any]] = []
+    for xref in xrefs:
+        caller_name = str(xref.get("fcn_name", "")).strip()
+        caller = next(
+            (candidate for candidate in functions if str(candidate.get("name", "")).strip() == caller_name),
+            None,
+        )
+        if caller is None and isinstance(xref.get("fcn_addr"), int):
+            caller = next(
+                (candidate for candidate in functions if candidate.get("addr") == xref["fcn_addr"]),
+                None,
+            )
+        if caller is None:
+            return False
+        callers.append(caller)
+    return all(_is_runtime_entrypoint(caller, unwind_section, entrypoint_addresses) for caller in callers)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1144,6 +1223,11 @@ def _ordered_functions(
     application_targets = _application_target_addresses(binary, raw_functions)
     application_candidates = _application_candidate_addresses(raw_functions, application_targets)
     raw_functions = _application_target_functions(binary, raw_functions, application_candidates)
+    raw_functions = [
+        function
+        for function in raw_functions
+        if not _is_direct_tail_jump_wrapper(binary, function) or function.get("addr") in dispatch_entrypoint_addresses
+    ]
 
     def function_order_key(function: dict[str, Any]) -> tuple[int, int]:
         if function.get("addr") in dispatch_entrypoint_addresses:
@@ -1160,8 +1244,14 @@ def _ordered_functions(
 
     def is_runtime_entrypoint(function: dict[str, Any]) -> bool:
         address = function.get("addr")
-        return address not in dispatch_entrypoint_addresses and _is_runtime_entrypoint(
-            function, unwind_section, entrypoint_addresses
+        if address in dispatch_entrypoint_addresses:
+            return False
+        return _is_runtime_entrypoint(function, unwind_section, entrypoint_addresses) or _is_runtime_only_helper(
+            binary,
+            function,
+            raw_functions,
+            unwind_section,
+            entrypoint_addresses,
         )
 
     non_tiny = [
