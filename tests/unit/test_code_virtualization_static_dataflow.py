@@ -150,6 +150,28 @@ def test_ordered_functions_excludes_runtime_helper_aliases_before_function_budge
     expect(functions == [{"addr": 0x2000, "size": 16, "name": "sym.user_function"}])
 
 
+def test_ordered_functions_keeps_named_entrypoint_callee() -> None:
+    entrypoint_address = 0x1000
+    callee_address = 0x2000
+
+    class FunctionSource:
+        def get_functions(self) -> list[dict[str, int | str]]:
+            return [
+                {"addr": entrypoint_address, "size": 16, "name": "entry0"},
+                {"addr": callee_address, "size": 16, "name": "sym.user_function"},
+            ]
+
+        @staticmethod
+        def get_xrefs_to(address: int) -> list[dict[str, int | str]]:
+            return [{"type": "CALL", "fcn_addr": entrypoint_address}] if address == callee_address else []
+
+    functions = _ordered_functions(
+        FunctionSource(), analysis_budget=1, entrypoint_addresses=frozenset({entrypoint_address})
+    )
+
+    expect(functions == [{"addr": callee_address, "size": 16, "name": "sym.user_function"}])
+
+
 def test_ordered_functions_excludes_unreferenced_auto_function_chunk() -> None:
     referenced_address = 0x2000
 

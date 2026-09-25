@@ -352,7 +352,8 @@ def _is_runtime_only_helper(
 ) -> bool:
     """Exclude unnamed linker helpers referenced exclusively by runtime code."""
     name = str(function.get("name", "")).strip().lower()
-    if name in {"main", "_main", "sym.main"}:
+    is_unnamed_helper = not name or name.startswith("fcn.")
+    if name in {"main", "_main", "sym.main"} or not is_unnamed_helper:
         return False
     address = function.get("addr")
     if not isinstance(address, int):
@@ -360,8 +361,6 @@ def _is_runtime_only_helper(
     try:
         xrefs = binary.get_xrefs_to(address)
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
-        return False
-    if not xrefs:
         return False
     callers: list[dict[str, Any]] = []
     for xref in xrefs:
@@ -378,7 +377,9 @@ def _is_runtime_only_helper(
         if caller is None:
             return False
         callers.append(caller)
-    return all(_is_runtime_entrypoint(caller, unwind_section, entrypoint_addresses) for caller in callers)
+    return bool(xrefs) and all(
+        _is_runtime_entrypoint(caller, unwind_section, entrypoint_addresses) for caller in callers
+    )
 
 
 @dataclass(frozen=True, slots=True)
