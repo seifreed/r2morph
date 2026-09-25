@@ -1633,7 +1633,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: seifreed/r2morph-corpus
-          ref: 5f16a6f
+          ref: 5f16a6fdcccbe2c3c97100f339a68ab916ca2e19
           path: public-corpus
 
       - name: Set up Python

@@ -1351,7 +1351,7 @@ def _check_corpus_workflows() -> None:
         "cross-platform-differential-macos-arm64",
         "public-compatibility-corpus:",
         "repository: seifreed/r2morph-corpus",
-        "5f16a6f",
+        "5f16a6fdcccbe2c3c97100f339a68ab916ca2e19",
         "Build public compatibility corpus",
         "Run public differential matrix",
         "Validate public differential matrix",
