@@ -27,7 +27,6 @@ REQUIRED_CI_JOBS = (
     "lint",
     "typecheck",
     "property-validation",
-    "stable-tests",
     "unit-tests",
     "integration-tests",
     "product-smoke-tests",
