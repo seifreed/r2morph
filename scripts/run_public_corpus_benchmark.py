@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-_ANALYZER_TIMEOUT_SECONDS = 120
+_ANALYZER_TIMEOUT_SECONDS = 180
 _PINNED_ANALYZER_TIMEOUT_SECONDS = 30
 _MIN_ARGUMENT_COUNT = 2
 
@@ -30,7 +30,7 @@ def main() -> int:
     if getattr(module, "_ANALYZER_TIMEOUT_SECONDS", None) != _PINNED_ANALYZER_TIMEOUT_SECONDS:
         raise RuntimeError("unexpected public corpus benchmark timeout contract")
     # The pinned corpus script has no timeout option; large static exception
-    # fixtures need a bounded 120-second analyzer window.
+    # fixtures need a bounded 180-second analyzer window.
     module._ANALYZER_TIMEOUT_SECONDS = _ANALYZER_TIMEOUT_SECONDS
     return int(module.main())
 

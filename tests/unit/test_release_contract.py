@@ -1714,6 +1714,12 @@ def test_public_corpus_aggregate_matches_downloaded_artifact_layout() -> None:
     expect('glob("public-compatibility-corpus-*")' in aggregate and 'glob("*/public-corpus")' not in aggregate)
 
 
+def test_public_corpus_benchmark_timeout_covers_large_static_fixtures() -> None:
+    wrapper = (_ROOT / "scripts" / "run_public_corpus_benchmark.py").read_text(encoding="utf-8")
+
+    expect("_ANALYZER_TIMEOUT_SECONDS = 180" in wrapper)
+
+
 def test_windows_pe_differential_covers_native_mutation_and_composition_passes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
