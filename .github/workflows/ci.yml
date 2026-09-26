@@ -247,7 +247,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $version = "6.2.0"
+          $version = "6.2.2"
           $archiveName = "radare2-$version-w64.zip"
           $archive = Join-Path $env:RUNNER_TEMP $archiveName
           $url = "https://github.com/radareorg/radare2/releases/download/$version/$archiveName"

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly version="6.2.0"
+readonly version="6.2.2"
 readonly source_url="https://github.com/radareorg/radare2.git"
 readonly destination="/tmp/radare2"
 readonly max_attempts=3
