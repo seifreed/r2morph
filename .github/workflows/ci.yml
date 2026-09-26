@@ -273,9 +273,21 @@ jobs:
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         timeout-minutes: 90
         run: |
-          python -W error -m pytest -v \
-            -m "not product_smoke and not slow" \
-            --cov-report=xml --tb=short
+          set -euo pipefail
+          coverage erase
+          for test_dir in tests/property tests/unit tests/integration tests/real_binaries; do
+            coverage_file="${RUNNER_TEMP}/.coverage.$(basename "$test_dir")"
+            COVERAGE_FILE="$coverage_file" coverage run --branch -m pytest -v "$test_dir" \
+              -m "not product_smoke and not slow" \
+              --no-cov --tb=short
+          done
+          coverage combine \
+            "${RUNNER_TEMP}/.coverage.property" \
+            "${RUNNER_TEMP}/.coverage.unit" \
+            "${RUNNER_TEMP}/.coverage.integration" \
+            "${RUNNER_TEMP}/.coverage.real_binaries"
+          coverage xml
+          coverage report
 
       - name: Install build backend for cross-platform wheel smoke
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'

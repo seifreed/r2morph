@@ -1926,6 +1926,21 @@ def test_ci_broad_linux_suite_has_runtime_headroom() -> None:
     expect("    timeout-minutes: 120" in cross_platform_job and "        timeout-minutes: 90" in cross_platform_job)
 
 
+def test_ci_broad_linux_coverage_isolates_test_directories() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    cross_platform_job = workflow.split("  cross-platform-tests:\n", 1)[1].split("  package-smoke:", 1)[0]
+
+    expect(
+        "coverage erase" in cross_platform_job
+        and "for test_dir in tests/property tests/unit tests/integration tests/real_binaries; do" in cross_platform_job
+        and "coverage run --branch -m pytest" in cross_platform_job
+        and "--no-cov --tb=short" in cross_platform_job
+        and "coverage combine" in cross_platform_job
+        and "coverage xml" in cross_platform_job
+        and "coverage report" in cross_platform_job
+    )
+
+
 def test_differential_workflow_keeps_windows_pe_evidence() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
