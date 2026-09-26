@@ -934,18 +934,21 @@ def _decompiler_observations(row: dict[str, object]) -> dict[str, int]:
         return {}
     original_status = original.get("decompiler_status")
     protected_status = protected.get("decompiler_status")
-    observed = int(isinstance(original_status, str) or isinstance(protected_status, str))
-    if not observed:
+    if not isinstance(original_status, str) or not isinstance(protected_status, str):
         return {}
+    baseline_unavailable = original_status == "unavailable"
+    observed = int(not baseline_unavailable)
     completed_pairs = int(original_status == "completed" and protected_status == "completed")
     result = {
-        "observed_pairs": 1,
+        "observed_pairs": observed,
         "completed_pairs": completed_pairs,
-        "missing_pairs": 1 - completed_pairs,
+        "missing_pairs": int(observed and not completed_pairs),
+        "baseline_unavailable_pairs": int(baseline_unavailable),
     }
     applied = row.get("pass_status", "applied") == "applied"
-    result["applied_observed_pairs"] = int(applied)
-    result["applied_completed_pairs"] = int(applied and completed_pairs == 1)
+    result["applied_observed_pairs"] = int(applied and observed)
+    result["applied_completed_pairs"] = int(applied and observed and completed_pairs == 1)
+    result["applied_baseline_unavailable_pairs"] = int(applied and baseline_unavailable)
     for field in ("decompiler_entrypoints", "decompiler_lines", "decompiler_bytes"):
         original_value = original.get(field)
         protected_value = protected.get(field)
@@ -1004,20 +1007,42 @@ def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
         )
 
 
+def _decompiler_baseline_unavailable_by_pass(
+    effectiveness: Mapping[str, Mapping[str, Mapping[str, Any]]],
+) -> dict[str, dict[str, int]]:
+    gaps: dict[str, dict[str, int]] = {}
+    for pass_name, tools in effectiveness.items():
+        pass_gaps = {
+            tool: int(decompiler["baseline_unavailable_pairs"])
+            for tool, summary in tools.items()
+            if isinstance(summary, Mapping)
+            and isinstance(decompiler := summary.get("decompiler"), Mapping)
+            and isinstance(decompiler.get("baseline_unavailable_pairs"), int)
+            and decompiler["baseline_unavailable_pairs"] > 0
+        }
+        if pass_gaps:
+            gaps[pass_name] = dict(sorted(pass_gaps.items()))
+    return dict(sorted(gaps.items()))
+
+
 def _decompiler_evidence_complete(decompiler: Mapping[str, Any], sample_count: int, applied_pairs: int) -> bool:
     """Require complete coverage for pairs affected by the pass."""
     if applied_pairs == 0:
         return (
             decompiler.get("applied_observed_pairs") == 0
             and decompiler.get("applied_completed_pairs") == 0
+            and decompiler.get("applied_baseline_unavailable_pairs", 0) == 0
             and decompiler.get("applied_completion_percent") == 0.0
         )
+    applied_observed_pairs = decompiler.get("applied_observed_pairs", 0)
+    applied_baseline_unavailable_pairs = decompiler.get("applied_baseline_unavailable_pairs", 0)
     return (
         0 <= applied_pairs <= sample_count
-        and decompiler.get("observed_pairs", 0) >= applied_pairs
-        and decompiler.get("completed_pairs", 0) >= applied_pairs
-        and decompiler.get("applied_observed_pairs") == applied_pairs
-        and decompiler.get("applied_completed_pairs") == applied_pairs
+        and 0 < applied_observed_pairs <= applied_pairs
+        and applied_observed_pairs + applied_baseline_unavailable_pairs == applied_pairs
+        and decompiler.get("observed_pairs", 0) >= applied_observed_pairs
+        and decompiler.get("completed_pairs", 0) >= applied_observed_pairs
+        and decompiler.get("applied_completed_pairs") == applied_observed_pairs
         and decompiler.get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
     )
 
@@ -1363,6 +1388,7 @@ def _campaign_summary(
         > 0
     }
     non_completed_tool_runs = expected_tool_runs - completed_tools
+    analyzer_effectiveness = _analyzer_effectiveness_by_pass(samples)
     summary: dict[str, object] = {
         "expected_pass_count": len(pass_names),
         "observed_pass_count": len(observed_passes),
@@ -1425,7 +1451,10 @@ def _campaign_summary(
         "error_tool_run_percent": _coverage_percent(error_tools, observed_tool_runs),
         "error_tool_runs_by_tool": error_tools_by_tool,
         "error_reasons_by_tool": _tool_reason_map(samples, "error"),
-        "analyzer_effectiveness_by_pass": _analyzer_effectiveness_by_pass(samples),
+        "analyzer_effectiveness_by_pass": analyzer_effectiveness,
+        "decompiler_baseline_unavailable_pairs_by_pass": _decompiler_baseline_unavailable_by_pass(
+            analyzer_effectiveness
+        ),
     }
     summary["adversarial_evidence_blockers"] = _adversarial_evidence_blockers(summary, pass_names)
     summary["adversarial_evidence_blocker_totals"] = _blocker_totals(
@@ -1457,6 +1486,7 @@ def _adversarial_evidence_blockers(
         "tools_without_full_completion",
         "unavailable_tool_runs_by_tool",
         "unavailable_reasons_by_tool",
+        "decompiler_baseline_unavailable_pairs_by_pass",
     ):
         value = summary.get(field)
         if isinstance(value, (list, dict)) and value:

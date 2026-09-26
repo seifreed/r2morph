@@ -15,6 +15,7 @@ from scripts.adversarial_benchmark import (
     _binary_ninja_decompiler_metrics,
     _campaign_summary,
     _decompiler_evidence_complete,
+    _decompiler_observations,
     _is_binary_ninja_license_error,
     _measure_pair_tools,
     _measure_tool,
@@ -347,6 +348,38 @@ def test_decompiler_evidence_accepts_unavailable_unapplied_subset() -> None:
     }
 
     expect(_decompiler_evidence_complete(evidence, 45, 3))
+
+
+def test_decompiler_evidence_records_unavailable_applied_baseline_as_non_comparable() -> None:
+    observations = _decompiler_observations(
+        {
+            "pass_status": "applied",
+            "original": {"decompiler_status": "unavailable"},
+            "protected": {"decompiler_status": "completed"},
+        }
+    )
+
+    expect(
+        observations["observed_pairs"] == 0
+        and observations["baseline_unavailable_pairs"] == 1
+        and observations["applied_observed_pairs"] == 0
+        and observations["applied_baseline_unavailable_pairs"] == 1
+    )
+
+
+def test_decompiler_evidence_accepts_complete_comparable_subset_with_baseline_gap() -> None:
+    evidence = {
+        "observed_pairs": 44,
+        "completed_pairs": 44,
+        "completion_percent": 100.0,
+        "baseline_unavailable_pairs": 1,
+        "applied_observed_pairs": 44,
+        "applied_completed_pairs": 44,
+        "applied_baseline_unavailable_pairs": 1,
+        "applied_completion_percent": 100.0,
+    }
+
+    expect(_decompiler_evidence_complete(evidence, 45, 45))
 
 
 def test_decompiler_evidence_rejects_incomplete_applied_subset() -> None:

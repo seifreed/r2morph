@@ -234,6 +234,7 @@ jobs:
               "tools_without_full_completion",
               "unavailable_tool_runs_by_tool",
               "unavailable_reasons_by_tool",
+              "decompiler_baseline_unavailable_pairs_by_pass",
           ):
               if summary[field]:
                   expected_blockers[field] = summary[field]
