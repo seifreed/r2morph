@@ -12,16 +12,29 @@ import logging
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.block_reordering_helpers import (
     calculate_jump_cost,
     can_reorder_function,
     generate_reordering,
+    overlaps_exception_frame,
     should_consider_function,
 )
 from r2morph.mutations.block_reordering_relocation import reorder_function_blocks
 
 logger = logging.getLogger(__name__)
+
+
+def _read_exception_frames(binary: Any) -> tuple[dict[int, Any] | None, str | None]:
+    """Read exception metadata before relocating any function blocks."""
+    try:
+        reader = ExceptionInfoReader(binary)
+        frames = reader.read_exception_frames()
+        return frames, reader.read_error
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        logger.debug("Failed to read exception metadata before block reordering: %s", exc)
+        return None, "failed to read exception metadata"
 
 
 class BlockReorderingPass(MutationPass):
@@ -113,11 +126,25 @@ class BlockReorderingPass(MutationPass):
         self._reset_random()
 
         functions = binary.get_functions()
+        exception_frames, exception_read_error = _read_exception_frames(binary)
         functions_mutated = 0
         total_blocks_reordered = 0
         functions_processed = 0
 
         logger.info(f"Block reordering: processing {len(functions)} functions")
+
+        if exception_read_error is not None:
+            logger.warning(
+                "Block reordering skipped because exception metadata is unavailable: %s",
+                exception_read_error,
+            )
+            return {
+                "mutations_applied": 0,
+                "functions_mutated": 0,
+                "total_blocks_reordered": 0,
+                "total_functions": len(functions),
+                "functions_processed": 0,
+            }
 
         for func in functions:
             if functions_processed >= self.max_functions:
@@ -130,6 +157,13 @@ class BlockReorderingPass(MutationPass):
                 continue
 
             if not should_consider_function(func, blocks):
+                continue
+
+            if exception_frames and overlaps_exception_frame(func, exception_frames):
+                logger.debug(
+                    "Skipping function at 0x%x because it has LSDA-backed exception metadata",
+                    int(func["addr"]),
+                )
                 continue
 
             functions_processed += 1

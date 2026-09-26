@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
 from tests.utils.assertions import expect
@@ -211,3 +212,58 @@ def test_block_reordering_skips_rip_relative_variadic_function_without_corruptio
     mutated_result = run_command([str(mutated)], capture_output=True)
 
     expect(mutated_result.returncode == original_result.returncode, f"reordering changed result: {result}")
+
+
+def test_block_reordering_leaves_cpp_lsda_function_unchanged(tmp_path: Path) -> None:
+    """Block relocation must not move code whose LSDA references its addresses."""
+    if not supports_native_elf_x86_64() or not shutil.which("g++"):
+        pytest.skip("native Linux amd64 compiler and execution are required")
+
+    source = tmp_path / "lsda_block_reordering.cpp"
+    original = tmp_path / "lsda_block_reordering"
+    mutated = tmp_path / "lsda_block_reordering_mutated"
+    source.write_text(
+        "#include <cstdlib>\n"
+        "#include <stdexcept>\n"
+        "__attribute__((noinline)) int protected_function(int value) {\n"
+        "    try {\n"
+        '        if (value < 0) throw std::runtime_error("negative");\n'
+        "        if (value == 0) return 2;\n"
+        "        if (value == 1) return 3;\n"
+        "        return 4;\n"
+        "    } catch (const std::runtime_error&) {\n"
+        "        return 9;\n"
+        "    }\n"
+        "}\n"
+        "int main(int argc, char** argv) {\n"
+        "    return protected_function(argc > 1 ? std::atoi(argv[1]) : 0);\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    result = run_command(
+        ["g++", "-O0", "-g", "-fno-pie", "-no-pie", str(source), "-o", str(original)],
+        check=True,
+        capture_output=True,
+    )
+    expect(result.returncode == 0, "failed to compile the LSDA block-reordering fixture")
+    shutil.copy2(original, mutated)
+
+    with Binary(mutated, writable=True) as binary:
+        binary.analyze()
+        function = next(
+            function for function in binary.get_functions() if "protected_function" in function.get("name", "")
+        )
+        function_address = int(function["addr"])
+        original_bytes = binary.read_bytes(function_address, int(function["size"]))
+        frames = ExceptionInfoReader(binary).read_exception_frames()
+        frame = next(
+            frame
+            for frame in frames.values()
+            if frame.landing_pads and frame.function_start <= function_address < frame.function_end
+        )
+        pass_obj = BlockReorderingPass(config={"probability": 1.0, "max_functions": 1000, "seed": 20260914})
+        pass_obj.apply(binary)
+        mutated_bytes = binary.read_bytes(function_address, int(function["size"]))
+
+    expect(frame.landing_pads, "fixture did not expose a landing pad for protected_function")
+    expect(mutated_bytes == original_bytes, "block reordering changed an LSDA-backed function")

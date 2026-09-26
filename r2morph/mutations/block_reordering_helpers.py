@@ -47,9 +47,25 @@ def should_consider_function(func: dict[str, Any], blocks: list[dict[str, Any]])
     return can_reorder_function(func, blocks)
 
 
+def overlaps_exception_frame(func: dict[str, Any], frames: dict[int, Any]) -> bool:
+    """Return whether a function overlaps LSDA-backed exception metadata."""
+    address = func.get("addr")
+    size = func.get("size")
+    if not isinstance(address, int):
+        return False
+    function_end = address + max(size, 1) if isinstance(size, int) else address + 1
+    return any(
+        (frame.lsda_address is not None or frame.landing_pads)
+        and frame.function_start < function_end
+        and address < frame.function_end
+        for frame in frames.values()
+    )
+
+
 __all__ = [
     "calculate_jump_cost",
     "can_reorder_function",
     "generate_reordering",
+    "overlaps_exception_frame",
     "should_consider_function",
 ]
