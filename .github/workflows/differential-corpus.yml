@@ -1819,8 +1819,6 @@ jobs:
                   raise SystemExit(f"incomplete public pass coverage: {pass_name}")
               if summary["differential_failed"] != 0 or summary["errors"] != 0:
                   raise SystemExit(f"public differential evidence failed: {pass_name}")
-              if summary["applied"] == 0:
-                  raise SystemExit(f"public pass was never applied: {pass_name}")
           print(f"public differential samples: {report['passed_samples']}")
           PY
 
@@ -1897,6 +1895,7 @@ jobs:
           total_record_count = None
           differential_failures = 0
           recovery_failures = 0
+          applied_counts = {pass_name: 0 for pass_name in expected_passes}
           for root in roots:
               manifest = json.loads(
                   (root / "build-selected/manifest.json").read_text(encoding="utf-8")
@@ -1931,8 +1930,7 @@ jobs:
                       raise SystemExit(f"incomplete public pass coverage: {pass_name}")
                   if summary["differential_failed"] != 0 or summary["errors"] != 0:
                       raise SystemExit(f"public differential evidence failed: {pass_name}")
-                  if summary["applied"] == 0:
-                      raise SystemExit(f"public pass was never applied: {pass_name}")
+                  applied_counts[pass_name] += summary["applied"]
               expected_measurements = len(records) * len(expected_passes)
               if benchmark["status"] != "passed":
                   raise SystemExit("public static recovery benchmark did not pass")
@@ -1949,6 +1947,9 @@ jobs:
               raise SystemExit("public corpus aggregate does not cover every selected record")
           if len(all_record_ids) != len(set(all_record_ids)):
               raise SystemExit("public corpus shards contain duplicate sample ids")
+          unapplied = [pass_name for pass_name, count in applied_counts.items() if count == 0]
+          if unapplied:
+              raise SystemExit(f"public passes were never applied across the complete corpus: {unapplied}")
           summary = {
               "schema_version": 1,
               "status": "passed",

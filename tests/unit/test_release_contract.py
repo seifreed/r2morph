@@ -1685,6 +1685,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "Download VM semantic campaign evidence" in differential
         and "VM semantic campaign evidence is incomplete" in differential
         and "public corpus pass selection drift" in differential
+        and "applied_counts = {pass_name: 0 for pass_name in expected_passes}" in differential
+        and "public passes were never applied across the complete corpus" in differential
         and "public static recovery benchmark is incomplete" in differential
         and 'Path("public-corpus-reports").glob("**/results/matrix.json")' in differential
         and 'Path("public-corpus-reports").glob("**/results/tools.json")' in differential
