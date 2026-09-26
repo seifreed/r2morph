@@ -1861,7 +1861,7 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
 
     expect(
         "Run cross-platform package smoke tests" in cross_platform_job
-        and "timeout-minutes: 60" in cross_platform_job
+        and "timeout-minutes: 120" in cross_platform_job
         and "Install build backend for cross-platform wheel smoke" in cross_platform_job
         and "Install radare2 (Windows)" in cross_platform_job
         and '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"' in cross_platform_job
@@ -1917,6 +1917,13 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and '"tests/unit/test_code_virtualization_fp_indexed_shapes.py"' in cross_platform_job
         and '"tests/unit/test_code_virtualization_avx256.py"' in cross_platform_job
     )
+
+
+def test_ci_broad_linux_suite_has_runtime_headroom() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    cross_platform_job = workflow.split("  cross-platform-tests:\n", 1)[1].split("  package-smoke:", 1)[0]
+
+    expect("    timeout-minutes: 120" in cross_platform_job and "        timeout-minutes: 90" in cross_platform_job)
 
 
 def test_differential_workflow_keeps_windows_pe_evidence() -> None:

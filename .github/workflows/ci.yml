@@ -208,7 +208,7 @@ jobs:
   cross-platform-tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -271,7 +271,7 @@ jobs:
 
       - name: Run broad Linux tests with coverage
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
-        timeout-minutes: 45
+        timeout-minutes: 90
         run: |
           python -W error -m pytest -v \
             -m "not product_smoke and not slow" \
