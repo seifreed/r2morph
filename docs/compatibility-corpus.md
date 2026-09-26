@@ -249,6 +249,15 @@ composition matrix with no failures. Six cross-format cases remain skipped on
 the Linux runner where native platform execution is unavailable, so this record
 does not close the declared PE/Mach-O or ARM/AArch64/x86 parity gaps.
 
+The newer campaign [36246458755](https://github.com/seifreed/r2morph/actions/runs/36246458755)
+at commit `c7ef761a` has already completed its native platform and VM semantic
+artifacts without failures. The platform aggregate records six complete pass
+rows for each of ELF ARM32, ELF x86-32, macOS ARM64, and Windows PE, plus six
+for ELF ARM64; the merged VM semantic artifact is `passed` for 1,005 cases
+across three seeds. These are partial campaign artifacts while the public
+compatibility matrix is still running; they do not close the broader
+cross-platform, per-pass analyzer, or 15-fixture-by-10-seed release gaps.
+
 The adversarial campaign summary records distinct completed, unavailable, and
 errored analyzer tools, so completed `angr` or Triton runs are not hidden behind
 environment-specific IDA, Ghidra, or Binary Ninja availability gaps. It also
