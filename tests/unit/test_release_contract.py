@@ -1707,6 +1707,13 @@ def test_release_contract_validates_corpus_workflows() -> None:
     expect(_check_corpus_workflows() is None)
 
 
+def test_public_corpus_aggregate_matches_downloaded_artifact_layout() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    aggregate = workflow.split("  aggregate-public-compatibility-corpus:\n", 1)[1].split("  elf-arm64-native:", 1)[0]
+
+    expect('glob("public-compatibility-corpus-*")' in aggregate and 'glob("*/public-corpus")' not in aggregate)
+
+
 def test_windows_pe_differential_covers_native_mutation_and_composition_passes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]

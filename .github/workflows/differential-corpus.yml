@@ -1952,7 +1952,9 @@ jobs:
           import json
           from pathlib import Path
 
-          roots = sorted(Path("public-compatibility-shards").glob("*/public-corpus"))
+          roots = sorted(
+              Path("public-compatibility-shards").glob("public-compatibility-corpus-*")
+          )
           if len(roots) != 4:
               raise SystemExit(f"expected 4 public corpus shards, found {len(roots)}")
           expected_passes = {
