@@ -1622,9 +1622,13 @@ jobs:
           path: windows-format-differential.xml
 
   public-compatibility-corpus:
-    name: Public compatibility corpus
+    name: Public compatibility corpus (${{ matrix.public_shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        public_shard: [0, 1, 2, 3]
     steps:
       - name: Checkout r2morph
         uses: actions/checkout@v5
@@ -1677,15 +1681,21 @@ jobs:
           PY
 
       - name: Select bounded public corpus matrix
+        env:
+          PUBLIC_SHARD_INDEX: ${{ matrix.public_shard }}
+          PUBLIC_SHARD_COUNT: "4"
         run: |
           python - <<'PY'
           import json
+          import os
           import shutil
           from pathlib import Path
 
           build_root = Path("public-corpus/build")
           selected_root = Path("public-corpus/build-selected")
           selected_root.mkdir(parents=True, exist_ok=True)
+          shard_index = int(os.environ["PUBLIC_SHARD_INDEX"])
+          shard_count = int(os.environ["PUBLIC_SHARD_COUNT"])
           manifest = json.loads((build_root / "manifest.json").read_text(encoding="utf-8"))
           variants = (
               ("O0", "non-pie", "symbols", "dynamic"),
@@ -1710,12 +1720,20 @@ jobs:
               )
               if key not in variants:
                   continue
-              source = build_root / str(record["id"])
-              shutil.copy2(source, selected_root / source.name)
               selected.append(record)
 
           if not selected:
               raise SystemExit("bounded public corpus selection is empty")
+          shard_records = [
+              record
+              for position, record in enumerate(selected)
+              if position % shard_count == shard_index
+          ]
+          if not shard_records:
+              raise SystemExit(f"public corpus shard {shard_index} is empty")
+          for record in shard_records:
+              source = build_root / str(record["id"])
+              shutil.copy2(source, selected_root / source.name)
           selected_manifest = {
               "schema_version": manifest["schema_version"],
               "target": manifest["target"],
@@ -1742,8 +1760,10 @@ jobs:
                           for record in selected
                       }
                   ),
+                  "total_record_count": len(selected),
+                  "shard": {"index": shard_index, "count": shard_count},
               },
-              "records": selected,
+              "records": shard_records,
           }
           (selected_root / "manifest.json").write_text(
               json.dumps(selected_manifest, indent=2, sort_keys=True) + "\n",
@@ -1755,7 +1775,10 @@ jobs:
               raise SystemExit("bounded public corpus selection lost a compiler")
           if selected_manifest["selection"]["variant_count"] != len(variants):
               raise SystemExit("bounded public corpus selection lost a requested variant")
-          print(f"bounded public corpus samples: {len(selected)}")
+          print(
+              f"bounded public corpus samples: {len(selected)}; "
+              f"shard {shard_index}: {len(shard_records)}"
+          )
           PY
 
       - name: Run public differential matrix
@@ -1831,13 +1854,121 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always() && !cancelled()
         with:
-          name: public-compatibility-corpus-${{ github.run_id }}-${{ github.run_attempt }}
+          name: public-compatibility-corpus-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.public_shard }}
           path: |
             public-corpus/manifest.json
             public-corpus/build/manifest.json
             public-corpus/build-selected/manifest.json
             public-corpus/results/matrix.json
             public-corpus/results/tools.json
+
+  aggregate-public-compatibility-corpus:
+    name: Aggregate public compatibility corpus
+    needs: public-compatibility-corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download public corpus shard artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: public-compatibility-corpus-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: public-compatibility-shards
+          merge-multiple: false
+
+      - name: Validate complete public corpus evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          roots = sorted(Path("public-compatibility-shards").glob("*/public-corpus"))
+          if len(roots) != 4:
+              raise SystemExit(f"expected 4 public corpus shards, found {len(roots)}")
+          expected_passes = {
+              "BlockReordering",
+              "CodeVirtualization",
+              "InstructionExpansion",
+              "InstructionSubstitution",
+              "NopInsertion",
+              "RegisterSubstitution",
+          }
+          shard_indexes = set()
+          all_record_ids = []
+          total_record_count = None
+          differential_failures = 0
+          recovery_failures = 0
+          for root in roots:
+              manifest = json.loads(
+                  (root / "build-selected/manifest.json").read_text(encoding="utf-8")
+              )
+              matrix = json.loads(
+                  (root / "results/matrix.json").read_text(encoding="utf-8")
+              )
+              benchmark = json.loads(
+                  (root / "results/tools.json").read_text(encoding="utf-8")
+              )
+              selection = manifest["selection"]
+              shard = selection["shard"]
+              if shard["count"] != 4 or shard["index"] in shard_indexes:
+                  raise SystemExit(f"invalid public corpus shard: {shard}")
+              shard_indexes.add(shard["index"])
+              if total_record_count is None:
+                  total_record_count = selection["total_record_count"]
+              if selection["total_record_count"] != total_record_count:
+                  raise SystemExit("public corpus shard totals disagree")
+              records = manifest["records"]
+              all_record_ids.extend(record["id"] for record in records)
+              if matrix["built_samples"] != len(records):
+                  raise SystemExit("public matrix does not match its shard manifest")
+              if set(matrix["passes"]) != expected_passes:
+                  raise SystemExit("public corpus pass selection drift")
+              if matrix["failed_samples"] != 0:
+                  raise SystemExit("public differential evidence contains failures")
+              differential_failures += matrix["failed_samples"]
+              for pass_name in expected_passes:
+                  summary = matrix["pass_summary"][pass_name]
+                  if summary["samples"] != len(records):
+                      raise SystemExit(f"incomplete public pass coverage: {pass_name}")
+                  if summary["differential_failed"] != 0 or summary["errors"] != 0:
+                      raise SystemExit(f"public differential evidence failed: {pass_name}")
+                  if summary["applied"] == 0:
+                      raise SystemExit(f"public pass was never applied: {pass_name}")
+              expected_measurements = len(records) * len(expected_passes)
+              if benchmark["status"] != "passed":
+                  raise SystemExit("public static recovery benchmark did not pass")
+              if benchmark["samples"] != expected_measurements:
+                  raise SystemExit("public static recovery benchmark is incomplete")
+              if benchmark["measured_samples"] != expected_measurements:
+                  raise SystemExit("public static recovery measurements are incomplete")
+              if benchmark["failed_samples"] != 0:
+                  raise SystemExit("public static recovery benchmark has failures")
+              recovery_failures += benchmark["failed_samples"]
+          if shard_indexes != {0, 1, 2, 3}:
+              raise SystemExit(f"unexpected public shard indexes: {shard_indexes}")
+          if total_record_count is None or len(all_record_ids) != total_record_count:
+              raise SystemExit("public corpus aggregate does not cover every selected record")
+          if len(all_record_ids) != len(set(all_record_ids)):
+              raise SystemExit("public corpus shards contain duplicate sample ids")
+          summary = {
+              "schema_version": 1,
+              "status": "passed",
+              "shards": len(roots),
+              "sample_count": total_record_count,
+              "passes": sorted(expected_passes),
+              "differential_failed_samples": differential_failures,
+              "static_recovery_failed_samples": recovery_failures,
+          }
+          Path("public-compatibility-aggregate.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Upload aggregated public compatibility evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: public-compatibility-corpus-aggregate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: public-compatibility-aggregate.json
 
   elf-arm64-native:
     name: Native ELF ARM64 differential

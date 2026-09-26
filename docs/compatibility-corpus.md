@@ -12,11 +12,12 @@ The scheduled `public-compatibility-corpus` job checks out that immutable commit
 builds its full GCC/Clang matrix, then selects a deterministic bounded matrix
 with five variants per source/compiler: `O0` and `O1` non-PIE with symbols and
 dynamic linking, `O2` PIE stripped, `O3` non-PIE static, and `Os` non-PIE with
-symbols and dynamic linking when the linker is available. It
-transforms every selected sample with the six selected passes, compares the
-original and transformed process observables, and runs the radare2
-static-recovery benchmark. The full and selected manifests, differential matrix,
-and benchmark report are uploaded as one bounded artifact. This is additional
+symbols and dynamic linking when the linker is available. The selected records
+are split across four parallel shards. Each shard transforms its complete
+record subset with the six selected passes, compares the original and
+transformed process observables, and runs the radare2 static-recovery
+benchmark. An aggregate job validates that the shard artifacts form one
+complete, duplicate-free matrix before publishing the bounded evidence. This is additional
 continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
