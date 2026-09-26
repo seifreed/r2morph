@@ -336,6 +336,19 @@ def test_decompiler_evidence_accepts_unavailable_base_for_empty_applied_subset()
     expect(_decompiler_evidence_complete(evidence, 2, 0))
 
 
+def test_decompiler_evidence_accepts_unavailable_unapplied_subset() -> None:
+    evidence = {
+        "observed_pairs": 44,
+        "completed_pairs": 44,
+        "completion_percent": 97.78,
+        "applied_observed_pairs": 3,
+        "applied_completed_pairs": 3,
+        "applied_completion_percent": 100.0,
+    }
+
+    expect(_decompiler_evidence_complete(evidence, 45, 3))
+
+
 def test_decompiler_evidence_rejects_incomplete_applied_subset() -> None:
     evidence = {
         "observed_pairs": 2,

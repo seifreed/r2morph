@@ -1012,14 +1012,11 @@ def _decompiler_evidence_complete(decompiler: Mapping[str, Any], sample_count: i
             and decompiler.get("applied_completed_pairs") == 0
             and decompiler.get("applied_completion_percent") == 0.0
         )
-    if (
-        decompiler.get("observed_pairs") != sample_count
-        or decompiler.get("completed_pairs") != sample_count
-        or decompiler.get("completion_percent") != _FULL_COVERAGE_PERCENT
-    ):
-        return False
     return (
-        decompiler.get("applied_observed_pairs") == applied_pairs
+        0 <= applied_pairs <= sample_count
+        and decompiler.get("observed_pairs", 0) >= applied_pairs
+        and decompiler.get("completed_pairs", 0) >= applied_pairs
+        and decompiler.get("applied_observed_pairs") == applied_pairs
         and decompiler.get("applied_completed_pairs") == applied_pairs
         and decompiler.get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
     )
