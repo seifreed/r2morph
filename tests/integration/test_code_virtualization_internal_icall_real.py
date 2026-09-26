@@ -19,6 +19,7 @@ _EXPECTED_MEMORY_INDIRECT_EXIT_CODE = 43
 _EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE = 43
 _EXPECTED_STACK_ARGUMENT_EXIT_CODE = 44
 _EXPECTED_INDEXED_MEMORY_INDIRECT_EXIT_CODE = 42
+_DISPATCH_INPUTS = (0, 1, 3, -11)
 _CALL_FALLBACK_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_run_callfallback_x86_64"
 _SOURCE = r"""
 __attribute__((noinline)) int indirect_local(int value) {
@@ -125,6 +126,33 @@ __attribute__((noinline)) static long invoke_indexed(long index) {
 
 int main(void) {
     return invoke_indexed(0) == 42 ? 42 : 1;
+}
+"""
+
+_INDEXED_TAIL_DISPATCH_SOURCE = r"""
+#include <stddef.h>
+#include <stdlib.h>
+
+typedef int (*transform_fn)(int);
+
+__attribute__((noinline)) static int add_three(int value) {
+    return value + 3;
+}
+
+__attribute__((noinline)) static int double_value(int value) {
+    return value * 2;
+}
+
+static transform_fn volatile transform_table[2] = {add_three, double_value};
+
+__attribute__((noinline)) static int dispatch(int value, size_t selector) {
+    transform_fn function = transform_table[selector & 1U];
+    return function(value);
+}
+
+int main(int argc, char **argv) {
+    int value = argc > 1 ? (int)strtol(argv[1], NULL, 10) : 0;
+    return dispatch(value, (size_t)value) & 127;
 }
 """
 
@@ -337,6 +365,34 @@ def test_virtualized_indexed_memory_indirect_call_preserves_exit_code(tmp_path: 
     mutated_result = run_process([mutated])
     expect(stats["functions_virtualized"] >= 1)
     expect(original_result.returncode == mutated_result.returncode == _EXPECTED_INDEXED_MEMORY_INDIRECT_EXIT_CODE)
+
+
+@pytest.mark.integration
+def test_virtualized_indexed_tail_dispatch_preserves_all_table_targets(tmp_path: Path) -> None:
+    """A PIE function-pointer tail dispatch includes every table target in the VM region."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("fixture requires x86-64 execution")
+    compiler = shutil.which("clang")
+    if compiler is None:
+        pytest.skip("fixture requires clang")
+    source = tmp_path / "indexed_tail_dispatch.c"
+    fixture = tmp_path / "indexed_tail_dispatch"
+    mutated = tmp_path / "mutated_indexed_tail_dispatch"
+    source.write_text(_INDEXED_TAIL_DISPATCH_SOURCE)
+    run_process([compiler, "-O2", "-g", "-fPIE", "-pie", str(source), "-o", str(fixture)], check=True)
+    run_process(["strip", str(fixture)], check=True)
+    shutil.copy(fixture, mutated)
+    original_results = tuple(run_process([fixture, str(value)]).returncode for value in _DISPATCH_INPUTS)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 4, "seed": 20260914}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    mutated_results = tuple(run_process([mutated, str(value)]).returncode for value in _DISPATCH_INPUTS)
+    expect(stats["functions_virtualized"] >= 1)
+    expect(mutated_results == original_results)
 
 
 def test_virtualized_direct_call_to_separate_function_preserves_exit_code(tmp_path: Path) -> None:

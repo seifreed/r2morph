@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, cast
 
@@ -15,6 +16,14 @@ _MEMORY_DISPATCH_KINDS = frozenset({"ijmpmem", "ijmpmemnb"})
 _COMPUTED_SWITCH_KINDS = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 _DIRECT_BRANCH_KINDS = frozenset({"jmp", "cjmp", "jrcxz"})
 _BRANCH_PROBE_TERMINATORS = frozenset({"jmp", "rjmp", "ujmp", "ret", "swi", "syscall", "trap", "invalid"})
+_MAX_FUNCTION_POINTER_TARGETS = 64
+_TABLE_LOAD_PATTERN = re.compile(
+    r"^mov\s+(?P<destination>[a-z0-9]+),\s*(?:qword\s+)?(?:ptr\s+)?"
+    r"\[(?P<base>[a-z0-9]+)\s*\+\s*(?P<index>[a-z0-9]+)\s*\*\s*(?P<scale>[1248])\]$",
+    re.IGNORECASE,
+)
+_LEA_PATTERN = re.compile(r"^lea\s+(?P<destination>[a-z0-9]+),", re.IGNORECASE)
+_MASK_PATTERN = re.compile(r"^(?:and|cmp)\s+(?P<register>[a-z0-9]+),\s*(?P<value>0x[0-9a-f]+|[0-9]+)$", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +59,94 @@ def _bounded_branch_probe(ops: object) -> list[dict[str, Any]]:
         if op.get("type") in _BRANCH_PROBE_TERMINATORS:
             break
     return bounded
+
+
+def _table_entry_count(ops: list[dict[str, Any]], index_register: str, end: int) -> int:
+    """Infer a bounded pointer-table length from a preceding index guard."""
+    for operation in reversed(ops[:end]):
+        match = _MASK_PATTERN.match(str(operation.get("opcode", "")).strip())
+        if match is None or match.group("register").lower() != index_register.lower():
+            continue
+        value = int(match.group("value"), 0)
+        return min(value + 1, _MAX_FUNCTION_POINTER_TARGETS)
+    return _MAX_FUNCTION_POINTER_TARGETS
+
+
+def _dispatch_table_candidate(ops: list[dict[str, Any]]) -> tuple[int, int] | None:
+    """Find a RIP-relative pointer table feeding a computed jump."""
+    for jump_index, operation in enumerate(ops):
+        if operation.get("type") not in _COMPUTED_SWITCH_KINDS:
+            continue
+        for load_index in range(jump_index - 1, -1, -1):
+            load = _TABLE_LOAD_PATTERN.match(str(ops[load_index].get("opcode", "")).strip())
+            if load is None:
+                continue
+            base_register = load.group("base")
+            for setup in reversed(ops[:load_index]):
+                lea = _LEA_PATTERN.match(str(setup.get("opcode", "")).strip())
+                if lea is None or lea.group("destination").lower() != base_register.lower():
+                    continue
+                table_address = setup.get("ptr")
+                if isinstance(table_address, int) and table_address > 0:
+                    return table_address, _table_entry_count(ops, load.group("index"), load_index)
+                break
+    return None
+
+
+def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
+    try:
+        sections = binary.get_sections()
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return ()
+    ranges: list[tuple[int, int]] = []
+    for section in sections:
+        permission = str(section.get("perm", ""))
+        start = section.get("vaddr", section.get("addr"))
+        size = section.get("vsize", section.get("size"))
+        if "x" in permission and isinstance(start, int) and isinstance(size, int) and size > 0:
+            ranges.append((start, start + size))
+    return tuple(ranges)
+
+
+def _target_ops(binary: Any, target: int, executable_ranges: tuple[tuple[int, int], ...]) -> list[dict[str, Any]]:
+    """Read one table target through its first return, within executable code."""
+    if executable_ranges and not any(start <= target < end for start, end in executable_ranges):
+        return []
+    try:
+        ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {target}") or []
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return []
+    return _bounded_branch_probe(ops) if any(operation.get("type") == "ret" for operation in ops) else []
+
+
+def _append_function_pointer_targets(binary: Any, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Append every proven local target of a bounded function-pointer table."""
+    candidate = _dispatch_table_candidate(ops)
+    if candidate is None:
+        return ops
+    table_address, entry_count = candidate
+    pointer_size = int(binary.get_arch_info().get("bits", 64)) // 8
+    if pointer_size not in (4, 8):
+        return ops
+    known_addresses = {operation.get("addr") for operation in ops}
+    executable_ranges = _executable_ranges(binary)
+    extended = list(ops)
+    for index in range(entry_count):
+        raw_target = binary.read_bytes(table_address + index * pointer_size, pointer_size)
+        if len(raw_target) != pointer_size:
+            break
+        target = int.from_bytes(raw_target, "little")
+        if target == 0:
+            break
+        target_instructions = _target_ops(binary, target, executable_ranges)
+        if not target_instructions:
+            continue
+        for instruction in target_instructions:
+            address = instruction.get("addr")
+            if address not in known_addresses:
+                extended.append(instruction)
+                known_addresses.add(address)
+    return extended
 
 
 def complete_direct_branch_ops(
@@ -103,7 +200,7 @@ def gather_dispatch_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any
             break
         gathered.append(insn)
         if insn.get("type") in ("ret", "swi", "syscall"):
-            return gathered
+            return _append_function_pointer_targets(binary, gathered)
     return None
 
 
