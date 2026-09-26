@@ -1005,15 +1005,19 @@ def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
 
 
 def _decompiler_evidence_complete(decompiler: Mapping[str, Any], sample_count: int, applied_pairs: int) -> bool:
-    """Require complete pair coverage while allowing empty applied subsets."""
+    """Require complete coverage for pairs affected by the pass."""
+    if applied_pairs == 0:
+        return (
+            decompiler.get("applied_observed_pairs") == 0
+            and decompiler.get("applied_completed_pairs") == 0
+            and decompiler.get("applied_completion_percent") == 0.0
+        )
     if (
         decompiler.get("observed_pairs") != sample_count
         or decompiler.get("completed_pairs") != sample_count
         or decompiler.get("completion_percent") != _FULL_COVERAGE_PERCENT
     ):
         return False
-    if applied_pairs == 0:
-        return True
     return (
         decompiler.get("applied_observed_pairs") == applied_pairs
         and decompiler.get("applied_completed_pairs") == applied_pairs
