@@ -1082,7 +1082,7 @@ def _check_ci_contract() -> None:
         "runner.os == 'Windows'",
         "Install radare2 (Windows)",
         '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"',
-        '"adb1ffd158066ea41316fa33b6d23b362aa9258df800721f7d15a42eefdd9202"',
+        '"913e7d95e7458226a5e783240877f2c1d405398ab38ba176ce9b12e046e31f34"',
         "Get-FileHash -Algorithm SHA256",
         "Expand-Archive -Path $archive -DestinationPath $destination -Force",
         "$env:GITHUB_PATH",
