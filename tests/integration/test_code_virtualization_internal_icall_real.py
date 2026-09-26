@@ -19,6 +19,7 @@ _EXPECTED_MEMORY_INDIRECT_EXIT_CODE = 43
 _EXPECTED_LOCAL_MEMORY_INDIRECT_EXIT_CODE = 43
 _EXPECTED_STACK_ARGUMENT_EXIT_CODE = 44
 _EXPECTED_INDEXED_MEMORY_INDIRECT_EXIT_CODE = 42
+_MIN_EXPECTED_VIRTUALIZED_FUNCTIONS = 2
 _DISPATCH_INPUTS = (0, 1, 3, -11)
 _CALL_FALLBACK_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_run_callfallback_x86_64"
 _SOURCE = r"""
@@ -152,6 +153,46 @@ __attribute__((noinline)) static int dispatch(int value, size_t selector) {
 
 int main(int argc, char **argv) {
     int value = argc > 1 ? (int)strtol(argv[1], NULL, 10) : 0;
+    return dispatch(value, (size_t)value) & 127;
+}
+"""
+
+_INDEXED_TAIL_DISPATCH_ABSOLUTE_TABLE_SOURCE = r"""
+#include <stddef.h>
+
+typedef int (*transform_fn)(int);
+
+__attribute__((noinline)) static int add_three(int value) {
+    return value + 3;
+}
+
+__attribute__((noinline)) static int double_value(int value) {
+    return value * 2;
+}
+
+static transform_fn volatile transform_table[2] = {add_three, double_value};
+
+static int parse_value(const char *text) {
+    int sign = 1;
+    int value = 0;
+    if (*text == '-') {
+        sign = -1;
+        ++text;
+    }
+    while (*text >= '0' && *text <= '9') {
+        value = value * 10 + (*text - '0');
+        ++text;
+    }
+    return sign * value;
+}
+
+__attribute__((noinline)) static int dispatch(int value, size_t selector) {
+    transform_fn function = transform_table[selector & 1U];
+    return function(value);
+}
+
+int main(int argc, char **argv) {
+    int value = argc > 1 ? parse_value(argv[1]) : 0;
     return dispatch(value, (size_t)value) & 127;
 }
 """
@@ -392,6 +433,47 @@ def test_virtualized_indexed_tail_dispatch_preserves_all_table_targets(tmp_path:
         binary.close()
     mutated_results = tuple(run_process([mutated, str(value)]).returncode for value in _DISPATCH_INPUTS)
     expect(stats["functions_virtualized"] >= 1)
+    expect(mutated_results == original_results)
+
+
+@pytest.mark.integration
+def test_virtualized_absolute_table_dispatch_preserves_all_targets(tmp_path: Path) -> None:
+    """An absolute indexed table keeps every Clang ``-Os`` tail target."""
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("fixture requires x86-64 execution")
+    compiler = shutil.which("clang")
+    if compiler is None:
+        pytest.skip("fixture requires clang")
+    source = tmp_path / "absolute_table_dispatch.c"
+    fixture = tmp_path / "absolute_table_dispatch"
+    mutated = tmp_path / "mutated_absolute_table_dispatch"
+    source.write_text(_INDEXED_TAIL_DISPATCH_ABSOLUTE_TABLE_SOURCE)
+    run_process(
+        [
+            compiler,
+            "-Os",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            str(source),
+            "-o",
+            str(fixture),
+        ],
+        check=True,
+    )
+    shutil.copy(fixture, mutated)
+    original_results = tuple(run_process([fixture, str(value)]).returncode for value in _DISPATCH_INPUTS)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260914}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    mutated_results = tuple(run_process([mutated, str(value)]).returncode for value in _DISPATCH_INPUTS)
+    expect(stats["functions_virtualized"] >= _MIN_EXPECTED_VIRTUALIZED_FUNCTIONS)
     expect(mutated_results == original_results)
 
 

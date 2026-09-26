@@ -22,6 +22,12 @@ _TABLE_LOAD_PATTERN = re.compile(
     r"\[(?P<base>[a-z0-9]+)\s*\+\s*(?P<index>[a-z0-9]+)\s*\*\s*(?P<scale>[1248])\]$",
     re.IGNORECASE,
 )
+_ABSOLUTE_TABLE_LOAD_PATTERN = re.compile(
+    r"^mov\s+(?P<destination>[a-z0-9]+),\s*(?:qword\s+)?(?:ptr\s+)?"
+    r"\[(?P<index>[a-z0-9]+)\s*\*\s*(?P<scale>[1248])\s*\+\s*"
+    r"(?:0x[0-9a-f]+|[0-9]+)\]$",
+    re.IGNORECASE,
+)
 _LEA_PATTERN = re.compile(r"^lea\s+(?P<destination>[a-z0-9]+),", re.IGNORECASE)
 _MASK_PATTERN = re.compile(r"^(?:and|cmp)\s+(?P<register>[a-z0-9]+),\s*(?P<value>0x[0-9a-f]+|[0-9]+)$", re.IGNORECASE)
 
@@ -78,7 +84,13 @@ def _dispatch_table_candidate(ops: list[dict[str, Any]]) -> tuple[int, int] | No
         if operation.get("type") not in _COMPUTED_SWITCH_KINDS:
             continue
         for load_index in range(jump_index - 1, -1, -1):
-            load = _TABLE_LOAD_PATTERN.match(str(ops[load_index].get("opcode", "")).strip())
+            opcode = str(ops[load_index].get("opcode", "")).strip()
+            absolute_load = _ABSOLUTE_TABLE_LOAD_PATTERN.match(opcode)
+            if absolute_load is not None:
+                table_address = ops[load_index].get("ptr")
+                if isinstance(table_address, int) and table_address > 0:
+                    return table_address, _table_entry_count(ops, absolute_load.group("index"), load_index)
+            load = _TABLE_LOAD_PATTERN.match(opcode)
             if load is None:
                 continue
             base_register = load.group("base")
@@ -108,8 +120,27 @@ def _executable_ranges(binary: Any) -> tuple[tuple[int, int], ...]:
     return tuple(ranges)
 
 
+def _address_bias(binary: Any) -> int:
+    """Return the loader-image bias between encoded and radare2 addresses."""
+    try:
+        header = binary.r2.cmdj("iHj").get("header", "")
+        match = re.search(r"Entrypoint\s+0x([0-9a-f]+)", str(header), re.IGNORECASE)
+        entries = binary.r2.cmdj("iej") or []
+        normalized_entry = entries[0].get("vaddr") if entries else None
+        if match is None or not isinstance(normalized_entry, int):
+            return 0
+        return int(match.group(1), 16) - normalized_entry
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return 0
+
+
+def _normalized_address(binary: Any, address: int) -> int:
+    return address - _address_bias(binary)
+
+
 def _target_ops(binary: Any, target: int, executable_ranges: tuple[tuple[int, int], ...]) -> list[dict[str, Any]]:
     """Read one table target through its first return, within executable code."""
+    target = _normalized_address(binary, target)
     if executable_ranges and not any(start <= target < end for start, end in executable_ranges):
         return []
     try:
@@ -125,6 +156,7 @@ def _append_function_pointer_targets(binary: Any, ops: list[dict[str, Any]]) -> 
     if candidate is None:
         return ops
     table_address, entry_count = candidate
+    table_address = _normalized_address(binary, table_address)
     pointer_size = int(binary.get_arch_info().get("bits", 64)) // 8
     if pointer_size not in (4, 8):
         return ops
