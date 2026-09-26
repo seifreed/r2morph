@@ -1059,9 +1059,11 @@ jobs:
           public_reports = sorted(
               Path("public-corpus-reports").glob("**/results/matrix.json")
           )
-          if len(public_reports) != 1:
-              raise SystemExit(f"expected one public corpus matrix, found {public_reports}")
-          public_matrix = json.loads(public_reports[0].read_text(encoding="utf-8"))
+          if len(public_reports) != 4:
+              raise SystemExit(f"expected four public corpus shard matrices, found {public_reports}")
+          public_matrices = [
+              json.loads(path.read_text(encoding="utf-8")) for path in public_reports
+          ]
           public_passes = {
               "BlockReordering",
               "CodeVirtualization",
@@ -1070,8 +1072,52 @@ jobs:
               "NopInsertion",
               "RegisterSubstitution",
           }
-          if set(public_matrix["passes"]) != public_passes:
-              raise SystemExit(f"public corpus pass selection drift: {public_matrix['passes']}")
+          for matrix in public_matrices:
+              if set(matrix["passes"]) != public_passes:
+                  raise SystemExit(f"public corpus pass selection drift: {matrix['passes']}")
+              if matrix["failed_samples"] != 0:
+                  raise SystemExit(f"public differential failures: {matrix['failed_samples']}")
+              if matrix["built_samples"] != len(matrix["records"]):
+                  raise SystemExit("public matrix record count does not match its sample count")
+              for pass_name in public_passes:
+                  summary = matrix["pass_summary"][pass_name]
+                  if summary["samples"] != matrix["built_samples"]:
+                      raise SystemExit(f"incomplete public pass coverage: {pass_name}")
+                  if summary["differential_failed"] or summary["errors"]:
+                      raise SystemExit(f"public differential evidence failed: {pass_name}")
+          record_ids = [record["id"] for matrix in public_matrices for record in matrix["records"]]
+          if len(record_ids) != len(set(record_ids)):
+              raise SystemExit("public corpus shards contain duplicate sample ids")
+          public_matrix = {
+              "schema_version": 1,
+              "seed": public_matrices[0]["seed"],
+              "passes": sorted(public_passes),
+              "built_samples": sum(matrix["built_samples"] for matrix in public_matrices),
+              "passed_samples": sum(matrix["passed_samples"] for matrix in public_matrices),
+              "failed_samples": sum(matrix["failed_samples"] for matrix in public_matrices),
+              "failed_records": [
+                  record for matrix in public_matrices for record in matrix["failed_records"]
+              ],
+              "pass_summary": {
+                  pass_name: {
+                      field: sum(
+                          matrix["pass_summary"][pass_name][field]
+                          for matrix in public_matrices
+                      )
+                      for field in (
+                          "applied",
+                          "applied_units",
+                          "differential_failed",
+                          "differential_passed",
+                          "errors",
+                          "omitted",
+                          "samples",
+                      )
+                  }
+                  for pass_name in sorted(public_passes)
+              },
+              "records": [record for matrix in public_matrices for record in matrix["records"]],
+          }
           if public_matrix["built_samples"] == 0 or public_matrix["failed_samples"] != 0:
               raise SystemExit(f"public differential failures: {public_matrix['failed_samples']}")
           for pass_name, summary in public_matrix["pass_summary"].items():
@@ -1082,9 +1128,36 @@ jobs:
           public_benchmarks = sorted(
               Path("public-corpus-reports").glob("**/results/tools.json")
           )
-          if len(public_benchmarks) != 1:
-              raise SystemExit(f"expected one public corpus benchmark, found {public_benchmarks}")
-          public_benchmark = json.loads(public_benchmarks[0].read_text(encoding="utf-8"))
+          if len(public_benchmarks) != 4:
+              raise SystemExit(f"expected four public corpus shard benchmarks, found {public_benchmarks}")
+          benchmark_reports = [
+              json.loads(path.read_text(encoding="utf-8")) for path in public_benchmarks
+          ]
+          if any(
+              report["status"] != "passed" or report["failed_samples"] != 0
+              for report in benchmark_reports
+          ):
+              raise SystemExit("public static recovery benchmark did not pass")
+          public_benchmark = dict(benchmark_reports[0])
+          public_benchmark["samples"] = sum(report["samples"] for report in benchmark_reports)
+          public_benchmark["measured_samples"] = sum(
+              report["measured_samples"] for report in benchmark_reports
+          )
+          public_benchmark["failed_samples"] = sum(
+              report["failed_samples"] for report in benchmark_reports
+          )
+          public_benchmark["measurements"] = [
+              measurement
+              for report in benchmark_reports
+              for measurement in report["measurements"]
+          ]
+          public_benchmark["pass_summary"] = {
+              pass_name: {
+                  field: sum(report["pass_summary"][pass_name][field] for report in benchmark_reports)
+                  for field in ("samples", "measured_samples", "failed_samples")
+              }
+              for pass_name in public_passes
+          }
           expected_measurements = sum(
               item["samples"] for item in public_matrix["pass_summary"].values()
           )
