@@ -210,7 +210,7 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 72:
+          if len(cases) != 73:
               raise SystemExit(f"cross-format smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
@@ -250,6 +250,7 @@ jobs:
               "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
               "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
+              "test_elf_x86_32_string_obfuscation_preserves_native_exit_code",
               "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code",
               "test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code",
               "test_elf_arm32_instruction_expansion_preserves_emulated_exit_code",
