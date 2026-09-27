@@ -33,9 +33,11 @@ from scripts.protection_maturity_baseline import (
     _build_mutation_pass,
     _complete_evidence_error,
     _diagnostic_counts,
+    _FixtureTimeout,
     _independent_semantic_pair,
     _limit_static_mutation_scope,
     _measure_campaign,
+    _measure_fixture_worker,
     _measure_seed,
     _parse_pass_names,
     _positive_fixture_timeout,
@@ -1501,6 +1503,16 @@ def test_fixture_timeout_rejects_non_positive_values() -> None:
         _positive_fixture_timeout("0")
     except argparse.ArgumentTypeError as error:
         expect(str(error) == "fixture timeout must be positive")
+        return
+    expect(False)
+
+
+def test_fixture_worker_timeout_identifies_the_fixture(tmp_path: Path) -> None:
+    task = (_NOP_FIXTURE, range(20260923, 20260924), tmp_path, ("NopInsertion",), ((),), 0.001)
+    try:
+        _measure_fixture_worker(task)
+    except _FixtureTimeout as error:
+        expect("elf_nop_x86_64" in str(error))
         return
     expect(False)
 

@@ -92,6 +92,12 @@ _GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
     ("--", "ffff"),
     ("path/with/slash", "spaced value"),
 )
+
+
+class _FixtureTimeout(BaseException):
+    """Abort one fixture outside the per-artifact exception boundaries."""
+
+
 _DEFAULT_INPUT_SOURCE = "default-argv"
 _GENERATED_INPUT_SOURCE = "generated-argv"
 _GENERATED_CORPUS_FAMILY = "generated-elf-x86-64"
@@ -1838,7 +1844,7 @@ def _positive_fixture_timeout(value: str) -> float:
 
 
 def _fixture_timeout_handler(fixture_name: str, _signum: int, _frame: FrameType | None) -> NoReturn:
-    raise TimeoutError(f"fixture {fixture_name!r} exceeded the fixture timeout")
+    raise _FixtureTimeout(f"fixture {fixture_name!r} exceeded the fixture timeout")
 
 
 def _render_multi_pass_result(
