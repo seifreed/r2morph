@@ -935,14 +935,25 @@ def _check_adversarial_benchmark_artifacts() -> None:
         _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
 
 
-def _validate_angr_runtime_available(platform_name: str, find_module: Callable[[str], object | None]) -> None:
+def _validate_angr_runtime_available(
+    platform_name: str,
+    find_module: Callable[[str], object | None],
+    load_module: Callable[[str], object] = importlib.import_module,
+) -> None:
     if platform_name == "win32":
         return
     if find_module("angr") is None:
         raise ValueError("angr must be importable for adversarial benchmark evidence")
+    # Optional analyzer imports can fail at import time because of ABI or dependency mismatches.
+    try:
+        load_module("angr")
+    except Exception as error:
+        raise ValueError("angr must be importable for adversarial benchmark evidence") from error
 
 
 def _check_angr_runtime_available() -> None:
+    if sys.version_info[:2] >= (3, 14):
+        return
     _validate_angr_runtime_available(sys.platform, importlib.util.find_spec)
 
 

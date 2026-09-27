@@ -247,6 +247,23 @@ def test_release_contract_rejects_missing_angr_runtime_dependency() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_broken_angr_runtime_dependency() -> None:
+    def broken_import(_name: str) -> object:
+        raise ImportError("broken angr import")
+
+    rejected = False
+    try:
+        _validate_angr_runtime_available(
+            "linux",
+            lambda _name: object(),
+            broken_import,
+        )
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_allows_missing_angr_runtime_on_windows() -> None:
     _validate_angr_runtime_available("win32", lambda _name: None)
 
