@@ -111,7 +111,9 @@ so a pass cannot be reported as a no-op merely because it exposes a
 pass-specific counter.
 The adversarial benchmark also measures Binary Ninja through its installed API
 when a licensed installation is available; otherwise its row is explicitly
-reported as unavailable rather than omitted.
+reported as unavailable rather than omitted. Binary Ninja is on hold for the
+current milestone, so the unavailable row remains visible evidence of scope,
+not a completed analyzer result.
 The repository-local single-fixture refresh at `736c7895` records this
 availability slot in
 [`protection-adversarial-benchmark.json`](protection-adversarial-benchmark.json)
