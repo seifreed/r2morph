@@ -116,7 +116,7 @@ def test_adversarial_benchmark_bounds_an_in_process_analyzer() -> None:
 
 def test_adversarial_benchmark_allows_analyzer_process_to_finish() -> None:
     expect(
-        _GHIDRA_PROCESS_TIMEOUT_SECONDS > _GHIDRA_ANALYSIS_TIMEOUT_SECONDS
+        _GHIDRA_PROCESS_TIMEOUT_SECONDS >= _GHIDRA_ANALYSIS_TIMEOUT_SECONDS * 3
         and _IN_PROCESS_TOOL_TIMEOUT_SECONDS >= _GHIDRA_PROCESS_TIMEOUT_SECONDS
     )
 
