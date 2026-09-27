@@ -83,6 +83,7 @@ jobs:
             --first-seed "${{ matrix.seed }}" \
             --count 1 \
             --workers 4 \
+            --fixture-timeout-seconds 600 \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 16 \
             --retain-output-root "$RUNNER_TEMP/differential-output" \

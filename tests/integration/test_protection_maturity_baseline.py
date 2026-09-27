@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import sys
 from pathlib import Path
@@ -37,6 +38,7 @@ from scripts.protection_maturity_baseline import (
     _measure_campaign,
     _measure_seed,
     _parse_pass_names,
+    _positive_fixture_timeout,
     _render_multi_pass_result,
     _render_result,
     _run_runtime,
@@ -1492,6 +1494,15 @@ def test_maturity_runner_expands_code_virtualization_analysis_budget() -> None:
     mutation_pass = _build_mutation_pass("CodeVirtualization", 20260923)
 
     expect(mutation_pass.max_function_analysis_count == _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT)
+
+
+def test_fixture_timeout_rejects_non_positive_values() -> None:
+    try:
+        _positive_fixture_timeout("0")
+    except argparse.ArgumentTypeError as error:
+        expect(str(error) == "fixture timeout must be positive")
+        return
+    expect(False)
 
 
 def test_measure_campaign_parallel_workers_preserve_applied_evidence(tmp_path: Path) -> None:

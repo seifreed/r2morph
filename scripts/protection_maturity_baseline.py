@@ -9,14 +9,17 @@ import hashlib
 import json
 import shlex
 import shutil
+import signal
 import struct
 import sys
 import tempfile
 import time
 from collections.abc import Mapping
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from pathlib import Path
-from typing import cast
+from types import FrameType
+from typing import NoReturn, cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -58,6 +61,7 @@ _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
 _PIE_LOAD_BIAS = 0x5555_5555_4000
 _RUNTIME_TIMEOUT_SECONDS = 15.0
+_FIXTURE_TIMEOUT_SECONDS = 600.0
 _QEMU_EXECUTABLE = "qemu-x86_64"
 _PREVIEW_BYTES = 32
 _MATURITY_MAX_FUNCTION_ANALYSIS_COUNT = 2048
@@ -1826,6 +1830,17 @@ def _positive_worker_count(value: str) -> int:
     return workers
 
 
+def _positive_fixture_timeout(value: str) -> float:
+    timeout = float(value)
+    if timeout <= 0:
+        raise argparse.ArgumentTypeError("fixture timeout must be positive")
+    return timeout
+
+
+def _fixture_timeout_handler(fixture_name: str, _signum: int, _frame: FrameType | None) -> NoReturn:
+    raise TimeoutError(f"fixture {fixture_name!r} exceeded the fixture timeout")
+
+
 def _render_multi_pass_result(
     measurements: dict[str, list[dict[str, object]]],
     dataset: Path | None = None,
@@ -2407,7 +2422,8 @@ def _measure_campaign(
 ) -> dict[str, list[dict[str, object]]]:
     seeds = range(args.first_seed, args.first_seed + args.count)
     runtime_inputs = _GENERATED_RUNTIME_INPUTS if args.generated_inputs else _DEFAULT_RUNTIME_INPUTS
-    tasks = [(fixture, seeds, output_root, pass_names, runtime_inputs) for fixture in fixtures]
+    fixture_timeout = getattr(args, "fixture_timeout_seconds", _FIXTURE_TIMEOUT_SECONDS)
+    tasks = [(fixture, seeds, output_root, pass_names, runtime_inputs, fixture_timeout) for fixture in fixtures]
     measurements: dict[str, list[dict[str, object]]] = {pass_name: [] for pass_name in pass_names}
 
     def record_fixture_results(results: tuple[tuple[str, dict[str, object]], ...]) -> None:
@@ -2426,17 +2442,32 @@ def _measure_campaign(
 
 
 def _measure_fixture_worker(
-    task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...]],
+    task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...], float],
 ) -> tuple[tuple[str, dict[str, object]], ...]:
-    fixture, seeds, output_root, pass_names, runtime_inputs = task
-    baseline_data = _fixture_baseline(fixture, runtime_inputs)
-    return tuple(
-        (
-            pass_name,
-            _measure_fixture_pass(fixture, seeds, output_root, pass_name, baseline_data),
-        )
-        for pass_name in pass_names
+    return _measure_fixture_task(task)
+
+
+def _measure_fixture_task(
+    task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...], float],
+) -> tuple[tuple[str, dict[str, object]], ...]:
+    fixture, seeds, output_root, pass_names, runtime_inputs, timeout_seconds = task
+    previous_handler = signal.signal(
+        signal.SIGALRM,
+        partial(_fixture_timeout_handler, fixture.name),
     )
+    signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
+    try:
+        baseline_data = _fixture_baseline(fixture, runtime_inputs)
+        return tuple(
+            (
+                pass_name,
+                _measure_fixture_pass(fixture, seeds, output_root, pass_name, baseline_data),
+            )
+            for pass_name in pass_names
+        )
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def _emit_report(rendered: str, output: Path | None) -> None:
@@ -2502,11 +2533,14 @@ def main() -> None:
         default=1,
         help="number of isolated fixture workers (default: 1)",
     )
+    parser.add_argument(
+        "--fixture-timeout-seconds",
+        type=_positive_fixture_timeout,
+        default=_FIXTURE_TIMEOUT_SECONDS,
+        help="maximum seconds spent measuring one fixture (default: 600)",
+    )
     args = parser.parse_args()
-    if args.count < 1:
-        parser.error("--count must be positive")
-    if args.all_fixtures and args.fixtures:
-        parser.error("pass either --all or explicit fixture paths")
+    _validate_campaign_arguments(args, parser)
     try:
         fixtures, fixture_shard = _campaign_fixture_selection(args)
     except ValueError as error:
@@ -2563,6 +2597,13 @@ def main() -> None:
         parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     _emit_report(rendered, args.output)
+
+
+def _validate_campaign_arguments(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    if args.count < 1:
+        parser.error("--count must be positive")
+    if args.all_fixtures and args.fixtures:
+        parser.error("pass either --all or explicit fixture paths")
 
 
 if __name__ == "__main__":
