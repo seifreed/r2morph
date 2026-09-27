@@ -19,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from pathlib import Path
 from types import FrameType
-from typing import NoReturn, cast
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -96,6 +96,13 @@ _GENERATED_RUNTIME_INPUTS: tuple[tuple[str, ...], ...] = (
 
 class _FixtureTimeout(BaseException):
     """Abort one fixture outside the per-artifact exception boundaries."""
+
+
+class _FixtureTimeoutState:
+    requested = False
+
+
+_fixture_timeout_state = _FixtureTimeoutState()
 
 
 _DEFAULT_INPUT_SOURCE = "default-argv"
@@ -848,7 +855,14 @@ def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str,
         runtime_path = workdir / "program"
         shutil.copyfile(path, runtime_path)
         runtime_path.chmod(0o700)
-        result = asyncio.run(_run_runtime(_runtime_command(runtime_path, arguments, f"./{runtime_path.name}"), workdir))
+        try:
+            result = asyncio.run(
+                _run_runtime(_runtime_command(runtime_path, arguments, f"./{runtime_path.name}"), workdir)
+            )
+        except RuntimeError:
+            _raise_requested_fixture_timeout(path)
+            raise
+        _raise_requested_fixture_timeout(path)
         result["argv"] = list(arguments)
         result["duration_seconds"] = time.perf_counter() - started
         result["created_files"] = _snapshot_created_files(workdir)
@@ -1843,8 +1857,18 @@ def _positive_fixture_timeout(value: str) -> float:
     return timeout
 
 
-def _fixture_timeout_handler(fixture_name: str, _signum: int, _frame: FrameType | None) -> NoReturn:
-    raise _FixtureTimeout(f"fixture {fixture_name!r} exceeded the fixture timeout")
+def _raise_requested_fixture_timeout(fixture: Path) -> None:
+    if _fixture_timeout_state.requested:
+        _fixture_timeout_state.requested = False
+        raise _FixtureTimeout(f"fixture {fixture.name!r} exceeded the fixture timeout")
+
+
+def _fixture_timeout_handler(fixture_name: str, _signum: int, _frame: FrameType | None) -> None:
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        raise _FixtureTimeout(f"fixture {fixture_name!r} exceeded the fixture timeout") from None
+    _fixture_timeout_state.requested = True
 
 
 def _render_multi_pass_result(
@@ -2457,6 +2481,7 @@ def _measure_fixture_task(
     task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...], float],
 ) -> tuple[tuple[str, dict[str, object]], ...]:
     fixture, seeds, output_root, pass_names, runtime_inputs, timeout_seconds = task
+    _fixture_timeout_state.requested = False
     previous_handler = signal.signal(
         signal.SIGALRM,
         partial(_fixture_timeout_handler, fixture.name),
@@ -2464,16 +2489,18 @@ def _measure_fixture_task(
     signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
     try:
         baseline_data = _fixture_baseline(fixture, runtime_inputs)
-        return tuple(
-            (
-                pass_name,
-                _measure_fixture_pass(fixture, seeds, output_root, pass_name, baseline_data),
+        _raise_requested_fixture_timeout(fixture)
+        measurements: list[tuple[str, dict[str, object]]] = []
+        for pass_name in pass_names:
+            measurements.append(
+                (pass_name, _measure_fixture_pass(fixture, seeds, output_root, pass_name, baseline_data))
             )
-            for pass_name in pass_names
-        )
+            _raise_requested_fixture_timeout(fixture)
+        return tuple(measurements)
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, previous_handler)
+        _fixture_timeout_state.requested = False
 
 
 def _emit_report(rendered: str, output: Path | None) -> None:
