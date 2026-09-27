@@ -156,13 +156,11 @@ format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
 summaries also count declared formats and architectures, making the current ELF
 x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 They also count declared unit and end-to-end evidence paths so test coverage
-gaps are visible at release-gate level. The continuous differential workflow
-also runs five ELF ARM32 cases under `qemu-arm`, six ELF AArch64 cases on
-native ARM64, and five native ELF x86 32-bit cases. Each target covers NOP
-insertion, instruction substitution, register substitution, constant zero
-unfolding, and a composed pass sequence; AArch64 additionally covers a compiled
-C memory and direct/indirect-call fixture. They are preview evidence only and do
-not close the per-pass ARM, AArch64, or x86 parity gaps.
+gaps are visible at release-gate level. The completed differential run
+`36341618537` aggregates six ELF ARM32 cases under `qemu-arm`, seven ELF
+AArch64 cases, and seven native ELF x86 32-bit cases, alongside twelve Windows
+PE cases and thirty-four macOS Mach-O/format cases. These are preview evidence
+only and do not close the per-pass ARM, AArch64, x86, PE, or Mach-O parity gaps.
 
 The `maturity` section assigns every pass an explicit profile covering formats,
 architectures, preconditions, invariants, affected instructions, false-positive

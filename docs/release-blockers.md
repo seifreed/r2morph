@@ -19,10 +19,13 @@ review. It is not a feature roadmap and must not be read as a support claim.
   evidence in addition to the already-complete native, performance, scoped
   composition, false-positive, and affected-instruction evidence.
 - RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass
-  Linux ELF x86-64 campaign. PE/Mach-O, ARM32, x86 32-bit, and AArch64 have
-  execution smoke cases for the core passes (ARM32, x86 32-bit, and AArch64
-  now include constant-unfolding cases), but still require
-  broader platform coverage and per-pass evidence. Evidence map:
+  Linux ELF x86-64 campaign. The latest run
+  [`36341618537`](https://github.com/seifreed/r2morph/actions/runs/36341618537)
+  completed the declared preview evidence aggregate for PE, Mach-O, ARM32,
+  x86 32-bit, and AArch64 (`5/5` platform reports, zero failures). The blocker
+  remains open for pass/target combinations outside that bounded matrix and for
+  parity with the official target; preview evidence is not full-format support.
+  Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [differential-corpus.yml](../.github/workflows/differential-corpus.yml)
   `continuous_evidence_blockers`, `continuous_evidence_blocker_totals`,

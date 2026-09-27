@@ -22,13 +22,15 @@ continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
 native ELF ARM64, native ELF ARM32, and native ELF x86 32-bit JUnit artifacts into
-`differential-platform-aggregate`. The aggregate is a completeness gate for
-those preview targets; it does not promote them to official parity. The ARM32,
-AArch64, and x86 32-bit targets currently have six core smoke cases each for
-NOP insertion, instruction substitution, register substitution, constant zero
-unfolding, a complex fixture, and a composed pass sequence. ARM32 executes under QEMU and AArch64
-runs on native ARM64. This is execution evidence only, not per-pass or
-full-format parity.
+`differential-platform-aggregate`. Run
+[`36341618537`](https://github.com/seifreed/r2morph/actions/runs/36341618537)
+completed that aggregate with `5/5` platform reports and no failures. The
+aggregate is a completeness gate for the declared preview cells; it does not
+promote them to official parity. The current report contains six ARM32 cases,
+seven AArch64 cases, seven x86 32-bit cases, twelve Windows PE cases, and
+thirty-four macOS Mach-O/format cases. ARM32 executes under QEMU and AArch64
+runs through the configured native/emulated runner path. This is bounded
+execution evidence for the listed passes, not full-format parity.
 The AArch64 campaign also includes a compiled C fixture with stack memory,
 direct and indirect calls, a loop, and the same four-pass composition; the
 compiled case is an additional evidence point, not a support promotion.
