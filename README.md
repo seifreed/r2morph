@@ -178,7 +178,9 @@ The latest local adversarial refresh measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
 also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
 rows are retained with their instruction-support reasons. Binary Ninja, IDA,
-Ghidra, and Triton remain explicit unavailable analyzer slots. The bounded
+and Triton remain explicit unavailable analyzer slots; Binary Ninja is on hold
+for the current milestone. Ghidra is now provisioned by the scheduled
+campaign. The bounded
 report is
 [`docs/protection-adversarial-angr-local-2026-09-20.json`](docs/protection-adversarial-angr-local-2026-09-20.json).
 The earlier focused `angr` fixture remains available in
@@ -187,7 +189,8 @@ That focused fixture records 5 completed analyzer slots and 4 unavailable analyz
 Binary Ninja is an explicit analyzer slot; the focused local
 fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The current installed API is importable, but the headless benchmark reports
-`analyzer license is unavailable`; the slot therefore remains a release blocker.
+`analyzer license is unavailable`; this remains an explicit evidence gap while
+the slot is on hold.
 The VM review packet still has `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
 flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths

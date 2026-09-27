@@ -2344,12 +2344,30 @@ def _select_fixtures(
 
 
 def _select_fixture_shard(fixtures: list[Path], index: int, count: int) -> list[Path]:
-    """Select a deterministic corpus partition for parallel scheduled jobs."""
+    """Select a deterministic, size-balanced corpus partition."""
     if count < 1:
         raise ValueError("fixture shard count must be positive")
     if index < 0 or index >= count:
         raise ValueError("fixture shard index must be within the shard count")
-    return fixtures[index::count]
+
+    def fixture_weight(fixture: Path) -> int:
+        try:
+            return max(fixture.stat().st_size, 1)
+        except OSError:
+            return 1
+
+    # ponytail: file size is a coarse cost proxy; use measured fixture timings if skew remains.
+    buckets: list[list[tuple[int, Path]]] = [[] for _ in range(count)]
+    loads = [0] * count
+    weighted_fixtures = sorted(
+        enumerate(fixtures),
+        key=lambda item: (-fixture_weight(item[1]), item[0]),
+    )
+    for position, fixture in weighted_fixtures:
+        bucket = min(range(count), key=lambda bucket_index: (loads[bucket_index], bucket_index))
+        buckets[bucket].append((position, fixture))
+        loads[bucket] += fixture_weight(fixture)
+    return [fixture for _position, fixture in sorted(buckets[index])]
 
 
 def _campaign_fixture_selection(args: argparse.Namespace) -> tuple[list[Path], dict[str, int] | None]:

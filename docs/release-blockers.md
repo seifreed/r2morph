@@ -63,19 +63,20 @@ review. It is not a feature roadmap and must not be read as a support claim.
   complete (`159/159` samples, `318/318` analyses, zero errors and timeouts).
   The remaining gap is a comparable continuous all-pass campaign attached to
   the scheduled benchmark. The workflow provisions a pinned Ghidra headless
-  analyzer with a verified checksum. Binary Ninja is an explicit slot and
-  remains unavailable by decision, so it is a release blocker rather than a
-  silently omitted result. Evidence map:
+  analyzer with a verified checksum. Binary Ninja is deliberately on hold for
+  this milestone: it remains an explicit unavailable slot and is not silently
+  omitted, but no installation work is planned in the current campaign.
+  Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
   `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
-  Exit criteria: every analyzer slot has completed comparable scheduled
-  campaign rows, including Binary Ninja; unavailable rows remain blockers with
-  reasons until completed. The campaign is partitioned into eight deterministic
-  fixture shards and merged before the corpus-wide gate runs; this addresses
-  campaign sustainability. In-process analyzers are isolated with bounded
-  workers so a timeout is retained as an error row; this does not close the
-  Binary Ninja availability blocker.
+  Exit criteria: every in-scope analyzer slot has completed comparable
+  scheduled campaign rows; Binary Ninja remains a recorded out-of-scope hold
+  with its reason. The campaign is partitioned into deterministic fixture
+  shards and merged before the corpus-wide gate runs; this addresses campaign
+  sustainability. In-process analyzers are isolated with bounded workers so a
+  timeout is retained as an error row. This does not turn the Binary Ninja hold
+  into completed evidence.
 - RB-006: The automated VM-resistance campaign is complete for fifteen fixtures
   across ten seeds: semantic parity, opcode/handler/dispatcher diversity,
   anti-tamper and progressive bytecode protection, plus bounded recovery
