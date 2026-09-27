@@ -672,17 +672,17 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         evidence_cells = {(cell["format"], cell["architecture"]) for cell in mutation_pass.get("evidence_cells", [])}
         for binary_format in formats:
             for architecture in architectures:
-                covered = (binary_format in supported_formats and architecture in supported_architectures) or (
-                    binary_format,
-                    architecture,
-                ) in evidence_cells
+                target = (binary_format, architecture)
+                declared_support = binary_format in supported_formats and architecture in supported_architectures
+                evidenced = target in evidence_cells
                 cells.append(
                     {
                         "pass": name,
                         "format": binary_format,
                         "architecture": architecture,
-                        "status": "evidenced" if covered else "not-supported",
-                        "evidence": mutation_pass.get("evidence", []) if covered else [],
+                        "declared_support": declared_support,
+                        "status": "evidenced" if evidenced else "not-supported",
+                        "evidence": mutation_pass.get("evidence", []) if evidenced else [],
                     }
                 )
     evidenced = sum(1 for cell in cells if cell["status"] == "evidenced")

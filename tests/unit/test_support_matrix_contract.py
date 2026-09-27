@@ -9,11 +9,11 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 48
-_EXPECTED_NOT_SUPPORTED_CELLS = 216
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 26
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 216
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 216
+_EXPECTED_EVIDENCED_CELLS = 47
+_EXPECTED_NOT_SUPPORTED_CELLS = 217
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 25
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 217
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 217
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -180,6 +180,26 @@ def test_support_matrix_honors_explicit_evidence_cells() -> None:
     }
 
     expect(build_matrix(document)["cells"][0]["status"] == "evidenced")
+
+
+def test_support_matrix_does_not_turn_declared_support_into_evidence() -> None:
+    document = {
+        "formats": {"ELF": "official"},
+        "architectures": {"x86-64": "official"},
+        "passes": [
+            {
+                "name": "nop",
+                "formats": ["ELF"],
+                "architectures": ["x86-64"],
+                "evidence_cells": [],
+                "evidence": ["tests/integration"],
+            }
+        ],
+    }
+
+    cell = build_matrix(document)["cells"][0]
+
+    expect(cell["declared_support"] and cell["status"] == "not-supported" and cell["evidence"] == [])
 
 
 def test_support_matrix_keeps_non_official_targets_out_of_supported_status() -> None:
