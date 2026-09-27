@@ -12,7 +12,10 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.platform.elf_handler_parsing import parse_elf_header
-from scripts.adversarial_benchmark import _EXPECTED_TOOLS
+from scripts.adversarial_benchmark import (
+    _EXPECTED_TOOLS,
+    _decompiler_evidence_complete,
+)
 from scripts.continuous_fuzz import run_campaign
 from scripts.protection_maturity_baseline import (
     _DIFFERENTIAL_PLATFORM_GAP_SCOPE,
@@ -62,7 +65,7 @@ _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "Differential corpus coverage remains incomplete",
     "VM semantic coverage is complete for the declared ELF x86-64 scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
-    "Binary Ninja is an explicit slot",
+    "Binary Ninja is deliberately on hold",
     "anti-tamper and progressive bytecode protection",
     "external human review records signoff",
 )
@@ -253,6 +256,66 @@ def _review_benchmark(root: Path) -> dict[str, object]:
     passed = tools == _EXPECTED_BENCHMARK_TOOLS and valid_unavailable and valid_completed
     return _check(
         "adversarial_benchmark_evidence", passed, f"{len(completed)} completed, {len(unavailable)} unavailable"
+    )
+
+
+def _review_live_adversarial_benchmark(path: Path) -> dict[str, object]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    summary = document.get("summary")
+    pass_names = document.get("pass_names")
+    pass_summary = document.get("pass_summary")
+    if not isinstance(summary, dict) or not isinstance(pass_names, list) or not isinstance(pass_summary, dict):
+        return _check("live_adversarial_campaign", False, "merged benchmark report has an invalid shape")
+
+    sample_count = document.get("sample_count")
+    expected_pass_runs = summary.get("expected_pass_runs")
+    completed_by_tool = summary.get("completed_tool_runs_by_tool")
+    effectiveness = summary.get("analyzer_effectiveness_by_pass")
+    required_tools = ("radare2", "angr", "ghidra")
+    valid = (
+        isinstance(sample_count, int)
+        and sample_count > 0
+        and isinstance(expected_pass_runs, int)
+        and expected_pass_runs > 0
+        and set(summary.get("expected_tools", ())) == set(_EXPECTED_TOOLS)
+        and isinstance(completed_by_tool, dict)
+        and isinstance(effectiveness, dict)
+        and set(effectiveness) == set(pass_names)
+        and summary.get("missing_pass_runs") == 0
+        and summary.get("error_pass_runs") == 0
+        and summary.get("missing_tool_runs") == 0
+        and summary.get("error_tool_runs") == 0
+    )
+    if valid:
+        valid = all(completed_by_tool.get(tool) == expected_pass_runs for tool in required_tools)
+    if valid:
+        for pass_name in pass_names:
+            pass_data = pass_summary.get(pass_name)
+            tools = effectiveness.get(pass_name)
+            if not isinstance(pass_data, dict) or not isinstance(tools, dict):
+                valid = False
+                break
+            applied_pairs = pass_data.get("applied")
+            if not isinstance(applied_pairs, int):
+                valid = False
+                break
+            for tool in required_tools:
+                decompiler = tools.get(tool, {}).get("decompiler") if isinstance(tools.get(tool), dict) else None
+                if not isinstance(decompiler, dict) or not _decompiler_evidence_complete(
+                    decompiler, sample_count, applied_pairs
+                ):
+                    valid = False
+                    break
+            if not valid:
+                break
+    return _check(
+        "live_adversarial_campaign",
+        valid,
+        (
+            f"{sample_count} samples, {len(pass_names)} passes, complete radare2/angr/ghidra evidence"
+            if valid
+            else "merged benchmark is missing complete in-scope analyzer evidence"
+        ),
     )
 
 
@@ -528,7 +591,7 @@ def _review_fixtures(root: Path) -> dict[str, object]:
     )
 
 
-def review(root: Path) -> dict[str, Any]:
+def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]:
     fuzz = run_campaign(cases=64, seed=20260827, max_payload=512)
     checks = [
         _review_virtualization(root),
@@ -557,6 +620,8 @@ def review(root: Path) -> dict[str, Any]:
         _review_fuzz_artifact(root),
         _check("independent_fuzz_recheck", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"),
     ]
+    if adversarial_report is not None:
+        checks.append(_review_live_adversarial_benchmark(adversarial_report))
     return {
         "schema_version": 1,
         "review_type": "automated-independent-second-pass",
@@ -574,9 +639,10 @@ def review(root: Path) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path("."))
+    parser.add_argument("--adversarial-report", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = review(args.root.resolve())
+    report = review(args.root.resolve(), args.adversarial_report)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")

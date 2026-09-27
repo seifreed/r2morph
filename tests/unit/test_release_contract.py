@@ -205,6 +205,8 @@ def test_independent_review_follows_successful_adversarial_campaign() -> None:
         'workflows: ["Adversarial Analysis Benchmark"]' in workflow
         and "types: [completed]" in workflow
         and "github.event.workflow_run.head_sha || github.sha" in workflow
+        and "actions/download-artifact@v8" in workflow
+        and "--adversarial-report" in workflow
     )
 
 

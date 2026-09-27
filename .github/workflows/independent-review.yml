@@ -30,8 +30,26 @@ jobs:
           pip install -r requirements.txt
           python -m pip install --editable .
 
+      - name: Download triggering adversarial campaign
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/download-artifact@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: adversarial-benchmark-merged-*
+          path: campaign-evidence
+          merge-multiple: false
+
       - name: Run independent review
-        run: python scripts/independent_review.py --output independent-review.json
+        shell: bash
+        run: |
+          args=(--output independent-review.json)
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]]; then
+            adversarial_report=$(find campaign-evidence -name adversarial-benchmark-merged.json -print -quit)
+            test -n "$adversarial_report"
+            args+=(--adversarial-report "$adversarial_report")
+          fi
+          python scripts/independent_review.py "${args[@]}"
 
       - name: Upload review report
         uses: actions/upload-artifact@v7
