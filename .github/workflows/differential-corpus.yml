@@ -1553,8 +1553,8 @@ jobs:
 
           suite = ET.parse("cross-platform-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) < 25:
-              raise SystemExit(f"cross-platform smoke ran too few cases: {len(cases)}")
+          if len(cases) != 34:
+              raise SystemExit(f"cross-platform smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-platform smoke contains failures or errors")
           if suite.findall(".//skipped"):
@@ -1568,6 +1568,9 @@ jobs:
               "test_nop_then_instruction_substitution_arm64_preserves_native_output",
               "test_register_substitution_arm64_preserves_generated_native_execution",
               "test_constant_unfolding_arm64_preserves_native_output",
+              "test_x86_string_obfuscation_preserves_native_exit_code",
+              "test_x86_nop_insertion_and_substitution_real",
+              "test_x86_instruction_expansion_and_register_substitution_real",
               "test_x86_mutation_sequence_preserves_native_exit_code",
               "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
               "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
@@ -1651,16 +1654,17 @@ jobs:
             tests/integration/test_nop_insertion_pe_real.py::test_instruction_expansion_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution `
+            tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_tier1_pass_composition_pe_x86_64_preserves_native_execution `
             tests/integration/test_mutation_passes_end_to_end_more2.py::test_multiple_mutation_passes_on_x86_binary `
-            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or instruction_expansion_pe_x86_64_preserves_native_execution or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or instruction_expansion_pe_x86_64_preserves_native_execution or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or string_obfuscation_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 11) { throw "Windows PE smoke ran $($cases.Count) cases; expected 11" }
+          if ($cases.Count -ne 12) { throw "Windows PE smoke ran $($cases.Count) cases; expected 12" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1680,6 +1684,7 @@ jobs:
             "test_instruction_expansion_pe_x86_64_preserves_native_execution",
             "test_register_substitution_pe_x86_64_preserves_native_execution",
             "test_constant_unfolding_pe_x86_64_preserves_native_execution",
+            "test_string_obfuscation_pe_x86_64_preserves_native_execution",
             "test_multiple_mutation_passes_on_x86_binary"
           )
           foreach ($name in $required) {
@@ -2185,7 +2190,7 @@ jobs:
 
           suite = ET.parse("elf-x86-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 6:
+          if len(cases) != 7:
               raise SystemExit(f"unexpected ELF x86 32-bit case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF x86 32-bit evidence is incomplete")
@@ -2201,6 +2206,7 @@ jobs:
               "test_elf_x86_32_register_substitution_preserves_native_exit_code",
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
               "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
+              "test_elf_x86_32_string_obfuscation_preserves_native_exit_code",
           }
           names = {case.attrib.get("name", "") for case in cases}
           missing = [name for name in required if not any(value.startswith(name) for value in names)]

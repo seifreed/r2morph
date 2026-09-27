@@ -10,6 +10,7 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from r2morph.platform.pe_handler import PEHandler
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
@@ -304,4 +305,40 @@ def test_instruction_expansion_pe_x86_64_preserves_native_execution(tmp_path: Pa
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE instruction expansion changed the native execution result",
+    )
+
+
+def test_string_obfuscation_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
+    if platform.system() != "Windows":
+        pytest.skip("native PE fixture execution requires Windows")
+
+    compiler = shutil.which("gcc") or shutil.which("x86_64-w64-mingw32-gcc")
+    if compiler is None:
+        pytest.skip("a PE compiler is required")
+    source = tmp_path / "string_sample.c"
+    source.write_text(
+        '__attribute__((used)) static const char unreferenced_evidence_string[] = "platform-string-evidence";\n'
+        "__attribute__((noinline)) int transform(int value) { return value + 1; }\n"
+        "int main(void) { return transform(41) == 42 ? 0 : 1; }\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "string_sample.exe"
+    run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    original_execution = run_command([binary_path], timeout=30)
+    expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        result = StringObfuscationPass({"probability": 1.0, "encoding": "xor", "max_strings_per_section": 1}).apply(
+            binary
+        )
+
+    handler = PEHandler(binary_path)
+    expect(result["mutations_applied"] > 0)
+    expect(handler.fix_checksum())
+    expect(handler.validate_integrity()[0])
+    mutated_execution = run_command([binary_path], timeout=30)
+    expect(
+        mutated_execution.returncode == original_execution.returncode == 0,
+        "PE string obfuscation changed the native execution result",
     )

@@ -21,6 +21,9 @@ _REQUIRED_CASES = {
         "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "test_register_substitution_arm64_preserves_generated_native_execution",
         "test_constant_unfolding_arm64_preserves_native_output",
+        "test_x86_string_obfuscation_preserves_native_exit_code",
+        "test_x86_nop_insertion_and_substitution_real",
+        "test_x86_instruction_expansion_and_register_substitution_real",
         "test_x86_mutation_sequence_preserves_native_exit_code",
         "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
         "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
@@ -37,6 +40,7 @@ _REQUIRED_CASES = {
         "test_register_substitution_pe_x86_64_preserves_native_execution",
         "test_constant_unfolding_pe_x86_64_preserves_native_execution",
         "test_tier1_pass_composition_pe_x86_64_preserves_native_execution",
+        "test_string_obfuscation_pe_x86_64_preserves_native_execution",
         "test_multiple_mutation_passes_on_x86_binary",
     ),
     "elf-arm64": (
@@ -54,6 +58,7 @@ _REQUIRED_CASES = {
         "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
         "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
         "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
+        "test_elf_x86_32_string_obfuscation_preserves_native_exit_code",
     ),
     "elf-arm-32": (
         "test_elf_arm32_instruction_substitution_preserves_emulated_exit_code",
@@ -72,6 +77,7 @@ _PASS_CASES = {
         "Composition": "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "RegisterSubstitution": "test_register_substitution_arm64_preserves_generated_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_arm64_preserves_native_output",
+        "StringObfuscation": "test_x86_string_obfuscation_preserves_native_exit_code",
     },
     "windows-pe": {
         "NopInsertion": "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
@@ -80,6 +86,7 @@ _PASS_CASES = {
         "RegisterSubstitution": "test_register_substitution_pe_x86_64_preserves_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_pe_x86_64_preserves_native_execution",
         "Composition": "test_tier1_pass_composition_pe_x86_64_preserves_native_execution",
+        "StringObfuscation": "test_string_obfuscation_pe_x86_64_preserves_native_execution",
     },
     "elf-arm64": {
         "NopInsertion": "test_elf_arm64_nop_insertion_preserves_native_exit_code",
@@ -96,6 +103,7 @@ _PASS_CASES = {
         "ConstantUnfolding": "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
         "InstructionExpansion": "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
         "Composition": "test_elf_x86_32_complex_pass_sequence_preserves_native_exit_code",
+        "StringObfuscation": "test_elf_x86_32_string_obfuscation_preserves_native_exit_code",
     },
     "elf-arm-32": {
         "NopInsertion": "test_elf_arm32_nop_insertion_preserves_emulated_exit_code",

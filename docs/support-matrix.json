@@ -53,6 +53,10 @@
         {
           "format": "Mach-O",
           "architecture": "x86-64"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
@@ -98,6 +102,10 @@
           "architecture": "AArch64"
         },
         {
+          "format": "Mach-O",
+          "architecture": "x86-64"
+        },
+        {
           "format": "PE",
           "architecture": "x86-64"
         }
@@ -141,6 +149,10 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64"
         },
         {
           "format": "PE",
@@ -190,6 +202,10 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
@@ -541,11 +557,25 @@
         {
           "format": "ELF",
           "architecture": "x86-64"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64"
         }
       ],
       "evidence": [
         "README.md",
-        "tests/integration"
+        "tests/integration/test_elf_x86_32_native.py",
+        "tests/integration/test_mutations_x86_compiled_binary.py",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ]
     },
     {
@@ -1045,14 +1075,14 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 47,
-      "not_supported_cells": 217,
+      "evidenced_cells": 54,
+      "not_supported_cells": 210,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 25,
-      "non_official_not_supported_cells": 217,
-      "non_official_evidence_percent": 10.33,
+      "non_official_evidenced_cells": 32,
+      "non_official_not_supported_cells": 210,
+      "non_official_evidence_percent": 13.22,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1071,9 +1101,9 @@
         {
           "format": "ELF",
           "architecture": "x86",
-          "evidenced_cells": 5,
-          "not_supported_cells": 17,
-          "evidence_percent": 22.73
+          "evidenced_cells": 6,
+          "not_supported_cells": 16,
+          "evidence_percent": 27.27
         },
         {
           "format": "Mach-O",
@@ -1099,9 +1129,9 @@
         {
           "format": "Mach-O",
           "architecture": "x86-64",
-          "evidenced_cells": 1,
-          "not_supported_cells": 21,
-          "evidence_percent": 4.55
+          "evidenced_cells": 5,
+          "not_supported_cells": 17,
+          "evidence_percent": 22.73
         },
         {
           "format": "PE",
@@ -1127,9 +1157,9 @@
         {
           "format": "PE",
           "architecture": "x86-64",
-          "evidenced_cells": 4,
-          "not_supported_cells": 18,
-          "evidence_percent": 18.18
+          "evidenced_cells": 6,
+          "not_supported_cells": 16,
+          "evidence_percent": 27.27
         }
       ],
       "parity_gap_scope": {
@@ -1162,9 +1192,9 @@
           {
             "format": "ELF",
             "architecture": "x86",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "Mach-O",
@@ -1176,16 +1206,16 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 1,
-            "not_supported_cells": 21,
-            "evidence_percent": 4.55
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "PE",
             "architecture": "x86-64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           }
         ],
         "zero_evidence_targets": [
@@ -1245,9 +1275,9 @@
           {
             "format": "ELF",
             "architecture": "x86",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "Mach-O",
@@ -1273,9 +1303,9 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 1,
-            "not_supported_cells": 21,
-            "evidence_percent": 4.55
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "PE",
@@ -1301,9 +1331,9 @@
           {
             "format": "PE",
             "architecture": "x86-64",
-            "evidenced_cells": 4,
-            "not_supported_cells": 18,
-            "evidence_percent": 18.18
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           }
         ],
         "parity_gap_scope": {
@@ -1319,7 +1349,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 217,
+        "non_official_missing_evidence_cells": 210,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2003,8 +2033,18 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": true,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_protection_maturity_baseline.py"
+        ]
       },
       {
         "pass": "nop",
@@ -2191,8 +2231,16 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+        ]
       },
       {
         "pass": "substitute",
@@ -2335,8 +2383,16 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration",
+          "tests/integration/test_mutation_register_substitution_arm64.py",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "register",
@@ -2479,8 +2535,16 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration",
+          "tests/integration/test_elf_arm32_native.py",
+          "tests/integration/test_elf_arm64_native.py",
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_mutation_nop_insertion_arm64.py",
+          "tests/integration/test_elf_x86_32_native.py"
+        ]
       },
       {
         "pass": "instruction-expansion",
@@ -4053,7 +4117,9 @@
         "status": "evidenced",
         "evidence": [
           "README.md",
-          "tests/integration"
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -4061,8 +4127,13 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "string-obfuscation",
@@ -4085,8 +4156,13 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "string-obfuscation",
@@ -4117,8 +4193,13 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration/test_elf_x86_32_native.py",
+          "tests/integration/test_mutations_x86_compiled_binary.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
+        ]
       },
       {
         "pass": "string-obfuscation",

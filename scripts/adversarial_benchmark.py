@@ -55,7 +55,8 @@ _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "tri
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
-_IN_PROCESS_TOOL_TIMEOUT_SECONDS = 90
+_GHIDRA_PROCESS_TIMEOUT_SECONDS = _GHIDRA_ANALYSIS_TIMEOUT_SECONDS + 30
+_IN_PROCESS_TOOL_TIMEOUT_SECONDS = 180
 _IN_PROCESS_TOOLS = frozenset({"angr", "binary-ninja", "unicorn", "triton", "custom"})
 _FULL_COVERAGE_PERCENT = 100.0
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
@@ -491,7 +492,7 @@ def _ghidra_metric(path: Path) -> dict[str, object]:
                 "-deleteProject",
                 "-okToDelete",
             ],
-            timeout=_COMMAND_TIMEOUT_SECONDS,
+            timeout=_GHIDRA_PROCESS_TIMEOUT_SECONDS,
         )
     if result.returncode != 0:
         raise RuntimeError(f"Ghidra headless exited with status {result.returncode}")

@@ -10,6 +10,9 @@ import pytest
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
+    _GHIDRA_ANALYSIS_TIMEOUT_SECONDS,
+    _GHIDRA_PROCESS_TIMEOUT_SECONDS,
+    _IN_PROCESS_TOOL_TIMEOUT_SECONDS,
     _analyzer_effectiveness_by_pass,
     _availability,
     _binary_ninja_decompiler_metrics,
@@ -109,6 +112,13 @@ def test_adversarial_benchmark_bounds_an_in_process_analyzer() -> None:
     result = _measure_tool_bounded("angr", _FIXTURE, _FIXTURE, timeout=0.001)
 
     expect(result["status"] == "error" and result["error_type"] == "ProcessTimeoutError")
+
+
+def test_adversarial_benchmark_allows_analyzer_process_to_finish() -> None:
+    expect(
+        _GHIDRA_PROCESS_TIMEOUT_SECONDS > _GHIDRA_ANALYSIS_TIMEOUT_SECONDS
+        and _IN_PROCESS_TOOL_TIMEOUT_SECONDS >= _GHIDRA_PROCESS_TIMEOUT_SECONDS
+    )
 
 
 def test_adversarial_benchmark_reports_the_bounded_custom_adapter() -> None:

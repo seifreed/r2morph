@@ -13,6 +13,7 @@ from r2morph.mutations.instruction_substitution import InstructionSubstitutionPa
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from r2morph.platform.codesign import CodeSigner
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
@@ -49,6 +50,7 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
         "  );\n"
         "  return y;\n"
         "}\n"
+        '__attribute__((used)) static const char unreferenced_evidence_string[] = "platform-string-evidence";\n'
         "__attribute__((noinline)) int branchy(int x) {\n"
         "  if (x & 1) { return x + 1; }\n"
         "  return x - 1;\n"
@@ -176,3 +178,22 @@ def test_x86_opaque_predicates_and_control_flow_detection(x86_binary_path: Path,
     expect(isinstance(result.cff_detected, bool))
     expect(isinstance(custom, dict))
     expect(isinstance(meta, dict))
+
+
+def test_x86_string_obfuscation_preserves_native_exit_code(x86_binary_path: Path, tmp_path: Path):
+    writable_path = _copy_writable(tmp_path, x86_binary_path)
+    original = run_command([writable_path], text=True, timeout=30)
+
+    with Binary(writable_path, writable=True) as bin_obj:
+        bin_obj.analyze("aa")
+        result = StringObfuscationPass(
+            config={"probability": 1.0, "encoding": "xor", "max_strings_per_section": 1}
+        ).apply(bin_obj)
+
+    expect(result["mutations_applied"] > 0)
+    expect(CodeSigner().sign(writable_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([writable_path], text=True, timeout=30)
+    expect(
+        (mutated.returncode, mutated.stdout, mutated.stderr) == (original.returncode, original.stdout, original.stderr),
+        "Mach-O x86-64 string obfuscation changed native execution",
+    )

@@ -9,11 +9,11 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 47
-_EXPECTED_NOT_SUPPORTED_CELLS = 217
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 25
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 217
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 217
+_EXPECTED_EVIDENCED_CELLS = 54
+_EXPECTED_NOT_SUPPORTED_CELLS = 210
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 32
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 210
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 210
 _EXPECTED_STABILITY_COUNTS = {"experimental": 19, "tier-1": 3}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -208,3 +208,20 @@ def test_support_matrix_keeps_non_official_targets_out_of_supported_status() -> 
     non_official_cells = [cell for cell in cells if cell["format"] != "ELF" or cell["architecture"] != "x86-64"]
 
     expect(non_official_cells and all(cell["status"] != "supported" for cell in non_official_cells))
+
+
+def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    cells_by_pass = {entry["name"]: entry["evidence_cells"] for entry in document["passes"]}
+
+    expect(
+        all(
+            cell in cells_by_pass[pass_name]
+            for pass_name, cell in (
+                ("nop", {"format": "PE", "architecture": "x86-64"}),
+                ("substitute", {"format": "Mach-O", "architecture": "x86-64"}),
+                ("register", {"format": "Mach-O", "architecture": "x86-64"}),
+                ("instruction-expansion", {"format": "Mach-O", "architecture": "x86-64"}),
+            )
+        )
+    )

@@ -14,6 +14,7 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -319,4 +320,63 @@ def test_elf_x86_32_instruction_expansion_preserves_native_exit_code(tmp_path: P
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "ELF x86 32-bit instruction expansion changed native execution",
+    )
+
+
+def test_elf_x86_32_string_obfuscation_preserves_native_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native ELF x86 32-bit execution requires a Linux x86-64 runner")
+
+    compiler = shutil.which("clang") or shutil.which("gcc")
+    if compiler is None:
+        raise RuntimeError("clang or gcc is required for the ELF x86 32-bit differential fixture")
+    target_flags = ["-target", "i386-linux-gnu"] if Path(compiler).name == "clang" else ["-m32"]
+    source = tmp_path / "x86_32_string.S"
+    source.write_text(
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    movl $42, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".size _start, .-_start\n"
+        ".section .rodata\n"
+        ".type unreferenced_evidence_string,@object\n"
+        "unreferenced_evidence_string:\n"
+        '    .asciz "platform-string-evidence"\n',
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "x86_32_string"
+    run_command(
+        [
+            compiler,
+            *target_flags,
+            "-nostdlib",
+            "-static",
+            "-Wl,-e,_start",
+            "-x",
+            "assembler",
+            "-o",
+            binary_path,
+            source,
+        ],
+        check=True,
+        text=True,
+    )
+    original = run_command([binary_path], text=True, timeout=30)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = StringObfuscationPass({"probability": 1.0, "encoding": "xor", "max_strings_per_section": 1}).apply(
+            binary
+        )
+
+    mutated = run_command([binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF x86 32-bit string obfuscation changed native execution",
     )

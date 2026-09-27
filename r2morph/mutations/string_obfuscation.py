@@ -175,6 +175,95 @@ class StringObfuscationPass(MutationPass):
             logger.warning("Cannot prove string at 0x%x is unreferenced: %s", address, error)
             return False
 
+    @staticmethod
+    def _select_data_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Select data sections across ELF, PE, and radare2's Mach-O names."""
+        data_sections = []
+        for section in sections:
+            section_name = str(section.get("name", "")).lower()
+            is_named_data = section_name in (
+                ".data",
+                ".rodata",
+                ".rdata",
+                "__data",
+                "__const",
+                "__cstring",
+            )
+            is_segmented_macho_data = section_name.endswith((".__data", ".__const", ".__cstring"))
+            if is_named_data or is_segmented_macho_data:
+                data_sections.append(section)
+        if data_sections:
+            return data_sections
+
+        # radare2 reports section ``perm`` as a string (e.g. "-rw-").
+        return [section for section in sections if "w" in str(section.get("perm", ""))]
+
+    def _obfuscate_string(self, binary: Any, section: dict[str, Any], string_info: dict[str, Any]) -> int:
+        """Encode one unreferenced string and return its byte count when applied."""
+        bytes_encoded = 0
+        if random.random() <= self.probability:
+            address = string_info.get("addr")
+            size = string_info.get("size")
+            content = string_info.get("content", "")
+            if isinstance(address, int) and isinstance(size, int) and size > 0:
+                mutation_checkpoint = self._create_mutation_checkpoint("string_obfuscate")
+                try:
+                    encoding = self.encoding
+                    if encoding == "random":
+                        encoding = random.choice(self.ENCODINGS)
+
+                    original_bytes = binary.read_bytes(address, size)
+                    if original_bytes:
+                        baseline = {}
+                        if self._validation_manager is not None:
+                            baseline = self._validation_manager.capture_structural_baseline(binary, None)
+
+                        encoded_bytes_value, key = self._encode_string(original_bytes, encoding)
+                        if binary.write_bytes(address, encoded_bytes_value):
+                            record = self._record_mutation(
+                                function_address=None,
+                                start_address=address,
+                                end_address=address + size - 1,
+                                original_bytes=original_bytes,
+                                mutated_bytes=encoded_bytes_value,
+                                original_disasm=f'string "{content[:30]}..."',
+                                mutated_disasm=f"{encoding}_encoded({key})",
+                                mutation_kind="string_obfuscation",
+                                metadata={
+                                    "encoding": encoding,
+                                    "key": key,
+                                    "string_length": size,
+                                    "original_content_preview": content[:50],
+                                    "section": section.get("name", "unknown"),
+                                    "structural_baseline": baseline,
+                                },
+                            )
+                            if not self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
+                                logger.info(
+                                    "Obfuscated string at 0x%x (%s, key=%d, len=%d)",
+                                    address,
+                                    encoding,
+                                    key,
+                                    size,
+                                )
+                                bytes_encoded = size
+                except Exception as error:
+                    logger.debug("Failed to obfuscate string at 0x%x: %s", address, error)
+        return bytes_encoded
+
+    def _process_section(self, binary: Any, section: dict[str, Any]) -> tuple[bool, int, int]:
+        """Process one data section and return candidate, mutation, and byte counts."""
+        strings = [
+            string for string in self._find_strings(binary, section) if self._is_unreferenced(binary, string["addr"])
+        ]
+        if not strings:
+            return False, 0, 0
+
+        selected = random.sample(strings, min(self.max_strings, len(strings)))
+        encoded_sizes = [self._obfuscate_string(binary, section, string) for string in selected]
+        applied_sizes = [size for size in encoded_sizes if size > 0]
+        return True, len(applied_sizes), sum(applied_sizes)
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply string obfuscation to the binary.
@@ -194,17 +283,7 @@ class StringObfuscationPass(MutationPass):
             logger.warning("No sections found in binary")
             return {"mutations_applied": 0, "skipped": True, "reason": "no sections"}
 
-        data_sections = [
-            s for s in sections if s.get("name", "").lower() in (".data", ".rodata", ".rdata", "__data", "__const")
-        ]
-
-        if not data_sections:
-            # radare2 reports section ``perm`` as a string (e.g. "-rw-",
-            # "-r-x", "----"), not an int bitmask. Select writable
-            # sections by testing the write flag in that string; the old
-            # ``s.get("perm", 0) & 0x2`` raised TypeError ("str & int")
-            # for every real binary, making this pass non-functional.
-            data_sections = [s for s in sections if "w" in str(s.get("perm", ""))]
+        data_sections = self._select_data_sections(sections)
 
         strings_obfuscated = 0
         bytes_encoded = 0
@@ -213,71 +292,12 @@ class StringObfuscationPass(MutationPass):
         logger.info(f"String obfuscation: processing {len(data_sections)} data sections")
 
         for section in data_sections:
-            strings = self._find_strings(binary, section)
-            strings = [string for string in strings if self._is_unreferenced(binary, string["addr"])]
-
-            if not strings:
+            has_candidates, mutation_count, encoded_size = self._process_section(binary, section)
+            if not has_candidates:
                 continue
-
             sections_processed += 1
-            selected = random.sample(strings, min(self.max_strings, len(strings)))
-
-            for string_info in selected:
-                if random.random() > self.probability:
-                    continue
-
-                addr = string_info["addr"]
-                size = string_info["size"]
-                content = string_info["content"]
-
-                mutation_checkpoint = self._create_mutation_checkpoint("string_obfuscate")
-
-                try:
-                    encoding = self.encoding
-                    if encoding == "random":
-                        encoding = random.choice(self.ENCODINGS)
-
-                    original_bytes = binary.read_bytes(addr, size)
-                    if not original_bytes:
-                        continue
-
-                    baseline = {}
-                    if self._validation_manager is not None:
-                        baseline = self._validation_manager.capture_structural_baseline(binary, None)
-
-                    encoded_bytes, key = self._encode_string(original_bytes, encoding)
-
-                    if not binary.write_bytes(addr, encoded_bytes):
-                        continue
-
-                    record = self._record_mutation(
-                        function_address=None,
-                        start_address=addr,
-                        end_address=addr + size - 1,
-                        original_bytes=original_bytes,
-                        mutated_bytes=encoded_bytes,
-                        original_disasm=f'string "{content[:30]}..."',
-                        mutated_disasm=f"{encoding}_encoded({key})",
-                        mutation_kind="string_obfuscation",
-                        metadata={
-                            "encoding": encoding,
-                            "key": key,
-                            "string_length": size,
-                            "original_content_preview": content[:50],
-                            "section": section.get("name", "unknown"),
-                            "structural_baseline": baseline,
-                        },
-                    )
-
-                    if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
-                        continue
-
-                    logger.info(f"Obfuscated string at 0x{addr:x} ({encoding}, key={key}, len={size})")
-                    strings_obfuscated += 1
-                    bytes_encoded += size
-
-                except Exception as e:
-                    logger.debug(f"Failed to obfuscate string at 0x{addr:x}: {e}")
+            strings_obfuscated += mutation_count
+            bytes_encoded += encoded_size
 
         logger.info(
             f"String obfuscation complete: {strings_obfuscated} strings, "
