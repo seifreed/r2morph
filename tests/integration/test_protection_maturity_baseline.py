@@ -1440,6 +1440,19 @@ def test_fixture_shard_selection_is_deterministic_and_disjoint() -> None:
     )
 
 
+def test_fixture_shard_selection_balances_fixture_sizes(tmp_path: Path) -> None:
+    fixtures = []
+    for index, size in enumerate((100, 90, 80, 70)):
+        fixture = tmp_path / f"fixture-{index}"
+        fixture.write_bytes(b"x" * size)
+        fixtures.append(fixture)
+
+    shards = [_select_fixture_shard(fixtures, index, 2) for index in range(2)]
+    shard_sizes = [sum(path.stat().st_size for path in shard) for shard in shards]
+
+    expect(shard_sizes == [170, 170] and sorted(path for shard in shards for path in shard) == sorted(fixtures))
+
+
 def test_merge_maturity_reports_rechecks_application_across_shards() -> None:
     first_fixture = {"all_semantic_equal": True, "runs": []}
     second_fixture = {"all_semantic_equal": True, "runs": []}
