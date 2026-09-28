@@ -18,22 +18,23 @@ review. It is not a feature roadmap and must not be read as a support claim.
   Exit criteria: every pass has complete analyzer/decompiler effectiveness
   evidence in addition to the already-complete native, performance, scoped
   composition, false-positive, and affected-instruction evidence.
-- RB-002: Differential corpus coverage remains incomplete beyond the scheduled all-pass
-  Linux ELF x86-64 campaign. The latest run
-  [`36341618537`](https://github.com/seifreed/r2morph/actions/runs/36341618537)
-  completed the declared preview evidence aggregate for PE, Mach-O, ARM32,
-  x86 32-bit, and AArch64 (`5/5` platform reports, zero failures). The blocker
-  remains open for pass/target combinations outside that bounded matrix and for
-  parity with the official target; preview evidence is not full-format support.
-  Evidence map:
+## Resolved blockers
+
+- RB-002: The declared differential preview matrix is complete. Run
+  [`36378342000`](https://github.com/seifreed/r2morph/actions/runs/36378342000)
+  completed the aggregate with `5/5` platform reports, zero failures, zero
+  errors, and no missing required cases for PE, Mach-O ARM64, ARM32, AArch64,
+  and x86-32. The historical entry “Differential corpus coverage remains
+  incomplete” is closed for this declared matrix. The bounded matrix remains
+  preview evidence and does not promote those targets to parity with official
+  Linux ELF x86-64; the contractual parity gap remains open. Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [differential-corpus.yml](../.github/workflows/differential-corpus.yml)
   `continuous_evidence_blockers`, `continuous_evidence_blocker_totals`,
   `extended_maturity_evidence_blockers`, and
-  `extended_maturity_evidence_blocker_totals`.
-  Exit criteria: all relevant passes have complete differential evidence across
-  the supported corpus and declared platform matrix.
-## Resolved blockers
+  `extended_maturity_evidence_blocker_totals`. Exit criteria: the declared
+  preview platform aggregate remains complete and any new missing or failed
+  platform report reopens this blocker.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,
