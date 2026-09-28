@@ -25,9 +25,7 @@ from scripts.virtualization_coverage import build_coverage_inventory
 
 _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
 _EXPECTED_CORPUS_TOOLS = _EXPECTED_BENCHMARK_TOOLS - {"binary-ninja"}
-_EXPECTED_MATURITY_BLOCKER_FIELDS = {
-    "decompiler_effectiveness",
-}
+_EXPECTED_MATURITY_BLOCKER_FIELDS: set[str] = set()
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     "evidence_quality": "seed-diversity-only",
     "pending_scope": [
@@ -178,8 +176,8 @@ def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
     matrix = document.get("matrix", {})
     summary = matrix.get("summary", {}) if isinstance(matrix, dict) else {}
     blockers = summary.get("maturity_evidence_blockers", {}) if isinstance(summary, dict) else {}
-    missing_fields = blockers.get("missing_fields_by_field") if isinstance(blockers, dict) else None
-    missing_by_pass = blockers.get("missing_fields_by_pass") if isinstance(blockers, dict) else None
+    missing_fields = blockers.get("missing_fields_by_field", {}) if isinstance(blockers, dict) else None
+    missing_by_pass = blockers.get("missing_fields_by_pass", {}) if isinstance(blockers, dict) else None
     native_gaps = blockers.get("native_evidence_gap_passes", []) if isinstance(blockers, dict) else None
     passed = (
         isinstance(missing_fields, dict)
@@ -189,7 +187,7 @@ def _review_pass_maturity_gap_scope(root: Path) -> dict[str, object]:
         and native_gaps == summary.get("native_evidence_gap_passes")
         and isinstance(native_gaps, list)
     )
-    return _check("pass_maturity_gap_scope", passed, "decompiler gaps tracked; native evidence is complete")
+    return _check("pass_maturity_gap_scope", passed, "decompiler evidence complete; native evidence is complete")
 
 
 def _review_vm_semantic_gap_scope(root: Path) -> dict[str, object]:

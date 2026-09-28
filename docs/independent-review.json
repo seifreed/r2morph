@@ -36,7 +36,7 @@
       "status": "passed"
     },
     {
-      "detail": "decompiler gaps tracked; native evidence is complete",
+      "detail": "decompiler evidence complete; native evidence is complete",
       "name": "pass_maturity_gap_scope",
       "status": "passed"
     },

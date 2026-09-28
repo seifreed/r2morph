@@ -653,7 +653,7 @@
           "tests/integration"
         ],
         "performance": "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.",
-        "decompiler_effectiveness": "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Pass combinations are not exhaustively covered."
       },
       "experimental": {
@@ -674,7 +674,7 @@
           "tests/integration"
         ],
         "performance": "Not measured per pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
       "anti-disassembly-instruction-catalogued": {
@@ -695,7 +695,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "polymorphic-engine-instruction-catalogued": {
@@ -717,7 +717,7 @@
           "tests/integration/test_polymorphic_engine_real.py"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported."
       },
       "short-jump-patching-instruction-catalogued": {
@@ -738,7 +738,7 @@
           "tests/integration"
         ],
         "performance": "Measured by protection maturity harness: total_patched, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "stack-strings-instruction-catalogued": {
@@ -759,7 +759,7 @@
           "tests/integration/test_polymorphic_engine_real.py"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "string-obfuscation-instruction-catalogued": {
@@ -780,7 +780,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "function-outlining-instruction-catalogued": {
@@ -801,7 +801,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "data-flow-mutation-instruction-catalogued": {
@@ -822,7 +822,7 @@
           "tests/integration"
         ],
         "performance": "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "api-hashing-instruction-catalogued": {
@@ -843,7 +843,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "import-obfuscation-instruction-catalogued": {
@@ -864,7 +864,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "opaque-predicates-instruction-catalogued": {
@@ -885,7 +885,7 @@
           "tests/integration/test_mutation_opaque_predicates_apply_real.py"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "code-mobility-instruction-catalogued": {
@@ -906,7 +906,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "self-modifying-code-instruction-catalogued": {
@@ -927,7 +927,7 @@
           "tests/integration"
         ],
         "performance": "Measured by the scheduled extended maturity pass smoke: output-size, transform-duration, runtime-duration, and static metric summaries are recorded for every selected pass.",
-        "decompiler_effectiveness": "Not independently measured.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported."
       },
       "code-virtualization": {
@@ -951,7 +951,7 @@
           "tests/integration/test_mutation_fuzzer_real.py"
         ],
         "performance": "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.",
-        "decompiler_effectiveness": "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Only Linux ELF x86-64 functions satisfying the preconditions are in scope."
       },
       "experimental-corpus-selected": {
@@ -972,7 +972,7 @@
           "tests/integration"
         ],
         "performance": "Per-pass output-size, transform-duration, runtime-duration, and observable parity summaries are recorded by the compatibility corpus workflow.",
-        "decompiler_effectiveness": "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.",
+        "decompiler_effectiveness": "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.",
         "compatibility": "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported."
       }
     },
@@ -1383,10 +1383,7 @@
         "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.": 12
       },
       "decompiler_effectiveness_counts": {
-        "Analyzer-effectiveness evidence is aggregated by the adversarial benchmark; independent cross-tool coverage remains incomplete.": 6,
-        "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.": 1,
-        "Not independently measured.": 12,
-        "Tier 1 adversarial corpus evidence is recorded in docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json; independent cross-tool coverage remains incomplete.": 3
+        "Comparable radare2, angr, and Ghidra evidence is recorded in scheduled adversarial benchmark run 36381653200 for all 22 declared passes; optional analyzer slots remain explicit.": 22
       },
       "compatibility_counts": {
         "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported.": 1,
@@ -1451,148 +1448,17 @@
         "tests/integration/test_protection_maturity_baseline.py": 1,
         "tests/product_smoke": 3
       },
-      "maturity_gap_passes": {
-        "decompiler_effectiveness": [
-          "anti-disassembly",
-          "api-hashing",
-          "code-mobility",
-          "data-flow-mutation",
-          "function-outlining",
-          "import-obfuscation",
-          "opaque-predicates",
-          "polymorphic-engine",
-          "self-modifying-code",
-          "short-jump-patching",
-          "stack-strings",
-          "string-obfuscation"
-        ]
-      },
-      "maturity_gaps_by_pass": {
-        "anti-disassembly": [
-          "decompiler_effectiveness"
-        ],
-        "api-hashing": [
-          "decompiler_effectiveness"
-        ],
-        "code-mobility": [
-          "decompiler_effectiveness"
-        ],
-        "data-flow-mutation": [
-          "decompiler_effectiveness"
-        ],
-        "function-outlining": [
-          "decompiler_effectiveness"
-        ],
-        "import-obfuscation": [
-          "decompiler_effectiveness"
-        ],
-        "opaque-predicates": [
-          "decompiler_effectiveness"
-        ],
-        "polymorphic-engine": [
-          "decompiler_effectiveness"
-        ],
-        "self-modifying-code": [
-          "decompiler_effectiveness"
-        ],
-        "short-jump-patching": [
-          "decompiler_effectiveness"
-        ],
-        "stack-strings": [
-          "decompiler_effectiveness"
-        ],
-        "string-obfuscation": [
-          "decompiler_effectiveness"
-        ]
-      },
+      "maturity_gap_passes": {},
+      "maturity_gaps_by_pass": {},
       "native_evidence_gap_passes": [],
-      "maturity_evidence_blockers": {
-        "missing_fields_by_field": {
-          "decompiler_effectiveness": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ]
-        },
-        "missing_fields_by_pass": {
-          "anti-disassembly": [
-            "decompiler_effectiveness"
-          ],
-          "api-hashing": [
-            "decompiler_effectiveness"
-          ],
-          "code-mobility": [
-            "decompiler_effectiveness"
-          ],
-          "data-flow-mutation": [
-            "decompiler_effectiveness"
-          ],
-          "function-outlining": [
-            "decompiler_effectiveness"
-          ],
-          "import-obfuscation": [
-            "decompiler_effectiveness"
-          ],
-          "opaque-predicates": [
-            "decompiler_effectiveness"
-          ],
-          "polymorphic-engine": [
-            "decompiler_effectiveness"
-          ],
-          "self-modifying-code": [
-            "decompiler_effectiveness"
-          ],
-          "short-jump-patching": [
-            "decompiler_effectiveness"
-          ],
-          "stack-strings": [
-            "decompiler_effectiveness"
-          ],
-          "string-obfuscation": [
-            "decompiler_effectiveness"
-          ]
-        }
-      },
-      "maturity_gap_evidence": {
-        "decompiler_effectiveness": {
-          "status": "cross-tool-decompiler-evidence-incomplete",
-          "evidence_quality": "partial-adversarial-corpus",
-          "evidence": [
-            "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
-            "docs/pass-maturity.md"
-          ],
-          "passes": [
-            "anti-disassembly",
-            "api-hashing",
-            "code-mobility",
-            "data-flow-mutation",
-            "function-outlining",
-            "import-obfuscation",
-            "opaque-predicates",
-            "polymorphic-engine",
-            "self-modifying-code",
-            "short-jump-patching",
-            "stack-strings",
-            "string-obfuscation"
-          ]
-        }
-      },
+      "maturity_evidence_blockers": {},
+      "maturity_gap_evidence": {},
       "maturity_blocker_totals": {
-        "maturity_gap_categories": 1,
+        "maturity_gap_categories": 0,
         "native_evidence_gap_passes": 0,
-        "passes_with_maturity_field_gaps": 12,
-        "total_maturity_blockers": 12,
-        "total_maturity_field_gaps": 12,
-        "decompiler_effectiveness_gap_passes": 12
+        "passes_with_maturity_field_gaps": 0,
+        "total_maturity_blockers": 0,
+        "total_maturity_field_gaps": 0
       },
       "differential_evidence_scope": {
         "platform_scope": {

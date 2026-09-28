@@ -3,22 +3,20 @@
 This ledger records the remaining blockers from the current release-hardening
 review. It is not a feature roadmap and must not be read as a support claim.
 
-## Open blockers
+## Resolved blockers
 
-- RB-001: Per-pass maturity remains incomplete for analyzer/decompiler
-  effectiveness. The scheduled extended maturity campaign now completes native
-  execution, performance, independent false-positive measurement, scoped
-  composition, and affected-instruction evidence for all twelve extended
-  passes.
-  The scoped NOP composition contract and affected-instruction catalog are
-  complete. Evidence map:
+- RB-001: Per-pass maturity remains incomplete was resolved for the declared
+  analyzer/decompiler effectiveness contract. The authoritative scheduled
+  adversarial run `36381653200` records `7,964/7,964` expected pass rows and
+  `22/22` passes comparable with complete `radare2`, `angr`, and `ghidra`
+  evidence. The optional Binary Ninja and IDA slots remain explicit
+  unavailable rows rather than being treated as required evidence. Evidence map:
   [pass-maturity.md](pass-maturity.md),
   [support-matrix.json](support-matrix.json) `maturity_evidence_blockers`
   and `maturity_blocker_totals`.
-  Exit criteria: every pass has complete analyzer/decompiler effectiveness
-  evidence in addition to the already-complete native, performance, scoped
-  composition, false-positive, and affected-instruction evidence.
-## Resolved blockers
+  Exit criteria: every declared pass has complete comparable evidence from the
+  required three analyzers and the generated maturity summary reports zero
+  decompiler effectiveness blockers.
 
 - RB-002: The declared differential preview matrix is complete. Run
   [`36378342000`](https://github.com/seifreed/r2morph/actions/runs/36378342000)
@@ -52,7 +50,7 @@ review. It is not a feature roadmap and must not be read as a support claim.
   every declared capability remains covered by a passing campaign and unsupported
   instructions continue to fail closed with precise diagnostics.
 
-## Open blockers
+## Mixed-status blockers
 
 - RB-004: PE, Mach-O, ARM, and AArch64 remain preview or experimental and do not have
   parity with Linux ELF x86-64. Evidence map:
@@ -62,25 +60,19 @@ review. It is not a feature roadmap and must not be read as a support claim.
   [pass-maturity.md](pass-maturity.md). Exit criteria: preview targets either
   reach equivalent evidence to Linux ELF x86-64 or remain explicitly
   non-official in the support matrix.
-- RB-005: The adversarial benchmark has complete local `angr` evidence for the
-  current CodeVirtualization corpus, and the standalone Ghidra corpus is now
-  complete (`159/159` samples, `318/318` analyses, zero errors and timeouts).
-  The remaining gap is a comparable continuous all-pass campaign attached to
-  the scheduled benchmark. The workflow provisions a pinned Ghidra headless
-  analyzer with a verified checksum. Binary Ninja is deliberately on hold for
+- RB-005: The adversarial benchmark's required cross-tool campaign is resolved.
+  Run `36381653200` contains complete comparable `radare2`, `angr`, and `ghidra`
+  rows for all 22 declared passes. Binary Ninja is deliberately on hold for
   this milestone: it remains an explicit unavailable slot and is not silently
   omitted, but no installation work is planned in the current campaign.
   Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
   `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
-  Exit criteria: every in-scope analyzer slot has completed comparable
-  scheduled campaign rows; Binary Ninja remains a recorded out-of-scope hold
-  with its reason. The campaign is partitioned into deterministic fixture
-  shards and merged before the corpus-wide gate runs; this addresses campaign
-  sustainability. In-process analyzers are isolated with bounded workers so a
-  timeout is retained as an error row. This does not turn the Binary Ninja hold
-  into completed evidence.
+  Exit criteria: the required three-tool comparable campaign remains complete;
+  Binary Ninja remains a recorded unavailable hold with its reason. The
+  campaign is partitioned into deterministic fixture shards and merged before
+  the corpus-wide gate runs; this addresses campaign sustainability.
 - RB-006: The automated VM-resistance campaign is complete for fifteen fixtures
   across ten seeds: semantic parity, opcode/handler/dispatcher diversity,
   anti-tamper and progressive bytecode protection, plus bounded recovery

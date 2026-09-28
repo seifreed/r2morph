@@ -124,16 +124,19 @@ preview-only, or pending. This artifact is a reporting contract: a passing
 workflow does not promote partial analyzer coverage or a preview-only pass to
 official support.
 The static profile summary remains a declared-gap view: it now reports 0 with
-no independent false-positive measurement, 12 with no independent
+no independent false-positive measurement, 0 with no independent
 decompiler-effectiveness measurement, 0 without contractual composition
-support, and 12 total per-pass maturity field gaps across 1 maturity gap
-category, with no remaining exhaustive affected-instruction catalogue gap in
+support, and 0 total per-pass maturity field gaps across 0 maturity gap
+categories, with no remaining exhaustive affected-instruction catalogue gap in
 the static profiles. The current
 last archived scheduled artifact records ten passes without independent semantic
 false-positive observations, eight without contractual composition support,
 22 without comparable decompiler evidence, and one without an applied
 affected-instruction catalogue: 41 per-pass evidence blockers across four
-measured categories. Performance coverage is complete in that artifact. The
+measured categories. Those are historical archived totals. The current
+scheduled adversarial run `36381653200` records all 22 passes as comparable,
+with `7,964/7,964` expected pass rows and complete `radare2`, `angr`, and
+`ghidra` evidence for every pass. Performance coverage is complete in that artifact. The
 verified 46-case composition smoke now provides the scoped NOP-order contract
 for all twelve extended passes, including the `StackStrings` native rewrite;
 arbitrary pass combinations remain outside the contract. The

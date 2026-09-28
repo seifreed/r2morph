@@ -405,9 +405,9 @@ def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
         raise ValueError("maturity gap evidence must cover every declared maturity gap")
     if blockers.get("native_evidence_gap_passes", []) != summary["native_evidence_gap_passes"]:
         raise ValueError("maturity native evidence blockers must match summary")
-    if blockers["missing_fields_by_field"] != summary["maturity_gap_passes"]:
+    if blockers.get("missing_fields_by_field", {}) != summary["maturity_gap_passes"]:
         raise ValueError("maturity field blockers must match summary")
-    if blockers["missing_fields_by_pass"] != summary["maturity_gaps_by_pass"]:
+    if blockers.get("missing_fields_by_pass", {}) != summary["maturity_gaps_by_pass"]:
         raise ValueError("maturity pass blockers must match summary")
     totals = summary["maturity_blocker_totals"]
     field_gap_total = sum(len(pass_names) for pass_names in summary["maturity_gap_passes"].values())

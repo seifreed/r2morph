@@ -310,10 +310,11 @@ the differential aggregator, which validates its six-pass matrix and
 static-recovery artifact before publishing merged evidence. The merged maturity
 evidence retains ten independent false-positive gaps, eight composition gaps,
 22 decompiler gaps, and one pass without an applied instruction catalogue;
-these archived totals are release blockers, not implied support. The current
-46-case composition smoke adds applied evidence for seven of those eight
-composition gaps; the scheduled aggregate must publish the updated total
-before this archived report is replaced.
+these are archived totals, not current release blockers. The authoritative
+adversarial run `36381653200` records all 22 passes as comparable, with
+`7,964/7,964` expected pass rows and complete `radare2`, `angr`, and `ghidra`
+evidence for every pass. The current 46-case composition smoke adds applied
+evidence for seven of those eight historical composition gaps.
 
 The companion adversarial aggregate
 [`34999775170`](https://github.com/seifreed/r2morph/actions/runs/34999775170)

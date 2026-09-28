@@ -51,7 +51,7 @@ _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
-_EXPECTED_TOTAL_MATURITY_BLOCKERS = 12
+_EXPECTED_TOTAL_MATURITY_BLOCKERS = 0
 _EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES = 12
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
@@ -393,7 +393,11 @@ def test_support_matrix_summarizes_decompiler_effectiveness_profiles() -> None:
 
     expect(
         sum(summary["decompiler_effectiveness_counts"].values()) == len(matrix["passes"])
-        and any("Not independently measured" in value for value in summary["decompiler_effectiveness_counts"])
+        and "Not independently measured." not in summary["decompiler_effectiveness_counts"]
+        and any(
+            "Comparable radare2, angr, and Ghidra evidence" in value
+            for value in summary["decompiler_effectiveness_counts"]
+        )
     )
 
 
@@ -434,11 +438,9 @@ def test_support_matrix_names_maturity_gap_passes() -> None:
     gaps = summary["maturity_gap_passes"]
 
     expect(
-        set(gaps) == {"decompiler_effectiveness"}
+        gaps == {}
         and "Not measured per pass." not in summary["performance_counts"]
         and any("scheduled extended maturity pass smoke" in value for value in summary["performance_counts"])
-        and len(gaps["decompiler_effectiveness"])
-        == summary["decompiler_effectiveness_counts"]["Not independently measured."]
     )
 
 
@@ -452,12 +454,7 @@ def test_support_matrix_names_maturity_gaps_by_pass() -> None:
         for field in gaps_by_field
     }
 
-    expect(
-        inverted == gaps_by_field
-        and "anti-disassembly" in gaps_by_pass
-        and "performance" not in gaps_by_pass["anti-disassembly"]
-        and all(gaps for gaps in gaps_by_pass.values())
-    )
+    expect(inverted == gaps_by_field and gaps_by_pass == {})
 
 
 def test_support_matrix_names_maturity_evidence_blockers() -> None:
@@ -467,10 +464,8 @@ def test_support_matrix_names_maturity_evidence_blockers() -> None:
 
     expect(
         blockers.get("native_evidence_gap_passes", []) == summary["native_evidence_gap_passes"]
-        and blockers["missing_fields_by_field"] == summary["maturity_gap_passes"]
-        and blockers["missing_fields_by_pass"] == summary["maturity_gaps_by_pass"]
-        and "performance" not in blockers["missing_fields_by_field"]
-        and "anti-disassembly" in blockers["missing_fields_by_pass"]
+        and blockers.get("missing_fields_by_field", {}) == summary["maturity_gap_passes"]
+        and blockers.get("missing_fields_by_pass", {}) == summary["maturity_gaps_by_pass"]
     )
 
 
@@ -505,7 +500,8 @@ def test_support_matrix_names_maturity_gap_evidence() -> None:
 
 def test_release_contract_rejects_missing_maturity_gap_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["matrix"]["summary"]["maturity_gap_evidence"].pop("decompiler_effectiveness")
+    matrix["matrix"]["summary"]["maturity_gap_passes"] = {"decompiler_effectiveness": ["anti-disassembly"]}
+    matrix["matrix"]["summary"]["maturity_gap_evidence"] = {}
 
     rejected = False
     try:

@@ -40,10 +40,10 @@ _MATURITY_GAP_EVIDENCE = {
         "evidence": ["docs/pass-maturity.md", "docs/release-blockers.md"],
     },
     "decompiler_effectiveness": {
-        "status": "cross-tool-decompiler-evidence-incomplete",
-        "evidence_quality": "partial-adversarial-corpus",
+        "status": "cross-tool-decompiler-evidence-complete",
+        "evidence_quality": "complete-adversarial-corpus",
         "evidence": [
-            "docs/protection-adversarial-tier1-2026-09-13-400c2a48-summary.json",
+            ".github/workflows/adversarial-benchmark.yml",
             "docs/pass-maturity.md",
         ],
     },
