@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement
-from scripts.vm_resistance_adversarial import _probe_diverged
+from scripts.vm_resistance_adversarial import _native_baseline_status, _probe_diverged
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -55,6 +55,14 @@ def test_vm_probe_uses_complete_emulation_before_native_fallback() -> None:
 
 def test_vm_probe_uses_native_fallback_when_emulation_is_incomplete() -> None:
     expect(_probe_diverged(None, None, True) is True)
+
+
+def test_vm_probe_accepts_matching_native_baseline() -> None:
+    expect(_native_baseline_status({"status": "completed", "return_code": 42}, 42) == "completed")
+
+
+def test_vm_probe_rejects_native_baseline_that_disagrees_with_emulation() -> None:
+    expect(_native_baseline_status({"status": "completed", "return_code": -11}, 42) == "invalid-baseline")
 
 
 def test_vm_resistance_cli_help_loads_sibling_modules() -> None:

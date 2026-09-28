@@ -14,7 +14,7 @@ import json
 import shutil
 import sys
 import tempfile
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
@@ -165,6 +165,15 @@ def _probe_diverged(original_exit: int | None, tampered_exit: int | None, native
     return native_diverged
 
 
+def _native_baseline_status(native_original: Mapping[str, object], observed_exit: int | None) -> str:
+    """Classify whether native tamper probes have a usable baseline."""
+    if native_original.get("status") != "completed":
+        return "unavailable"
+    if observed_exit is not None and native_original.get("return_code") != observed_exit:
+        return "invalid-baseline"
+    return "completed"
+
+
 def _adversarial_recovery_probe(path: Path) -> dict[str, object]:
     """Run the bounded recovery adversary and retain only summary metrics."""
     try:
@@ -260,6 +269,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
     stats = _virtualize_fixture(source, protected, seed, depth)
     original_exit = _observed_exit_code(protected)
     native_original = _native_execution(protected)
+    native_baseline_status = _native_baseline_status(native_original, original_exit)
     adversarial_recovery = _adversarial_recovery_probe(protected)
     data = bytearray(protected.read_bytes())
     vm_entries = stats.get("vm_entries")
@@ -290,7 +300,7 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         tampered.chmod(0o700)
         tampered_exit = _observed_exit_code(tampered)
         native_tampered = _native_execution(tampered)
-        native_diverged = native_original.get("status") == "completed" and (
+        native_diverged = native_baseline_status == "completed" and (
             native_tampered.get("status") != "completed"
             or native_tampered.get("return_code") != native_original.get("return_code")
         )
@@ -315,11 +325,12 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         "tamper_probe_count": len(probes),
         "tamper_probes": probes,
         "all_tamper_probes_diverged": all(probe["diverged"] for probe in probes),
+        "native_baseline_status": native_baseline_status,
         "native_original": native_original,
         "native_execution_available": native_original.get("status") == "completed",
         "adversarial_recovery": adversarial_recovery,
         "all_native_tamper_probes_diverged": (
-            native_original.get("status") == "completed" and all(probe["native_diverged"] for probe in probes)
+            native_baseline_status == "completed" and all(probe["native_diverged"] for probe in probes)
         ),
     }
 

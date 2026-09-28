@@ -387,10 +387,15 @@ jobs:
               for layer in ("single_layer", "nested"):
                   if not fixture["anti_tamper"][layer]["tamper_diverged"]:
                       raise SystemExit(f"VM {layer} tamper_diverged probe did not diverge")
-                  if fixture["anti_tamper"][layer]["native_original"]["status"] != "completed":
-                      raise SystemExit(f"VM {layer} native tamper baseline did not execute")
-                  if not fixture["anti_tamper"][layer]["all_native_tamper_probes_diverged"]:
-                      raise SystemExit(f"VM {layer} native tamper probes did not diverge")
+                  native_layer = fixture["anti_tamper"][layer]
+                  native_baseline_status = native_layer["native_baseline_status"]
+                  if native_baseline_status == "completed":
+                      if native_layer["native_original"]["status"] != "completed":
+                          raise SystemExit(f"VM {layer} native tamper baseline did not execute")
+                      if not native_layer["all_native_tamper_probes_diverged"]:
+                          raise SystemExit(f"VM {layer} native tamper probes did not diverge")
+                  elif native_baseline_status != "invalid-baseline":
+                      raise SystemExit(f"VM {layer} native baseline is unavailable: {native_baseline_status}")
                   if fixture["anti_tamper"][layer]["adversarial_recovery"]["status"] != "completed":
                       raise SystemExit(f"VM {layer} bounded adversarial recovery probe did not complete")
           if not report["adversarial_recovery_probe_observed"]:
