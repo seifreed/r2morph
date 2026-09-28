@@ -1014,12 +1014,12 @@ def _decompiler_baseline_unavailable_by_pass(
     gaps: dict[str, dict[str, int]] = {}
     for pass_name, tools in effectiveness.items():
         pass_gaps = {
-            tool: int(decompiler["baseline_unavailable_pairs"])
+            tool: int(decompiler["applied_baseline_unavailable_pairs"])
             for tool, summary in tools.items()
             if isinstance(summary, Mapping)
             and isinstance(decompiler := summary.get("decompiler"), Mapping)
-            and isinstance(decompiler.get("baseline_unavailable_pairs"), int)
-            and decompiler["baseline_unavailable_pairs"] > 0
+            and isinstance(decompiler.get("applied_baseline_unavailable_pairs"), int)
+            and decompiler["applied_baseline_unavailable_pairs"] > 0
         }
         if pass_gaps:
             gaps[pass_name] = dict(sorted(pass_gaps.items()))

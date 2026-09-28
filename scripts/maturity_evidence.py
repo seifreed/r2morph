@@ -291,22 +291,28 @@ def _decompiler_evidence(
         and isinstance(value.get("decompiler"), Mapping)
         and value["decompiler"].get("observed_pairs", 0) > 0
     }
-    completed = sorted(
-        name
-        for name, value in observed_tools.items()
-        if (
-            value["decompiler"].get("completion_percent") == _FULL_COVERAGE_PERCENT
-            and (expected_pair_count is None or value["decompiler"].get("observed_pairs") == expected_pair_count)
-        )
-        and (expected_pair_count is None or value["decompiler"].get("completed_pairs") == expected_pair_count)
-        and (
-            not isinstance(value["decompiler"].get("applied_observed_pairs"), int)
-            or (
-                value["decompiler"].get("applied_observed_pairs") == expected_pair_count
-                and value["decompiler"].get("applied_completed_pairs") == expected_pair_count
-                and value["decompiler"].get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
+
+    def _tool_has_complete_evidence(decompiler: Mapping[str, Any]) -> bool:
+        applied_observed = decompiler.get("applied_observed_pairs")
+        applied_completed = decompiler.get("applied_completed_pairs")
+        if isinstance(applied_observed, int) and isinstance(applied_completed, int):
+            applied_unavailable = decompiler.get("applied_baseline_unavailable_pairs", 0)
+            if not isinstance(applied_unavailable, int):
+                return False
+            return (
+                applied_observed + applied_unavailable == expected_pair_count
+                and applied_observed > 0
+                and applied_completed == applied_observed
+                and decompiler.get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
             )
+        return (
+            decompiler.get("completion_percent") == _FULL_COVERAGE_PERCENT
+            and (expected_pair_count is None or decompiler.get("observed_pairs") == expected_pair_count)
+            and (expected_pair_count is None or decompiler.get("completed_pairs") == expected_pair_count)
         )
+
+    completed = sorted(
+        name for name, value in observed_tools.items() if _tool_has_complete_evidence(value["decompiler"])
     )
     incomplete = sorted(name for name in observed_tools if name not in completed)
     completed_set = set(completed)

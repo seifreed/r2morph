@@ -321,6 +321,46 @@ def test_adversarial_benchmark_separates_applied_decompiler_pairs() -> None:
     )
 
 
+def test_adversarial_summary_ignores_unavailable_noop_baselines() -> None:
+    completed_metrics = {
+        "decompiler_status": "completed",
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_bytes": 240,
+    }
+    unavailable_metrics = {"decompiler_status": "unavailable"}
+    samples = [
+        {
+            "tools": [
+                {
+                    "pass_name": "NopInsertion",
+                    "pass_status": "no-op",
+                    "tool": "radare2",
+                    "status": "completed",
+                    "original": unavailable_metrics,
+                    "protected": completed_metrics,
+                }
+            ]
+        },
+        {
+            "tools": [
+                {
+                    "pass_name": "NopInsertion",
+                    "pass_status": "applied",
+                    "tool": "radare2",
+                    "status": "completed",
+                    "original": completed_metrics,
+                    "protected": completed_metrics,
+                }
+            ]
+        },
+    ]
+
+    summary = _campaign_summary(samples, _EXPECTED_MERGED_SAMPLE_COUNT, ("NopInsertion",))
+
+    expect(summary["decompiler_baseline_unavailable_pairs_by_pass"] == {})
+
+
 def test_decompiler_evidence_accepts_empty_applied_subset() -> None:
     evidence = {
         "observed_pairs": 2,

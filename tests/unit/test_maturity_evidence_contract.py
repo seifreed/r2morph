@@ -363,6 +363,70 @@ def test_maturity_evidence_keeps_comparable_tools_when_optional_slots_are_unavai
     )
 
 
+def test_maturity_evidence_uses_applied_pairs_when_noop_baselines_are_unavailable() -> None:
+    tools = {
+        name: {
+            "decompiler": {
+                "observed_pairs": 360,
+                "completed_pairs": 360,
+                "completion_percent": 100.0,
+                "applied_observed_pairs": 24,
+                "applied_completed_pairs": 24,
+                "applied_completion_percent": 100.0,
+                "baseline_unavailable_pairs": 2,
+            }
+        }
+        for name in ("radare2", "angr", "ghidra")
+    }
+    evidence = merge_decompiler_evidence(
+        {
+            "passes": {"APIHashing": {"decompiler": {"status": "pending"}}},
+            "summary": {"blockers": {}, "blocker_totals": {}},
+        },
+        {
+            "sample_count": 362,
+            "pass_summary": {"APIHashing": {"applied": 24}},
+            "summary": {"analyzer_effectiveness_by_pass": {"APIHashing": tools}},
+        },
+    )
+
+    expect(
+        evidence["passes"]["APIHashing"]["decompiler"]["status"] == "comparable"
+        and evidence["summary"]["blocker_totals"]["decompiler"] == 0
+    )
+
+
+def test_maturity_evidence_accepts_unavailable_applied_baseline_pairs() -> None:
+    tools = {
+        name: {
+            "decompiler": {
+                "observed_pairs": 360,
+                "completed_pairs": 360,
+                "completion_percent": 100.0,
+                "baseline_unavailable_pairs": 2,
+                "applied_observed_pairs": 360,
+                "applied_completed_pairs": 360,
+                "applied_baseline_unavailable_pairs": 2,
+                "applied_completion_percent": 100.0,
+            }
+        }
+        for name in ("radare2", "angr", "ghidra")
+    }
+    evidence = merge_decompiler_evidence(
+        {
+            "passes": {"CodeVirtualization": {"decompiler": {"status": "pending"}}},
+            "summary": {"blockers": {}, "blocker_totals": {}},
+        },
+        {
+            "sample_count": 362,
+            "pass_summary": {"CodeVirtualization": {"applied": 362}},
+            "summary": {"analyzer_effectiveness_by_pass": {"CodeVirtualization": tools}},
+        },
+    )
+
+    expect(evidence["passes"]["CodeVirtualization"]["decompiler"]["status"] == "comparable")
+
+
 def test_maturity_evidence_rejects_partial_decompiler_corpus_coverage() -> None:
     evidence = merge_decompiler_evidence(
         {
