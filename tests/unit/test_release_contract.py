@@ -66,8 +66,6 @@ _EXPECTED_ADVERSARIAL_TOOLS = [
 ]
 _CURRENT_ANGR_EVIDENCE = "docs/protection-adversarial-angr-local-2026-09-20.json"
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
-    "instruction-expansion",
-    "block-reordering",
     "dead-code-injection",
     "control-flow-flattening",
     "constant-unfolding",

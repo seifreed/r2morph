@@ -16,8 +16,7 @@ import pytest
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
-STABLE_MUTATIONS = ["nop", "substitute", "register"]
-EXPERIMENTAL_MUTATIONS = ["expand", "block"]
+STABLE_MUTATIONS = ["nop", "substitute", "register", "expand", "block"]
 
 
 @pytest.fixture
@@ -110,6 +109,10 @@ class TestStableMutations:
                 str(output_path),
                 "-m",
                 "register",
+                "-m",
+                "expand",
+                "-m",
+                "block",
                 "--seed",
                 "1337",
                 "--report",
@@ -223,36 +226,3 @@ class TestStableMutations:
         passes = list(report.get("passes", {}).keys())
         expect("NopInsertion" in passes or "nop" in str(passes))
         expect("InstructionSubstitution" in passes or "substitute" in str(passes))
-
-
-@pytest.mark.experimental
-@pytest.mark.product_smoke
-class TestExperimentalMutations:
-    """Product tests for experimental mutation passes."""
-
-    @pytest.mark.parametrize("mutation", EXPERIMENTAL_MUTATIONS)
-    def test_experimental_mutation_warns(self, test_binary, tmp_path, mutation):
-        """Experimental mutations should warn but still run."""
-        output_path = tmp_path / f"output_{mutation}.bin"
-
-        result = run_command(
-            [
-                sys.executable,
-                "-m",
-                "r2morph.cli",
-                "mutate",
-                str(test_binary),
-                "-o",
-                str(output_path),
-                "-m",
-                mutation,
-                "--seed",
-                "1337",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-
-        # Experimental mutations should warn
-        expect("experimental" in result.stdout.lower() or "Experimental" in result.stdout)

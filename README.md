@@ -94,7 +94,7 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 
 | Architecture | NOP | Substitute | Register | Expand | Block | Dead Code |
 |--------------|-----|-----------|----------|--------|-------|-----------|
-| **x86_64 Linux ELF** | Tier 1 | Tier 1 | Tier 1 | Experimental | Experimental | Experimental |
+| **x86_64 Linux ELF** | Tier 1 | Tier 1 | Tier 1 | Tier 1 | Tier 1 | Experimental |
 | **x86** | Experimental | Experimental | Experimental | Experimental | Experimental | Experimental |
 | **AArch64/ARM** | Experimental | Experimental | Experimental | Experimental | Experimental | Experimental |
 
@@ -104,8 +104,8 @@ x86-64 or equivalent CodeVirtualization support.
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
 ELF x86-64 target (100.0% evidence) and 32/242 evidenced cells for non-official
-targets (13.22% evidence). It currently classifies 3 passes as Tier 1 and
-19 passes as experimental.
+targets (13.22% evidence). It currently classifies 5 passes as Tier 1 and
+17 passes as experimental.
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent
@@ -132,13 +132,13 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 | **NOP Insertion** | `-m nop` | Inserts benign NOP equivalents at safe locations |
 | **Instruction Substitution** | `-m substitute` | Replaces instructions with semantically equivalent alternatives |
 | **Register Substitution** | `-m register` | Substitutes registers via liveness analysis |
+| **Instruction Expansion** | `-m expand` | Expands supported instructions into validated equivalent sequences |
+| **Block Reordering** | `-m block` | Reorders eligible basic blocks with validated jump repair |
 
 ### Experimental (working, limited testing)
 
 | Pass | Surface | Description |
 |------|----------|-------------|
-| **Instruction Expansion** | `-m expand` | Expands single instructions into longer equivalent sequences |
-| **Block Reordering** | `-m block` | Reorders basic blocks with jump patching |
 | **Dead Code Injection** | engine-only | Injects semantically neutral code in padding regions |
 | **Control Flow Flattening** | engine-only | Inserts opaque predicates and jump obfuscation |
 | **Opaque Predicates** | engine-only | Writes opaque predicate instructions into basic blocks |

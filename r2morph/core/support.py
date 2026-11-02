@@ -18,8 +18,8 @@ class SupportMatrix:
     stable_architectures: tuple[str, ...] = ("x86_64",)
     prolonged_experimental_formats: tuple[str, ...] = ("Mach-O", "PE")
     prolonged_experimental_architectures: tuple[str, ...] = ("arm64", "arm32", "x86")
-    stable_mutations: tuple[str, ...] = ("nop", "substitute", "register")
-    experimental_mutations: tuple[str, ...] = ("expand", "block")
+    stable_mutations: tuple[str, ...] = ("nop", "substitute", "register", "expand", "block")
+    experimental_mutations: tuple[str, ...] = ()
     stable_validators: tuple[str, ...] = ("structural", "runtime")
     experimental_validators: tuple[str, ...] = ("symbolic",)
     notes: dict[str, Any] = field(
@@ -42,7 +42,10 @@ class SupportMatrix:
                 "semantic validation beyond bounded symbolic scope",
             ],
             "architecture_support": {
-                "x86_64": {"status": "stable", "passes": ["nop", "substitute", "register"]},
+                "x86_64": {
+                    "status": "stable",
+                    "passes": ["nop", "substitute", "register", "expand", "block"],
+                },
                 "x86": {"status": "experimental", "passes": ["nop"]},
                 "arm64": {"status": "experimental", "passes": ["nop"]},
                 "arm32": {"status": "experimental", "passes": ["nop"]},
@@ -124,8 +127,3 @@ def _parity_gap_scope(binary_format: str, architecture: str) -> list[str]:
 def is_stable_mutation(name: str) -> bool:
     """Return whether a mutation name is part of the stable core."""
     return name in PRODUCT_SUPPORT.stable_mutations
-
-
-def is_experimental_mutation(name: str) -> bool:
-    """Return whether a mutation name is marked experimental."""
-    return name in PRODUCT_SUPPORT.experimental_mutations

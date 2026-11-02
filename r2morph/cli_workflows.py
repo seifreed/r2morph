@@ -25,7 +25,6 @@ from r2morph.cli_workflow_validation_policy import ValidationModeRequest
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.engine_run import EngineRunOptions
-from r2morph.core.support import is_experimental_mutation
 from r2morph.utils.logging import sanitize_log_text, setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator_runtime import RuntimeComparisonConfig
@@ -64,13 +63,6 @@ class MorphWorkflowRequest:
     require_pass_severity: list[str] | None
     seed: int | None
     report_format: str = "json"
-
-
-def _warn_experimental_mutations(mutations: list[str]) -> None:
-    if not mutations:
-        return
-    console.print(f"[yellow]Experimental mutations selected:[/yellow] {', '.join(mutations)}")
-    console.print("[yellow]These passes are outside the stable core and validation coverage is best-effort.[/yellow]")
 
 
 def _build_runtime_validator(
@@ -163,8 +155,6 @@ def _run_morph_workflow(request: MorphWorkflowRequest) -> None:
     console.print(f"Output: {request.output}")
     console.print(f"Mutations: {', '.join(request.mutations)}\n")
 
-    experimental = [mutation for mutation in request.mutations if is_experimental_mutation(mutation)]
-    _warn_experimental_mutations(experimental)
     warn_experimental_validation_mode(request.validation_mode)
     _, min_severity_rank = resolve_min_severity(request.min_severity)
     config = build_config(request.aggressive, request.force)
@@ -189,7 +179,7 @@ def _run_morph_workflow(request: MorphWorkflowRequest) -> None:
                 config={
                     "seed": request.seed,
                     "requested_mutations": list(request.mutations),
-                    "experimental_mutations": experimental,
+                    "experimental_mutations": [],
                     "requested_validation_mode": request.validation_mode,
                     "effective_validation_mode": effective_validation_mode,
                     "validation_policy": validation_policy,

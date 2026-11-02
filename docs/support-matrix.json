@@ -171,7 +171,7 @@
     },
     {
       "name": "instruction-expansion",
-      "stability": "experimental",
+      "stability": "tier-1",
       "formats": [
         "ELF"
       ],
@@ -209,18 +209,15 @@
         }
       ],
       "evidence": [
-        "README.md",
-        "tests/integration",
-        "tests/integration/test_elf_arm32_native.py",
-        "tests/integration/test_elf_arm64_native.py",
-        "tests/integration/test_nop_insertion_pe_real.py",
-        "tests/integration/test_mutation_nop_insertion_arm64.py",
-        "tests/integration/test_elf_x86_32_native.py"
+        "tests/product_smoke/test_stable_mutations.py",
+        "tests/unit/test_instruction_expansion_helpers_contract.py",
+        "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+        "docs/compatibility-corpus.md"
       ]
     },
     {
       "name": "block-reordering",
-      "stability": "experimental",
+      "stability": "tier-1",
       "formats": [
         "ELF"
       ],
@@ -234,8 +231,11 @@
         }
       ],
       "evidence": [
-        "README.md",
-        "tests/integration"
+        "tests/product_smoke/test_stable_mutations.py",
+        "tests/unit/test_block_reordering_edge_cases.py",
+        "tests/integration/test_block_reordering_apply_real.py",
+        "tests/integration/test_block_reordering_relocation_real.py",
+        "docs/compatibility-corpus.md"
       ]
     },
     {
@@ -980,8 +980,8 @@
       "nop": "tier-1-native",
       "substitute": "tier-1-native",
       "register": "tier-1-native",
-      "instruction-expansion": "experimental-corpus-selected",
-      "block-reordering": "experimental-corpus-selected",
+      "instruction-expansion": "tier-1-native",
+      "block-reordering": "tier-1-native",
       "dead-code-injection": "experimental-corpus-selected",
       "control-flow-flattening": "experimental-corpus-selected",
       "opaque-predicates": "opaque-predicates-instruction-catalogued",
@@ -1356,8 +1356,8 @@
         "total_parity_blockers": 16
       },
       "stability_counts": {
-        "experimental": 19,
-        "tier-1": 3
+        "experimental": 17,
+        "tier-1": 5
       },
       "maturity_profile_counts": {
         "anti-disassembly-instruction-catalogued": 1,
@@ -1365,7 +1365,7 @@
         "code-mobility-instruction-catalogued": 1,
         "code-virtualization": 1,
         "data-flow-mutation-instruction-catalogued": 1,
-        "experimental-corpus-selected": 6,
+        "experimental-corpus-selected": 4,
         "function-outlining-instruction-catalogued": 1,
         "import-obfuscation-instruction-catalogued": 1,
         "opaque-predicates-instruction-catalogued": 1,
@@ -1374,12 +1374,12 @@
         "short-jump-patching-instruction-catalogued": 1,
         "stack-strings-instruction-catalogued": 1,
         "string-obfuscation-instruction-catalogued": 1,
-        "tier-1-native": 3
+        "tier-1-native": 5
       },
       "false_positive_risk_counts": {
-        "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.": 3,
+        "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.": 5,
         "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.": 1,
-        "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.": 6,
+        "Corpus application and omission counts are recorded; independent false-positive rates remain unavailable.": 4,
         "Measured by the scheduled extended maturity pass smoke: native runtime and independent QEMU/Unicorn semantic false-positive observations are complete and the release gate requires a zero rate.": 12
       },
       "decompiler_effectiveness_counts": {
@@ -1388,9 +1388,9 @@
       "compatibility_counts": {
         "A real ELF x86-64 composition matrix records successful child-pass sequencing and exit-code parity on two fixtures; arbitrary pass combinations remain unsupported.": 1,
         "Only Linux ELF x86-64 functions satisfying the preconditions are in scope.": 1,
-        "Pass combinations are not exhaustively covered.": 3,
+        "Pass combinations are not exhaustively covered.": 5,
         "Scoped composition with NopInsertion is contractually supported on the ELF x86-64 real-fixture matrix in both orders; arbitrary pass combinations remain unsupported.": 11,
-        "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 6
+        "Selected-pass composition is measured by scheduled corpus campaigns; arbitrary pass combinations remain unsupported.": 4
       },
       "performance_counts": {
         "Measured by protection maturity harness: mutations_applied, transform duration, output-size delta, static metric deltas, and Unicorn exit-code parity are covered by tests/integration/test_protection_maturity_baseline.py.": 1,
@@ -1406,10 +1406,10 @@
         "Known imported API symbols are hashed with ROR13, ROR7, DJB2, FNV1a, or CRC32; each successful import writes a 10-byte resolver stub containing mov eax, imm32 followed by a rel32 JMP to the PLT target, and direct rel32 E8 call sites are retargeted to that stub when offsets fit int32.": 1,
         "Liveness-guided x86/x86-64 register substitution is limited to safe instruction mnemonics nop, mov, xor, and, or, add, sub, shl, shr, not, neg, inc, dec, push, pop, lea, test, and cmp; replacements use dead caller-saved registers and NOP-fill shorter encodings.": 1,
         "Movable basic blocks of at least five bytes, excluding data/invalid blocks and RIP-relative disassembly, are copied to executable caves with an appended x86/x86-64 rel32 JMP back to the original fallthrough; the original block start is replaced with a rel32 JMP trampoline and trailing NOP fill.": 1,
-        "Pass-specific x86-64 rules exercised by native fixtures.": 3,
+        "Pass-specific x86-64 rules exercised by native fixtures.": 5,
         "Printable ASCII string bytes in selected sections are encoded in place with XOR, ROT13, or byte-pair swap; executable instructions are not rewritten by this pass.": 1,
         "Selected basic-block starts are overwritten with bounded always-true or always-false predicate sequences. x86/x86-64 forms use register-only xor, test, and conditional/unconditional jumps; ARM forms use mul, cmp, b.ge, b.eq, b.lt, b, and nop.": 1,
-        "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 6,
+        "Selected corpus passes affect their documented candidate instruction families: instruction expansion arithmetic/data movement, block layout and branch repair, dead-code insertion, control-flow dispatch scaffolding, constant expression replacement, and pattern-substitution equivalence rules.": 4,
         "Selected x86/x86-64 basic-block starts are overwritten with anti-disassembly snippets covering overlapping byte sequences, jump-into-middle patterns, false-branch sequences, optional SEH snippets, polyglot bytes, trampoline bytes, opaque-predicate assembly templates, and obfuscated NOP sled assembly templates.": 1,
         "Short-jump-exclusive x86 control-transfer instructions: loop, loopne, loopnz, loope, loopz, jcxz, jecxz, and jrcxz.": 1,
         "Supported ELF x86-64 apply path rewrites a unique RIP-relative LEA or direct immediate MOV string argument followed by a direct CALL or tail JMP through a code-cave bridge; the bridge uses stack-pointer adjustment, byte stores, immediate XOR/ADD byte decoding, and optional NOP interleaving. Other references and encodings remain no-op.": 1,
@@ -1446,7 +1446,7 @@
         "tests/integration/test_mutation_opaque_predicates_apply_real.py": 1,
         "tests/integration/test_polymorphic_engine_real.py": 2,
         "tests/integration/test_protection_maturity_baseline.py": 1,
-        "tests/product_smoke": 3
+        "tests/product_smoke": 5
       },
       "maturity_gap_passes": {},
       "maturity_gaps_by_pass": {},
@@ -2299,13 +2299,10 @@
         "declared_support": true,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2315,13 +2312,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2331,13 +2325,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2347,13 +2338,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2363,13 +2351,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2403,13 +2388,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2427,13 +2409,10 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_x86_32_native.py"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_instruction_expansion_helpers_contract.py",
+          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {
@@ -2451,8 +2430,11 @@
         "declared_support": true,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration"
+          "tests/product_smoke/test_stable_mutations.py",
+          "tests/unit/test_block_reordering_edge_cases.py",
+          "tests/integration/test_block_reordering_apply_real.py",
+          "tests/integration/test_block_reordering_relocation_real.py",
+          "docs/compatibility-corpus.md"
         ]
       },
       {

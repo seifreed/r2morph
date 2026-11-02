@@ -94,7 +94,7 @@ def test_product_mutate_generates_stable_report(stable_elf_binary: Path, tmp_pat
             }
         )
     )
-    expect(payload["support_matrix"]["stable_mutations"] == ["nop", "substitute", "register"])
+    expect(payload["support_matrix"]["stable_mutations"] == ["nop", "substitute", "register", "expand", "block"])
 
 
 @pytest.mark.slow
@@ -155,6 +155,8 @@ def test_product_symbolic_report_keeps_mutation_level_metadata(
         ("nop", "NopInsertion"),
         ("substitute", "InstructionSubstitution"),
         ("register", "RegisterSubstitution"),
+        ("expand", "InstructionExpansion"),
+        ("block", "BlockReordering"),
     ],
 )
 def test_product_cli_accepts_each_stable_pass(
@@ -288,7 +290,7 @@ def test_product_seed_is_reproducible_for_stable_pass(
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("mutation", ["nop", "substitute", "register"])
+@pytest.mark.parametrize("mutation", ["nop", "substitute", "register", "expand", "block"])
 def test_product_seed_is_reproducible_for_all_stable_passes(
     stable_elf_binary: Path,
     tmp_path: Path,

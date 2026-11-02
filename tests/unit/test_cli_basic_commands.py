@@ -62,7 +62,7 @@ def test_cli_version_option_reports_installed_version() -> None:
     expect("r2morph 0.4.0-alpha.3" in result.output)
 
 
-def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
+def test_cli_stable_block_mutation_does_not_warn(tmp_path: Path) -> None:
     source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
@@ -84,9 +84,11 @@ def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
         ],
     )
 
-    expect(result.exit_code == 0)
-    expect(not ("Experimental mutations selected" not in result.output))
-    expect(not ("best-effort" not in result.output))
+    expect(
+        result.exit_code == 0
+        and "Experimental mutations selected" not in result.output
+        and "best-effort" not in result.output
+    )
 
 
 def test_cli_warns_for_symbolic_validation_mode(
