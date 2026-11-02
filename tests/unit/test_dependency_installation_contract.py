@@ -10,6 +10,9 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _UNSUPPORTED_UNICORN_ON_MAC_ARM = 'unicorn>=2.0.0; platform_system != "Darwin" or platform_machine != "arm64"'
 _EXPECTED_UNICORN_MANIFEST_COUNT = 3
+_ANGR_BITSTRING_CONTRACT = 'bitstring>=4.4.0,<5; platform_system != "Windows"'
+_ANGR_PYCPARSER_CONTRACT = 'pycparser>=3.1,<3.2; platform_system != "Windows"'
+_EXPECTED_ANGR_COMPATIBILITY_MANIFEST_COUNT = 2
 
 
 def test_supported_dependency_manifests_include_required_analyzer_packages() -> None:
@@ -35,4 +38,18 @@ def test_supported_dependency_manifests_skip_unicorn_on_macos_arm64() -> None:
     expect(
         requirements.count(_UNSUPPORTED_UNICORN_ON_MAC_ARM) == 1
         and optional_text.count(_UNSUPPORTED_UNICORN_ON_MAC_ARM) == _EXPECTED_UNICORN_MANIFEST_COUNT
+    )
+
+
+def test_supported_dependency_manifests_keep_angr_bitstring_api_compatible() -> None:
+    requirements = (_ROOT / "requirements.txt").read_text(encoding="utf-8")
+    project = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    optional_dependencies = project["project"]["optional-dependencies"]
+    optional_text = "\n".join(dependency for group in optional_dependencies.values() for dependency in group)
+
+    expect(
+        requirements.count(_ANGR_BITSTRING_CONTRACT) == 1
+        and optional_text.count(_ANGR_BITSTRING_CONTRACT) == _EXPECTED_ANGR_COMPATIBILITY_MANIFEST_COUNT
+        and requirements.count(_ANGR_PYCPARSER_CONTRACT) == 1
+        and optional_text.count(_ANGR_PYCPARSER_CONTRACT) == _EXPECTED_ANGR_COMPATIBILITY_MANIFEST_COUNT
     )

@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import angr
-    from angr.exploration_techniques import ExplorationTechnique
+
+    class ExplorationTechnique:
+        """Static contract for the optional runtime base class."""
+
+        def __init__(self) -> None:
+            pass
+
 else:
     from r2morph.adapters.angr_import import import_angr_modules
 
