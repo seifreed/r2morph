@@ -100,6 +100,7 @@ class _FixtureTimeout(BaseException):
 
 class _FixtureTimeoutState:
     requested = False
+    defer_interrupt = False
 
 
 _fixture_timeout_state = _FixtureTimeoutState()
@@ -847,6 +848,14 @@ async def _run_runtime(command: list[str], workdir: Path) -> dict[str, object]:
     return {"status": "completed", "return_code": return_code, "stdout": stdout, "stderr": stderr}
 
 
+def _run_runtime_sync(command: list[str], workdir: Path) -> dict[str, object]:
+    _fixture_timeout_state.defer_interrupt = True
+    try:
+        return asyncio.run(_run_runtime(command, workdir))
+    finally:
+        _fixture_timeout_state.defer_interrupt = False
+
+
 def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str, object]:
     """Run a fixture in isolation and retain bounded, reproducible observables."""
     started = time.perf_counter()
@@ -856,8 +865,9 @@ def _runtime_artifacts(path: Path, arguments: tuple[str, ...] = ()) -> dict[str,
         shutil.copyfile(path, runtime_path)
         runtime_path.chmod(0o700)
         try:
-            result = asyncio.run(
-                _run_runtime(_runtime_command(runtime_path, arguments, f"./{runtime_path.name}"), workdir)
+            result = _run_runtime_sync(
+                _runtime_command(runtime_path, arguments, f"./{runtime_path.name}"),
+                workdir,
             )
         except RuntimeError:
             _raise_requested_fixture_timeout(path)
@@ -893,7 +903,8 @@ def _qemu_semantic_artifacts(path: Path) -> dict[str, object]:
         runtime_path = workdir / "program"
         shutil.copyfile(path, runtime_path)
         runtime_path.chmod(0o700)
-        result = asyncio.run(_run_runtime([qemu, f"./{runtime_path.name}"], workdir))
+        result = _run_runtime_sync([qemu, f"./{runtime_path.name}"], workdir)
+        _raise_requested_fixture_timeout(path)
     if result.get("status") != "completed":
         return {
             "status": result.get("status", "error"),
@@ -1864,6 +1875,9 @@ def _raise_requested_fixture_timeout(fixture: Path) -> None:
 
 
 def _fixture_timeout_handler(fixture_name: str, _signum: int, _frame: FrameType | None) -> None:
+    if _fixture_timeout_state.defer_interrupt:
+        _fixture_timeout_state.requested = True
+        return
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -2482,6 +2496,7 @@ def _measure_fixture_task(
 ) -> tuple[tuple[str, dict[str, object]], ...]:
     fixture, seeds, output_root, pass_names, runtime_inputs, timeout_seconds = task
     _fixture_timeout_state.requested = False
+    _fixture_timeout_state.defer_interrupt = False
     previous_handler = signal.signal(
         signal.SIGALRM,
         partial(_fixture_timeout_handler, fixture.name),
@@ -2501,6 +2516,7 @@ def _measure_fixture_task(
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, previous_handler)
         _fixture_timeout_state.requested = False
+        _fixture_timeout_state.defer_interrupt = False
 
 
 def _emit_report(rendered: str, output: Path | None) -> None:

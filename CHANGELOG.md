@@ -2,6 +2,15 @@
 
 ## 0.4.0-alpha.3
 
+- Promotes instruction expansion and block reordering into the five-pass Tier 1
+  Linux ELF x86-64 contract after native, corpus, composition, and analyzer
+  evidence completed.
+- Accepts the merged adversarial report's required custom analyzer slot during
+  independent review, keeping successful campaigns green.
+- Defers fixture-level alarms across asyncio loop setup so maturity timeout
+  failures close their runtime resources without warnings.
+- Includes the verified `build` frontend in the development extra so the
+  documented wheel gate runs from a normal development installation.
 - Fixes release artifact download in the isolated PyPI publish job.
 - Publishes the same verified ELF x86-64 support contract as alpha.2.
 - Keeps the VM milestone blocked until external human review records signoff.
