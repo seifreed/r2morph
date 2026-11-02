@@ -60,8 +60,8 @@ def test_repeated_setup_without_file_does_not_accumulate(tmp_path: Path) -> None
     expect(not (any(isinstance(h, logging.FileHandler) for h in logger.handlers)))
 
 
-def test_setup_logging_uses_process_stdout_for_console_handler() -> None:
+def test_setup_logging_uses_process_stderr_for_console_handler() -> None:
     setup_logging()
     logger = logging.getLogger("r2morph")
 
-    expect(logger.handlers[0].stream is sys.__stdout__)
+    expect(logger.handlers[0].stream is sys.__stderr__)

@@ -13,9 +13,17 @@ from r2morph.utils.dead_code import (
 )
 from r2morph.utils.entropy import calculate_entropy, calculate_file_entropy
 from r2morph.utils.hashing import hash_file
-from r2morph.utils.logging import setup_logging
+from r2morph.utils.logging import (
+    LoggingConfig,
+    log_exception_once,
+    logging_context,
+    observed_operation,
+    setup_logging,
+    shutdown_logging,
+)
 
 __all__ = [
+    "LoggingConfig",
     "calculate_entropy",
     "calculate_file_entropy",
     "generate_arm_dead_code",
@@ -26,5 +34,9 @@ __all__ = [
     "generate_x86_dead_code",
     "generate_x86_dead_code_for_size",
     "hash_file",
+    "log_exception_once",
+    "logging_context",
+    "observed_operation",
     "setup_logging",
+    "shutdown_logging",
 ]

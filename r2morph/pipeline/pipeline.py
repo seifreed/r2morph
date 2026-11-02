@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.pipeline import observability as pipeline_observability
 from r2morph.protocols import MutationPassProtocol, PipelineRunOptions
 
 logger = logging.getLogger(__name__)
@@ -226,7 +227,7 @@ class Pipeline:
     ) -> None:
         """Roll back and record a failed pass in the run results."""
         mutation_pass = pass_ctx.mutation_pass
-        logger.error(f"Pass {mutation_pass.name} failed: {error}")
+        pipeline_observability.log_pass_failed(logger, mutation_pass.name, error)
         if ctx.session is not None and pass_ctx.checkpoint_name is not None:
             ctx.session.rollback_to(pass_ctx.checkpoint_name)
             ctx.binary.reload()
@@ -280,8 +281,7 @@ class Pipeline:
 
         results["pass_results"][mutation_pass.name] = pass_result
 
-        status_msg = "rolled back" if pass_result.get("rolled_back", False) else "complete"
-        logger.info(f"Pass {mutation_pass.name} {status_msg}: " f"{pass_result.get('mutations_applied', 0)} mutations")
+        pipeline_observability.log_pass_completed(logger, mutation_pass.name, pass_result)
 
     def _apply_pass(
         self,
@@ -445,7 +445,7 @@ class Pipeline:
         )
 
         for i, mutation_pass in enumerate(self.passes):
-            logger.info(f"Running pass {i + 1}/{len(self.passes)}: {mutation_pass.name}")
+            pipeline_observability.log_pass_started(logger, mutation_pass.name, i + 1, len(self.passes))
             checkpoint_name = self._prepare_pass(ctx, i, mutation_pass)
             pass_ctx = _PassContext(mutation_pass, checkpoint_name)
 
@@ -483,7 +483,7 @@ class Pipeline:
             finally:
                 mutation_pass.clear_runtime()
 
-        logger.info(f"Pipeline complete: {results['total_mutations']} total mutations")
+        pipeline_observability.log_pipeline_completed(logger, results)
         return results
 
     def get_pass_names(self) -> list[str]:

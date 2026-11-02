@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.core.engine_run import EngineRunOptions, run
 from r2morph.protocols import PipelineRunOptions
-from tests.utils.assertions import expect
+from r2morph.utils.logging import setup_logging, shutdown_logging
+from tests.utils.assertions import expect, expect_all
 
 _EXPECTED_FAKE_ENGINE_CONFIG_SEED_7 = 7
+_EXPECTED_CORRELATION_ID_LENGTH_32 = 32
 
 
 class _FakeBinary:
@@ -115,3 +119,34 @@ def test_engine_run_helper_applies_seed_validation_and_report(tmp_path: Path) ->
     expect(result["working_path"] == str(binary_path))
     expect(result["config"] == {"seed": 7})
     expect(fake_engine.saved_reports and fake_engine.saved_reports[0][0] == report_path)
+
+
+def test_engine_run_emits_correlated_outcome_event(tmp_path: Path) -> None:
+    binary_path = tmp_path / "sample.bin"
+    binary_path.write_bytes(b"sample")
+    stream = StringIO()
+    setup_logging(stream=stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+    fake_engine = SimpleNamespace(
+        binary=_FakeBinary(binary_path, analyzed=True),
+        pipeline=_FakePipeline(),
+        config={},
+        _session=None,
+        _original_path=binary_path,
+        _stats={},
+        _last_result=None,
+    )
+
+    try:
+        result = run(fake_engine)
+    finally:
+        shutdown_logging()
+
+    event = json.loads(stream.getvalue().splitlines()[0])
+    expect_all(
+        result["validation_mode"] == "structural",
+        event["event_name"] == "engine.run.completed",
+        event["operation"] == "engine.run",
+        event["outcome"] == "success",
+        event["duration_ms"] >= 0,
+        len(event["correlation_id"]) == _EXPECTED_CORRELATION_ID_LENGTH_32,
+    )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from contextvars import copy_context
 from typing import Any
 
 from r2morph.core.parallel_planner import PassResult, PassStatus
@@ -29,11 +30,8 @@ def execute_stage(
             if pass_name not in pass_map:
                 continue
             pass_obj = pass_map[pass_name]
-            future = executor.submit(
-                execute_pass,
-                pass_obj,
-                progress_callback,
-            )
+            context = copy_context()
+            future = executor.submit(context.run, execute_pass, pass_obj, progress_callback)
             futures[future] = pass_name
 
         for future in as_completed(futures):

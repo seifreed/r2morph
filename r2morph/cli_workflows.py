@@ -26,7 +26,7 @@ from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.engine_run import EngineRunOptions
 from r2morph.core.support import is_experimental_mutation
-from r2morph.utils.logging import setup_logging
+from r2morph.utils.logging import sanitize_log_text, setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator_runtime import RuntimeComparisonConfig
 
@@ -238,5 +238,5 @@ def _run_morph_workflow(request: MorphWorkflowRequest) -> None:
         except typer.Exit:
             raise
         except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {e}")
+            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
             raise typer.Exit(1) from e

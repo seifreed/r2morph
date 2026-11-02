@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import shlex
 import shutil
@@ -10,6 +11,10 @@ import signal
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+
+from r2morph.utils.logging import observed_operation
+
+logger = logging.getLogger(__name__)
 
 
 class ProcessError(RuntimeError):
@@ -116,7 +121,8 @@ def run_process(
     check: bool = False,
 ) -> ProcessResult:
     """Run an external command without a shell and capture its output."""
-    result = asyncio.run(_run_process(command, timeout=timeout, context=context or ProcessContext()))
-    if check and result.returncode != 0:
-        raise ProcessExecutionError(f"Process exited with status {result.returncode}")
-    return result
+    with observed_operation(logger, "process.execute", event_name="process.execute"):
+        result = asyncio.run(_run_process(command, timeout=timeout, context=context or ProcessContext()))
+        if check and result.returncode != 0:
+            raise ProcessExecutionError(f"Process exited with status {result.returncode}")
+        return result

@@ -264,6 +264,21 @@ r2morph report report.json --format sarif -o report.sarif
 
 ---
 
+## Observability
+
+r2morph writes human-readable development logs to stderr and selects
+newline-delimited JSON automatically when
+`R2MORPH_ENVIRONMENT=production`. Levels, file rotation, correlation,
+redaction, and event conventions are documented in
+[Logging and observability](docs/observability.md).
+
+```bash
+R2MORPH_ENVIRONMENT=production R2MORPH_LOG_FILE=./r2morph.jsonl \
+  r2morph mutate sample.bin -o sample.mutated
+```
+
+---
+
 ## SARIF 2.1.0 Integration
 
 Reports in SARIF format include:

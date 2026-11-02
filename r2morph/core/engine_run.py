@@ -12,6 +12,7 @@ from typing import Any, cast
 import r2morph.core.randomness as random
 from r2morph.core.report_helpers_validation import _build_pass_validation_context, _enrich_validation_policy
 from r2morph.protocols import PipelineRunOptions
+from r2morph.utils.logging import observed_operation
 from r2morph.validation import BinaryValidator, ValidationManager
 
 logger = logging.getLogger(__name__)
@@ -140,17 +141,12 @@ def _enrich_run_result(engine: Any, result: dict[str, Any], validation_mode: str
     result["config"] = dict(engine.config)
 
 
-def run(engine: Any, options: EngineRunOptions | None = None) -> dict[str, Any]:
-    """Run the transformation pipeline using the engine state."""
-    options = options or EngineRunOptions()
-    if not engine.binary:
-        raise RuntimeError("No binary loaded. Call load_binary() first.")
-
+def _execute_run(engine: Any, options: EngineRunOptions) -> dict[str, Any]:
+    """Execute an already validated engine run."""
     if not engine.binary.is_analyzed():
         logger.warning("Binary not analyzed. Running automatic analysis...")
         engine.analyze()
 
-    logger.info("Starting transformation pipeline...")
     start_time = time.time()
     if options.seed is not None:
         _apply_seed_to_passes(engine, options.seed)
@@ -176,5 +172,13 @@ def run(engine: Any, options: EngineRunOptions | None = None) -> dict[str, Any]:
     if options.report_path is not None:
         engine.save_report(options.report_path, engine._last_result)
 
-    logger.info("Transformation complete")
     return cast("dict[str, Any]", engine._last_result)
+
+
+def run(engine: Any, options: EngineRunOptions | None = None) -> dict[str, Any]:
+    """Run the transformation pipeline using the engine state."""
+    options = options or EngineRunOptions()
+    if not engine.binary:
+        raise RuntimeError("No binary loaded. Call load_binary() first.")
+    with observed_operation(logger, "engine.run", event_name="engine.run"):
+        return _execute_run(engine, options)

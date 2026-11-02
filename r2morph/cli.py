@@ -8,6 +8,7 @@ Primary product flow:
 
 import argparse
 import json
+import logging
 import sys
 import traceback
 from importlib import import_module
@@ -49,7 +50,9 @@ from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
 from r2morph.reporting.cli_commands import ReportCommandOptions, handle_report_command
 from r2morph.reporting.report_context import PassClassFilters
-from r2morph.utils.logging import setup_logging
+from r2morph.utils.logging import observed_operation, sanitize_log_text, setup_logging
+
+logger = logging.getLogger(__name__)
 
 app = typer.Typer(
     name="r2morph",
@@ -110,6 +113,7 @@ def _handle_main(options: MainCommandOptions) -> None:
         r2morph functions input.exe
         r2morph morph input.exe -m nop
     """
+    setup_logging("DEBUG" if (options.verbose or options.debug) else "INFO")
     if options.ctx.invoked_subcommand is not None:
         return
 
@@ -125,21 +129,22 @@ def _handle_main(options: MainCommandOptions) -> None:
         raise typer.Exit(0)
 
     try:
-        _run_simple_mode(
-            SimpleModeRequest(
-                input_file=input_file,
-                output_file=output_file,
-                aggressive=options.aggressive,
-                force=options.force,
-                seed=options.seed,
-                verbose=options.verbose,
-                debug=options.debug,
+        with observed_operation(logger, "cli.simple_mode", event_name="cli.simple_mode"):
+            _run_simple_mode(
+                SimpleModeRequest(
+                    input_file=input_file,
+                    output_file=output_file,
+                    aggressive=options.aggressive,
+                    force=options.force,
+                    seed=options.seed,
+                    verbose=options.verbose,
+                    debug=options.debug,
+                )
             )
-        )
     except Exception as e:
-        console.print(f"[bold red]Error:[/bold red] {e}")
+        console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
         if options.verbose or options.debug:
-            console.print(traceback.format_exc())
+            console.print(sanitize_log_text(traceback.format_exc()))
         raise typer.Exit(1) from e
 
 
@@ -177,7 +182,7 @@ def analyze(
         except typer.Exit:
             raise
         except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {e}")
+            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
             raise typer.Exit(1) from e
 
 
@@ -228,9 +233,9 @@ def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
             orchestrator.analyze(analysis_configuration)
 
         except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {e}")
+            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
             if options.verbose:
-                console.print(traceback.format_exc())
+                console.print(sanitize_log_text(traceback.format_exc()))
             raise typer.Exit(1) from e
 
 
@@ -273,7 +278,7 @@ def functions(
                 console.print(f"\n[yellow]{notice}[/yellow]")
 
         except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {e}")
+            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
             raise typer.Exit(1) from e
 
 
@@ -305,28 +310,29 @@ def _handle_morph(options: MorphCommandOptions) -> None:
         console.print(f"[bold red]Error:[/bold red] Unknown mutations: {', '.join(unknown)}")
         raise typer.Exit(2)
 
-    _run_morph_workflow(
-        MorphWorkflowRequest(
-            binary=options.binary,
-            output=output,
-            mutations=selected_mutations,
-            aggressive=options.aggressive,
-            force=options.force,
-            validation_mode=options.validation_mode,
-            allow_limited_symbolic=options.allow_limited_symbolic,
-            limited_symbolic_policy=options.limited_symbolic_policy,
-            rollback_policy=options.rollback_policy,
-            report=options.report,
-            runtime_corpus=options.runtime_corpus,
-            runtime_compare_files=options.runtime_compare_files,
-            runtime_normalize_whitespace=options.runtime_normalize_whitespace,
-            runtime_timeout=options.runtime_timeout,
-            min_severity=options.min_severity,
-            require_pass_severity=options.require_pass_severity,
-            seed=options.seed,
-            report_format=options.report_format,
+    with observed_operation(logger, "cli.mutate", event_name="cli.mutate"):
+        _run_morph_workflow(
+            MorphWorkflowRequest(
+                binary=options.binary,
+                output=output,
+                mutations=selected_mutations,
+                aggressive=options.aggressive,
+                force=options.force,
+                validation_mode=options.validation_mode,
+                allow_limited_symbolic=options.allow_limited_symbolic,
+                limited_symbolic_policy=options.limited_symbolic_policy,
+                rollback_policy=options.rollback_policy,
+                report=options.report,
+                runtime_corpus=options.runtime_corpus,
+                runtime_compare_files=options.runtime_compare_files,
+                runtime_normalize_whitespace=options.runtime_normalize_whitespace,
+                runtime_timeout=options.runtime_timeout,
+                min_severity=options.min_severity,
+                require_pass_severity=options.require_pass_severity,
+                seed=options.seed,
+                report_format=options.report_format,
+            )
         )
-    )
 
 
 morph = CommandCallback("morph", MorphCommandOptions, _handle_morph)
@@ -461,17 +467,19 @@ def main() -> None:
         args = parser.parse_args(argv)
         input_file = Path(args.input_opt or args.input_file)
         output_file = Path(args.output_opt or args.output_file) if (args.output_opt or args.output_file) else None
-        _run_simple_mode(
-            SimpleModeRequest(
-                input_file=input_file,
-                output_file=output_file,
-                aggressive=args.aggressive,
-                force=args.force,
-                seed=args.seed,
-                verbose=args.verbose,
-                debug=args.debug,
+        setup_logging("DEBUG" if (args.verbose or args.debug) else "INFO")
+        with observed_operation(logger, "cli.simple_mode", event_name="cli.simple_mode"):
+            _run_simple_mode(
+                SimpleModeRequest(
+                    input_file=input_file,
+                    output_file=output_file,
+                    aggressive=args.aggressive,
+                    force=args.force,
+                    seed=args.seed,
+                    verbose=args.verbose,
+                    debug=args.debug,
+                )
             )
-        )
         return
     app()
 
