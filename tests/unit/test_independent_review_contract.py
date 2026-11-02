@@ -2,8 +2,11 @@ import json
 from pathlib import Path
 from typing import cast
 
-from scripts.adversarial_benchmark import _EXPECTED_TOOLS
-from scripts.independent_review import _review_live_adversarial_benchmark, review
+from scripts.independent_review import (
+    _EXPECTED_BENCHMARK_TOOLS,
+    _review_live_adversarial_benchmark,
+    review,
+)
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -21,7 +24,7 @@ def _live_campaign_report() -> dict[str, object]:
     analyzer_effectiveness = {
         "NopInsertion": {tool: {"decompiler": dict(decompiler)} for tool in ("radare2", "angr", "ghidra")}
     }
-    completed = {tool: 1 for tool in _EXPECTED_TOOLS if tool != "binary-ninja"}
+    completed = {tool: 1 for tool in _EXPECTED_BENCHMARK_TOOLS if tool != "binary-ninja"}
     completed["binary-ninja"] = 0
     return {
         "sample_count": 1,
@@ -29,7 +32,7 @@ def _live_campaign_report() -> dict[str, object]:
         "pass_summary": {"NopInsertion": {"applied": 1}},
         "summary": {
             "expected_pass_runs": 1,
-            "expected_tools": list(_EXPECTED_TOOLS),
+            "expected_tools": sorted(_EXPECTED_BENCHMARK_TOOLS),
             "completed_tool_runs_by_tool": completed,
             "analyzer_effectiveness_by_pass": analyzer_effectiveness,
             "missing_pass_runs": 0,

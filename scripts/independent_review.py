@@ -275,7 +275,7 @@ def _review_live_adversarial_benchmark(path: Path) -> dict[str, object]:
         and sample_count > 0
         and isinstance(expected_pass_runs, int)
         and expected_pass_runs > 0
-        and set(summary.get("expected_tools", ())) == set(_EXPECTED_TOOLS)
+        and set(summary.get("expected_tools", ())) == _EXPECTED_BENCHMARK_TOOLS
         and isinstance(completed_by_tool, dict)
         and isinstance(effectiveness, dict)
         and set(effectiveness) == set(pass_names)
