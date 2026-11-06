@@ -32,7 +32,7 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Tier 1 Passes** | NOP, instruction substitution, and register substitution on the official target |
+| **Tier 1 Passes** | NOP, instruction substitution, register substitution, instruction expansion, and block reordering on the official target |
 | **Declared Support** | Linux ELF x86-64; preview and experimental targets are tracked separately |
 | **4 Validation Modes** | Structural, runtime, symbolic (angr), CFG integrity |
 | **Session Management** | Checkpoint/rollback system preserving binary state across mutation passes |

@@ -100,6 +100,21 @@ def test_support_matrix_readme_parity_gap_matches_generated_summary() -> None:
     )
 
 
+def test_readme_key_features_names_every_tier_1_pass() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    tier_1_passes = [entry["name"] for entry in document["passes"] if entry["stability"] == "tier-1"]
+    readme = _README.read_text(encoding="utf-8")
+
+    expect(
+        tier_1_passes == ["nop", "substitute", "register", "instruction-expansion", "block-reordering"]
+        and (
+            "NOP, instruction substitution, register substitution, instruction expansion, and block reordering "
+            "on the official target"
+        )
+        in readme
+    )
+
+
 def test_pass_maturity_keeps_preview_targets_out_of_parity_claims() -> None:
     document = json.loads(_MATRIX.read_text(encoding="utf-8"))
     summary = build_matrix(document)["summary"]

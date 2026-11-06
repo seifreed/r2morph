@@ -542,6 +542,8 @@ def _check_readme_support_summary(matrix: dict[str, object]) -> None:
         "Composition with other passes is not contractually supported.", 0
     )
     for fragment in (
+        "NOP, instruction substitution, register substitution, instruction expansion, and block reordering "
+        "on the official target",
         f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
         f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
         f"{summary['official_evidence_percent']}% evidence",
