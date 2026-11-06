@@ -1507,7 +1507,7 @@ jobs:
 
   cross-platform-differential:
     name: Cross-platform differential (macOS ARM64)
-    runs-on: macos-14
+    runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - name: Checkout

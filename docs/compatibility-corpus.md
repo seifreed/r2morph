@@ -234,10 +234,12 @@ extended pass errors, missing applications, behavioral false positives, or
 missing runtime observations. It does not promote those passes until their
 applied-run, behavioral-validation, and complete-evidence blockers are zero.
 The same scheduled workflow now runs a native ARM64 macOS differential job on
-`macos-14`. It executes the Mach-O ARM64 NOP and register substitutions,
-including a native NOP-plus-instruction-substitution composition,
-PE integrity checks, format-preserving rewriter checks, and fail-closed
-virtualization target checks, then uploads
+`macos-latest` (currently the `macos-26-arm64` image); GitHub retired the
+`macos-14` runner label on November 2, 2026 ([announcement](https://github.blog/changelog/2026-10-01-github-actions-macos-14-runner-image-retirement/)).
+It executes the Mach-O ARM64 NOP and register substitutions, including a native
+NOP-plus-instruction-substitution composition, PE integrity checks,
+format-preserving rewriter checks, and fail-closed virtualization target
+checks, then uploads
 `cross-platform-differential-macos-arm64`. This is additional native
 cross-platform evidence; it does not promote PE, Mach-O, ARM, or AArch64 to
 the official Linux ELF x86-64 support tier. The platform evidence aggregator

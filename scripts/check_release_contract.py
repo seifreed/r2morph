@@ -2,1412 +2,231 @@
 
 from __future__ import annotations
 
-import importlib
-import importlib.util
 import json
-import re
 import sys
 import tomllib
-from collections.abc import Callable
-from pathlib import Path
 
 try:
-    from scripts.adversarial_benchmark import _tool_summary
-    from scripts.independent_review import review as build_independent_review
-    from scripts.protection_maturity_baseline import CORPUS_PASS_NAMES
-    from scripts.support_matrix import build_matrix
+    from scripts.release_contract_common import (
+        _BANNED_BINARY_NINJA_OMISSION_PHRASES,
+        _DOCUMENTATION_LINK_FILES,
+        _FORBIDDEN_RELEASE_CLAIMS,
+        _MARKDOWN_LINK_PATTERN,
+        _RELEASE_BLOCKER_FRAGMENTS,
+        _RELEASE_BLOCKER_ID_PATTERN,
+        _RELEASE_BLOCKER_IDS,
+        _RELEASE_BLOCKER_INDEX_AREAS,
+        _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT,
+        _RELEASE_HONESTY_FILES,
+        ADVERSARIAL_TOOL_SLOTS,
+        FULL_EVIDENCE_PERCENT,
+        INDEPENDENT_REVIEW_CHECKS,
+        MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT,
+        MINIMUM_COVERAGE_PERCENT,
+        MINIMUM_VM_VARIANT_COUNT,
+        PUBLIC_CLI_ALIASES,
+        REQUIRED_CI_JOBS,
+        REQUIRED_VM_TARGET_OPERATION,
+        REQUIRED_VM_TARGET_STRIDE_VALUES,
+        ROOT,
+        TIER_1_MATURITY_PROFILE,
+        VM_ADVERSARIAL_VALIDATION,
+        VM_HANDLER_COUNT,
+        VM_RESISTANCE_EVIDENCE_QUALITY,
+        VM_RESISTANCE_SEED_COUNT,
+        Path,
+        _check_version,
+    )
 except ModuleNotFoundError:
-    from adversarial_benchmark import _tool_summary
-    from independent_review import review as build_independent_review
-    from protection_maturity_baseline import CORPUS_PASS_NAMES
-    from support_matrix import build_matrix
+    from release_contract_common import (
+        _check_version,
+    )
 
-ROOT = Path(__file__).resolve().parents[1]
-REQUIRED_CI_JOBS = (
-    "lint",
-    "typecheck",
-    "property-validation",
-    "unit-tests",
-    "integration-tests",
-    "product-smoke-tests",
-    "cross-platform-tests",
-    "package-smoke",
+
+try:
+    from scripts.release_contract_matrix import (
+        _check_adversarial_benchmark_evidence,
+        _check_differential_gap_evidence,
+        _check_matrix,
+        _check_maturity_gap_evidence,
+        _check_maturity_profile_values,
+        _check_parity_gap_evidence,
+        _check_pass_selection_contract,
+        _check_tier_1_maturity,
+        _check_vm_resistance_gap_evidence,
+        _check_vm_semantic_campaign,
+        _check_vm_semantic_campaign_capabilities,
+        _check_vm_semantic_fixture_coverage,
+        _check_vm_semantic_gap_evidence,
+        _load_matrix,
+    )
+except ModuleNotFoundError:
+    from release_contract_matrix import (
+        _check_matrix,
+        _load_matrix,
+    )
+
+
+try:
+    from scripts.release_contract_docs import (
+        _check_changelog,
+        _check_corpus_pass_selection_docs,
+        _check_documentation_claims,
+        _check_documentation_links,
+        _check_pass_maturity_gap_summary,
+        _check_readme_adversarial_summary,
+        _check_readme_cross_platform_parity,
+        _check_readme_differential_summary,
+        _check_readme_pass_surface,
+        _check_readme_support_summary,
+        _check_readme_vm_resistance_summary,
+        _check_readme_vm_review_scope,
+        _check_release_blockers,
+        _forbidden_release_claims,
+        _validate_release_blockers_text,
+    )
+except ModuleNotFoundError:
+    from release_contract_docs import (
+        _check_changelog,
+        _check_corpus_pass_selection_docs,
+        _check_documentation_claims,
+        _check_documentation_links,
+        _check_pass_maturity_gap_summary,
+        _check_readme_adversarial_summary,
+        _check_readme_cross_platform_parity,
+        _check_readme_differential_summary,
+        _check_readme_pass_surface,
+        _check_readme_support_summary,
+        _check_readme_vm_resistance_summary,
+        _check_readme_vm_review_scope,
+        _check_release_blockers,
+    )
+
+
+try:
+    from scripts.release_contract_artifacts import (
+        _adversarial_release_signoff_blockers,
+        _blocker_totals,
+        _check_adversarial_benchmark_artifacts,
+        _check_angr_runtime_available,
+        _check_independent_review_artifact,
+        _check_independent_review_packet_claims,
+        _check_inventory,
+        _check_vm_resistance_artifacts,
+        _validate_adversarial_benchmark_artifact,
+        _validate_adversarial_signoff_blockers,
+        _validate_angr_runtime_available,
+        _validate_bytecode_diversification,
+        _validate_independent_review_artifact,
+        _validate_independent_review_freshness,
+        _validate_inventory,
+        _validate_vm_resistance_artifacts,
+    )
+except ModuleNotFoundError:
+    from release_contract_artifacts import (
+        _check_adversarial_benchmark_artifacts,
+        _check_angr_runtime_available,
+        _check_independent_review_artifact,
+        _check_independent_review_packet_claims,
+        _check_inventory,
+        _check_vm_resistance_artifacts,
+    )
+
+
+try:
+    from scripts.release_contract_workflows import (
+        _check_ci_contract,
+        _check_corpus_workflows,
+        _check_release_recovery_workflow,
+        _check_release_workflow,
+    )
+except ModuleNotFoundError:
+    from release_contract_workflows import (
+        _check_ci_contract,
+        _check_corpus_workflows,
+        _check_release_recovery_workflow,
+        _check_release_workflow,
+    )
+
+__all__ = (
+    "ADVERSARIAL_TOOL_SLOTS",
+    "FULL_EVIDENCE_PERCENT",
+    "INDEPENDENT_REVIEW_CHECKS",
+    "MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT",
+    "MINIMUM_COVERAGE_PERCENT",
+    "MINIMUM_VM_VARIANT_COUNT",
+    "PUBLIC_CLI_ALIASES",
+    "REQUIRED_CI_JOBS",
+    "REQUIRED_VM_TARGET_OPERATION",
+    "REQUIRED_VM_TARGET_STRIDE_VALUES",
+    "ROOT",
+    "TIER_1_MATURITY_PROFILE",
+    "VM_ADVERSARIAL_VALIDATION",
+    "VM_HANDLER_COUNT",
+    "VM_RESISTANCE_EVIDENCE_QUALITY",
+    "VM_RESISTANCE_SEED_COUNT",
+    "_BANNED_BINARY_NINJA_OMISSION_PHRASES",
+    "_DOCUMENTATION_LINK_FILES",
+    "_FORBIDDEN_RELEASE_CLAIMS",
+    "_MARKDOWN_LINK_PATTERN",
+    "_RELEASE_BLOCKER_FRAGMENTS",
+    "_RELEASE_BLOCKER_IDS",
+    "_RELEASE_BLOCKER_ID_PATTERN",
+    "_RELEASE_BLOCKER_INDEX_AREAS",
+    "_RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT",
+    "_RELEASE_HONESTY_FILES",
+    "Path",
+    "_adversarial_release_signoff_blockers",
+    "_blocker_totals",
+    "_check_adversarial_benchmark_artifacts",
+    "_check_adversarial_benchmark_evidence",
+    "_check_angr_runtime_available",
+    "_check_changelog",
+    "_check_ci_contract",
+    "_check_corpus_pass_selection_docs",
+    "_check_corpus_workflows",
+    "_check_differential_gap_evidence",
+    "_check_documentation_claims",
+    "_check_documentation_links",
+    "_check_independent_review_artifact",
+    "_check_independent_review_packet_claims",
+    "_check_inventory",
+    "_check_matrix",
+    "_check_maturity_gap_evidence",
+    "_check_maturity_profile_values",
+    "_check_parity_gap_evidence",
+    "_check_pass_maturity_gap_summary",
+    "_check_pass_selection_contract",
+    "_check_readme_adversarial_summary",
+    "_check_readme_cross_platform_parity",
+    "_check_readme_differential_summary",
+    "_check_readme_pass_surface",
+    "_check_readme_support_summary",
+    "_check_readme_vm_resistance_summary",
+    "_check_readme_vm_review_scope",
+    "_check_release_blockers",
+    "_check_release_recovery_workflow",
+    "_check_release_workflow",
+    "_check_tier_1_maturity",
+    "_check_version",
+    "_check_vm_resistance_artifacts",
+    "_check_vm_resistance_gap_evidence",
+    "_check_vm_semantic_campaign",
+    "_check_vm_semantic_campaign_capabilities",
+    "_check_vm_semantic_fixture_coverage",
+    "_check_vm_semantic_gap_evidence",
+    "_forbidden_release_claims",
+    "_load_matrix",
+    "_validate_adversarial_benchmark_artifact",
+    "_validate_adversarial_signoff_blockers",
+    "_validate_angr_runtime_available",
+    "_validate_bytecode_diversification",
+    "_validate_independent_review_artifact",
+    "_validate_independent_review_freshness",
+    "_validate_inventory",
+    "_validate_release_blockers_text",
+    "_validate_vm_resistance_artifacts",
 )
-MINIMUM_COVERAGE_PERCENT = 75
-FULL_EVIDENCE_PERCENT = 100.0
-TIER_1_MATURITY_PROFILE = "tier-1-native"
-PUBLIC_CLI_ALIASES = {"block", "expand", "nop", "register", "substitute"}
-VM_RESISTANCE_SEED_COUNT = 10
-VM_HANDLER_COUNT = 255
-MINIMUM_VM_VARIANT_COUNT = 3
-MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT = 20.0
-REQUIRED_VM_TARGET_STRIDE_VALUES = [3, 4, 5]
-REQUIRED_VM_TARGET_OPERATION = {"is_immediate": False, "mnemonic": "mov", "width": 64}
-VM_ADVERSARIAL_VALIDATION = {
-    "status": "pending-human-adversarial-review",
-    "evidence_quality": "seed-diversity-only",
-    "pending_scope": [
-        "human-adversarial-validation",
-        "isa-opcode-diversity",
-        "handler-diversity",
-        "dispatcher-diversity",
-        "anti-tamper",
-        "progressive-bytecode-protection",
-    ],
-}
-VM_RESISTANCE_EVIDENCE_QUALITY = {
-    "anti-tamper": "automated-native-tamper-smoke",
-    "human-adversarial-validation": "automated-adversarial-smoke",
-}
-ADVERSARIAL_TOOL_SLOTS = {
-    "angr",
-    "binary-ninja",
-    "custom",
-    "ghidra",
-    "ida-pro",
-    "objdump",
-    "radare2",
-    "triton",
-    "unicorn",
-}
-INDEPENDENT_REVIEW_CHECKS = {
-    "adversarial_benchmark_evidence",
-    "adversarial_continuous_evidence_gate",
-    "adversarial_corpus_evidence",
-    "adversarial_signoff_blockers",
-    "angr_binary_ninja_availability",
-    "binary_ninja_benchmark_contract",
-    "differential_continuous_evidence_gate",
-    "differential_corpus_gap_scope",
-    "differential_platform_gap_scope",
-    "fppackedidxnb_regression_evidence",
-    "ghidra_corpus_evidence",
-    "ida_corpus_evidence",
-    "ida_current_summary_evidence",
-    "independent_fuzz_recheck",
-    "official_target_scope",
-    "parser_rewriter_fuzz_campaign",
-    "pass_maturity_gap_scope",
-    "release_blocker_ledger_scope",
-    "support_matrix_consistency",
-    "triton_corpus_evidence",
-    "virtualization_fixture_coverage",
-    "virtualization_fixture_headers",
-    "vm_fail_closed_diagnostics_contract",
-    "vm_resistance_adversarial_scope",
-    "vm_semantic_gap_scope",
-}
-_MARKDOWN_LINK_PATTERN = re.compile(r"!?\[[^]]*\]\(([^)]+)\)")
-_DOCUMENTATION_LINK_FILES = (
-    ROOT / "docs" / "independent-review-packet.md",
-    ROOT / "docs" / "compatibility-corpus.md",
-    ROOT / "docs" / "release-blockers.md",
-)
-_RELEASE_HONESTY_FILES = (
-    ROOT / "README.md",
-    ROOT / "CHANGELOG.md",
-    ROOT / "docs" / "independent-review-packet.md",
-    ROOT / "docs" / "pass-maturity.md",
-    ROOT / "docs" / "release-blockers.md",
-)
-_FORBIDDEN_RELEASE_CLAIMS = (
-    "production-ready",
-    "production ready",
-    "ready to ship",
-    "full parity",
-    "universal protector",
-    "vm milestone complete",
-    "vm milestone approved",
-    "anti-tamper approved",
-    "progressive bytecode protection approved",
-    "external human review passed",
-)
-_BANNED_BINARY_NINJA_OMISSION_PHRASES = (
-    "Binary Ninja is explicitly omitted",
-    "Binary Ninja is intentionally omitted",
-    "Binary Ninja remains intentionally omitted",
-    "Binary Ninja remains omitted by project decision",
-    "Binary Ninja remains excluded by project decision",
-)
-_RELEASE_BLOCKER_FRAGMENTS = (
-    "Per-pass maturity remains incomplete",
-    "maturity_evidence_blockers",
-    "maturity_blocker_totals",
-    "Differential corpus coverage remains incomplete",
-    "continuous_evidence_blockers",
-    "continuous_evidence_blocker_totals",
-    "extended_maturity_evidence_blockers",
-    "extended_maturity_evidence_blocker_totals",
-    "VM semantic coverage is complete for the declared ELF x86-64 scope",
-    "vm_semantic_gap_scope",
-    "vm_semantic_blocker_totals",
-    "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
-    "parity_evidence_blockers",
-    "parity_blocker_totals",
-    "Binary Ninja is deliberately on hold for",
-    "adversarial_evidence_blockers",
-    "adversarial_evidence_blocker_totals",
-    "adversarial_validation",
-    "vm_resistance_blocker_totals",
-    "anti-tamper and progressive bytecode protection",
-    "external human review records signoff",
-    "human_signoff",
-    "release_decision",
-)
-_RELEASE_BLOCKER_IDS = tuple(f"RB-{index:03d}" for index in range(1, 8))
-_RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT = 2
-_RELEASE_BLOCKER_INDEX_AREAS = {
-    "RB-001": "per-pass maturity",
-    "RB-002": "differential evidence",
-    "RB-003": "VM semantics",
-    "RB-004": "cross-platform parity",
-    "RB-005": "adversarial benchmark",
-    "RB-006": "VM resistance",
-    "RB-007": "human VM signoff",
-}
-_RELEASE_BLOCKER_ID_PATTERN = re.compile(r"\bRB-\d{3}\b")
-
-
-def _load_matrix() -> dict[str, object]:
-    path = ROOT / "docs" / "support-matrix.json"
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _check_version() -> str:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    package_version = project["project"]["version"]
-    init_path = ROOT / "r2morph" / "__init__.py"
-    if init_path.exists():
-        public_version_matches = f'__version__ = "{package_version}"' in init_path.read_text(encoding="utf-8")
-    else:
-        public_version_matches = importlib.import_module("r2morph").__version__ == package_version
-    if not public_version_matches:
-        raise ValueError("package and public version must match")
-    return package_version
-
-
-def _check_tier_1_maturity(matrix: dict[str, object], pass_profiles: dict[str, str]) -> None:
-    tier_1_passes = {entry["name"] for entry in matrix["passes"] if entry["stability"] == "tier-1"}
-    tier_1_profiles = {name for name, profile_name in pass_profiles.items() if profile_name == TIER_1_MATURITY_PROFILE}
-    if tier_1_profiles != tier_1_passes:
-        raise ValueError("tier-1 passes must exactly match the tier-1 maturity profile")
-
-
-def _check_maturity_profile_values(profile_name: str, profile: dict[str, object]) -> None:
-    for field, value in profile.items():
-        if isinstance(value, str):
-            if not value.strip():
-                raise ValueError(f"maturity profile has empty field: {profile_name}.{field}")
-        elif isinstance(value, list):
-            if not value or any(not isinstance(item, str) or not item.strip() for item in value):
-                raise ValueError(f"maturity profile has empty field: {profile_name}.{field}")
-        else:
-            raise ValueError(f"maturity profile has invalid field type: {profile_name}.{field}")
-    for field in ("unit_tests", "e2e_tests"):
-        for evidence_path in profile[field]:
-            if not (ROOT / evidence_path).exists():
-                raise ValueError(f"maturity profile has missing evidence path: {profile_name}.{field}.{evidence_path}")
-
-
-def _check_pass_selection_contract(matrix: dict[str, object], pass_names: set[str]) -> None:
-    selection = matrix["selection"]
-    cli_aliases = selection["cli_aliases"]
-    engine_only = set(selection["engine_only_passes"])
-    if set(cli_aliases.values()) | engine_only != pass_names:
-        raise ValueError("pass selection must cover every pass exactly")
-    if set(cli_aliases) != PUBLIC_CLI_ALIASES:
-        raise ValueError("public CLI aliases changed without release contract update")
-    if set(cli_aliases.values()) & engine_only:
-        raise ValueError("public CLI aliases must not overlap engine-only passes")
-
-
-def _check_vm_semantic_gap_evidence(matrix: dict[str, object]) -> None:
-    vm_semantics = matrix["vm_semantics"]
-    gap_scope = vm_semantics["gap_scope"]
-    evidence = vm_semantics["gap_evidence"]
-    if sorted(evidence) != sorted(gap_scope):
-        raise ValueError("vm semantic gap evidence must cover every declared gap")
-    summary = matrix["matrix"]["summary"]
-    if summary["vm_semantic_gap_scope"] != gap_scope or summary["vm_semantic_gap_evidence"] != evidence:
-        raise ValueError("vm semantic gap summary must match source evidence")
-    totals = summary["vm_semantic_blocker_totals"]
-    if totals["vm_semantic_gap_scope"] != len(gap_scope) or totals["total_vm_semantic_blockers"] != len(gap_scope):
-        raise ValueError("vm semantic blocker totals must match declared gap scope")
-    for gap, row in evidence.items():
-        if not row["status"].endswith("-incomplete"):
-            raise ValueError(f"vm semantic gap must remain incomplete until closed: {gap}")
-        if not row["evidence"]:
-            raise ValueError(f"vm semantic gap evidence is empty: {gap}")
-        for evidence_path in row["evidence"]:
-            if (
-                isinstance(evidence_path, str)
-                and not evidence_path.startswith("http")
-                and not (ROOT / evidence_path).exists()
-            ):
-                raise ValueError(f"vm semantic gap evidence path is missing: {gap}.{evidence_path}")
-
-
-def _check_vm_semantic_campaign_capabilities(
-    matrix: dict[str, object],
-    campaign: dict[str, object],
-    report: dict[str, object],
-) -> None:
-    vm_semantics = matrix["vm_semantics"]
-    capabilities = campaign.get("capabilities")
-    report_capabilities = report.get("capability_summary")
-    resolved = vm_semantics.get("resolved_evidence")
-    summary = matrix["matrix"]["summary"]
-    if not isinstance(resolved, dict) or summary.get("vm_semantic_resolved_evidence") != resolved:
-        raise ValueError("vm semantic resolved evidence summary is stale")
-    if not isinstance(capabilities, dict) or not isinstance(report_capabilities, dict):
-        raise ValueError("vm semantic campaign capability summary is missing")
-    if set(resolved) != set(capabilities):
-        raise ValueError("vm semantic resolved evidence scope changed")
-    if set(capabilities) != set(report_capabilities):
-        raise ValueError("vm semantic campaign capability scope changed")
-    for name, expected in capabilities.items():
-        actual = report_capabilities.get(name)
-        resolved_row = resolved.get(name)
-        if not isinstance(expected, dict) or not isinstance(actual, dict):
-            raise ValueError(f"vm semantic campaign capability is invalid: {name}")
-        if not isinstance(resolved_row, dict) or resolved_row.get("status") != "campaign-measured":
-            raise ValueError(f"vm semantic resolved evidence is incomplete: {name}")
-        if expected.get("status") != "campaign-measured":
-            raise ValueError(f"vm semantic campaign capability is not complete: {name}")
-        for field in ("fixture_count", "passed_count", "failed_count"):
-            if expected.get(field) != actual.get(field):
-                raise ValueError(f"vm semantic campaign capability metadata is stale: {name}.{field}")
-
-
-def _check_vm_semantic_campaign(matrix: dict[str, object]) -> None:
-    vm_semantics = matrix["vm_semantics"]
-    campaign = vm_semantics.get("campaign")
-    if not isinstance(campaign, dict):
-        raise ValueError("vm semantic campaign metadata is missing")
-    artifact = campaign.get("artifact")
-    if not isinstance(artifact, str) or not (ROOT / artifact).exists():
-        raise ValueError("vm semantic campaign artifact is missing")
-    report = json.loads((ROOT / artifact).read_text(encoding="utf-8"))
-    if report.get("status") != "passed" or report.get("failed_count") != 0:
-        raise ValueError("vm semantic campaign did not pass")
-    for field in ("fixture_count", "passed_count", "seed_count"):
-        if report.get(field) != campaign.get(field):
-            raise ValueError(f"vm semantic campaign metadata is stale: {field}")
-    _check_vm_semantic_campaign_capabilities(matrix, campaign, report)
-
-
-def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    gap_scope = summary["vm_resistance_gap_scope"]
-    evidence = summary["vm_resistance_gap_evidence"]
-    if sorted(evidence) != sorted(gap_scope):
-        raise ValueError("vm resistance gap evidence must cover every declared gap")
-    if summary["vm_resistance_evidence_blockers"]["vm_resistance_gap_scope"] != gap_scope:
-        raise ValueError("vm resistance evidence blockers must match declared gap scope")
-    totals = summary["vm_resistance_blocker_totals"]
-    if totals["vm_resistance_gap_scope"] != len(gap_scope) or totals["total_vm_resistance_blockers"] != len(gap_scope):
-        raise ValueError("vm resistance blocker totals must match declared gap scope")
-    for gap, row in evidence.items():
-        expected_quality = VM_RESISTANCE_EVIDENCE_QUALITY.get(gap, "seed-diversity-only")
-        if row["status"] == "complete" or row["evidence_quality"] != expected_quality:
-            raise ValueError(f"vm resistance gap must remain pending adversarial review: {gap}")
-        if not row["evidence"]:
-            raise ValueError(f"vm resistance gap evidence is empty: {gap}")
-        for evidence_path in row["evidence"]:
-            if (
-                isinstance(evidence_path, str)
-                and not evidence_path.startswith("http")
-                and not (ROOT / evidence_path).exists()
-            ):
-                raise ValueError(f"vm resistance gap evidence path is missing: {gap}.{evidence_path}")
-
-
-def _check_differential_gap_evidence(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    scope = summary["differential_evidence_scope"]
-    evidence = summary["differential_gap_evidence"]
-    blockers = summary["differential_evidence_blockers"]
-    if sorted(evidence) != sorted(scope):
-        raise ValueError("differential gap evidence must cover every declared scope")
-    if blockers["platform_gap_scope"] != scope["platform_gap_scope"]:
-        raise ValueError("differential platform blockers must match declared gap scope")
-    if blockers["corpus_gap_scope"] != scope["corpus_gap_scope"]:
-        raise ValueError("differential corpus blockers must match declared gap scope")
-    totals = summary["differential_blocker_totals"]
-    platform_blockers = sum(len(values) for values in blockers["platform_gap_scope"].values())
-    corpus_blockers = sum(len(values) for values in blockers["corpus_gap_scope"].values())
-    if (
-        totals["platform_gap_scope"] != platform_blockers
-        or totals["corpus_gap_scope"] != corpus_blockers
-        or totals["total_differential_blockers"] != platform_blockers + corpus_blockers
-    ):
-        raise ValueError("differential blocker totals must match declared gap scope")
-    for gap, row in evidence.items():
-        if row["status"] == "complete":
-            raise ValueError(f"differential gap must remain incomplete until closed: {gap}")
-        if not row["evidence"]:
-            raise ValueError(f"differential gap evidence is empty: {gap}")
-        for evidence_path in row["evidence"]:
-            if (
-                isinstance(evidence_path, str)
-                and not evidence_path.startswith("http")
-                and not (ROOT / evidence_path).exists()
-            ):
-                raise ValueError(f"differential gap evidence path is missing: {gap}.{evidence_path}")
-
-
-def _check_adversarial_benchmark_evidence(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    evidence = summary["adversarial_benchmark_evidence"]
-    if set(evidence["expected_tools"]) != ADVERSARIAL_TOOL_SLOTS:
-        raise ValueError("adversarial benchmark must declare every expected tool slot")
-    measured = evidence["measured_available_tools"]
-    unavailable = evidence["unavailable_reference_tools"]
-    blockers = summary["adversarial_evidence_blockers"]
-    if unavailable.get("binary-ninja", {}).get("status") != "unavailable":
-        raise ValueError("Binary Ninja must remain an explicit unavailable analyzer slot")
-    if blockers["binary_ninja_unavailable"] != ["binary-ninja"]:
-        raise ValueError("Binary Ninja unavailable blocker must remain explicit")
-    totals = summary["adversarial_blocker_totals"]
-    incomplete_tool_count = len(blockers["incomplete_tool_coverage"])
-    binary_ninja_count = len(blockers["binary_ninja_unavailable"])
-    campaign_scope_count = len(blockers["comparable_campaign_scope"])
-    if (
-        totals["incomplete_tool_coverage"] != incomplete_tool_count
-        or totals["binary_ninja_unavailable"] != binary_ninja_count
-        or totals["comparable_campaign_scope"] != campaign_scope_count
-        or totals["total_adversarial_blockers"] != incomplete_tool_count + binary_ninja_count + campaign_scope_count
-    ):
-        raise ValueError("adversarial blocker totals must match declared benchmark blockers")
-    for tool, row in measured.items():
-        if row["status"] != "completed":
-            raise ValueError(f"adversarial benchmark measured tool is incomplete: {tool}")
-    evidence_paths = list(evidence["campaign_evidence"])
-    for section in (measured, unavailable):
-        evidence_paths.extend(path for row in section.values() for path in row["evidence"])
-    for evidence_path in evidence_paths:
-        if (
-            isinstance(evidence_path, str)
-            and not evidence_path.startswith("http")
-            and not (ROOT / evidence_path).exists()
-        ):
-            raise ValueError(f"adversarial benchmark evidence path is missing: {evidence_path}")
-
-
-def _check_maturity_gap_evidence(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    evidence = summary["maturity_gap_evidence"]
-    blockers = summary["maturity_evidence_blockers"]
-    expected_fields = set(summary["maturity_gap_passes"])
-    if summary["native_evidence_gap_passes"]:
-        expected_fields.add("native_evidence")
-    if set(evidence) != expected_fields:
-        raise ValueError("maturity gap evidence must cover every declared maturity gap")
-    if blockers.get("native_evidence_gap_passes", []) != summary["native_evidence_gap_passes"]:
-        raise ValueError("maturity native evidence blockers must match summary")
-    if blockers.get("missing_fields_by_field", {}) != summary["maturity_gap_passes"]:
-        raise ValueError("maturity field blockers must match summary")
-    if blockers.get("missing_fields_by_pass", {}) != summary["maturity_gaps_by_pass"]:
-        raise ValueError("maturity pass blockers must match summary")
-    totals = summary["maturity_blocker_totals"]
-    field_gap_total = sum(len(pass_names) for pass_names in summary["maturity_gap_passes"].values())
-    if (
-        totals["native_evidence_gap_passes"] != len(summary["native_evidence_gap_passes"])
-        or totals["passes_with_maturity_field_gaps"] != len(summary["maturity_gaps_by_pass"])
-        or totals["total_maturity_field_gaps"] != field_gap_total
-        or totals["maturity_gap_categories"] != len(summary["maturity_gap_passes"])
-        or totals["total_maturity_blockers"] != len(summary["native_evidence_gap_passes"]) + field_gap_total
-    ):
-        raise ValueError("maturity blocker totals must match declared gap scope")
-    for gap, row in evidence.items():
-        if not row["passes"]:
-            raise ValueError(f"maturity gap evidence has no passes: {gap}")
-        if not (row["status"].endswith("-incomplete") or row["status"].endswith("-unsupported")):
-            raise ValueError(f"maturity gap must remain incomplete until closed: {gap}")
-        for evidence_path in row["evidence"]:
-            if (
-                isinstance(evidence_path, str)
-                and not evidence_path.startswith("http")
-                and not (ROOT / evidence_path).exists()
-            ):
-                raise ValueError(f"maturity gap evidence path is missing: {gap}.{evidence_path}")
-
-
-def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    evidence = summary["parity_gap_evidence"]
-    blockers = summary["parity_evidence_blockers"]
-    preview_targets = evidence["preview_evidence_targets"]
-    zero_targets = evidence["zero_evidence_targets"]
-    parity_targets = sorted(preview_targets + zero_targets, key=lambda row: (row["format"], row["architecture"]))
-    if parity_targets != summary["non_official_gap_targets"]:
-        raise ValueError("parity gap evidence must cover every non-official target")
-    if blockers["parity_gap_scope"] != summary["parity_gap_scope"]:
-        raise ValueError("parity gap scope blockers must match summary")
-    if blockers["non_official_gap_targets"] != summary["non_official_gap_targets"]:
-        raise ValueError("parity target blockers must match summary")
-    totals = summary["parity_blocker_totals"]
-    if totals["non_official_gap_targets"] != len(summary["non_official_gap_targets"]):
-        raise ValueError("parity target blocker total must match summary")
-    parity_gap_formats = len(summary["parity_gap_scope"]["formats"])
-    parity_gap_architectures = len(summary["parity_gap_scope"]["architectures"])
-    if (
-        totals["parity_gap_formats"] != parity_gap_formats
-        or totals["parity_gap_architectures"] != parity_gap_architectures
-        or totals["total_parity_blockers"]
-        != totals["non_official_gap_targets"] + parity_gap_formats + parity_gap_architectures
-    ):
-        raise ValueError("parity blocker totals must match declared gap scope")
-    if any(
-        row["evidence_percent"] >= summary["official_evidence_percent"] for row in blockers["non_official_gap_targets"]
-    ):
-        raise ValueError("non-official targets must remain below official parity")
-
-
-def _check_vm_semantic_fixture_coverage(matrix: dict[str, object]) -> None:
-    coverage = matrix["matrix"]["summary"]["vm_semantic_fixture_coverage"]
-    if coverage != matrix["vm_semantics"]["fixture_coverage"]:
-        raise ValueError("vm semantic fixture coverage summary must match source evidence")
-    if not (ROOT / coverage["artifact"]).exists():
-        raise ValueError("vm semantic fixture coverage artifact is missing")
-    if coverage["fixture_count"] <= 0 or coverage["covered_capability_count"] != coverage["capability_count"]:
-        raise ValueError("vm semantic fixture coverage must cover every declared capability")
-    if coverage["unclassified_count"] != 0:
-        raise ValueError("vm semantic fixture coverage must not contain unclassified fixtures")
-
-
-def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
-    if matrix["release"] != package_version:
-        raise ValueError("support matrix release must match package version")
-    target = matrix["official_target"]
-    if target != {"os": "linux", "format": "ELF", "architecture": "x86-64", "status": "supported"}:
-        raise ValueError("official target must be Linux ELF x86-64")
-    for pass_entry in matrix["passes"]:
-        for evidence in pass_entry["evidence"]:
-            if evidence.startswith("http"):
-                continue
-            if not (ROOT / evidence).exists():
-                raise ValueError(f"missing evidence path: {evidence}")
-    generated_matrix = build_matrix(matrix)
-    if matrix["matrix"] != generated_matrix:
-        raise ValueError("support matrix generated cells must be up to date")
-    maturity = matrix["maturity"]
-    profiles = maturity["profiles"]
-    required_fields = maturity["required_fields"]
-    pass_profiles = maturity["pass_profiles"]
-    pass_names = {entry["name"] for entry in matrix["passes"]}
-    _check_pass_selection_contract(matrix, pass_names)
-    if set(pass_profiles) != pass_names:
-        raise ValueError("maturity profile map must cover every pass exactly")
-    for profile_name in set(pass_profiles.values()):
-        profile = profiles[profile_name]
-        if set(profile) != set(required_fields):
-            raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
-        _check_maturity_profile_values(profile_name, profile)
-    _check_tier_1_maturity(matrix, pass_profiles)
-    summary = matrix["matrix"]["summary"]
-    if summary["official_evidence_percent"] != FULL_EVIDENCE_PERCENT:
-        raise ValueError("official target must retain complete evidence")
-    if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
-        raise ValueError("non-official targets must not claim official-target parity")
-    _check_adversarial_benchmark_evidence(matrix)
-    _check_differential_gap_evidence(matrix)
-    _check_maturity_gap_evidence(matrix)
-    _check_parity_gap_evidence(matrix)
-    _check_vm_semantic_fixture_coverage(matrix)
-    _check_vm_semantic_campaign(matrix)
-    _check_vm_semantic_gap_evidence(matrix)
-    _check_vm_resistance_gap_evidence(matrix)
-
-
-def _check_readme_support_summary(matrix: dict[str, object]) -> None:
-    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
-    summary = matrix["matrix"]["summary"]
-    stability_counts = summary["stability_counts"]
-    official_total = summary["official_evidenced_cells"] + summary["official_not_supported_cells"]
-    non_official_total = summary["non_official_evidenced_cells"] + summary["non_official_not_supported_cells"]
-    instruction_gap_count = summary["instructions_affected_counts"].get("Not exhaustively catalogued.", 0)
-    instruction_gap_fragment = (
-        f"{instruction_gap_count} without an exhaustive affected-instruction catalogue"
-        if instruction_gap_count
-        else "no remaining affected-instruction catalogue gap"
-    )
-    performance_gap_count = summary["performance_counts"].get("Not measured per pass.", 0)
-    performance_fragment = (
-        f"{performance_gap_count} passes with no per-pass performance"
-        if performance_gap_count
-        else "scheduled extended maturity smoke now records output-size,"
-    )
-    compatibility_gap_count = summary["compatibility_counts"].get(
-        "Composition with other passes is not contractually supported.", 0
-    )
-    for fragment in (
-        "NOP, instruction substitution, register substitution, instruction expansion, and block reordering "
-        "on the official target",
-        f"{summary['official_evidenced_cells']}/{official_total} evidenced cells for the official",
-        f"{summary['non_official_evidenced_cells']}/{non_official_total} evidenced cells for non-official",
-        f"{summary['official_evidence_percent']}% evidence",
-        f"{summary['non_official_evidence_percent']}% evidence",
-        f"{stability_counts['tier-1']} passes as Tier 1",
-        f"{stability_counts['experimental']} passes as experimental",
-        performance_fragment,
-        (
-            f"{summary['false_positive_risk_counts'].get('Not independently measured.', 0)} with no independent "
-            "false-positive measurement"
-        ),
-        (
-            f"{summary['decompiler_effectiveness_counts'].get('Not independently measured.', 0)} with no independent "
-            "decompiler-effectiveness measurement"
-        ),
-        (f"{compatibility_gap_count} " "without contractual composition support"),
-        instruction_gap_fragment,
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README support summary is missing: {fragment}")
-
-
-def _check_readme_pass_surface(matrix: dict[str, object]) -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    pass_surface = {
-        "nop": ("NOP Insertion", "`-m nop`"),
-        "substitute": ("Instruction Substitution", "`-m substitute`"),
-        "register": ("Register Substitution", "`-m register`"),
-        "instruction-expansion": ("Instruction Expansion", "`-m expand`"),
-        "block-reordering": ("Block Reordering", "`-m block`"),
-        "dead-code-injection": ("Dead Code Injection", "engine-only"),
-        "control-flow-flattening": ("Control Flow Flattening", "engine-only"),
-        "opaque-predicates": ("Opaque Predicates", "engine-only"),
-        "code-virtualization": ("Code Virtualization", "engine-only"),
-        "anti-disassembly": ("Anti-Disassembly", "engine-only"),
-        "data-flow-mutation": ("Data Flow Mutation", "engine-only"),
-        "short-jump-patching": ("Short Jump Patching", "engine-only"),
-        "constant-unfolding": ("Constant Unfolding", "engine-only"),
-        "code-mobility": ("Code Mobility", "engine-only"),
-        "function-outlining": ("Function Outlining", "engine-only"),
-        "api-hashing": ("API Hashing", "engine-only"),
-        "import-obfuscation": ("Import Obfuscation", "engine-only"),
-        "self-modifying-code": ("Self-Modifying Code", "engine-only"),
-        "stack-strings": ("Stack Strings", "engine-only"),
-        "string-obfuscation": ("String Obfuscation", "engine-only"),
-        "pattern-substitution": ("Pattern Substitution", "engine-only"),
-        "polymorphic-engine": ("Polymorphic Engine", "engine-only"),
-    }
-    for entry in matrix["passes"]:
-        name = entry["name"]
-        if name not in pass_surface:
-            raise ValueError(f"README pass surface map is missing: {name}")
-        display_name, surface = pass_surface[name]
-        row_prefix = f"| **{display_name}** | {surface} |"
-        if row_prefix not in readme:
-            raise ValueError(f"README pass surface is missing: {row_prefix}")
-
-
-def _check_readme_cross_platform_parity() -> None:
-    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
-    for fragment in (
-        "PE, Mach-O, ARM, and AArch64 evidence does not imply parity with Linux ELF x86-64",
-        "equivalent CodeVirtualization support",
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README cross-platform parity warning is missing: {fragment}")
-
-
-def _check_readme_differential_summary() -> None:
-    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
-    workflow = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
-    corpus = " ".join((ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
-    for fragment in ("--passes all", "--require-applied", "--require-complete-evidence"):
-        if fragment not in workflow or fragment not in readme:
-            raise ValueError(f"README differential summary is missing workflow flag: {fragment}")
-    for fragment in (
-        "nine seed-derived command-line inputs",
-        "exit code, stdout, stderr, created files, and declared observable effects",
-        "runtime, size, transform-duration, runtime-duration, and static analyzer evidence",
-        "total_continuous_evidence_blockers",
-    ):
-        if fragment not in corpus:
-            raise ValueError(f"compatibility corpus differential contract is missing: {fragment}")
-    for fragment in (
-        "nine seed-derived inputs",
-        "exit code, stdout, stderr, created files, and declared observable effects",
-        "runtime, output size, transform duration, runtime duration, and static analyzer evidence",
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README differential summary is missing: {fragment}")
-
-
-def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
-    summary = matrix["matrix"]["summary"]
-    contract = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
-    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
-    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
-    stability_counts = summary["stability_counts"]
-    maturity_profile_counts = summary["maturity_profile_counts"]
-    performance_gap_count = summary["performance_counts"].get("Not measured per pass.", 0)
-    performance_fragment = (
-        f"{performance_gap_count} passes with no per-pass performance"
-        if performance_gap_count
-        else "scheduled extended maturity smoke now records output-size,"
-    )
-    compatibility_gap_count = summary["compatibility_counts"].get(
-        "Composition with other passes is not contractually supported.", 0
-    )
-    maturity_gap_category_count = summary["maturity_blocker_totals"]["maturity_gap_categories"]
-    maturity_gap_category_label = "category" if maturity_gap_category_count == 1 else "categories"
-    fragments = [
-        f"{summary['official_evidence_percent']}% official evidence",
-        f"{summary['non_official_evidence_percent']}% non-official evidence",
-        f"{summary['parity_blocker_totals']['total_parity_blockers']} total parity blockers",
-        f"{stability_counts['tier-1']} tier-1 passes",
-        f"{stability_counts['experimental']} experimental passes",
-        f"{maturity_profile_counts['tier-1-native']} tier-1-native profile passes",
-        f"{maturity_profile_counts['experimental-corpus-selected']} experimental-corpus-selected profile passes",
-        f"{maturity_profile_counts['code-virtualization']} code-virtualization profile pass",
-        performance_fragment,
-        (
-            f"{summary['false_positive_risk_counts'].get('Not independently measured.', 0)} with no independent "
-            "false-positive measurement"
-        ),
-        (
-            f"{summary['decompiler_effectiveness_counts'].get('Not independently measured.', 0)} with no independent "
-            "decompiler-effectiveness measurement"
-        ),
-        (f"{compatibility_gap_count} " "without contractual composition support"),
-        f"{summary['maturity_blocker_totals']['total_maturity_field_gaps']} total per-pass maturity field gaps",
-        f"{maturity_gap_category_count} maturity gap {maturity_gap_category_label}",
-        f"{summary['vm_semantic_blocker_totals']['total_vm_semantic_blockers']} VM semantic blockers",
-        f"{summary['vm_resistance_blocker_totals']['total_vm_resistance_blockers']} VM resistance blockers",
-        f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
-        f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
-        f"{bytecode['all_handler_stride_unique_count']} handler stride values",
-        "target handler stride diversity",
-        "not human approval of anti-tamper or progressive bytecode protection",
-    ]
-    experimental_profile_count = maturity_profile_counts.get("experimental", 0)
-    if experimental_profile_count:
-        fragments.append(f"{experimental_profile_count} experimental profile passes")
-    instruction_gap_count = summary["instructions_affected_counts"].get("Not exhaustively catalogued.", 0)
-    fragments.append(
-        f"{instruction_gap_count} without an exhaustive affected-instruction catalogue"
-        if instruction_gap_count
-        else "no remaining exhaustive affected-instruction catalogue gap"
-    )
-    for fragment in fragments:
-        if fragment not in contract:
-            raise ValueError(f"pass maturity summary is missing: {fragment}")
-
-
-def _check_corpus_pass_selection_docs() -> None:
-    maturity = " ".join((ROOT / "docs" / "pass-maturity.md").read_text(encoding="utf-8").split())
-    compatibility = " ".join((ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8").split())
-    maturity_passes = ", ".join(f"`{pass_name}`" for pass_name in CORPUS_PASS_NAMES[:-1])
-    compatibility_passes = ", ".join(CORPUS_PASS_NAMES[:-1])
-    if f"{maturity_passes}, and `{CORPUS_PASS_NAMES[-1]}`." not in maturity:
-        raise ValueError("pass maturity contract must name the public corpus selection")
-    if f"for ten selected passes: {compatibility_passes}, and {CORPUS_PASS_NAMES[-1]}." not in compatibility:
-        raise ValueError("compatibility corpus must name the full pass selection")
-
-
-def _check_changelog(package_version: str) -> None:
-    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    if f"## {package_version}" not in changelog:
-        raise ValueError("changelog must contain the package version heading")
-    if package_version == _check_version() and "VM milestone blocked until external human review" not in changelog:
-        raise ValueError("changelog must preserve the VM milestone signoff blocker")
-
-
-def _validate_inventory(inventory: dict[str, object]) -> None:
-    fixtures = inventory["fixtures"]
-    if inventory["compatible_fixture_count"] != len(fixtures):
-        raise ValueError("generated inventory count does not match fixture records")
-    for fixture in fixtures:
-        if fixture["all_semantic_equal"] is not True:
-            raise ValueError("generated inventory contains a failed semantic comparison")
-        if not fixture["runs"]:
-            raise ValueError("generated inventory contains a fixture without runs")
-        if fixture["baseline_runtime"]["status"] != "completed":
-            raise ValueError("generated inventory baseline runtime did not complete")
-        for run in fixture["runs"]:
-            if run["runtime"]["status"] != "completed":
-                raise ValueError("generated inventory run runtime did not complete")
-            if run["runtime_observable_equal"] is not True:
-                raise ValueError("generated inventory contains a failed runtime comparison")
-    summary = inventory["summary"]
-    expected_summary = {
-        "failed_seed_runs": 0,
-        "semantic_failures": 0,
-        "semantic_passes": len(fixtures),
-        "successful_seed_runs": sum(len(fixture["runs"]) for fixture in fixtures),
-    }
-    if summary != expected_summary:
-        raise ValueError("generated inventory summary does not match fixture records")
-
-
-def _check_inventory() -> None:
-    inventory = json.loads((ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
-    _validate_inventory(inventory)
-
-
-def _validate_bytecode_diversification(bytecode: dict[str, object]) -> None:
-    if (
-        bytecode.get("seeds_with_target_handlers") != VM_RESISTANCE_SEED_COUNT
-        or bytecode.get("seeds_without_target_handlers") != 0
-    ):
-        raise ValueError("bytecode grammar must find target handlers for every seed")
-    if bytecode.get("target_stride_diverse") is not True:
-        raise ValueError("bytecode grammar target handler stride must be diverse")
-    if bytecode.get("target_stride_unique_count") != len(bytecode.get("target_stride_values", [])):
-        raise ValueError("bytecode grammar target stride count must match stride values")
-    if bytecode.get("target_stride_values") != REQUIRED_VM_TARGET_STRIDE_VALUES:
-        raise ValueError("bytecode grammar target stride values changed")
-    if bytecode.get("target_operation") != REQUIRED_VM_TARGET_OPERATION:
-        raise ValueError("bytecode grammar target operation changed")
-    if bytecode.get("target_stride_unique_count", 0) < MINIMUM_VM_VARIANT_COUNT:
-        raise ValueError("bytecode grammar target handlers must record multiple strides")
-    seeds = bytecode.get("seeds")
-    if not isinstance(seeds, list) or any(
-        not isinstance(seed, dict)
-        or seed.get("handler_count") != VM_HANDLER_COUNT
-        or not isinstance(seed.get("target_handler_count"), int)
-        or seed["target_handler_count"] < 1
-        or not seed.get("target_stride_values")
-        for seed in seeds
-    ):
-        raise ValueError("bytecode grammar artifact must preserve per-seed target handler diversity")
-
-
-def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict[str, object]) -> None:
-    if handler.get("seed_count") != VM_RESISTANCE_SEED_COUNT or bytecode.get("seed_count") != VM_RESISTANCE_SEED_COUNT:
-        raise ValueError("VM resistance artifacts must cover ten seeds")
-    if handler.get("adversarial_validation") != VM_ADVERSARIAL_VALIDATION:
-        raise ValueError("handler clustering artifact must preserve pending adversarial validation scope")
-    if bytecode.get("adversarial_validation") != VM_ADVERSARIAL_VALIDATION:
-        raise ValueError("bytecode grammar artifact must preserve pending adversarial validation scope")
-    if handler.get("cross_seed_has_exact_normalised_matches") is not False:
-        raise ValueError("handler clustering must not contain exact cross-seed matches")
-    if handler.get("cross_seed_largest_normalised_cluster") != 1:
-        raise ValueError("handler clustering must keep normalized clusters unique")
-    similarity_mean = handler.get("cross_seed_nearest_similarity_mean")
-    similarity_threshold = handler.get("similarity_threshold")
-    if not isinstance(similarity_mean, int | float) or not isinstance(similarity_threshold, int | float):
-        raise ValueError("handler clustering must record similarity mean and threshold")
-    if similarity_mean >= similarity_threshold:
-        raise ValueError("handler clustering mean similarity must remain below the configured threshold")
-    above_threshold_percent = handler.get("cross_seed_nearest_similarity_above_threshold_percent")
-    if (
-        not isinstance(above_threshold_percent, int | float)
-        or above_threshold_percent > MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT
-    ):
-        raise ValueError("handler clustering above-threshold similarity rate is too high")
-    seeds = handler.get("seeds")
-    if not isinstance(seeds, list) or any(
-        not isinstance(seed, dict)
-        or seed.get("handler_count") != VM_HANDLER_COUNT
-        or seed.get("raw_unique_count") != seed.get("handler_count")
-        or seed.get("normalised_unique_count") != seed.get("handler_count")
-        for seed in seeds
-    ):
-        raise ValueError("handler clustering artifact must preserve per-seed handler uniqueness")
-    if bytecode.get("all_handler_stride_unique_count") != len(bytecode.get("all_handler_stride_values", [])):
-        raise ValueError("bytecode grammar stride count must match stride values")
-    if bytecode.get("all_handler_stride_unique_count", 0) < MINIMUM_VM_VARIANT_COUNT:
-        raise ValueError("bytecode grammar must record multiple handler strides")
-    padding = bytecode.get("padding_histogram")
-    if not isinstance(padding, dict) or len(padding) < MINIMUM_VM_VARIANT_COUNT:
-        raise ValueError("bytecode grammar must record varied handler padding")
-    _validate_bytecode_diversification(bytecode)
-
-
-def _check_vm_resistance_artifacts() -> None:
-    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
-    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
-    _validate_vm_resistance_artifacts(handler, bytecode)
-
-
-def _validate_independent_review_artifact(report: dict[str, object]) -> None:
-    if report.get("passed") is not True:
-        raise ValueError("independent review artifact must pass")
-    if report.get("human_signoff") != "not-attested":
-        raise ValueError("independent review artifact must not claim human signoff")
-    release_decision = report.get("release_decision")
-    if not isinstance(release_decision, dict) or release_decision.get("status") != "block-vm-milestone":
-        raise ValueError("independent review artifact must block the VM milestone without human signoff")
-    if release_decision.get("reason") != "automated evidence is not a substitute for external human review":
-        raise ValueError("independent review artifact must require external human review")
-    checks = report.get("checks")
-    if not isinstance(checks, list):
-        raise ValueError("independent review artifact must contain checks")
-    statuses = {check.get("name"): check.get("status") for check in checks if isinstance(check, dict)}
-    if set(statuses) != INDEPENDENT_REVIEW_CHECKS:
-        raise ValueError("independent review artifact checks are incomplete")
-    if any(status != "passed" for status in statuses.values()):
-        raise ValueError("independent review artifact contains a failed check")
-
-
-def _validate_independent_review_freshness(report: dict[str, object]) -> None:
-    if report != build_independent_review(ROOT):
-        raise ValueError("independent review artifact must match the current review output")
-
-
-def _check_independent_review_artifact() -> None:
-    report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
-    _validate_independent_review_artifact(report)
-    _validate_independent_review_freshness(report)
-
-
-def _check_independent_review_packet_claims() -> None:
-    packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
-    for fragment in (
-        "release_decision: block-vm-milestone",
-        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
-        "SSA, and liveness",
-        "unsupported instructions fail closed",
-        "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason",
-        "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
-        "and progressive bytecode protection",
-        "fuzz properties and failure handling for dispatcher, relocations, and rewriting",
-    ):
-        if fragment not in packet:
-            raise ValueError(f"independent review packet is missing: {fragment}")
-
-
-def _validate_adversarial_benchmark_artifact(report: dict[str, object]) -> None:
-    tools = report.get("tools")
-    if not isinstance(tools, list):
-        raise ValueError("adversarial benchmark artifact must contain tools")
-    if report.get("tool_summary") != _tool_summary([{"tools": tools}]):
-        raise ValueError("adversarial benchmark artifact tool summary must match tool rows")
-    _validate_adversarial_signoff_blockers(report)
-    observed = {tool.get("tool") for tool in tools if isinstance(tool, dict)}
-    if observed != ADVERSARIAL_TOOL_SLOTS:
-        raise ValueError("adversarial benchmark artifact must contain every analyzer slot")
-    for tool in tools:
-        if not isinstance(tool, dict):
-            raise ValueError("adversarial benchmark artifact contains an invalid tool row")
-        status = tool.get("status")
-        if status == "completed":
-            if not isinstance(tool.get("original"), dict) or not isinstance(tool.get("protected"), dict):
-                raise ValueError("completed analyzer rows must include original and protected evidence")
-        elif status == "unavailable":
-            if not isinstance(tool.get("reason"), str) or not tool["reason"].strip():
-                raise ValueError("unavailable analyzer rows must include a reason")
-        else:
-            raise ValueError("analyzer rows must be completed or unavailable")
-
-
-def _validate_adversarial_signoff_blockers(report: dict[str, object]) -> None:
-    signoff_blockers = report.get("release_signoff_blockers")
-    if signoff_blockers != _adversarial_release_signoff_blockers(report):
-        raise ValueError("adversarial benchmark artifact must expose release signoff blockers")
-    if not isinstance(signoff_blockers, dict):
-        raise ValueError("adversarial benchmark artifact release signoff blockers must be a map")
-    if report.get("release_signoff_blocker_totals") != _blocker_totals(signoff_blockers):
-        raise ValueError("adversarial benchmark artifact must expose release signoff blocker totals")
-
-
-def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str, object]:
-    tool_summary = report.get("tool_summary")
-    if not isinstance(tool_summary, dict):
-        return {}
-    unavailable = {
-        tool: summary["unavailable_reasons"]
-        for tool, summary in tool_summary.items()
-        if isinstance(tool, str)
-        and isinstance(summary, dict)
-        and summary.get("unavailable", 0) > 0
-        and isinstance(summary.get("unavailable_reasons"), dict)
-    }
-    return {"unavailable_analyzers": unavailable} if unavailable else {}
-
-
-def _blocker_totals(blockers: dict[str, object]) -> dict[str, int]:
-    totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
-    totals["blocker_categories"] = len(blockers)
-    totals["total_release_signoff_blockers"] = sum(
-        count for field, count in totals.items() if field != "blocker_categories"
-    )
-    return dict(sorted(totals.items()))
-
-
-def _check_adversarial_benchmark_artifacts() -> None:
-    for path in (
-        ROOT / "docs" / "protection-adversarial-benchmark.json",
-        ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-59898697.json",
-    ):
-        _validate_adversarial_benchmark_artifact(json.loads(path.read_text(encoding="utf-8")))
-
-
-def _validate_angr_runtime_available(
-    platform_name: str,
-    find_module: Callable[[str], object | None],
-    load_module: Callable[[str], object] = importlib.import_module,
-) -> None:
-    if platform_name == "win32":
-        return
-    if find_module("angr") is None:
-        raise ValueError("angr must be importable for adversarial benchmark evidence")
-    # Optional analyzer imports can fail at import time because of ABI or dependency mismatches.
-    try:
-        load_module("angr")
-    except Exception as error:
-        raise ValueError("angr must be importable for adversarial benchmark evidence") from error
-
-
-def _check_angr_runtime_available() -> None:
-    if sys.version_info[:2] >= (3, 14):
-        return
-    _validate_angr_runtime_available(sys.platform, importlib.util.find_spec)
-
-
-def _check_readme_adversarial_summary() -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    report_name = "protection-adversarial-angr-local-2026-09-18-59898697.json"
-    report = json.loads((ROOT / "docs" / report_name).read_text(encoding="utf-8"))
-    tools = report["tools"]
-    completed = sum(1 for tool in tools if tool["status"] == "completed")
-    unavailable = sum(1 for tool in tools if tool["status"] == "unavailable")
-    binary_ninja = next(tool for tool in tools if tool["tool"] == "binary-ninja")
-    for fragment in (
-        f"{completed} completed analyzer slots",
-        f"{unavailable} unavailable analyzer slots",
-        report_name,
-        "Binary Ninja is an explicit analyzer slot",
-        f"`binary-ninja` as {binary_ninja['status']}",
-        binary_ninja["reason"],
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README adversarial summary is missing: {fragment}")
-
-
-def _check_readme_vm_review_scope() -> None:
-    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
-    packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
-    review = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
-    release_decision = review["release_decision"]
-    for fragment in (
-        f"human_signoff: {review['human_signoff']}",
-        f"release_decision: {release_decision['status']}",
-        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
-        "SSA, and liveness paths remain explicit review scope",
-        "unsupported instructions must fail closed",
-        "partial protected functions",
-        "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason",
-        "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
-        "and progressive bytecode protection",
-        "human-review scope before the virtualizer milestone can be marked complete",
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README VM review scope is missing: {fragment}")
-    for fragment in (
-        "VM ISA/opcode diversification, dispatcher/handler alternatives",
-        "superinstructions, anti-tamper, and progressive bytecode protection",
-    ):
-        if fragment not in packet:
-            raise ValueError(f"independent review packet VM scope is missing: {fragment}")
-
-
-def _check_readme_vm_resistance_summary() -> None:
-    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
-    handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
-    bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
-    for fragment in (
-        f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
-        f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
-        f"{bytecode['all_handler_stride_unique_count']} handler stride values",
-        "target handler stride diversity",
-        "protection-handler-clustering.json",
-        "protection-bytecode-grammar.json",
-    ):
-        if fragment not in readme:
-            raise ValueError(f"README VM resistance summary is missing: {fragment}")
-
-
-def _check_documentation_links(documents: tuple[Path, ...] = _DOCUMENTATION_LINK_FILES) -> None:
-    for document in documents:
-        for target in _MARKDOWN_LINK_PATTERN.findall(document.read_text(encoding="utf-8")):
-            target_path = target.split("#", 1)[0].strip().strip("<>")
-            if not target_path or target.startswith(("http://", "https://", "mailto:", "#")):
-                continue
-            if not (document.parent / target_path).exists():
-                raise ValueError(f"missing documentation link: {target}")
-
-
-def _forbidden_release_claims(text: str) -> tuple[str, ...]:
-    normalized = text.lower()
-    return tuple(phrase for phrase in _FORBIDDEN_RELEASE_CLAIMS if phrase in normalized)
-
-
-def _check_documentation_claims() -> None:
-    for document in _RELEASE_HONESTY_FILES:
-        claims = _forbidden_release_claims(document.read_text(encoding="utf-8"))
-        if claims:
-            raise ValueError(f"{document.relative_to(ROOT)} contains unsupported release claim: {claims[0]}")
-    corpus = (ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
-    if any(phrase in corpus for phrase in _BANNED_BINARY_NINJA_OMISSION_PHRASES):
-        raise ValueError("compatibility corpus must not claim Binary Ninja is intentionally omitted")
-    if "Binary Ninja through its installed API" not in corpus:
-        raise ValueError("compatibility corpus must retain the Binary Ninja availability-slot contract")
-
-
-def _validate_release_blockers_text(blockers: str) -> None:
-    blocker_ids = tuple(_RELEASE_BLOCKER_ID_PATTERN.findall(blockers))
-    if blocker_ids[: len(_RELEASE_BLOCKER_IDS)] != _RELEASE_BLOCKER_IDS:
-        raise ValueError("release blockers ledger is missing stable blocker IDs")
-    if (
-        blocker_ids.count("RB-001") != _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT
-        or blocker_ids.count("RB-007") != _RELEASE_BLOCKER_REQUIRED_ENTRY_COUNT
-    ):
-        raise ValueError("release blockers ledger must include prose and index entries")
-    for fragment in _RELEASE_BLOCKER_FRAGMENTS:
-        if fragment not in blockers:
-            raise ValueError(f"release blockers ledger is missing: {fragment}")
-    for blocker_id in _RELEASE_BLOCKER_IDS:
-        _, tail = blockers.split(blocker_id, 1)
-        section = tail.split("RB-", 1)[0]
-        if "Evidence map:" not in section or not _MARKDOWN_LINK_PATTERN.search(section):
-            raise ValueError(f"release blocker is missing evidence links: {blocker_id}")
-        if "Exit criteria:" not in section:
-            raise ValueError(f"release blocker is missing exit criteria: {blocker_id}")
-    for blocker_id, area in _RELEASE_BLOCKER_INDEX_AREAS.items():
-        if f"| {blocker_id} | {area} |" not in blockers:
-            raise ValueError(f"release blocker index is missing: {blocker_id}")
-
-
-def _check_release_blockers() -> None:
-    blockers = " ".join((ROOT / "docs" / "release-blockers.md").read_text(encoding="utf-8").split())
-    _validate_release_blockers_text(blockers)
-
-
-def _check_ci_contract() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    cross_platform_job = workflow.split("  cross-platform-tests:", 1)[1].split("  package-smoke:", 1)[0]
-    for job in REQUIRED_CI_JOBS:
-        if f"\n  {job}:" not in workflow:
-            raise ValueError(f"CI is missing required job: {job}")
-    for fragment in (
-        "python -m build",
-        "dist/*.whl",
-        "import r2morph",
-        "r2morph --version",
-        "--no-cov --tb=short",
-        "python -W error -m pytest",
-        "windows-latest",
-        "runner.os == 'Windows'",
-        "Install radare2 (Windows)",
-        '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"',
-        '"913e7d95e7458226a5e783240877f2c1d405398ab38ba176ce9b12e046e31f34"',
-        "Get-FileHash -Algorithm SHA256",
-        "Expand-Archive -Path $archive -DestinationPath $destination -Force",
-        "$env:GITHUB_PATH",
-        "python -m pip install --force-reinstall dist/*.whl",
-        'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
-        'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")',
-        'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]',
-        '"tests/unit/test_circular_imports.py"',
-        '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"',
-        "python scripts/support_matrix.py --check docs/support-matrix.json",
-    ):
-        if fragment not in workflow:
-            raise ValueError(f"CI is missing wheel smoke contract: {fragment}")
-    for fragment in (
-        "Install build backend for cross-platform wheel smoke",
-        'run: python -m pip install "build>=1.2.0"',
-        "shell: bash",
-        "python -m build",
-        "python -m pip install --force-reinstall dist/*.whl",
-        "import platform",
-        'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
-        "test_targets = [",
-        "x64_assembler_targets = [",
-        'if platform.machine().lower() in {"amd64", "x86_64"}:',
-        '"tests/unit/test_pe_handler_parsing_contract.py"',
-        '"tests/unit/test_pe_handler_struct_parse.py"',
-        '"tests/unit/test_macho_parse_basic.py"',
-        '"tests/unit/test_instruction_substitution_arm64_contract.py"',
-        '"tests/unit/test_package_data.py"',
-        '"tests/unit/test_support_matrix_contract.py"',
-        '"tests/unit/test_benchmark_metrics_contract.py"',
-        '"tests/unit/test_benchmark_runners_contract.py"',
-        '"tests/unit/test_benchmark_reporting_summary_contract.py"',
-        '"tests/unit/test_benchmark_reporting_breakdown_contract.py"',
-        '"tests/unit/test_benchmark_reporting_text_contract.py"',
-        '"tests/unit/test_benchmark_reporting_io_contract.py"',
-        '"tests/unit/test_benchmark_reporting_exports_contract.py"',
-        '"tests/unit/test_performance_regression_suite_contract.py"',
-        '"tests/unit/test_performance_regression_measurement_contract.py"',
-        '"tests/unit/test_performance_regression_execution_contract.py"',
-        '"tests/unit/test_performance_regression_models_contract.py"',
-        '"tests/unit/test_performance_regression_metadata_contract.py"',
-        '"tests/unit/test_performance_regression_comparison_contract.py"',
-        '"tests/unit/test_performance_regression_storage_contract.py"',
-        '"tests/unit/test_pass_dependency_catalogs_contract.py"',
-        '"tests/unit/test_evasion_scorer_helpers_contract.py"',
-        '"tests/unit/test_enhanced_analyzer_reporting_contract.py"',
-        '"tests/unit/test_mutation_annotator_instruction_contract.py"',
-        '"tests/unit/test_code_virtualization_memory_widths.py"',
-        '"tests/unit/test_code_virtualization_call_abi.py"',
-        '"tests/unit/test_code_virtualization_tls.py"',
-        '"tests/unit/test_code_virtualization_static_dataflow.py"',
-        '"tests/unit/test_code_virtualization_diagnostics.py"',
-        '"tests/unit/test_code_virtualization_fp_indexed_shapes.py"',
-        '"tests/unit/test_code_virtualization_avx256.py"',
-    ):
-        if fragment not in cross_platform_job:
-            raise ValueError(f"cross-platform CI is missing installed-wheel contract: {fragment}")
-
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    pytest_options = project["tool"]["pytest"]["ini_options"]
-    if pytest_options["filterwarnings"] != ["error"]:
-        raise ValueError("pytest warnings must remain errors")
-    if project["tool"]["coverage"]["report"]["fail_under"] < MINIMUM_COVERAGE_PERCENT:
-        raise ValueError("coverage gate must be at least 75 percent")
-
-
-def _check_release_workflow() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-    for fragment in (
-        "sbom.cdx.json",
-        "rm dist/sbom.cdx.json",
-        "actions/attest-build-provenance@v4",
-        "attestations: write",
-        'gh run download "$GITHUB_RUN_ID" --name dist --dir dist',
-        "dist/*.whl",
-        "python -m pip install --force-reinstall dist/*.whl",
-        "Run tests against installed wheel",
-        "python -W error -m pytest --no-cov",
-        'awk -v version="$RELEASE_VERSION"',
-        "test -s /tmp/changes.md",
-        "r2morph --version",
-        "Require green CI for release commit",
-        "--workflow ci.yml",
-        '--commit "$GITHUB_SHA"',
-        'test "$ci_conclusion" = "success"',
-    ):
-        if fragment not in workflow:
-            raise ValueError(f"release workflow is missing: {fragment}")
-
-
-def _check_release_recovery_workflow() -> None:
-    workflow = (ROOT / ".github" / "workflows" / "release-recovery.yml").read_text(encoding="utf-8")
-    for fragment in (
-        "workflow_dispatch:",
-        "validate-release",
-        "publish-pypi",
-        'git rev-parse "${RELEASE_TAG}^{commit}"',
-        'gh run download "$SOURCE_RUN_ID" --name dist --dir dist',
-        "attestations: write",
-        "actions/attest-build-provenance@v4",
-        "softprops/action-gh-release@v2",
-    ):
-        if fragment not in workflow:
-            raise ValueError(f"release recovery workflow is missing: {fragment}")
-
-
-def _check_corpus_workflows() -> None:
-    adversarial = (ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
-    differential = (ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
-    fuzz = (ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
-    independent_review = (ROOT / ".github" / "workflows" / "independent-review.yml").read_text(encoding="utf-8")
-    for fragment in (
-        "schedule:",
-        "workflow_dispatch:",
-        "cron:",
-        "Build and install package wheel",
-        "python -m build",
-        "python -m pip install --force-reinstall dist/*.whl",
-        "wheel_root=/tmp/r2morph-adversarial-wheel-check",
-        "cp -R scripts tests fixtures",
-        'pyproject.toml "$wheel_root"/',
-        'cd "$wheel_root"',
-        '--output "$GITHUB_WORKSPACE/adversarial-benchmark.json"',
-        "--passes all",
-        "--require-tool-slots",
-        "--require-applied",
-        "--fixture-shard-count 16",
-        "Validate adversarial campaign summary",
-        "expected_tools",
-        "observed_tools",
-        "binary-ninja",
-        "missing_pass_runs",
-        "missing_tool_runs",
-        "adversarial_evidence_blockers",
-        "total_adversarial_evidence_blockers",
-        "incomplete_tool_coverage",
-        "completed_tool_runs_by_tool",
-        "unavailable_tool_runs_by_tool",
-        "unavailable_reasons_by_tool",
-        "incomplete tool coverage mismatch",
-        "passes without applications",
-        "Run VM resistance seed-diversity smoke",
-        "scripts/protection_handler_clustering.py",
-        '--output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"',
-        "Validate VM resistance seed-diversity evidence",
-        "pending-human-adversarial-review",
-        "cross_seed_has_exact_normalised_matches",
-        "cross_seed_largest_normalised_cluster",
-        "cross_seed_nearest_similarity_mean",
-        "similarity_threshold",
-        'cp -R docs "$wheel_root"/',
-        "test_protection_bytecode_grammar.py",
-        "test_protection_handler_clustering.py",
-        "test_resistance_measurement_contract.py",
-        "scripts/vm_resistance_adversarial.py",
-        "test_vm_resistance_adversarial.py",
-        '--output "$GITHUB_WORKSPACE/vm-resistance-adversarial.json"',
-        "automated VM resistance evidence is missing",
-        "dispatcher_unique_count",
-        "tamper_diverged",
-        "growth_observed",
-        "Upload VM resistance seed-diversity evidence",
-        "vm-resistance-seed-diversity",
-    ):
-        if fragment not in adversarial:
-            raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
-    for fragment in (
-        "push:",
-        "branches: [main]",
-        '"r2morph/**"',
-        "schedule:",
-        "workflow_dispatch:",
-        "cron:",
-        "Build and install package wheel",
-        "python -m build",
-        "python -m pip install --force-reinstall dist/*.whl",
-        "wheel_root=/tmp/r2morph-differential-wheel-check",
-        "cp -R scripts tests fixtures",
-        'pyproject.toml "$wheel_root"/',
-        'cd "$wheel_root"',
-        "fixture_shard",
-        "--fixture-shard-count 16",
-        "--fixture-shard-index",
-        '--output "$GITHUB_WORKSPACE/differential-corpus.json"',
-        '--output "$GITHUB_WORKSPACE/extended-maturity-passes.json"',
-        "--passes all",
-        "--require-complete-evidence",
-        "--require-applied",
-        "--count 1",
-        "Validate differential campaign summary",
-        "platform_scope",
-        "platform_gap_scope",
-        "corpus_gap_scope",
-        "corpus_scope",
-        "linux",
-        "ELF",
-        "x86-64",
-        "fixtures/dataset",
-        "missing_corpus_passes",
-        "total_complete_evidence_missing_runs",
-        "passes_with_incomplete_coverage",
-        "continuous_evidence_blockers",
-        "differential-corpus-by-pass",
-        "Run cross-format differential smoke",
-        "test_binary_rewriter_formats_real.py",
-        "test_binary_rewriter_noop_preserves_real_format",
-        "test_platform_deeper.py",
-        "cross-format-differential.xml",
-        "Validate cross-format differential evidence",
-        "cross-format smoke coverage drift",
-        "Upload cross-format differential evidence",
-        "cross-format-differential",
-        "Run VM semantic regression smoke",
-        "test_memory_width_fixture_virtualization_preserves_exit_code",
-        "test_virtualized_callee_saved_fixture_preserves_registers",
-        "test_call_flags_stack_fixture_virtualization_preserves_exit_code",
-        "test_virtualized_elf_preserves_fs_relative_access",
-        "test_virtualized_threads_tls_and_signal_preserve_exit_code",
-        "test_virtualized_elf_preserves_integer_varargs_stack_abi",
-        "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi",
-        "test_virtualized_direct_call_to_separate_function_preserves_exit_code",
-        "test_virtualized_local_indirect_call_preserves_exit_code",
-        "test_virtualized_vex_nondestructive_packed_add_preserves_result",
-        "test_simd_integer_fixture_virtualization_preserves_exit_code",
-        "test_code_virtualization_preserves_exception_from_call_inside_virtualized_function",
-        "tests/unit/test_code_virtualization_static_dataflow.py",
-        '--junitxml="$GITHUB_WORKSPACE/vm-semantic-differential.xml"',
-        "Validate VM semantic differential evidence",
-        "VM semantic smoke ran too few cases",
-        "VM semantic smoke coverage drift",
-        "Upload VM semantic differential evidence",
-        "vm-semantic-differential.xml",
-        "vm-semantic-differential",
-        "Run parser and rewriter fuzz smoke",
-        "Validate parser and rewriter fuzz smoke",
-        "scripts/continuous_fuzz.py",
-        "--cases 64",
-        "--max-payload 512",
-        "differential-fuzz-smoke.json",
-        "binary_parsers",
-        "vm_dispatcher",
-        "relocations",
-        "binary_rewriter",
-        "Upload differential fuzz smoke",
-        "differential-fuzz-smoke",
-        "Run extended maturity pass smoke",
-        "Validate extended maturity pass smoke",
-        "EXTENDED_MATURITY_PASSES",
-        "AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation",
-        "SelfModifyingCode,ShortJumpPatching",
-        "missing_extended_passes",
-        "passes_without_extended_applied_runs",
-        "extended_passes_with_error_runs",
-        "extended_maturity_evidence_blockers",
-        "total_extended_maturity_evidence_blockers",
-        "extended maturity pass errors",
-        "extended-maturity-passes",
-        "extended-maturity-merged.json",
-        "cross-platform-differential:",
-        "Cross-platform differential (macOS ARM64)",
-        "runs-on: macos-14",
-        "test_mutation_nop_insertion_arm64.py",
-        "test_mutation_register_substitution_arm64.py",
-        "cross-platform-differential-macos-arm64",
-        "public-compatibility-corpus:",
-        "repository: seifreed/r2morph-corpus",
-        "5f16a6fdcccbe2c3c97100f339a68ab916ca2e19",
-        "Build public compatibility corpus",
-        "Run public differential matrix",
-        "Validate public differential matrix",
-        "Run public static recovery benchmark",
-        "Select bounded public corpus matrix",
-        "public-corpus/build-selected",
-        "O0",
-        "O2",
-        "O3",
-        "aggregate-platform-differential:",
-        "Aggregate platform differential evidence",
-        "cross-platform-differential-macos-arm64",
-        "cross-platform-differential-windows-pe",
-        "elf-arm64-native",
-        "differential-platform-aggregate",
-        "Validate aggregated platform evidence",
-    ):
-        if fragment not in differential:
-            raise ValueError(f"differential corpus workflow is missing: {fragment}")
-    for fragment in (
-        "workflow_run:",
-        'workflows: ["Adversarial Analysis Benchmark"]',
-        "types: [completed]",
-        "github.event.workflow_run.conclusion == 'success'",
-        "github.event.workflow_run.head_sha || github.sha",
-    ):
-        if fragment not in independent_review:
-            raise ValueError(f"independent review workflow is missing: {fragment}")
-    for fragment in (
-        "schedule:",
-        "workflow_dispatch:",
-        "Build and install package wheel",
-        "python -m build",
-        "python -m pip install --force-reinstall dist/*.whl",
-        "wheel_root=/tmp/r2morph-fuzz-wheel-check",
-        'cp -R scripts fixtures "$wheel_root"/',
-        'cd "$wheel_root"',
-        'python -c "import r2morph; print(r2morph.__file__)"',
-        "scripts/continuous_fuzz.py",
-        '--output "$GITHUB_WORKSPACE/fuzz-campaign.json"',
-        "continuous-fuzz-report",
-    ):
-        if fragment not in fuzz:
-            raise ValueError(f"continuous fuzz workflow is missing: {fragment}")
 
 
 def main() -> int:
