@@ -50,7 +50,7 @@ from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
 from r2morph.reporting.cli_commands import ReportCommandOptions, handle_report_command
 from r2morph.reporting.report_context import PassClassFilters
-from r2morph.utils.logging import observed_operation, sanitize_log_text, setup_logging
+from r2morph.utils.logging import logging_context, observed_operation, sanitize_log_text, setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -202,53 +202,58 @@ def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
     """
     setup_logging("DEBUG" if options.verbose else "INFO")
 
-    with observed_operation(logger, "cli.enhanced_analysis.initialize", event_name="cli.enhanced_analysis.initialize"):
+    with observed_operation(
+        logger,
+        "cli.enhanced_analysis.initialize",
+        event_name="cli.enhanced_analysis.initialize",
+    ) as correlation_id:
         analyzer_module = import_module("r2morph.analysis.enhanced_analyzer")
         models_module = import_module("r2morph.analysis.enhanced_analyzer_models")
         enhanced_analysis_orchestrator = analyzer_module.EnhancedAnalysisOrchestrator
         check_enhanced_dependencies = analyzer_module.check_enhanced_dependencies
         analysis_options = models_module.AnalysisOptions
 
-    if not check_enhanced_dependencies():
-        logger.warning(
-            "Enhanced analysis dependencies unavailable",
-            extra={
-                "event_name": "cli.enhanced_analysis.unavailable",
-                "operation": "cli.enhanced_analysis",
-                "outcome": "degraded",
-                "status": "unavailable",
-            },
-        )
-        console.print("[bold red]Error:[/bold red] Enhanced analysis requires additional dependencies.")
-        console.print("Install with: [cyan]pip install 'r2morph[enhanced]'[/cyan]")
-        raise typer.Exit(1)
-
-    with console.status("[bold green]Analyzing obfuscated binary..."):
-        try:
-            analysis_configuration = analysis_options(
-                verbose=options.verbose,
-                detect_only=options.detect_only,
-                symbolic=options.symbolic,
-                dynamic=options.dynamic,
-                devirt=options.devirt,
-                iterative=options.iterative,
-                rewrite=options.rewrite,
-                bypass=options.bypass,
+    with logging_context(correlation_id=correlation_id, operation="cli.enhanced_analysis"):
+        if not check_enhanced_dependencies():
+            logger.warning(
+                "Enhanced analysis dependencies unavailable",
+                extra={
+                    "event_name": "cli.enhanced_analysis.unavailable",
+                    "operation": "cli.enhanced_analysis",
+                    "outcome": "degraded",
+                    "status": "unavailable",
+                },
             )
+            console.print("[bold red]Error:[/bold red] Enhanced analysis requires additional dependencies.")
+            console.print("Install with: [cyan]pip install 'r2morph[enhanced]'[/cyan]")
+            raise typer.Exit(1)
 
-            orchestrator = enhanced_analysis_orchestrator(
-                binary_path=options.binary,
-                output_dir=options.output,
-                console=console,
-            )
+        with console.status("[bold green]Analyzing obfuscated binary..."):
+            try:
+                analysis_configuration = analysis_options(
+                    verbose=options.verbose,
+                    detect_only=options.detect_only,
+                    symbolic=options.symbolic,
+                    dynamic=options.dynamic,
+                    devirt=options.devirt,
+                    iterative=options.iterative,
+                    rewrite=options.rewrite,
+                    bypass=options.bypass,
+                )
 
-            orchestrator.analyze(analysis_configuration)
+                orchestrator = enhanced_analysis_orchestrator(
+                    binary_path=options.binary,
+                    output_dir=options.output,
+                    console=console,
+                )
 
-        except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
-            if options.verbose:
-                console.print(sanitize_log_text(traceback.format_exc()))
-            raise typer.Exit(1) from e
+                orchestrator.analyze(analysis_configuration)
+
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
+                if options.verbose:
+                    console.print(sanitize_log_text(traceback.format_exc()))
+                raise typer.Exit(1) from e
 
 
 analyze_enhanced = CommandCallback("analyze_enhanced", EnhancedAnalysisOptions, _handle_enhanced_analysis)

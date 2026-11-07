@@ -65,6 +65,22 @@ def test_cli_validate_logs_runtime_outcome(capfd):
     )
 
 
+def test_cli_enhanced_analysis_reuses_initialization_correlation_id(capfd):
+    binary_path = Path("fixtures/dataset/elf_x86_64")
+    result = runner.invoke(
+        app_cmd,
+        ["experimental", "analyze-enhanced", str(binary_path), "--detect-only"],
+        env={"R2MORPH_LOG_FORMAT": "json"},
+    )
+    events = [json.loads(line) for line in capfd.readouterr().err.splitlines()]
+    initialization = next(
+        event for event in events if event.get("event_name") == "cli.enhanced_analysis.initialize.completed"
+    )
+    analysis = next(event for event in events if event.get("event_name") == "analysis.enhanced.completed")
+
+    expect(result.exit_code == 0 and initialization["correlation_id"] == analysis["correlation_id"])
+
+
 def test_cli_direct_morph(tmp_path):
     binary_path = Path("fixtures/dataset/elf_x86_64")
     output_path = tmp_path / "elf_morphed"
