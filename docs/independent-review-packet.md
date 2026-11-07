@@ -6,8 +6,12 @@ checks are evidence, not a human approval.
 
 ## Target
 
-- Commit: `fa5cbf0`
-- Production evidence baseline: `9ac3e14`.
+- Review the exact pushed `main` HEAD when the human review begins; record its
+  full 40-character commit SHA in the sign-off below. This keeps the review
+  bound to the current code instead of the historical commit listed in the
+  earlier agent review record.
+- Original production evidence baseline: `9ac3e14`; inspect the current source
+  and all relevant changes since that baseline.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
 - Binary Ninja: measured by the benchmark when its licensed API is available;
@@ -254,12 +258,12 @@ the aggregate counters alone.
 
 ## Sign-off
 
-### Agent review record
+### Historical agent review record (not current human sign-off)
 
 Reviewer: Codex (AI coding agent)
 Date (UTC): 2026-09-08
 Result: TECHNICAL REVIEW RECORDED; HUMAN APPROVAL NOT ATTESTED
-Reviewed commit: `fa5cbf0`
+Reviewed commit: `fa5cbf0` (historical)
 Independence statement: This is an AI-assisted repository review, not a
 human independent review or approval. The reviewer has no authority to attest
 human independence on behalf of a person.
@@ -271,7 +275,7 @@ Date (UTC):
 Independence statement:
 Result: APPROVE / APPROVE WITH FINDINGS / REJECT
 Findings:
-Reviewed commit: fa5cbf0
+Reviewed commit (full 40-character SHA):
 ```
 
 No approval is implied until a human reviewer fills this section outside the

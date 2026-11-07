@@ -1222,6 +1222,15 @@ def test_independent_review_packet_lists_vm_resistance_reports() -> None:
     expect("protection-handler-clustering.json" in packet and "protection-bytecode-grammar.json" in packet)
 
 
+def test_independent_review_packet_targets_current_main_head() -> None:
+    packet = " ".join((_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
+
+    expect(
+        "Review the exact pushed `main` HEAD when the human review begins" in packet
+        and "Reviewed commit (full 40-character SHA):" in packet
+    )
+
+
 def test_independent_review_packet_keeps_vm_resistance_checklist() -> None:
     expect(_check_independent_review_packet_claims() is None)
 
