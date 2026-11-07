@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import islice
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TextIO
@@ -165,29 +166,32 @@ def sanitize_log_text(value: str) -> str:
 
 
 def _safe_value(value: object, *, key: str | None = None) -> object:
-    if key is not None and key.lower() in _SENSITIVE_KEYS:
+    sensitive_key = re.split(r"[:=]", key, maxsplit=1)[0].strip().lower() if key is not None else None
+    if sensitive_key in _SENSITIVE_KEYS:
         result: object = "<redacted>"
     elif isinstance(value, Path):
-        result = f"<path:{value.name}>"
+        result = sanitize_log_text(f"<path:{value.name}>")
     elif isinstance(value, bytes):
         digest = hashlib.sha256(value).hexdigest()[:12]
         result = {"size": len(value), "sha256_prefix": digest}
     elif isinstance(value, str):
         result = sanitize_log_text(value)
     elif isinstance(value, Mapping):
-        items = list(value.items())
+        item_count = len(value)
+        items = list(islice(value.items(), _MAX_COLLECTION_ITEMS))
         safe_mapping = {
-            str(item_key): _safe_value(item_value, key=str(item_key))
-            for item_key, item_value in items[:_MAX_COLLECTION_ITEMS]
+            sanitize_log_text(str(item_key)): _safe_value(item_value, key=str(item_key))
+            for item_key, item_value in items
         }
-        if len(items) > _MAX_COLLECTION_ITEMS:
-            safe_mapping["_truncated_items"] = len(items) - _MAX_COLLECTION_ITEMS
+        if item_count > _MAX_COLLECTION_ITEMS:
+            safe_mapping["_truncated_items"] = item_count - _MAX_COLLECTION_ITEMS
         result = safe_mapping
     elif isinstance(value, (list, tuple, set, frozenset)):
-        items = list(value)
-        safe_items = [_safe_value(item) for item in items[:_MAX_COLLECTION_ITEMS]]
-        if len(items) > _MAX_COLLECTION_ITEMS:
-            safe_items.append(f"<truncated:{len(items) - _MAX_COLLECTION_ITEMS}>")
+        item_count = len(value)
+        items = list(islice(value, _MAX_COLLECTION_ITEMS))
+        safe_items = [_safe_value(item) for item in items]
+        if item_count > _MAX_COLLECTION_ITEMS:
+            safe_items.append(f"<truncated:{item_count - _MAX_COLLECTION_ITEMS}>")
         result = safe_items
     elif value is None or isinstance(value, (bool, int, float)):
         result = value

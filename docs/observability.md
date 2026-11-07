@@ -131,6 +131,9 @@ maps, or report payloads as log fields. Log counts, hashes, bounded previews,
 addresses, and typed outcomes instead. Sanitization is a final guardrail, not a
 reason to add sensitive inputs.
 
+SARIF artifact URIs contain only input and output basenames. Reports omit the
+host source root so sharing evidence does not disclose the analyst's paths.
+
 ## Resilience and retention
 
 The CLI is low-volume and synchronous, so an asynchronous logging queue is not
