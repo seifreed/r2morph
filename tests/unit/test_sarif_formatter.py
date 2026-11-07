@@ -393,6 +393,24 @@ class TestSARIFFormatter:
         expect(artifacts is not None)
         expect(len(artifacts) == _EXPECTED_LEN_ARTIFACTS_2)
 
+    def test_sarif_artifacts_exclude_parent_paths(self, formatter):
+        report = formatter.format(
+            ReportData(
+                binary_path="/Users/analyst/private/input.exe",
+                output_path=r"C:\Users\analyst\private\output.exe",
+            )
+        )
+
+        artifacts = report.runs[0].artifacts
+        expect(
+            artifacts is not None and [artifact.location.uri for artifact in artifacts] == ["input.exe", "output.exe"]
+        )
+
+    def test_sarif_report_omits_host_source_root(self, formatter):
+        report = formatter.to_json(ReportData(binary_path="/Users/analyst/private/input.exe"))
+
+        expect("originalUriBaseIds" not in report)
+
     def test_properties_in_result(self, formatter, sample_mutation):
         report_data = ReportData(
             binary_path="test.exe",

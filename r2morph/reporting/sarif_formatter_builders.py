@@ -106,12 +106,16 @@ def build_driver(tool_version: str, information_uri: str, rules: list[SARIFRule]
     return SARIFTool(driver=driver)
 
 
+def _artifact_uri(path: str) -> str:
+    return path.replace("\\", "/").rsplit("/", maxsplit=1)[-1]
+
+
 def build_artifacts(report_data: ReportData) -> list[SARIFArtifact]:
     artifacts = []
-    loc = SARIFArtifactLocation(uri=report_data.binary_path)
+    loc = SARIFArtifactLocation(uri=_artifact_uri(report_data.binary_path))
     artifacts.append(SARIFArtifact(location=loc, mime_type="application/octet-stream"))
     if report_data.output_path:
-        loc = SARIFArtifactLocation(uri=report_data.output_path)
+        loc = SARIFArtifactLocation(uri=_artifact_uri(report_data.output_path))
         artifacts.append(SARIFArtifact(location=loc, mime_type="application/octet-stream"))
     return artifacts
 

@@ -58,7 +58,6 @@ class SARIFFormatter:
                     artifacts=artifacts or None,
                     invocations=invocations or None,
                     taxonomies=[taxonomy],
-                    original_uri_base_ids={"SRCROOT": str(Path.cwd())},
                 )
             ]
         )
