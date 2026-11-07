@@ -57,6 +57,8 @@ _TRACE_EVENT_CAP = 256
 _VEX128_OPCODE_EXTRACT = 0x19
 _VEX128_OPCODE_INSERT = 0x18
 _VEX_OPCODE_XOR = 0xEF
+_VEX256_OPCODE_PACKUSDW = 0x2B
+_VEX256_PACKUSDW_PREFIX_FLAGS = 0x05
 _VEX_MAP_0F38 = 2
 _VEX128_VPMULDQ_OPCODE = 0x28
 _VEX128_VPMULUDQ_OPCODE = 0x15
@@ -437,6 +439,38 @@ def _emulate_vpxor(mu: Any, instruction: bytes) -> int | None:
     return None
 
 
+def _emulate_vpackusdw(mu: Any, instruction: bytes) -> int | None:
+    if not (
+        instruction[0] == _VEX_3_BYTE_PREFIX
+        and instruction[1] & 0x1F == _VEX_MAP_0F38
+        and instruction[2] & 0x07 == _VEX256_PACKUSDW_PREFIX_FLAGS
+        and instruction[3] == _VEX256_OPCODE_PACKUSDW
+    ):
+        return None
+    prefix = instruction[:3]
+    modrm = instruction[4]
+    destination, source_two, source_one = _decode_three_byte_vex_registers(prefix, modrm)
+    source_one_value = _read_vector_register(mu, "YMM", source_one)
+    if modrm & 0xC0 == _VEX_MODRM_REGISTER:
+        source_two_value = _read_vector_register(mu, "YMM", source_two)
+        length = 5
+    else:
+        operand = _memory_operand(mu, prefix, modrm, instruction)
+        if operand is None:
+            return None
+        address, length = operand
+        source_two_value = int.from_bytes(mu.mem_read(address, 32), "little")
+
+    result = 0
+    for lane in range(2):
+        for source_value, source_offset in ((source_one_value, 0), (source_two_value, 4)):
+            for index in range(4):
+                value = _signed_lane(source_value, lane * 4 + index, 32)
+                result |= max(0, min(0xFFFF, value)) << ((lane * 8 + source_offset + index) * 16)
+    _write_vector_register(mu, "YMM", destination, result)
+    return length
+
+
 def _emulate_unsupported_avx_instruction(mu: Any, address: int) -> int | None:
     """Emulate the YMM state bridges absent from the installed Unicorn build."""
     instruction = bytes(mu.mem_read(address, 15))
@@ -444,6 +478,9 @@ def _emulate_unsupported_avx_instruction(mu: Any, address: int) -> int | None:
     if length is not None:
         return length
     length = _emulate_vex128_insert(mu, instruction)
+    if length is not None:
+        return length
+    length = _emulate_vpackusdw(mu, instruction)
     if length is not None:
         return length
     return _emulate_vpxor(mu, instruction)
