@@ -110,7 +110,7 @@ def _add_mutations(
 
 
 def _run_simple_mode(request: SimpleModeRequest) -> None:
-    setup_logging("DEBUG" if (request.verbose or request.debug) else "INFO")
+    setup_logging("DEBUG" if (request.verbose or request.debug) else None)
 
     output_file = request.output_file
     if output_file is None:

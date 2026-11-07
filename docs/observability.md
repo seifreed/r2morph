@@ -43,6 +43,9 @@ Explicit `setup_logging` arguments override environment values for the
 legacy `level` and `log_file` entry points. New applications should use
 `LoggingConfig` or the environment.
 
+CLI commands preserve `R2MORPH_LOG_LEVEL` unless `--verbose` or `--debug` is
+set; either flag forces `DEBUG` for that invocation.
+
 | Variable | Default | Meaning |
 |---|---:|---|
 | `R2MORPH_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` |

@@ -113,7 +113,7 @@ def _handle_main(options: MainCommandOptions) -> None:
         r2morph functions input.exe
         r2morph morph input.exe -m nop
     """
-    setup_logging("DEBUG" if (options.verbose or options.debug) else "INFO")
+    setup_logging("DEBUG" if (options.verbose or options.debug) else None)
     if options.ctx.invoked_subcommand is not None:
         return
 
@@ -160,7 +160,7 @@ def analyze(
     """
     Analyze a binary and display statistics.
     """
-    setup_logging("DEBUG" if verbose else "INFO")
+    setup_logging("DEBUG" if verbose else None)
 
     try:
         with (
@@ -200,7 +200,7 @@ def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
     - Binary rewriting and reconstruction
     - Anti-analysis bypass framework
     """
-    setup_logging("DEBUG" if options.verbose else "INFO")
+    setup_logging("DEBUG" if options.verbose else None)
 
     with observed_operation(
         logger,
@@ -269,7 +269,7 @@ def functions(
     """
     List functions in a binary.
     """
-    setup_logging("DEBUG" if verbose else "INFO")
+    setup_logging("DEBUG" if verbose else None)
 
     try:
         with (
@@ -310,7 +310,7 @@ def _handle_morph(options: MorphCommandOptions) -> None:
         r2morph mutate binary.exe -m nop -m substitute --report report.json
         r2morph mutate binary.exe --cache  # Enable caching for faster repeated runs
     """
-    setup_logging("DEBUG" if options.verbose else "INFO")
+    setup_logging("DEBUG" if options.verbose else None)
 
     output = options.output or options.binary.parent / f"{options.binary.stem}_morphed{options.binary.suffix}"
 
@@ -502,7 +502,7 @@ def main() -> None:
         args = parser.parse_args(argv)
         input_file = Path(args.input_opt or args.input_file)
         output_file = Path(args.output_opt or args.output_file) if (args.output_opt or args.output_file) else None
-        setup_logging("DEBUG" if (args.verbose or args.debug) else "INFO")
+        setup_logging("DEBUG" if (args.verbose or args.debug) else None)
         with observed_operation(logger, "cli.simple_mode", event_name="cli.simple_mode"):
             _run_simple_mode(
                 SimpleModeRequest(
