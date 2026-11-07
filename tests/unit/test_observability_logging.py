@@ -280,6 +280,18 @@ def test_safe_value_bounds_mapping_iteration() -> None:
     )
 
 
+def test_safe_value_redacts_secret_assignments_in_mapping_keys() -> None:
+    safe_mapping = _safe_value({"password=hunter2": "private"})
+
+    expect(json.dumps(safe_mapping) == '{"password=<redacted>": "<redacted>"}')
+
+
+def test_safe_value_sanitizes_path_basename() -> None:
+    safe_path = _safe_value(Path("token=pathsecret\nforged"))
+
+    expect(safe_path == "<path:token=<redacted>\\nforged>")
+
+
 def test_safe_value_bounds_sequence_iteration() -> None:
     safe_values = _safe_value(_IterationBoundedList())
 

@@ -166,10 +166,11 @@ def sanitize_log_text(value: str) -> str:
 
 
 def _safe_value(value: object, *, key: str | None = None) -> object:
-    if key is not None and key.lower() in _SENSITIVE_KEYS:
+    sensitive_key = re.split(r"[:=]", key, maxsplit=1)[0].strip().lower() if key is not None else None
+    if sensitive_key in _SENSITIVE_KEYS:
         result: object = "<redacted>"
     elif isinstance(value, Path):
-        result = f"<path:{value.name}>"
+        result = sanitize_log_text(f"<path:{value.name}>")
     elif isinstance(value, bytes):
         digest = hashlib.sha256(value).hexdigest()[:12]
         result = {"size": len(value), "sha256_prefix": digest}
@@ -178,7 +179,10 @@ def _safe_value(value: object, *, key: str | None = None) -> object:
     elif isinstance(value, Mapping):
         item_count = len(value)
         items = list(islice(value.items(), _MAX_COLLECTION_ITEMS))
-        safe_mapping = {str(item_key): _safe_value(item_value, key=str(item_key)) for item_key, item_value in items}
+        safe_mapping = {
+            sanitize_log_text(str(item_key)): _safe_value(item_value, key=str(item_key))
+            for item_key, item_value in items
+        }
         if item_count > _MAX_COLLECTION_ITEMS:
             safe_mapping["_truncated_items"] = item_count - _MAX_COLLECTION_ITEMS
         result = safe_mapping
