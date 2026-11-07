@@ -32,6 +32,7 @@ from r2morph.analysis.enhanced_analyzer_reporting import (
 )
 from r2morph.detection.anti_analysis_bypass import AntiAnalysisBypass
 from r2morph.detection.obfuscation_detector import ObfuscationDetector
+from r2morph.utils.logging import observed_operation
 
 logger = logging.getLogger(__name__)
 
@@ -183,47 +184,48 @@ class EnhancedAnalysisOrchestrator:
             options = AnalysisOptions()
 
         try:
-            self._load_binary()
-            self.run_detection()
-            self.display_detection_results(verbose=options.verbose)
+            with observed_operation(logger, "analysis.enhanced", event_name="analysis.enhanced"):
+                self._load_binary()
+                self.run_detection()
+                self.display_detection_results(verbose=options.verbose)
 
-            if options.detect_only:
+                if options.detect_only:
+                    return self.results
+
+                result = self.results.detection_result
+
+                if options.bypass:
+                    self.run_anti_analysis_bypass()
+
+                if result.control_flow_flattened or options.devirt:
+                    self.run_cfo_simplification()
+
+                if options.iterative:
+                    self.run_iterative_simplification(max_iterations=options.max_iterations, timeout=options.timeout)
+
+                if options.symbolic and result.vm_detected:
+                    self.run_symbolic_analysis()
+
+                if options.dynamic:
+                    self.run_dynamic_analysis()
+
+                if options.rewrite:
+                    self.run_binary_rewriting()
+
+                self.display_analysis_results()
+
+                report = self.generate_report()
+
+                if self.output_dir:
+                    self.save_report(report)
+
+                self.display_recommendations()
+
+                self.console.print("\n[bold green]Phase 2 Analysis Complete![/bold green]")
+                if self.output_dir:
+                    self.console.print(f"Results saved to: {self.output_dir}")
+
                 return self.results
-
-            result = self.results.detection_result
-
-            if options.bypass:
-                self.run_anti_analysis_bypass()
-
-            if result.control_flow_flattened or options.devirt:
-                self.run_cfo_simplification()
-
-            if options.iterative:
-                self.run_iterative_simplification(max_iterations=options.max_iterations, timeout=options.timeout)
-
-            if options.symbolic and result.vm_detected:
-                self.run_symbolic_analysis()
-
-            if options.dynamic:
-                self.run_dynamic_analysis()
-
-            if options.rewrite:
-                self.run_binary_rewriting()
-
-            self.display_analysis_results()
-
-            report = self.generate_report()
-
-            if self.output_dir:
-                self.save_report(report)
-
-            self.display_recommendations()
-
-            self.console.print("\n[bold green]Phase 2 Analysis Complete![/bold green]")
-            if self.output_dir:
-                self.console.print(f"Results saved to: {self.output_dir}")
-
-            return self.results
 
         finally:
             self._cleanup()

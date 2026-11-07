@@ -29,6 +29,14 @@ Business and domain modules do not select handlers or formats. The configured
 The mutation pipeline keeps its event construction in
 `r2morph.pipeline.observability`, separate from mutation policy.
 
+Enhanced analysis emits a correlated start and completion event for each
+`analyze` operation. Recoverable phase failures and unavailable optional phases
+emit warning events while retaining the existing terminal guidance.
+
+CLI analysis, function listing, diff, validation, report, and cache operations
+emit correlated lifecycle events. Validation also records its pass/fail result
+separately from whether the validator itself ran successfully.
+
 ## Configuration
 
 Explicit `setup_logging` arguments override environment values for the

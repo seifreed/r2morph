@@ -1,8 +1,11 @@
+import json
+from io import StringIO
 from pathlib import Path
 
 import pytest
 
 from r2morph.analysis.enhanced_analyzer import AnalysisOptions, EnhancedAnalysisOrchestrator
+from r2morph.utils.logging import setup_logging, shutdown_logging
 from tests.utils.assertions import expect
 
 pytestmark = [pytest.mark.experimental]
@@ -55,3 +58,26 @@ def test_enhanced_analysis_orchestrator_paths(tmp_path):
         orchestrator._cleanup()
         if bin_obj is not None:
             bin_obj.__exit__(None, None, None)
+
+
+def test_detect_only_analysis_logs_correlated_completion() -> None:
+    stream = StringIO()
+    setup_logging(stream=stream, environ={"R2MORPH_LOG_FORMAT": "json", "R2MORPH_LOG_LEVEL": "DEBUG"})
+    orchestrator = EnhancedAnalysisOrchestrator(Path("fixtures/dataset/elf_x86_64"))
+    try:
+        orchestrator.analyze(AnalysisOptions(detect_only=True))
+    finally:
+        shutdown_logging()
+
+    all_events = [json.loads(line) for line in stream.getvalue().splitlines()]
+    operation_events = [
+        event
+        for event in all_events
+        if event.get("event_name") in {"analysis.enhanced.started", "analysis.enhanced.completed"}
+    ]
+    expect(
+        [event["event_name"] for event in operation_events]
+        == ["analysis.enhanced.started", "analysis.enhanced.completed"]
+        and operation_events[0]["correlation_id"] == operation_events[1]["correlation_id"]
+        and operation_events[1]["duration_ms"] >= 0
+    )

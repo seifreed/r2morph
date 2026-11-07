@@ -162,8 +162,11 @@ def analyze(
     """
     setup_logging("DEBUG" if verbose else "INFO")
 
-    with console.status("[bold green]Analyzing binary..."):
-        try:
+    try:
+        with (
+            observed_operation(logger, "cli.analyze", event_name="cli.analyze"),
+            console.status("[bold green]Analyzing binary..."),
+        ):
             binary_analyzer_cls = _load_binary_analyzer()
             with MorphEngine() as engine:
                 engine.load_binary(binary).analyze()
@@ -178,12 +181,11 @@ def analyze(
                 table.add_row(label, value)
 
             console.print(table)
-
-        except typer.Exit:
-            raise
-        except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
-            raise typer.Exit(1) from e
+    except typer.Exit:
+        raise
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
+        raise typer.Exit(1) from e
 
 
 def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
@@ -200,13 +202,23 @@ def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
     """
     setup_logging("DEBUG" if options.verbose else "INFO")
 
-    analyzer_module = import_module("r2morph.analysis.enhanced_analyzer")
-    models_module = import_module("r2morph.analysis.enhanced_analyzer_models")
-    enhanced_analysis_orchestrator = analyzer_module.EnhancedAnalysisOrchestrator
-    check_enhanced_dependencies = analyzer_module.check_enhanced_dependencies
-    analysis_options = models_module.AnalysisOptions
+    with observed_operation(logger, "cli.enhanced_analysis.initialize", event_name="cli.enhanced_analysis.initialize"):
+        analyzer_module = import_module("r2morph.analysis.enhanced_analyzer")
+        models_module = import_module("r2morph.analysis.enhanced_analyzer_models")
+        enhanced_analysis_orchestrator = analyzer_module.EnhancedAnalysisOrchestrator
+        check_enhanced_dependencies = analyzer_module.check_enhanced_dependencies
+        analysis_options = models_module.AnalysisOptions
 
     if not check_enhanced_dependencies():
+        logger.warning(
+            "Enhanced analysis dependencies unavailable",
+            extra={
+                "event_name": "cli.enhanced_analysis.unavailable",
+                "operation": "cli.enhanced_analysis",
+                "outcome": "degraded",
+                "status": "unavailable",
+            },
+        )
         console.print("[bold red]Error:[/bold red] Enhanced analysis requires additional dependencies.")
         console.print("Install with: [cyan]pip install 'r2morph[enhanced]'[/cyan]")
         raise typer.Exit(1)
@@ -254,8 +266,11 @@ def functions(
     """
     setup_logging("DEBUG" if verbose else "INFO")
 
-    with console.status("[bold green]Loading binary..."):
-        try:
+    try:
+        with (
+            observed_operation(logger, "cli.functions", event_name="cli.functions"),
+            console.status("[bold green]Loading binary..."),
+        ):
             binary_analyzer_cls = _load_binary_analyzer()
             with MorphEngine() as engine:
                 engine.load_binary(binary).analyze()
@@ -276,10 +291,9 @@ def functions(
             notice = build_function_limit_notice(limit, len(funcs))
             if notice is not None:
                 console.print(f"\n[yellow]{notice}[/yellow]")
-
-        except Exception as e:
-            console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
-            raise typer.Exit(1) from e
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {sanitize_log_text(str(e))}")
+        raise typer.Exit(1) from e
 
 
 def _handle_morph(options: MorphCommandOptions) -> None:
@@ -363,7 +377,17 @@ def _handle_validate(options: ValidateCommandOptions) -> None:
         compare_files=options.compare_files,
         normalize_whitespace=options.normalize_whitespace,
     )
-    result = validator.validate(options.original, options.mutated)
+    with observed_operation(logger, "cli.validate", event_name="cli.validate"):
+        result = validator.validate(options.original, options.mutated)
+        logger.info(
+            "Runtime validation result",
+            extra={
+                "event_name": "cli.validate.result",
+                "operation": "cli.validate",
+                "outcome": "success" if result.passed else "failure",
+                "status": "passed" if result.passed else "failed",
+            },
+        )
     console.print_json(json.dumps(result.to_dict()))
     raise typer.Exit(0 if result.passed else 1)
 
@@ -380,40 +404,42 @@ def diff(
     """
     Show a lightweight diff summary between two binaries.
     """
-    diff_analyzer_cls = _load_diff_analyzer()
-    analyzer = diff_analyzer_cls()
-    result = analyzer.compare(original, mutated)
-    console.print_json(json.dumps(result.__dict__))
+    with observed_operation(logger, "cli.diff", event_name="cli.diff"):
+        diff_analyzer_cls = _load_diff_analyzer()
+        analyzer = diff_analyzer_cls()
+        result = analyzer.compare(original, mutated)
+        console.print_json(json.dumps(result.__dict__))
     raise typer.Exit(0)
 
 
 def _handle_report(options: ReportViewOptions) -> None:
     """Display a previously generated engine report."""
-    handle_report_command(
-        options.report_file,
-        ReportCommandOptions(
-            only_pass=options.only_pass,
-            only_status=options.only_status,
-            only_mismatches=options.only_mismatches,
-            summary_only=options.summary_only,
-            output=options.output,
-            require_results=options.require_results,
-            min_severity=options.min_severity,
-            only_expected_severity=options.only_expected_severity,
-            only_pass_failure=options.only_pass_failure,
-            only_degraded=options.only_degraded,
-            only_failed_gates=options.only_failed_gates,
-            pass_classes=PassClassFilters(
-                only_risky_passes=options.only_risky_passes,
-                only_structural_risk=options.only_structural_risk,
-                only_symbolic_risk=options.only_symbolic_risk,
-                only_uncovered_passes=options.only_uncovered_passes,
-                only_covered_passes=options.only_covered_passes,
-                only_clean_passes=options.only_clean_passes,
+    with observed_operation(logger, "cli.report", event_name="cli.report"):
+        handle_report_command(
+            options.report_file,
+            ReportCommandOptions(
+                only_pass=options.only_pass,
+                only_status=options.only_status,
+                only_mismatches=options.only_mismatches,
+                summary_only=options.summary_only,
+                output=options.output,
+                require_results=options.require_results,
+                min_severity=options.min_severity,
+                only_expected_severity=options.only_expected_severity,
+                only_pass_failure=options.only_pass_failure,
+                only_degraded=options.only_degraded,
+                only_failed_gates=options.only_failed_gates,
+                pass_classes=PassClassFilters(
+                    only_risky_passes=options.only_risky_passes,
+                    only_structural_risk=options.only_structural_risk,
+                    only_symbolic_risk=options.only_symbolic_risk,
+                    only_uncovered_passes=options.only_uncovered_passes,
+                    only_covered_passes=options.only_covered_passes,
+                    only_clean_passes=options.only_clean_passes,
+                ),
+                output_format=options.output_format,
             ),
-            output_format=options.output_format,
-        ),
-    )
+        )
 
 
 report = CommandCallback("report", ReportViewOptions, _handle_report)
@@ -444,7 +470,11 @@ def cache(
         r2morph cache --clear --path /custom/cache  # Clear specific cache directory
     """
     try:
-        handle_cache_command(clear=clear, stats=stats, path=path, console=console)
+        if clear or stats:
+            with observed_operation(logger, "cli.cache", event_name="cli.cache"):
+                handle_cache_command(clear=clear, stats=stats, path=path, console=console)
+        else:
+            handle_cache_command(clear=clear, stats=stats, path=path, console=console)
     except SystemExit as exc:
         code = exc.code
         raise typer.Exit(code if isinstance(code, int) else (0 if code is None else 1)) from exc

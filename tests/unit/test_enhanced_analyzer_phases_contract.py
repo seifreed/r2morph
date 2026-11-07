@@ -1,3 +1,5 @@
+import json
+from io import StringIO
 from pathlib import Path
 
 from rich.console import Console
@@ -11,6 +13,7 @@ from r2morph.analysis.enhanced_analyzer_phases import (
     run_iterative_simplification,
     run_symbolic_analysis,
 )
+from r2morph.utils.logging import setup_logging, shutdown_logging
 from tests.utils.assertions import expect
 
 
@@ -30,3 +33,22 @@ def test_enhanced_analyzer_phase_helpers_basic_flow(tmp_path):
         expect(rewrite_result is None or isinstance(rewrite_result, str))
     finally:
         binary.__exit__(None, None, None)
+
+
+def test_cfo_simplification_failure_emits_structured_warning() -> None:
+    stream = StringIO()
+    setup_logging(stream=stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+    try:
+        result = run_cfo_simplification(None, Console(record=True), AnalysisResults())
+    finally:
+        shutdown_logging()
+
+    event = json.loads(stream.getvalue().splitlines()[0])
+    expect(
+        result == 0
+        and event["event_name"] == "analysis.cfo_simplification.failed"
+        and event["operation"] == "analysis.cfo_simplification"
+        and event["outcome"] == "degraded"
+        and event["error_type"] == "AttributeError"
+        and "stack_trace" in event
+    )

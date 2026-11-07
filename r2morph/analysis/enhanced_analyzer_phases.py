@@ -2,9 +2,36 @@
 
 from __future__ import annotations
 
+import logging
 from importlib import import_module
 from pathlib import Path
 from typing import Any, cast
+
+logger = logging.getLogger(__name__)
+
+
+def _log_phase_failure(operation: str) -> None:
+    logger.warning(
+        "Enhanced analysis phase failed",
+        extra={
+            "event_name": f"{operation}.failed",
+            "operation": operation,
+            "outcome": "degraded",
+        },
+        exc_info=True,
+    )
+
+
+def _log_optional_phase_unavailable(operation: str, error: ImportError) -> None:
+    logger.warning(
+        "Optional analysis phase unavailable",
+        extra={
+            "event_name": f"{operation}.unavailable",
+            "operation": operation,
+            "outcome": "degraded",
+            "error_type": type(error).__name__,
+        },
+    )
 
 
 def run_cfo_simplification(binary: Any, console: Any, results: Any) -> int:
@@ -30,6 +57,7 @@ def run_cfo_simplification(binary: Any, console: Any, results: Any) -> int:
         return total_reduction
 
     except Exception as e:
+        _log_phase_failure("analysis.cfo_simplification")
         console.print(f"[yellow]CFO simplification error: {e}[/yellow]")
         return 0
 
@@ -69,6 +97,7 @@ def run_iterative_simplification(
         return None
 
     except Exception as e:
+        _log_phase_failure("analysis.iterative_simplification")
         console.print(f"[yellow]Iterative simplification error: {e}[/yellow]")
         return None
 
@@ -96,7 +125,8 @@ def run_symbolic_analysis(binary: Any, console: Any, results: Any) -> int | None
                 return handlers_count
         return None
 
-    except ImportError:
+    except ImportError as error:
+        _log_optional_phase_unavailable("analysis.symbolic", error)
         console.print("[yellow]Symbolic execution not available (missing angr)[/yellow]")
         return None
 
@@ -112,7 +142,8 @@ def run_dynamic_analysis(console: Any) -> bool:
         console.print("Frida engine initialized")
         return True
 
-    except ImportError:
+    except ImportError as error:
+        _log_optional_phase_unavailable("analysis.dynamic", error)
         console.print("[yellow]Dynamic instrumentation not available (missing frida)[/yellow]")
         return False
 
@@ -149,9 +180,18 @@ def run_binary_rewriting(
             results.rewrite_output = str(output_path)
             return str(output_path)
 
+        logger.warning(
+            "Binary rewriting did not produce output",
+            extra={
+                "event_name": "analysis.binary_rewriting.failed",
+                "operation": "analysis.binary_rewriting",
+                "outcome": "degraded",
+            },
+        )
         console.print("Binary rewriting failed")
         return None
 
     except Exception as e:
+        _log_phase_failure("analysis.binary_rewriting")
         console.print(f"[yellow]Binary rewriting error: {e}[/yellow]")
         return None
