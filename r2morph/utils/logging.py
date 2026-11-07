@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from itertools import islice
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TextIO
@@ -175,19 +176,18 @@ def _safe_value(value: object, *, key: str | None = None) -> object:
     elif isinstance(value, str):
         result = sanitize_log_text(value)
     elif isinstance(value, Mapping):
-        items = list(value.items())
-        safe_mapping = {
-            str(item_key): _safe_value(item_value, key=str(item_key))
-            for item_key, item_value in items[:_MAX_COLLECTION_ITEMS]
-        }
-        if len(items) > _MAX_COLLECTION_ITEMS:
-            safe_mapping["_truncated_items"] = len(items) - _MAX_COLLECTION_ITEMS
+        item_count = len(value)
+        items = list(islice(value.items(), _MAX_COLLECTION_ITEMS))
+        safe_mapping = {str(item_key): _safe_value(item_value, key=str(item_key)) for item_key, item_value in items}
+        if item_count > _MAX_COLLECTION_ITEMS:
+            safe_mapping["_truncated_items"] = item_count - _MAX_COLLECTION_ITEMS
         result = safe_mapping
     elif isinstance(value, (list, tuple, set, frozenset)):
-        items = list(value)
-        safe_items = [_safe_value(item) for item in items[:_MAX_COLLECTION_ITEMS]]
-        if len(items) > _MAX_COLLECTION_ITEMS:
-            safe_items.append(f"<truncated:{len(items) - _MAX_COLLECTION_ITEMS}>")
+        item_count = len(value)
+        items = list(islice(value, _MAX_COLLECTION_ITEMS))
+        safe_items = [_safe_value(item) for item in items]
+        if item_count > _MAX_COLLECTION_ITEMS:
+            safe_items.append(f"<truncated:{item_count - _MAX_COLLECTION_ITEMS}>")
         result = safe_items
     elif value is None or isinstance(value, (bool, int, float)):
         result = value

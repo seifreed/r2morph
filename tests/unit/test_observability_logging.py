@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Iterator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 from pathlib import Path
@@ -16,8 +17,10 @@ import pytest
 
 from r2morph.adapters.process import run_process
 from r2morph.utils.logging import (
+    _MAX_COLLECTION_ITEMS,
     LoggingConfig,
     ProcessOwnerFilter,
+    _safe_value,
     logging_context,
     observed_operation,
     setup_logging,
@@ -32,6 +35,27 @@ _EXPECTED_MAX_RETAINED_FILES_3 = 3
 _EXPECTED_MAX_BYTES_2048 = 2048
 _EXPECTED_BACKUP_COUNT_3 = 3
 _MAX_SAFE_MESSAGE_LENGTH_4200 = 4200
+
+
+class _IterationBoundedMapping(Mapping[str, str]):
+    def __getitem__(self, key: str) -> str:
+        return key
+
+    def __iter__(self) -> Iterator[str]:
+        yield from (str(index) for index in range(_MAX_COLLECTION_ITEMS + 1))
+        raise AssertionError("mapping iteration exceeded the logging collection cap")
+
+    def __len__(self) -> int:
+        return _MAX_COLLECTION_ITEMS + 1
+
+
+class _IterationBoundedList(list[str]):
+    def __iter__(self) -> Iterator[str]:
+        yield from (str(index) for index in range(_MAX_COLLECTION_ITEMS + 1))
+        raise AssertionError("list iteration exceeded the logging collection cap")
+
+    def __len__(self) -> int:
+        return _MAX_COLLECTION_ITEMS + 1
 
 
 @pytest.fixture(autouse=True)
@@ -242,6 +266,30 @@ def test_formatter_bounds_untrusted_message_size() -> None:
 
     message = _json_events(stream)[0]["message"]
     expect(len(message) < _MAX_SAFE_MESSAGE_LENGTH_4200 and message.endswith("<truncated:5904>"))
+
+
+def test_safe_value_bounds_mapping_iteration() -> None:
+    safe_mapping = _safe_value(_IterationBoundedMapping())
+
+    expect(
+        safe_mapping
+        == {
+            **{str(index): str(index) for index in range(_MAX_COLLECTION_ITEMS)},
+            "_truncated_items": 1,
+        }
+    )
+
+
+def test_safe_value_bounds_sequence_iteration() -> None:
+    safe_values = _safe_value(_IterationBoundedList())
+
+    expect(
+        safe_values
+        == [
+            *[str(index) for index in range(_MAX_COLLECTION_ITEMS)],
+            "<truncated:1>",
+        ]
+    )
 
 
 def _write_concurrent_events(logger: logging.Logger, worker_id: int) -> None:
