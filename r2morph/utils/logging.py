@@ -34,11 +34,15 @@ _SENSITIVE_KEYS = frozenset(
         "access_token",
         "authorization",
         "cookie",
+        "client_secret",
+        "id_token",
+        "oauth_token",
         "password",
         "passwd",
         "private_key",
         "refresh_token",
         "secret",
+        "secret_key",
         "session",
         "session_id",
         "token",
@@ -65,7 +69,8 @@ _EVENT_FIELDS = (
 )
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x1f\x7f]")
 _SECRET_ASSIGNMENT = re.compile(
-    r"(?i)\b(password|passwd|token|access_token|refresh_token|api[-_]?key|secret|authorization|cookie|session)"
+    r"(?i)\b(password|passwd|token|access_token|refresh_token|oauth[-_]?token|id[-_]?token|api[-_]?key|"
+    r"client[-_]?secret|secret[-_]?key|private[-_]?key|secret|authorization|cookie|session)"
     r"(\s*[:=]\s*)([^\s,;]+)"
 )
 _BEARER_TOKEN = re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]+")
@@ -166,7 +171,7 @@ def sanitize_log_text(value: str) -> str:
 
 
 def _safe_value(value: object, *, key: str | None = None) -> object:
-    sensitive_key = re.split(r"[:=]", key, maxsplit=1)[0].strip().lower() if key is not None else None
+    sensitive_key = re.split(r"[:=]", key, maxsplit=1)[0].strip().lower().replace("-", "_") if key is not None else None
     if sensitive_key in _SENSITIVE_KEYS:
         result: object = "<redacted>"
     elif isinstance(value, Path):

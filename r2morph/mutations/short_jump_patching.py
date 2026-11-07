@@ -387,7 +387,7 @@ class RIPRelativeValidationPass(MutationPass):
                 f"Found {len(rip_relative_found)} RIP-relative instructions in {functions_with_rip} functions"
             )
             for item in rip_relative_found[:_RIP_RELATIVE_PREVIEW_COUNT]:
-                logger.warning(f"  0x{item['address']:x}: {item['disasm']} in {item['function']}")
+                logger.debug("  0x%x: %s in %s", item["address"], item["disasm"], item["function"])
             if len(rip_relative_found) > _RIP_RELATIVE_PREVIEW_COUNT:
                 logger.warning(f"  ... and {len(rip_relative_found) - _RIP_RELATIVE_PREVIEW_COUNT} more")
 

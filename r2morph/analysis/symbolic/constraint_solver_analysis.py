@@ -120,7 +120,16 @@ def simplify_mba_expression(
             confidence=max(0.1, confidence),
         )
     except Exception as exc:
-        logger.error(f"Error simplifying MBA expression: {exc}")
+        logger.error(
+            "MBA constraint simplification failed",
+            extra={
+                "event_name": "analysis.mba_constraint_simplification.failed",
+                "operation": "analysis.mba_constraint_simplification",
+                "outcome": "failure",
+                "error_type": type(exc).__name__,
+            },
+        )
+        logger.debug("MBA constraint simplification detail: %s", exc)
         return SolverResult(satisfiable=False, solving_time=time.time() - start_time, solver_used="z3")
 
 

@@ -233,7 +233,7 @@ class ConstantUnfoldingPass(MutationPass):
             )
             applied = self._apply_single_unfold(binary, mutation)
             if applied:
-                logger.info("Unfolded constant: '%s' -> '%s' at 0x%x", disasm, "; ".join(unfolded), addr)
+                logger.debug("Unfolded constant: '%s' -> '%s' at 0x%x", disasm, "; ".join(unfolded), addr)
             return applied, is_constant, new_size - orig_size if applied else 0
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as exc:
             logger.debug("Failed to unfold constant at 0x%x: %s", addr, exc)

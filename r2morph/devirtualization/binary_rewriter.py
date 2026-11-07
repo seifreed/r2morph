@@ -498,11 +498,29 @@ class BinaryRewriter:
         try:
             encoding, _ = self.ks.asm(asm_code)
         except (keystone.KsError, TypeError, ValueError) as e:
-            logger.error("Assembly failed for %r: %s; refusing to fabricate bytes", asm_code, e)
+            logger.error(
+                "Assembly failed; refusing to fabricate bytes",
+                extra={
+                    "event_name": "devirtualization.assembly.failed",
+                    "operation": "devirtualization.assemble",
+                    "outcome": "failure",
+                    "error_type": type(e).__name__,
+                },
+            )
+            logger.debug("Assembly failed for %r: %s", asm_code, e)
             return b""
 
         if not encoding:
-            logger.error("Assembler produced no encoding for %r; refusing to fabricate bytes", asm_code)
+            logger.error(
+                "Assembler produced no encoding; refusing to fabricate bytes",
+                extra={
+                    "event_name": "devirtualization.assembly.failed",
+                    "operation": "devirtualization.assemble",
+                    "outcome": "failure",
+                    "error_code": "empty_encoding",
+                },
+            )
+            logger.debug("Assembler produced no encoding for %r", asm_code)
             return b""
         return bytes(encoding)
 

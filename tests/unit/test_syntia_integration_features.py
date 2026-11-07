@@ -1,6 +1,10 @@
+import json
+from io import StringIO
+
 import pytest
 
 from r2morph.analysis.symbolic.syntia_integration import InstructionSemantics, SyntiaFramework, VMHandlerSemantics
+from r2morph.utils.logging import setup_logging
 from tests.utils.assertions import expect
 
 _EXPECTED_FRAMEWORK_EVALUATE_EXPRESSION_X_X_0_4294967295 = 0xFFFFFFFF
@@ -9,6 +13,17 @@ _EXPECTED_FRAMEWORK_EVALUATE_EXPRESSION_X_Y_X_5_Y_3_6 = 6
 
 
 pytestmark = [pytest.mark.experimental]
+
+
+def test_syntia_expression_diagnostic_is_debug_only():
+    log_stream = StringIO()
+    setup_logging("DEBUG", stream=log_stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+
+    SyntiaFramework().simplify_mba_with_syntia("x + x", variables={"x"})
+
+    events = [json.loads(line) for line in log_stream.getvalue().splitlines()]
+    detail = next(event for event in events if event["message"] == "Simplifying MBA expression: x + x")
+    expect(detail["level"] == "DEBUG")
 
 
 def test_syntia_vm_handler_analysis_and_exports(tmp_path):

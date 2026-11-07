@@ -192,7 +192,12 @@ class PatternSubstitutionPass(MutationPass):
         if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
             return False
 
-        logger.info(f"Pattern-substituted '{original.get('disasm')}' with '{replacement_disasm}' at 0x{addr:x}")
+        logger.debug(
+            "Pattern-substituted '%s' with '%s' at 0x%x",
+            original.get("disasm"),
+            replacement_disasm,
+            addr,
+        )
         return True
 
     def _assemble_replacement(self, binary: Any, func_addr: int, replacement: list[Any]) -> bytes | None:

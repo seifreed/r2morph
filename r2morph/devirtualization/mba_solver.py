@@ -224,7 +224,16 @@ class MBASolver:
                     self.stats["z3_simplifications"] += 1
 
         except Exception as e:
-            logger.error(f"Error simplifying MBA expression: {e}")
+            logger.error(
+                "MBA expression simplification failed",
+                extra={
+                    "event_name": "analysis.mba_simplification.failed",
+                    "operation": "analysis.mba_simplification",
+                    "outcome": "failure",
+                    "error_type": type(e).__name__,
+                },
+            )
+            logger.debug("MBA expression simplification detail: %s", e)
             result.success = False
 
         result.solving_time = time.time() - start_time

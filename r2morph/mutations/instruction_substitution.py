@@ -243,7 +243,13 @@ class InstructionSubstitutionPass(MutationPass):
         if not self._validate_substitution(binary, record, checkpoint):
             return False
         suffix = " (+ NOPs)" if use_padding else ""
-        logger.info(f"Substituted '{instruction.get('disasm')}' with '{choice.replacement}'{suffix} at 0x{address:x}")
+        logger.debug(
+            "Substituted '%s' with '%s'%s at 0x%x",
+            instruction.get("disasm"),
+            choice.replacement,
+            suffix,
+            address,
+        )
         return True
 
     def apply(self, binary: Any) -> dict[str, Any]:

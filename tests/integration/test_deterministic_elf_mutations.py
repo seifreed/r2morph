@@ -3,6 +3,8 @@ Real integration tests against deterministic ELF x86_64 fixtures.
 """
 
 import importlib.util
+import json
+from io import StringIO
 
 import pytest
 
@@ -21,6 +23,7 @@ from r2morph.mutations import (
     NopInsertionPass,
     RegisterSubstitutionPass,
 )
+from r2morph.utils.logging import setup_logging
 
 _EXPECTED_LEN_MUTATION_METADATA_GET_SYMBOLIC_BINARY_MUT_2 = 2
 _EXPECTED_LEN_MUTATION_METADATA_GET_SYMBOLIC_BINARY_ORI_2 = 2
@@ -174,6 +177,23 @@ def test_deterministic_instruction_substitution_fixture_gets_symbolic_coverage(
         )
     )
     expect(not (report["summary"]["changed_bytes"] <= 0))
+
+
+def test_instruction_substitution_details_are_debug_only(deterministic_substitute_elf):
+    log_stream = StringIO()
+    setup_logging("DEBUG", stream=log_stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+    with MorphEngine(config={"seed": 1337}) as engine:
+        engine.load_binary(deterministic_substitute_elf).analyze()
+        engine.add_mutation(
+            InstructionSubstitutionPass(
+                config={"probability": 1.0, "max_substitutions_per_function": 8, "strict_size": True, "seed": 1337}
+            )
+        )
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
+
+    events = [json.loads(line) for line in log_stream.getvalue().splitlines()]
+    details = [event for event in events if event["message"].startswith("Substituted '")]
+    expect(result["total_mutations"] > 0 and details and all(event["level"] == "DEBUG" for event in details))
 
 
 def test_deterministic_register_fixture_produces_real_substitutions(deterministic_register_elf):

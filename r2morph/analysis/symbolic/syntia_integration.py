@@ -209,7 +209,7 @@ class SyntiaFramework:
         Returns:
             Simplified expression or None if simplification failed
         """
-        logger.info(f"Simplifying MBA expression: {mba_expression}")
+        logger.debug("Simplifying MBA expression: %s", mba_expression)
 
         # Try systematic simplification rules. Syntia-based program synthesis
         # would live alongside this branch but is not yet wired up; the

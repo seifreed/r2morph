@@ -258,6 +258,19 @@ def test_formatter_redacts_secrets_paths_and_control_characters() -> None:
     )
 
 
+def test_formatter_redacts_compound_secret_assignments() -> None:
+    stream = StringIO()
+    logger = setup_logging(stream=stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+
+    logger.error("client_secret=alpha secret_key=beta private_key=gamma oauth_token=delta id_token=epsilon")
+
+    message = _json_events(stream)[0]["message"]
+    expect(
+        message == "client_secret=<redacted> secret_key=<redacted> private_key=<redacted> "
+        "oauth_token=<redacted> id_token=<redacted>"
+    )
+
+
 def test_formatter_bounds_untrusted_message_size() -> None:
     stream = StringIO()
     logger = setup_logging(stream=stream, environ={"R2MORPH_LOG_FORMAT": "json"})
@@ -284,6 +297,27 @@ def test_safe_value_redacts_secret_assignments_in_mapping_keys() -> None:
     safe_mapping = _safe_value({"password=hunter2": "private"})
 
     expect(json.dumps(safe_mapping) == '{"password=<redacted>": "<redacted>"}')
+
+
+def test_safe_value_redacts_compound_secret_field_names() -> None:
+    safe_mapping = _safe_value(
+        {
+            "client_secret": "alpha",
+            "secret_key": "beta",
+            "oauth-token": "gamma",
+            "id_token": "delta",
+        }
+    )
+
+    expect(
+        safe_mapping
+        == {
+            "client_secret": "<redacted>",
+            "secret_key": "<redacted>",
+            "oauth-token": "<redacted>",
+            "id_token": "<redacted>",
+        }
+    )
 
 
 def test_safe_value_sanitizes_path_basename() -> None:

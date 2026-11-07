@@ -7,7 +7,9 @@ and validated end-to-end.
 """
 
 import importlib.util
+import json
 import shutil
+from io import StringIO
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,7 @@ from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
 from r2morph.mutations.pattern_types import Instruction
+from r2morph.utils.logging import setup_logging
 from tests.integration.elf_emulator import emulate_exit_code
 
 
@@ -137,6 +140,21 @@ def test_pattern_substitution_records_each_instruction_once(deterministic_patter
 
     start_addresses = [record.start_address for record in mutation_pass.get_records()]
     expect(len(start_addresses) == len(set(start_addresses)))
+
+
+def test_pattern_substitution_instruction_details_are_debug_only(deterministic_pattern_subst_elf, tmp_path):
+    log_stream = StringIO()
+    setup_logging("DEBUG", stream=log_stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+    binary_path = tmp_path / "pattern_substitution"
+    shutil.copyfile(deterministic_pattern_subst_elf, binary_path)
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        stats = PatternSubstitutionPass({"probability": 1.0, "seed": 1337}).apply(binary)
+
+    events = [json.loads(line) for line in log_stream.getvalue().splitlines()]
+    details = [event for event in events if event["message"].startswith("Pattern-substituted ")]
+    expect(stats["mutations_applied"] > 0 and details and all(event["level"] == "DEBUG" for event in details))
 
 
 def test_pattern_substitution_preserves_flag_live_fixture_exit(tmp_path):

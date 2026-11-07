@@ -1,9 +1,12 @@
+import json
+from io import StringIO
 from pathlib import Path
 
 import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryFormat, BinaryRewriter, CodePatch, RewriteOperation
+from r2morph.utils.logging import setup_logging
 from tests.utils.assertions import expect
 
 _EXPECTED_LEN_ASSEMBLED_2 = 2
@@ -68,3 +71,18 @@ def test_binary_rewriter_helpers_with_real_binary(tmp_path: Path):
         checks = rewriter._perform_integrity_checks(str(output_path))
         expect(not (checks["file_exists"] is not True))
         expect(not (checks["valid_pe_header"] is not True))
+
+
+def test_binary_rewriter_assembly_error_keeps_sample_in_debug_only():
+    log_stream = StringIO()
+    setup_logging("DEBUG", stream=log_stream, environ={"R2MORPH_LOG_FORMAT": "json"})
+    rewriter = BinaryRewriter()
+    rewriter.arch = "amd64"
+    expect(rewriter._initialize_codegen())
+    expect(rewriter._assemble_instructions(["invalid_secret_marker"]) == b"")
+
+    events = [json.loads(line) for line in log_stream.getvalue().splitlines()]
+    error = next(event for event in events if event.get("event_name") == "devirtualization.assembly.failed")
+    detail = next(event for event in events if "invalid_secret_marker" in event["message"])
+    expect(error["level"] == "ERROR" and "invalid_secret_marker" not in error["message"])
+    expect(detail["level"] == "DEBUG")
