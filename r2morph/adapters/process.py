@@ -9,6 +9,7 @@ import shlex
 import shutil
 import signal
 from collections.abc import Mapping, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -104,13 +105,38 @@ async def _run_process(
     try:
         stdout, stderr = await asyncio.wait_for(process.communicate(context.input_bytes), timeout)
     except TimeoutError:
-        if os.name == "posix":
-            os.killpg(process.pid, signal.SIGKILL)
-        else:
-            process.kill()
-        await process.communicate()
+        await _terminate_process_tree(process)
         raise ProcessTimeoutError(f"Process exceeded {timeout} seconds") from None
     return ProcessResult(stdout=stdout, stderr=stderr, returncode=process.returncode or 0)
+
+
+async def _terminate_process_tree(process: asyncio.subprocess.Process) -> None:
+    if os.name == "posix":
+        os.killpg(process.pid, signal.SIGKILL)
+    else:
+        try:
+            killer = await asyncio.create_subprocess_exec(
+                "taskkill",
+                "/PID",
+                str(process.pid),
+                "/T",
+                "/F",
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+            await killer.wait()
+            if killer.returncode != 0:
+                _kill_if_running(process)
+        except OSError:
+            _kill_if_running(process)
+    await process.communicate()
+
+
+def _kill_if_running(process: asyncio.subprocess.Process) -> None:
+    if process.returncode is None:
+        with suppress(ProcessLookupError):
+            # The child can exit between taskkill's result and the fallback kill.
+            process.kill()
 
 
 def run_process(

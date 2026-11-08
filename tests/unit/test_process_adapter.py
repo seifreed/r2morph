@@ -1,6 +1,5 @@
 """Real-process contract for the external process adapter."""
 
-import os
 import sys
 import time
 from pathlib import Path
@@ -34,7 +33,7 @@ def test_run_process_executes_shebang_script_without_shell(tmp_path: Path) -> No
     expect(result.stdout_text == "ok")
 
 
-def test_run_process_timeout_terminates_child_process_group(tmp_path: Path) -> None:
+def test_run_process_timeout_terminates_descendant_processes(tmp_path: Path) -> None:
     marker = tmp_path / "child-survived"
     child_code = "import pathlib, time; " f"time.sleep(0.5); pathlib.Path({str(marker)!r}).write_text('survived')"
     parent_code = (
@@ -45,4 +44,4 @@ def test_run_process_timeout_terminates_child_process_group(tmp_path: Path) -> N
         run_process([Path(sys.executable), "-c", parent_code], timeout=0.1)
 
     time.sleep(0.7)
-    expect(marker.exists() is (os.name != "posix"))
+    expect(not marker.exists())
