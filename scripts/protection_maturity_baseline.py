@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Mapping
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from types import FrameType
@@ -50,6 +50,7 @@ from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from r2morph.mutations.stack_strings import StackStringsPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+from scripts.protection_maturity_worker import FixtureWorkerTimeoutError, run_fixture_worker
 from tests.integration.elf_emulator import emulate_exit_code
 
 _ELF_MAGIC = b"\x7fELF"
@@ -2475,11 +2476,10 @@ def _measure_campaign(
             measurements[pass_name].append(measurement)
 
     if args.workers == 1:
-        results = (_measure_fixture_worker(task) for task in tasks)
-        for fixture_results in results:
+        for fixture_results in map(_measure_fixture_worker, tasks):
             record_fixture_results(fixture_results)
         return measurements
-    with ProcessPoolExecutor(max_workers=args.workers) as executor:
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
         for fixture_results in executor.map(_measure_fixture_worker, tasks):
             record_fixture_results(fixture_results)
     return measurements
@@ -2488,7 +2488,10 @@ def _measure_campaign(
 def _measure_fixture_worker(
     task: tuple[Path, range, Path, tuple[str, ...], tuple[tuple[str, ...], ...], float],
 ) -> tuple[tuple[str, dict[str, object]], ...]:
-    return _measure_fixture_task(task)
+    try:
+        return run_fixture_worker(task)
+    except FixtureWorkerTimeoutError as error:
+        raise _FixtureTimeout(str(error)) from None
 
 
 def _measure_fixture_task(
@@ -2526,7 +2529,28 @@ def _emit_report(rendered: str, output: Path | None) -> None:
     print(rendered, end="")
 
 
+def _run_fixture_worker_main() -> None:
+    payload = cast(dict[str, object], json.load(sys.stdin))
+    task = (
+        Path(str(payload["fixture"])),
+        range(int(payload["seed_start"]), int(payload["seed_stop"])),
+        Path(str(payload["output_root"])),
+        tuple(cast(list[str], payload["pass_names"])),
+        tuple(tuple(arguments) for arguments in cast(list[list[str]], payload["runtime_inputs"])),
+        float(payload["timeout_seconds"]),
+    )
+    try:
+        results = _measure_fixture_task(task)
+    except _FixtureTimeout as error:
+        print(json.dumps({"status": "timeout", "error": str(error)}))
+        return
+    print(json.dumps({"status": "completed", "results": results}))
+
+
 def main() -> None:
+    if sys.argv[1:] == ["--_worker-task"]:
+        _run_fixture_worker_main()
+        return
     parser = argparse.ArgumentParser()
     parser.add_argument("fixtures", nargs="*", type=Path)
     parser.add_argument("--all", action="store_true", dest="all_fixtures")
