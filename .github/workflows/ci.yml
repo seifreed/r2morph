@@ -203,7 +203,9 @@ jobs:
       - name: Run product smoke tests
         run: |
           python -W error -m pytest -v tests/product_smoke \
-            -m "stable" --no-cov --tb=short
+            -m "stable" --no-cov --tb=short \
+            --junitxml="$RUNNER_TEMP/stable-product-smoke.xml"
+          python scripts/check_critical_skips.py "$RUNNER_TEMP/stable-product-smoke.xml"
 
   cross-platform-tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
