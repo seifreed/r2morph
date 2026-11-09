@@ -3,14 +3,14 @@
 This ledger records the remaining blockers from the current release-hardening
 review. It is not a feature roadmap and must not be read as a support claim.
 
-## Latest CI verification
+## Latest full CI verification of a code-bearing commit
 
-Commit `fcc540e2` passed CI run
-[`42548850819`](https://github.com/seifreed/r2morph/actions/runs/42548850819)
+Commit `97b0d05b` passed CI run
+[`42574682459`](https://github.com/seifreed/r2morph/actions/runs/42574682459)
 with all 15 jobs successful, including the full Linux Python 3.12 suite,
 integration tests, the Python/platform matrix, property and fuzz validation,
 installed-wheel smoke tests, lint, and type checking. This result verifies
-that commit only; later commits require their own successful run.
+that code commit only; later code changes require their own successful run.
 
 ## Resolved blockers
 
