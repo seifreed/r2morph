@@ -3,6 +3,15 @@
 This ledger records the remaining blockers from the current release-hardening
 review. It is not a feature roadmap and must not be read as a support claim.
 
+## Latest CI verification
+
+Commit `fcc540e2` passed CI run
+[`42548850819`](https://github.com/seifreed/r2morph/actions/runs/42548850819)
+with all 15 jobs successful, including the full Linux Python 3.12 suite,
+integration tests, the Python/platform matrix, property and fuzz validation,
+installed-wheel smoke tests, lint, and type checking. This result verifies
+that commit only; later commits require their own successful run.
+
 ## Resolved blockers
 
 - RB-001: Per-pass maturity remains incomplete was resolved for the declared
