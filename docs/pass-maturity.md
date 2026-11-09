@@ -265,12 +265,14 @@ target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
 artifacts also carry `adversarial_validation.status` as
 `pending-human-adversarial-review`, with automated adversarial smoke recorded as
-the evidence quality. The scheduled adversarial workflow additionally runs six real
+the evidence quality. This describes the automated artifacts; the separate
+independent human approval is recorded in
+[`human-review-signoff.json`](human-review-signoff.json). The scheduled adversarial workflow additionally runs six real
 tamper/progressive protection tests and publishes JUnit evidence, including
 single-level tamper, nested tamper, nested growth, and diversified-build
-checks. This strengthens automated evidence but does not replace the pending
-human/adversarial review. The generated `total_vm_resistance_blockers` count is
-currently 1 VM resistance blockers (the remaining gap is external human review).
+checks. The generated `total_vm_resistance_blockers` count is 0 VM resistance
+blockers; independent review closed the human-resistance gap for the reviewed
+commit.
 The complete local artifact
 [`protection-vm-resistance-2026-09-22-e3a491b3.json`](protection-vm-resistance-2026-09-22-e3a491b3.json)
 passes semantic parity, artifact, opcode, dispatcher, handler, grammar,
@@ -287,4 +289,4 @@ ten-seed report that joins semantic parity, distinct artifact hashes,
 opcode-assignment, dispatcher/handler/stride diversity, single- and nested-layer tamper
 divergence, and progressive blob growth. Its `human_adversarial_review` field
 remains pending by contract, so the report is continuous automated evidence
-rather than a human signoff.
+rather than a human signoff. The independent human signoff is recorded separately.

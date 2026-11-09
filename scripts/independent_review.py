@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -65,7 +67,7 @@ _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "Binary Ninja is deliberately on hold",
     "anti-tamper and progressive bytecode protection",
-    "external human review records signoff",
+    "Independent human review records signoff",
 )
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
@@ -79,6 +81,34 @@ _EXPECTED_CORPUS_SAMPLE_COUNT = 159
 
 def _check(name: str, passed: bool, detail: str) -> dict[str, object]:
     return {"name": name, "status": "passed" if passed else "failed", "detail": detail}
+
+
+def _human_review_signoff(root: Path) -> dict[str, Any] | None:
+    path = root / "docs" / "human-review-signoff.json"
+    if not path.exists():
+        return None
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(record, dict)
+        or record.get("schema_version") != 1
+        or record.get("result") != "APPROVE"
+        or record.get("independent") is not True
+        or not isinstance(record.get("reviewer"), str)
+        or not isinstance(record.get("review_date_utc"), str)
+        or not isinstance(record.get("reviewed_commit"), str)
+        or re.fullmatch(r"[0-9a-f]{40}", record["reviewed_commit"]) is None
+        or record.get("findings") != []
+    ):
+        raise ValueError("human review signoff record is invalid")
+    try:
+        date.fromisoformat(record["review_date_utc"])
+    except ValueError as error:
+        raise ValueError("human review signoff date must use ISO format") from error
+    if not isinstance(record.get("independence_confirmation"), str) or not isinstance(
+        record.get("specialist_expertise_confirmation"), str
+    ):
+        raise ValueError("human review signoff must record its independence and expertise confirmations")
+    return record
 
 
 def _review_virtualization(root: Path) -> dict[str, object]:
@@ -115,7 +145,7 @@ def _review_release_blocker_ledger(root: Path) -> dict[str, object]:
     return _check(
         "release_blocker_ledger_scope",
         passed,
-        "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and signoff gaps",
+        "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and review signoff",
     )
 
 
@@ -234,11 +264,21 @@ def _review_vm_fail_closed_diagnostics(root: Path) -> dict[str, object]:
 def _review_vm_resistance_adversarial_scope(root: Path) -> dict[str, object]:
     handler = json.loads((root / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((root / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    signoff = _human_review_signoff(root)
     passed = (
         handler.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
         and bytecode.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
+        and signoff is not None
     )
-    return _check("vm_resistance_adversarial_scope", passed, "VM resistance remains pending human adversarial review")
+    return _check(
+        "vm_resistance_adversarial_scope",
+        passed,
+        (
+            "automated resistance evidence is paired with an independent human signoff"
+            if signoff is not None
+            else "independent human signoff is missing"
+        ),
+    )
 
 
 def _review_benchmark(root: Path) -> dict[str, object]:
@@ -591,6 +631,7 @@ def _review_fixtures(root: Path) -> dict[str, object]:
 
 def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]:
     fuzz = run_campaign(cases=64, seed=20260827, max_payload=512)
+    human_signoff = _human_review_signoff(root)
     checks = [
         _review_virtualization(root),
         _review_matrix(root),
@@ -623,14 +664,23 @@ def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]
     return {
         "schema_version": 1,
         "review_type": "automated-independent-second-pass",
-        "human_signoff": "not-attested",
+        "human_signoff": "attested" if human_signoff is not None else "not-attested",
+        "human_review": human_signoff,
         "release_decision": {
-            "status": "block-vm-milestone",
-            "reason": "automated evidence is not a substitute for external human review",
+            "status": "signoff-recorded" if human_signoff is not None else "block-vm-milestone",
+            "reason": (
+                f"independent human review approved commit {human_signoff['reviewed_commit']}"
+                if human_signoff is not None
+                else "automated evidence is not a substitute for external human review"
+            ),
         },
         "checks": checks,
         "passed": all(check["status"] == "passed" for check in checks),
-        "limitations": ["This artifact is not a substitute for an external human review."],
+        "limitations": (
+            ["Human approval applies only to the reviewed commit."]
+            if human_signoff is not None
+            else ["This artifact is not a substitute for an external human review."]
+        ),
     }
 
 

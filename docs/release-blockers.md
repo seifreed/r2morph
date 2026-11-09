@@ -85,33 +85,36 @@ that commit only; later commits require their own successful run.
   Binary Ninja remains a recorded unavailable hold with its reason. The
   campaign is partitioned into deterministic fixture shards and merged before
   the corpus-wide gate runs; this addresses campaign sustainability.
-- RB-006: The automated VM-resistance campaign is complete for fifteen fixtures
-  across ten seeds: semantic parity, opcode/handler/dispatcher diversity,
-  anti-tamper and progressive bytecode protection, plus bounded recovery
-  probes all passed. The remaining blocker is external human adversarial review;
-  automated evidence does not constitute human signoff.
-  Evidence map: [protection-vm-resistance-2026-09-22-e3a491b3.json](protection-vm-resistance-2026-09-22-e3a491b3.json),
-  [protection-vm-resistance-2026-09-20.json](protection-vm-resistance-2026-09-20.json),
-  [protection-handler-clustering.json](protection-handler-clustering.json),
-  [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
-  `adversarial_validation` and `vm_resistance_blocker_totals`, plus the automated
-  tamper/progressive smoke in
-  [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml).
-  Exit criteria: adversarial review validates VM diversity, anti-tamper, and
-  progressive bytecode protection instead of treating seed diversity or the
-  automated smoke as signoff.
-- RB-007: The VM milestone remains blocked until external human review records signoff.
-  Evidence map: [independent-review.json](independent-review.json)
-  `human_signoff` and `release_decision`,
-  [independent-review-packet.md](independent-review-packet.md). Exit criteria:
-  external human review records signoff for the VM milestone and the release
-  decision no longer blocks the VM milestone.
 
+## Resolved review gates
+
+- RB-006: The independent human review approved the VM resistance evidence on
+  commit `a111f923df43a66826b71ab70db8a484532fbf3b`. The reviewer inspected
+  VM diversification, dispatch and handler alternatives, anti-tamper and
+  progressive bytecode protection, fuzz properties, failure handling, and
+  bounded reporting. Evidence map:
+  [human-review-signoff.json](human-review-signoff.json),
+  [independent-review-packet.md](independent-review-packet.md), and
+  [independent-review.json](independent-review.json). The
+  [protection-handler-clustering.json](protection-handler-clustering.json) and
+  [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
+  `adversarial_validation` fields retain the automated evidence scope; the
+  [support matrix](support-matrix.json) records zero `vm_resistance_blocker_totals`.
+  Exit criteria: the
+  approval remains bound to the reviewed commit; implementation changes require
+  another independent review.
+- RB-007: Independent human review records signoff for the reviewed VM commit and
+  the release decision now reports `signoff-recorded`. The
+  `human_signoff` and `release_decision` fields record this state. Evidence map:
+  [human-review-signoff.json](human-review-signoff.json),
+  [independent-review.json](independent-review.json). Exit criteria: preserve
+  the review record and require a new review when the reviewed implementation
+  changes.
 The continuous fuzzing scope has an additional reproducible local run at
 [protection-fuzz-2026-09-22-d02bc5b2.json](protection-fuzz-2026-09-22-d02bc5b2.json):
 20,000 target runs across 5,000 deterministic cases completed with zero
-failures. This strengthens the fuzzing evidence but does not close the
-remaining resistance and signoff blockers without adversarial and human review.
+failures. This strengthens fuzzing evidence alongside the independent review;
+it does not establish parity for preview or experimental targets.
 The current scheduled workflow also passed 20,000 target runs on commit
 `0933d50c`; its retained summary is
 [protection-fuzz-2026-09-23-0933d50c.json](protection-fuzz-2026-09-23-0933d50c.json).

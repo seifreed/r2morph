@@ -640,32 +640,32 @@ def test_release_contract_rejects_stale_vm_semantic_blocker_totals() -> None:
 def test_support_matrix_names_vm_resistance_gap_scope() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
-    expected = ["human-adversarial-validation"]
+    expected: list[str] = []
+    resolved = summary["vm_resistance_resolved_evidence"]["human-adversarial-validation"]
 
     expect(
         summary["vm_resistance_gap_scope"] == expected
         and summary["vm_resistance_evidence_blockers"]["vm_resistance_gap_scope"] == expected
         and summary["vm_resistance_blocker_totals"]["vm_resistance_gap_scope"] == len(expected)
         and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(expected)
+        and resolved["status"] == "approved"
+        and resolved["evidence_quality"] == "independent-human-review"
     )
 
 
-def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> None:
+def test_support_matrix_names_resolved_vm_resistance_evidence_with_signoff() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     summary = matrix["matrix"]["summary"]
     evidence = summary["vm_resistance_gap_evidence"]
     gap_scope = summary["vm_resistance_gap_scope"]
-    evidence_paths = {
-        item
-        for row in evidence.values()
-        for item in row["evidence"]
-        if isinstance(item, str) and not item.startswith("http")
-    }
+    resolved = summary["vm_resistance_resolved_evidence"]["human-adversarial-validation"]
+    evidence_paths = [item for item in resolved["evidence"] if isinstance(item, str) and not item.startswith("http")]
 
     expect(
-        sorted(evidence) == sorted(gap_scope)
-        and all(row["evidence_quality"] == "automated-adversarial-smoke" for gap, row in evidence.items())
-        and all(row["status"] != "complete" for row in evidence.values())
+        not gap_scope
+        and not evidence
+        and resolved["status"] == "approved"
+        and resolved["reviewed_commit"] == "a111f923df43a66826b71ab70db8a484532fbf3b"
         and all((_ROOT / path).exists() for path in evidence_paths)
         and summary["vm_resistance_blocker_totals"]["total_vm_resistance_blockers"] == len(gap_scope)
     )
@@ -673,10 +673,10 @@ def test_support_matrix_names_vm_resistance_gap_evidence_without_signoff() -> No
 
 def test_support_matrix_records_latest_vm_resistance_campaign() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    evidence = matrix["matrix"]["summary"]["vm_resistance_gap_evidence"]
+    evidence = matrix["matrix"]["summary"]["vm_resistance_resolved_evidence"]
     latest = "docs/protection-vm-resistance-2026-09-22-e3a491b3.json"
 
-    expect(all(latest in row["evidence"] for row in evidence.values()))
+    expect(latest in evidence["human-adversarial-validation"]["evidence"])
 
 
 def test_release_contract_rejects_stale_vm_resistance_blocker_totals() -> None:
@@ -692,15 +692,15 @@ def test_release_contract_rejects_stale_vm_resistance_blocker_totals() -> None:
     expect(rejected)
 
 
-def test_release_contract_rejects_missing_vm_resistance_gap_evidence() -> None:
+def test_release_contract_rejects_missing_resolved_vm_resistance_evidence() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
-    matrix["matrix"]["summary"]["vm_resistance_gap_evidence"].pop("human-adversarial-validation")
+    matrix["matrix"]["summary"]["vm_resistance_resolved_evidence"].pop("human-adversarial-validation")
 
     rejected = False
     try:
         _check_vm_resistance_gap_evidence(matrix)
     except ValueError as error:
-        rejected = "vm resistance gap evidence" in str(error)
+        rejected = "vm resistance" in str(error)
 
     expect(rejected)
 
@@ -1222,12 +1222,12 @@ def test_independent_review_packet_lists_vm_resistance_reports() -> None:
     expect("protection-handler-clustering.json" in packet and "protection-bytecode-grammar.json" in packet)
 
 
-def test_independent_review_packet_targets_current_main_head() -> None:
+def test_independent_review_packet_binds_approval_to_reviewed_commit() -> None:
     packet = " ".join((_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
 
     expect(
-        "Review the exact pushed `main` HEAD when the human review begins" in packet
-        and "Reviewed commit (full 40-character SHA):" in packet
+        "Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`" in packet
+        and "This approval applies to the reviewed commit only" in packet
     )
 
 
@@ -1409,7 +1409,7 @@ def test_release_contract_rejects_failed_independent_review_check() -> None:
 
 def test_release_contract_rejects_independent_review_without_vm_block() -> None:
     report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
-    report["release_decision"]["status"] = "ship"
+    report["release_decision"]["status"] = "block-vm-milestone"
 
     rejected = False
     try:
@@ -1456,10 +1456,10 @@ def test_release_contract_requires_versioned_changelog_heading() -> None:
     expect(rejected)
 
 
-def test_changelog_keeps_vm_milestone_blocker() -> None:
+def test_changelog_records_independent_vm_review() -> None:
     changelog = (_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
-    expect("VM milestone blocked until external human review" in changelog)
+    expect("Independent human review approval is recorded" in changelog)
 
 
 def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:

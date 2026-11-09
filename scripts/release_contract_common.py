@@ -156,7 +156,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "adversarial_validation",
     "vm_resistance_blocker_totals",
     "anti-tamper and progressive bytecode protection",
-    "external human review records signoff",
+    "Independent human review records signoff",
     "human_signoff",
     "release_decision",
 )

@@ -4,6 +4,7 @@ from typing import cast
 
 from scripts.independent_review import (
     _EXPECTED_BENCHMARK_TOOLS,
+    _human_review_signoff,
     _review_live_adversarial_benchmark,
     review,
 )
@@ -67,11 +68,13 @@ def test_independent_review_rejects_live_campaign_without_ghidra(tmp_path: Path)
 
 def test_independent_review_passes_published_artifacts() -> None:
     report = review(_ROOT)
+    signoff = json.loads((_ROOT / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
 
     expect(
         report["passed"] is True
-        and report["human_signoff"] == "not-attested"
-        and report["release_decision"]["status"] == "block-vm-milestone"
+        and report["human_signoff"] == "attested"
+        and report["human_review"] == signoff
+        and report["release_decision"]["status"] == "signoff-recorded"
     )
 
 
@@ -117,12 +120,42 @@ def test_independent_review_validates_fppackedidxnb_regression_artifact() -> Non
     expect(checks["fppackedidxnb_regression_evidence"] == "passed")
 
 
-def test_review_packet_records_approval_without_claiming_independence() -> None:
+def test_review_packet_records_independent_human_approval() -> None:
     packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+    normalized_packet = " ".join(packet.split())
 
     expect(
-        "Result: APPROVE\nFindings: None reported" in packet
-        and "independence not established" in packet
-        and "satisfy the independent external review gate." in packet
-        and "No independent approval is implied" in packet
+        "Result: APPROVE" in normalized_packet
+        and "Findings: None reported" in normalized_packet
+        and "reviewer acted independently of the authoring team" in normalized_packet
+        and "specialist experience in binary rewriting and virtualization" in normalized_packet
+        and "Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`" in normalized_packet
     )
+
+
+def test_independent_review_rejects_malformed_signoff_record(tmp_path: Path) -> None:
+    signoff_path = tmp_path / "docs" / "human-review-signoff.json"
+    signoff_path.parent.mkdir()
+    signoff_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "reviewer": "Reviewer",
+                "review_date_utc": "2026-11-08",
+                "result": "APPROVE",
+                "reviewed_commit": "not-a-commit",
+                "independent": True,
+                "independence_confirmation": "confirmed",
+                "findings": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rejected = False
+    try:
+        _human_review_signoff(tmp_path)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)

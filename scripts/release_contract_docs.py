@@ -236,8 +236,8 @@ def _check_changelog(package_version: str) -> None:
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     if f"## {package_version}" not in changelog:
         raise ValueError("changelog must contain the package version heading")
-    if package_version == _check_version() and "VM milestone blocked until external human review" not in changelog:
-        raise ValueError("changelog must preserve the VM milestone signoff blocker")
+    if package_version == _check_version() and "Independent human review approval is recorded" not in changelog:
+        raise ValueError("changelog must record the independent human review")
 
 
 def _check_readme_adversarial_summary() -> None:
@@ -268,14 +268,14 @@ def _check_readme_vm_review_scope() -> None:
     for fragment in (
         f"human_signoff: {review['human_signoff']}",
         f"release_decision: {release_decision['status']}",
-        "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
-        "SSA, and liveness paths remain explicit review scope",
+        "reviewed memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
+        "SSA, and liveness paths",
         "unsupported instructions must fail closed",
         "partial protected functions",
         "instruction address, mnemonic, type, size, bounded opcode preview, capability, and reason",
         "VM ISA/opcode diversification, dispatcher/handler alternatives, superinstructions, anti-tamper, "
         "and progressive bytecode protection",
-        "human-review scope before the virtualizer milestone can be marked complete",
+        "Human independent review approved the reviewed commit",
     ):
         if fragment not in readme:
             raise ValueError(f"README VM review scope is missing: {fragment}")

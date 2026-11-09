@@ -168,6 +168,22 @@ def _check_vm_resistance_gap_evidence(matrix: dict[str, object]) -> None:
                 and not (ROOT / evidence_path).exists()
             ):
                 raise ValueError(f"vm resistance gap evidence path is missing: {gap}.{evidence_path}")
+    signoff = json.loads((ROOT / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
+    resolved = summary["vm_resistance_resolved_evidence"]
+    if not isinstance(resolved, dict) or "human-adversarial-validation" not in resolved:
+        raise ValueError("vm resistance resolved review evidence is missing")
+    human_review = resolved["human-adversarial-validation"]
+    if (
+        human_review["status"] != "approved"
+        or human_review["evidence_quality"] != "independent-human-review"
+        or human_review["reviewed_commit"] != signoff["reviewed_commit"]
+        or human_review["reviewer"] != signoff["reviewer"]
+        or human_review["review_date_utc"] != signoff["review_date_utc"]
+        or human_review["specialist_expertise_confirmation"] != signoff["specialist_expertise_confirmation"]
+        or "docs/human-review-signoff.json" not in human_review["evidence"]
+        or gap_scope
+    ):
+        raise ValueError("vm resistance independent review evidence is stale")
 
 
 def _check_differential_gap_evidence(matrix: dict[str, object]) -> None:

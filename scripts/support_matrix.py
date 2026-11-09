@@ -109,7 +109,7 @@ _DEFAULT_VM_SEMANTIC_GAP_SCOPE = (
     "fp-simd",
     "ssa-liveness",
 )
-_VM_RESISTANCE_GAP_SCOPE = ("human-adversarial-validation",)
+_VM_RESISTANCE_GAP_SCOPE: tuple[str, ...] = ()
 _VM_RESISTANCE_GAP_EVIDENCE = {
     "human-adversarial-validation": {
         "status": "pending-human-adversarial-review",
@@ -406,6 +406,26 @@ def _vm_semantic_blocker_totals(gap_scope: list[str]) -> dict[str, int]:
 
 def _vm_resistance_evidence_blockers() -> dict[str, object]:
     return {"vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE)}
+
+
+def _vm_resistance_resolved_evidence() -> dict[str, object]:
+    root = Path(__file__).resolve().parents[1]
+    signoff = json.loads((root / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
+    return {
+        "human-adversarial-validation": {
+            "status": "approved",
+            "evidence_quality": "independent-human-review",
+            "reviewed_commit": signoff["reviewed_commit"],
+            "reviewer": signoff["reviewer"],
+            "review_date_utc": signoff["review_date_utc"],
+            "specialist_expertise_confirmation": signoff["specialist_expertise_confirmation"],
+            "evidence": [
+                "docs/human-review-signoff.json",
+                "docs/independent-review-packet.md",
+                "docs/protection-vm-resistance-2026-09-22-e3a491b3.json",
+            ],
+        }
+    }
 
 
 def _vm_resistance_gap_evidence() -> dict[str, object]:
@@ -785,6 +805,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             "vm_semantic_blocker_totals": _vm_semantic_blocker_totals(vm_semantic_gap_scope),
             "vm_resistance_gap_scope": list(_VM_RESISTANCE_GAP_SCOPE),
             "vm_resistance_gap_evidence": _vm_resistance_gap_evidence(),
+            "vm_resistance_resolved_evidence": _vm_resistance_resolved_evidence(),
             "vm_resistance_evidence_blockers": _vm_resistance_evidence_blockers(),
             "vm_resistance_blocker_totals": _vm_resistance_blocker_totals(),
         },

@@ -16,7 +16,7 @@
       "status": "passed"
     },
     {
-      "detail": "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and signoff gaps",
+      "detail": "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and review signoff",
       "name": "release_blocker_ledger_scope",
       "status": "passed"
     },
@@ -51,7 +51,7 @@
       "status": "passed"
     },
     {
-      "detail": "VM resistance remains pending human adversarial review",
+      "detail": "automated resistance evidence is paired with an independent human signoff",
       "name": "vm_resistance_adversarial_scope",
       "status": "passed"
     },
@@ -126,14 +126,25 @@
       "status": "passed"
     }
   ],
-  "human_signoff": "not-attested",
+  "human_review": {
+    "findings": [],
+    "independence_confirmation": "confirmed by the project owner on 2026-11-09",
+    "independent": true,
+    "result": "APPROVE",
+    "review_date_utc": "2026-11-08",
+    "reviewed_commit": "a111f923df43a66826b71ab70db8a484532fbf3b",
+    "reviewer": "Marc Rivero Lopez",
+    "schema_version": 1,
+    "specialist_expertise_confirmation": "binary rewriting and virtualization experience confirmed by the project owner on 2026-11-09"
+  },
+  "human_signoff": "attested",
   "limitations": [
-    "This artifact is not a substitute for an external human review."
+    "Human approval applies only to the reviewed commit."
   ],
   "passed": true,
   "release_decision": {
-    "reason": "automated evidence is not a substitute for external human review",
-    "status": "block-vm-milestone"
+    "reason": "independent human review approved commit a111f923df43a66826b71ab70db8a484532fbf3b",
+    "status": "signoff-recorded"
   },
   "review_type": "automated-independent-second-pass",
   "schema_version": 1

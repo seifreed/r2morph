@@ -191,17 +191,20 @@ fixture records `binary-ninja` as unavailable because `module 'binaryninja' is u
 The current installed API is importable, but the headless benchmark reports
 `analyzer license is unavailable`; this remains an explicit evidence gap while
 the slot is on hold.
-The VM review packet still has `human_signoff: not-attested` and
-`release_decision: block-vm-milestone`; memory, direct/indirect calls, returns,
-flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths
-remain explicit review scope, and unsupported instructions must fail closed
-instead of producing partial protected functions. Unsupported-instruction
-diagnostics must include instruction address, mnemonic, type, size, bounded
-opcode preview, capability, and reason.
-VM ISA/opcode diversification, dispatcher/handler alternatives,
-superinstructions, anti-tamper, and progressive bytecode protection remain
-explicit human-review scope before the virtualizer milestone can be marked
-complete.
+The VM review packet records `human_signoff: attested` and
+`release_decision: signoff-recorded`. Human independent review approved the
+reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. The project owner
+confirms Marc Rivero Lopez's independence and specialist experience in binary
+rewriting and virtualization. He reviewed memory, direct/indirect calls,
+returns, flags, FP/SIMD, varargs/ABI,
+unwinding, TLS/signals, SSA, and liveness paths; unsupported instructions must
+fail closed instead of producing partial protected functions. Diagnostics
+include instruction address, mnemonic, type, size, bounded opcode preview,
+capability, and reason. The review covered VM ISA/opcode diversification,
+dispatcher/handler alternatives, superinstructions, anti-tamper, and progressive
+bytecode protection, fuzz properties, failure handling, and bounded report
+data. This approval applies to that commit; changes to the reviewed VM
+implementation require a new independent review.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity recorded in

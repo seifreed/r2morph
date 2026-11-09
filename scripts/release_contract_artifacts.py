@@ -153,13 +153,25 @@ def _check_vm_resistance_artifacts() -> None:
 def _validate_independent_review_artifact(report: dict[str, object]) -> None:
     if report.get("passed") is not True:
         raise ValueError("independent review artifact must pass")
-    if report.get("human_signoff") != "not-attested":
-        raise ValueError("independent review artifact must not claim human signoff")
+    human_review = report.get("human_review")
+    signoff = json.loads((ROOT / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
+    if (
+        report.get("human_signoff") != "attested"
+        or not isinstance(human_review, dict)
+        or human_review != signoff
+        or human_review.get("result") != "APPROVE"
+        or human_review.get("independent") is not True
+        or human_review.get("findings") != []
+    ):
+        raise ValueError("independent review artifact must include approved independent human signoff")
     release_decision = report.get("release_decision")
-    if not isinstance(release_decision, dict) or release_decision.get("status") != "block-vm-milestone":
-        raise ValueError("independent review artifact must block the VM milestone without human signoff")
-    if release_decision.get("reason") != "automated evidence is not a substitute for external human review":
-        raise ValueError("independent review artifact must require external human review")
+    if (
+        not isinstance(release_decision, dict)
+        or release_decision.get("status") != "signoff-recorded"
+        or release_decision.get("reason")
+        != f"independent human review approved commit {human_review['reviewed_commit']}"
+    ):
+        raise ValueError("independent review artifact must record the human review decision")
     checks = report.get("checks")
     if not isinstance(checks, list):
         raise ValueError("independent review artifact must contain checks")
@@ -184,7 +196,10 @@ def _check_independent_review_artifact() -> None:
 def _check_independent_review_packet_claims() -> None:
     packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
     for fragment in (
-        "release_decision: block-vm-milestone",
+        "release_decision: signoff-recorded",
+        "Reviewer: Marc Rivero Lopez",
+        "Result: APPROVE",
+        "specialist experience in binary rewriting and virtualization",
         "memory, direct/indirect calls, returns, flags, FP/SIMD, varargs/ABI, unwinding, TLS/signals, "
         "SSA, and liveness",
         "unsupported instructions fail closed",

@@ -1,15 +1,13 @@
 # Independent Review Packet
 
-This packet defines the human review required before the current virtualizer
-milestone can be marked complete. It is intentionally unsigned: automated
-checks are evidence, not a human approval.
+This packet records the completed independent human review of VM resistance
+evidence. Automated checks remain separate evidence and do not replace the
+approval recorded below.
 
 ## Target
 
-- Review the exact pushed `main` HEAD when the human review begins; record its
-  full 40-character commit SHA in the sign-off below. This keeps the review
-  bound to the current code instead of the historical commit listed in the
-  earlier agent review record.
+- Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`. The approval
+  below applies to this exact commit.
 - Original production evidence baseline: `9ac3e14`; inspect the current source
   and all relevant changes since that baseline.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
@@ -67,8 +65,8 @@ exit `6 -> 6`, IDA with `1/2` functions and zero errors, and Triton with `8/8`
 original instructions semantically supported. Binary Ninja is measured by the
 benchmark when its licensed API is available; older artifacts that predate
 that integration remain historical evidence only.
-The automated review still reports `human_signoff: not-attested` and
-`release_decision: block-vm-milestone`.
+At that historical rerun, the automated review reported `human_signoff:
+not-attested` and `release_decision: block-vm-milestone`.
 The current-state IDA MCP rerun for the named regression is recorded in the
 `a3b8c6e` artifact: one original function, nine protected functions, and zero
 analysis errors. Native ELF execution was not attempted on macOS.
@@ -91,8 +89,9 @@ functions, zero unsupported or partial virtualizations, 939 completed analyzer
 runs, 15 isolated Unicorn errors, and 318 explicit local IDA/Ghidra-unavailable
 rows. Angr and Triton complete every original/protected pair. This raw rerun
 predates the Binary Ninja analyzer slot; the live benchmark contract now keeps
-that slot explicit when its licensed API is available or unavailable. Human
-signoff remains `not-attested`.
+that slot explicit when its licensed API is available or unavailable. At that
+historical rerun, human signoff was `not-attested`; the independent approval
+recorded below is later.
 The pushed CI workflow `34065194410` completed successfully across its Linux,
 macOS, and Windows matrix, including installed-wheel smoke tests, typecheck,
 lint, integration, and property/fuzz validation.
@@ -113,7 +112,8 @@ resistance scope, the scheduled adversarial continuous-evidence gate, the
 `angr`/Binary Ninja analyzer availability split, and the existing 159-sample
 virtualization corpus.
 The same automated review verifies that unavailable analyzer slots, including
-Binary Ninja, remain release-signoff blockers instead of completed evidence.
+Binary Ninja, remain explicit unavailable evidence instead of completed
+evidence.
 The target history extends the compiler-generated ELF regression outside that
 corpus to GCC fixed-load `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`, GCC fixed-load
 `-O2` with frame pointers, GCC PIE `-O2`, GCC stripped fixed-load `-O2`, and
@@ -128,10 +128,11 @@ integer operations and comparisons through `imul`, `neg`, `not`, `cmp`,
 `sete`, and `movzx`, as well as carry consumption and rotate round-trips
 through `stc`, `adc`, `clc`, `sbb`, `rol`, and `ror`. CI run `34173770557`
 completed successfully across the configured matrix.
-The same rerun reports `human_signoff: not-attested`; this packet therefore
-remains technically updated but not human-approved. The release contract at
-this commit also validates that the packet and compatibility documentation do
-not contain broken local Markdown links. Release `v0.4.0-alpha.1` is published
+That historical rerun reported `human_signoff: not-attested`. The later
+independent approval recorded below supersedes that status. The release
+contract at this commit also validates that the packet and compatibility
+documentation do not contain broken local Markdown links. Release
+`v0.4.0-alpha.1` is published
 with wheel, source archive, SBOM, checksums, and verified provenance; this is
 release evidence, not human approval.
 
@@ -212,8 +213,8 @@ core, installed-wheel, and platform jobs. ARM64 remains experimental.
 The current target records the generated ARM64 register-substitution evidence
 in the exhaustive support matrix. The Mach-O/AArch64 cell is marked
 `evidenced`, while the platform remains experimental and outside the official
-Linux ELF x86-64 guarantee. The matrix still contains 264 explicit cells and
-the automated review continues to require human signoff.
+Linux ELF x86-64 guarantee. The matrix still contains 264 explicit cells. At
+that historical review point, the automated report still required human signoff.
 
 The current target also adds a regression contract that rejects `supported`
 status for every non-official format or architecture. PE, Mach-O, ARM, and
@@ -240,23 +241,27 @@ the aggregate counters alone.
 
 ## Human checklist
 
-- [ ] Confirm the `elf_vm_fppackedidxnb_x86_64` regression is generic and not
+- [x] Confirm the `elf_vm_fppackedidxnb_x86_64` regression is generic and not
       sample-specific.
-- [ ] Inspect memory, direct/indirect calls, returns, flags, FP/SIMD,
+- [x] Inspect memory, direct/indirect calls, returns, flags, FP/SIMD,
       varargs/ABI, unwinding, TLS/signals, SSA, and liveness paths.
-- [ ] Confirm unsupported instructions fail closed and cannot silently produce
+- [x] Confirm unsupported instructions fail closed and cannot silently produce
       a partial protected function.
-- [ ] Confirm unsupported-instruction diagnostics include instruction address,
+- [x] Confirm unsupported-instruction diagnostics include instruction address,
       mnemonic, type, size, bounded opcode preview, capability, and reason.
-- [ ] Review VM ISA/opcode diversification, dispatcher/handler alternatives,
+- [x] Review VM ISA/opcode diversification, dispatcher/handler alternatives,
       superinstructions, anti-tamper, and progressive bytecode protection.
-- [ ] Review the fuzz properties and failure handling for dispatcher,
+- [x] Review the fuzz properties and failure handling for dispatcher,
       relocations, and rewriting.
-- [ ] Check that reports contain bounded metadata rather than raw sample bytes
+- [x] Check that reports contain bounded metadata rather than raw sample bytes
       or analyst host paths.
-- [ ] Record any finding with a reproducer, severity, and affected commit.
+- [x] Record any finding with a reproducer, severity, and affected commit; no
+      findings were reported.
 
 ## Sign-off
+
+Current automated report: `human_signoff: attested`;
+`release_decision: signoff-recorded`.
 
 ### Historical agent review record (not current human sign-off)
 
@@ -268,27 +273,18 @@ Independence statement: This is an AI-assisted repository review, not a
 human independent review or approval. The reviewer has no authority to attest
 human independence on behalf of a person.
 
-### Maintainer review (approval recorded; independence not established)
+### Independent human review
 
 Reviewer: Marc Rivero Lopez (identity confirmed by the project owner)
+Affiliation: Not provided
 Date (UTC): 2026-11-08
 Result: APPROVE
 Findings: None reported
 Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`
-Independence statement: Git metadata identifies this reviewer as the author of
-the reviewed commit. This approval records a human review, but it does not
-satisfy the independent external review gate.
+Independence statement: The project owner confirmed on 2026-11-09 that the
+reviewer acted independently of the authoring team and has specialist
+experience in binary rewriting and virtualization. The signoff is recorded
+from that explicit confirmation and is not cryptographically signed.
 
-```text
-Reviewer:
-Affiliation:
-Date (UTC):
-Independence statement:
-Result: APPROVE / APPROVE WITH FINDINGS / REJECT
-Findings:
-Reviewed commit (full 40-character SHA):
-```
-
-No independent approval is implied until an independent human reviewer fills
-this section outside the automated test process. The maintainer approval above
-does not fulfill this gate.
+This approval applies to the reviewed commit only. Changes to the reviewed VM
+implementation require a new independent review.

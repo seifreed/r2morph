@@ -1789,36 +1789,29 @@
         "total_vm_semantic_blockers": 0,
         "vm_semantic_gap_scope": 0
       },
-      "vm_resistance_gap_scope": [
-        "human-adversarial-validation"
-      ],
-      "vm_resistance_gap_evidence": {
+      "vm_resistance_gap_scope": [],
+      "vm_resistance_gap_evidence": {},
+      "vm_resistance_resolved_evidence": {
         "human-adversarial-validation": {
-          "status": "pending-human-adversarial-review",
-          "evidence_quality": "automated-adversarial-smoke",
+          "status": "approved",
+          "evidence_quality": "independent-human-review",
+          "reviewed_commit": "a111f923df43a66826b71ab70db8a484532fbf3b",
+          "reviewer": "Marc Rivero Lopez",
+          "review_date_utc": "2026-11-08",
+          "specialist_expertise_confirmation": "binary rewriting and virtualization experience confirmed by the project owner on 2026-11-09",
           "evidence": [
-            "docs/independent-review.json",
-            "docs/protection-bytecode-grammar.json",
-            "docs/protection-handler-clustering.json",
-            "docs/protection-vm-resistance-2026-09-22-e3a491b3.json",
-            "docs/protection-vm-resistance-2026-09-19-3feec419.json",
-            "docs/protection-vm-resistance-2026-09-20.json",
-            ".github/workflows/adversarial-benchmark.yml",
-            "scripts/vm_resistance_adversarial.py",
-            "tests/integration/test_code_virtualization_real.py",
-            "tests/integration/test_code_virtualization_diversification_real.py",
-            "tests/integration/test_vm_resistance_adversarial.py"
+            "docs/human-review-signoff.json",
+            "docs/independent-review-packet.md",
+            "docs/protection-vm-resistance-2026-09-22-e3a491b3.json"
           ]
         }
       },
       "vm_resistance_evidence_blockers": {
-        "vm_resistance_gap_scope": [
-          "human-adversarial-validation"
-        ]
+        "vm_resistance_gap_scope": []
       },
       "vm_resistance_blocker_totals": {
-        "total_vm_resistance_blockers": 1,
-        "vm_resistance_gap_scope": 1
+        "total_vm_resistance_blockers": 0,
+        "vm_resistance_gap_scope": 0
       }
     },
     "cells": [
