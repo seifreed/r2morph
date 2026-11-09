@@ -268,6 +268,17 @@ Independence statement: This is an AI-assisted repository review, not a
 human independent review or approval. The reviewer has no authority to attest
 human independence on behalf of a person.
 
+### Maintainer review (approval recorded; independence not established)
+
+Reviewer: Marc Rivero Lopez (identity confirmed by the project owner)
+Date (UTC): 2026-11-08
+Result: APPROVE
+Findings: None reported
+Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`
+Independence statement: Git metadata identifies this reviewer as the author of
+the reviewed commit. This approval records a human review, but it does not
+satisfy the independent external review gate.
+
 ```text
 Reviewer:
 Affiliation:
@@ -278,5 +289,6 @@ Findings:
 Reviewed commit (full 40-character SHA):
 ```
 
-No approval is implied until a human reviewer fills this section outside the
-automated test process.
+No independent approval is implied until an independent human reviewer fills
+this section outside the automated test process. The maintainer approval above
+does not fulfill this gate.

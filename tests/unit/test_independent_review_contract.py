@@ -115,3 +115,14 @@ def test_independent_review_validates_fppackedidxnb_regression_artifact() -> Non
     checks = {check["name"]: check["status"] for check in report["checks"]}
 
     expect(checks["fppackedidxnb_regression_evidence"] == "passed")
+
+
+def test_review_packet_records_approval_without_claiming_independence() -> None:
+    packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+
+    expect(
+        "Result: APPROVE\nFindings: None reported" in packet
+        and "independence not established" in packet
+        and "satisfy the independent external review gate." in packet
+        and "No independent approval is implied" in packet
+    )
