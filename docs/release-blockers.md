@@ -5,12 +5,14 @@ review. It is not a feature roadmap and must not be read as a support claim.
 
 ## Latest full CI verification of a code-bearing commit
 
-Commit `97b0d05b` passed CI run
-[`42574682459`](https://github.com/seifreed/r2morph/actions/runs/42574682459)
+Commit `4bd8aa85` passed CI run
+[`42595479228`](https://github.com/seifreed/r2morph/actions/runs/42595479228)
 with all 15 jobs successful, including the full Linux Python 3.12 suite,
 integration tests, the Python/platform matrix, property and fuzz validation,
-installed-wheel smoke tests, lint, and type checking. This result verifies
-that code commit only; later code changes require their own successful run.
+installed-wheel smoke tests, lint, and type checking. The Windows Python 3.12
+and 3.13 jobs both passed after adding bounded retries for transient radare2
+download failures. This result verifies that code commit only; later code
+changes require their own successful run.
 
 ## Resolved blockers
 
