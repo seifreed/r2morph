@@ -71,9 +71,12 @@ that commit only; later commits require their own successful run.
   non-official in the support matrix.
 - RB-005: The adversarial benchmark's required cross-tool campaign is resolved.
   Run `36381653200` contains complete comparable `radare2`, `angr`, and `ghidra`
-  rows for all 22 declared passes. Binary Ninja is deliberately on hold for
-  this milestone: it remains an explicit unavailable slot and is not silently
-  omitted, but no installation work is planned in the current campaign.
+  rows for all 22 declared passes. The Binary Ninja application bundle exists
+  in the local environment. Binary Ninja is deliberately on hold for this
+  milestone because the benchmark's real-fixture API probe returns
+  `unavailable` with `analyzer license is unavailable`. It remains an explicit
+  unavailable slot and is not counted as analyzer evidence. No licensed API is
+  available for this campaign.
   Evidence map:
   [compatibility-corpus.md](compatibility-corpus.md),
   [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
