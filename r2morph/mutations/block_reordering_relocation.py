@@ -75,7 +75,7 @@ def reorder_function_blocks(
         func_end = ordered[-1]["addr"] + ordered[-1]["size"]
         budget = func_end - func_start
         plans = _build_block_plans(binary, ordered, func_start)
-        new_order = _draw_new_order(ordered, rng)
+        new_order = _draw_new_order(ordered, plans, rng)
         if new_order is None:
             raise _BailOutError("shuffle kept the original order")
         layout = _lay_out(binary, new_order, plans, func_start, budget)
@@ -245,15 +245,25 @@ def _fallthrough_target(
 
 def _draw_new_order(
     ordered: list[dict[str, Any]],
+    plans: dict[int, _BlockPlan],
     rng: Any,
 ) -> list[dict[str, Any]] | None:
-    """Pin the entry block and shuffle the rest; None if order is unchanged."""
-    tail = ordered[1:]
+    """Keep fallthrough chains intact while shuffling independent block groups."""
+    groups: list[list[dict[str, Any]]] = []
+    group: list[dict[str, Any]] = []
+    for index, block in enumerate(ordered):
+        group.append(block)
+        next_addr = ordered[index + 1]["addr"] if index + 1 < len(ordered) else None
+        if next_addr is None or plans[block["addr"]].fallthrough != next_addr:
+            groups.append(group)
+            group = []
+
+    tail = groups[1:]
     shuffled = list(tail)
     rng.shuffle(shuffled)
     if shuffled == tail:
         return None
-    return [ordered[0], *shuffled]
+    return [block for blocks in [groups[0], *shuffled] for block in blocks]
 
 
 def _lay_out(
