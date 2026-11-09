@@ -139,6 +139,7 @@ try:
         _check_corpus_workflows,
         _check_release_recovery_workflow,
         _check_release_workflow,
+        _check_windows_download_contract,
     )
 except ModuleNotFoundError:
     from release_contract_workflows import (
@@ -146,6 +147,7 @@ except ModuleNotFoundError:
         _check_corpus_workflows,
         _check_release_recovery_workflow,
         _check_release_workflow,
+        _check_windows_download_contract,
     )
 
 __all__ = (
@@ -215,6 +217,7 @@ __all__ = (
     "_check_vm_semantic_campaign_capabilities",
     "_check_vm_semantic_fixture_coverage",
     "_check_vm_semantic_gap_evidence",
+    "_check_windows_download_contract",
     "_forbidden_release_claims",
     "_load_matrix",
     "_validate_adversarial_benchmark_artifact",
@@ -254,6 +257,7 @@ def main() -> int:
         _check_documentation_claims()
         _check_release_blockers()
         _check_ci_contract()
+        _check_windows_download_contract()
         _check_release_workflow()
         _check_release_recovery_workflow()
         _check_corpus_workflows()

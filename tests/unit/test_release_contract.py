@@ -1889,7 +1889,8 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and "Install radare2 (Windows)" in cross_platform_job
         and '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"' in cross_platform_job
         and '"913e7d95e7458226a5e783240877f2c1d405398ab38ba176ce9b12e046e31f34"' in cross_platform_job
-        and "Get-FileHash -Algorithm SHA256" in cross_platform_job
+        and '& ".github/scripts/download_verified_artifact.ps1" -Url $url -Output $archive -Sha256 $expectedSha256'
+        in cross_platform_job
         and "Expand-Archive -Path $archive -DestinationPath $destination -Force" in cross_platform_job
         and "$env:GITHUB_PATH" in cross_platform_job
         and 'run: python -m pip install "build>=1.2.0"' in cross_platform_job
@@ -1939,6 +1940,26 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and '"tests/unit/test_code_virtualization_diagnostics.py"' in cross_platform_job
         and '"tests/unit/test_code_virtualization_fp_indexed_shapes.py"' in cross_platform_job
         and '"tests/unit/test_code_virtualization_avx256.py"' in cross_platform_job
+    )
+
+
+def test_windows_radare2_workflows_use_bounded_verified_retries() -> None:
+    ci_workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    differential_workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    downloader = (_ROOT / ".github" / "scripts" / "download_verified_artifact.ps1").read_text(encoding="utf-8")
+    command = '& ".github/scripts/download_verified_artifact.ps1" -Url $url -Output $archive -Sha256 $expectedSha256'
+
+    expect(
+        ci_workflow.count(command) == 1
+        and differential_workflow.count(command) == 1
+        and '      - ".github/scripts/download_verified_artifact.ps1"' in differential_workflow
+        and "$maximumAttempts = 3" in downloader
+        and "Invoke-WebRequest -Uri $Url -OutFile $partialOutput -TimeoutSec 120" in downloader
+        and "$statusCode -in @(408, 429)" in downloader
+        and "$statusCode -ge 500" in downloader
+        and "Start-Sleep -Seconds $attempt" in downloader
+        and "Get-FileHash -Algorithm SHA256 -Path $partialOutput" in downloader
+        and "Move-Item -LiteralPath $partialOutput -Destination $Output -Force" in downloader
     )
 
 

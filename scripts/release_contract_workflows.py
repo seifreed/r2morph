@@ -36,7 +36,7 @@ def _check_ci_contract() -> None:
         "Install radare2 (Windows)",
         '"https://github.com/radareorg/radare2/releases/download/$version/$archiveName"',
         '"913e7d95e7458226a5e783240877f2c1d405398ab38ba176ce9b12e046e31f34"',
-        "Get-FileHash -Algorithm SHA256",
+        '& ".github/scripts/download_verified_artifact.ps1" -Url $url -Output $archive -Sha256 $expectedSha256',
         "Expand-Archive -Path $archive -DestinationPath $destination -Force",
         "$env:GITHUB_PATH",
         "git build-essential clang gcc-arm-linux-gnueabihf qemu-user",
@@ -102,6 +102,29 @@ def _check_ci_contract() -> None:
         raise ValueError("pytest warnings must remain errors")
     if project["tool"]["coverage"]["report"]["fail_under"] < MINIMUM_COVERAGE_PERCENT:
         raise ValueError("coverage gate must be at least 75 percent")
+
+
+def _check_windows_download_contract() -> None:
+    root = ROOT / ".github"
+    script = (root / "scripts" / "download_verified_artifact.ps1").read_text(encoding="utf-8")
+    for workflow_name in ("ci.yml", "differential-corpus.yml"):
+        workflow = (root / "workflows" / workflow_name).read_text(encoding="utf-8")
+        if (
+            '& ".github/scripts/download_verified_artifact.ps1" -Url $url -Output $archive -Sha256 $expectedSha256'
+            not in workflow
+        ):
+            raise ValueError(f"{workflow_name} must use the verified Windows artifact downloader")
+    for fragment in (
+        "$maximumAttempts = 3",
+        "Invoke-WebRequest -Uri $Url -OutFile $partialOutput -TimeoutSec 120",
+        "$statusCode -in @(408, 429)",
+        "$statusCode -ge 500",
+        "Start-Sleep -Seconds $attempt",
+        "Get-FileHash -Algorithm SHA256 -Path $partialOutput",
+        "Move-Item -LiteralPath $partialOutput -Destination $Output -Force",
+    ):
+        if fragment not in script:
+            raise ValueError(f"verified Windows artifact downloader is missing: {fragment}")
 
 
 def _check_release_workflow() -> None:
