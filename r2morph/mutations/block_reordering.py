@@ -24,6 +24,7 @@ from r2morph.mutations.block_reordering_helpers import (
 from r2morph.mutations.block_reordering_relocation import reorder_function_blocks
 
 logger = logging.getLogger(__name__)
+_X86_64_BITS = 64
 
 
 def _read_exception_frames(binary: Any) -> tuple[dict[int, Any] | None, str | None]:
@@ -69,6 +70,12 @@ class BlockReorderingPass(MutationPass):
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 10)
         self.preserve_fallthrough = self.config.get("preserve_fallthrough", True)
+        self.set_support(
+            formats=("ELF",),
+            architectures=("x86_64",),
+            validators=("structural", "runtime"),
+            stability="stable",
+        )
 
     def _can_reorder_function(self, func: dict[str, Any], blocks: list[dict[str, Any]]) -> bool:
         return can_reorder_function(func, blocks)
@@ -126,6 +133,25 @@ class BlockReorderingPass(MutationPass):
         self._reset_random()
 
         functions = binary.get_functions()
+        arch_info = binary.get_arch_info()
+        binary_format = str(arch_info.get("format", "")).upper()
+        architecture = str(arch_info.get("arch", "")).lower()
+        bits = arch_info.get("bits")
+        if not (binary_format.startswith("ELF") and architecture == "x86" and bits == _X86_64_BITS):
+            logger.warning(
+                "Block reordering skipped for unsupported target: format=%s arch=%s bits=%s",
+                binary_format,
+                architecture,
+                bits,
+            )
+            return {
+                "mutations_applied": 0,
+                "functions_mutated": 0,
+                "total_blocks_reordered": 0,
+                "total_functions": len(functions),
+                "functions_processed": 0,
+            }
+
         exception_frames, exception_read_error = _read_exception_frames(binary)
         functions_mutated = 0
         total_blocks_reordered = 0
