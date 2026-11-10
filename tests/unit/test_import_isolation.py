@@ -115,7 +115,7 @@ def test_optional_angr_import_boundary_handles_known_external_warning() -> None:
         "from r2morph.adapters.angr_import import import_angr_modules\n"
         "stack = import_angr_modules(claripy=True, project=True, cfg_fast=True, exploration_technique=True)\n"
         "assert stack.available, 'angr stack should import when installed'\n"
-        "assert stack.claripy is stack.angr.claripy, 'symbolic expressions must use angr runtime module'\n"
+        "assert stack.claripy is __import__('claripy'), 'symbolic expressions must use the matching claripy module'\n"
     )
     result = run_command(
         [sys.executable, "-W", "error", "-c", probe],

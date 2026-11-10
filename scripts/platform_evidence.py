@@ -77,7 +77,6 @@ _PASS_CASES = {
         "Composition": "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "RegisterSubstitution": "test_register_substitution_arm64_preserves_generated_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_arm64_preserves_native_output",
-        "StringObfuscation": "test_x86_string_obfuscation_preserves_native_exit_code",
     },
     "windows-pe": {
         "NopInsertion": "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",

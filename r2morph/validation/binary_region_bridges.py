@@ -141,7 +141,12 @@ def setup_symbolic_bridges(
                 "symbolic_binary_check_performed": False,
                 "symbolic_binary_reason": "angr module not available",
             }
-        claripy = angr_module.claripy
+        claripy = getattr(bridge_module, "claripy", None)
+        if claripy is None:
+            return {
+                "symbolic_binary_check_performed": False,
+                "symbolic_binary_reason": "claripy module not available",
+            }
         options = angr_module.options
         return (original_bridge, mutated_bridge, angr_module, claripy, options)
 

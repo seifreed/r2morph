@@ -31,6 +31,12 @@ def compare_instruction_substitution_observables(
             "symbolic_observable_check_performed": False,
             "symbolic_observable_reason": "angr module not available",
         }
+    claripy_module = getattr(bridge_module, "claripy", None)
+    if claripy_module is None:
+        return {
+            "symbolic_observable_check_performed": False,
+            "symbolic_observable_reason": "claripy module not available",
+        }
 
     config = _observables_arch_config(binary.get_arch_info())
     if config is None:
@@ -41,7 +47,7 @@ def compare_instruction_substitution_observables(
     shellcode_arch, observables = config
     execution = _ObservableExecution(
         angr=angr_module,
-        claripy=angr_module.claripy,
+        claripy=claripy_module,
         options=angr_module.options,
         shellcode_arch=shellcode_arch,
         observables=observables,

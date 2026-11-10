@@ -34,6 +34,12 @@ def compare_instruction_substitution_transition(
             "symbolic_transition_check_performed": False,
             "symbolic_transition_reason": "angr module not available",
         }
+    claripy_module = getattr(bridge_module, "claripy", None)
+    if claripy_module is None:
+        return {
+            "symbolic_transition_check_performed": False,
+            "symbolic_transition_reason": "claripy module not available",
+        }
 
     config = _transition_arch_config(binary.get_arch_info())
     if config is None:
@@ -44,8 +50,7 @@ def compare_instruction_substitution_transition(
     shellcode_arch, stack_reg, bit_width = config
 
     options = angr_module.options
-    claripy = angr_module.claripy
-    runtime = TransitionRuntime(angr_module, claripy, options, shellcode_arch, stack_reg, bit_width)
+    runtime = TransitionRuntime(angr_module, claripy_module, options, shellcode_arch, stack_reg, bit_width)
     compared_regions: list[dict[str, Any]] = []
     mismatches: list[dict[str, Any]] = []
 

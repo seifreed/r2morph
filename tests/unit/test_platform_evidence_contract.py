@@ -81,6 +81,10 @@ def test_platform_evidence_uses_native_composition_contracts() -> None:
     )
 
 
+def test_macos_arm64_evidence_excludes_x86_string_obfuscation() -> None:
+    expect("StringObfuscation" not in _PASS_CASES["macos-arm64"])
+
+
 def test_platform_evidence_rejects_report_missing_required_case(tmp_path: Path) -> None:
     for platform_name in _REQUIRED_CASES:
         (tmp_path / platform_name).mkdir()

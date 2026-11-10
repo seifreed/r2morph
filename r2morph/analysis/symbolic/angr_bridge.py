@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import angr
+    import claripy
     from angr import Project
     from angr.analyses import CFGFast
 
@@ -21,9 +22,10 @@ if TYPE_CHECKING:
 else:
     from r2morph.adapters.angr_import import import_angr_modules
 
-    _angr_import = import_angr_modules(project=True, cfg_fast=True)
+    _angr_import = import_angr_modules(claripy=True, project=True, cfg_fast=True)
     ANGR_AVAILABLE = _angr_import.available
     angr = _angr_import.angr
+    claripy = _angr_import.claripy
     Project = _angr_import.project
     CFGFast = _angr_import.cfg_fast
 
