@@ -46,6 +46,7 @@ def _check_ci_contract() -> None:
         'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]',
         '"tests/unit/test_circular_imports.py"',
         '"tests/unit/test_cli_basic_commands.py::test_cli_version_function"',
+        '"tests/unit/test_public_surface_contract.py"',
         "python scripts/support_matrix.py --check docs/support-matrix.json",
     ):
         if fragment not in workflow:
@@ -61,6 +62,7 @@ def _check_ci_contract() -> None:
         "test_targets = [",
         "x64_assembler_targets = [",
         'if platform.machine().lower() in {"amd64", "x86_64"}:',
+        '"tests/unit/test_public_surface_contract.py"',
         '"tests/unit/test_pe_handler_parsing_contract.py"',
         '"tests/unit/test_pe_handler_struct_parse.py"',
         '"tests/unit/test_macho_parse_basic.py"',

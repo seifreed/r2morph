@@ -13,16 +13,18 @@ from r2morph import Binary, MorphEngine, Pipeline
 ```
 
 `r2morph.__all__` and the behavior of those exported classes are covered by
-`tests/unit/test_public_surface_contract.py`. Modules not exported by the
-package root remain implementation details unless a later version explicitly
-promotes them here.
+`tests/unit/test_public_surface_contract.py`. CI also runs this contract
+against the installed wheel on Linux and in the cross-platform package smoke
+job. Modules not exported by the package root remain implementation details
+unless a later version explicitly promotes them here.
 
 ## CLI
 
 The installed `r2morph` command is bound to `r2morph.cli:app`. Its top-level
 commands, the `morph`/`mutate` aliases, and the long options of `mutate` are
 compatibility surfaces. The regression test for these names is
-`tests/unit/test_public_surface_contract.py`.
+`tests/unit/test_public_surface_contract.py`, including when CI imports the
+installed wheel rather than the source checkout.
 
 The default command, `analyze`, `functions`, `validate`, `diff`, `report`,
 `version`, `cache`, and `experimental analyze-enhanced` are listed explicitly

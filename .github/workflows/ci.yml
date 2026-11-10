@@ -319,6 +319,7 @@ jobs:
           test_targets = [
               "tests/unit/test_circular_imports.py",
               "tests/unit/test_cli_basic_commands.py::test_cli_version_function",
+              "tests/unit/test_public_surface_contract.py",
               "tests/unit/test_pe_handler_parsing_contract.py",
               "tests/unit/test_pe_handler_struct_parse.py",
               "tests/unit/test_macho_parse_basic.py",
@@ -437,4 +438,5 @@ jobs:
           /tmp/r2morph-wheel-venv/bin/python -W error -m pytest \
             tests/unit/test_circular_imports.py \
             tests/unit/test_cli_basic_commands.py::test_cli_version_function \
+            tests/unit/test_public_surface_contract.py \
             --no-cov --tb=short
