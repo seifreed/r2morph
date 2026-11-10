@@ -42,6 +42,11 @@ On 2026-11-10, the same PE test module ran locally on macOS 27.2 ARM64 with
 MinGW-w64 GCC 16.2 and Wine 11.0: seven generated-binary mutation tests passed
 and the Windows-only fixture test was skipped. This confirms an additional
 Wine execution path; it is not native Windows evidence or a PE parity claim.
+The PE block-reordering regression now builds a separate control-flow fixture,
+executes the original and mutated images under native Windows or Wine for nine
+inputs, and validates the repaired PE checksum and integrity. A passing local
+run is preview evidence for this pass/target cell only; it does not promote
+PE x86-64 to parity with Linux ELF x86-64.
 On 2026-11-10, a connected licensed static-analysis service inspected the
 original and CodeVirtualization-protected `elf_x86_64` fixture. The bounded
 function and decompilation observations are in

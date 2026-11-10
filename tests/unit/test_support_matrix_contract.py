@@ -10,11 +10,11 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 56
-_EXPECTED_NOT_SUPPORTED_CELLS = 208
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 34
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 208
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 208
+_EXPECTED_EVIDENCED_CELLS = 57
+_EXPECTED_NOT_SUPPORTED_CELLS = 207
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 35
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 207
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 207
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -293,6 +293,7 @@ def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
             )
             for pass_name, cell in (
                 ("nop", {"format": "PE", "architecture": "x86-64"}),
+                ("block-reordering", {"format": "PE", "architecture": "x86-64"}),
                 ("substitute", {"format": "Mach-O", "architecture": "x86-64"}),
                 ("register", {"format": "Mach-O", "architecture": "x86-64"}),
                 ("instruction-expansion", {"format": "Mach-O", "architecture": "x86-64"}),
@@ -318,5 +319,24 @@ def test_support_matrix_records_macho_block_reordering_as_one_preview_case() -> 
         == [
             "tests/integration/test_mutations_x86_compiled_binary.py::"
             "test_x86_block_reordering_preserves_native_exit_code"
+        ]
+    )
+
+
+def test_support_matrix_records_pe_block_reordering_as_preview_evidence() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    entry = next(item for item in document["passes"] if item["name"] == "block-reordering")
+    cell = next(
+        cell
+        for cell in build_matrix(document)["cells"]
+        if cell["pass"] == entry["name"] and cell["format"] == "PE" and cell["architecture"] == "x86-64"
+    )
+
+    expect(
+        entry["stability"] == "tier-1"
+        and cell["status"] == "evidenced"
+        and cell["evidence"]
+        == [
+            "tests/integration/test_block_reordering_pe_real.py::test_pe_x86_64_block_reordering_preserves_native_observables"
         ]
     )
