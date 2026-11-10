@@ -7,6 +7,11 @@ import sys
 import tomllib
 
 try:
+    from scripts.one_zero_release_gate import check_one_zero_release_gate as _check_one_zero_release_gate
+except ModuleNotFoundError:
+    from one_zero_release_gate import check_one_zero_release_gate as _check_one_zero_release_gate
+
+try:
     from scripts.release_contract_common import (
         _BANNED_BINARY_NINJA_OMISSION_PHRASES,
         _DOCUMENTATION_LINK_FILES,
@@ -196,6 +201,7 @@ __all__ = (
     "_check_matrix",
     "_check_maturity_gap_evidence",
     "_check_maturity_profile_values",
+    "_check_one_zero_release_gate",
     "_check_parity_gap_evidence",
     "_check_pass_maturity_gap_summary",
     "_check_pass_selection_contract",
@@ -235,6 +241,11 @@ __all__ = (
 def main() -> int:
     try:
         package_version = _check_version()
+        _check_one_zero_release_gate(
+            package_version,
+            ROOT / "docs" / "one-zero-readiness.json",
+            ROOT,
+        )
         matrix = _load_matrix()
         _check_matrix(matrix, package_version)
         _check_readme_support_summary(matrix)

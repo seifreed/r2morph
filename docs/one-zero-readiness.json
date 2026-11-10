@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "blocked",
+  "blocking_criteria": [
+    "all_named_adversarial_analyzers",
+    "complete_compatibility_contract",
+    "cross_platform_parity",
+    "documented_resistance_scope",
+    "published_correctness_results",
+    "published_cost_results",
+    "published_resistance_results",
+    "stable_api_cli"
+  ],
+  "criteria": {
+    "all_named_adversarial_analyzers": {
+      "status": "open",
+      "evidence": ["docs/compatibility-corpus.md", "docs/release-blockers.md"]
+    },
+    "complete_compatibility_contract": {
+      "status": "in_progress",
+      "evidence": ["docs/support-matrix.json", "docs/compatibility-corpus.md"]
+    },
+    "cross_platform_parity": {
+      "status": "open",
+      "evidence": ["docs/support-matrix.json", "docs/release-blockers.md"]
+    },
+    "documented_resistance_scope": {
+      "status": "in_progress",
+      "evidence": ["docs/independent-review-packet.md", "docs/protection-independent-analysis-2026-11-10.json"]
+    },
+    "published_cost_results": {
+      "status": "in_progress",
+      "evidence": ["docs/pass-maturity.md", "docs/compatibility-corpus.md"]
+    },
+    "published_correctness_results": {
+      "status": "in_progress",
+      "evidence": ["docs/compatibility-corpus.md", "docs/support-matrix.json"]
+    },
+    "published_resistance_results": {
+      "status": "open",
+      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json"]
+    },
+    "stable_api_cli": {
+      "status": "in_progress",
+      "evidence": ["docs/stability-contract.md", "tests/unit/test_public_surface_contract.py"]
+    }
+  }
+}

@@ -2,6 +2,9 @@
 
 This ledger records the remaining blockers from the current release-hardening
 review. It is not a feature roadmap and must not be read as a support claim.
+The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
+the evidence requirements and keeps stable-major releases blocked while any
+criterion remains open or in progress.
 
 ## Latest full CI verification of a code-bearing commit
 
