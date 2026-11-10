@@ -1,5 +1,11 @@
 # r2morph API Documentation
 
+> **Compatibility scope:** This guide includes module-level examples that are
+> useful for development but are not all stable imports. The intended 1.0
+> compatibility surface and deprecation policy are defined in
+> [stability-contract.md](stability-contract.md); currently the package-root
+> exports and documented CLI surface are the contracted entry points.
+
 ## Overview
 
 r2morph is a metamorphic mutation engine for binary transformation. The API is organized into several modules:
