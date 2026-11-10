@@ -24,10 +24,14 @@
       "stability": "tier-1",
       "formats": [
         "ELF",
-        "PE"
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
       ],
       "evidence_cells": [
         {
@@ -87,16 +91,58 @@
         "tests/integration/test_elf_arm64_native.py",
         "tests/integration/test_mutations_x86_compiled_binary.py",
         "tests/integration/test_protection_maturity_baseline.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "supported"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
       "name": "substitute",
       "stability": "tier-1",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
       ],
       "evidence_cells": [
         {
@@ -154,16 +200,58 @@
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_elf_arm64_native.py",
         "tests/integration/test_mutation_passes_end_to_end_more2.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "supported"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
       "name": "register",
       "stability": "tier-1",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
       ],
       "evidence_cells": [
         {
@@ -221,16 +309,58 @@
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_elf_arm64_native.py",
         "tests/integration/test_nop_insertion_pe_real.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "supported"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
       "name": "instruction-expansion",
       "stability": "tier-1",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
       ],
       "evidence_cells": [
         {
@@ -285,6 +415,43 @@
         "tests/unit/test_instruction_expansion_helpers_contract.py",
         "tests/integration/test_mutation_instruction_expansion_unsupported.py",
         "docs/compatibility-corpus.md"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "supported"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -292,11 +459,12 @@
       "stability": "tier-1",
       "formats": [
         "ELF",
-        "Mach-O",
-        "PE"
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86"
       ],
       "evidence_cells": [
         {
@@ -332,6 +500,28 @@
         "tests/integration/test_block_reordering_relocation_real.py",
         "tests/integration/test_block_reordering_pe_real.py",
         "docs/compatibility-corpus.md"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "supported"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
@@ -352,6 +542,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -372,6 +569,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -392,6 +596,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -413,6 +624,13 @@
         "docs/protection-maturity.md",
         "tests/integration",
         "tests/integration/test_code_virtualization_generic_isa_real.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -433,6 +651,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -453,6 +678,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -473,16 +705,28 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
       "name": "constant-unfolding",
       "stability": "experimental",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
       ],
       "evidence_cells": [
         {
@@ -533,6 +777,38 @@
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_nop_insertion_pe_real.py",
         "tests/integration/test_mutation_nop_insertion_arm64.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "ARM",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
@@ -553,6 +829,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -573,6 +856,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -593,6 +883,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -613,6 +910,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -633,6 +937,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -653,16 +964,26 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
       "name": "string-obfuscation",
       "stability": "experimental",
       "formats": [
-        "ELF"
+        "ELF",
+        "PE",
+        "Mach-O"
       ],
       "architectures": [
-        "x86-64"
+        "x86-64",
+        "x86"
       ],
       "evidence_cells": [
         {
@@ -696,6 +1017,28 @@
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_mutations_x86_compiled_binary.py",
         "tests/integration/test_nop_insertion_pe_real.py"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "ELF",
+          "architecture": "x86",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86-64",
+          "support_status": "preview"
+        }
       ]
     },
     {
@@ -716,6 +1059,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     },
     {
@@ -736,6 +1086,13 @@
       "evidence": [
         "README.md",
         "tests/integration"
+      ],
+      "target_cells": [
+        {
+          "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        }
       ]
     }
   ],
@@ -1195,6 +1552,13 @@
     },
     "cell_count": 264,
     "summary": {
+      "declared_support_cells": 57,
+      "unclaimed_cells": 207,
+      "target_support_status_counts": {
+        "experimental": 45,
+        "preview": 7,
+        "supported": 5
+      },
       "evidenced_cells": 57,
       "not_supported_cells": 207,
       "official_evidenced_cells": 22,
@@ -1940,6 +2304,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "supported",
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke",
@@ -1957,7 +2322,8 @@
         "pass": "nop",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_nop_insertion_preserves_native_exit_code"
@@ -1967,7 +2333,8 @@
         "pass": "nop",
         "format": "ELF",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm64_native.py::test_elf_arm64_nop_insertion_preserves_native_exit_code"
@@ -1977,7 +2344,8 @@
         "pass": "nop",
         "format": "ELF",
         "architecture": "ARM",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm32_native.py::test_elf_arm32_nop_insertion_preserves_emulated_exit_code"
@@ -1988,6 +2356,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity"
@@ -1998,6 +2367,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2006,6 +2376,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2014,6 +2385,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2021,7 +2393,8 @@
         "pass": "nop",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
@@ -2032,6 +2405,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2039,7 +2413,8 @@
         "pass": "nop",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutation_nop_insertion_arm64.py::test_nop_insertion_arm64_preserves_native_output"
@@ -2050,6 +2425,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2058,6 +2434,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "supported",
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke",
@@ -2073,7 +2450,8 @@
         "pass": "substitute",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_substitution_preserves_native_exit_code"
@@ -2083,7 +2461,8 @@
         "pass": "substitute",
         "format": "ELF",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_substitution_preserves_native_exit_code"
@@ -2093,7 +2472,8 @@
         "pass": "substitute",
         "format": "ELF",
         "architecture": "ARM",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_substitution_preserves_emulated_exit_code"
@@ -2103,7 +2483,8 @@
         "pass": "substitute",
         "format": "PE",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_x86_64_preserves_native_execution"
@@ -2114,6 +2495,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2122,6 +2504,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2130,6 +2513,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2137,7 +2521,8 @@
         "pass": "substitute",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
@@ -2148,6 +2533,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2155,7 +2541,8 @@
         "pass": "substitute",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_substitution_arm64_preserves_native_output"
@@ -2166,6 +2553,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2174,6 +2562,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "supported",
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke",
@@ -2189,7 +2578,8 @@
         "pass": "register",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_register_substitution_preserves_native_exit_code"
@@ -2199,7 +2589,8 @@
         "pass": "register",
         "format": "ELF",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm64_native.py::test_elf_arm64_register_substitution_preserves_native_exit_code"
@@ -2209,7 +2600,8 @@
         "pass": "register",
         "format": "ELF",
         "architecture": "ARM",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm32_native.py::test_elf_arm32_register_substitution_preserves_emulated_exit_code"
@@ -2219,7 +2611,8 @@
         "pass": "register",
         "format": "PE",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution"
@@ -2230,6 +2623,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2238,6 +2632,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2246,6 +2641,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2253,7 +2649,8 @@
         "pass": "register",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
@@ -2264,6 +2661,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2271,7 +2669,8 @@
         "pass": "register",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutation_register_substitution_arm64.py::test_register_substitution_arm64_preserves_generated_native_execution"
@@ -2282,6 +2681,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2290,6 +2690,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "supported",
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke/test_stable_mutations.py",
@@ -2302,7 +2703,8 @@
         "pass": "instruction-expansion",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_expansion_preserves_native_exit_code"
@@ -2312,7 +2714,8 @@
         "pass": "instruction-expansion",
         "format": "ELF",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_expansion_preserves_native_exit_code"
@@ -2322,7 +2725,8 @@
         "pass": "instruction-expansion",
         "format": "ELF",
         "architecture": "ARM",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_expansion_preserves_emulated_exit_code"
@@ -2332,7 +2736,8 @@
         "pass": "instruction-expansion",
         "format": "PE",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_instruction_expansion_pe_x86_64_preserves_native_execution"
@@ -2343,6 +2748,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2351,6 +2757,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2359,6 +2766,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2366,7 +2774,8 @@
         "pass": "instruction-expansion",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
@@ -2377,6 +2786,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2384,7 +2794,8 @@
         "pass": "instruction-expansion",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_expansion_arm64_preserves_native_output"
@@ -2395,6 +2806,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2403,6 +2815,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "supported",
         "status": "evidenced",
         "evidence": [
           "tests/product_smoke/test_stable_mutations.py",
@@ -2417,7 +2830,8 @@
         "pass": "block-reordering",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_block_reordering_preserves_emulated_exit_code"
@@ -2428,6 +2842,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2436,6 +2851,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2444,6 +2860,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_block_reordering_pe_real.py::test_pe_x86_64_block_reordering_preserves_native_observables"
@@ -2454,6 +2871,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2462,6 +2880,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2470,6 +2889,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2478,6 +2898,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_block_reordering_preserves_native_exit_code"
@@ -2488,6 +2909,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2496,6 +2918,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2504,6 +2927,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2512,6 +2936,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -2523,6 +2948,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2531,6 +2957,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2539,6 +2966,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2547,6 +2975,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2555,6 +2984,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2563,6 +2993,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2571,6 +3002,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2579,6 +3011,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2587,6 +3020,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2595,6 +3029,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2603,6 +3038,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2611,6 +3047,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -2622,6 +3059,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2630,6 +3068,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2638,6 +3077,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2646,6 +3086,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2654,6 +3095,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2662,6 +3104,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2670,6 +3113,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2678,6 +3122,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2686,6 +3131,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2694,6 +3140,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2702,6 +3149,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2710,6 +3158,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -2721,6 +3170,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2729,6 +3179,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2737,6 +3188,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2745,6 +3197,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2753,6 +3206,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2761,6 +3215,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2769,6 +3224,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2777,6 +3233,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2785,6 +3242,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2793,6 +3251,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2801,6 +3260,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2809,6 +3269,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "docs/protection-maturity.md",
@@ -2821,6 +3282,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2829,6 +3291,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2837,6 +3300,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2845,6 +3309,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2853,6 +3318,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2861,6 +3327,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2869,6 +3336,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2877,6 +3345,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2885,6 +3354,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2893,6 +3363,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2901,6 +3372,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2909,6 +3381,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -2920,6 +3393,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2928,6 +3402,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2936,6 +3411,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2944,6 +3420,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2952,6 +3429,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2960,6 +3438,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2968,6 +3447,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2976,6 +3456,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2984,6 +3465,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -2992,6 +3474,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3000,6 +3483,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3008,6 +3492,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3019,6 +3504,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3027,6 +3513,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3035,6 +3522,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3043,6 +3531,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3051,6 +3540,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3059,6 +3549,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3067,6 +3558,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3075,6 +3567,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3083,6 +3576,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3091,6 +3585,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3099,6 +3594,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3107,6 +3603,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3118,6 +3615,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3126,6 +3624,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3134,6 +3633,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3142,6 +3642,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3150,6 +3651,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3158,6 +3660,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3166,6 +3669,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3174,6 +3678,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3182,6 +3687,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3190,6 +3696,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3198,6 +3705,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3206,6 +3714,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3221,7 +3730,8 @@
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code"
@@ -3231,7 +3741,8 @@
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm64_native.py::test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code"
@@ -3241,7 +3752,8 @@
         "pass": "constant-unfolding",
         "format": "ELF",
         "architecture": "ARM",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_arm32_native.py::test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code"
@@ -3251,7 +3763,8 @@
         "pass": "constant-unfolding",
         "format": "PE",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution"
@@ -3262,6 +3775,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3270,6 +3784,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3278,6 +3793,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3286,6 +3802,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3294,6 +3811,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3301,7 +3819,8 @@
         "pass": "constant-unfolding",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutation_nop_insertion_arm64.py::test_constant_unfolding_arm64_preserves_native_output"
@@ -3312,6 +3831,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3320,6 +3840,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3331,6 +3852,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3339,6 +3861,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3347,6 +3870,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3355,6 +3879,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3363,6 +3888,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3371,6 +3897,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3379,6 +3906,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3387,6 +3915,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3395,6 +3924,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3403,6 +3933,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3411,6 +3942,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3419,6 +3951,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3430,6 +3963,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3438,6 +3972,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3446,6 +3981,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3454,6 +3990,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3462,6 +3999,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3470,6 +4008,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3478,6 +4017,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3486,6 +4026,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3494,6 +4035,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3502,6 +4044,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3510,6 +4053,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3518,6 +4062,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3529,6 +4074,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3537,6 +4083,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3545,6 +4092,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3553,6 +4101,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3561,6 +4110,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3569,6 +4119,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3577,6 +4128,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3585,6 +4137,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3593,6 +4146,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3601,6 +4155,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3609,6 +4164,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3617,6 +4173,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3628,6 +4185,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3636,6 +4194,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3644,6 +4203,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3652,6 +4212,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3660,6 +4221,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3668,6 +4230,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3676,6 +4239,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3684,6 +4248,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3692,6 +4257,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3700,6 +4266,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3708,6 +4275,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3716,6 +4284,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3727,6 +4296,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3735,6 +4305,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3743,6 +4314,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3751,6 +4323,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3759,6 +4332,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3767,6 +4341,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3775,6 +4350,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3783,6 +4359,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3791,6 +4368,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3799,6 +4377,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3807,6 +4386,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3815,6 +4395,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3826,6 +4407,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3834,6 +4416,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3842,6 +4425,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3850,6 +4434,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3858,6 +4443,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3866,6 +4452,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3874,6 +4461,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3882,6 +4470,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3890,6 +4479,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3898,6 +4488,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3906,6 +4497,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3914,6 +4506,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -3926,7 +4519,8 @@
         "pass": "string-obfuscation",
         "format": "ELF",
         "architecture": "x86",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_string_obfuscation_preserves_native_exit_code"
@@ -3937,6 +4531,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3945,6 +4540,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3952,7 +4548,8 @@
         "pass": "string-obfuscation",
         "format": "PE",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "preview",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution"
@@ -3963,6 +4560,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3971,6 +4569,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3979,6 +4578,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -3986,7 +4586,8 @@
         "pass": "string-obfuscation",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
+        "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_string_obfuscation_preserves_native_exit_code"
@@ -3997,6 +4598,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4005,6 +4607,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4013,6 +4616,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4021,6 +4625,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -4032,6 +4637,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4040,6 +4646,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4048,6 +4655,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4056,6 +4664,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4064,6 +4673,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4072,6 +4682,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4080,6 +4691,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4088,6 +4700,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4096,6 +4709,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4104,6 +4718,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4112,6 +4727,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4120,6 +4736,7 @@
         "format": "ELF",
         "architecture": "x86-64",
         "declared_support": true,
+        "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
           "README.md",
@@ -4131,6 +4748,7 @@
         "format": "ELF",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4139,6 +4757,7 @@
         "format": "ELF",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4147,6 +4766,7 @@
         "format": "ELF",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4155,6 +4775,7 @@
         "format": "PE",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4163,6 +4784,7 @@
         "format": "PE",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4171,6 +4793,7 @@
         "format": "PE",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4179,6 +4802,7 @@
         "format": "PE",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4187,6 +4811,7 @@
         "format": "Mach-O",
         "architecture": "x86-64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4195,6 +4820,7 @@
         "format": "Mach-O",
         "architecture": "x86",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4203,6 +4829,7 @@
         "format": "Mach-O",
         "architecture": "AArch64",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       },
@@ -4211,6 +4838,7 @@
         "format": "Mach-O",
         "architecture": "ARM",
         "declared_support": false,
+        "support_status": null,
         "status": "not-supported",
         "evidence": []
       }

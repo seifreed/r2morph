@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Expand the declared pass support into an exhaustive matrix."""
+"""Expand explicit pass target cells into an exhaustive compatibility matrix."""
 
 from __future__ import annotations
 
@@ -205,6 +205,7 @@ _NATIVE_EVIDENCE_PROFILES = {
     "string-obfuscation-instruction-catalogued",
 }
 FULL_EVIDENCE_PERCENT = 100.0
+_TARGET_SUPPORT_STATUSES = {"supported", "preview", "experimental"}
 
 
 def _add_count(counts: dict[str, int], value: str) -> None:
@@ -690,6 +691,72 @@ def _cell_evidence(mutation_pass: dict[str, Any]) -> dict[tuple[str, str], list[
     return evidence_by_target
 
 
+def _validated_target_support_cell(
+    cell: object,
+    mutation_pass: dict[str, Any],
+    formats: tuple[str, ...],
+    architectures: tuple[str, ...],
+    official_target: tuple[object, object],
+) -> tuple[tuple[str, str], str]:
+    """Validate one exact support cell and return its normalized key and status."""
+    if not isinstance(cell, dict):
+        raise ValueError(f"invalid target cell for pass {mutation_pass.get('name')}")
+    binary_format = cell.get("format")
+    architecture = cell.get("architecture")
+    support_status = cell.get("support_status")
+    if not isinstance(binary_format, str) or not binary_format or not isinstance(architecture, str) or not architecture:
+        raise ValueError(f"invalid target cell for pass {mutation_pass.get('name')}")
+    target = (binary_format, architecture)
+    if binary_format not in formats or architecture not in architectures:
+        raise ValueError(f"target cell is outside declared dimensions for pass {mutation_pass.get('name')}: {target}")
+    if support_status not in _TARGET_SUPPORT_STATUSES:
+        raise ValueError(f"invalid target support status for pass {mutation_pass.get('name')}: {target}")
+    is_official = (binary_format, architecture) == official_target
+    if support_status == "supported" and not is_official:
+        raise ValueError(f"only the official target may be marked supported: {mutation_pass.get('name')}: {target}")
+    if is_official:
+        expected_status = "supported" if mutation_pass.get("stability") == "tier-1" else "experimental"
+        if support_status != expected_status:
+            raise ValueError(f"official target status must match pass stability: {mutation_pass.get('name')}")
+    return target, support_status
+
+
+def _target_support_statuses(
+    mutation_pass: dict[str, Any],
+    formats: tuple[str, ...],
+    architectures: tuple[str, ...],
+    official_format: object,
+    official_architecture: object,
+) -> dict[tuple[str, str], str]:
+    """Load explicit format-architecture support without forming a product."""
+    statuses: dict[tuple[str, str], str] = {}
+    target_cells = mutation_pass.get("target_cells")
+    if not isinstance(target_cells, list) or not target_cells:
+        raise ValueError(f"pass needs explicit target_cells: {mutation_pass.get('name')}")
+    for cell in target_cells:
+        target, support_status = _validated_target_support_cell(
+            cell,
+            mutation_pass,
+            formats,
+            architectures,
+            (official_format, official_architecture),
+        )
+        if target in statuses:
+            raise ValueError(f"duplicate target cell for pass {mutation_pass.get('name')}: {target}")
+        statuses[target] = support_status
+
+    expected_formats = {binary_format for binary_format, _architecture in statuses}
+    expected_architectures = {architecture for _format, architecture in statuses}
+    if expected_formats != set(mutation_pass.get("formats", [])):
+        raise ValueError(f"pass formats must project explicit target cells: {mutation_pass.get('name')}")
+    if expected_architectures != set(mutation_pass.get("architectures", [])):
+        raise ValueError(f"pass architectures must project explicit target cells: {mutation_pass.get('name')}")
+    evidence_targets = set(_cell_evidence(mutation_pass))
+    if not evidence_targets.issubset(statuses):
+        raise ValueError(f"evidence cell is not a declared target for pass {mutation_pass.get('name')}")
+    return statuses
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -704,13 +771,19 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         stability = mutation_pass.get("stability")
         if isinstance(stability, str):
             stability_counts[stability] = stability_counts.get(stability, 0) + 1
-        supported_formats = set(mutation_pass.get("formats", []))
-        supported_architectures = set(mutation_pass.get("architectures", []))
+        target_statuses = _target_support_statuses(
+            mutation_pass,
+            formats,
+            architectures,
+            official_format,
+            official_architecture,
+        )
         evidence_cells = _cell_evidence(mutation_pass)
         for binary_format in formats:
             for architecture in architectures:
                 target = (binary_format, architecture)
-                declared_support = binary_format in supported_formats and architecture in supported_architectures
+                support_status = target_statuses.get(target)
+                declared_support = support_status is not None
                 cell_is_evidenced = target in evidence_cells
                 references = evidence_cells.get(target, [])
                 if cell_is_evidenced and not references:
@@ -724,6 +797,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
                         "format": binary_format,
                         "architecture": architecture,
                         "declared_support": declared_support,
+                        "support_status": support_status,
                         "status": "evidenced" if cell_is_evidenced else "not-supported",
                         "evidence": references if cell_is_evidenced else [],
                     }
@@ -761,6 +835,12 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     maturity_gap_passes = _maturity_gap_passes(document.get("maturity"))
     maturity_gaps_by_pass = _maturity_gaps_by_pass(document.get("maturity"))
     native_evidence_gap_passes = _native_evidence_gap_passes(document.get("maturity"))
+    target_support_status_counts: dict[str, int] = {}
+    for cell in cells:
+        support_status = cell["support_status"]
+        if isinstance(support_status, str):
+            target_support_status_counts[support_status] = target_support_status_counts.get(support_status, 0) + 1
+    declared_support_cells = sum(1 for cell in cells if cell["declared_support"])
     non_official_gap_targets = _non_official_gap_targets(cells, official_format, official_architecture)
     parity_gap_scope = _parity_gap_scope(formats, architectures, official_format, official_architecture)
     vm_semantic_gap_scope = _vm_semantic_gap_scope(document)
@@ -775,6 +855,9 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
         },
         "cell_count": len(cells),
         "summary": {
+            "declared_support_cells": declared_support_cells,
+            "unclaimed_cells": len(cells) - declared_support_cells,
+            "target_support_status_counts": dict(sorted(target_support_status_counts.items())),
             "evidenced_cells": evidenced,
             "not_supported_cells": len(cells) - evidenced,
             "official_evidenced_cells": official_evidenced,

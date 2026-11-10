@@ -12,6 +12,9 @@ _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.m
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
 _EXPECTED_EVIDENCED_CELLS = 57
 _EXPECTED_NOT_SUPPORTED_CELLS = 207
+_EXPECTED_DECLARED_SUPPORT_CELLS = 57
+_EXPECTED_UNCLAIMED_CELLS = 207
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 7, "supported": 5}
 _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 35
 _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 207
 _EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 207
@@ -69,6 +72,9 @@ def test_support_matrix_summarizes_parity_gaps() -> None:
     expect(
         summary["evidenced_cells"] == _EXPECTED_EVIDENCED_CELLS
         and summary["not_supported_cells"] == _EXPECTED_NOT_SUPPORTED_CELLS
+        and summary["declared_support_cells"] == _EXPECTED_DECLARED_SUPPORT_CELLS
+        and summary["unclaimed_cells"] == _EXPECTED_UNCLAIMED_CELLS
+        and summary["target_support_status_counts"] == _EXPECTED_TARGET_SUPPORT_STATUS_COUNTS
         and summary["non_official_evidenced_cells"] == _EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS
         and summary["non_official_not_supported_cells"] == _EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS
         and parity_totals["non_official_missing_evidence_cells"] == _EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS
@@ -123,6 +129,8 @@ def test_pass_maturity_keeps_preview_targets_out_of_parity_claims() -> None:
 
     expect(
         "Preview PE, Mach-O, ARM, and AArch64 evidence does not imply parity" in contract
+        and "`target_cells` is the canonical support contract" in contract
+        and "must not be cross-multiplied" in contract
         and "preview coverage cannot look equivalent to the supported baseline" in contract
         and str(summary["non_official_evidenced_cells"]) in contract
         and str(summary["non_official_not_supported_cells"]) in contract
@@ -187,8 +195,9 @@ def test_support_matrix_honors_explicit_evidence_cells() -> None:
         "passes": [
             {
                 "name": "nop",
-                "formats": [],
-                "architectures": [],
+                "formats": ["PE"],
+                "architectures": ["AArch64"],
+                "target_cells": [{"format": "PE", "architecture": "AArch64", "support_status": "experimental"}],
                 "evidence_cells": [
                     {
                         "format": "PE",
@@ -204,15 +213,69 @@ def test_support_matrix_honors_explicit_evidence_cells() -> None:
     expect(build_matrix(document)["cells"][0]["status"] == "evidenced")
 
 
+def test_support_matrix_does_not_expand_target_cells_cartesianly() -> None:
+    document = {
+        "formats": {"ELF": "official", "PE": "preview"},
+        "architectures": {"x86-64": "official", "AArch64": "experimental"},
+        "official_target": {"format": "ELF", "architecture": "x86-64"},
+        "passes": [
+            {
+                "name": "nop",
+                "stability": "tier-1",
+                "formats": ["ELF", "PE"],
+                "architectures": ["x86-64", "AArch64"],
+                "target_cells": [
+                    {"format": "ELF", "architecture": "x86-64", "support_status": "supported"},
+                    {"format": "PE", "architecture": "x86-64", "support_status": "preview"},
+                    {"format": "ELF", "architecture": "AArch64", "support_status": "experimental"},
+                ],
+                "evidence_cells": [
+                    {
+                        "format": "ELF",
+                        "architecture": "x86-64",
+                        "evidence": ["tests/integration/test_elf_nop.py::test_nop"],
+                    },
+                    {
+                        "format": "PE",
+                        "architecture": "x86-64",
+                        "evidence": ["tests/integration/test_pe_nop.py::test_nop"],
+                    },
+                    {
+                        "format": "ELF",
+                        "architecture": "AArch64",
+                        "evidence": ["tests/integration/test_arm64_nop.py::test_nop"],
+                    },
+                ],
+                "evidence": ["tests/integration"],
+            }
+        ],
+    }
+
+    cells = build_matrix(document)["cells"]
+    pe_aarch64 = next(cell for cell in cells if cell["format"] == "PE" and cell["architecture"] == "AArch64")
+
+    expect(
+        not pe_aarch64["declared_support"]
+        and pe_aarch64["support_status"] is None
+        and pe_aarch64["status"] == "not-supported"
+    )
+
+
 def test_support_matrix_uses_target_specific_evidence_without_inheriting_other_targets() -> None:
     document = {
         "formats": {"ELF": "official", "PE": "preview"},
         "architectures": {"x86-64": "official"},
+        "official_target": {"format": "ELF", "architecture": "x86-64"},
         "passes": [
             {
                 "name": "nop",
-                "formats": ["ELF"],
+                "stability": "tier-1",
+                "formats": ["ELF", "PE"],
                 "architectures": ["x86-64"],
+                "target_cells": [
+                    {"format": "ELF", "architecture": "x86-64", "support_status": "supported"},
+                    {"format": "PE", "architecture": "x86-64", "support_status": "preview"},
+                ],
                 "evidence": ["tests/integration/test_linux_nop.py::test_linux_execution"],
                 "evidence_cells": [
                     {
@@ -257,11 +320,14 @@ def test_support_matrix_does_not_turn_declared_support_into_evidence() -> None:
     document = {
         "formats": {"ELF": "official"},
         "architectures": {"x86-64": "official"},
+        "official_target": {"format": "ELF", "architecture": "x86-64"},
         "passes": [
             {
                 "name": "nop",
+                "stability": "tier-1",
                 "formats": ["ELF"],
                 "architectures": ["x86-64"],
+                "target_cells": [{"format": "ELF", "architecture": "x86-64", "support_status": "supported"}],
                 "evidence_cells": [],
                 "evidence": ["tests/integration"],
             }
@@ -278,7 +344,7 @@ def test_support_matrix_keeps_non_official_targets_out_of_supported_status() -> 
     cells = build_matrix(document)["cells"]
     non_official_cells = [cell for cell in cells if cell["format"] != "ELF" or cell["architecture"] != "x86-64"]
 
-    expect(non_official_cells and all(cell["status"] != "supported" for cell in non_official_cells))
+    expect(non_official_cells and all(cell["support_status"] != "supported" for cell in non_official_cells))
 
 
 def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
@@ -314,6 +380,7 @@ def test_support_matrix_records_macho_block_reordering_as_one_preview_case() -> 
     expect(
         entry["stability"] == "tier-1"
         and "Mach-O" in entry["formats"]
+        and cell["support_status"] == "experimental"
         and cell["status"] == "evidenced"
         and cell["evidence"]
         == [
@@ -334,6 +401,7 @@ def test_support_matrix_records_pe_block_reordering_as_preview_evidence() -> Non
 
     expect(
         entry["stability"] == "tier-1"
+        and cell["support_status"] == "preview"
         and cell["status"] == "evidenced"
         and cell["evidence"]
         == [

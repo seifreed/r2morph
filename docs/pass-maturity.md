@@ -7,6 +7,14 @@ promoted.
 Preview PE, Mach-O, ARM, and AArch64 evidence does not imply parity with the
 official Linux ELF x86-64 target.
 
+`target_cells` is the canonical support contract for each pass. Each entry
+names one exact format and architecture pair and its `support_status`
+(`supported`, `preview`, or `experimental`). The legacy `formats` and
+`architectures` lists are projections of those cells; they must not be
+cross-multiplied to infer additional combinations. Evidence is tracked
+separately: a declared target without evidence remains unevidenced, and a pair
+without a `target_cells` entry makes no support claim.
+
 The compatibility corpus selection currently covers `BlockReordering`,
 `CodeVirtualization`, `ConstantUnfolding`, `ControlFlowFlattening`,
 `DeadCodeInjection`, `InstructionExpansion`, `InstructionSubstitution`,
