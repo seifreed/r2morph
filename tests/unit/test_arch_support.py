@@ -52,12 +52,17 @@ class TestArchitectureSupport:
         expect(result["tier"] == "prolonged-experimental")
         expect(result["architecture"] == "x86")
 
-    def test_classify_arm32_target(self):
-        """Test ARM32 target classification."""
+    def test_classify_arm32_target_marks_it_experimental(self):
+        """ARM32 remains experimental instead of appearing unsupported."""
         result = classify_target_support("ELF", "arm", 32)
 
-        expect(result["tier"] == "unsupported")
-        expect(not ("architecture" not in result))
+        expect(result["tier"] == "prolonged-experimental")
+
+    def test_classify_arm32_target_uses_canonical_architecture(self):
+        """ARM32 reports the canonical identifier used by the support matrix."""
+        result = classify_target_support("ELF", "arm", 32)
+
+        expect(result["architecture"] == "arm32")
 
     def test_classify_arm64_target(self):
         """Test ARM64 target classification."""
