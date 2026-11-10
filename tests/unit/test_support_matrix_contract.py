@@ -1,5 +1,6 @@
 """Regression contract for exhaustive pass support cells."""
 
+import ast
 import json
 from pathlib import Path
 
@@ -188,13 +189,68 @@ def test_support_matrix_honors_explicit_evidence_cells() -> None:
                 "name": "nop",
                 "formats": [],
                 "architectures": [],
-                "evidence_cells": [{"format": "PE", "architecture": "AArch64"}],
+                "evidence_cells": [
+                    {
+                        "format": "PE",
+                        "architecture": "AArch64",
+                        "evidence": ["tests/integration/test_pe_aarch64.py::test_real_execution"],
+                    }
+                ],
                 "evidence": ["tests/integration"],
             }
         ],
     }
 
     expect(build_matrix(document)["cells"][0]["status"] == "evidenced")
+
+
+def test_support_matrix_uses_target_specific_evidence_without_inheriting_other_targets() -> None:
+    document = {
+        "formats": {"ELF": "official", "PE": "preview"},
+        "architectures": {"x86-64": "official"},
+        "passes": [
+            {
+                "name": "nop",
+                "formats": ["ELF"],
+                "architectures": ["x86-64"],
+                "evidence": ["tests/integration/test_linux_nop.py::test_linux_execution"],
+                "evidence_cells": [
+                    {
+                        "format": "PE",
+                        "architecture": "x86-64",
+                        "evidence": ["tests/integration/test_pe_nop.py::test_pe_execution"],
+                    }
+                ],
+            }
+        ],
+    }
+
+    pe_cell = next(cell for cell in build_matrix(document)["cells"] if cell["format"] == "PE")
+
+    expect(pe_cell["evidence"] == ["tests/integration/test_pe_nop.py::test_pe_execution"])
+
+
+def test_support_matrix_preview_evidence_references_real_test_cases() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    preview_cells = [
+        cell
+        for cell in document["matrix"]["cells"]
+        if cell["status"] == "evidenced" and (cell["format"] != "ELF" or cell["architecture"] != "x86-64")
+    ]
+    missing_cases = []
+    for cell in preview_cells:
+        for reference in cell["evidence"]:
+            path_text, case_name = reference.split("::", maxsplit=1)
+            source = (_MATRIX.parents[1] / path_text).read_text(encoding="utf-8")
+            definitions = {
+                node.name
+                for node in ast.walk(ast.parse(source))
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            }
+            if case_name not in definitions:
+                missing_cases.append(reference)
+
+    expect(not missing_cases)
 
 
 def test_support_matrix_does_not_turn_declared_support_into_evidence() -> None:
@@ -231,7 +287,10 @@ def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
 
     expect(
         all(
-            cell in cells_by_pass[pass_name]
+            any(
+                evidence_cell["format"] == cell["format"] and evidence_cell["architecture"] == cell["architecture"]
+                for evidence_cell in cells_by_pass[pass_name]
+            )
             for pass_name, cell in (
                 ("nop", {"format": "PE", "architecture": "x86-64"}),
                 ("substitute", {"format": "Mach-O", "architecture": "x86-64"}),

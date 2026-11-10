@@ -36,27 +36,45 @@
         },
         {
           "format": "ELF",
-          "architecture": "ARM"
+          "architecture": "ARM",
+          "evidence": [
+            "tests/integration/test_elf_arm32_native.py::test_elf_arm32_nop_insertion_preserves_emulated_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_nop_insertion_preserves_native_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_elf_arm64_native.py::test_elf_arm64_nop_insertion_preserves_native_exit_code"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_mutation_nop_insertion_arm64.py::test_nop_insertion_arm64_preserves_native_output"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity"
+          ]
         }
       ],
       "evidence": [
@@ -87,27 +105,45 @@
         },
         {
           "format": "ELF",
-          "architecture": "ARM"
+          "architecture": "ARM",
+          "evidence": [
+            "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_substitution_preserves_emulated_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_substitution_preserves_native_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_substitution_preserves_native_exit_code"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_substitution_arm64_preserves_native_output"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_x86_64_preserves_native_execution"
+          ]
         }
       ],
       "evidence": [
@@ -136,27 +172,45 @@
         },
         {
           "format": "ELF",
-          "architecture": "ARM"
+          "architecture": "ARM",
+          "evidence": [
+            "tests/integration/test_elf_arm32_native.py::test_elf_arm32_register_substitution_preserves_emulated_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_register_substitution_preserves_native_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_elf_arm64_native.py::test_elf_arm64_register_substitution_preserves_native_exit_code"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_mutation_register_substitution_arm64.py::test_register_substitution_arm64_preserves_generated_native_execution"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution"
+          ]
         }
       ],
       "evidence": [
@@ -185,27 +239,45 @@
         },
         {
           "format": "ELF",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_expansion_preserves_native_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "ARM"
+          "architecture": "ARM",
+          "evidence": [
+            "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_expansion_preserves_emulated_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_expansion_preserves_native_exit_code"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_instruction_expansion_pe_x86_64_preserves_native_execution"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_expansion_arm64_preserves_native_output"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
+          ]
         }
       ],
       "evidence": [
@@ -395,23 +467,38 @@
         },
         {
           "format": "ELF",
-          "architecture": "ARM"
+          "architecture": "ARM",
+          "evidence": [
+            "tests/integration/test_elf_arm32_native.py::test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_elf_arm64_native.py::test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code"
+          ]
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "AArch64"
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_mutation_nop_insertion_arm64.py::test_constant_unfolding_arm64_preserves_native_output"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution"
+          ]
         }
       ],
       "evidence": [
@@ -560,15 +647,24 @@
         },
         {
           "format": "ELF",
-          "architecture": "x86"
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_string_obfuscation_preserves_native_exit_code"
+          ]
         },
         {
           "format": "Mach-O",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_string_obfuscation_preserves_native_exit_code"
+          ]
         },
         {
           "format": "PE",
-          "architecture": "x86-64"
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution"
+          ]
         }
       ],
       "evidence": [
@@ -1840,15 +1936,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_nop_insertion_preserves_native_exit_code"
         ]
       },
       {
@@ -1858,15 +1946,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_elf_arm64_native.py::test_elf_arm64_nop_insertion_preserves_native_exit_code"
         ]
       },
       {
@@ -1876,15 +1956,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_elf_arm32_native.py::test_elf_arm32_nop_insertion_preserves_emulated_exit_code"
         ]
       },
       {
@@ -1894,15 +1966,7 @@
         "declared_support": true,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity"
         ]
       },
       {
@@ -1936,15 +2000,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
         ]
       },
       {
@@ -1962,15 +2018,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_protection_maturity_baseline.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py::test_nop_insertion_arm64_preserves_native_output"
         ]
       },
       {
@@ -2004,13 +2052,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_substitution_preserves_native_exit_code"
         ]
       },
       {
@@ -2020,13 +2062,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_substitution_preserves_native_exit_code"
         ]
       },
       {
@@ -2036,13 +2072,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_substitution_preserves_emulated_exit_code"
         ]
       },
       {
@@ -2052,13 +2082,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_x86_64_preserves_native_execution"
         ]
       },
       {
@@ -2092,13 +2116,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
         ]
       },
       {
@@ -2116,13 +2134,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_nop_insertion_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_substitution_arm64_preserves_native_output"
         ]
       },
       {
@@ -2156,13 +2168,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_register_substitution_preserves_native_exit_code"
         ]
       },
       {
@@ -2172,13 +2178,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_elf_arm64_native.py::test_elf_arm64_register_substitution_preserves_native_exit_code"
         ]
       },
       {
@@ -2188,13 +2188,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_elf_arm32_native.py::test_elf_arm32_register_substitution_preserves_emulated_exit_code"
         ]
       },
       {
@@ -2204,13 +2198,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution"
         ]
       },
       {
@@ -2244,13 +2232,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
         ]
       },
       {
@@ -2268,13 +2250,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke",
-          "tests/integration",
-          "tests/integration/test_mutation_register_substitution_arm64.py",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_mutation_register_substitution_arm64.py::test_register_substitution_arm64_preserves_generated_native_execution"
         ]
       },
       {
@@ -2305,10 +2281,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_instruction_expansion_preserves_native_exit_code"
         ]
       },
       {
@@ -2318,10 +2291,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_elf_arm64_native.py::test_elf_arm64_instruction_expansion_preserves_native_exit_code"
         ]
       },
       {
@@ -2331,10 +2301,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_elf_arm32_native.py::test_elf_arm32_instruction_expansion_preserves_emulated_exit_code"
         ]
       },
       {
@@ -2344,10 +2311,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_nop_insertion_pe_real.py::test_instruction_expansion_pe_x86_64_preserves_native_execution"
         ]
       },
       {
@@ -2381,10 +2345,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
         ]
       },
       {
@@ -2402,10 +2363,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "tests/product_smoke/test_stable_mutations.py",
-          "tests/unit/test_instruction_expansion_helpers_contract.py",
-          "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "tests/integration/test_mutation_nop_insertion_arm64.py::test_instruction_expansion_arm64_preserves_native_output"
         ]
       },
       {
@@ -3235,13 +3193,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code"
         ]
       },
       {
@@ -3251,13 +3203,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_elf_arm64_native.py::test_elf_arm64_constant_unfolding_zero_preserves_native_exit_code"
         ]
       },
       {
@@ -3267,13 +3213,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_elf_arm32_native.py::test_elf_arm32_constant_unfolding_zero_preserves_emulated_exit_code"
         ]
       },
       {
@@ -3283,13 +3223,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution"
         ]
       },
       {
@@ -3339,13 +3273,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration",
-          "tests/integration/test_elf_arm32_native.py",
-          "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_nop_insertion_pe_real.py",
-          "tests/integration/test_mutation_nop_insertion_arm64.py"
+          "tests/integration/test_mutation_nop_insertion_arm64.py::test_constant_unfolding_arm64_preserves_native_output"
         ]
       },
       {
@@ -3970,10 +3898,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_elf_x86_32_native.py::test_elf_x86_32_string_obfuscation_preserves_native_exit_code"
         ]
       },
       {
@@ -3999,10 +3924,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution"
         ]
       },
       {
@@ -4036,10 +3958,7 @@
         "declared_support": false,
         "status": "evidenced",
         "evidence": [
-          "README.md",
-          "tests/integration/test_elf_x86_32_native.py",
-          "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_string_obfuscation_preserves_native_exit_code"
         ]
       },
       {

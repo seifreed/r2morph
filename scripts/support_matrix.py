@@ -673,6 +673,23 @@ def _parity_blocker_totals(
     }
 
 
+def _cell_evidence(mutation_pass: dict[str, Any]) -> dict[tuple[str, str], list[str]]:
+    evidence_by_target: dict[tuple[str, str], list[str]] = {}
+    for cell in mutation_pass.get("evidence_cells", []):
+        target = (cell.get("format"), cell.get("architecture"))
+        references = cell.get("evidence", [])
+        if not all(isinstance(part, str) and part for part in target):
+            raise ValueError(f"invalid evidence target for pass {mutation_pass.get('name')}")
+        if not isinstance(references, list) or not all(
+            isinstance(reference, str) and reference for reference in references
+        ):
+            raise ValueError(f"invalid cell evidence references for pass {mutation_pass.get('name')}")
+        if target in evidence_by_target:
+            raise ValueError(f"duplicate evidence target for pass {mutation_pass.get('name')}: {target}")
+        evidence_by_target[target] = references
+    return evidence_by_target
+
+
 def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
     """Build one explicit cell for every pass, format, and architecture."""
     formats = tuple(document.get("formats", {}))
@@ -689,20 +706,26 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             stability_counts[stability] = stability_counts.get(stability, 0) + 1
         supported_formats = set(mutation_pass.get("formats", []))
         supported_architectures = set(mutation_pass.get("architectures", []))
-        evidence_cells = {(cell["format"], cell["architecture"]) for cell in mutation_pass.get("evidence_cells", [])}
+        evidence_cells = _cell_evidence(mutation_pass)
         for binary_format in formats:
             for architecture in architectures:
                 target = (binary_format, architecture)
                 declared_support = binary_format in supported_formats and architecture in supported_architectures
-                evidenced = target in evidence_cells
+                cell_is_evidenced = target in evidence_cells
+                references = evidence_cells.get(target, [])
+                if cell_is_evidenced and not references:
+                    is_official_target = binary_format == official_format and architecture == official_architecture
+                    references = mutation_pass.get("evidence", []) if is_official_target else []
+                    if not references:
+                        raise ValueError(f"preview evidence cell needs target-specific references: {name}: {target}")
                 cells.append(
                     {
                         "pass": name,
                         "format": binary_format,
                         "architecture": architecture,
                         "declared_support": declared_support,
-                        "status": "evidenced" if evidenced else "not-supported",
-                        "evidence": mutation_pass.get("evidence", []) if evidenced else [],
+                        "status": "evidenced" if cell_is_evidenced else "not-supported",
+                        "evidence": references if cell_is_evidenced else [],
                     }
                 )
     evidenced = sum(1 for cell in cells if cell["status"] == "evidenced")
