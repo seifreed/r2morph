@@ -70,6 +70,7 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
 def _build_block_reordering_x86_binary(tmp_dir: Path) -> Path:
     source = tmp_dir / "x86_block_reordering.c"
     source.write_text(
+        "#include <stdlib.h>\n"
         "__attribute__((noinline)) int branchy(int value) {\n"
         "    int result;\n"
         "    if (value < 0) result = value * 3 + 7;\n"
@@ -78,7 +79,10 @@ def _build_block_reordering_x86_binary(tmp_dir: Path) -> Path:
         "    else result -= 3;\n"
         "    return result;\n"
         "}\n"
-        "int main(void) { return branchy(-2) == -2 ? 0 : 1; }\n",
+        "int main(int argc, char **argv) {\n"
+        "    if (argc != 2) return 125;\n"
+        "    return branchy((int)strtol(argv[1], 0, 10)) & 0xff;\n"
+        "}\n",
         encoding="ascii",
     )
     output = tmp_dir / "x86_block_reordering"
@@ -184,7 +188,12 @@ def test_x86_block_reordering_preserves_native_exit_code(tmp_path: Path):
     if not _clang_available():
         pytest.skip("clang not available")
     writable_path = _build_block_reordering_x86_binary(tmp_path)
-    original = run_command([writable_path], text=True, timeout=30)
+    inputs = (-9, -2, -1, 0, 2, 5, 10, 18, 21)
+    original = [run_command([writable_path, str(value)], text=True, timeout=30) for value in inputs]
+    expect(
+        len({result.returncode for result in original}) > 1,
+        "Mach-O control-flow inputs did not exercise distinct outcomes",
+    )
 
     with Binary(writable_path, writable=True) as bin_obj:
         bin_obj.analyze("aa")
@@ -192,10 +201,11 @@ def test_x86_block_reordering_preserves_native_exit_code(tmp_path: Path):
 
     expect(result["mutations_applied"] > 0, f"Mach-O x86-64 block reordering made no change: {result!r}")
     expect(CodeSigner().sign(writable_path, adhoc=True), "failed to re-sign mutated Mach-O")
-    mutated = run_command([writable_path], text=True, timeout=30)
+    mutated = [run_command([writable_path, str(value)], text=True, timeout=30) for value in inputs]
 
     expect(
-        (mutated.returncode, mutated.stdout, mutated.stderr) == (original.returncode, original.stdout, original.stderr),
+        [(result.returncode, result.stdout, result.stderr) for result in mutated]
+        == [(result.returncode, result.stdout, result.stderr) for result in original],
         f"Mach-O x86-64 block reordering changed native execution: {original!r} -> {mutated!r}",
     )
 
