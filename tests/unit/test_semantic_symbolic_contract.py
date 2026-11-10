@@ -1,7 +1,5 @@
 from types import SimpleNamespace
 
-import claripy
-
 from r2morph.validation.semantic_symbolic import (
     create_symbolic_state,
     default_observables,
@@ -28,6 +26,6 @@ def test_create_symbolic_state_builds_expected_registers() -> None:
     created = create_symbolic_state(project, 0x1000, 64, ["rax", "eflags"])
 
     expect(not (created is not state))
-    expect(claripy.is_true(state.regs.rsp == _EXPECTED_STATE_REGS_RSP_1048576))
-    expect(claripy.is_true(state.regs.rbp == _EXPECTED_STATE_REGS_RBP_1048576))
+    expect(state.regs.rsp.op == "BVV" and state.regs.rsp.args[0] == _EXPECTED_STATE_REGS_RSP_1048576)
+    expect(state.regs.rbp.op == "BVV" and state.regs.rbp.args[0] == _EXPECTED_STATE_REGS_RBP_1048576)
     expect(next(iter(state.regs.rax.variables)).startswith("rax_1000_"))

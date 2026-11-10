@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -42,7 +41,7 @@ def compare_instruction_substitution_observables(
     shellcode_arch, observables = config
     execution = _ObservableExecution(
         angr=angr_module,
-        claripy=import_module("claripy"),
+        claripy=angr_module.claripy,
         options=angr_module.options,
         shellcode_arch=shellcode_arch,
         observables=observables,

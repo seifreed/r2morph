@@ -78,7 +78,9 @@ def import_angr_modules(
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message=_PY314_CTYPES_PACK_WARNING, category=DeprecationWarning)
             angr_module = importlib.import_module("angr")
-            claripy_module = importlib.import_module("claripy") if claripy else None
+            claripy_module = getattr(angr_module, "claripy", None) if claripy else None
+            if claripy and claripy_module is None:
+                claripy_module = importlib.import_module("claripy")
             project_class = angr_module.Project if project else None
             cfg_fast_class = importlib.import_module("angr.analyses").CFGFast if cfg_fast else None
             technique_class = (

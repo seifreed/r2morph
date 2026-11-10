@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -45,7 +44,7 @@ def compare_instruction_substitution_transition(
     shellcode_arch, stack_reg, bit_width = config
 
     options = angr_module.options
-    claripy = import_module("claripy")
+    claripy = angr_module.claripy
     runtime = TransitionRuntime(angr_module, claripy, options, shellcode_arch, stack_reg, bit_width)
     compared_regions: list[dict[str, Any]] = []
     mismatches: list[dict[str, Any]] = []
