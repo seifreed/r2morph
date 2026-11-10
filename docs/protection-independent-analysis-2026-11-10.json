@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "measurement": "targeted-independent-static-analysis-pair",
+  "date_utc": "2026-11-10",
+  "source_commit": "1942151b",
+  "fixture": {
+    "path": "fixtures/dataset/elf_x86_64",
+    "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a",
+    "format": "ELF",
+    "architecture": "x86_64"
+  },
+  "transformation": {
+    "pass": "CodeVirtualization",
+    "seed": 20261110,
+    "functions_virtualized": 1,
+    "instructions_virtualized": 9,
+    "bytecode_bytes": 9624,
+    "unsupported_functions": 0
+  },
+  "analyzer": {
+    "availability": "available",
+    "service": "connected licensed static-analysis service",
+    "decompiler_ready": true,
+    "version": "not exposed by the service"
+  },
+  "original": {
+    "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a",
+    "function_count": 1,
+    "functions": [
+      {
+        "name": "_start",
+        "size_bytes": 12,
+        "basic_blocks": 1,
+        "cyclomatic_complexity": 1,
+        "decompilation_summary": "direct system exit with status 0"
+      }
+    ]
+  },
+  "protected": {
+    "sha256": "108e6f7e80e07c935eaf32392fa2e70793437354989e3a3cfcecdfd239713716",
+    "function_count": 2,
+    "functions": [
+      {
+        "name": "j__start",
+        "size_bytes": 5
+      },
+      {
+        "name": "_start",
+        "size_bytes": 294,
+        "basic_blocks": 12,
+        "cyclomatic_complexity": 7,
+        "decompilation_summary": "byte loop with nested rotate and XOR operations"
+      }
+    ]
+  },
+  "runtime_equivalence": "not measured",
+  "interpretation": "For this single ELF x86_64 fixture, the analyzed protected output differs structurally from the original decompilation. This is one bounded static-analysis observation.",
+  "limitations": [
+    "one fixture and one pass only",
+    "analyzer version was not exposed",
+    "runtime equivalence was not executed or measured",
+    "does not establish general resistance to professional reverse engineering",
+    "does not replace the required three-analyzer release campaign"
+  ]
+}

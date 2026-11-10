@@ -42,6 +42,13 @@ On 2026-11-10, the same PE test module ran locally on macOS 27.2 ARM64 with
 MinGW-w64 GCC 16.2 and Wine 11.0: seven generated-binary mutation tests passed
 and the Windows-only fixture test was skipped. This confirms an additional
 Wine execution path; it is not native Windows evidence or a PE parity claim.
+On 2026-11-10, a connected licensed static-analysis service inspected the
+original and CodeVirtualization-protected `elf_x86_64` fixture. The bounded
+function and decompilation observations are in
+[`protection-independent-analysis-2026-11-10.json`](protection-independent-analysis-2026-11-10.json).
+The service did not expose its version; runtime equivalence was not measured.
+This one-fixture result does not establish general resistance or replace the
+three-analyzer release campaign.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
 The workflow pins the collected matrix at 73 cases so loss of a preview corpus
