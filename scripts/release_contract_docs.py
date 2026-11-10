@@ -244,10 +244,12 @@ def _check_readme_adversarial_summary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     report_name = "protection-adversarial-angr-local-2026-09-18-59898697.json"
     report = json.loads((ROOT / "docs" / report_name).read_text(encoding="utf-8"))
+    independent_review = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
     tools = report["tools"]
     completed = sum(1 for tool in tools if tool["status"] == "completed")
     unavailable = sum(1 for tool in tools if tool["status"] == "unavailable")
     binary_ninja = next(tool for tool in tools if tool["tool"] == "binary-ninja")
+    evidence_details = {check["name"]: check["detail"] for check in independent_review["checks"]}
     for fragment in (
         f"{completed} completed analyzer slots",
         f"{unavailable} unavailable analyzer slots",
@@ -255,6 +257,11 @@ def _check_readme_adversarial_summary() -> None:
         "Binary Ninja is an explicit analyzer slot",
         f"`binary-ninja` as {binary_ninja['status']}",
         binary_ninja["reason"],
+        evidence_details["triton_corpus_evidence"],
+        evidence_details["ida_corpus_evidence"],
+        evidence_details["ida_current_summary_evidence"],
+        "availability in one campaign does not fill unavailable rows in another",
+        "the all-named-analyzers 1.0 criterion remains open",
     ):
         if fragment not in readme:
             raise ValueError(f"README adversarial summary is missing: {fragment}")
@@ -291,6 +298,21 @@ def _check_readme_vm_resistance_summary() -> None:
     readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
     handler = json.loads((ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    independent_analysis = json.loads(
+        (ROOT / "docs" / "protection-independent-analysis-2026-11-10.json").read_text(encoding="utf-8")
+    )
+    readiness = json.loads((ROOT / "docs" / "one-zero-readiness.json").read_text(encoding="utf-8"))
+    required_limitations = (
+        "does not establish general resistance to professional reverse engineering",
+        "does not replace the required three-analyzer release campaign",
+    )
+    if not all(limitation in independent_analysis["limitations"] for limitation in required_limitations):
+        raise ValueError("independent analysis must retain its resistance scope limitations")
+    if (
+        readiness["criteria"]["documented_resistance_scope"]["status"] != "complete"
+        or "documented_resistance_scope" in readiness["blocking_criteria"]
+    ):
+        raise ValueError("documented resistance scope must match its published limitation evidence")
     for fragment in (
         f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
         f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
@@ -298,6 +320,9 @@ def _check_readme_vm_resistance_summary() -> None:
         "target handler stride diversity",
         "protection-handler-clustering.json",
         "protection-bytecode-grammar.json",
+        "they do not measure generalized attack cost or establish resistance to professional reverse engineering",
+        "Published resistance results remain an open 1.0 criterion.",
+        *required_limitations,
     ):
         if fragment not in readme:
             raise ValueError(f"README VM resistance summary is missing: {fragment}")

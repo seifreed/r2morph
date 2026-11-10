@@ -44,6 +44,7 @@ try:
     )
 except ModuleNotFoundError:
     from release_contract_common import (
+        ROOT,
         _check_version,
     )
 

@@ -174,13 +174,12 @@ transform duration, runtime duration, and static analyzer evidence while
 comparing exit code, stdout, stderr, created files, and declared observable
 effects across nine seed-derived inputs.
 
-The latest local adversarial refresh measures all 162 repository fixtures:
+The 2026-09-20 local adversarial campaign measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
 also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
-rows are retained with their instruction-support reasons. Binary Ninja, IDA,
-and Triton remain explicit unavailable analyzer slots; Binary Ninja is on hold
-for the current milestone. Ghidra is now provisioned by the scheduled
-campaign. The bounded
+rows are retained with their instruction-support reasons. In that campaign,
+IDA and Triton were unavailable; these rows remain explicit and are not counted
+as completed analysis. Ghidra is provisioned by the scheduled campaign. The bounded
 report is
 [`docs/protection-adversarial-angr-local-2026-09-20.json`](docs/protection-adversarial-angr-local-2026-09-20.json).
 The earlier focused `angr` fixture remains available in
@@ -190,7 +189,12 @@ Binary Ninja is an explicit analyzer slot; the focused local
 fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The current installed API is importable, but the headless benchmark reports
 `analyzer license is unavailable`; this remains an explicit evidence gap while
-the slot is on hold.
+the slot is on hold. Separately, the 159-sample evidence summarized in
+[`docs/independent-review.json`](docs/independent-review.json) records
+`159 samples, 159 Triton runs`, `159 samples, 318 completed analyses` for IDA,
+and `159 samples, 0 IDA errors`. These are campaign-specific
+results: availability in one campaign does not fill unavailable rows in another,
+and the all-named-analyzers 1.0 criterion remains open.
 The VM review packet records `human_signoff: attested` and
 `release_decision: signoff-recorded`. Human independent review approved the
 reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. The project owner
@@ -210,6 +214,13 @@ Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 target handler stride diversity recorded in
 [`docs/protection-handler-clustering.json`](docs/protection-handler-clustering.json)
 and [`docs/protection-bytecode-grammar.json`](docs/protection-bytecode-grammar.json).
+These finite seed-diversity measurements describe generated output variation;
+they do not measure generalized attack cost or establish resistance to
+professional reverse engineering. The independent analysis report explicitly
+limits its evidence to one fixture and one pass and states that it does not
+establish general resistance to professional reverse engineering. The report
+does not replace the required three-analyzer release campaign. Published
+resistance results remain an open 1.0 criterion.
 
 ---
 

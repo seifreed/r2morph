@@ -2,6 +2,8 @@
 
 ## 0.4.0-alpha.3
 
+- Clarifies campaign-specific IDA and Triton availability and limits VM resistance
+  claims to the finite evidence actually measured.
 - Promotes instruction expansion and block reordering into the five-pass Tier 1
   Linux ELF x86-64 contract after native, corpus, composition, and analyzer
   evidence completed.

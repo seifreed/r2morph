@@ -5,7 +5,6 @@
     "all_named_adversarial_analyzers",
     "complete_compatibility_contract",
     "cross_platform_parity",
-    "documented_resistance_scope",
     "published_correctness_results",
     "published_cost_results",
     "published_resistance_results",
@@ -25,8 +24,8 @@
       "evidence": ["docs/support-matrix.json", "docs/release-blockers.md"]
     },
     "documented_resistance_scope": {
-      "status": "in_progress",
-      "evidence": ["docs/independent-review-packet.md", "docs/protection-independent-analysis-2026-11-10.json"]
+      "status": "complete",
+      "evidence": ["README.md", "docs/independent-review-packet.md", "docs/protection-independent-analysis-2026-11-10.json"]
     },
     "published_cost_results": {
       "status": "in_progress",
