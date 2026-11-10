@@ -10,11 +10,11 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 54
-_EXPECTED_NOT_SUPPORTED_CELLS = 210
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 32
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 210
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 210
+_EXPECTED_EVIDENCED_CELLS = 55
+_EXPECTED_NOT_SUPPORTED_CELLS = 209
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 33
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 209
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 209
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -298,4 +298,25 @@ def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
                 ("instruction-expansion", {"format": "Mach-O", "architecture": "x86-64"}),
             )
         )
+    )
+
+
+def test_support_matrix_records_macho_block_reordering_as_one_preview_case() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    entry = next(item for item in document["passes"] if item["name"] == "block-reordering")
+    cell = next(
+        cell
+        for cell in build_matrix(document)["cells"]
+        if cell["pass"] == entry["name"] and cell["format"] == "Mach-O" and cell["architecture"] == "x86-64"
+    )
+
+    expect(
+        entry["stability"] == "tier-1"
+        and "Mach-O" in entry["formats"]
+        and cell["status"] == "evidenced"
+        and cell["evidence"]
+        == [
+            "tests/integration/test_mutations_x86_compiled_binary.py::"
+            "test_x86_block_reordering_preserves_native_exit_code"
+        ]
     )

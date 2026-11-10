@@ -12,10 +12,15 @@ _ROOT = Path(__file__).resolve().parents[2]
 _PE_FIXTURE = _ROOT / "fixtures" / "dataset" / "pe_mutation_x86_64.exe"
 
 
-def test_block_reordering_declares_verified_elf_x86_64_support() -> None:
+def test_block_reordering_marks_macho_x86_64_as_experimental() -> None:
     support = BlockReorderingPass().get_support()
 
-    expect(support.formats == ("ELF",) and support.architectures == ("x86_64",))
+    expect(
+        support.formats == ("ELF", "Mach-O")
+        and support.architectures == ("x86_64",)
+        and support.stability == "stable"
+        and support.notes == ("Mach-O x86_64 remains experimental pending broader native corpus evidence.",)
+    )
 
 
 def test_block_reordering_pe_target_is_skipped_without_writes(tmp_path: Path, caplog) -> None:

@@ -67,6 +67,25 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
     return output
 
 
+def _build_block_reordering_x86_binary(tmp_dir: Path) -> Path:
+    source = tmp_dir / "x86_block_reordering.c"
+    source.write_text(
+        "__attribute__((noinline)) int branchy(int value) {\n"
+        "    int result;\n"
+        "    if (value < 0) result = value * 3 + 7;\n"
+        "    else result = value / 2 - 5;\n"
+        "    if (result == 4) result += 11;\n"
+        "    else result -= 3;\n"
+        "    return result;\n"
+        "}\n"
+        "int main(void) { return branchy(-2) == -2 ? 0 : 1; }\n",
+        encoding="ascii",
+    )
+    output = tmp_dir / "x86_block_reordering"
+    run_command(["/usr/bin/clang", "-arch", "x86_64", "-O0", "-fno-inline", "-o", str(output), str(source)])
+    return output
+
+
 @pytest.fixture(scope="module")
 def x86_binary_path(tmp_path_factory: pytest.TempPathFactory) -> Path:
     if platform.system() != "Darwin":
@@ -157,6 +176,28 @@ def test_x86_block_reordering_real(x86_binary_path: Path, tmp_path: Path):
         result = pass_obj.apply(bin_obj)
 
     expect(not ("functions_processed" not in result))
+
+
+def test_x86_block_reordering_preserves_native_exit_code(tmp_path: Path):
+    if platform.system() != "Darwin":
+        pytest.skip("Mach-O x86_64 execution requires macOS")
+    if not _clang_available():
+        pytest.skip("clang not available")
+    writable_path = _build_block_reordering_x86_binary(tmp_path)
+    original = run_command([writable_path], text=True, timeout=30)
+
+    with Binary(writable_path, writable=True) as bin_obj:
+        bin_obj.analyze("aa")
+        result = BlockReorderingPass(config={"probability": 1.0, "max_functions": 5, "seed": 1}).apply(bin_obj)
+
+    expect(result["mutations_applied"] > 0, f"Mach-O x86-64 block reordering made no change: {result!r}")
+    expect(CodeSigner().sign(writable_path, adhoc=True), "failed to re-sign mutated Mach-O")
+    mutated = run_command([writable_path], text=True, timeout=30)
+
+    expect(
+        (mutated.returncode, mutated.stdout, mutated.stderr) == (original.returncode, original.stdout, original.stderr),
+        f"Mach-O x86-64 block reordering changed native execution: {original!r} -> {mutated!r}",
+    )
 
 
 def test_x86_opaque_predicates_and_control_flow_detection(x86_binary_path: Path, tmp_path: Path):

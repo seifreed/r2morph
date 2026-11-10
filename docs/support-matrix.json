@@ -291,7 +291,8 @@
       "name": "block-reordering",
       "stability": "tier-1",
       "formats": [
-        "ELF"
+        "ELF",
+        "Mach-O"
       ],
       "architectures": [
         "x86-64"
@@ -300,6 +301,13 @@
         {
           "format": "ELF",
           "architecture": "x86-64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_block_reordering_preserves_native_exit_code"
+          ]
         }
       ],
       "evidence": [
@@ -1171,14 +1179,14 @@
     },
     "cell_count": 264,
     "summary": {
-      "evidenced_cells": 54,
-      "not_supported_cells": 210,
+      "evidenced_cells": 55,
+      "not_supported_cells": 209,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 32,
-      "non_official_not_supported_cells": 210,
-      "non_official_evidence_percent": 13.22,
+      "non_official_evidenced_cells": 33,
+      "non_official_not_supported_cells": 209,
+      "non_official_evidence_percent": 13.64,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1225,9 +1233,9 @@
         {
           "format": "Mach-O",
           "architecture": "x86-64",
-          "evidenced_cells": 5,
-          "not_supported_cells": 17,
-          "evidence_percent": 22.73
+          "evidenced_cells": 6,
+          "not_supported_cells": 16,
+          "evidence_percent": 27.27
         },
         {
           "format": "PE",
@@ -1302,9 +1310,9 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "PE",
@@ -1399,9 +1407,9 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "PE",
@@ -1445,7 +1453,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 210,
+        "non_official_missing_evidence_cells": 209,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2448,9 +2456,11 @@
         "pass": "block-reordering",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_block_reordering_preserves_native_exit_code"
+        ]
       },
       {
         "pass": "block-reordering",

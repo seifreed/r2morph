@@ -71,10 +71,11 @@ class BlockReorderingPass(MutationPass):
         self.max_functions = self.config.get("max_functions", 10)
         self.preserve_fallthrough = self.config.get("preserve_fallthrough", True)
         self.set_support(
-            formats=("ELF",),
+            formats=("ELF", "Mach-O"),
             architectures=("x86_64",),
             validators=("structural", "runtime"),
             stability="stable",
+            notes=("Mach-O x86_64 remains experimental pending broader native corpus evidence.",),
         )
 
     def _can_reorder_function(self, func: dict[str, Any], blocks: list[dict[str, Any]]) -> bool:
@@ -137,7 +138,8 @@ class BlockReorderingPass(MutationPass):
         binary_format = str(arch_info.get("format", "")).upper()
         architecture = str(arch_info.get("arch", "")).lower()
         bits = arch_info.get("bits")
-        if not (binary_format.startswith("ELF") and architecture == "x86" and bits == _X86_64_BITS):
+        supported_format = binary_format.startswith("ELF") or binary_format.startswith("MACH")
+        if not (supported_format and architecture == "x86" and bits == _X86_64_BITS):
             logger.warning(
                 "Block reordering skipped for unsupported target: format=%s arch=%s bits=%s",
                 binary_format,
