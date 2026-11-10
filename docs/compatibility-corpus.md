@@ -38,6 +38,10 @@ compiled case is an additional evidence point, not a support promotion.
 The Windows PE preview job also executes a real NOP-plus-register-substitution
 composition and validates the repaired PE checksum; it remains preview evidence
 and does not promote PE to the official support tier.
+On 2026-11-10, the same PE test module ran locally on macOS 27.2 ARM64 with
+MinGW-w64 GCC 16.2 and Wine 11.0: seven generated-binary mutation tests passed
+and the Windows-only fixture test was skipped. This confirms an additional
+Wine execution path; it is not native Windows evidence or a PE parity claim.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
 The workflow pins the collected matrix at 73 cases so loss of a preview corpus

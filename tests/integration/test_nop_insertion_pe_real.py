@@ -1,6 +1,8 @@
 import platform
 import shutil
+import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -15,17 +17,26 @@ from r2morph.platform.pe_handler import PEHandler
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
-pytestmark = pytest.mark.skipif(
-    platform.system() == "Darwin" and platform.machine().lower() in {"arm64", "aarch64"},
-    reason="the available PE runtime is x86_64-only on this ARM64 host",
-)
+
+def _pe_toolchain() -> tuple[str, str | None]:
+    """Resolve a PE compiler and either native Windows or Wine execution."""
+    is_windows = platform.system() == "Windows"
+    compiler = shutil.which("x86_64-w64-mingw32-gcc")
+    if compiler is None and is_windows:
+        compiler = shutil.which("gcc")
+    runtime = None if is_windows else shutil.which("wine")
+    if compiler is None or (not is_windows and runtime is None):
+        pytest.skip("a PE compiler and a native Windows or Wine runtime are required")
+    return compiler, runtime
+
+
+def _run_pe(binary_path: Path, runtime: str | None) -> subprocess.CompletedProcess[Any]:
+    command = [str(binary_path)] if runtime is None else [runtime, str(binary_path)]
+    return run_command(command, timeout=30)
 
 
 def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) -> None:
-    compiler = shutil.which("x86_64-w64-mingw32-gcc") or shutil.which("gcc")
-    wine = None if platform.system() == "Windows" else shutil.which("wine")
-    if compiler is None or (platform.system() != "Windows" and wine is None):
-        pytest.skip("a PE compiler and a native or Wine runtime are required")
+    compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "nop_sample.c"
     source.write_text(
@@ -44,8 +55,7 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
     )
     binary_path = tmp_path / "nop_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    command = [str(binary_path)] if wine is None else [wine, str(binary_path)]
-    original_execution = run_command(command, timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(
         original_execution.returncode == 0,
         f"generated PE fixture did not execute successfully: {original_execution.returncode}",
@@ -70,7 +80,7 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
-    mutated_execution = run_command(command, timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE NOP insertion changed the native execution result",
@@ -78,10 +88,7 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
 
 
 def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    compiler = shutil.which("x86_64-w64-mingw32-gcc")
-    wine = shutil.which("wine")
-    if compiler is None or wine is None:
-        pytest.skip("PE compiler and Wine runtime are required")
+    compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "substitution_sample.c"
     source.write_text(
@@ -100,7 +107,7 @@ def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path:
     )
     binary_path = tmp_path / "substitution_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    original_execution = run_command([wine, str(binary_path)], timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     handler = PEHandler(binary_path)
@@ -112,7 +119,7 @@ def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path:
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
-    mutated_execution = run_command([wine, str(binary_path)], timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE instruction substitution changed the native execution result",
@@ -120,10 +127,7 @@ def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path:
 
 
 def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    compiler = shutil.which("x86_64-w64-mingw32-gcc") or shutil.which("gcc")
-    wine = None if platform.system() == "Windows" else shutil.which("wine")
-    if compiler is None or (platform.system() != "Windows" and wine is None):
-        pytest.skip("a PE compiler and a native or Wine runtime are required")
+    compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "register_sample.c"
     source.write_text(
@@ -142,8 +146,7 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Pa
     )
     binary_path = tmp_path / "register_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    command = [str(binary_path)] if wine is None else [wine, str(binary_path)]
-    original_execution = run_command(command, timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     handler = PEHandler(binary_path)
@@ -155,7 +158,7 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Pa
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
-    mutated_execution = run_command(command, timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE register substitution changed the native execution result",
@@ -163,10 +166,7 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Pa
 
 
 def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    compiler = shutil.which("x86_64-w64-mingw32-gcc")
-    wine = None if platform.system() == "Windows" else shutil.which("wine")
-    if compiler is None or (platform.system() != "Windows" and wine is None):
-        pytest.skip("a PE compiler and a native or Wine runtime are required")
+    compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "constant_unfolding_sample.c"
     source.write_text(
@@ -181,8 +181,7 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
     )
     binary_path = tmp_path / "constant_unfolding_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    command = [str(binary_path)] if wine is None else [wine, str(binary_path)]
-    original_execution = run_command(command, timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     with Binary(binary_path, writable=True) as binary:
@@ -194,7 +193,7 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
-    mutated_execution = run_command(command, timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE constant unfolding changed the native execution result",
@@ -202,10 +201,7 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
 
 
 def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    compiler = shutil.which("x86_64-w64-mingw32-gcc") or shutil.which("gcc")
-    wine = None if platform.system() == "Windows" else shutil.which("wine")
-    if compiler is None or (platform.system() != "Windows" and wine is None):
-        pytest.skip("a PE compiler and a native or Wine runtime are required")
+    compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "composition_sample.c"
     source.write_text(
@@ -221,8 +217,7 @@ def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: P
     )
     binary_path = tmp_path / "composition_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    command = [str(binary_path)] if wine is None else [wine, str(binary_path)]
-    original_execution = run_command(command, timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     with Binary(binary_path, writable=True) as binary:
@@ -236,7 +231,7 @@ def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: P
     handler = PEHandler(binary_path)
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
-    mutated_execution = run_command(command, timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         first_result["mutations_applied"] > 0
         and second_result["mutations_applied"] > 0
@@ -270,12 +265,7 @@ def test_instruction_substitution_pe_fixture_preserves_windows_exit_code(tmp_pat
 
 
 def test_instruction_expansion_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    if platform.system() != "Windows":
-        pytest.skip("native PE fixture execution requires Windows")
-
-    compiler = shutil.which("gcc") or shutil.which("x86_64-w64-mingw32-gcc")
-    if compiler is None:
-        pytest.skip("a PE compiler is required")
+    compiler, runtime = _pe_toolchain()
     source = tmp_path / "expansion_sample.c"
     source.write_text(
         "__attribute__((noinline)) int transform(int value) {\n"
@@ -287,7 +277,7 @@ def test_instruction_expansion_pe_x86_64_preserves_native_execution(tmp_path: Pa
     )
     binary_path = tmp_path / "expansion_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    original_execution = run_command([binary_path], timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     with Binary(binary_path, writable=True) as binary:
@@ -301,7 +291,7 @@ def test_instruction_expansion_pe_x86_64_preserves_native_execution(tmp_path: Pa
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
-    mutated_execution = run_command([binary_path], timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE instruction expansion changed the native execution result",
@@ -309,12 +299,7 @@ def test_instruction_expansion_pe_x86_64_preserves_native_execution(tmp_path: Pa
 
 
 def test_string_obfuscation_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
-    if platform.system() != "Windows":
-        pytest.skip("native PE fixture execution requires Windows")
-
-    compiler = shutil.which("gcc") or shutil.which("x86_64-w64-mingw32-gcc")
-    if compiler is None:
-        pytest.skip("a PE compiler is required")
+    compiler, runtime = _pe_toolchain()
     source = tmp_path / "string_sample.c"
     source.write_text(
         '__attribute__((used)) static const char unreferenced_evidence_string[] = "platform-string-evidence";\n'
@@ -324,7 +309,7 @@ def test_string_obfuscation_pe_x86_64_preserves_native_execution(tmp_path: Path)
     )
     binary_path = tmp_path / "string_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
-    original_execution = run_command([binary_path], timeout=30)
+    original_execution = _run_pe(binary_path, runtime)
     expect(original_execution.returncode == 0, "generated PE fixture did not execute successfully")
 
     with Binary(binary_path, writable=True) as binary:
@@ -337,7 +322,7 @@ def test_string_obfuscation_pe_x86_64_preserves_native_execution(tmp_path: Path)
     expect(result["mutations_applied"] > 0)
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
-    mutated_execution = run_command([binary_path], timeout=30)
+    mutated_execution = _run_pe(binary_path, runtime)
     expect(
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE string obfuscation changed the native execution result",
