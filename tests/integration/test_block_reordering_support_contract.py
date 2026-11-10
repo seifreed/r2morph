@@ -19,7 +19,11 @@ def test_block_reordering_marks_macho_x86_64_as_experimental() -> None:
         support.formats == ("ELF", "Mach-O")
         and support.architectures == ("x86_64",)
         and support.stability == "stable"
-        and support.notes == ("Mach-O x86_64 remains experimental pending broader native corpus evidence.",)
+        and support.notes
+        == (
+            "ELF x86-32 remains preview pending broader native corpus evidence.",
+            "Mach-O x86_64 remains preview pending broader native corpus evidence.",
+        )
     )
 
 

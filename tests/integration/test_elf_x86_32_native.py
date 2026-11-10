@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import platform
 import shutil
+import struct
 from pathlib import Path
 
 import pytest
+import unicorn
+from unicorn import x86_const
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.block_reordering import BlockReorderingPass
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
@@ -17,6 +21,18 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
+
+_ELF_PT_LOAD = 1
+_ELF_PAGE_SIZE = 0x1000
+_ELF32_ENTRY_OFFSET = 0x18
+_ELF32_PROGRAM_HEADER_OFFSET_OFFSET = 0x1C
+_ELF32_PROGRAM_HEADER_SIZE_OFFSET = 0x2A
+_ELF32_PROGRAM_HEADER_COUNT_OFFSET = 0x2C
+_ELF32_STACK_BASE = 0x70000000
+_ELF32_STACK_SIZE = 0x10000
+_ELF32_SYSCALL_INTERRUPT = 0x80
+_ELF32_EXIT_SYSCALL = 1
+_ELF32_INSTRUCTION_LIMIT = 10_000
 
 
 def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
@@ -66,16 +82,24 @@ def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
         "zero:\n"
         "    addl %esi, %ecx\n"
         "done:\n"
+        "    cmpl $42, %ecx\n"
+        "    je validated\n"
+        "    jmp finish\n"
+        "validated:\n"
+        "    addl $0, %ecx\n"
+        "finish:\n"
         "    movl %ecx, %eax\n"
         "    ret\n"
         ".size _start, .-_start\n"
     )
     source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "x86_32_exit"
+    linker_flags = ["-fuse-ld=lld"] if platform.system() == "Darwin" else []
     run_command(
         [
             compiler,
             *target_flags,
+            *linker_flags,
             "-nostdlib",
             "-static",
             "-Wl,-e,_start",
@@ -89,6 +113,64 @@ def _build_x86_32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
         text=True,
     )
     return binary_path
+
+
+def _emulate_elf32_exit_code(binary_path: Path) -> int:
+    raw = binary_path.read_bytes()
+    entry = struct.unpack_from("<I", raw, _ELF32_ENTRY_OFFSET)[0]
+    program_header_offset = struct.unpack_from("<I", raw, _ELF32_PROGRAM_HEADER_OFFSET_OFFSET)[0]
+    program_header_size = struct.unpack_from("<H", raw, _ELF32_PROGRAM_HEADER_SIZE_OFFSET)[0]
+    program_header_count = struct.unpack_from("<H", raw, _ELF32_PROGRAM_HEADER_COUNT_OFFSET)[0]
+    machine = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_32)
+    mapped_pages: set[int] = set()
+
+    for index in range(program_header_count):
+        offset = program_header_offset + index * program_header_size
+        header = struct.unpack_from("<IIIIIIII", raw, offset)
+        segment_type, file_offset, address, _, file_size, memory_size, _, _ = header
+        if segment_type != _ELF_PT_LOAD:
+            continue
+        start = address & ~(_ELF_PAGE_SIZE - 1)
+        end = (address + max(file_size, memory_size) + _ELF_PAGE_SIZE - 1) & ~(_ELF_PAGE_SIZE - 1)
+        for page in range(start, end, _ELF_PAGE_SIZE):
+            if page not in mapped_pages:
+                machine.mem_map(page, _ELF_PAGE_SIZE)
+                mapped_pages.add(page)
+        machine.mem_write(address, raw[file_offset : file_offset + file_size])
+
+    machine.mem_map(_ELF32_STACK_BASE, _ELF32_STACK_SIZE)
+    machine.reg_write(x86_const.UC_X86_REG_ESP, _ELF32_STACK_BASE + _ELF32_STACK_SIZE // 2)
+    exit_codes: list[int] = []
+
+    def capture_exit(emulator: unicorn.Uc, interrupt: int, _user_data: object) -> None:
+        if interrupt != _ELF32_SYSCALL_INTERRUPT or emulator.reg_read(x86_const.UC_X86_REG_EAX) != _ELF32_EXIT_SYSCALL:
+            raise RuntimeError(f"unexpected ELF32 interrupt {interrupt}")
+        exit_codes.append(emulator.reg_read(x86_const.UC_X86_REG_EBX) & 0xFF)
+        emulator.emu_stop()
+
+    machine.hook_add(unicorn.UC_HOOK_INTR, capture_exit)
+    machine.emu_start(entry, 0, count=_ELF32_INSTRUCTION_LIMIT)
+    if not exit_codes:
+        raise RuntimeError("ELF32 execution did not reach sys_exit")
+    return exit_codes[0]
+
+
+def test_elf_x86_32_block_reordering_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() == "Darwin" and shutil.which("ld.lld") is None:
+        pytest.skip("ld.lld is required to link an ELF32 fixture on macOS")
+
+    binary_path = _build_x86_32_elf(tmp_path, complex_fixture=True)
+    original_exit_code = _emulate_elf32_exit_code(binary_path)
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = BlockReorderingPass({"probability": 1.0, "seed": 1, "max_functions": 10}).apply(binary)
+
+    mutated_exit_code = _emulate_elf32_exit_code(binary_path)
+    expect(result["mutations_applied"] > 0, f"ELF x86-32 block reordering made no change: {result!r}")
+    expect(
+        (original_exit_code, mutated_exit_code) == (42, 42),
+        f"ELF x86-32 block reordering changed emulated execution: {original_exit_code} -> {mutated_exit_code}",
+    )
 
 
 def _build_x86_32_expansion_elf(tmp_path: Path) -> Path:

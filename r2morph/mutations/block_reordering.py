@@ -25,6 +25,7 @@ from r2morph.mutations.block_reordering_relocation import reorder_function_block
 
 logger = logging.getLogger(__name__)
 _X86_64_BITS = 64
+_X86_BITS = 32
 
 
 def _read_exception_frames(binary: Any) -> tuple[dict[int, Any] | None, str | None]:
@@ -75,7 +76,10 @@ class BlockReorderingPass(MutationPass):
             architectures=("x86_64",),
             validators=("structural", "runtime"),
             stability="stable",
-            notes=("Mach-O x86_64 remains experimental pending broader native corpus evidence.",),
+            notes=(
+                "ELF x86-32 remains preview pending broader native corpus evidence.",
+                "Mach-O x86_64 remains preview pending broader native corpus evidence.",
+            ),
         )
 
     def _can_reorder_function(self, func: dict[str, Any], blocks: list[dict[str, Any]]) -> bool:
@@ -139,7 +143,7 @@ class BlockReorderingPass(MutationPass):
         architecture = str(arch_info.get("arch", "")).lower()
         bits = arch_info.get("bits")
         supported_format = binary_format.startswith("ELF") or binary_format.startswith("MACH")
-        if not (supported_format and architecture == "x86" and bits == _X86_64_BITS):
+        if not (supported_format and architecture == "x86" and bits in {_X86_BITS, _X86_64_BITS}):
             logger.warning(
                 "Block reordering skipped for unsupported target: format=%s arch=%s bits=%s",
                 binary_format,
