@@ -280,7 +280,9 @@ tamper/progressive protection tests and publishes JUnit evidence, including
 single-level tamper, nested tamper, nested growth, and diversified-build
 checks. The generated `total_vm_resistance_blockers` count is 0 VM resistance
 blockers; independent review closed the human-resistance gap for the reviewed
-commit.
+commit. This zero covers only the declared campaign checks and review gate; it
+does not establish general resistance to professional reverse engineering or
+close the 1.0 `published_resistance_results` criterion.
 The complete local artifact
 [`protection-vm-resistance-2026-09-22-e3a491b3.json`](protection-vm-resistance-2026-09-22-e3a491b3.json)
 passes semantic parity, artifact, opcode, dispatcher, handler, grammar,

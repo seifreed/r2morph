@@ -105,6 +105,9 @@ changes require their own successful run.
   [protection-bytecode-grammar.json](protection-bytecode-grammar.json)
   `adversarial_validation` fields retain the automated evidence scope; the
   [support matrix](support-matrix.json) records zero `vm_resistance_blocker_totals`.
+  This resolves only the human signoff requirement. It does not establish
+  general resistance to professional reverse engineering or close the 1.0
+  `published_resistance_results` criterion.
   Exit criteria: the
   approval remains bound to the reviewed commit; implementation changes require
   another independent review.
