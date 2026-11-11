@@ -9,35 +9,85 @@
   "criteria": {
     "all_named_adversarial_analyzers": {
       "status": "open",
-      "evidence": ["docs/compatibility-corpus.md", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json", "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json", "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json", "docs/release-blockers.md"]
+      "evidence": [
+        "docs/compatibility-corpus.md",
+        "docs/protection-ida-targeted-2026-11-11-c70a113b.json",
+        "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json",
+        "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-50496238-shard-06.json",
+        "docs/release-blockers.md"
+      ]
     },
     "complete_compatibility_contract": {
       "status": "complete",
-      "evidence": ["docs/support-matrix.json", "docs/compatibility-corpus.md", "tests/unit/test_support_matrix_contract.py", "scripts/support_matrix.py"]
+      "evidence": [
+        "docs/support-matrix.json",
+        "docs/compatibility-corpus.md",
+        "tests/unit/test_support_matrix_contract.py",
+        "scripts/support_matrix.py"
+      ]
     },
     "cross_platform_parity": {
       "status": "open",
-      "evidence": ["docs/support-matrix.json", "docs/release-blockers.md"]
+      "evidence": [
+        "docs/support-matrix.json",
+        "docs/release-blockers.md"
+      ]
     },
     "documented_resistance_scope": {
       "status": "complete",
-      "evidence": ["README.md", "docs/independent-review-packet.md", "docs/protection-independent-analysis-2026-11-10.json"]
+      "evidence": [
+        "README.md",
+        "docs/independent-review-packet.md",
+        "docs/protection-independent-analysis-2026-11-10.json"
+      ]
     },
     "published_cost_results": {
       "status": "complete",
-      "evidence": ["docs/pass-maturity.md", "docs/compatibility-corpus.md", "docs/protection-differential-2026-11-11-019a0551.json", "docs/protection-extended-differential-2026-11-11-019a0551.json"]
+      "evidence": [
+        "docs/pass-maturity.md",
+        "docs/compatibility-corpus.md",
+        "docs/protection-differential-2026-11-11-019a0551.json",
+        "docs/protection-extended-differential-2026-11-11-019a0551.json"
+      ]
     },
     "published_correctness_results": {
       "status": "complete",
-      "evidence": ["docs/compatibility-corpus.md", "docs/support-matrix.json", "docs/protection-differential-2026-11-11-019a0551.json", "docs/protection-extended-differential-2026-11-11-019a0551.json"]
+      "evidence": [
+        "docs/compatibility-corpus.md",
+        "docs/support-matrix.json",
+        "docs/protection-differential-2026-11-11-019a0551.json",
+        "docs/protection-extended-differential-2026-11-11-019a0551.json"
+      ]
     },
     "published_resistance_results": {
       "status": "open",
-      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-vm-resistance-2026-11-11-4749bca3.json", "docs/protection-vm-seed-diversity-2026-11-11-4749bca3.json", "docs/protection-vm-bytecode-grammar-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json", "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json", "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json"]
+      "evidence": [
+        "docs/protection-handler-clustering.json",
+        "docs/protection-bytecode-grammar.json",
+        "docs/protection-ida-targeted-2026-11-11-c70a113b.json",
+        "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json",
+        "docs/protection-vm-resistance-2026-11-11-4749bca3.json",
+        "docs/protection-vm-seed-diversity-2026-11-11-4749bca3.json",
+        "docs/protection-vm-bytecode-grammar-2026-11-11-4749bca3.json",
+        "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-50496238-shard-06.json",
+        "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json"
+      ]
     },
     "stable_api_cli": {
       "status": "complete",
-      "evidence": ["docs/stability-contract.md", "tests/unit/test_public_surface_contract.py"]
+      "evidence": [
+        "docs/stability-contract.md",
+        "tests/unit/test_public_surface_contract.py"
+      ]
     }
   }
 }
