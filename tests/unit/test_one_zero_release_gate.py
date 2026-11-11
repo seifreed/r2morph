@@ -26,6 +26,7 @@ _CRITERIA = (
 _EXPECTED_DECLARED_PASSES = 22
 _EXPECTED_SEED_RUNS = 23892
 _EXPECTED_APPLIED_RUNS = 6939
+_EXPECTED_SUPPORT_MATRIX_CELLS = 264
 
 
 def test_one_zero_gate_allows_alpha_while_readiness_is_open() -> None:
@@ -78,6 +79,29 @@ def test_readiness_publishes_correctness_and_cost_for_all_declared_passes() -> N
         and core["campaign"]["semantic_failures"] + extended_summary["semantic_failures"] == 0
         and extended_summary["runtime_observable_failures"] == 0
         and extended_summary["complete_evidence_missing_runs"] == 0
+    )
+
+
+def test_readiness_completes_compatibility_contract_without_claiming_parity() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    support_matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    matrix = support_matrix["matrix"]
+    official = support_matrix["official_target"]
+    non_official_cells = [
+        cell
+        for cell in matrix["cells"]
+        if (cell["format"], cell["architecture"]) != (official["format"], official["architecture"])
+    ]
+    criteria = readiness["criteria"]
+
+    expect(
+        criteria["complete_compatibility_contract"]["status"] == "complete"
+        and "complete_compatibility_contract" not in readiness["blocking_criteria"]
+        and criteria["cross_platform_parity"]["status"] == "open"
+        and "cross_platform_parity" in readiness["blocking_criteria"]
+        and matrix["cell_count"] == _EXPECTED_SUPPORT_MATRIX_CELLS
+        and len(matrix["cells"]) == _EXPECTED_SUPPORT_MATRIX_CELLS
+        and all(cell["support_status"] != "supported" for cell in non_official_cells)
     )
 
 

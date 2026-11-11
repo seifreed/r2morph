@@ -19,6 +19,15 @@ changes require their own successful run.
 
 ## Resolved blockers
 
+- The 1.0 compatibility contract is explicit across all 264 pass/format/
+  architecture cells. Each cell records declared support, observed status, and
+  evidence; unsupported cells cannot carry evidence, and generated-matrix
+  freshness is checked in CI. Only Linux ELF x86-64 is official. The other
+  formats and architectures remain preview or experimental, so this closes the
+  contract requirement without closing the separate parity criterion. Evidence:
+  [support-matrix.json](support-matrix.json),
+  [compatibility-corpus.md](compatibility-corpus.md), and
+  [test_support_matrix_contract.py](../tests/unit/test_support_matrix_contract.py).
 - The 1.0 published correctness and observed-cost criteria now cover all 22
   declared passes on official Linux ELF x86-64. Core and extended reports from
   workflow `42980449435` at `019a0551` record complete evidence, zero errors,

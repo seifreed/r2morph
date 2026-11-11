@@ -3,7 +3,6 @@
   "status": "blocked",
   "blocking_criteria": [
     "all_named_adversarial_analyzers",
-    "complete_compatibility_contract",
     "cross_platform_parity",
     "published_resistance_results"
   ],
@@ -13,8 +12,8 @@
       "evidence": ["docs/compatibility-corpus.md", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/release-blockers.md"]
     },
     "complete_compatibility_contract": {
-      "status": "in_progress",
-      "evidence": ["docs/support-matrix.json", "docs/compatibility-corpus.md"]
+      "status": "complete",
+      "evidence": ["docs/support-matrix.json", "docs/compatibility-corpus.md", "tests/unit/test_support_matrix_contract.py", "scripts/support_matrix.py"]
     },
     "cross_platform_parity": {
       "status": "open",
