@@ -1661,6 +1661,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "--cases 64" in differential
         and "--max-payload 512" in differential
         and "differential-fuzz-smoke.json" in differential
+        and "assembling" in differential
         and "binary_parsers" in differential
         and "vm_dispatcher" in differential
         and "relocations" in differential

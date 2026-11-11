@@ -497,6 +497,7 @@ jobs:
 
           report = json.loads(Path("differential-fuzz-smoke.json").read_text(encoding="utf-8"))
           expected_targets = {
+              "assembling": 64,
               "binary_parsers": 64,
               "vm_dispatcher": 64,
               "relocations": 64,
@@ -1274,6 +1275,7 @@ jobs:
           )
 
           expected_fuzz_targets = {
+              "assembling": 64,
               "binary_parsers": 64,
               "vm_dispatcher": 64,
               "relocations": 64,

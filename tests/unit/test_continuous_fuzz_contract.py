@@ -23,5 +23,12 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
         report["cases"] == 1
         and report["max_payload"] == _SMALL_PAYLOAD
         and report["failure_limit"] == _MAX_FAILURES
-        and report["target_runs"] == {"binary_parsers": 1, "vm_dispatcher": 1, "relocations": 1, "binary_rewriter": 1}
+        and report["target_runs"]
+        == {
+            "assembling": 1,
+            "binary_parsers": 1,
+            "vm_dispatcher": 1,
+            "relocations": 1,
+            "binary_rewriter": 1,
+        }
     )

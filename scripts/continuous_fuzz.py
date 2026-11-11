@@ -10,7 +10,7 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
-from keystone import KS_ARCH_X86, KS_MODE_64, Ks
+from keystone import KS_ARCH_X86, KS_MODE_64, Ks, KsError
 
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
@@ -30,7 +30,9 @@ _DEFAULT_CASES = 1000
 _DEFAULT_MAX_PAYLOAD = 4096
 _MAX_FAILURES = 128
 _MIN_PATCH_ADDRESS = 0x1000
-_FUZZ_TARGETS = ("binary_parsers", "vm_dispatcher", "relocations", "binary_rewriter")
+_ASSEMBLY_INSTRUCTION_COUNT = 4
+_ASSEMBLY_INVALID_SAMPLE_RATE = 4
+_FUZZ_TARGETS = ("assembling", "binary_parsers", "vm_dispatcher", "relocations", "binary_rewriter")
 _X86_64_ASSEMBLER = Ks(KS_ARCH_X86, KS_MODE_64)
 _ELF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "dataset" / "elf_x86_64"
 
@@ -79,6 +81,27 @@ def _rewrite_case(seed: int, index: int) -> None:
         raise AssertionError("rewrite planner did not order patches")
     if len(addresses) == len(set(addresses)) and (not validation["valid"] or len(shifts) != len(patches)):
         raise AssertionError("rewrite validation rejected non-overlapping patches")
+
+
+def _assembly_case(seed: int, index: int) -> None:
+    if index % _ASSEMBLY_INVALID_SAMPLE_RATE == 0:
+        try:
+            _X86_64_ASSEMBLER.asm(f"r2morph_invalid_{_bounded_value(seed, index, 35, 0xFFFF):x}")
+        except KsError:
+            return
+        raise AssertionError("assembler accepted an invalid generated instruction")
+
+    immediate = _bounded_value(seed, index, 32, 0x7FFFFFFF)
+    stack_offset = _bounded_value(seed, index, 33, 0x7FF)
+    assembly = (
+        f"mov rax, 0x{_bounded_value(seed, index, 34, 0xFFFFFFFFFFFFFFFF):x}\n"
+        f"add rax, 0x{immediate:x}\n"
+        f"lea r10, [rsp+0x{stack_offset:x}]\n"
+        f"xor r12d, 0x{immediate:x}\n"
+    )
+    encoded, instruction_count = _X86_64_ASSEMBLER.asm(assembly)
+    if not encoded or instruction_count != _ASSEMBLY_INSTRUCTION_COUNT:
+        raise AssertionError("assembler did not encode all generated instructions")
 
 
 def _dispatcher_case(seed: int, index: int) -> None:
@@ -131,6 +154,7 @@ def _parser_case(payload: bytes) -> None:
 
 def _case_targets(payload: bytes, seed: int, index: int) -> tuple[tuple[str, Callable[[], None]], ...]:
     return (
+        ("assembling", lambda: _assembly_case(seed, index)),
         ("binary_parsers", lambda: _parser_case(payload)),
         ("vm_dispatcher", lambda: _dispatcher_case(seed, index)),
         ("relocations", lambda: _relocation_case(seed, index)),
