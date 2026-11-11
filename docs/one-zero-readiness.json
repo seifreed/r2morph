@@ -7,8 +7,7 @@
     "cross_platform_parity",
     "published_correctness_results",
     "published_cost_results",
-    "published_resistance_results",
-    "stable_api_cli"
+    "published_resistance_results"
   ],
   "criteria": {
     "all_named_adversarial_analyzers": {
@@ -40,7 +39,7 @@
       "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json"]
     },
     "stable_api_cli": {
-      "status": "in_progress",
+      "status": "complete",
       "evidence": ["docs/stability-contract.md", "tests/unit/test_public_surface_contract.py"]
     }
   }

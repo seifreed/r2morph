@@ -47,6 +47,13 @@ _MUTATE_LONG_OPTIONS = {
     "--validation-mode",
     "--verbose",
 }
+_MUTATE_SHORT_OPTION_ALIASES = {
+    "--aggressive": ("-a",),
+    "--force": ("-f",),
+    "--mutation": ("-m",),
+    "--output": ("-o",),
+    "--verbose": ("-v",),
+}
 
 
 def test_package_root_exports_remain_the_supported_python_api() -> None:
@@ -74,6 +81,20 @@ def test_mutate_command_options_remain_compatible() -> None:
     }
 
     expect(long_options == _MUTATE_LONG_OPTIONS)
+
+
+def test_mutate_short_option_aliases_remain_compatible() -> None:
+    command = get_command(app).commands["mutate"]
+    aliases = {
+        long_option: tuple(
+            option for option in parameter.opts if option.startswith("-") and not option.startswith("--")
+        )
+        for parameter in command.params
+        for long_option in parameter.opts
+        if long_option in _MUTATE_SHORT_OPTION_ALIASES
+    }
+
+    expect(aliases == _MUTATE_SHORT_OPTION_ALIASES)
 
 
 def test_console_script_remains_bound_to_the_supported_cli_app() -> None:
