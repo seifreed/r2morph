@@ -136,3 +136,26 @@ def test_one_zero_gate_rejects_evidence_paths_outside_the_readiness_root(tmp_pat
         rejected = "missing or unsafe" in str(error)
 
     expect(rejected)
+
+
+def test_one_zero_gate_rejects_evidence_symlink_outside_the_readiness_root(
+    tmp_path: Path,
+) -> None:
+    evidence_root = tmp_path / "evidence"
+    evidence_root.mkdir()
+    external_evidence = tmp_path / "external.md"
+    external_evidence.write_text("external evidence\n", encoding="utf-8")
+    evidence_link = evidence_root / "evidence.md"
+    evidence_link.symlink_to(external_evidence)
+    report = json.loads(_READINESS.read_text(encoding="utf-8"))
+    report["criteria"][_CRITERIA[0]]["evidence"] = [evidence_link.name]
+    report_path = evidence_root / "readiness.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    rejected = False
+    try:
+        _check_one_zero_release_gate("0.4.0-alpha.3", report_path, evidence_root)
+    except ValueError as error:
+        rejected = "missing or unsafe" in str(error)
+
+    expect(rejected)

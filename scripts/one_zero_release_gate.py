@@ -54,9 +54,16 @@ def _validate_criteria(criteria: dict[str, Any], evidence_root: Path) -> list[st
 
 
 def _validate_evidence_paths(name: str, evidence: list[Any], evidence_root: Path) -> None:
+    resolved_root = evidence_root.resolve()
     for reference in evidence:
         if not isinstance(reference, str) or not reference.strip():
             raise ValueError(f"1.0 readiness criterion has an invalid evidence path: {name}")
         path = Path(reference)
-        if path.is_absolute() or ".." in path.parts or not (evidence_root / path).is_file():
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError(f"1.0 readiness evidence file is missing or unsafe: {name}: {reference}")
+        try:
+            resolved_path = (evidence_root / path).resolve(strict=True)
+        except (OSError, RuntimeError) as exc:
+            raise ValueError(f"1.0 readiness evidence file is missing or unsafe: {name}: {reference}") from exc
+        if not resolved_path.is_relative_to(resolved_root) or not resolved_path.is_file():
             raise ValueError(f"1.0 readiness evidence file is missing or unsafe: {name}: {reference}")
