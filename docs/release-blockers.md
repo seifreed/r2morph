@@ -125,6 +125,15 @@ successful run.
   pairs. This is one fixture and does not fill the pass-by-fixture matrix.
   Binary Ninja remained unavailable because its license was unavailable on the
   host. Evidence: [protection-host-analyzer-calibration-2026-11-11-0920b7d3.json](protection-host-analyzer-calibration-2026-11-11-0920b7d3.json).
+  A second local run at commit `92265ab8f9d3577a58d9fb69730ab1359feb5552`
+  applies `CodeVirtualization` to ten ELF x86-64 fixtures. IDA Pro 9.5 and
+  Ghidra 11.4.2 completed all ten original/protected measurements, and Unicorn
+  returned matching exit codes for all ten pairs. All ten transformations
+  applied without unsupported functions. The report records 60 of 90 analyzer
+  runs completed; angr, Binary Ninja, and Triton were unavailable on the host.
+  This adds a bounded pass-by-fixture slice; it does not resolve the remaining
+  full analyzer matrix or establish general resistance. Evidence:
+  [protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json](protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
