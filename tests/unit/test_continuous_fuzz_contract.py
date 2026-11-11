@@ -1,5 +1,7 @@
 """Regression contract for the deterministic parser/rewrite fuzz campaign."""
 
+from logging import getLogger
+
 from scripts.continuous_fuzz import run_campaign
 from tests.utils.assertions import expect
 
@@ -35,4 +37,22 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
             "relocations": 1,
             "binary_rewriter": 1,
         }
+    )
+
+
+def test_continuous_fuzz_campaign_counts_expected_parser_diagnostics() -> None:
+    parser_logger = getLogger("r2morph.platform.macho_handler")
+    original_handlers = tuple(parser_logger.handlers)
+    original_propagate = parser_logger.propagate
+    report = run_campaign(cases=_CASE_COUNT, seed=_SEED, max_payload=512)
+
+    expect(
+        tuple(parser_logger.handlers) == original_handlers
+        and parser_logger.propagate is original_propagate
+        and all(
+            key.startswith(("binary_parsers.", "macho_load_commands."))
+            and key.rsplit(".", 1)[1] in {"warning", "error"}
+            and count > 0
+            for key, count in report["parser_diagnostic_counts"].items()
+        )
     )

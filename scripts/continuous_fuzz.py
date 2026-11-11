@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import struct
 import tempfile
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from keystone import KS_ARCH_X86, KS_MODE_64, Ks, KsError
@@ -60,6 +62,24 @@ _FORMAT_PARSER_FIXTURES = {
     "pe_header_parser": _DATASET / "pe_x86_64.exe",
     "macho_load_commands": _DATASET / "macho_arm64",
 }
+
+
+class _ParserDiagnosticCounter(logging.Handler):
+    def __init__(self, target: str, counts: dict[str, int]) -> None:
+        super().__init__(level=logging.WARNING)
+        self.target = target
+        self.counts = counts
+
+    def emit(self, record: logging.LogRecord) -> None:
+        key = f"{self.target}.{record.levelname.lower()}"
+        self.counts[key] = self.counts.get(key, 0) + 1
+
+
+@dataclass(slots=True)
+class _CampaignObservations:
+    failures: list[dict[str, object]] = field(default_factory=list)
+    target_runs: dict[str, int] = field(default_factory=lambda: dict.fromkeys(_FUZZ_TARGETS, 0))
+    parser_diagnostic_counts: dict[str, int] = field(default_factory=dict)
 
 
 def _bounded_value(seed: int, index: int, slot: int, maximum: int) -> int:
@@ -188,16 +208,35 @@ def _relocation_case(seed: int, index: int) -> None:
         raise AssertionError("relocation leaked beyond its half-open range")
 
 
-def _parser_case(payload: bytes) -> None:
+def _macho_parser_case(path: Path, target: str, diagnostics: dict[str, int]) -> None:
+    parser_logger = logging.getLogger("r2morph.platform.macho_handler")
+    previous_propagate = parser_logger.propagate
+    handler = _ParserDiagnosticCounter(target, diagnostics)
+    parser_logger.addHandler(handler)
+    parser_logger.propagate = False
+    try:
+        MachOHandler(path)._parse_macho_basic()
+    finally:
+        parser_logger.removeHandler(handler)
+        parser_logger.propagate = previous_propagate
+
+
+def _parser_case(payload: bytes, diagnostics: dict[str, int]) -> None:
     with tempfile.TemporaryDirectory(prefix="r2morph-fuzz-") as directory:
         path = Path(directory) / "candidate"
         path.write_bytes(payload)
         parse_elf_header(path)
         read_pe_header(path)
-        MachOHandler(path)._parse_macho_basic()
+        _macho_parser_case(path, "binary_parsers", diagnostics)
 
 
-def _format_parser_case(format_name: str, seed: int, index: int, payload: bytes) -> None:
+def _format_parser_case(
+    format_name: str,
+    seed: int,
+    index: int,
+    payload: bytes,
+    diagnostics: dict[str, int],
+) -> None:
     fixture = _FORMAT_PARSER_FIXTURES[format_name].read_bytes()
     start, end = _parser_mutation_bounds(format_name, fixture)
     mutation_offset = start + _bounded_value(seed, index, 41, end - start - 1)
@@ -213,7 +252,7 @@ def _format_parser_case(format_name: str, seed: int, index: int, payload: bytes)
         elif format_name == "pe_header_parser":
             read_pe_header(path)
         else:
-            MachOHandler(path)._parse_macho_basic()
+            _macho_parser_case(path, format_name, diagnostics)
 
 
 def _parser_mutation_bounds(format_name: str, fixture: bytes) -> tuple[int, int]:
@@ -225,13 +264,27 @@ def _parser_mutation_bounds(format_name: str, fixture: bytes) -> tuple[int, int]
     return 16, min(256, len(fixture))
 
 
-def _case_targets(payload: bytes, seed: int, index: int) -> tuple[tuple[str, Callable[[], None]], ...]:
+def _case_targets(
+    payload: bytes,
+    seed: int,
+    index: int,
+    parser_diagnostics: dict[str, int],
+) -> tuple[tuple[str, Callable[[], None]], ...]:
     return (
         ("assembling", lambda: _assembly_case(seed, index)),
-        ("binary_parsers", lambda: _parser_case(payload)),
-        ("elf_header_parser", lambda: _format_parser_case("elf_header_parser", seed, index, payload)),
-        ("pe_header_parser", lambda: _format_parser_case("pe_header_parser", seed, index, payload)),
-        ("macho_load_commands", lambda: _format_parser_case("macho_load_commands", seed, index, payload)),
+        ("binary_parsers", lambda: _parser_case(payload, parser_diagnostics)),
+        (
+            "elf_header_parser",
+            lambda: _format_parser_case("elf_header_parser", seed, index, payload, parser_diagnostics),
+        ),
+        (
+            "pe_header_parser",
+            lambda: _format_parser_case("pe_header_parser", seed, index, payload, parser_diagnostics),
+        ),
+        (
+            "macho_load_commands",
+            lambda: _format_parser_case("macho_load_commands", seed, index, payload, parser_diagnostics),
+        ),
         ("vm_dispatcher", lambda: _dispatcher_case(seed, index)),
         ("vm_bytecode", lambda: _vm_bytecode_case(seed, index)),
         ("relocations", lambda: _relocation_case(seed, index)),
@@ -259,15 +312,14 @@ def _exercise_case(
     payload: bytes,
     seed: int,
     index: int,
-    failures: list[dict[str, object]],
-    target_runs: dict[str, int],
+    observations: _CampaignObservations,
 ) -> None:
-    for target, action in _case_targets(payload, seed, index):
-        target_runs[target] += 1
+    for target, action in _case_targets(payload, seed, index, observations.parser_diagnostic_counts):
+        observations.target_runs[target] += 1
         try:
             action()
         except Exception as error:  # Fuzz boundary records unexpected failures for triage.
-            _record_failure(failures, target, payload, index, error)
+            _record_failure(observations.failures, target, payload, index, error)
 
 
 def run_campaign(
@@ -279,20 +331,20 @@ def run_campaign(
     if max_payload < 1:
         raise ValueError("max_payload must be positive")
 
-    failures: list[dict[str, object]] = []
-    target_runs = dict.fromkeys(_FUZZ_TARGETS, 0)
+    observations = _CampaignObservations()
     for index in range(cases):
         payload = _payload(seed, index, max_payload)
-        _exercise_case(payload, seed, index, failures, target_runs)
+        _exercise_case(payload, seed, index, observations)
 
     return {
         "schema_version": 1,
         "seed": seed,
         "cases": cases,
         "max_payload": max_payload,
-        "target_runs": target_runs,
-        "failures": failures,
-        "failure_count": len(failures),
+        "target_runs": observations.target_runs,
+        "parser_diagnostic_counts": dict(sorted(observations.parser_diagnostic_counts.items())),
+        "failures": observations.failures,
+        "failure_count": len(observations.failures),
         "failure_limit": _MAX_FAILURES,
     }
 
