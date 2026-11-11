@@ -5,8 +5,6 @@
     "all_named_adversarial_analyzers",
     "complete_compatibility_contract",
     "cross_platform_parity",
-    "published_correctness_results",
-    "published_cost_results",
     "published_resistance_results"
   ],
   "criteria": {
@@ -27,12 +25,12 @@
       "evidence": ["README.md", "docs/independent-review-packet.md", "docs/protection-independent-analysis-2026-11-10.json"]
     },
     "published_cost_results": {
-      "status": "in_progress",
-      "evidence": ["docs/pass-maturity.md", "docs/compatibility-corpus.md"]
+      "status": "complete",
+      "evidence": ["docs/pass-maturity.md", "docs/compatibility-corpus.md", "docs/protection-differential-2026-11-11-019a0551.json", "docs/protection-extended-differential-2026-11-11-019a0551.json"]
     },
     "published_correctness_results": {
-      "status": "in_progress",
-      "evidence": ["docs/compatibility-corpus.md", "docs/support-matrix.json"]
+      "status": "complete",
+      "evidence": ["docs/compatibility-corpus.md", "docs/support-matrix.json", "docs/protection-differential-2026-11-11-019a0551.json", "docs/protection-extended-differential-2026-11-11-019a0551.json"]
     },
     "published_resistance_results": {
       "status": "open",

@@ -19,6 +19,17 @@ changes require their own successful run.
 
 ## Resolved blockers
 
+- The 1.0 published correctness and observed-cost criteria now cover all 22
+  declared passes on official Linux ELF x86-64. Core and extended reports from
+  workflow `42980449435` at `019a0551` record complete evidence, zero errors,
+  and zero semantic or runtime-observable failures. The extended report covers
+  13,032 seeded runs with 3,374 applied transformations and zero output-size
+  delta. Its durations are observed corpus costs, not controlled benchmarks.
+  This closes only `published_correctness_results` and `published_cost_results`;
+  cross-platform parity and general analyzer resistance remain open. Evidence:
+  [protection-differential-2026-11-11-019a0551.json](protection-differential-2026-11-11-019a0551.json),
+  [protection-extended-differential-2026-11-11-019a0551.json](protection-extended-differential-2026-11-11-019a0551.json),
+  and [one-zero-readiness.json](one-zero-readiness.json).
 - RB-001: Per-pass maturity remains incomplete was resolved for the declared
   analyzer/decompiler effectiveness contract. The authoritative scheduled
   adversarial run `36381653200` records `7,964/7,964` expected pass rows and

@@ -116,7 +116,7 @@
       "status": "passed"
     },
     {
-      "detail": "100000 target runs, 0 failures",
+      "detail": "120000 target runs, 0 failures",
       "name": "parser_rewriter_fuzz_campaign",
       "status": "passed"
     },

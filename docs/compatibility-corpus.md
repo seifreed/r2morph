@@ -524,18 +524,29 @@ The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core
 passes over 10,860 seeded runs, 3,565 applied transformations, zero errors,
 zero semantic failures, and complete runtime-observable and evidence fields.
-The 12 extended passes were outside this campaign. The separate public corpus
-matrix completed 360 samples across six selected passes and 2,160 radare2
-static-recovery measurements with no differential or analyzer failures; an
-omitted pass application is not counted as a transformation success. The
+The same workflow also completed the 12 extended passes over 13,032 seeded
+runs: 3,374 applications, 9,658 expected omissions, zero errors, zero semantic
+or runtime-observable failures, and complete evidence for every run. All 12
+passes applied at least once. Across applied runs, output size was unchanged;
+the campaign recorded 3,573.11 seconds of aggregate transformation time. These
+are observed costs on this Linux ELF x86-64 corpus, not controlled performance
+benchmarks. The compact per-pass results and raw artifact digest are published
+in [`protection-extended-differential-2026-11-11-019a0551.json`](protection-extended-differential-2026-11-11-019a0551.json).
+Together, the core and extended reports cover all 22 declared passes for
+published correctness and observed-cost evidence on this target. They do not
+establish preview-platform parity or resistance to named analysts. The separate
+public corpus matrix completed 360 samples across six selected passes and
+2,160 radare2 static-recovery measurements with no differential or analyzer
+failures; an omitted pass application is not counted as a transformation
+success. The
 compact result, source artifact digests, and workflow link are retained in
 [`protection-differential-2026-11-11-019a0551.json`](protection-differential-2026-11-11-019a0551.json)
 and [run 42980449435](https://github.com/seifreed/r2morph/actions/runs/42980449435).
 Its aggregate output-size growth is 64,374,555 bytes over 10,860 runs and the
 campaign records 4,635.57 seconds of transformation time; these are raw
 aggregate costs, not normalized per-binary or controlled performance claims.
-This evidence does not establish preview-platform parity, extended-pass
-correctness, or resistance to named analysts.
+The core report alone does not establish preview-platform parity or resistance
+to named analysts.
 
 The authoritative current CodeVirtualization rerun at `dbf77c59` repeats all
 159 repository fixtures with the dedicated Python 3.13 virtualenv containing

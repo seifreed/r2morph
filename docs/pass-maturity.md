@@ -124,6 +124,15 @@ The aggregate job now persists these per-pass results as
 `extended-maturity-merged.json` alongside the differential corpus artifact,
 so the evidence is retained as a reviewable campaign output rather than only
 being checked transiently inside a runner.
+For run `42980449435` at commit `019a0551`, the bounded report
+[`protection-extended-differential-2026-11-11-019a0551.json`](protection-extended-differential-2026-11-11-019a0551.json)
+publishes the twelve extended passes' correctness and observed-cost results:
+13,032 seeded runs, 3,374 applied transformations, zero errors or semantic and
+runtime-observable failures, complete evidence, and zero output-size delta.
+Its durations are corpus observations rather than controlled performance
+benchmarks. Combined with the core differential report, this closes published
+correctness and cost evidence for all 22 passes on Linux ELF x86-64 only; it
+does not close platform parity or general analyzer resistance.
 The same aggregate job now publishes `maturity-evidence-merged.json`. It joins
 the differential and extended-pass summaries with the composition JUnit shards
 and records, per pass, whether performance, behavioral validation, affected

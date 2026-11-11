@@ -23,6 +23,9 @@ _CRITERIA = (
     "published_resistance_results",
     "stable_api_cli",
 )
+_EXPECTED_DECLARED_PASSES = 22
+_EXPECTED_SEED_RUNS = 23892
+_EXPECTED_APPLIED_RUNS = 6939
 
 
 def test_one_zero_gate_allows_alpha_while_readiness_is_open() -> None:
@@ -52,6 +55,29 @@ def test_readiness_keeps_general_resistance_results_open_when_scope_is_documente
         and "does not establish general resistance to professional reverse engineering" in pass_maturity
         and "close the 1.0 `published_resistance_results` criterion" in pass_maturity
         and "does not establish general resistance to professional reverse engineering" in release_blockers
+    )
+
+
+def test_readiness_publishes_correctness_and_cost_for_all_declared_passes() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    core_path = _ROOT / "docs" / "protection-differential-2026-11-11-019a0551.json"
+    extended_path = _ROOT / "docs" / "protection-extended-differential-2026-11-11-019a0551.json"
+    core = json.loads(core_path.read_text(encoding="utf-8"))
+    extended = json.loads(extended_path.read_text(encoding="utf-8"))
+    criteria = readiness["criteria"]
+    extended_summary = extended["summary"]
+
+    expect(
+        criteria["published_correctness_results"]["status"] == "complete"
+        and criteria["published_cost_results"]["status"] == "complete"
+        and "published_correctness_results" not in readiness["blocking_criteria"]
+        and "published_cost_results" not in readiness["blocking_criteria"]
+        and core["campaign"]["core_passes"] + extended_summary["extended_pass_count"] == _EXPECTED_DECLARED_PASSES
+        and core["campaign"]["seed_runs"] + extended["corpus_scope"]["total_seed_runs"] == _EXPECTED_SEED_RUNS
+        and core["campaign"]["applied_runs"] + extended_summary["applied_runs"] == _EXPECTED_APPLIED_RUNS
+        and core["campaign"]["semantic_failures"] + extended_summary["semantic_failures"] == 0
+        and extended_summary["runtime_observable_failures"] == 0
+        and extended_summary["complete_evidence_missing_runs"] == 0
     )
 
 
