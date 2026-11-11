@@ -134,6 +134,17 @@ successful run.
   This adds a bounded pass-by-fixture slice; it does not resolve the remaining
   full analyzer matrix or establish general resistance. Evidence:
   [protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json](protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json).
+  A host shard at commit `52dfc2eac82584149dcb6e4c83dd08fd03c040a6` reran
+  the same ten fixtures through the available local analyzers. IDA Pro 9.5,
+  Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom analyzer
+  completed all 70 expected runs with zero tool errors. Binary Ninja was
+  unavailable because its license could not be acquired; Triton was unavailable
+  on this macOS host. All ten CodeVirtualization transformations applied with
+  zero unsupported functions. This fills ten angr slots and independently
+  confirms the IDA/Ghidra/Unicorn slice, but does not complete all pass/fixture
+  slots. Evidence:
+  [protection-host-adversarial-shard-2026-11-11-52dfc2ea.json](protection-host-adversarial-shard-2026-11-11-52dfc2ea.json)
+  and [test_published_host_adversarial_shard.py](../tests/unit/test_published_host_adversarial_shard.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
