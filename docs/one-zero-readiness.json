@@ -9,7 +9,7 @@
   "criteria": {
     "all_named_adversarial_analyzers": {
       "status": "open",
-      "evidence": ["docs/compatibility-corpus.md", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json", "docs/release-blockers.md"]
+      "evidence": ["docs/compatibility-corpus.md", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json", "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json", "docs/release-blockers.md"]
     },
     "complete_compatibility_contract": {
       "status": "complete",
@@ -33,7 +33,7 @@
     },
     "published_resistance_results": {
       "status": "open",
-      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-vm-resistance-2026-11-11-4749bca3.json", "docs/protection-vm-seed-diversity-2026-11-11-4749bca3.json", "docs/protection-vm-bytecode-grammar-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json"]
+      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json", "docs/protection-vm-resistance-2026-11-11-4749bca3.json", "docs/protection-vm-seed-diversity-2026-11-11-4749bca3.json", "docs/protection-vm-bytecode-grammar-2026-11-11-4749bca3.json", "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json", "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json", "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json", "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json"]
     },
     "stable_api_cli": {
       "status": "complete",

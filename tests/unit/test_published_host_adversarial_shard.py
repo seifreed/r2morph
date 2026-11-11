@@ -12,6 +12,7 @@ _REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-52dfc2e
 _NEXT_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _THIRD_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json"
 _FOURTH_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json"
+_FIFTH_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json"
 _EXPECTED_FIXTURES = {
     "elf_switch_pie_x86_64",
     "elf_vm_addflaglive_x86_64",
@@ -71,6 +72,38 @@ _FOURTH_SHARD_COMPLETED_RUNS = {
     "unicorn": len(_FOURTH_SHARD_FIXTURES) - 1,
 }
 _FOURTH_SHARD_EXPECTED_TOOLS = _FOURTH_SHARD_COMPLETED_TOOLS | {"binary-ninja", "triton", "unicorn"}
+_FIFTH_SHARD_FIXTURES = {
+    "elf_vm_cmpsynth_x86_64",
+    "elf_vm_fpindexed_x86_64",
+    "elf_vm_gs_tls_x86_64",
+    "elf_vm_idxcall_x86_64",
+    "elf_vm_incall_x86_64",
+    "elf_vm_memops_x86_64",
+    "elf_vm_memwidth_x86_64",
+    "elf_vm_movx_x86_64",
+    "elf_vm_vex256_unpack_x86_64",
+    "elf_vm_vex_word_shuffle_x86_64",
+}
+_FIFTH_SHARD_EXPECTED_TOOLS = {
+    "angr",
+    "binary-ninja",
+    "custom",
+    "ghidra",
+    "ida-pro",
+    "objdump",
+    "radare2",
+    "triton",
+    "unicorn",
+}
+_FIFTH_SHARD_COMPLETED_RUNS = {
+    "angr": len(_FIFTH_SHARD_FIXTURES),
+    "custom": len(_FIFTH_SHARD_FIXTURES),
+    "ghidra": len(_FIFTH_SHARD_FIXTURES),
+    "ida-pro": len(_FIFTH_SHARD_FIXTURES),
+    "objdump": len(_FIFTH_SHARD_FIXTURES),
+    "radare2": len(_FIFTH_SHARD_FIXTURES),
+    "unicorn": len(_FIFTH_SHARD_FIXTURES) - 2,
+}
 _THIRD_SHARD_COMPLETED_RUNS = {
     **{tool: len(_THIRD_SHARD_FIXTURES) for tool in _THIRD_SHARD_COMPLETED_TOOLS},
     "unicorn": len(_THIRD_SHARD_FIXTURES) - 1,
@@ -249,5 +282,48 @@ def test_fourth_host_adversarial_shard_records_unavailable_analyzers() -> None:
 
 def test_fourth_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
     report = _FOURTH_SHARD_REPORT.read_text(encoding="utf-8")
+
+    expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))
+
+
+def test_fifth_host_adversarial_shard_applies_virtualization_to_new_fixtures() -> None:
+    report = json.loads(_FIFTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["fixture_shard"] == {"count": 16, "index": 4}
+        and report["sample_count"] == len(_FIFTH_SHARD_FIXTURES)
+        and {sample["original"] for sample in report["samples"]} == _FIFTH_SHARD_FIXTURES
+        and report["pass_names"] == ["CodeVirtualization"]
+        and report["pass_summary"]["CodeVirtualization"]["applied"] == len(_FIFTH_SHARD_FIXTURES)
+        and report["pass_summary"]["CodeVirtualization"]["unsupported_functions"] == 0
+    )
+
+
+def test_fifth_host_adversarial_shard_completes_available_analyzers() -> None:
+    report = json.loads(_FIFTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["completed_tool_runs_by_tool"] == _FIFTH_SHARD_COMPLETED_RUNS
+        and report["summary"]["completed_tool_runs"] == sum(_FIFTH_SHARD_COMPLETED_RUNS.values())
+        and report["summary"]["expected_tool_runs"] == len(_FIFTH_SHARD_FIXTURES) * len(_FIFTH_SHARD_EXPECTED_TOOLS)
+        and report["summary"]["error_tool_runs"] == 0
+    )
+
+
+def test_fifth_host_adversarial_shard_records_unavailable_analyzers() -> None:
+    report = json.loads(_FIFTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["unavailable_reasons_by_tool"]
+        == {
+            "binary-ninja": {"analyzer license is unavailable": report["sample_count"]},
+            "triton": {"module 'triton' is unavailable": report["sample_count"]},
+            "unicorn": {"the installed x86 emulator does not support an instruction in this fixture": 2},
+        }
+    )
+
+
+def test_fifth_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
+    report = _FIFTH_SHARD_REPORT.read_text(encoding="utf-8")
 
     expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))
