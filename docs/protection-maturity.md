@@ -225,10 +225,15 @@ and the reproducible second-pass review is in
 [`docs/independent-review.json`](independent-review.json). An analyzer is marked
 `unavailable` when its executable or license is absent; those rows are not
 treated as passing evidence. The automated review is not human sign-off.
-The current local campaign at `2e4ad8e` ran 20,000 cases per target across
-`binary_parsers`, `vm_dispatcher`, `relocations`, and `binary_rewriter`, for
-80,000 target runs with zero failures; its bounded report is
-[`docs/protection-fuzz-2026-09-05-2e4ad8e.json`](protection-fuzz-2026-09-05-2e4ad8e.json).
+The current wheel-backed fuzz campaign at `95cff0fb` ran 20,000 cases per
+target across malformed bytes, valid-fixture mutations for ELF/PE/Mach-O
+parsers, assembly, VM dispatch and bytecode, relocations, and rewriting. All
+180,000 target runs completed with zero failures. It recorded 413 recoverable
+Mach-O parser warnings as bounded counters without emitting per-input log spam.
+The pinned report is
+[`docs/protection-fuzz-format-aware-2026-11-11-95cff0fb.json`](protection-fuzz-format-aware-2026-11-11-95cff0fb.json).
+This is parser and code-generation robustness evidence; it does not establish
+semantic equivalence, analyzer resistance, or platform parity.
 
 ## 4. Obfuscation maturity technique-by-technique
 

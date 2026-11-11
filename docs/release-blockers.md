@@ -190,15 +190,17 @@ it does not establish parity for preview or experimental targets.
 The current scheduled workflow also passed 20,000 target runs on commit
 `0933d50c`; its retained summary is
 [protection-fuzz-2026-09-23-0933d50c.json](protection-fuzz-2026-09-23-0933d50c.json).
-The latest reviewed-branch rerun completed 20,000 cases per target (120,000
-target runs) with seed `20261111` and zero failures after installing the built
-wheel. It includes generated and malformed x86-64 assembly, binary parsers, VM
-dispatch and bytecode generation, relocations, and rewriting. The interpreter
-is generated and assembled once per 128 cases. See the pinned
-[protection-fuzz-2026-11-11-a2b17f86.json](protection-fuzz-2026-11-11-a2b17f86.json)
-and [workflow run 43001693635](https://github.com/seifreed/r2morph/actions/runs/43001693635).
-This closes the six-target bounded run; broader platform fuzzing and
-professional adversarial resistance remain separate requirements.
+The latest wheel-backed rerun at commit `95cff0fb` completed 20,000 cases per
+target (180,000 target runs) with seed `20261111` and zero failures. It adds
+deterministic mutations of valid ELF headers, PE optional headers, and Mach-O
+load commands alongside malformed bytes, assembly, VM dispatch/codegen,
+relocations, and rewriting. The 413 recoverable Mach-O warnings are counted in
+the report rather than emitted per input. See
+[protection-fuzz-format-aware-2026-11-11-95cff0fb.json](protection-fuzz-format-aware-2026-11-11-95cff0fb.json)
+and [workflow run 43067351979](https://github.com/seifreed/r2morph/actions/runs/43067351979).
+This strengthens format-parser fuzz evidence; semantic equivalence, full
+cross-platform fuzzing, and professional adversarial resistance remain separate
+requirements.
 
 ## Blocker index
 
