@@ -60,6 +60,7 @@ jobs:
           python -m pip install --editable .
 
       - name: Build and install package wheel
+        id: build_wheel
         run: |
           python -m build
           python -m pip install --force-reinstall dist/*.whl
@@ -186,7 +187,7 @@ jobs:
           retention-days: 7
 
       - name: Run cross-format differential smoke
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -309,7 +310,7 @@ jobs:
           PY
 
       - name: Run composition regression smoke
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -402,7 +403,7 @@ jobs:
           PY
 
       - name: Run VM semantic regression smoke
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -477,7 +478,7 @@ jobs:
           PY
 
       - name: Run parser and rewriter fuzz smoke
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -511,7 +512,7 @@ jobs:
           PY
 
       - name: Run extended maturity pass smoke
-        if: always() && !cancelled()
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
         env:
           EXTENDED_MATURITY_PASSES: >-
             AntiDisassembly,APIHashing,CodeMobility,DataFlowMutation,
