@@ -1,0 +1,84 @@
+{
+  "artifact": {
+    "file": "differential-corpus-merged.json",
+    "name": "differential-corpus-merged-42980449435-1",
+    "public_compatibility_sha256": "cdc2840288b1275805b5410dac2c19c7a4e1f5010fd2f109c65df430c09b565d",
+    "sha256": "26f03ddbb4f5a2e7fef80f2b5f0b190a866b836c0795588aea6203781cc8950a"
+  },
+  "campaign": {
+    "applied_runs": 3565,
+    "complete_evidence_coverage_percent": 100.0,
+    "core_passes": 10,
+    "error_runs": 0,
+    "expected_core_passes": 10,
+    "expected_extended_passes": 12,
+    "extended_passes": 0,
+    "generated_fixtures": 200,
+    "omitted_runs": 7295,
+    "output_size_delta_bytes": 64374555,
+    "runtime_duration_delta_seconds": -4.601233675996099,
+    "runtime_observable_coverage_percent": 100.0,
+    "runtime_observable_failures": 0,
+    "seed_runs": 10860,
+    "semantic_failures": 0,
+    "transform_duration_seconds": 4635.566579574999
+  },
+  "commit": "019a05517dc2857cc2103301bf6b3c2bdb7b07b5",
+  "cost_note": "Output-size and transform-duration totals are raw aggregate measurements. Runtime-duration delta is not a controlled benchmark and is not a performance claim.",
+  "measurement": "differential-corpus",
+  "public_compatibility": {
+    "failed_samples": 0,
+    "passes": {
+      "BlockReordering": {
+        "applied": 30,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 330
+      },
+      "CodeVirtualization": {
+        "applied": 234,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 126
+      },
+      "InstructionExpansion": {
+        "applied": 73,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 287
+      },
+      "InstructionSubstitution": {
+        "applied": 287,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 73
+      },
+      "NopInsertion": {
+        "applied": 84,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 276
+      },
+      "RegisterSubstitution": {
+        "applied": 5,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 355
+      }
+    },
+    "samples": 360,
+    "static_analyzer": "radare2",
+    "static_failures": 0,
+    "static_measurements": 2160
+  },
+  "schema_version": 1,
+  "scope_note": "Correctness and cost evidence for the declared Linux ELF x86-64 campaigns only. It does not establish cross-platform parity, extended-pass coverage, or analyzer resistance.",
+  "workflow_run": 42980449435,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/42980449435"
+}
