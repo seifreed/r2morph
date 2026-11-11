@@ -1663,6 +1663,9 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "differential-fuzz-smoke.json" in differential
         and "assembling" in differential
         and "binary_parsers" in differential
+        and "elf_header_parser" in differential
+        and "pe_header_parser" in differential
+        and "macho_load_commands" in differential
         and "vm_dispatcher" in differential
         and "vm_bytecode" in differential
         and "relocations" in differential

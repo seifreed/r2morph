@@ -83,6 +83,9 @@ jobs:
           expected_targets = {
               "assembling": cases,
               "binary_parsers": cases,
+              "elf_header_parser": cases,
+              "pe_header_parser": cases,
+              "macho_load_commands": cases,
               "vm_dispatcher": cases,
               "vm_bytecode": cases,
               "relocations": cases,

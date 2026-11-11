@@ -500,6 +500,9 @@ jobs:
           expected_targets = {
               "assembling": 64,
               "binary_parsers": 64,
+              "elf_header_parser": 64,
+              "pe_header_parser": 64,
+              "macho_load_commands": 64,
               "vm_dispatcher": 64,
               "vm_bytecode": 64,
               "relocations": 64,

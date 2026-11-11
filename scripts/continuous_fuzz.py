@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -40,9 +41,25 @@ _VM_INTERPRETER_SAMPLE_INTERVAL = 128
 _VM_INTERPRETER_ADDRESS = 0x401000
 _VM_BYTECODE_BASE = 0x402000
 _VM_BYTECODE_MAX_SIZE = 4096
-_FUZZ_TARGETS = ("assembling", "binary_parsers", "vm_dispatcher", "vm_bytecode", "relocations", "binary_rewriter")
+_FUZZ_TARGETS = (
+    "assembling",
+    "binary_parsers",
+    "elf_header_parser",
+    "pe_header_parser",
+    "macho_load_commands",
+    "vm_dispatcher",
+    "vm_bytecode",
+    "relocations",
+    "binary_rewriter",
+)
 _X86_64_ASSEMBLER = Ks(KS_ARCH_X86, KS_MODE_64)
-_ELF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "dataset" / "elf_x86_64"
+_DATASET = Path(__file__).parents[1] / "fixtures" / "dataset"
+_ELF_FIXTURE = _DATASET / "elf_x86_64"
+_FORMAT_PARSER_FIXTURES = {
+    "elf_header_parser": _ELF_FIXTURE,
+    "pe_header_parser": _DATASET / "pe_x86_64.exe",
+    "macho_load_commands": _DATASET / "macho_arm64",
+}
 
 
 def _bounded_value(seed: int, index: int, slot: int, maximum: int) -> int:
@@ -180,10 +197,41 @@ def _parser_case(payload: bytes) -> None:
         MachOHandler(path)._parse_macho_basic()
 
 
+def _format_parser_case(format_name: str, seed: int, index: int, payload: bytes) -> None:
+    fixture = _FORMAT_PARSER_FIXTURES[format_name].read_bytes()
+    start, end = _parser_mutation_bounds(format_name, fixture)
+    mutation_offset = start + _bounded_value(seed, index, 41, end - start - 1)
+    mutation = payload[0] if payload and payload[0] else _bounded_value(seed, index, 42, 255) or 1
+    mutated = bytearray(fixture)
+    mutated[mutation_offset] ^= mutation
+
+    with tempfile.TemporaryDirectory(prefix="r2morph-fuzz-") as directory:
+        path = Path(directory) / "candidate"
+        path.write_bytes(mutated)
+        if format_name == "elf_header_parser":
+            parse_elf_header(path)
+        elif format_name == "pe_header_parser":
+            read_pe_header(path)
+        else:
+            MachOHandler(path)._parse_macho_basic()
+
+
+def _parser_mutation_bounds(format_name: str, fixture: bytes) -> tuple[int, int]:
+    if format_name == "elf_header_parser":
+        return 16, min(64, len(fixture))
+    if format_name == "pe_header_parser":
+        optional_header_offset = struct.unpack_from("<I", fixture, 0x3C)[0] + 24
+        return optional_header_offset, min(optional_header_offset + 240, len(fixture))
+    return 16, min(256, len(fixture))
+
+
 def _case_targets(payload: bytes, seed: int, index: int) -> tuple[tuple[str, Callable[[], None]], ...]:
     return (
         ("assembling", lambda: _assembly_case(seed, index)),
         ("binary_parsers", lambda: _parser_case(payload)),
+        ("elf_header_parser", lambda: _format_parser_case("elf_header_parser", seed, index, payload)),
+        ("pe_header_parser", lambda: _format_parser_case("pe_header_parser", seed, index, payload)),
+        ("macho_load_commands", lambda: _format_parser_case("macho_load_commands", seed, index, payload)),
         ("vm_dispatcher", lambda: _dispatcher_case(seed, index)),
         ("vm_bytecode", lambda: _vm_bytecode_case(seed, index)),
         ("relocations", lambda: _relocation_case(seed, index)),
