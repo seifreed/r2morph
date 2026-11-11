@@ -547,6 +547,19 @@ report is
 This adds one bounded fixture shard and does not establish all-pass analyzer
 coverage or cross-platform parity.
 
+A third deterministic host shard applied CodeVirtualization to ten more ELF
+x86-64 fixtures, with no unsupported functions or pass errors. IDA Pro 9.5,
+Ghidra 12.2, angr, radare2, objdump, and the custom analyzer completed all ten
+original/protected pairs; Unicorn completed nine and reported one unsupported
+instruction. The shard therefore completed 69/90 analyzer runs with zero tool
+errors. Binary Ninja remained unavailable because the host license was
+unavailable, and Triton was not installed. Its pinned report and regression
+checks are
+[`protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json`](protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json)
+and [`test_published_host_adversarial_shard.py`](../tests/unit/test_published_host_adversarial_shard.py).
+This adds fixture-level evidence only; it does not close all-analyzer coverage,
+the independent resistance review, or platform parity.
+
 The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core
 passes over 10,860 seeded runs, 3,565 applied transformations, zero errors,

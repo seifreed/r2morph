@@ -155,6 +155,17 @@ successful run.
   matrix or the resistance criterion. Evidence:
   [protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json](protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json)
   and [test_published_host_adversarial_shard.py](../tests/unit/test_published_host_adversarial_shard.py).
+  A third deterministic shard at commit `c5b590cc` applied CodeVirtualization
+  to ten more ELF x86-64 fixtures without unsupported functions or pass errors.
+  IDA Pro 9.5, Ghidra 12.2, angr, radare2, objdump, and the custom analyzer
+  completed all ten original/protected measurements. Unicorn completed nine;
+  one fixture used an unsupported instruction. The report records 69/90
+  analyzer runs completed, zero tool errors, and 21 unavailable slots: ten
+  Binary Ninja slots (license unavailable), ten Triton slots (module
+  unavailable), and one Unicorn slot. This adds a bounded fixture slice and
+  does not close the full pass/fixture matrix or resistance criterion. Evidence:
+  [protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json](protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json)
+  and [test_published_host_adversarial_shard.py](../tests/unit/test_published_host_adversarial_shard.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
