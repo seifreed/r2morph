@@ -61,6 +61,24 @@ function counts, seeds, and exact limits are recorded in
 [`protection-ida-targeted-2026-11-11-c70a113b.json`](protection-ida-targeted-2026-11-11-c70a113b.json).
 The IDA Pro version was not exposed; this bounded run is analyzer coverage,
 not a devirtualization-resistance result or a replacement for the full campaign.
+The completed adversarial benchmark run
+[`42987427831`](https://github.com/seifreed/r2morph/actions/runs/42987427831)
+extends the run to 22 passes and 7,964 pass rows over repository fixtures plus
+200 generated ELF x86-64 and C++ fixtures. All 22 passes have comparable
+radare2, angr, and Ghidra evidence; the campaign recorded 2,341 applied passes,
+zero pass errors, and no missing pass or analyzer rows. Triton completed all
+7,964 analyzer runs; Unicorn completed 7,436 (93.37%). Of 71,676 expected
+analyzer runs, 55,220 completed overall (77.04%), leaving 16,456 explicitly
+unavailable runs and 17 evidence blockers: Binary Ninja's module and IDA Pro's
+executable were unavailable, Unicorn could not execute 528 fixture runs, and
+angr lacked three decompiler baselines. The pinned summary records the source report hash,
+tool coverage, blockers, and VM smoke reports in
+[`protection-adversarial-campaign-2026-11-11-4749bca3.json`](protection-adversarial-campaign-2026-11-11-4749bca3.json).
+The accompanying 15-fixture, ten-seed VM campaign observed semantic parity,
+distinct artifacts, opcode/handler/dispatcher diversity, tamper divergence,
+and progressive growth on six fixtures. It is automated smoke evidence only:
+the report retains pending independent adversarial validation and does not
+establish general resistance.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
 The workflow pins the collected matrix at 73 cases so loss of a preview corpus

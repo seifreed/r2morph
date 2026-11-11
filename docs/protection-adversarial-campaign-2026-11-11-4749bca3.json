@@ -1,0 +1,406 @@
+{
+  "campaign": {
+    "applied_pass_runs": 2341,
+    "blocker_totals": {
+      "blocker_categories": 6,
+      "decompiler_baseline_unavailable_pairs_by_pass": 2,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 17,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "blockers": {
+      "decompiler_baseline_unavailable_pairs_by_pass": {
+        "CodeVirtualization": {
+          "angr": 2
+        },
+        "ConstantUnfolding": {
+          "angr": 1
+        }
+      },
+      "incomplete_tool_coverage": [
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "binary-ninja",
+          "unavailable_runs": 7964
+        },
+        {
+          "completed_run_coverage_percent": 93.37,
+          "completed_runs": 7436,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "unicorn",
+          "unavailable_runs": 528
+        },
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "ida-pro",
+          "unavailable_runs": 7964
+        }
+      ],
+      "non_completed_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      },
+      "tools_without_full_completion": [
+        "binary-ninja",
+        "ida-pro",
+        "unicorn"
+      ],
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 7964
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 7964
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 528
+        }
+      },
+      "unavailable_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      }
+    },
+    "completed_analyzer_coverage_percent": 77.04,
+    "completed_analyzer_runs": 55220,
+    "completed_coverage_percent_by_analyzer": {
+      "angr": 100.0,
+      "custom": 100.0,
+      "ghidra": 100.0,
+      "objdump": 100.0,
+      "radare2": 100.0,
+      "triton": 100.0,
+      "unicorn": 93.37
+    },
+    "completed_runs_by_analyzer": {
+      "angr": 7964,
+      "custom": 7964,
+      "ghidra": 7964,
+      "objdump": 7964,
+      "radare2": 7964,
+      "triton": 7964,
+      "unicorn": 7436
+    },
+    "decompiler_incomplete_passes": [],
+    "error_pass_runs": 0,
+    "expected_analyzer_runs": 71676,
+    "expected_pass_runs": 7964,
+    "missing_analyzer_runs": 0,
+    "missing_pass_runs": 0,
+    "observed_analyzer_runs": 71676,
+    "observed_pass_runs": 7964,
+    "required_comparable_decompilers": [
+      "angr",
+      "ghidra",
+      "radare2"
+    ],
+    "required_decompiler_pass_count": 22,
+    "status": "completed",
+    "unavailable_reasons_by_analyzer": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "unavailable_runs": 16456,
+    "unavailable_runs_by_analyzer": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    }
+  },
+  "measurement": "published-adversarial-campaign-evidence",
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus_families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "expected_analyzers": [
+      "radare2",
+      "objdump",
+      "angr",
+      "binary-ninja",
+      "unicorn",
+      "triton",
+      "ida-pro",
+      "ghidra",
+      "custom"
+    ],
+    "generated_fixture_count": 200,
+    "pass_count": 22,
+    "pass_rows": {
+      "APIHashing": {
+        "applied_runs": 24,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "AntiDisassembly": {
+        "applied_runs": 58,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "BlockReordering": {
+        "applied_runs": 13,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "CodeMobility": {
+        "applied_runs": 187,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "CodeVirtualization": {
+        "applied_runs": 362,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "ConstantUnfolding": {
+        "applied_runs": 217,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "ControlFlowFlattening": {
+        "applied_runs": 51,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "DataFlowMutation": {
+        "applied_runs": 28,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "DeadCodeInjection": {
+        "applied_runs": 55,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "FunctionOutlining": {
+        "applied_runs": 178,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "ImportObfuscation": {
+        "applied_runs": 177,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "InstructionExpansion": {
+        "applied_runs": 20,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "InstructionSubstitution": {
+        "applied_runs": 216,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "NopInsertion": {
+        "applied_runs": 23,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "OpaquePredicates": {
+        "applied_runs": 190,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "PatternSubstitution": {
+        "applied_runs": 211,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "PolymorphicEngine": {
+        "applied_runs": 233,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "RegisterSubstitution": {
+        "applied_runs": 8,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "SelfModifyingCode": {
+        "applied_runs": 35,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "ShortJumpPatching": {
+        "applied_runs": 12,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "StackStrings": {
+        "applied_runs": 6,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      },
+      "StringObfuscation": {
+        "applied_runs": 37,
+        "comparable_decompilers": [
+          "angr",
+          "ghidra",
+          "radare2"
+        ],
+        "decompiler_status": "comparable"
+      }
+    },
+    "pass_runs": 7964,
+    "platform": {
+      "architecture": "x86-64",
+      "format": "ELF",
+      "os": "Linux"
+    },
+    "sample_count": 362
+  },
+  "source": {
+    "commit": "4749bca36dcbf668495f76b09f5d1b202af70eda",
+    "merged_report_bytes": 44759883,
+    "merged_report_sha256": "d24876dae39a7c410222ff64ab0c159d29a628d5b6660735aae80676103dfafd",
+    "workflow_artifact_ids": {
+      "merged_report": 13852247749,
+      "vm_adversarial": 13853125631,
+      "vm_bytecode_grammar": 13851469873,
+      "vm_seed_diversity": 13852667040
+    },
+    "workflow_run_id": 42987427831,
+    "workflow_run_url": "https://github.com/seifreed/r2morph/actions/runs/42987427831"
+  },
+  "vm_resistance_smoke": {
+    "adversarial_report": "docs/protection-vm-resistance-2026-11-11-4749bca3.json",
+    "all_tamper_probes_diverged": true,
+    "automated_status": "completed",
+    "bytecode_grammar_report": "docs/protection-vm-bytecode-grammar-2026-11-11-4749bca3.json",
+    "claim": "automated-smoke-only; general resistance is not established",
+    "dispatcher_diversity_observed": true,
+    "evidence_quality": "automated-adversarial-smoke",
+    "fixture_count": 15,
+    "handler_diversity_observed": true,
+    "human_review_status": "pending-human-adversarial-review",
+    "opcode_assignment_diversity_observed": true,
+    "pending_review_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "progressive_growth_supported_fixture_count": 6,
+    "report_sha256": {
+      "adversarial": "97a72c55ba9390c751e6fe1c0ddabe4a3053f84b952a0bfda9aab34d08d4c530",
+      "bytecode_grammar": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef",
+      "seed_diversity": "077a49437857b5ea724944029cb8d1f83ffb3b5f341660a5b7c5822375ea4815"
+    },
+    "seed_count": 10,
+    "seed_diversity_report": "docs/protection-vm-seed-diversity-2026-11-11-4749bca3.json",
+    "semantic_parity": true
+  }
+}

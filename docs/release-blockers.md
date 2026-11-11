@@ -8,14 +8,13 @@ criterion remains open or in progress.
 
 ## Latest full CI verification of a code-bearing commit
 
-Commit `4bd8aa85` passed CI run
-[`42595479228`](https://github.com/seifreed/r2morph/actions/runs/42595479228)
-with all 15 jobs successful, including the full Linux Python 3.12 suite,
-integration tests, the Python/platform matrix, property and fuzz validation,
-installed-wheel smoke tests, lint, and type checking. The Windows Python 3.12
-and 3.13 jobs both passed after adding bounded retries for transient radare2
-download failures. This result verifies that code commit only; later code
-changes require their own successful run.
+Commit `0134656bc95668af4ca5a40af07cb6e9166bd4dc` passed CI run
+[`43008805011`](https://github.com/seifreed/r2morph/actions/runs/43008805011)
+with all 15 jobs successful. The run includes unit and integration suites,
+installed-wheel smoke tests, property and fuzz validation, lint and type
+checking, and macOS, Windows, and Ubuntu jobs on Python 3.12 and 3.13. This
+result verifies that code commit only; later code changes require their own
+successful run.
 
 ## Resolved blockers
 
@@ -98,22 +97,29 @@ changes require their own successful run.
   [pass-maturity.md](pass-maturity.md). Exit criteria: preview targets either
   reach equivalent evidence to Linux ELF x86-64 or remain explicitly
   non-official in the support matrix.
-- RB-005: The adversarial benchmark's required cross-tool campaign is resolved.
-  Run `36381653200` contains complete comparable `radare2`, `angr`, and `ghidra`
-  rows for all 22 declared passes. The Binary Ninja application bundle exists
-  in the local environment. Binary Ninja is deliberately on hold for this
-  milestone because the benchmark's real-fixture API probe returns
-  `unavailable` with `analyzer license is unavailable`. It remains an explicit
-  unavailable slot and is not counted as analyzer evidence. No licensed API is
-  available for this campaign.
+- RB-005: The required three-decompiler maturity campaign is complete, while
+  the broader all-named-analyzer release gate remains open. Run
+  [`42987427831`](https://github.com/seifreed/r2morph/actions/runs/42987427831)
+  merged all 16 deterministic shards and recorded comparable
+  `radare2`, `angr`, and `ghidra` evidence for all 22 passes. Across 7,964
+  pass rows, 2,341 transformations were applied, with zero pass errors or
+  missing rows. The campaign observed all 71,676 expected analyzer slots, but
+  only 55,220 runs completed (77.04%); 17 evidence blockers remain. Binary
+  Ninja's module and IDA Pro's `idat` executable were unavailable, Unicorn had
+  528 unsupported-instruction rows, and angr lacked three decompiler baseline
+  pairs. Triton completed all 7,964 runs and Unicorn completed 7,436 (93.37%).
+  Binary Ninja is deliberately on hold for this campaign because its licensed
+  module is not available. These are recorded unavailable results, not analyzer
+  evidence.
+  The aggregate records the remaining rows in `adversarial_evidence_blockers`
+  and `adversarial_evidence_blocker_totals`; those counts are retained in the
+  pinned evidence report.
   Evidence map:
-  [compatibility-corpus.md](compatibility-corpus.md),
-  [adversarial-benchmark.yml](../.github/workflows/adversarial-benchmark.yml)
-  `adversarial_evidence_blockers` and `adversarial_evidence_blocker_totals`.
-  Exit criteria: the required three-tool comparable campaign remains complete;
-  Binary Ninja remains a recorded unavailable hold with its reason. The
-  campaign is partitioned into deterministic fixture shards and merged before
-  the corpus-wide gate runs; this addresses campaign sustainability.
+  [protection-adversarial-campaign-2026-11-11-4749bca3.json](protection-adversarial-campaign-2026-11-11-4749bca3.json).
+  This closes only the required comparable three-decompiler criterion; it does
+  not close `all_named_adversarial_analyzers`.
+  Exit criteria: complete the declared analyzer slots, resolve the 17 reported
+  evidence blockers, and retain comparable results for all 22 passes.
 
 ## Resolved review gates
 
@@ -132,6 +138,13 @@ changes require their own successful run.
   This resolves only the human signoff requirement. It does not establish
   general resistance to professional reverse engineering or close the 1.0
   `published_resistance_results` criterion.
+  The newer automated campaign adds 15 fixtures and ten seeds with semantic
+  parity, artifact/opcode/handler/dispatcher diversity, tamper-probe divergence,
+  and progressive growth on six fixtures. Its report explicitly remains
+  `pending-human-adversarial-review`; see
+  [protection-adversarial-campaign-2026-11-11-4749bca3.json](protection-adversarial-campaign-2026-11-11-4749bca3.json)
+  and the three pinned VM reports it references. It strengthens smoke evidence
+  but does not establish general resistance or close that release criterion.
   Exit criteria: the
   approval remains bound to the reviewed commit; implementation changes require
   another independent review.
