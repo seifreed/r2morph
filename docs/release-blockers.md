@@ -118,6 +118,13 @@ successful run.
   [protection-adversarial-campaign-2026-11-11-4749bca3.json](protection-adversarial-campaign-2026-11-11-4749bca3.json).
   This closes only the required comparable three-decompiler criterion; it does
   not close `all_named_adversarial_analyzers`.
+  A supplemental local calibration at commit `0920b7d32e0ad4c3588150baaa54c25c49d4fff4`
+  measured all 22 pass names against `elf_vm_arith_x86_64` with IDA Pro 9.5 and
+  Ghidra 11.4.2. Two passes applied and 20 were no-ops; both analyzers completed
+  all 22 measurements, and Unicorn returned matching exit codes for all 22
+  pairs. This is one fixture and does not fill the pass-by-fixture matrix.
+  Binary Ninja remained unavailable because its license was unavailable on the
+  host. Evidence: [protection-host-analyzer-calibration-2026-11-11-0920b7d3.json](protection-host-analyzer-calibration-2026-11-11-0920b7d3.json).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 

@@ -1,0 +1,3517 @@
+{
+  "campaign": "host-analyzer-calibration",
+  "date_utc": "2026-11-11",
+  "environment": {
+    "architecture": "arm64",
+    "ghidra": "11.4.2",
+    "ida_pro": "9.5",
+    "operating_system": "Darwin",
+    "python": "3.12.16"
+  },
+  "report": {
+    "original": "elf_vm_arith_x86_64",
+    "pass_names": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "passes": [
+      {
+        "mutations_applied": 0,
+        "pass_name": "BlockReordering",
+        "status": "no-op"
+      },
+      {
+        "functions_virtualized": 1,
+        "partial_virtualization": 0,
+        "pass_name": "CodeVirtualization",
+        "status": "applied",
+        "unsupported_functions": 0
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "ConstantUnfolding",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "ControlFlowFlattening",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "DeadCodeInjection",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "InstructionExpansion",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 1,
+        "pass_name": "InstructionSubstitution",
+        "status": "applied"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "NopInsertion",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "PatternSubstitution",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "RegisterSubstitution",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "AntiDisassembly",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "APIHashing",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "CodeMobility",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "DataFlowMutation",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "FunctionOutlining",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "ImportObfuscation",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "OpaquePredicates",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "PolymorphicEngine",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "SelfModifyingCode",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "ShortJumpPatching",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "StackStrings",
+        "status": "no-op"
+      },
+      {
+        "mutations_applied": 0,
+        "pass_name": "StringObfuscation",
+        "status": "no-op"
+      }
+    ],
+    "protected": "protected",
+    "release_signoff_blocker_totals": {
+      "blocker_categories": 1,
+      "total_release_signoff_blockers": 3,
+      "unavailable_analyzers": 3
+    },
+    "release_signoff_blockers": {
+      "unavailable_analyzers": {
+        "angr": {
+          "module 'angr' cannot be imported through the compatibility adapter": 22
+        },
+        "binary-ninja": {
+          "analyzer license is unavailable": 22
+        },
+        "triton": {
+          "module 'triton' is unavailable": 22
+        }
+      }
+    },
+    "schema_version": 3,
+    "tool_summary": {
+      "angr": {
+        "changed": 0,
+        "completed": 0,
+        "duration_pairs": 0,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "unavailable": 22,
+        "unavailable_reasons": {
+          "module 'angr' cannot be imported through the compatibility adapter": 22
+        }
+      },
+      "binary-ninja": {
+        "changed": 0,
+        "completed": 0,
+        "duration_pairs": 0,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "unavailable": 22,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 22
+        }
+      },
+      "custom": {
+        "changed": 1,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "total_functions_delta": 2,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 99,
+        "total_decompiler_entrypoints_delta": 1,
+        "total_decompiler_lines_delta": 16,
+        "total_duration_seconds": 556.3527681601845,
+        "total_functions_delta": 1,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 939,
+        "total_decompiler_entrypoints_delta": 1,
+        "total_decompiler_lines_delta": 26,
+        "total_duration_seconds": 342.4501815841213,
+        "total_functions_delta": 1,
+        "unavailable": 0
+      },
+      "objdump": {
+        "changed": 2,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_instruction_lines_pairs": 22,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "total_instruction_lines_delta": 7,
+        "unavailable": 0
+      },
+      "radare2": {
+        "changed": 1,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 1838,
+        "total_decompiler_entrypoints_delta": 0,
+        "total_decompiler_lines_delta": 78,
+        "total_duration_seconds": 0.0,
+        "total_functions_delta": 2,
+        "unavailable": 0
+      },
+      "triton": {
+        "changed": 0,
+        "completed": 0,
+        "duration_pairs": 0,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "unavailable": 22,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 22
+        }
+      },
+      "unicorn": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.3658830911590485,
+        "unavailable": 0
+      }
+    },
+    "tools": [
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "BlockReordering",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 2099,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 88,
+          "decompiler_status": "completed",
+          "functions": 3,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": true,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "instruction_lines": 12,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "duration_seconds": 0.11531595900305547,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 982,
+          "decompiler_entrypoints": 2,
+          "decompiler_lines": 30,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.399131375001161,
+          "functions": 2,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 311,
+          "decompiler_entrypoints": 2,
+          "decompiler_lines": 28,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.325956333006616,
+          "functions": 2,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": true,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeVirtualization",
+        "pass_status": "applied",
+        "protected": {
+          "functions": 3,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ConstantUnfolding",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ControlFlowFlattening",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DeadCodeInjection",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionExpansion",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": true,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "instruction_lines": 7,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "duration_seconds": 0.0025824580079643056,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.590684875001898,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 5.940247666992946,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "InstructionSubstitution",
+        "pass_status": "applied",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "NopInsertion",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PatternSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "RegisterSubstitution",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "AntiDisassembly",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "APIHashing",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "CodeMobility",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "DataFlowMutation",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "FunctionOutlining",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ImportObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "OpaquePredicates",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "PolymorphicEngine",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "SelfModifyingCode",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "ShortJumpPatching",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StackStrings",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      },
+      {
+        "changed": false,
+        "original": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 261,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 10,
+          "decompiler_status": "completed",
+          "functions": 1,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "radare2"
+      },
+      {
+        "changed": false,
+        "original": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "instruction_lines": 6,
+          "return_code": 0,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "objdump"
+      },
+      {
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "reason": "module 'angr' cannot be imported through the compatibility adapter",
+        "status": "unavailable",
+        "tool": "angr"
+      },
+      {
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "reason": "analyzer license is unavailable",
+        "status": "unavailable",
+        "tool": "binary-ninja"
+      },
+      {
+        "changed": true,
+        "original": {
+          "duration_seconds": 0.009829417002038099,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "duration_seconds": 0.001586875005159527,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "unicorn"
+      },
+      {
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "reason": "module 'triton' is unavailable",
+        "status": "unavailable",
+        "tool": "triton"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 7.177058917004615,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 43,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 4,
+          "decompiler_status": "completed",
+          "duration_seconds": 8.478253458000836,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ida-pro"
+      },
+      {
+        "changed": true,
+        "original": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.967313750006724,
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "decompiler_bytes": 212,
+          "decompiler_entrypoints": 1,
+          "decompiler_lines": 12,
+          "decompiler_status": "completed",
+          "duration_seconds": 12.84028308300185,
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "ghidra"
+      },
+      {
+        "changed": false,
+        "original": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "pass_name": "StringObfuscation",
+        "pass_status": "no-op",
+        "protected": {
+          "functions": 1,
+          "status": "completed"
+        },
+        "status": "completed",
+        "tool": "custom"
+      }
+    ]
+  },
+  "schema_version": 1,
+  "scope": {
+    "applied_passes": [
+      "CodeVirtualization",
+      "InstructionSubstitution"
+    ],
+    "fixture": "elf_vm_arith_x86_64",
+    "limitation": "One fixture only; this does not close cross-sample analyzer coverage or the full pass-by-fixture matrix.",
+    "no_op_passes": [
+      "BlockReordering",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "pass_rows": 22
+  },
+  "source_commit": "0920b7d32e0ad4c3588150baaa54c25c49d4fff4"
+}
