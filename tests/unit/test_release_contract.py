@@ -1524,6 +1524,28 @@ def test_release_recovery_validates_source_run_and_tag() -> None:
     )
 
 
+def test_differential_aggregate_requires_every_format_parser_fuzz_target() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    expected_targets = workflow.split("expected_fuzz_targets = {", 1)[1].split("}", 1)[0]
+
+    expect(
+        all(
+            f'"{target}": 64' in expected_targets
+            for target in (
+                "assembling",
+                "binary_parsers",
+                "elf_header_parser",
+                "pe_header_parser",
+                "macho_load_commands",
+                "vm_dispatcher",
+                "vm_bytecode",
+                "relocations",
+                "binary_rewriter",
+            )
+        )
+    )
+
+
 def test_corpus_workflows_run_the_full_pass_selection() -> None:
     adversarial = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     differential = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
