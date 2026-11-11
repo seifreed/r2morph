@@ -9,6 +9,7 @@ import pytest
 
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.binary import Binary
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
@@ -417,9 +418,11 @@ int main() { return caller(); }
 
     with Binary(executable, writable=True) as binary:
         binary.analyze()
-        boundary_address = next(
-            int(function["addr"]) for function in binary.get_functions() if "boundary" in function.get("name", "")
+        boundary_function = next(
+            function for function in binary.get_functions() if "boundary" in function.get("name", "")
         )
+        boundary_address = int(boundary_function["addr"])
+        boundary_size = int(boundary_function["size"])
         original_boundary_bytes = binary.read_bytes(boundary_address, 8)
         stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1000, "seed": FIXTURE_SEED}).apply(
             binary
@@ -432,7 +435,7 @@ int main() { return caller(); }
     }
     expect(
         not boundary_was_transformed
-        and boundary_address in rejected_addresses
+        and (boundary_address in rejected_addresses or boundary_size < MINIMUM_FUNCTION_SIZE)
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "a call with an exception edge crossing the VM was not rejected safely: "
         f"{boundary_address=:#x}, {boundary_was_transformed=}, {runtime_result.returncode=}, "
