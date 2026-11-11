@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "measurement": "github-release-pipeline",
+  "generated_at": "2026-11-11",
+  "release_tag": "v0.4.0-alpha.3",
+  "release_commit": "151df243dc690195797d01836cdd078ae1f68b6f",
+  "workflow_run": 34096579308,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/34096579308",
+  "release_url": "https://github.com/seifreed/r2morph/releases/tag/v0.4.0-alpha.3",
+  "published_at": "2026-09-07T07:51:31Z",
+  "conclusion": "success",
+  "jobs": {
+    "validate-release": "success",
+    "build": "success",
+    "test": "success",
+    "publish-pypi": "success",
+    "create-release": "success"
+  },
+  "assets": [
+    "r2morph-0.4.0a3-py3-none-any.whl",
+    "r2morph-0.4.0a3.tar.gz",
+    "sbom.cdx.json",
+    "SHA256SUMS"
+  ],
+  "provenance_attestation": "workflow step completed successfully",
+  "scope_limit": "Alpha release pipeline evidence; does not satisfy blocked stable-major readiness criteria."
+}

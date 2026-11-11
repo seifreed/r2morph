@@ -136,6 +136,16 @@ adversarial signoff remain separate requirements.
 
 ## Blocker index
 
+The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
+including installed-wheel tests, PyPI publication, provenance attestation, and
+GitHub release creation. The release contains the wheel, source archive, SBOM,
+and SHA-256 checksums. The pinned run record is
+[release-pipeline-2026-09-07.json](release-pipeline-2026-09-07.json), with the
+[workflow run](https://github.com/seifreed/r2morph/actions/runs/34096579308)
+and [published release](https://github.com/seifreed/r2morph/releases/tag/v0.4.0-alpha.3).
+This verifies the alpha release path only; `one-zero-readiness.json` continues
+to block stable-major publication until every 1.0 evidence criterion is complete.
+
 | ID | Area | Evidence |
 |---|---|---|
 | RB-001 | per-pass maturity | `support-matrix.json` `pass-maturity.md` |
