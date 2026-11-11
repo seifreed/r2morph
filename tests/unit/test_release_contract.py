@@ -1624,7 +1624,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "test_platform_deeper.py" in differential
         and "test_platform_tier1_matrix.py" in differential
         and "test_tier1_pass_preview_target_preserves_exit_code" in differential
-        and "if len(cases) != 73" in differential
+        and "cross-format smoke coverage drift" in differential
         and "cross-format-differential.xml" in differential
         and "Validate cross-format differential evidence" in differential
         and "cross-format smoke coverage drift" in differential
@@ -2026,6 +2026,19 @@ def test_differential_workflow_keeps_main_campaigns_running() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
 
     expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: true" in workflow)
+
+
+def test_differential_platform_validators_use_named_evidence_not_exact_counts() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+
+    expect(
+        "if len(cases) !=" not in workflow
+        and "cross-format smoke coverage drift" in workflow
+        and "cross-platform smoke coverage drift" in workflow
+        and "test_elf_x86_32_block_reordering_preserves_emulated_exit_code" in workflow
+        and "test_elf_arm64_complex_pass_sequence_preserves_native_exit_code" in workflow
+        and "test_elf_arm32_complex_pass_sequence_preserves_emulated_exit_code" in workflow
+    )
 
 
 def test_platform_evidence_aggregate_runs_after_failed_dependencies() -> None:

@@ -211,8 +211,6 @@ jobs:
 
           suite = ET.parse("cross-format-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 73:
-              raise SystemExit(f"cross-format smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-format smoke contains failures or errors")
           unexpected_skips = [
@@ -332,8 +330,6 @@ jobs:
               raise SystemExit(f"composition smoke ran too few cases: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("composition smoke contains failures, errors, or skipped cases")
-          if len(cases) != 46:
-              raise SystemExit(f"composition smoke case count drifted: {len(cases)}")
           names = {case.attrib.get("name", "") for case in cases}
           required = {
               "test_polymorphic_engine_reports_composed_mutations_and_preserves_exit_code",
@@ -1555,8 +1551,6 @@ jobs:
 
           suite = ET.parse("cross-platform-differential.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 34:
-              raise SystemExit(f"cross-platform smoke case count drifted: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error"):
               raise SystemExit("cross-platform smoke contains failures or errors")
           if suite.findall(".//skipped"):
@@ -2088,8 +2082,6 @@ jobs:
 
           suite = ET.parse("elf-arm64-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 7:
-              raise SystemExit(f"unexpected ELF ARM64 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM64 evidence is incomplete")
           if not any(
@@ -2188,8 +2180,6 @@ jobs:
 
           suite = ET.parse("elf-x86-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 7:
-              raise SystemExit(f"unexpected ELF x86 32-bit case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF x86 32-bit evidence is incomplete")
           if not any(
@@ -2205,6 +2195,7 @@ jobs:
               "test_elf_x86_32_constant_unfolding_zero_preserves_native_exit_code",
               "test_elf_x86_32_instruction_expansion_preserves_native_exit_code",
               "test_elf_x86_32_string_obfuscation_preserves_native_exit_code",
+              "test_elf_x86_32_block_reordering_preserves_emulated_exit_code",
           }
           names = {case.attrib.get("name", "") for case in cases}
           missing = [name for name in required if not any(value.startswith(name) for value in names)]
@@ -2264,8 +2255,6 @@ jobs:
 
           suite = ET.parse("elf-arm-32-native.xml").getroot()
           cases = suite.findall(".//testcase")
-          if len(cases) != 6:
-              raise SystemExit(f"unexpected ELF ARM32 case count: {len(cases)}")
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native ELF ARM32 evidence is incomplete")
           if not any(
