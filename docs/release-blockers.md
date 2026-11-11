@@ -23,9 +23,13 @@ changes require their own successful run.
   analyzer/decompiler effectiveness contract. The authoritative scheduled
   adversarial run `36381653200` records `7,964/7,964` expected pass rows and
   `22/22` passes comparable with complete `radare2`, `angr`, and `ghidra`
-  evidence. The optional Binary Ninja and IDA slots remain explicit
-  unavailable rows rather than being treated as required evidence. Evidence map:
+  evidence. The optional Binary Ninja and IDA slots remain explicit unavailable
+  rows in that campaign. A later targeted IDA Pro run covers five
+  CodeVirtualization fixture pairs, but does not fill the full pass-by-fixture
+  matrix or promote the resistance claim. Evidence map:
   [pass-maturity.md](pass-maturity.md),
+  [compatibility-corpus.md](compatibility-corpus.md),
+  [protection-ida-targeted-2026-11-11-c70a113b.json](protection-ida-targeted-2026-11-11-c70a113b.json),
   [support-matrix.json](support-matrix.json) `maturity_evidence_blockers`
   and `maturity_blocker_totals`.
   Exit criteria: every declared pass has complete comparable evidence from the

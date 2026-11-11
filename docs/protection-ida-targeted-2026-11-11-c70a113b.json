@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "measurement": "targeted-idapro-code-virtualization-campaign",
+  "date_utc": "2026-11-11",
+  "source_commit": "c70a113bb4bc763684f96166cc8411a41030fc23",
+  "analyzer": {
+    "name": "IDA Pro",
+    "interface": "connected IDALib analysis service",
+    "version": "not exposed by the service",
+    "automatic_analysis_ready": true,
+    "decompiler_ready": true
+  },
+  "target": {
+    "format": "ELF",
+    "architecture": "x86_64",
+    "pass": "CodeVirtualization",
+    "fixtures": 5,
+    "seeds": [20261111, 20261112, 20261113, 20261114, 20261115]
+  },
+  "results": [
+    {
+      "fixture": "elf_x86_64",
+      "seed": 20261111,
+      "original_sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a",
+      "protected_sha256": "0f28808e35ba0419f0437861eb53c78c89eef9a67f582acfaf0d773bdb469bbc",
+      "virtualized_functions": 1,
+      "bytecode_bytes": 10508,
+      "unsupported_functions": 0,
+      "partial_virtualization": 0,
+      "ida": {
+        "original_function_count": 1,
+        "protected_function_count": 2,
+        "original_start_function": {"name": "_start", "size_bytes": 12, "type": "leaf"},
+        "protected_start_function": {"name": "_start", "size_bytes": 294, "type": "leaf"},
+        "protected_decompilation_succeeded": true
+      }
+    },
+    {
+      "fixture": "elf_vm_call_x86_64",
+      "seed": 20261112,
+      "original_sha256": "a74b830c273088e2b58458e5227b839d0a1e07b422e34dfa6c42db5e10e08754",
+      "protected_sha256": "e518362a686a38798d33fa860eca99da26e9f6f71d06513446149317bb4f8889",
+      "virtualized_functions": 1,
+      "bytecode_bytes": 22586,
+      "unsupported_functions": 0,
+      "partial_virtualization": 0,
+      "ida": {
+        "original_function_count": 2,
+        "protected_function_count": 19,
+        "original_start_function": {"name": "_start", "size_bytes": 29, "type": "wrapper"},
+        "protected_start_function": {"name": "_start", "size_bytes": 352, "type": "leaf"},
+        "protected_decompilation_succeeded": true
+      }
+    },
+    {
+      "fixture": "elf_vm_memwidth_x86_64",
+      "seed": 20261113,
+      "original_sha256": "c9822958e3998bfd84695a71694cac10eb353f4d4c425bd814ecbcf16b67e7b3",
+      "protected_sha256": "dadf847ae7f48c64112c54370c0b05e338645ab5052ef73a9b43fa59f339cbf1",
+      "virtualized_functions": 1,
+      "bytecode_bytes": 25601,
+      "unsupported_functions": 0,
+      "partial_virtualization": 0,
+      "ida": {
+        "original_function_count": 1,
+        "protected_function_count": 2,
+        "original_start_function": {"name": "_start", "size_bytes": 145, "type": "leaf"},
+        "protected_start_function": {"name": "_start", "size_bytes": 217, "type": "leaf"},
+        "protected_decompilation_succeeded": true
+      }
+    },
+    {
+      "fixture": "elf_vm_fpenginearith_x86_64",
+      "seed": 20261114,
+      "original_sha256": "f2d91f477ad18696e258cade68a278ab64de9daeccc9c69d4659a2952a5f5e16",
+      "protected_sha256": "e10917efda32e0eac49193f567a13bcf56fa4867b3e66f44aaa2b4858b2b9c5b",
+      "virtualized_functions": 1,
+      "bytecode_bytes": 32311,
+      "unsupported_functions": 0,
+      "partial_virtualization": 0,
+      "ida": {
+        "original_function_count": 2,
+        "protected_function_count": 3,
+        "original_start_function": {"name": "_start", "size_bytes": 84, "type": "wrapper"},
+        "protected_start_function": {"name": "_start", "size_bytes": 356, "type": "leaf"},
+        "protected_decompilation_succeeded": true
+      }
+    },
+    {
+      "fixture": "elf_vm_thread_xchg_x86_64",
+      "seed": 20261115,
+      "original_sha256": "40e4cb2c5971846efc94f7e75e54d30255e78a8b6adb5f6df2a92942472de91f",
+      "protected_sha256": "9e969d68be991b31bee0009ec31fa084e85f28515747f0568cfb6842ce67db59",
+      "virtualized_functions": 1,
+      "bytecode_bytes": 35292,
+      "unsupported_functions": 0,
+      "partial_virtualization": 0,
+      "ida": {
+        "original_function_count": 1,
+        "protected_function_count": 2,
+        "original_start_function": {"name": "_start", "size_bytes": 102, "type": "leaf"},
+        "protected_start_function": {"name": "_start", "size_bytes": 305, "type": "leaf"},
+        "protected_decompilation_succeeded": true
+      }
+    }
+  ],
+  "summary": {
+    "analyzed_pairs": 5,
+    "protected_decompilations_succeeded": 5,
+    "virtualization_failures": 0,
+    "partial_virtualizations": 0
+  },
+  "interpretation": "IDA Pro detected and decompiled the non-thunk _start function in all five bounded ELF x86_64 fixtures. This adds named-analyzer coverage and also shows that bytecode dispatch remains visible to decompilation; it is not evidence of general resistance.",
+  "limitations": [
+    "one target architecture, one format, and one pass only",
+    "five fixtures and one seed per fixture",
+    "IDA Pro version was not exposed by the connected service",
+    "no runtime-equivalence measurement was made for these exact seeded outputs",
+    "no CFG similarity, devirtualization success rate, or analyst effort was measured",
+    "does not replace the full adversarial analyzer campaign"
+  ]
+}

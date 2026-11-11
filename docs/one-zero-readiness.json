@@ -12,7 +12,7 @@
   "criteria": {
     "all_named_adversarial_analyzers": {
       "status": "open",
-      "evidence": ["docs/compatibility-corpus.md", "docs/release-blockers.md"]
+      "evidence": ["docs/compatibility-corpus.md", "docs/protection-ida-targeted-2026-11-11-c70a113b.json", "docs/release-blockers.md"]
     },
     "complete_compatibility_contract": {
       "status": "in_progress",
@@ -36,7 +36,7 @@
     },
     "published_resistance_results": {
       "status": "open",
-      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json"]
+      "evidence": ["docs/protection-handler-clustering.json", "docs/protection-bytecode-grammar.json", "docs/protection-ida-targeted-2026-11-11-c70a113b.json"]
     },
     "stable_api_cli": {
       "status": "complete",

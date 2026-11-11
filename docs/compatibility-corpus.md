@@ -54,6 +54,13 @@ function and decompilation observations are in
 The service did not expose its version; runtime equivalence was not measured.
 This one-fixture result does not establish general resistance or replace the
 three-analyzer release campaign.
+On 2026-11-11, IDA Pro analyzed five original/protected ELF x86-64 fixture
+pairs after one seeded CodeVirtualization pass each. It discovered and
+decompiled the non-thunk `_start` function in all five protected outputs. The fixture hashes,
+function counts, seeds, and exact limits are recorded in
+[`protection-ida-targeted-2026-11-11-c70a113b.json`](protection-ida-targeted-2026-11-11-c70a113b.json).
+The IDA Pro version was not exposed; this bounded run is analyzer coverage,
+not a devirtualization-resistance result or a replacement for the full campaign.
 The cross-format matrix additionally exercises `basic` and `complex` CFG
 variants for those three ELF targets across the same four individual passes.
 The workflow pins the collected matrix at 73 cases so loss of a preview corpus
