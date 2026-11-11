@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "measurement": "continuous-fuzzing",
+  "generated_at": "2026-11-11",
+  "commit": "019a05517dc2857cc2103301bf6b3c2bdb7b07b5",
+  "workflow_run": 42980438491,
+  "seed": 20261111,
+  "cases": 20000,
+  "max_payload": 4096,
+  "target_runs": {
+    "assembling": 20000,
+    "binary_parsers": 20000,
+    "binary_rewriter": 20000,
+    "relocations": 20000,
+    "vm_dispatcher": 20000
+  },
+  "failure_count": 0,
+  "status": "passed"
+}
