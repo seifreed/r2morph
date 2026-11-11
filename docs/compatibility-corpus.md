@@ -569,6 +569,14 @@ success. The
 compact result, source artifact digests, and workflow link are retained in
 [`protection-differential-2026-11-11-019a0551.json`](protection-differential-2026-11-11-019a0551.json)
 and [run 42980449435](https://github.com/seifreed/r2morph/actions/runs/42980449435).
+The rerun from source commit `52dfc2eac82584149dcb6e4c83dd08fd03c040a6`
+completed all four public-corpus shards and the aggregate validation job in
+[run 43064188826](https://github.com/seifreed/r2morph/actions/runs/43064188826).
+It reproduced the same 360 selected samples, six-pass outcomes, 2,160
+differential checks, and 2,160 radare2 measurements with zero failures. This
+confirms a repeatable run; it is not an additional 360-sample corpus expansion.
+Per-shard manifest, matrix, and analyzer artifact hashes are pinned in
+[`protection-public-corpus-2026-11-11-43064188826.json`](protection-public-corpus-2026-11-11-43064188826.json).
 Its aggregate output-size growth is 64,374,555 bytes over 10,860 runs and the
 campaign records 4,635.57 seconds of transformation time; these are raw
 aggregate costs, not normalized per-binary or controlled performance claims.

@@ -91,6 +91,11 @@
       "status": "passed"
     },
     {
+      "detail": "360 unique samples, 2160/2160 differential checks, 0 failures",
+      "name": "public_corpus_differential_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "159 samples, 318 completed analyses",
       "name": "ghidra_corpus_evidence",
       "status": "passed"

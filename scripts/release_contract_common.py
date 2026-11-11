@@ -89,6 +89,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "official_target_scope",
     "parser_rewriter_fuzz_campaign",
     "pass_maturity_gap_scope",
+    "public_corpus_differential_evidence",
     "release_blocker_ledger_scope",
     "support_matrix_consistency",
     "triton_corpus_evidence",

@@ -1,0 +1,163 @@
+{
+  "aggregate_job": {
+    "completed_at": "2026-11-11T18:01:00Z",
+    "id": 130698370476,
+    "name": "Aggregate public compatibility corpus",
+    "status": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43064188826/job/130698370476"
+  },
+  "completed_corpus_shards": 4,
+  "differential_failed": 0,
+  "differential_passed": 2160,
+  "differential_records": 2160,
+  "expected_corpus_shards": 4,
+  "full_manifest_candidate_count_per_shard": 2960,
+  "measurement": "public-compatibility-corpus-differential",
+  "other_analyzer_runners": "omitted by this public corpus workflow",
+  "pass_errors": 0,
+  "passes": {
+    "BlockReordering": {
+      "applied": 30,
+      "applied_units": 31,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 330,
+      "samples": 360
+    },
+    "CodeVirtualization": {
+      "applied": 234,
+      "applied_units": 436,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 126,
+      "samples": 360
+    },
+    "InstructionExpansion": {
+      "applied": 73,
+      "applied_units": 435,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 287,
+      "samples": 360
+    },
+    "InstructionSubstitution": {
+      "applied": 287,
+      "applied_units": 745,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 73,
+      "samples": 360
+    },
+    "NopInsertion": {
+      "applied": 84,
+      "applied_units": 2122,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 276,
+      "samples": 360
+    },
+    "RegisterSubstitution": {
+      "applied": 5,
+      "applied_units": 14,
+      "differential_failed": 0,
+      "differential_passed": 360,
+      "errors": 0,
+      "omitted": 355,
+      "samples": 360
+    }
+  },
+  "radare2_measurement_failures": 0,
+  "radare2_measurements": 2160,
+  "sample_dimensions": {
+    "compiler": {
+      "clang": 175,
+      "clang++": 5,
+      "g++": 5,
+      "gcc": 175
+    },
+    "language": {
+      "c": 350,
+      "c++": 10
+    },
+    "link": {
+      "dynamic": 288,
+      "static": 72
+    },
+    "optimization": {
+      "O0": 72,
+      "O1": 72,
+      "O2": 72,
+      "O3": 72,
+      "Os": 72
+    },
+    "pie": {
+      "non-pie": 288,
+      "pie": 72
+    },
+    "symbols": {
+      "stripped": 72,
+      "symbols": 288
+    }
+  },
+  "schema_version": 1,
+  "seed": 20260914,
+  "selected_samples": 360,
+  "shards": [
+    {
+      "differential_failed": 0,
+      "differential_passed": 540,
+      "index": 0,
+      "matrix_report_sha256": "c01f926503f73ac21381a0c3b461b18b7dded4264470da8a70e8cc1ffbf2814c",
+      "pass_errors": 0,
+      "radare2_measurements": 540,
+      "sample_count": 90,
+      "selected_manifest_sha256": "a4050237af0e773003350209bd862f80551ce5a801229c08e6047020c5357a42",
+      "tools_report_sha256": "19d46cfdb40872bc828bee543ef874c874945d791d8c8228a5c4451ec8aa1cc8"
+    },
+    {
+      "differential_failed": 0,
+      "differential_passed": 540,
+      "index": 1,
+      "matrix_report_sha256": "8fd702691a8664384c4f554ecfb5871ec3fc18f710a6627d54473a206b208472",
+      "pass_errors": 0,
+      "radare2_measurements": 540,
+      "sample_count": 90,
+      "selected_manifest_sha256": "9efb957c1cd5aed41d11581589eb84d5b88877477a7e6e0e561d748a2e47ac9f",
+      "tools_report_sha256": "a3b471c12f8155f026472c4a4bab64a2229ad3d414bf2a001b32ec1801ee0e8c"
+    },
+    {
+      "differential_failed": 0,
+      "differential_passed": 540,
+      "index": 2,
+      "matrix_report_sha256": "80af53d50fee91e52264974d1a46ba54c0544fad1413b1e1e7f5ecce54b7e0c9",
+      "pass_errors": 0,
+      "radare2_measurements": 540,
+      "sample_count": 90,
+      "selected_manifest_sha256": "2c79dabe28372ddc6646147a16ab8eb8dff20be041137914fc4effc969d5fcf4",
+      "tools_report_sha256": "d576c0188f198d02cfc9c9bb8b174b928511c751cc4f01ee92875bfff5986e64"
+    },
+    {
+      "differential_failed": 0,
+      "differential_passed": 540,
+      "index": 3,
+      "matrix_report_sha256": "8585257ef83d810393d7b00a24fb9dd3b6ac14cda4df198a5336479f90a9b6e8",
+      "pass_errors": 0,
+      "radare2_measurements": 540,
+      "sample_count": 90,
+      "selected_manifest_sha256": "4fef4568476ff20164f10d6b986c77b4cb51982cf01ef3b861f97e02d54fc0b9",
+      "tools_report_sha256": "63a6b20c2ebdd26cc303370e87209af2702fc29c4bea685b71ad0d8f0adf5f76"
+    }
+  ],
+  "source_commit": "52dfc2eac82584149dcb6e4c83dd08fd03c040a6",
+  "status": "passed_for_completed_public_corpus_shards",
+  "unique_sample_ids": 360,
+  "workflow_attempt": 1,
+  "workflow_run": 43064188826,
+  "workflow_state_at_capture": "in_progress",
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43064188826"
+}

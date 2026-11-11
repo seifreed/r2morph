@@ -75,6 +75,7 @@ _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-format-aware-2026-11-11-95cff0fb.json"
+_CURRENT_PUBLIC_CORPUS_REPORT = "protection-public-corpus-2026-11-11-43064188826.json"
 _CURRENT_HOST_SHARD_REPORT = "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-59898697.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
@@ -82,6 +83,18 @@ _HOST_SHARD_SAMPLE_COUNT = 11
 _HOST_SHARD_EXPECTED_TOOL_RUNS = 99
 _HOST_SHARD_COMPLETED_TOOL_RUNS = 77
 _HOST_SHARD_UNAVAILABLE_TOOL_RUNS = 22
+_PUBLIC_CORPUS_SAMPLE_COUNT = 360
+_PUBLIC_CORPUS_DIFFERENTIAL_COUNT = 2160
+_PUBLIC_CORPUS_SHARD_COUNT = 4
+_PUBLIC_CORPUS_MEASUREMENTS_PER_SHARD = 540
+_PUBLIC_CORPUS_PASS_NAMES = {
+    "BlockReordering",
+    "CodeVirtualization",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "RegisterSubstitution",
+}
 
 
 def _check(name: str, passed: bool, detail: str) -> dict[str, object]:
@@ -659,6 +672,81 @@ def _review_fuzz_artifact(root: Path) -> dict[str, object]:
     return _check("parser_rewriter_fuzz_campaign", passed, f"{total_runs} target runs, 0 failures")
 
 
+def _review_public_corpus_differential(root: Path) -> dict[str, object]:
+    path = root / "docs" / _CURRENT_PUBLIC_CORPUS_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    passes = document.get("passes", {})
+    shards = document.get("shards", [])
+    shards_valid = (
+        isinstance(shards, list)
+        and len(shards) == _PUBLIC_CORPUS_SHARD_COUNT
+        and all(_valid_public_corpus_shard(shard, index) for index, shard in enumerate(shards))
+    )
+    passes_valid = _valid_public_corpus_passes(passes)
+    aggregate = document.get("aggregate_job")
+    passed = (
+        document.get("status") == "passed_for_completed_public_corpus_shards"
+        and document.get("workflow_state_at_capture") == "in_progress"
+        and isinstance(aggregate, dict)
+        and aggregate.get("status") == "success"
+        and document.get("completed_corpus_shards")
+        == document.get("expected_corpus_shards")
+        == _PUBLIC_CORPUS_SHARD_COUNT
+        and document.get("selected_samples") == document.get("unique_sample_ids") == _PUBLIC_CORPUS_SAMPLE_COUNT
+        and document.get("differential_records")
+        == document.get("differential_passed")
+        == _PUBLIC_CORPUS_DIFFERENTIAL_COUNT
+        and document.get("differential_failed")
+        == document.get("pass_errors")
+        == document.get("radare2_measurement_failures")
+        == 0
+        and document.get("radare2_measurements") == _PUBLIC_CORPUS_DIFFERENTIAL_COUNT
+        and passes_valid
+        and shards_valid
+    )
+    return _check(
+        "public_corpus_differential_evidence",
+        passed,
+        f"{document.get('selected_samples', 0)} unique samples, "
+        f"{document.get('differential_passed', 0)}/{_PUBLIC_CORPUS_DIFFERENTIAL_COUNT} "
+        "differential checks, 0 failures",
+    )
+
+
+def _valid_public_corpus_shard(shard: object, expected_index: int) -> bool:
+    if not isinstance(shard, dict):
+        return False
+    return (
+        shard.get("index") == expected_index
+        and shard.get("sample_count") == _PUBLIC_CORPUS_SAMPLE_COUNT // _PUBLIC_CORPUS_SHARD_COUNT
+        and shard.get("differential_passed") == _PUBLIC_CORPUS_MEASUREMENTS_PER_SHARD
+        and shard.get("differential_failed") == shard.get("pass_errors") == 0
+        and shard.get("radare2_measurements") == _PUBLIC_CORPUS_MEASUREMENTS_PER_SHARD
+        and all(
+            isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest)
+            for digest in (
+                shard.get("selected_manifest_sha256"),
+                shard.get("matrix_report_sha256"),
+                shard.get("tools_report_sha256"),
+            )
+        )
+    )
+
+
+def _valid_public_corpus_passes(passes: object) -> bool:
+    return (
+        isinstance(passes, dict)
+        and set(passes) == _PUBLIC_CORPUS_PASS_NAMES
+        and all(
+            isinstance(result, dict)
+            and result.get("samples") == _PUBLIC_CORPUS_SAMPLE_COUNT
+            and result.get("differential_passed") == _PUBLIC_CORPUS_SAMPLE_COUNT
+            and result.get("differential_failed") == result.get("errors") == 0
+            for result in passes.values()
+        )
+    )
+
+
 def _review_fixtures(root: Path) -> dict[str, object]:
     dataset = root / "fixtures" / "dataset"
     candidates = sorted(dataset.glob("elf_vm_*_x86_64"))
@@ -696,6 +784,7 @@ def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]
         _review_angr_binary_ninja_availability(root),
         _review_corpus_benchmark(root),
         _review_host_adversarial_shard(root),
+        _review_public_corpus_differential(root),
         _review_ghidra_corpus(root),
         _review_triton_corpus(root),
         _review_ida_corpus(root),
