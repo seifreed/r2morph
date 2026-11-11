@@ -74,7 +74,7 @@ _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
-_CURRENT_FUZZ_REPORT = "protection-fuzz-2026-11-11-019a0551.json"
+_CURRENT_FUZZ_REPORT = "protection-fuzz-2026-11-11-a2b17f86.json"
 _CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-59898697.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
 
@@ -596,12 +596,19 @@ def _review_fp_regression(root: Path) -> dict[str, object]:
 
 
 def _review_fuzz_artifact(root: Path) -> dict[str, object]:
-    """Validate the bounded campaign recorded for all five fuzz targets."""
+    """Validate the bounded campaign recorded for all six fuzz targets."""
     path = root / "docs" / _CURRENT_FUZZ_REPORT
     document = json.loads(path.read_text(encoding="utf-8"))
     cases = document.get("cases")
     target_runs = document.get("target_runs")
-    expected_targets = {"assembling", "binary_parsers", "vm_dispatcher", "relocations", "binary_rewriter"}
+    expected_targets = {
+        "assembling",
+        "binary_parsers",
+        "vm_dispatcher",
+        "vm_bytecode",
+        "relocations",
+        "binary_rewriter",
+    }
     passed = (
         isinstance(cases, int)
         and cases > 0

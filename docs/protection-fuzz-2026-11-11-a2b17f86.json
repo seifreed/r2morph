@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "measurement": "continuous-fuzzing",
+  "generated_at": "2026-11-11",
+  "commit": "a2b17f86d7a020ffec8dcb32c72c16da78eb62e2",
+  "workflow_run": 43001693635,
+  "campaign_report_sha256": "54409b00a8bdf9672d65a69b37f44c5c8732cf83495fb959a91f9134f1268de5",
+  "seed": 20261111,
+  "cases": 20000,
+  "max_payload": 4096,
+  "target_runs": {
+    "assembling": 20000,
+    "binary_parsers": 20000,
+    "binary_rewriter": 20000,
+    "relocations": 20000,
+    "vm_bytecode": 20000,
+    "vm_dispatcher": 20000
+  },
+  "failure_count": 0,
+  "status": "passed"
+}

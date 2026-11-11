@@ -130,13 +130,14 @@ it does not establish parity for preview or experimental targets.
 The current scheduled workflow also passed 20,000 target runs on commit
 `0933d50c`; its retained summary is
 [protection-fuzz-2026-09-23-0933d50c.json](protection-fuzz-2026-09-23-0933d50c.json).
-The latest reviewed-branch rerun completed 20,000 cases per target (100,000
+The latest reviewed-branch rerun completed 20,000 cases per target (120,000
 target runs) with seed `20261111` and zero failures after installing the built
-wheel. It includes generated and malformed x86-64 assembly in addition to
-binary parsers, VM dispatch, relocations, and rewriting. See the pinned
-[protection-fuzz-2026-11-11-019a0551.json](protection-fuzz-2026-11-11-019a0551.json)
-and [workflow run 42980438491](https://github.com/seifreed/r2morph/actions/runs/42980438491).
-This closes the five-target bounded run; broader platform fuzzing and
+wheel. It includes generated and malformed x86-64 assembly, binary parsers, VM
+dispatch and bytecode generation, relocations, and rewriting. The interpreter
+is generated and assembled once per 128 cases. See the pinned
+[protection-fuzz-2026-11-11-a2b17f86.json](protection-fuzz-2026-11-11-a2b17f86.json)
+and [workflow run 43001693635](https://github.com/seifreed/r2morph/actions/runs/43001693635).
+This closes the six-target bounded run; broader platform fuzzing and
 professional adversarial resistance remain separate requirements.
 
 ## Blocker index

@@ -507,17 +507,18 @@ The current fuzz rerun at `cf44477` repeats 20,000 cases per target with seed
 parsers, the VM dispatcher, relocations, and binary rewriting. Its bounded
 report is [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json).
 
-The current bounded campaign passed at commit `019a0551` with seed `20261111`:
-20,000 cases per target across assembly, binary parsing, VM dispatch,
-relocations, and rewriting, for 100,000 target runs with zero failures. The
-workflow built and installed the wheel before running the campaign. The added
-assembly target includes valid generated instruction sequences and malformed
-mnemonics that must be rejected. This is bounded parser/assembler/rewriter
+The current bounded campaign passed at commit `a2b17f86` with seed `20261111`:
+20,000 cases per target across assembly, binary parsing, VM dispatch and
+bytecode generation, relocations, and rewriting, for 120,000 target runs with
+zero failures. The workflow built and installed the wheel before running the
+campaign. It assembles one generated interpreter per 128 cases to bound runtime
+while directly exercising interpreter code generation. The report records the
+raw workflow artifact digest and run. This is bounded parser/assembler/VM-codegen
 robustness evidence; it does not establish semantic equivalence, analyzer
 resistance, or platform parity. The report and workflow run are
-[`protection-fuzz-2026-11-11-019a0551.json`](protection-fuzz-2026-11-11-019a0551.json)
-and [run 42980438491](https://github.com/seifreed/r2morph/actions/runs/42980438491).
-The prior 80,000-run report for `f30a0646` remains historical evidence.
+[`protection-fuzz-2026-11-11-a2b17f86.json`](protection-fuzz-2026-11-11-a2b17f86.json)
+and [run 43001693635](https://github.com/seifreed/r2morph/actions/runs/43001693635).
+The earlier five-target report on `019a0551` remains historical evidence.
 
 The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core
