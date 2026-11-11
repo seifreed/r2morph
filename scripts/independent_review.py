@@ -75,8 +75,13 @@ _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
 _CURRENT_FUZZ_REPORT = "protection-fuzz-format-aware-2026-11-11-95cff0fb.json"
+_CURRENT_HOST_SHARD_REPORT = "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-59898697.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
+_HOST_SHARD_SAMPLE_COUNT = 11
+_HOST_SHARD_EXPECTED_TOOL_RUNS = 99
+_HOST_SHARD_COMPLETED_TOOL_RUNS = 77
+_HOST_SHARD_UNAVAILABLE_TOOL_RUNS = 22
 
 
 def _check(name: str, passed: bool, detail: str) -> dict[str, object]:
@@ -484,6 +489,31 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
     )
 
 
+def _review_host_adversarial_shard(root: Path) -> dict[str, object]:
+    path = root / "docs" / _CURRENT_HOST_SHARD_REPORT
+    document = json.loads(path.read_text(encoding="utf-8"))
+    samples = document.get("samples")
+    summary = document.get("summary", {})
+    valid_samples = (
+        isinstance(samples, list) and document.get("sample_count") == len(samples) == _HOST_SHARD_SAMPLE_COUNT
+    )
+    pass_summary = document.get("pass_summary", {}).get("CodeVirtualization", {})
+    completed = sum(value for value in summary.get("completed_tool_runs_by_tool", {}).values())
+    unavailable = sum(value for value in summary.get("unavailable_tool_runs_by_tool", {}).values())
+    passed = (
+        valid_samples
+        and document.get("fixture_shard") == {"count": 16, "index": 1}
+        and pass_summary.get("applied") == _HOST_SHARD_SAMPLE_COUNT
+        and pass_summary.get("unsupported_functions") == 0
+        and summary.get("expected_tool_runs") == _HOST_SHARD_EXPECTED_TOOL_RUNS
+        and summary.get("completed_tool_runs") == completed == _HOST_SHARD_COMPLETED_TOOL_RUNS
+        and summary.get("unavailable_tool_runs") == unavailable == _HOST_SHARD_UNAVAILABLE_TOOL_RUNS
+        and summary.get("error_tool_runs") == 0
+        and summary.get("unavailable_tools") == ["binary-ninja", "triton"]
+    )
+    return _check("host_adversarial_shard_evidence", passed, f"11 fixtures, {completed}/99 analyzer runs, 0 errors")
+
+
 def _review_ghidra_corpus(root: Path) -> dict[str, object]:
     path = root / "docs" / _CURRENT_GHIDRA_REPORT
     document = json.loads(path.read_text(encoding="utf-8"))
@@ -665,6 +695,7 @@ def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]
         _review_binary_ninja_contract(),
         _review_angr_binary_ninja_availability(root),
         _review_corpus_benchmark(root),
+        _review_host_adversarial_shard(root),
         _review_ghidra_corpus(root),
         _review_triton_corpus(root),
         _review_ida_corpus(root),

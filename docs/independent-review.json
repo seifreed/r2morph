@@ -86,6 +86,11 @@
       "status": "passed"
     },
     {
+      "detail": "11 fixtures, 77/99 analyzer runs, 0 errors",
+      "name": "host_adversarial_shard_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "159 samples, 318 completed analyses",
       "name": "ghidra_corpus_evidence",
       "status": "passed"

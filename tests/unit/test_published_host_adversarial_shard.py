@@ -9,6 +9,7 @@ from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-52dfc2ea.json"
+_NEXT_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _EXPECTED_FIXTURES = {
     "elf_switch_pie_x86_64",
     "elf_vm_addflaglive_x86_64",
@@ -22,6 +23,20 @@ _EXPECTED_FIXTURES = {
     "elf_vm_vpmuldq_x86_64",
 }
 _COMPLETED_TOOLS = {"angr", "custom", "ghidra", "ida-pro", "objdump", "radare2", "unicorn"}
+_NEXT_SHARD_FIXTURES = {
+    "elf_vm_arith_x86_64",
+    "elf_vm_boolflagdead_x86_64",
+    "elf_vm_flagsynth_x86_64",
+    "elf_vm_fparith_x86_64",
+    "elf_vm_leaidxnb_x86_64",
+    "elf_vm_mcall_x86_64",
+    "elf_vm_pie_x86_64",
+    "elf_vm_shift_x86_64",
+    "elf_vm_syscall_x86_64",
+    "elf_vm_thread_xchg_x86_64",
+    "elf_vm_varargs_x86_64",
+}
+_NEXT_SHARD_COMPLETED_TOOLS = {"angr", "custom", "ghidra", "ida-pro", "objdump", "radare2", "unicorn"}
 _ANALYST_PATH_MARKERS = (
     "/Users/",
     "/Applications/",
@@ -69,5 +84,47 @@ def test_host_adversarial_shard_preserves_unavailable_analyzer_reasons() -> None
 
 def test_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
     report = _REPORT.read_text(encoding="utf-8")
+
+    expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))
+
+
+def test_next_host_adversarial_shard_applies_virtualization_to_new_fixtures() -> None:
+    report = json.loads(_NEXT_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["fixture_shard"] == {"count": 16, "index": 1}
+        and report["sample_count"] == len(_NEXT_SHARD_FIXTURES)
+        and {sample["original"] for sample in report["samples"]} == _NEXT_SHARD_FIXTURES
+        and report["pass_summary"]["CodeVirtualization"]["applied"] == len(_NEXT_SHARD_FIXTURES)
+        and report["pass_summary"]["CodeVirtualization"]["unsupported_functions"] == 0
+    )
+
+
+def test_next_host_adversarial_shard_completes_seven_analyzers() -> None:
+    report = json.loads(_NEXT_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["completed_tool_runs_by_tool"]
+        == {tool: report["sample_count"] for tool in _NEXT_SHARD_COMPLETED_TOOLS}
+        and report["summary"]["completed_tool_runs"] == len(_NEXT_SHARD_COMPLETED_TOOLS) * report["sample_count"]
+        and report["summary"]["error_tool_runs"] == 0
+    )
+
+
+def test_next_host_adversarial_shard_records_only_unavailable_optional_analyzers() -> None:
+    report = json.loads(_NEXT_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["unavailable_reasons_by_tool"]
+        == {
+            "binary-ninja": {"analyzer license is unavailable": report["sample_count"]},
+            "triton": {"module 'triton' is unavailable": report["sample_count"]},
+        }
+        and report["summary"]["unavailable_tool_runs"] == 2 * report["sample_count"]
+    )
+
+
+def test_next_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
+    report = _NEXT_SHARD_REPORT.read_text(encoding="utf-8")
 
     expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))

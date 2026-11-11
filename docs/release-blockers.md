@@ -145,6 +145,16 @@ successful run.
   slots. Evidence:
   [protection-host-adversarial-shard-2026-11-11-52dfc2ea.json](protection-host-adversarial-shard-2026-11-11-52dfc2ea.json)
   and [test_published_host_adversarial_shard.py](../tests/unit/test_published_host_adversarial_shard.py).
+  A second deterministic shard at `b8d112a750724fb91f1666760937606af88b36b3`
+  applied CodeVirtualization to 11 additional fixtures with zero unsupported
+  functions or pass errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2,
+  objdump, and the custom analyzer completed all 77 available runs; Binary
+  Ninja (license unavailable) and Triton (module unavailable) account for the
+  remaining 22/99 slots. No analyzer tool errors occurred. This adds 11 fixture
+  pairs to the available host evidence but does not close the all-pass analyzer
+  matrix or the resistance criterion. Evidence:
+  [protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json](protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json)
+  and [test_published_host_adversarial_shard.py](../tests/unit/test_published_host_adversarial_shard.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 

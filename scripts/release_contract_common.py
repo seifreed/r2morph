@@ -82,6 +82,7 @@ INDEPENDENT_REVIEW_CHECKS = {
     "differential_platform_gap_scope",
     "fppackedidxnb_regression_evidence",
     "ghidra_corpus_evidence",
+    "host_adversarial_shard_evidence",
     "ida_corpus_evidence",
     "ida_current_summary_evidence",
     "independent_fuzz_recheck",

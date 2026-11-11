@@ -537,6 +537,16 @@ This adds per-format parser depth; it does not establish semantic equivalence,
 analyzer resistance, or platform parity. Earlier campaigns remain historical
 evidence.
 
+A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
+fixtures. All 11 transformations applied without unsupported functions or pass
+errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom
+analyzer completed 77/77 available runs with zero tool errors; Binary Ninja and
+Triton were unavailable, leaving 22/99 expected slots unavailable. The pinned
+report is
+[`protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json`](protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json).
+This adds one bounded fixture shard and does not establish all-pass analyzer
+coverage or cross-platform parity.
+
 The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core
 passes over 10,860 seeded runs, 3,565 applied transformations, zero errors,
