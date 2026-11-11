@@ -500,6 +500,15 @@ The current fuzz rerun at `cf44477` repeats 20,000 cases per target with seed
 parsers, the VM dispatcher, relocations, and binary rewriting. Its bounded
 report is [`protection-fuzz-2026-09-06-cf44477.json`](protection-fuzz-2026-09-06-cf44477.json).
 
+The same bounded campaign passed against the current reviewed branch at commit
+`f30a0646` with seed `20261111`: 20,000 cases per target, 80,000 target runs,
+and zero failures. The workflow built and installed the wheel before running
+the campaign. This is parser/rewriter robustness evidence only; it does not
+establish semantic equivalence, analyzer resistance, or platform parity. The
+report and workflow run are
+[`protection-fuzz-2026-11-11-f30a0646.json`](protection-fuzz-2026-11-11-f30a0646.json)
+and [run 42968076318](https://github.com/seifreed/r2morph/actions/runs/42968076318).
+
 The authoritative current CodeVirtualization rerun at `dbf77c59` repeats all
 159 repository fixtures with the dedicated Python 3.13 virtualenv containing
 `triton-library 1.0.0rc4`. It records 159/159 applications, 171 virtualized
