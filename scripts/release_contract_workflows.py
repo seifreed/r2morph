@@ -132,6 +132,8 @@ def _check_windows_download_contract() -> None:
 def _check_release_workflow() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     for fragment in (
+        "Validate support contract",
+        "run: python scripts/check_release_contract.py",
         "sbom.cdx.json",
         "rm dist/sbom.cdx.json",
         "actions/attest-build-provenance@v4",

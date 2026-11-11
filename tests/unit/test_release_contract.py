@@ -1492,7 +1492,9 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 
     expect(
-        "Require green CI for release commit" in workflow
+        "Validate support contract" in workflow
+        and "run: python scripts/check_release_contract.py" in workflow
+        and "Require green CI for release commit" in workflow
         and "--workflow ci.yml" in workflow
         and '--commit "$GITHUB_SHA"' in workflow
         and 'test "$ci_conclusion" = "success"' in workflow
