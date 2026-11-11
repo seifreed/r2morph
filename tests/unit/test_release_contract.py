@@ -52,6 +52,7 @@ _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
 _EXPECTED_ADVERSARIAL_BLOCKERS = 2
 _EXPECTED_TOTAL_MATURITY_BLOCKERS = 0
+_DIFFERENTIAL_SYSTEM_DEPENDENCY_JOBS = 6
 _EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES = 12
 _EXPECTED_ADVERSARIAL_TOOLS = [
     "radare2",
@@ -194,6 +195,16 @@ def test_differential_workflow_installs_lld_for_real_composition() -> None:
     primary_job = workflow.split("  differential-corpus:\n", 1)[1].split("  cross-platform-differential:", 1)[0]
 
     expect("clang lld" in primary_job and "test_polymorphic_engine_real.py" in primary_job)
+
+
+def test_differential_workflow_retries_transient_apt_fetch_failures() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+
+    expect(
+        workflow.count("sudo apt-get -o Acquire::Retries=3 update") == _DIFFERENTIAL_SYSTEM_DEPENDENCY_JOBS
+        and workflow.count("sudo apt-get -o Acquire::Retries=3 install -y") == _DIFFERENTIAL_SYSTEM_DEPENDENCY_JOBS
+        and "sudo apt-get install -y" not in workflow
+    )
 
 
 def test_independent_review_follows_successful_adversarial_campaign() -> None:
