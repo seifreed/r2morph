@@ -28,6 +28,7 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
             "assembling": 1,
             "binary_parsers": 1,
             "vm_dispatcher": 1,
+            "vm_bytecode": 1,
             "relocations": 1,
             "binary_rewriter": 1,
         }

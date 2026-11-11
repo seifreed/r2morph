@@ -500,6 +500,7 @@ jobs:
               "assembling": 64,
               "binary_parsers": 64,
               "vm_dispatcher": 64,
+              "vm_bytecode": 64,
               "relocations": 64,
               "binary_rewriter": 64,
           }
@@ -1278,6 +1279,7 @@ jobs:
               "assembling": 64,
               "binary_parsers": 64,
               "vm_dispatcher": 64,
+              "vm_bytecode": 64,
               "relocations": 64,
               "binary_rewriter": 64,
           }

@@ -54,7 +54,7 @@ jobs:
           python -m build
           python -m pip install --force-reinstall dist/*.whl
 
-      - name: Fuzz assembly, parsers, VM dispatch, relocations, and rewriting
+      - name: Fuzz assembly, parsers, VM codegen, relocations, and rewriting
         run: |
           cases="${{ inputs.cases || '5000' }}"
           seed="${{ inputs.seed || '20260827' }}"
@@ -84,6 +84,7 @@ jobs:
               "assembling": cases,
               "binary_parsers": cases,
               "vm_dispatcher": cases,
+              "vm_bytecode": cases,
               "relocations": cases,
               "binary_rewriter": cases,
           }

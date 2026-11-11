@@ -1664,6 +1664,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "assembling" in differential
         and "binary_parsers" in differential
         and "vm_dispatcher" in differential
+        and "vm_bytecode" in differential
         and "relocations" in differential
         and "binary_rewriter" in differential
         and "Upload differential fuzz smoke" in differential

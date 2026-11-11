@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run deterministic parser, VM dispatch, relocation, and rewrite fuzzing."""
+"""Run deterministic parser, VM, relocation, assembler, and rewrite fuzzing."""
 
 from __future__ import annotations
 
@@ -21,6 +21,10 @@ from r2morph.devirtualization.binary_rewriter_planning import (
     validate_patches,
 )
 from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask, decode_block
+from r2morph.mutations.code_virtualization_engine_codegen import _interpreter_asm
+from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_encoder import encode_bytecode
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedOp
 from r2morph.platform.elf_handler_parsing import parse_elf_header
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler_parsing import read_pe_header
@@ -32,7 +36,11 @@ _MAX_FAILURES = 128
 _MIN_PATCH_ADDRESS = 0x1000
 _ASSEMBLY_INSTRUCTION_COUNT = 4
 _ASSEMBLY_INVALID_SAMPLE_RATE = 4
-_FUZZ_TARGETS = ("assembling", "binary_parsers", "vm_dispatcher", "relocations", "binary_rewriter")
+_VM_INTERPRETER_SAMPLE_INTERVAL = 128
+_VM_INTERPRETER_ADDRESS = 0x401000
+_VM_BYTECODE_BASE = 0x402000
+_VM_BYTECODE_MAX_SIZE = 4096
+_FUZZ_TARGETS = ("assembling", "binary_parsers", "vm_dispatcher", "vm_bytecode", "relocations", "binary_rewriter")
 _X86_64_ASSEMBLER = Ks(KS_ARCH_X86, KS_MODE_64)
 _ELF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "dataset" / "elf_x86_64"
 
@@ -129,6 +137,26 @@ def _dispatcher_case(seed: int, index: int) -> None:
         raise AssertionError("VM dispatcher did not assemble")
 
 
+def _vm_bytecode_case(seed: int, index: int) -> None:
+    case_seed = _bounded_value(seed, index, 36, 0xFFFFFFFF)
+    scheme = build_vm_scheme(randomness.Random(case_seed))
+    ops = [
+        VirtualizedOp("mov", 0, _bounded_value(seed, index, 37, 0xFFFFFFFFFFFFFFFF), True, 64),
+        VirtualizedOp("add", 0, _bounded_value(seed, index, 38, 0x7FFFFFFF), True, 64),
+        VirtualizedOp("xor", 0, _bounded_value(seed, index, 39, 15), False, 64),
+        VirtualizedOp("sub", 1, _bounded_value(seed, index, 40, 0x7FFFFFFF), True, 32),
+    ]
+    bytecode = encode_bytecode(ops, scheme, checksum=case_seed & 0xFF, bytecode_base=_VM_BYTECODE_BASE)
+    if not bytecode or len(bytecode) > _VM_BYTECODE_MAX_SIZE:
+        raise AssertionError("VM bytecode encoder returned an empty or oversized payload")
+    # shortcut: sample interpreter assembly periodically to bound cost; widen coverage if codegen changes.
+    if index % _VM_INTERPRETER_SAMPLE_INTERVAL == 0:
+        assembly = _interpreter_asm(_VM_INTERPRETER_ADDRESS, scheme)
+        encoded, instruction_count = _X86_64_ASSEMBLER.asm(assembly)
+        if not encoded or instruction_count == 0:
+            raise AssertionError("generated VM interpreter did not assemble")
+
+
 def _relocation_case(seed: int, index: int) -> None:
     old_address = _bounded_value(seed, index, 25, 0xFFFFF) + _MIN_PATCH_ADDRESS
     new_address = _bounded_value(seed, index, 26, 0xFFFFF) + 0x200000
@@ -157,6 +185,7 @@ def _case_targets(payload: bytes, seed: int, index: int) -> tuple[tuple[str, Cal
         ("assembling", lambda: _assembly_case(seed, index)),
         ("binary_parsers", lambda: _parser_case(payload)),
         ("vm_dispatcher", lambda: _dispatcher_case(seed, index)),
+        ("vm_bytecode", lambda: _vm_bytecode_case(seed, index)),
         ("relocations", lambda: _relocation_case(seed, index)),
         ("binary_rewriter", lambda: _rewrite_case(seed, index)),
     )
