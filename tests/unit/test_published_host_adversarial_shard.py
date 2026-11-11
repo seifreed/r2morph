@@ -11,6 +11,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-52dfc2ea.json"
 _NEXT_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _THIRD_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json"
+_FOURTH_SHARD_REPORT = _ROOT / "docs" / "protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json"
 _EXPECTED_FIXTURES = {
     "elf_switch_pie_x86_64",
     "elf_vm_addflaglive_x86_64",
@@ -52,6 +53,24 @@ _THIRD_SHARD_FIXTURES = {
 }
 _THIRD_SHARD_COMPLETED_TOOLS = {"angr", "custom", "ghidra", "ida-pro", "objdump", "radare2"}
 _THIRD_SHARD_EXPECTED_TOOLS = _THIRD_SHARD_COMPLETED_TOOLS | {"binary-ninja", "triton", "unicorn"}
+_FOURTH_SHARD_FIXTURES = {
+    "elf_vm_cmp8_x86_64",
+    "elf_vm_dynamic_x86_64",
+    "elf_vm_fpcmp_x86_64",
+    "elf_vm_fpengineidxnb_x86_64",
+    "elf_vm_fpenginerip_x86_64",
+    "elf_vm_leaidx_x86_64",
+    "elf_vm_movabs_x86_64",
+    "elf_vm_run_movxidxfallback_x86_64",
+    "elf_vm_vex128_shift_x86_64",
+    "elf_vm_vpmuludq_x86_64",
+}
+_FOURTH_SHARD_COMPLETED_TOOLS = {"angr", "custom", "ghidra", "ida-pro", "objdump", "radare2"}
+_FOURTH_SHARD_COMPLETED_RUNS = {
+    **{tool: len(_FOURTH_SHARD_FIXTURES) for tool in _FOURTH_SHARD_COMPLETED_TOOLS},
+    "unicorn": len(_FOURTH_SHARD_FIXTURES) - 1,
+}
+_FOURTH_SHARD_EXPECTED_TOOLS = _FOURTH_SHARD_COMPLETED_TOOLS | {"binary-ninja", "triton", "unicorn"}
 _THIRD_SHARD_COMPLETED_RUNS = {
     **{tool: len(_THIRD_SHARD_FIXTURES) for tool in _THIRD_SHARD_COMPLETED_TOOLS},
     "unicorn": len(_THIRD_SHARD_FIXTURES) - 1,
@@ -187,5 +206,48 @@ def test_third_host_adversarial_shard_records_unavailable_analyzers() -> None:
 
 def test_third_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
     report = _THIRD_SHARD_REPORT.read_text(encoding="utf-8")
+
+    expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))
+
+
+def test_fourth_host_adversarial_shard_applies_virtualization_to_new_fixtures() -> None:
+    report = json.loads(_FOURTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["fixture_shard"] == {"count": 16, "index": 3}
+        and report["sample_count"] == len(_FOURTH_SHARD_FIXTURES)
+        and {sample["original"] for sample in report["samples"]} == _FOURTH_SHARD_FIXTURES
+        and report["pass_names"] == ["CodeVirtualization"]
+        and report["pass_summary"]["CodeVirtualization"]["applied"] == len(_FOURTH_SHARD_FIXTURES)
+        and report["pass_summary"]["CodeVirtualization"]["unsupported_functions"] == 0
+    )
+
+
+def test_fourth_host_adversarial_shard_completes_available_analyzers() -> None:
+    report = json.loads(_FOURTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["completed_tool_runs_by_tool"] == _FOURTH_SHARD_COMPLETED_RUNS
+        and report["summary"]["completed_tool_runs"] == sum(_FOURTH_SHARD_COMPLETED_RUNS.values())
+        and report["summary"]["expected_tool_runs"] == len(_FOURTH_SHARD_FIXTURES) * len(_FOURTH_SHARD_EXPECTED_TOOLS)
+        and report["summary"]["error_tool_runs"] == 0
+    )
+
+
+def test_fourth_host_adversarial_shard_records_unavailable_analyzers() -> None:
+    report = json.loads(_FOURTH_SHARD_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["summary"]["unavailable_reasons_by_tool"]
+        == {
+            "binary-ninja": {"analyzer license is unavailable": report["sample_count"]},
+            "triton": {"module 'triton' is unavailable": report["sample_count"]},
+            "unicorn": {"the installed x86 emulator does not support an instruction in this fixture": 1},
+        }
+    )
+
+
+def test_fourth_host_adversarial_shard_does_not_publish_analyst_paths() -> None:
+    report = _FOURTH_SHARD_REPORT.read_text(encoding="utf-8")
 
     expect(not any(marker in report for marker in _ANALYST_PATH_MARKERS))
