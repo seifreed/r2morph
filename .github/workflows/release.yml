@@ -153,6 +153,8 @@ jobs:
           rm -rf "$test_root"
           mkdir -p "$test_root"
           cp -R .github tests fixtures docs scripts pyproject.toml requirements.txt CHANGELOG.md README.md "$test_root"/
+          mkdir -p "$test_root/r2morph/mutations"
+          cp r2morph/mutations/code_virtualization.py "$test_root/r2morph/mutations/"
           cd "$test_root"
           python -W error -m pytest --no-cov \
             --tb=short

@@ -38,3 +38,16 @@ def test_installed_wheel_jobs_run_the_public_api_and_cli_contract() -> None:
         workflow.count("tests/unit/test_public_surface_contract.py")
         == _EXPECTED_PUBLIC_SURFACE_CONTRACT_WORKFLOW_OCCURRENCES
     )
+
+
+def test_release_wheel_review_contract_reads_source_without_shadowing_installed_package() -> None:
+    workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
+    test_steps = workflow["jobs"]["test"]["steps"]
+    run_step = next(step for step in test_steps if step.get("name") == "Run tests against installed wheel")
+    run_script = run_step["run"]
+
+    expect(
+        'mkdir -p "$test_root/r2morph/mutations"' in run_script
+        and 'cp r2morph/mutations/code_virtualization.py "$test_root/r2morph/mutations/"' in run_script
+        and "r2morph/__init__.py" not in run_script
+    )
