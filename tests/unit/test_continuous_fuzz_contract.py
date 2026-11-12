@@ -1,6 +1,7 @@
 """Regression contract for the deterministic parser/rewrite fuzz campaign."""
 
-import subprocess
+import importlib
+import multiprocessing
 import sys
 from logging import getLogger
 from pathlib import Path
@@ -77,18 +78,16 @@ def test_continuous_fuzz_workflow_runs_on_all_three_platforms() -> None:
 
 
 def test_package_bootstrap_loads_keystone_compatibility_dependencies() -> None:
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            "import r2morph, sys\n"
-            "if 'setuptools' not in sys.modules: raise SystemExit('setuptools shim was not loaded')\n"
-            "import keystone",
-        ],
-        capture_output=True,
-        check=False,
-        cwd=_ROOT,
-        text=True,
-    )
+    process = multiprocessing.get_context("spawn").Process(target=_import_package_with_compatibility_dependencies)
+    process.start()
+    process.join(timeout=30)
+    if process.is_alive():
+        process.terminate()
+        process.join()
+    expect(process.exitcode == 0, "isolated compatibility imports failed or timed out")
 
-    expect(result.returncode == 0, result.stderr)
+
+def _import_package_with_compatibility_dependencies() -> None:
+    importlib.import_module("r2morph")
+    expect("setuptools" in sys.modules, "the setuptools shim was not loaded")
+    importlib.import_module("keystone")
