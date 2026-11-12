@@ -14,6 +14,7 @@
         "docs/protection-ida-targeted-2026-11-11-c70a113b.json",
         "docs/protection-adversarial-campaign-2026-11-11-4749bca3.json",
         "docs/protection-ida-codevirtualization-shard-2026-11-11-92265ab8.json",
+        "docs/protection-ida-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json",
         "docs/protection-host-adversarial-shard-2026-11-11-52dfc2ea.json",
         "docs/protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json",
         "docs/protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json",
@@ -22,6 +23,7 @@
         "docs/protection-host-adversarial-shard-2026-11-12-95ada1f8-shard-07.json",
         "docs/protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json",
         "docs/protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json",
+        "docs/protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json",
         "docs/release-blockers.md"
       ]
     },
@@ -85,6 +87,7 @@
         "docs/protection-host-adversarial-shard-2026-11-12-95ada1f8-shard-07.json",
         "docs/protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json",
         "docs/protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json",
+        "docs/protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json",
         "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json"
       ]
     },

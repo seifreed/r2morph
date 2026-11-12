@@ -235,6 +235,25 @@ successful run.
   resistance criterion. Evidence:
   [protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json](protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json)
   and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  An eleventh host shard measured eleven additional ELF x86-64 fixtures at
+  commit `74a3e18d`. All eleven CodeVirtualization passes applied with zero
+  unsupported functions or pass errors. angr, Unicorn, radare2, objdump, and
+  the custom analyzer completed all 55 available runs with zero reported tool
+  errors. Binary Ninja, Ghidra, IDA Pro, and Triton were unavailable in this
+  local environment, accounting for 44/99 slots; one angr decompiler baseline
+  pair was also unavailable. This adds eleven fixture pairs but does not
+  complete the full pass/fixture analyzer matrix or resistance criterion.
+  Evidence:
+  [protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json](protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json)
+  and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  A supplemental IDA Pro service run analyzed the same eleven original and
+  protected fixture pairs. It discovered and decompiled all 16 original and 28
+  protected functions with zero errors. Decompiler output grew from 1,746
+  bytes/93 lines to 8,139 bytes/308 lines. The service did not expose its
+  version; this evidence is separate from the command-line campaign, which
+  still records the local `idat` executable as unavailable, and does not
+  measure runtime equivalence or general resistance. Evidence:
+  [protection-ida-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json](protection-ida-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 

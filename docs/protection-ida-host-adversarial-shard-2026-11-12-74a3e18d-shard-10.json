@@ -1,0 +1,557 @@
+{
+  "schema_version": 1,
+  "measurement": "ida-pro-host-adversarial-shard",
+  "source_commit": "74a3e18d31a1d6df513f3044140981d082b1a3da",
+  "analyzer": {
+    "name": "IDA Pro",
+    "integration": "idalib MCP",
+    "version": "not exposed"
+  },
+  "scope": {
+    "os": "macOS",
+    "format": "ELF",
+    "architecture": "x86-64",
+    "pass": "CodeVirtualization",
+    "fixture_shard": {
+      "index": 10,
+      "count": 16
+    },
+    "seed": 20260827
+  },
+  "sample_count": 11,
+  "summary": {
+    "original_functions": 16,
+    "original_decompiled_functions": 16,
+    "protected_functions": 28,
+    "protected_decompiled_functions": 28,
+    "original_decompiler_output_bytes": 1746,
+    "protected_decompiler_output_bytes": 8139,
+    "original_decompiler_output_lines": 93,
+    "protected_decompiler_output_lines": 308,
+    "error_count": 0
+  },
+  "evidence_limitations": [
+    "This supplemental IDA MCP run is separate from the command-line campaign, which records idat as unavailable.",
+    "The analyzer version was not exposed.",
+    "Function discovery, decompilation, and decompiler output size were measured; runtime equivalence and general resistance were not."
+  ],
+  "samples": [
+    {
+      "fixture": "elf_vm_bswap_x86_64",
+      "original_sha256": "9ee80ad725e8b006b4f39f45d474c87da97c76964577287f4cf48bc2c2e35574",
+      "protected_sha256": "62686d1e1e1b587a1d10f8ab58e6c71503d1a62c6eb8a88f7cc91ef5caa4fffd",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 56,
+        "decompiler_output_lines": 4,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 464,
+        "decompiler_output_lines": 21,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x4012a8",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_call_x86_64",
+      "original_sha256": "a74b830c273088e2b58458e5227b839d0a1e07b422e34dfa6c42db5e10e08754",
+      "protected_sha256": "008af74f9feea36c264411f7c7b894632049f3eede31f3661b8b42fe82ed8af2",
+      "original": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 137,
+        "decompiler_output_lines": 8,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "twice",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x401005",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 3,
+        "decompiled_count": 3,
+        "decompiler_output_bytes": 531,
+        "decompiler_output_lines": 25,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "twice",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "j__start",
+            "addr": "0x401005",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x401238",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_callflags_stack_x86_64",
+      "original_sha256": "a872de7c4ddf6781eff33650a1d073d07b8fc71f0e501e61c9332eca82176ac3",
+      "protected_sha256": "d6ce1a9d3daf0c43141a001db2d4f9e02f04904caa02e65ea26de33de51bb9eb",
+      "original": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 261,
+        "decompiler_output_lines": 16,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "check_stack_argument",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x40100a",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 3,
+        "decompiled_count": 3,
+        "decompiler_output_bytes": 1177,
+        "decompiler_output_lines": 34,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "check_stack_argument",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "j__start",
+            "addr": "0x40100a",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x401298",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_fpenginemove_x86_64",
+      "original_sha256": "53a649d30ca8d277594feca688abf3c18f89f1cee785d3b502e0ede1dd869b0a",
+      "protected_sha256": "47cd4844d0c061556a07cf5f6fbd35b9ee1d5bce2af6a0bc0310254dbf5dd923",
+      "original": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 177,
+        "decompiler_output_lines": 13,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "helper",
+            "addr": "0x401032",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 1126,
+        "decompiler_output_lines": 30,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x401288",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_fppackedaridx_x86_64",
+      "original_sha256": "7a4c9c47370fbe1ecb30087bdfb337db99ccd46da01cd73c3d4e3b27b93579d2",
+      "protected_sha256": "61ab04cc8af6851ad497023b59988c4f17e5540231d4df380388566c1ce065f8",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 76,
+        "decompiler_output_lines": 4,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 1123,
+        "decompiler_output_lines": 30,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x401260",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_fppackedidxnb_x86_64",
+      "original_sha256": "a5b98d15463806174fdf87a6ac74ada040ac46690d2dfd0bbbbce4be6a7d63c7",
+      "protected_sha256": "85edf4a26f6eb02ec598aa545efebc228ffb8d0c3a2c378b752d47551160eadb",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 176,
+        "decompiler_output_lines": 5,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 454,
+        "decompiler_output_lines": 21,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x405000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_lea_x86_64",
+      "original_sha256": "7e4bb5cd0c896347d7415bae14d0a3685d6c9df182fffdd0ca142d7d1525a5d5",
+      "protected_sha256": "823c0fcf755e5a742acfc361e49063222f27231ca29be878263dca829ce7af7c",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 62,
+        "decompiler_output_lines": 4,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 463,
+        "decompiler_output_lines": 21,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x401000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x405000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_phaddmem_x86_64",
+      "original_sha256": "148096b975c2bca7814bf2f022392c932e8b9062a47cf71525041498452fd865",
+      "protected_sha256": "0a9194b620a6c46129f4e8be8b2b61cfdc82f2d81767e90308cd2c18a4e32043",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 126,
+        "decompiler_output_lines": 5,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x201180",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 458,
+        "decompiler_output_lines": 21,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x201180",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x205000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_redzone_x86_64",
+      "original_sha256": "d8c46db3ab698d08ecaabd3ebce91e8d09657e2fc2eae20fe5ec1c66e45d7518",
+      "protected_sha256": "07c8334b6552c639cd962280e9eda82e50847d731dc7d9a2e0044801dd9b3ae8",
+      "original": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 140,
+        "decompiler_output_lines": 9,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x201120",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "redzone_value",
+            "addr": "0x20112e",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 4,
+        "decompiled_count": 4,
+        "decompiler_output_bytes": 966,
+        "decompiler_output_lines": 42,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x201120",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "redzone_value",
+            "addr": "0x20112e",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x201370",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "redzone_value_0",
+            "addr": "0x205c9d",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_simdint_x86_64",
+      "original_sha256": "0ea456c94f2fa6b58758a156aab2628c9ba91f5ad02e9f837fb4c60c6e67952f",
+      "protected_sha256": "f665bb8b187e8d82565ba070fa3def1b68e899f5bc250233b8906895c93ae381",
+      "original": {
+        "function_count": 1,
+        "decompiled_count": 1,
+        "decompiler_output_bytes": 396,
+        "decompiler_output_lines": 16,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x201174",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 455,
+        "decompiler_output_lines": 21,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x201174",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x2013f0",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "fixture": "elf_vm_unwind_x86_64",
+      "original_sha256": "8a75f791e426086017950baaea9b93c641bbef31b826b8fbcdd4d14168faca14",
+      "protected_sha256": "67b2a62380a0256e7c33563af6c764acb46da4a181a177387725ecedf4f0179e",
+      "original": {
+        "function_count": 2,
+        "decompiled_count": 2,
+        "decompiler_output_bytes": 139,
+        "decompiler_output_lines": 9,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "_start",
+            "addr": "0x1000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "protected_body",
+            "addr": "0x100e",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      },
+      "protected": {
+        "function_count": 4,
+        "decompiled_count": 4,
+        "decompiler_output_bytes": 922,
+        "decompiler_output_lines": 42,
+        "error_count": 0,
+        "functions": [
+          {
+            "name": "j__start",
+            "addr": "0x1000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "protected_body",
+            "addr": "0x100e",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "_start",
+            "addr": "0x5000",
+            "decompiled": true,
+            "error": null
+          },
+          {
+            "name": "protected_body_0",
+            "addr": "0xb000",
+            "decompiled": true,
+            "error": null
+          }
+        ]
+      }
+    }
+  ]
+}
