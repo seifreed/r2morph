@@ -45,7 +45,18 @@
         "docs/support-matrix.json",
         "docs/release-blockers.md",
         "docs/protection-differential-run-2026-11-12-43165336266.json",
-        "docs/protection-differential-run-2026-11-12-43177927462.json"
+        "docs/protection-differential-run-2026-11-12-43177927462.json",
+        "docs/protection-differential-run-2026-11-12-43225790149.json",
+        "docs/protection-platform-evidence-2026-11-12-43225790149.json",
+        "docs/protection-public-compatibility-2026-11-12-43225790149.json",
+        "docs/protection-vm-semantic-2026-11-12-43225790149.json",
+        "docs/protection-maturity-evidence-2026-11-12-43225790149.json",
+        "docs/protection-vm-semantic-contracts-2026-11-12-43225790149.json",
+        "docs/protection-platform-elf-arm-32-2026-11-12-43225790149.xml",
+        "docs/protection-platform-elf-arm64-2026-11-12-43225790149.xml",
+        "docs/protection-platform-elf-x86-32-2026-11-12-43225790149.xml",
+        "docs/protection-platform-macos-arm64-2026-11-12-43225790149.xml",
+        "docs/protection-platform-windows-pe-2026-11-12-43225790149.xml"
       ]
     },
     "documented_resistance_scope": {
@@ -63,7 +74,10 @@
         "docs/compatibility-corpus.md",
         "docs/protection-differential-2026-11-11-019a0551.json",
         "docs/protection-extended-differential-2026-11-11-019a0551.json",
-        "docs/protection-differential-run-2026-11-12-43177927462.json"
+        "docs/protection-differential-run-2026-11-12-43177927462.json",
+        "docs/protection-differential-run-2026-11-12-43225790149.json",
+        "docs/protection-public-compatibility-2026-11-12-43225790149.json",
+        "docs/protection-vm-semantic-2026-11-12-43225790149.json"
       ]
     },
     "published_correctness_results": {
@@ -74,7 +88,10 @@
         "docs/protection-differential-2026-11-11-019a0551.json",
         "docs/protection-extended-differential-2026-11-11-019a0551.json",
         "docs/protection-differential-run-2026-11-12-43165336266.json",
-        "docs/protection-differential-run-2026-11-12-43177927462.json"
+        "docs/protection-differential-run-2026-11-12-43177927462.json",
+        "docs/protection-differential-run-2026-11-12-43225790149.json",
+        "docs/protection-public-compatibility-2026-11-12-43225790149.json",
+        "docs/protection-vm-semantic-2026-11-12-43225790149.json"
       ]
     },
     "published_resistance_results": {
