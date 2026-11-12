@@ -70,6 +70,15 @@ successful run.
   `extended_maturity_evidence_blocker_totals`. Exit criteria: the declared
   preview platform aggregate remains complete and any new missing or failed
   platform report reopens this blocker.
+  A subsequent complete run [`43165336266`](https://github.com/seifreed/r2morph/actions/runs/43165336266)
+  completed 85/85 jobs. Its 10-pass core and 12-pass extended differential
+  campaigns covered 10,860 and 13,032 classified runs respectively, with
+  zero errors or failed seeds. The public corpus completed 360 samples with no
+  differential or static-recovery failures; all five preview platform slices
+  completed their 73 required cases. The hash-bound archived evidence is
+  [protection-differential-run-2026-11-12-43165336266.json](protection-differential-run-2026-11-12-43165336266.json).
+  This strengthens correctness and bounded preview evidence; it does not close
+  the separate cross-platform parity criterion.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,

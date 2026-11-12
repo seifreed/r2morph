@@ -42,7 +42,8 @@
       "status": "open",
       "evidence": [
         "docs/support-matrix.json",
-        "docs/release-blockers.md"
+        "docs/release-blockers.md",
+        "docs/protection-differential-run-2026-11-12-43165336266.json"
       ]
     },
     "documented_resistance_scope": {
@@ -68,7 +69,8 @@
         "docs/compatibility-corpus.md",
         "docs/support-matrix.json",
         "docs/protection-differential-2026-11-11-019a0551.json",
-        "docs/protection-extended-differential-2026-11-11-019a0551.json"
+        "docs/protection-extended-differential-2026-11-11-019a0551.json",
+        "docs/protection-differential-run-2026-11-12-43165336266.json"
       ]
     },
     "published_resistance_results": {

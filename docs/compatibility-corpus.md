@@ -32,6 +32,20 @@ thirty-four macOS Mach-O/format cases. Every platform report has zero failures,
 zero errors, and no missing required cases. ARM32 executes under QEMU and
 AArch64 runs through the configured native/emulated runner path. This is
 bounded execution evidence for the listed passes, not full-format parity.
+
+The later complete run [43165336266](https://github.com/seifreed/r2morph/actions/runs/43165336266)
+finished 85/85 jobs. Its core differential campaign covered 10 passes and
+10,860 classified runs; the extended campaign covered 12 passes and 13,032
+runs. Both recorded 100% semantic success with zero errors or failed seeds.
+The public corpus aggregate covered 360 samples across four shards with no
+differential or static-recovery failures. The preview platform aggregate
+completed 5/5 slices and 73 JUnit cases; a separate VM semantic campaign passed
+1,005/1,005 fixtures and QEMU pairs. The hash-bound summary and retained small
+reports are in
+[`protection-differential-run-2026-11-12-43165336266.json`](protection-differential-run-2026-11-12-43165336266.json).
+These results strengthen bounded correctness evidence; they do not establish
+full cross-platform parity or generalized resistance.
+
 The Windows job now builds 32-bit PEs with MinGW and runs them under native
 Windows or Wine. Local 2026-11-12 regressions passed for NOP insertion, the
 four individual instruction, register, expansion, and constant-unfolding
