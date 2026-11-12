@@ -537,6 +537,17 @@ This adds per-format parser depth; it does not establish semantic equivalence,
 analyzer resistance, or platform parity. Earlier campaigns remain historical
 evidence.
 
+A source-tree rerun at commit `04e2f5b4` used seed `20261112` and completed
+20,000 cases for each of the same nine targets (180,000 target runs, zero
+failures). It recorded 428 recoverable Mach-O parser warnings as bounded
+counts. The exact raw campaign output is
+[`protection-fuzz-2026-11-12-04e2f5b4-output.json`](protection-fuzz-2026-11-12-04e2f5b4-output.json);
+the metadata summary binds its SHA-256 and identifies this as a local source-tree
+run, not a wheel-backed workflow. Reproduce it with
+`python scripts/continuous_fuzz.py --cases 20000 --seed 20261112 --output fuzz-campaign.json`.
+This adds current fuzz evidence but does not establish semantic equivalence,
+complete cross-platform fuzz coverage, analyzer resistance, or platform parity.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom

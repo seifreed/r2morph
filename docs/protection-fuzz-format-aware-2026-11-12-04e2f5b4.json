@@ -1,0 +1,31 @@
+{
+  "campaign_report_sha256": "a609648c75ef620ee43d6acb775baa7e0b0eff5347635a8dff8e7365ca00883d",
+  "cases": 20000,
+  "commit": "04e2f5b4a365154712149ddc0f668d4b7692d495",
+  "failure_count": 0,
+  "generated_at": "2026-11-12",
+  "max_payload": 4096,
+  "measurement": "continuous-fuzzing",
+  "parser_diagnostic_counts": {
+    "macho_load_commands.warning": 428
+  },
+  "provenance": "local-source-tree",
+  "runtime": {
+    "os": "Darwin",
+    "python": "3.13.18"
+  },
+  "schema_version": 1,
+  "seed": 20261112,
+  "status": "passed",
+  "target_runs": {
+    "assembling": 20000,
+    "binary_parsers": 20000,
+    "binary_rewriter": 20000,
+    "elf_header_parser": 20000,
+    "macho_load_commands": 20000,
+    "pe_header_parser": 20000,
+    "relocations": 20000,
+    "vm_bytecode": 20000,
+    "vm_dispatcher": 20000
+  }
+}

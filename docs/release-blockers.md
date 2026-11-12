@@ -311,6 +311,16 @@ This strengthens format-parser fuzz evidence; semantic equivalence, full
 cross-platform fuzzing, and professional adversarial resistance remain separate
 requirements.
 
+A local source-tree rerun at `04e2f5b4` completed 20,000 cases per target
+(180,000 target runs) with seed `20261112` and zero failures. Its raw output and
+hash-bound summary are
+[protection-fuzz-2026-11-12-04e2f5b4-output.json](protection-fuzz-2026-11-12-04e2f5b4-output.json)
+and
+[protection-fuzz-format-aware-2026-11-12-04e2f5b4.json](protection-fuzz-format-aware-2026-11-12-04e2f5b4.json).
+This is source-tree evidence; the separate wheel-backed workflow run remains
+the package-installation check. The result does not close semantic-equivalence,
+cross-platform fuzz, analyzer-resistance, or parity requirements.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
