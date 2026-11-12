@@ -1,6 +1,7 @@
 """Regression contract for the deterministic parser/rewrite fuzz campaign."""
 
 from logging import getLogger
+from pathlib import Path
 
 from scripts.continuous_fuzz import run_campaign
 from tests.utils.assertions import expect
@@ -9,6 +10,7 @@ _CASE_COUNT = 32
 _SEED = 20260827
 _SMALL_PAYLOAD = 7
 _MAX_FAILURES = 128
+_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_continuous_fuzz_campaign_is_reproducible_and_clean() -> None:
@@ -55,4 +57,17 @@ def test_continuous_fuzz_campaign_counts_expected_parser_diagnostics() -> None:
             and count > 0
             for key, count in report["parser_diagnostic_counts"].items()
         )
+    )
+
+
+def test_continuous_fuzz_workflow_runs_on_all_three_platforms() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
+
+    expect(
+        "os: [ubuntu-latest, macos-15, windows-latest]" in workflow
+        and "runs-on: ${{ matrix.os }}" in workflow
+        and "fail-fast: false" in workflow
+        and "shell: bash" in workflow
+        and 'wheel_root="$(cygpath -u "$RUNNER_TEMP")/r2morph-fuzz-wheel-check"' in workflow
+        and "name: continuous-fuzz-report-${{ matrix.os }}" in workflow
     )

@@ -32,8 +32,13 @@ concurrency:
 
 jobs:
   parser-and-rewriter:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    name: parser-and-rewriter (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -55,10 +60,14 @@ jobs:
           python -m pip install --force-reinstall dist/*.whl
 
       - name: Fuzz assembly, parsers, VM codegen, relocations, and rewriting
+        shell: bash
         run: |
           cases="${{ inputs.cases || '5000' }}"
           seed="${{ inputs.seed || '20260827' }}"
           wheel_root=/tmp/r2morph-fuzz-wheel-check
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            wheel_root="$(cygpath -u "$RUNNER_TEMP")/r2morph-fuzz-wheel-check"
+          fi
           rm -rf "$wheel_root"
           mkdir -p "$wheel_root"
           cp -R scripts fixtures "$wheel_root"/
@@ -70,6 +79,7 @@ jobs:
             --output "$GITHUB_WORKSPACE/fuzz-campaign.json"
 
       - name: Validate continuous fuzz campaign
+        shell: bash
         env:
           CASES: ${{ inputs.cases || '5000' }}
         run: |
@@ -103,5 +113,5 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always() && !cancelled()
         with:
-          name: continuous-fuzz-report
+          name: continuous-fuzz-report-${{ matrix.os }}
           path: fuzz-campaign.json
