@@ -71,18 +71,24 @@ jobs:
       - name: Validate support contract
         run: python scripts/check_release_contract.py
 
-      - name: Require green CI for release commit
+      - name: Require green validation workflows for release commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ci_conclusion=$(gh run list \
-            --repo "$GITHUB_REPOSITORY" \
-            --workflow ci.yml \
-            --commit "$GITHUB_SHA" \
-            --limit 1 \
-            --json conclusion \
-            --jq '.[0].conclusion')
-          test "$ci_conclusion" = "success"
+          set -euo pipefail
+          for workflow_file in ci.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml; do
+            conclusion=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow "$workflow_file" \
+              --commit "$GITHUB_SHA" \
+              --limit 1 \
+              --json conclusion \
+              --jq '.[0].conclusion // ""')
+            if [[ "$conclusion" != "success" ]]; then
+              echo "::error::Required workflow $workflow_file for $GITHUB_SHA concluded '$conclusion'"
+              exit 1
+            fi
+          done
 
   build:
     runs-on: ubuntu-latest

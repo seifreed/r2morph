@@ -50,11 +50,22 @@ def test_stable_readiness_gate_runs_before_release_build_and_publish() -> None:
     workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
     validation_steps = workflow["jobs"]["validate-release"]["steps"]
     support_contract_step = next(step for step in validation_steps if step.get("name") == "Validate support contract")
-    green_ci_step = next(step for step in validation_steps if step.get("name") == "Require green CI for release commit")
+    green_ci_step = next(
+        step for step in validation_steps if step.get("name") == "Require green validation workflows for release commit"
+    )
 
     expect(
         "python scripts/check_release_contract.py" in support_contract_step["run"]
         and validation_steps.index(support_contract_step) < validation_steps.index(green_ci_step)
+        and all(
+            workflow in green_ci_step["run"]
+            for workflow in (
+                "ci.yml",
+                "differential-corpus.yml",
+                "adversarial-benchmark.yml",
+                "independent-review.yml",
+            )
+        )
         and workflow["jobs"]["build"]["needs"] == "validate-release"
         and "validate-release" in workflow["jobs"]["publish-pypi"]["needs"]
         and "validate-release" in workflow["jobs"]["create-release"]["needs"]

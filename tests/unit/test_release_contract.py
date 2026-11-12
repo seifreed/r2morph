@@ -1495,10 +1495,12 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
     expect(
         "Validate support contract" in workflow
         and "run: python scripts/check_release_contract.py" in workflow
-        and "Require green CI for release commit" in workflow
-        and "--workflow ci.yml" in workflow
+        and "Require green validation workflows for release commit" in workflow
+        and "for workflow_file in ci.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml"
+        in workflow
+        and '--workflow "$workflow_file"' in workflow
         and '--commit "$GITHUB_SHA"' in workflow
-        and 'test "$ci_conclusion" = "success"' in workflow
+        and 'if [[ "$conclusion" != "success" ]]; then' in workflow
     )
 
 
