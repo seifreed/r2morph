@@ -31,6 +31,21 @@ def test_validate_release_installs_checker_dependencies_before_running_contract(
     )
 
 
+def test_stable_readiness_gate_runs_before_release_build_and_publish() -> None:
+    workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
+    validation_steps = workflow["jobs"]["validate-release"]["steps"]
+    support_contract_step = next(step for step in validation_steps if step.get("name") == "Validate support contract")
+    green_ci_step = next(step for step in validation_steps if step.get("name") == "Require green CI for release commit")
+
+    expect(
+        "python scripts/check_release_contract.py" in support_contract_step["run"]
+        and validation_steps.index(support_contract_step) < validation_steps.index(green_ci_step)
+        and workflow["jobs"]["build"]["needs"] == "validate-release"
+        and "validate-release" in workflow["jobs"]["publish-pypi"]["needs"]
+        and "validate-release" in workflow["jobs"]["create-release"]["needs"]
+    )
+
+
 def test_installed_wheel_jobs_run_the_public_api_and_cli_contract() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
