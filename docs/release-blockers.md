@@ -287,6 +287,18 @@ successful run.
   or establish general resistance. Evidence:
   [protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json](protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json)
   and [test_published_host_adversarial_shard_11.py](../tests/unit/test_published_host_adversarial_shard_11.py).
+  A focused current-commit shard measured CodeVirtualization on nine repository
+  fixtures. All nine transformations applied with zero unsupported functions,
+  partial results, or pass errors. IDA Pro 9.5, Ghidra 12.2, angr, radare2,
+  objdump, and the custom analyzer completed all nine measurements; Unicorn
+  completed eight and lacked one instruction, while Binary Ninja and Triton
+  remained unavailable on the host. There were zero analyzer errors or missing
+  rows. The runner output hash is `e6a031f61f4fc86a474c241622ad7b052ad19e53a2c6328f75a5a37700c89dae`;
+  the published report is separately bound to commit `4db66d94`. This adds
+  current-commit evidence for the available tools but covers one pass and nine
+  fixtures only; it does not close the full analyzer matrix or resistance gap.
+  Evidence: [protection-adversarial-codevirtualization-2026-11-12-4db66d94-shard-12.json](protection-adversarial-codevirtualization-2026-11-12-4db66d94-shard-12.json)
+  and [test_published_codevirtualization_adversarial_shard_12.py](../tests/unit/test_published_codevirtualization_adversarial_shard_12.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
