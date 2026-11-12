@@ -165,7 +165,7 @@ successful run.
   unavailable), and one Unicorn slot. This adds a bounded fixture slice and
   does not close the full pass/fixture matrix or resistance criterion. Evidence:
   [protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json](protection-host-adversarial-shard-2026-11-11-c5b590cc-shard-02.json)
-  and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  and [test_published_host_adversarial_shards_early.py](../tests/unit/test_published_host_adversarial_shards_early.py).
   A fourth host shard at commit `0208d79e` applied CodeVirtualization to ten
   additional fixtures with zero unsupported functions or pass errors. IDA Pro
   9.5, Ghidra 11.4.2, angr, radare2, objdump, and the custom analyzer completed
@@ -175,7 +175,7 @@ successful run.
   zero analyzer tool errors. This adds ten fixture pairs but does not complete
   the full pass-by-fixture analyzer matrix or resistance criterion. Evidence:
   [protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json](protection-host-adversarial-shard-2026-11-11-0208d79e-shard-03.json)
-  and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  and [test_published_host_adversarial_shards_early.py](../tests/unit/test_published_host_adversarial_shards_early.py).
   A fifth deterministic host shard measured ten additional ELF x86-64 fixtures
   at commit `ebe50ae2`. All ten CodeVirtualization passes applied with zero
   unsupported functions or pass errors. IDA Pro 9.5, Ghidra 11.4.2, angr,
@@ -185,7 +185,7 @@ successful run.
   for 68/90 completed analyzer runs and zero tool errors. This adds ten fixture
   pairs but does not close the full pass/fixture matrix or resistance criterion.
   Evidence: [protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json](protection-host-adversarial-shard-2026-11-11-ebe50ae2-shard-04.json)
-  and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  and [test_published_host_adversarial_shards_early.py](../tests/unit/test_published_host_adversarial_shards_early.py).
   A sixth deterministic host shard measured ten additional ELF x86-64 fixtures
   at commit `811ab859`. All ten CodeVirtualization passes applied with zero
   unsupported functions or pass errors. IDA Pro 9.5, Ghidra 11.4.2, angr,
@@ -224,6 +224,16 @@ successful run.
   pairs but does not complete the full pass/fixture analyzer matrix or
   resistance criterion. Evidence:
   [protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json](protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json)
+  and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
+  A tenth deterministic host shard measured ten additional ELF x86-64 fixtures
+  at commit `c30d1337`. All ten CodeVirtualization passes applied with zero
+  unsupported functions or pass errors. IDA Pro 9.5, Ghidra 11.4.2, angr,
+  Unicorn, radare2, objdump, and the custom analyzer completed all 70 available
+  runs with zero reported tool errors. Binary Ninja's license and the Triton
+  module were unavailable, accounting for 20/90 slots. This adds ten fixture
+  pairs but does not complete the full pass/fixture analyzer matrix or
+  resistance criterion. Evidence:
+  [protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json](protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json)
   and [test_published_host_adversarial_shards.py](../tests/unit/test_published_host_adversarial_shards.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
