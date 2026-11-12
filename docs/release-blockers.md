@@ -254,6 +254,17 @@ successful run.
   still records the local `idat` executable as unavailable, and does not
   measure runtime equivalence or general resistance. Evidence:
   [protection-ida-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json](protection-ida-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json).
+  A twelfth host shard at commit `2867d63b` measured all 22 declared passes on
+  ten ELF x86-64 fixtures. CodeVirtualization applied to all ten with zero
+  unsupported functions or pass errors; 18 pass/fixture cases applied across
+  five pass types, while 17 pass names had no applied transformations in this
+  shard. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the
+  custom analyzer completed all 1,540 available runs with zero tool errors.
+  Binary Ninja's license and the Triton module were unavailable for 440 slots.
+  This is one of sixteen deterministic shards and does not close the complete
+  analyzer matrix or establish general resistance. Evidence:
+  [protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json](protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json)
+  and [test_published_host_adversarial_shard_zero.py](../tests/unit/test_published_host_adversarial_shard_zero.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
