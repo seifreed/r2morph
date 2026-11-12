@@ -54,7 +54,14 @@ jobs:
           python -m pip install "build>=1.2.0"
           pip install -r requirements.txt
 
+      - name: Install Keystone native library
+        if: runner.os == 'macOS'
+        run: |
+          brew install keystone
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix keystone)/lib" >> "$GITHUB_ENV"
+
       - name: Build and install package wheel
+        shell: bash
         run: |
           python -m build
           # Unix: python -m pip install --force-reinstall dist/*.whl; Bash on Windows does not expand globs.
