@@ -1609,10 +1609,26 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install 32-bit PE compiler
+        uses: msys2/setup-msys2@v2
+        id: msys2
+        with:
+          msystem: MINGW32
+          update: true
+          install: mingw-w64-i686-gcc
+
+      - name: Expose 32-bit PE compiler
+        shell: pwsh
+        run: |
+          $compilerBin = Join-Path '${{ steps.msys2.outputs.msys2-location }}' "mingw32\bin"
+          $compiler = Join-Path $compilerBin "i686-w64-mingw32-gcc.exe"
+          if (-not (Test-Path $compiler)) { throw "32-bit PE compiler was not installed: $compiler" }
+          $compilerBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & $compiler --version
+
       - name: Install radare2 (Windows)
         shell: pwsh
         run: |
-          choco install mingw --no-progress --yes
           $version = "6.2.2"
           $archiveName = "radare2-$version-w64.zip"
           $archive = Join-Path $env:RUNNER_TEMP $archiveName
