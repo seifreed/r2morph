@@ -26,3 +26,11 @@ def test_windows_differential_exposes_i686_compiler_on_path() -> None:
     expose = next(step for step in steps if step["name"] == "Expose 32-bit PE compiler")
 
     expect("i686-w64-mingw32-gcc.exe" in expose["run"] and "GITHUB_PATH" in expose["run"])
+
+
+def test_windows_differential_matches_parameterized_cases_literally() -> None:
+    workflow = yaml.safe_load(_WORKFLOW.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["cross-platform-format-windows"]["steps"]
+    validate = next(step for step in steps if step["name"] == "Validate Windows PE format differential evidence")
+
+    expect("Where-Object { $_.name -ceq $name }" in validate["run"])

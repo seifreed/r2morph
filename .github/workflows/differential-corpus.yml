@@ -1714,7 +1714,7 @@ jobs:
             "test_multiple_mutation_passes_on_x86_binary"
           )
           foreach ($name in $required) {
-            if (-not ($cases | Where-Object { $_.name -like "$name*" })) {
+            if (-not ($cases | Where-Object { $_.name -ceq $name })) {
               throw "Windows PE smoke is missing $name"
             }
           }
