@@ -39,3 +39,11 @@ def test_arm64_three_operand_expansion_rejects_different_immediate() -> None:
 
 def test_arm64_three_operand_expansion_matches_shift_by_one() -> None:
     expect(match_expansion_pattern({"disasm": "lsl w1, w1, 1"}, "arm64"))
+
+
+def test_x86_three_operand_imul_matches_expansion_when_source_and_destination_match() -> None:
+    expect(match_expansion_pattern({"disasm": "imul eax, eax, 2"}, "x86"))
+
+
+def test_x86_three_operand_imul_does_not_expand_different_source_register() -> None:
+    expect(not match_expansion_pattern({"disasm": "imul eax, ebx, 2"}, "x86"))

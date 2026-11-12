@@ -18,6 +18,9 @@ EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] =
             [("shl", "reg", "1")],
             [("add", "reg", "reg")],
         ],
+        ("imul", "reg", "same_reg", "2"): [
+            [("shl", "reg", "1")],
+        ],
         ("imul", "reg", "4"): [
             [("shl", "reg", "2")],
         ],
@@ -91,9 +94,9 @@ def _parse_supported_immediate(operand: str) -> int | None:
         return None
 
 
-def _second_operand_matches(pattern: str, operand: str) -> bool:
-    if pattern == "reg":
-        return _is_register_operand(operand)
+def _second_operand_matches(pattern: str, operand: str, first_operand: str) -> bool:
+    if pattern in {"reg", "same_reg"}:
+        return _is_register_operand(operand) and (pattern == "reg" or operand.lower() == first_operand.lower())
     normalized_pattern = pattern.removeprefix("#")
     normalized_operand = operand.removeprefix("#")
     if normalized_pattern in {"xzr", "0"}:
@@ -119,7 +122,7 @@ def _pattern_matches(pattern: tuple[str, ...], mnemonic: str, operands: list[str
     if len(operands) < len(pattern_operands):
         return False
     return all(
-        _second_operand_matches(pattern_operand, operand)
+        _second_operand_matches(pattern_operand, operand, operands[0])
         for pattern_operand, operand in zip(pattern_operands[1:], operands[1:], strict=True)
     )
 

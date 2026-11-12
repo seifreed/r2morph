@@ -10,14 +10,14 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 58
-_EXPECTED_NOT_SUPPORTED_CELLS = 206
-_EXPECTED_DECLARED_SUPPORT_CELLS = 58
-_EXPECTED_UNCLAIMED_CELLS = 206
-_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 8, "supported": 5}
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 36
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 206
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 206
+_EXPECTED_EVIDENCED_CELLS = 62
+_EXPECTED_NOT_SUPPORTED_CELLS = 202
+_EXPECTED_DECLARED_SUPPORT_CELLS = 62
+_EXPECTED_UNCLAIMED_CELLS = 202
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 12, "supported": 5}
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 40
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 202
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 202
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -76,6 +76,23 @@ def test_support_matrix_records_pe_x86_nop_evidence_as_preview() -> None:
         and cell["support_status"] == "preview"
         and cell["evidence"]
         == ["tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution"]
+    )
+
+
+def test_support_matrix_records_pe_x86_tier1_mutation_evidence() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    cells = {
+        cell["pass"]: cell
+        for cell in build_matrix(document)["cells"]
+        if cell["format"] == "PE" and cell["architecture"] == "x86"
+    }
+    expected_passes = {"nop", "substitute", "register", "instruction-expansion"}
+
+    expect(
+        all(
+            cells[pass_name]["status"] == "evidenced" and cells[pass_name]["support_status"] == "preview"
+            for pass_name in expected_passes
+        )
     )
 
 
@@ -319,13 +336,14 @@ def test_support_matrix_preview_evidence_references_real_test_cases() -> None:
     for cell in preview_cells:
         for reference in cell["evidence"]:
             path_text, case_name = reference.split("::", maxsplit=1)
+            definition_name = case_name.split("[", maxsplit=1)[0]
             source = (_MATRIX.parents[1] / path_text).read_text(encoding="utf-8")
             definitions = {
                 node.name
                 for node in ast.walk(ast.parse(source))
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
             }
-            if case_name not in definitions:
+            if definition_name not in definitions:
                 missing_cases.append(reference)
 
     expect(not missing_cases)

@@ -36,6 +36,10 @@ _REQUIRED_CASES = {
         "test_pe_handler_real_binary",
         "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
         "test_nop_insertion_pe_x86_preserves_native_execution",
+        "test_tier1_pe_x86_pass_preserves_native_observables[instruction-substitution]",
+        "test_tier1_pe_x86_pass_preserves_native_observables[register-substitution]",
+        "test_tier1_pe_x86_pass_preserves_native_observables[instruction-expansion]",
+        "test_tier1_pe_x86_pass_preserves_native_observables[constant-unfolding]",
         "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
         "test_instruction_expansion_pe_x86_64_preserves_native_execution",
         "test_register_substitution_pe_x86_64_preserves_native_execution",
@@ -82,6 +86,12 @@ _PASS_CASES = {
     "windows-pe": {
         "NopInsertion": "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
         "NopInsertion (x86)": "test_nop_insertion_pe_x86_preserves_native_execution",
+        "InstructionSubstitution (x86)": (
+            "test_tier1_pe_x86_pass_preserves_native_observables[instruction-substitution]"
+        ),
+        "RegisterSubstitution (x86)": "test_tier1_pe_x86_pass_preserves_native_observables[register-substitution]",
+        "InstructionExpansion (x86)": "test_tier1_pe_x86_pass_preserves_native_observables[instruction-expansion]",
+        "ConstantUnfolding (x86)": "test_tier1_pe_x86_pass_preserves_native_observables[constant-unfolding]",
         "InstructionSubstitution": "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
         "InstructionExpansion": "test_instruction_expansion_pe_x86_64_preserves_native_execution",
         "RegisterSubstitution": "test_register_substitution_pe_x86_64_preserves_native_execution",

@@ -1,6 +1,7 @@
 import platform
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -128,6 +129,74 @@ def test_nop_insertion_pe_x86_preserves_native_execution(tmp_path: Path) -> None
     expect(handler.fix_checksum() and handler.validate_integrity()[0])
     mutated_execution = _run_pe(binary_path, runtime)
     expect(mutated_execution.returncode == original_execution.returncode == 0)
+
+
+@pytest.mark.parametrize(
+    ("pass_type", "settings", "body", "return_expression"),
+    [
+        pytest.param(
+            InstructionSubstitutionPass,
+            {"probability": 1.0, "force_different": True, "seed": 1337},
+            "volatile uint32_t cell = (uint32_t)value; cell = cell * 3U + 2U;",
+            "(int)(cell ^ (uint32_t)value)",
+            id="instruction-substitution",
+        ),
+        pytest.param(
+            RegisterSubstitutionPass,
+            {"probability": 1.0, "seed": 1338},
+            "volatile uint32_t cell = (uint32_t)value; cell = cell * 3U + 2U;",
+            "(int)(cell ^ (uint32_t)value)",
+            id="register-substitution",
+        ),
+        pytest.param(
+            InstructionExpansionPass,
+            {"probability": 1.0, "max_expansions_per_function": 1, "seed": 1339},
+            '__asm__ volatile("imull $2, %%eax\\n" : "+a"(value));',
+            "value + 2",
+            id="instruction-expansion",
+        ),
+        pytest.param(
+            ConstantUnfoldingPass,
+            {"probability": 1.0, "seed": 1340},
+            "volatile uint32_t cell = 0U; cell += (uint32_t)value;",
+            "(int)cell",
+            id="constant-unfolding",
+        ),
+    ],
+)
+def test_tier1_pe_x86_pass_preserves_native_observables(
+    tmp_path: Path,
+    pass_type: Callable[[dict[str, Any]], Any],
+    settings: dict[str, Any],
+    body: str,
+    return_expression: str,
+) -> None:
+    compiler, runtime = _pe_x86_toolchain()
+    source = tmp_path / "tier1_pe_x86.c"
+    source.write_text(
+        "#include <stdint.h>\n"
+        "#include <stdio.h>\n"
+        "__attribute__((noinline)) int transform(int value) {\n"
+        f"  {body}\n"
+        f"  return {return_expression};\n"
+        "}\n"
+        'int main(void) { printf("%d\\n", transform(41)); return 0; }\n',
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "tier1_pe_x86.exe"
+    run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    original = _run_pe(binary_path, runtime)
+    expect(original.returncode == 0, "generated PE x86 fixture did not execute successfully")
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        result = pass_type(settings).apply(binary)
+
+    handler = PEHandler(binary_path)
+    expect(result["mutations_applied"] > 0, f"{pass_type.__name__} did not apply: {result}")
+    expect(handler.fix_checksum() and handler.validate_integrity()[0])
+    mutated = _run_pe(binary_path, runtime)
+    expect((mutated.returncode, mutated.stdout) == (original.returncode, original.stdout))
 
 
 def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:

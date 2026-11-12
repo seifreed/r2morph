@@ -202,6 +202,13 @@
           "evidence": [
             "tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_x86_64_preserves_native_execution"
           ]
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[instruction-substitution]"
+          ]
         }
       ],
       "evidence": [
@@ -211,7 +218,8 @@
         "tests/integration/test_elf_arm32_native.py",
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_elf_arm64_native.py",
-        "tests/integration/test_mutation_passes_end_to_end_more2.py"
+        "tests/integration/test_mutation_passes_end_to_end_more2.py",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ],
       "target_cells": [
         {
@@ -247,6 +255,11 @@
         {
           "format": "PE",
           "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
           "support_status": "preview"
         }
       ]
@@ -311,6 +324,13 @@
           "evidence": [
             "tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution"
           ]
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[register-substitution]"
+          ]
         }
       ],
       "evidence": [
@@ -356,6 +376,11 @@
         {
           "format": "PE",
           "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
           "support_status": "preview"
         }
       ]
@@ -420,13 +445,21 @@
           "evidence": [
             "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
           ]
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[instruction-expansion]"
+          ]
         }
       ],
       "evidence": [
         "tests/product_smoke/test_stable_mutations.py",
         "tests/unit/test_instruction_expansion_helpers_contract.py",
         "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-        "docs/compatibility-corpus.md"
+        "docs/compatibility-corpus.md",
+        "tests/integration/test_nop_insertion_pe_real.py"
       ],
       "target_cells": [
         {
@@ -463,6 +496,11 @@
           "format": "Mach-O",
           "architecture": "x86-64",
           "support_status": "experimental"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "support_status": "preview"
         }
       ]
     },
@@ -779,6 +817,13 @@
           "evidence": [
             "tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution"
           ]
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[constant-unfolding]"
+          ]
         }
       ],
       "evidence": [
@@ -819,6 +864,11 @@
         {
           "format": "PE",
           "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
           "support_status": "preview"
         }
       ]
@@ -1564,21 +1614,21 @@
     },
     "cell_count": 264,
     "summary": {
-      "declared_support_cells": 58,
-      "unclaimed_cells": 206,
+      "declared_support_cells": 62,
+      "unclaimed_cells": 202,
       "target_support_status_counts": {
         "experimental": 45,
-        "preview": 8,
+        "preview": 12,
         "supported": 5
       },
-      "evidenced_cells": 58,
-      "not_supported_cells": 206,
+      "evidenced_cells": 62,
+      "not_supported_cells": 202,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 36,
-      "non_official_not_supported_cells": 206,
-      "non_official_evidence_percent": 14.88,
+      "non_official_evidenced_cells": 40,
+      "non_official_not_supported_cells": 202,
+      "non_official_evidence_percent": 16.53,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1646,9 +1696,9 @@
         {
           "format": "PE",
           "architecture": "x86",
-          "evidenced_cells": 1,
-          "not_supported_cells": 21,
-          "evidence_percent": 4.55
+          "evidenced_cells": 5,
+          "not_supported_cells": 17,
+          "evidence_percent": 22.73
         },
         {
           "format": "PE",
@@ -1709,9 +1759,9 @@
           {
             "format": "PE",
             "architecture": "x86",
-            "evidenced_cells": 1,
-            "not_supported_cells": 21,
-            "evidence_percent": 4.55
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "PE",
@@ -1820,9 +1870,9 @@
           {
             "format": "PE",
             "architecture": "x86",
-            "evidenced_cells": 1,
-            "not_supported_cells": 21,
-            "evidence_percent": 4.55
+            "evidenced_cells": 5,
+            "not_supported_cells": 17,
+            "evidence_percent": 22.73
           },
           {
             "format": "PE",
@@ -1845,7 +1895,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 206,
+        "non_official_missing_evidence_cells": 202,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2457,7 +2507,8 @@
           "tests/integration/test_elf_arm32_native.py",
           "tests/integration/test_elf_x86_32_native.py",
           "tests/integration/test_elf_arm64_native.py",
-          "tests/integration/test_mutation_passes_end_to_end_more2.py"
+          "tests/integration/test_mutation_passes_end_to_end_more2.py",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -2508,10 +2559,12 @@
         "pass": "substitute",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[instruction-substitution]"
+        ]
       },
       {
         "pass": "substitute",
@@ -2636,10 +2689,12 @@
         "pass": "register",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[register-substitution]"
+        ]
       },
       {
         "pass": "register",
@@ -2710,7 +2765,8 @@
           "tests/product_smoke/test_stable_mutations.py",
           "tests/unit/test_instruction_expansion_helpers_contract.py",
           "tests/integration/test_mutation_instruction_expansion_unsupported.py",
-          "docs/compatibility-corpus.md"
+          "docs/compatibility-corpus.md",
+          "tests/integration/test_nop_insertion_pe_real.py"
         ]
       },
       {
@@ -2761,10 +2817,12 @@
         "pass": "instruction-expansion",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[instruction-expansion]"
+        ]
       },
       {
         "pass": "instruction-expansion",
@@ -3788,10 +3846,12 @@
         "pass": "constant-unfolding",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_tier1_pe_x86_pass_preserves_native_observables[constant-unfolding]"
+        ]
       },
       {
         "pass": "constant-unfolding",
