@@ -24,7 +24,9 @@
         "docs/protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json",
         "docs/protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json",
         "docs/protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json",
-        "docs/release-blockers.md"
+        "docs/release-blockers.md",
+        "docs/protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json",
+        "docs/protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -88,7 +90,9 @@
         "docs/protection-host-adversarial-shard-2026-11-12-a508ec2b-shard-08.json",
         "docs/protection-host-adversarial-shard-2026-11-12-c30d1337-shard-09.json",
         "docs/protection-host-adversarial-shard-2026-11-12-74a3e18d-shard-10.json",
-        "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json"
+        "docs/protection-host-adversarial-shard-2026-11-11-811ab859-shard-05.json",
+        "docs/protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json",
+        "docs/protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json"
       ]
     },
     "stable_api_cli": {

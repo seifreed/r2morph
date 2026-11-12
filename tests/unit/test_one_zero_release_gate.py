@@ -13,6 +13,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _READINESS = _ROOT / "docs" / "one-zero-readiness.json"
 _PASS_MATURITY = _ROOT / "docs" / "pass-maturity.md"
 _RELEASE_BLOCKERS = _ROOT / "docs" / "release-blockers.md"
+_HOST_ADVERSARIAL_SHARD = "docs/protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json"
 _CRITERIA = (
     "all_named_adversarial_analyzers",
     "complete_compatibility_contract",
@@ -56,6 +57,35 @@ def test_readiness_keeps_general_resistance_results_open_when_scope_is_documente
         and "does not establish general resistance to professional reverse engineering" in pass_maturity
         and "close the 1.0 `published_resistance_results` criterion" in pass_maturity
         and "does not establish general resistance to professional reverse engineering" in release_blockers
+    )
+
+
+def test_readiness_tracks_host_shard_without_closing_open_criteria() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    criteria = readiness["criteria"]
+
+    expect(
+        _HOST_ADVERSARIAL_SHARD in criteria["all_named_adversarial_analyzers"]["evidence"]
+        and _HOST_ADVERSARIAL_SHARD in criteria["published_resistance_results"]["evidence"]
+        and criteria["all_named_adversarial_analyzers"]["status"] == "open"
+        and criteria["published_resistance_results"]["status"] == "open"
+        and set(readiness["blocking_criteria"])
+        == {"all_named_adversarial_analyzers", "cross_platform_parity", "published_resistance_results"}
+    )
+
+
+def test_readiness_tracks_thirteenth_host_shard_without_closing_open_criteria() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    criteria = readiness["criteria"]
+    report = "docs/protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json"
+
+    expect(
+        report in criteria["all_named_adversarial_analyzers"]["evidence"]
+        and report in criteria["published_resistance_results"]["evidence"]
+        and criteria["all_named_adversarial_analyzers"]["status"] == "open"
+        and criteria["published_resistance_results"]["status"] == "open"
+        and set(readiness["blocking_criteria"])
+        == {"all_named_adversarial_analyzers", "cross_platform_parity", "published_resistance_results"}
     )
 
 

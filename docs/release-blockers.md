@@ -265,6 +265,19 @@ successful run.
   analyzer matrix or establish general resistance. Evidence:
   [protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json](protection-host-adversarial-shard-2026-11-12-2867d63b-shard-00.json)
   and [test_published_host_adversarial_shard_zero.py](../tests/unit/test_published_host_adversarial_shard_zero.py).
+  A thirteenth host shard at commit `0ab74d02`, run under supported Python
+  3.12, measured all 22 declared passes on ten additional ELF x86-64 fixtures.
+  CodeVirtualization applied to all ten without unsupported functions or pass
+  errors; 19 applications occurred across six pass types, while 16 pass names
+  had no application in this shard. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn,
+  radare2, objdump, and the custom analyzer completed 1,518 of 1,980 expected
+  runs with zero tool errors or missing rows. Binary Ninja's license and the
+  Triton module were unavailable for 440 rows; Unicorn could not execute one
+  instruction in each of ten fixtures, accounting for 22 more unavailable
+  rows. This is shard 11 of 16 and does not close the complete analyzer matrix
+  or establish general resistance. Evidence:
+  [protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json](protection-host-adversarial-shard-2026-11-12-0ab74d02-shard-11.json)
+  and [test_published_host_adversarial_shard_11.py](../tests/unit/test_published_host_adversarial_shard_11.py).
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
