@@ -159,9 +159,31 @@ jobs:
           python -W error -m pytest --no-cov \
             --tb=short
 
-  publish-pypi:
+  attest:
     runs-on: ubuntu-latest
     needs: [validate-release, build, test]
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Download artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --name dist --dir dist
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/sbom.cdx.json
+
+  publish-pypi:
+    runs-on: ubuntu-latest
+    needs: [validate-release, build, test, attest]
     if: startsWith(github.ref, 'refs/tags/')
     environment:
       name: pypi
@@ -185,13 +207,11 @@ jobs:
 
   create-release:
     runs-on: ubuntu-latest
-    needs: [validate-release, build, test, publish-pypi]
+    needs: [validate-release, build, test, attest, publish-pypi]
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       actions: read
-      attestations: write
       contents: write
-      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -207,14 +227,6 @@ jobs:
         run: |
           cd dist
           sha256sum -- *.tar.gz *.whl sbom.cdx.json > SHA256SUMS
-
-      - name: Attest release artifacts
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: |
-            dist/*.whl
-            dist/*.tar.gz
-            dist/sbom.cdx.json
 
       - name: Generate changelog
         id: changelog

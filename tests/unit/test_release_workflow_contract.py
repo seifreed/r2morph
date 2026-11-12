@@ -46,6 +46,22 @@ def test_stable_readiness_gate_runs_before_release_build_and_publish() -> None:
     )
 
 
+def test_release_artifacts_are_attested_before_pypi_publish() -> None:
+    workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
+    jobs = workflow["jobs"]
+    attest = jobs["attest"]
+    attestation_step = next(step for step in attest["steps"] if step.get("name") == "Attest release artifacts")
+
+    expect(
+        attest["needs"] == ["validate-release", "build", "test"]
+        and attest["permissions"]["attestations"] == "write"
+        and attest["permissions"]["id-token"] == "write"
+        and attestation_step["uses"] == "actions/attest-build-provenance@v4"
+        and "attest" in jobs["publish-pypi"]["needs"]
+        and "Attest release artifacts" not in [step.get("name") for step in jobs["create-release"]["steps"]]
+    )
+
+
 def test_installed_wheel_jobs_run_the_public_api_and_cli_contract() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
