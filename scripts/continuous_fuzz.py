@@ -11,9 +11,8 @@ import struct
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from importlib import import_module
 from pathlib import Path
-
-from keystone import KS_ARCH_X86, KS_MODE_64, Ks, KsError
 
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
@@ -32,6 +31,12 @@ from r2morph.platform.elf_handler_parsing import parse_elf_header
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler_parsing import read_pe_header
 from r2morph.relocations.manager import RelocationManager
+
+keystone = import_module("keystone")
+KS_ARCH_X86 = keystone.KS_ARCH_X86
+KS_MODE_64 = keystone.KS_MODE_64
+Ks = keystone.Ks
+KsError = keystone.KsError
 
 _DEFAULT_CASES = 1000
 _DEFAULT_MAX_PAYLOAD = 4096

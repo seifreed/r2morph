@@ -10,6 +10,9 @@ from __future__ import annotations
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
+# Keystone 0.9.2 still imports distutils, which setuptools provides on Python 3.12+.
+import_module("setuptools")
+
 __version__ = "0.4.0-alpha.3"
 
 __author__ = "r2morph contributors"

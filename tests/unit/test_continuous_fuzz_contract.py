@@ -1,5 +1,7 @@
 """Regression contract for the deterministic parser/rewrite fuzz campaign."""
 
+import subprocess
+import sys
 from logging import getLogger
 from pathlib import Path
 
@@ -69,5 +71,24 @@ def test_continuous_fuzz_workflow_runs_on_all_three_platforms() -> None:
         and "fail-fast: false" in workflow
         and "shell: bash" in workflow
         and 'wheel_root="$(cygpath -u "$RUNNER_TEMP")/r2morph-fuzz-wheel-check"' in workflow
+        and "Path('dist').glob('*.whl')" in workflow
         and "name: continuous-fuzz-report-${{ matrix.os }}" in workflow
     )
+
+
+def test_package_bootstrap_loads_keystone_compatibility_dependencies() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import r2morph, sys\n"
+            "if 'setuptools' not in sys.modules: raise SystemExit('setuptools shim was not loaded')\n"
+            "import keystone",
+        ],
+        capture_output=True,
+        check=False,
+        cwd=_ROOT,
+        text=True,
+    )
+
+    expect(result.returncode == 0, result.stderr)

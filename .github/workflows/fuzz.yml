@@ -57,7 +57,9 @@ jobs:
       - name: Build and install package wheel
         run: |
           python -m build
-          python -m pip install --force-reinstall dist/*.whl
+          # Unix: python -m pip install --force-reinstall dist/*.whl; Bash on Windows does not expand globs.
+          wheel_path="$(python -c "from pathlib import Path; print(next(Path('dist').glob('*.whl')).resolve().as_posix())")"
+          python -m pip install --force-reinstall "$wheel_path"
 
       - name: Fuzz assembly, parsers, VM codegen, relocations, and rewriting
         shell: bash
