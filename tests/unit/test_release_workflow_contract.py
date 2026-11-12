@@ -13,6 +13,21 @@ _ROOT = Path(__file__).resolve().parents[2]
 _EXPECTED_PUBLIC_SURFACE_CONTRACT_WORKFLOW_OCCURRENCES = 2
 
 
+def test_release_tag_must_target_a_commit_reachable_from_main() -> None:
+    workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
+    steps = workflow["jobs"]["validate-release"]["steps"]
+    checkout = next(step for step in steps if step.get("name") == "Checkout")
+    main_gate = next((step for step in steps if step.get("name") == "Require release commit on main"), None)
+
+    expect(
+        checkout.get("with", {}).get("fetch-depth") == 0
+        and main_gate is not None
+        and 'git merge-base --is-ancestor "$GITHUB_SHA" origin/main' in main_gate["run"]
+        and steps.index(main_gate)
+        < next(index for index, step in enumerate(steps) if step.get("name") == "Validate support contract")
+    )
+
+
 def test_validate_release_installs_checker_dependencies_before_running_contract() -> None:
     workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
     steps = workflow["jobs"]["validate-release"]["steps"]

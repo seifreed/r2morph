@@ -134,6 +134,8 @@ def _check_release_workflow() -> None:
     for fragment in (
         "Validate support contract",
         "run: python scripts/check_release_contract.py",
+        "Require release commit on main",
+        'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
         "sbom.cdx.json",
         "rm dist/sbom.cdx.json",
         "actions/attest-build-provenance@v4",
