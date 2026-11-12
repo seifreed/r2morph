@@ -1,0 +1,24 @@
+{
+  "adversarial_benchmark_evidence": "5 completed analyzers, 4 unavailable analyzer slots",
+  "automated_review_passed": true,
+  "checks": {
+    "failed": 0,
+    "passed": 27,
+    "total": 27
+  },
+  "commit": "2a7c4837a85f191399b4fa69c7c0495639dc21b6",
+  "conclusion": "success",
+  "human_review": {
+    "limitation": "approval applies only to the reviewed commit",
+    "result": "APPROVE",
+    "reviewed_commit": "a111f923df43a66826b71ab70db8a484532fbf3b",
+    "reviewer": "Marc Rivero Lopez"
+  },
+  "live_adversarial_report_attached": false,
+  "measurement": "independent-validation-review",
+  "readiness_blockers_remain_open": true,
+  "report": "independent-review.json",
+  "report_sha256": "284a1f50d06d3f7bda254dee538b1ac01f3879ba50bcf5aa5b751f0488f2d91e",
+  "schema_version": 1,
+  "workflow_run": 43194475525
+}
