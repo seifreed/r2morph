@@ -566,6 +566,18 @@ and
 This confirms installed-wheel fuzz coverage, not cross-platform semantic
 equivalence or general resistance.
 
+The follow-up run [43160969902](https://github.com/seifreed/r2morph/actions/runs/43160969902)
+ran that same wheel-backed campaign on Ubuntu, macOS ARM64, and Windows. Each
+runner completed all nine targets at 20,000 cases per target: 540,000 target
+runs overall, zero failures, and 428 counted recoverable Mach-O warnings per
+runner. The raw campaign reports and hash-bound platform summary are
+[`protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json`](protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json),
+[`ubuntu`](protection-fuzz-wheel-platform-2026-11-12-df55c7a6-ubuntu.json),
+[`macOS`](protection-fuzz-wheel-platform-2026-11-12-df55c7a6-macos.json), and
+[`Windows`](protection-fuzz-wheel-platform-2026-11-12-df55c7a6-windows.json).
+This closes the declared wheel-fuzz execution matrix for these three runners;
+it does not establish cross-platform semantic parity or general resistance.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom

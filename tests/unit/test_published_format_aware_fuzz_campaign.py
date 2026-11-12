@@ -14,10 +14,14 @@ _CURRENT_REPORT = _ROOT / "docs" / "protection-fuzz-format-aware-2026-11-12-04e2
 _CURRENT_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-2026-11-12-04e2f5b4-output.json"
 _WHEEL_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-2026-11-12-8d6ceb6a.json"
 _WHEEL_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json"
+_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json"
+_PLATFORM_RUNNERS = {"ubuntu-latest", "macos-15", "windows-latest"}
+_PLATFORM_WORKFLOW_RUN = 43_160_969_902
 _WORKFLOW_RUN = 43_067_351_979
 _WHEEL_WORKFLOW_RUN = 43_132_685_797
 _CASES_PER_TARGET = 20_000
 _TOTAL_TARGET_RUNS = 180_000
+_TOTAL_PLATFORM_TARGET_RUNS = _TOTAL_TARGET_RUNS * len(_PLATFORM_RUNNERS)
 _HOST_PATH_PREFIXES = ("/Users/", "/Applications/", "/private/", "/home/")
 _EXPECTED_TARGETS = {
     "assembling",
@@ -126,3 +130,55 @@ def test_current_wheel_fuzz_campaign_does_not_expose_host_paths() -> None:
     report = _WHEEL_REPORT.read_text(encoding="utf-8") + _WHEEL_RAW_REPORT.read_text(encoding="utf-8")
 
     expect(not any(prefix in report for prefix in _HOST_PATH_PREFIXES))
+
+
+def test_current_platform_fuzz_campaign_binds_to_the_workflow_run() -> None:
+    report = json.loads(_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["commit"] == "df55c7a6cea1e96ca687e96beb3ef0f77a450c65"
+        and report["workflow_run"] == _PLATFORM_WORKFLOW_RUN
+        and report["provenance"] == "github-actions-installed-wheel"
+        and report["failure_count"] == 0
+        and report["platform_count"] == len(_PLATFORM_RUNNERS)
+        and report["total_target_runs"] == _TOTAL_PLATFORM_TARGET_RUNS
+    )
+
+
+def test_current_platform_fuzz_campaign_covers_all_targets_on_every_runner() -> None:
+    report = json.loads(_PLATFORM_REPORT.read_text(encoding="utf-8"))
+    platforms = report["platforms"]
+
+    expect(
+        {platform["runner"] for platform in platforms} == _PLATFORM_RUNNERS
+        and all(
+            platform["cases_per_target"] == _CASES_PER_TARGET
+            and set(platform["target_runs"]) == _EXPECTED_TARGETS
+            and all(platform["target_runs"][target] == _CASES_PER_TARGET for target in _EXPECTED_TARGETS)
+            and platform["total_target_runs"] == _TOTAL_TARGET_RUNS
+            and platform["failure_count"] == 0
+            for platform in platforms
+        )
+    )
+
+
+def test_current_platform_fuzz_campaign_binds_each_output_hash() -> None:
+    report = json.loads(_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all(
+            hashlib.sha256((_ROOT / "docs" / platform["campaign_report"]).read_bytes()).hexdigest()
+            == platform["campaign_report_sha256"]
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_current_platform_fuzz_campaign_does_not_expose_host_paths() -> None:
+    reports = [_PLATFORM_REPORT.read_text(encoding="utf-8")]
+    report = json.loads(reports[0])
+    reports.extend(
+        (_ROOT / "docs" / platform["campaign_report"]).read_text(encoding="utf-8") for platform in report["platforms"]
+    )
+
+    expect(not any(prefix in "".join(reports) for prefix in _HOST_PATH_PREFIXES))

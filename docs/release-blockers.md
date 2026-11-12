@@ -355,6 +355,15 @@ the workflow run is [43132685797](https://github.com/seifreed/r2morph/actions/ru
 It confirms the installed package path but does not close the separate
 semantic-equivalence, cross-platform fuzz, resistance, or parity criteria.
 
+The latest installed-wheel follow-up ran the same nine-target, 20,000-case
+campaign on Ubuntu, macOS ARM64, and Windows: 540,000 target runs total with
+zero failures. Each runner reported 428 recoverable Mach-O parser warnings.
+The reports are hash-bound in
+[protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json](protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json)
+with raw reports for each runner. This closes the declared cross-platform
+fuzz execution matrix only; semantic parity, analyzer resistance, and
+professional adversarial resistance remain separate open criteria.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

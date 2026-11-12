@@ -1,0 +1,88 @@
+{
+  "cases_per_target": 20000,
+  "commit": "df55c7a6cea1e96ca687e96beb3ef0f77a450c65",
+  "failure_count": 0,
+  "generated_at": "2026-11-12",
+  "measurement": "continuous-fuzzing",
+  "platform_count": 3,
+  "platforms": [
+    {
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-12-df55c7a6-ubuntu.json",
+      "campaign_report_sha256": "a609648c75ef620ee43d6acb775baa7e0b0eff5347635a8dff8e7365ca00883d",
+      "cases_per_target": 20000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 428
+      },
+      "python": "3.12",
+      "runner": "ubuntu-latest",
+      "target_runs": {
+        "assembling": 20000,
+        "binary_parsers": 20000,
+        "binary_rewriter": 20000,
+        "elf_header_parser": 20000,
+        "macho_load_commands": 20000,
+        "pe_header_parser": 20000,
+        "relocations": 20000,
+        "vm_bytecode": 20000,
+        "vm_dispatcher": 20000
+      },
+      "total_target_runs": 180000
+    },
+    {
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-12-df55c7a6-macos.json",
+      "campaign_report_sha256": "a609648c75ef620ee43d6acb775baa7e0b0eff5347635a8dff8e7365ca00883d",
+      "cases_per_target": 20000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 428
+      },
+      "python": "3.12",
+      "runner": "macos-15",
+      "target_runs": {
+        "assembling": 20000,
+        "binary_parsers": 20000,
+        "binary_rewriter": 20000,
+        "elf_header_parser": 20000,
+        "macho_load_commands": 20000,
+        "pe_header_parser": 20000,
+        "relocations": 20000,
+        "vm_bytecode": 20000,
+        "vm_dispatcher": 20000
+      },
+      "total_target_runs": 180000
+    },
+    {
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-12-df55c7a6-windows.json",
+      "campaign_report_sha256": "a609648c75ef620ee43d6acb775baa7e0b0eff5347635a8dff8e7365ca00883d",
+      "cases_per_target": 20000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 428
+      },
+      "python": "3.12",
+      "runner": "windows-latest",
+      "target_runs": {
+        "assembling": 20000,
+        "binary_parsers": 20000,
+        "binary_rewriter": 20000,
+        "elf_header_parser": 20000,
+        "macho_load_commands": 20000,
+        "pe_header_parser": 20000,
+        "relocations": 20000,
+        "vm_bytecode": 20000,
+        "vm_dispatcher": 20000
+      },
+      "total_target_runs": 180000
+    }
+  ],
+  "provenance": "github-actions-installed-wheel",
+  "schema_version": 1,
+  "seed": 20261112,
+  "target_count": 9,
+  "total_target_runs": 540000,
+  "workflow_run": 43160969902
+}
