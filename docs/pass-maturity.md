@@ -35,7 +35,7 @@ contract until they have equivalent real-fixture coverage.
 
 | Pass | Status | Target | Current limitation | Evidence |
 |---|---|---|---|---|
-| NOP insertion | Tier 1 | Linux ELF x86-64; PE x86-64 and Mach-O x86-64/AArch64 preview | Preview targets require real structural validation and checksum/signature handling; no official cross-platform contract | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
+| NOP insertion | Tier 1 | Linux ELF x86-64; PE x86/x86-64 and Mach-O x86-64/AArch64 preview | Preview targets require real structural validation and checksum/signature handling; no official cross-platform contract | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
 | Instruction substitution | Tier 1 | Linux ELF x86-64; ELF ARM32, x86-32, AArch64, PE x86-64, and Mach-O AArch64/x86-64 preview | Rule coverage is ISA-specific; preview evidence is limited to focused real fixtures and does not imply format parity | `tests/product_smoke`, `tests/integration`, `tests/integration/test_mutation_nop_insertion_arm64.py`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_elf_x86_32_native.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
 | Register substitution | Tier 1 | Linux ELF x86-64; ELF ARM32, x86-32, AArch64, PE x86-64, and Mach-O AArch64/x86-64 preview | Requires proven liveness and ABI preservation; preview evidence is limited to focused real fixtures | `tests/product_smoke`, `tests/integration`, `tests/integration/test_nop_insertion_pe_real.py`, `tests/integration/test_mutation_register_substitution_arm64.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_elf_x86_32_native.py`, `tests/integration/test_mutations_x86_compiled_binary.py` |
 | Instruction expansion | Tier 1 | Linux ELF x86-64; ELF ARM32, x86-32, AArch64, PE x86-64, and Mach-O AArch64/x86-64 preview | Official only on Linux ELF x86-64; unsupported instruction families fail closed and preview evidence does not imply target parity | `tests/product_smoke/test_stable_mutations.py`, `tests/unit/test_instruction_expansion_helpers_contract.py`, `tests/integration/test_mutation_instruction_expansion_unsupported.py`, `docs/compatibility-corpus.md` |
@@ -66,12 +66,13 @@ including official and non-official targets, so the Linux ELF x86-64 baseline
 and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
 cell. It also records evidence percentages for official and non-official targets
 so preview coverage cannot look equivalent to the supported baseline. The
-current matrix records 100.0% official evidence, 14.46% non-official evidence,
-35 non-official evidenced cells, and 207 non-official not-supported cells. It
+current matrix records 100.0% official evidence, 14.88% non-official evidence,
+36 non-official evidenced cells, and 206 non-official not-supported cells. It
 also lists 11 non-official format/architecture targets in
-`non_official_gap_targets`; Mach-O AArch64, Mach-O x86-64, PE x86-64, and ELF
-ARM/AArch64/x86 currently have preview evidence, while Mach-O ARM/x86 and PE
-AArch64/ARM/x86 remain at 0.0% evidence. The generated
+`non_official_gap_targets`; Mach-O AArch64, Mach-O x86-64, PE x86/x86-64, and
+ELF ARM/AArch64/x86 currently have preview evidence. PE x86 has evidence for
+NOP insertion only (1/22 passes); Mach-O ARM/x86 and PE AArch64/ARM remain at
+0.0% evidence. The generated
 `total_parity_blockers` count is currently 16 total parity blockers. It
 also counts passes per declared
 stability and maturity profile so Tier 1, corpus-selected,

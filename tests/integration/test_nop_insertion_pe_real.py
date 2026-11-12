@@ -30,6 +30,16 @@ def _pe_toolchain() -> tuple[str, str | None]:
     return compiler, runtime
 
 
+def _pe_x86_toolchain() -> tuple[str, str | None]:
+    """Resolve a 32-bit PE compiler and either native Windows or Wine execution."""
+    is_windows = platform.system() == "Windows"
+    compiler = shutil.which("i686-w64-mingw32-gcc")
+    runtime = None if is_windows else shutil.which("wine")
+    if compiler is None or (not is_windows and runtime is None):
+        pytest.skip("a 32-bit PE compiler and a native Windows or Wine runtime are required")
+    return compiler, runtime
+
+
 def _run_pe(binary_path: Path, runtime: str | None) -> subprocess.CompletedProcess[Any]:
     command = [str(binary_path)] if runtime is None else [runtime, str(binary_path)]
     return run_command(command, timeout=30)
@@ -53,6 +63,7 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
         "}\n"
         "int main(void) { return transform(41) != 84; }\n"
     )
+
     binary_path = tmp_path / "nop_sample.exe"
     run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
     original_execution = _run_pe(binary_path, runtime)
@@ -85,6 +96,38 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE NOP insertion changed the native execution result",
     )
+
+
+def test_nop_insertion_pe_x86_preserves_native_execution(tmp_path: Path) -> None:
+    compiler, runtime = _pe_x86_toolchain()
+    source = tmp_path / "pe_x86_sample.c"
+    source.write_text(
+        "#include <stdint.h>\n"
+        "__attribute__((noinline)) int transform(int value) {\n"
+        "  volatile uint32_t cell = (uint32_t)value;\n"
+        "  cell = (cell * 3U + 2U) ^ 0x55U;\n"
+        '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
+        "  return (int)(cell ^ (uint32_t)value);\n"
+        "}\n"
+        "int main(void) { return transform(41) == 0; }\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "pe_x86_sample.exe"
+    run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    original_execution = _run_pe(binary_path, runtime)
+    expect(original_execution.returncode == 0, "generated PE x86 fixture did not execute successfully")
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        result = NopInsertionPass(
+            {"probability": 1.0, "max_nops_per_function": 2, "use_creative_nops": False, "seed": 1337}
+        ).apply(binary)
+
+    handler = PEHandler(binary_path)
+    expect(result["mutations_applied"] > 0)
+    expect(handler.fix_checksum() and handler.validate_integrity()[0])
+    mutated_execution = _run_pe(binary_path, runtime)
+    expect(mutated_execution.returncode == original_execution.returncode == 0)
 
 
 def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:

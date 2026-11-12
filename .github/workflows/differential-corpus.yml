@@ -1653,6 +1653,7 @@ jobs:
             tests/integration/test_platform_handlers_extended.py `
             tests/integration/test_platform_handlers_real.py `
             tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity `
+            tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_instruction_substitution_pe_fixture_preserves_windows_exit_code `
             tests/integration/test_nop_insertion_pe_real.py::test_instruction_expansion_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution `
@@ -1660,14 +1661,14 @@ jobs:
             tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_tier1_pass_composition_pe_x86_64_preserves_native_execution `
             tests/integration/test_mutation_passes_end_to_end_more2.py::test_multiple_mutation_passes_on_x86_binary `
-            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or instruction_expansion_pe_x86_64_preserves_native_execution or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or string_obfuscation_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
+            -k "pe_handler or instruction_substitution_pe_fixture_preserves_windows_exit_code or nop_insertion_pe_x86_64_preserves_repaired_integrity or nop_insertion_pe_x86_preserves_native_execution or instruction_expansion_pe_x86_64_preserves_native_execution or register_substitution_pe_x86_64_preserves_native_execution or constant_unfolding_pe_x86_64_preserves_native_execution or string_obfuscation_pe_x86_64_preserves_native_execution or tier1_pass_composition_pe_x86_64_preserves_native_execution or multiple_mutation_passes_on_x86_binary"
 
       - name: Validate Windows PE format differential evidence
         shell: pwsh
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 12) { throw "Windows PE smoke ran $($cases.Count) cases; expected 12" }
+          if ($cases.Count -ne 13) { throw "Windows PE smoke ran $($cases.Count) cases; expected 13" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1683,6 +1684,7 @@ jobs:
             "test_pe_handler_extended",
             "test_pe_handler_real_binary",
             "test_nop_insertion_pe_x86_64_preserves_repaired_integrity",
+            "test_nop_insertion_pe_x86_preserves_native_execution",
             "test_instruction_substitution_pe_fixture_preserves_windows_exit_code",
             "test_instruction_expansion_pe_x86_64_preserves_native_execution",
             "test_register_substitution_pe_x86_64_preserves_native_execution",

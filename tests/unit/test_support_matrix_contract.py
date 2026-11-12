@@ -10,14 +10,14 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 57
-_EXPECTED_NOT_SUPPORTED_CELLS = 207
-_EXPECTED_DECLARED_SUPPORT_CELLS = 57
-_EXPECTED_UNCLAIMED_CELLS = 207
-_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 7, "supported": 5}
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 35
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 207
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 207
+_EXPECTED_EVIDENCED_CELLS = 58
+_EXPECTED_NOT_SUPPORTED_CELLS = 206
+_EXPECTED_DECLARED_SUPPORT_CELLS = 58
+_EXPECTED_UNCLAIMED_CELLS = 206
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 8, "supported": 5}
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 36
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 206
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 206
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -62,6 +62,21 @@ def test_support_matrix_marks_unsupported_combinations_without_evidence() -> Non
     unsupported = [cell for cell in matrix["cells"] if cell["status"] == "not-supported"]
 
     expect(unsupported and all(cell["evidence"] == [] for cell in unsupported))
+
+
+def test_support_matrix_records_pe_x86_nop_evidence_as_preview() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    matrix = build_matrix(document)
+    cell = next(
+        cell for cell in matrix["cells"] if (cell["pass"], cell["format"], cell["architecture"]) == ("nop", "PE", "x86")
+    )
+
+    expect(
+        cell["status"] == "evidenced"
+        and cell["support_status"] == "preview"
+        and cell["evidence"]
+        == ["tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution"]
+    )
 
 
 def test_support_matrix_summarizes_parity_gaps() -> None:

@@ -32,6 +32,11 @@ thirty-four macOS Mach-O/format cases. Every platform report has zero failures,
 zero errors, and no missing required cases. ARM32 executes under QEMU and
 AArch64 runs through the configured native/emulated runner path. This is
 bounded execution evidence for the listed passes, not full-format parity.
+The Windows job now also builds a 32-bit PE with MinGW, runs the original and
+NOP-mutated images under native Windows or Wine, and checks the repaired PE
+integrity. That single local regression passed under Wine on 2026-11-12 and is
+declared as preview evidence for PE x86 NOP insertion; the Windows workflow
+must still complete before its artifact is published.
 The AArch64 campaign also includes a compiled C fixture with stack memory,
 direct and indirect calls, a loop, and the same four-pass composition; the
 compiled case is an additional evidence point, not a support promotion.

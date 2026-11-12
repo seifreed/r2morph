@@ -79,6 +79,13 @@
           "evidence": [
             "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_64_preserves_repaired_integrity"
           ]
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution"
+          ]
         }
       ],
       "evidence": [
@@ -126,6 +133,11 @@
         {
           "format": "PE",
           "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
           "support_status": "preview"
         }
       ]
@@ -1552,21 +1564,21 @@
     },
     "cell_count": 264,
     "summary": {
-      "declared_support_cells": 57,
-      "unclaimed_cells": 207,
+      "declared_support_cells": 58,
+      "unclaimed_cells": 206,
       "target_support_status_counts": {
         "experimental": 45,
-        "preview": 7,
+        "preview": 8,
         "supported": 5
       },
-      "evidenced_cells": 57,
-      "not_supported_cells": 207,
+      "evidenced_cells": 58,
+      "not_supported_cells": 206,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 35,
-      "non_official_not_supported_cells": 207,
-      "non_official_evidence_percent": 14.46,
+      "non_official_evidenced_cells": 36,
+      "non_official_not_supported_cells": 206,
+      "non_official_evidence_percent": 14.88,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1634,9 +1646,9 @@
         {
           "format": "PE",
           "architecture": "x86",
-          "evidenced_cells": 0,
-          "not_supported_cells": 22,
-          "evidence_percent": 0.0
+          "evidenced_cells": 1,
+          "not_supported_cells": 21,
+          "evidence_percent": 4.55
         },
         {
           "format": "PE",
@@ -1696,6 +1708,13 @@
           },
           {
             "format": "PE",
+            "architecture": "x86",
+            "evidenced_cells": 1,
+            "not_supported_cells": 21,
+            "evidence_percent": 4.55
+          },
+          {
+            "format": "PE",
             "architecture": "x86-64",
             "evidenced_cells": 7,
             "not_supported_cells": 15,
@@ -1727,13 +1746,6 @@
           {
             "format": "PE",
             "architecture": "ARM",
-            "evidenced_cells": 0,
-            "not_supported_cells": 22,
-            "evidence_percent": 0.0
-          },
-          {
-            "format": "PE",
-            "architecture": "x86",
             "evidenced_cells": 0,
             "not_supported_cells": 22,
             "evidence_percent": 0.0
@@ -1808,9 +1820,9 @@
           {
             "format": "PE",
             "architecture": "x86",
-            "evidenced_cells": 0,
-            "not_supported_cells": 22,
-            "evidence_percent": 0.0
+            "evidenced_cells": 1,
+            "not_supported_cells": 21,
+            "evidence_percent": 4.55
           },
           {
             "format": "PE",
@@ -1833,7 +1845,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 207,
+        "non_official_missing_evidence_cells": 206,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -2366,10 +2378,12 @@
         "pass": "nop",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution"
+        ]
       },
       {
         "pass": "nop",
