@@ -321,6 +321,16 @@ This is source-tree evidence; the separate wheel-backed workflow run remains
 the package-installation check. The result does not close semantic-equivalence,
 cross-platform fuzz, analyzer-resistance, or parity requirements.
 
+The follow-up wheel-backed workflow on `8d6ceb6a` passed the same nine-target
+campaign, with 20,000 cases per target and zero failures. The artifact is
+downloaded and hash-bound in
+[protection-fuzz-wheel-2026-11-12-8d6ceb6a.json](protection-fuzz-wheel-2026-11-12-8d6ceb6a.json)
+and
+[protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json](protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json);
+the workflow run is [43132685797](https://github.com/seifreed/r2morph/actions/runs/43132685797).
+It confirms the installed package path but does not close the separate
+semantic-equivalence, cross-platform fuzz, resistance, or parity criteria.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

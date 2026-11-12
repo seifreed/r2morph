@@ -548,6 +548,18 @@ run, not a wheel-backed workflow. Reproduce it with
 This adds current fuzz evidence but does not establish semantic equivalence,
 complete cross-platform fuzz coverage, analyzer resistance, or platform parity.
 
+The wheel-backed workflow reran the same 180,000-target campaign on commit
+`8d6ceb6a` with seed `20261112`. The built wheel was installed in a clean
+directory, all nine targets completed 20,000 cases each with zero failures,
+and 428 recoverable Mach-O warnings were retained as counts. The verified run
+is [43132685797](https://github.com/seifreed/r2morph/actions/runs/43132685797);
+its downloaded raw output and hash-bound summary are
+[`protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json`](protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json)
+and
+[`protection-fuzz-wheel-2026-11-12-8d6ceb6a.json`](protection-fuzz-wheel-2026-11-12-8d6ceb6a.json).
+This confirms installed-wheel fuzz coverage, not cross-platform semantic
+equivalence or general resistance.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom
