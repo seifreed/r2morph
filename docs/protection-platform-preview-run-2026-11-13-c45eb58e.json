@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "source_commit": "c45eb58e3de7cb5775ce84a202005196a127b970",
+  "workflow_run": 43340083394,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43340083394",
+  "platform_reports": {
+    "macos_arm64": {
+      "platform": "macOS ARM64",
+      "target": "MACH-O / ELF / PE format smoke",
+      "artifact_id": 13998659764,
+      "artifact_name": "cross-platform-differential-macos-arm64-43340083394-1",
+      "report": "protection-platform-macos-arm64-2026-11-13-c45eb58e.xml",
+      "sha256": "3e76fb6339bcd7641a6b03e076f3ddcda08c5030bae8d24fa1f6d2178e92c7f9",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows_pe": {
+      "platform": "Windows x86_64",
+      "target": "PE",
+      "artifact_id": 13998084777,
+      "artifact_name": "cross-platform-differential-windows-pe-43340083394-1",
+      "report": "protection-platform-windows-pe-2026-11-13-c45eb58e.xml",
+      "sha256": "36ab5bec34411f0b8e383be43132e56e7ba82139218fa1f57e11c21a1ba0c486",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_arm32": {
+      "platform": "Linux x86_64 with QEMU ARM32",
+      "target": "ELF ARM32",
+      "artifact_id": 13999216887,
+      "artifact_name": "elf-arm-32-native-43340083394-1",
+      "report": "protection-platform-elf-arm32-2026-11-13-c45eb58e.xml",
+      "sha256": "8074f38aac9afc769ca639beb5ab27100f5dc4cd90549479245453e52d5cc8ef",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_arm64": {
+      "platform": "Linux ARM64",
+      "target": "ELF AArch64",
+      "artifact_id": 13999755758,
+      "artifact_name": "elf-arm64-native-43340083394-1",
+      "report": "protection-platform-elf-arm64-2026-11-13-c45eb58e.xml",
+      "sha256": "7154b82e7f54568b529455a582aebacf17c9a329191a54c1dd639f1a1ace921d",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_x86_32": {
+      "platform": "Linux x86_64 with 32-bit emulation",
+      "target": "ELF x86",
+      "artifact_id": 13999296883,
+      "artifact_name": "elf-x86-32-native-43340083394-1",
+      "report": "protection-platform-elf-x86-32-2026-11-13-c45eb58e.xml",
+      "sha256": "cb3096632b0c10c69d9dec568c067cff7cd1fd28b3759f926613e661e886ce53",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "totals": {
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "scope": "Five individually validated preview job reports. This is not full platform parity or the result of the workflow aggregate job."
+}

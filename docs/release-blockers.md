@@ -84,6 +84,12 @@ successful run.
   hash-bound reports are recorded in `compatibility-corpus.md`; these bounded
   job results do not complete the run's full matrix or establish platform
   parity.
+  In run `43340083394`, the five individual platform jobs have since passed
+  their validators and produced 73 zero-failure JUnit cases. The retained
+  per-job hashes are in
+  [protection-platform-preview-run-2026-11-13-c45eb58e.json](protection-platform-preview-run-2026-11-13-c45eb58e.json).
+  At this update, the workflow aggregate and its differential corpus jobs are
+  still running; these reports therefore remain bounded preview evidence.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,

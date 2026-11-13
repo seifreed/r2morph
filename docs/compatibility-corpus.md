@@ -45,6 +45,14 @@ reports are in
 [`protection-differential-run-2026-11-12-43165336266.json`](protection-differential-run-2026-11-12-43165336266.json).
 These results strengthen bounded correctness evidence; they do not establish
 full cross-platform parity or generalized resistance.
+The current `main` run [`43340083394`](https://github.com/seifreed/r2morph/actions/runs/43340083394)
+has independently validated all five declared preview platform jobs: 73 cases
+across macOS ARM64, Windows PE, ELF ARM32, ELF AArch64, and ELF x86-32; every
+job reports zero failures, errors, and skips. The hash-bound JUnit files and
+per-job totals are retained in
+[`protection-platform-preview-run-2026-11-13-c45eb58e.json`](protection-platform-preview-run-2026-11-13-c45eb58e.json).
+This records only those five bounded preview jobs, not the workflow-wide
+differential aggregate or full platform parity.
 
 The Windows job now builds 32-bit PEs with MinGW and runs them under native
 Windows or Wine. Local 2026-11-12 regressions passed for NOP insertion, the
