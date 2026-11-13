@@ -901,3 +901,17 @@ conventions. The hash-bound reports are
 and
 [`protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json`](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json).
 This shard does not close the analyzer matrix or establish general resistance.
+
+The current-main shard at `61f152e2` covered six repository fixtures across all
+22 passes (132 rows): 12 applications, 120 no-ops, zero omissions, and zero
+pass errors. Eight analyzers, including IDA Pro, Ghidra, and Triton, completed
+all 132 rows. Binary Ninja was unavailable because the installed license was
+invalid, leaving 132/1,188 analyzer slots unavailable. angr reported
+unsupported VEX `IN`/`OUT` helpers, unhooked addresses, and missing inferred
+calling conventions. Generated Linux fixtures were not included on macOS. The
+hash-bound raw report and summary are
+[`protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32.json`](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json`](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json).
+This bounded fixture slice does not establish general resistance or close the
+all-analyzer criterion.

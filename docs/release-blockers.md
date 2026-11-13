@@ -385,6 +385,16 @@ successful run.
   and [summary](protection-host-adversarial-allpasses-2026-11-13-acfc0995-shard-14-32-summary.json).
   This fills one bounded IDA slice; all-analyzer coverage and general
   resistance remain open.
+  A local shard at source `61f152e2` covered six repository fixtures across all
+  22 passes: 12 applications, 120 no-ops, zero pass errors or omissions, and
+  1,056 completed analyzer runs. Eight analyzers completed all 132 rows each;
+  Binary Ninja was unavailable because its license was invalid, leaving
+  132/1,188 analyzer slots unavailable. Generated Linux fixtures were not
+  included on macOS. See the hash-bound
+  [raw report](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32.json)
+  and [summary](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json).
+  This adds a local Triton slice but leaves the all-analyzer matrix and general
+  resistance criterion open.
   The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)
   did not aggregate: shard 12 hit the six-hour job timeout, leaving 15/16
   reports. The benchmark now partitions the same declared scope into 32 jobs

@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "source_commit": "61f152e259a040a6316b6247218d7dc3f67af73c",
+  "source_report": "protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32.json",
+  "source_report_sha256": "270b00516684c3026a1b2758d4b4fdc93cd8b23300bf9bc0f1f0b521fd2cda1e",
+  "execution_context": {
+    "platform": "macOS arm64",
+    "macos": "27.2",
+    "python": "3.13.11",
+    "ida_pro": "9.5",
+    "ghidra": "12.2",
+    "radare2": "6.2.6",
+    "triton_source_commit": "0ff0315021c416995e169334b25eb84f818caaeb",
+    "keystone": "available"
+  },
+  "fixture_shard": {
+    "count": 32,
+    "index": 16
+  },
+  "sample_count": 6,
+  "sample_names": [
+    "elf_jumpchain_x86_64",
+    "elf_vm_flagsynth_x86_64",
+    "elf_vm_fppackedrip_x86_64",
+    "elf_vm_multiexit_x86_64",
+    "elf_vm_tls_widths_x86_64",
+    "elf_vm_vex128_scalar_x86_64"
+  ],
+  "pass_names": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "ConstantUnfolding",
+    "ControlFlowFlattening",
+    "DeadCodeInjection",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "PatternSubstitution",
+    "RegisterSubstitution",
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation"
+  ],
+  "pass_status_counts": {
+    "APIHashing": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "BlockReordering": {
+      "applied": 2,
+      "no-op": 4,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeVirtualization": {
+      "applied": 6,
+      "no-op": 0,
+      "omitted": 0,
+      "error": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 1,
+      "no-op": 5,
+      "omitted": 0,
+      "error": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 1,
+      "no-op": 5,
+      "omitted": 0,
+      "error": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "PatternSubstitution": {
+      "applied": 1,
+      "no-op": 5,
+      "omitted": 0,
+      "error": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 1,
+      "no-op": 5,
+      "omitted": 0,
+      "error": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    }
+  },
+  "applied_pass_runs": 12,
+  "error_pass_runs": 0,
+  "omitted_pass_runs": 0,
+  "analyzer_summary": {
+    "expected_tool_runs": 1188,
+    "completed_tool_runs": 1056,
+    "unavailable_tool_runs": 132,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tool_runs_by_tool": {
+      "angr": 132,
+      "custom": 132,
+      "ghidra": 132,
+      "ida-pro": 132,
+      "objdump": 132,
+      "radare2": 132,
+      "triton": 132,
+      "unicorn": 132
+    },
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 132
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 132
+      }
+    }
+  },
+  "scope": "Six repository fixtures across one 32-shard slice only. Binary Ninja was unavailable because its license was invalid; generated Linux fixtures were not included. Analyzer metrics are bounded structural observations and do not prove semantic equivalence or general resistance."
+}
