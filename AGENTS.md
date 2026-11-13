@@ -164,6 +164,8 @@ protocols/      ← interfaces / contratos abstractos
 platform/       ← detalles específicos de formato (PE, ELF, Mach-O); slices Mach-O en macho_arch.py
 reporting/      ← salida (JSON, SARIF, terminal)
 cli.py          ← entrada de usuario; sin lógica de dominio
+scripts/adversarial_benchmark.py ← fachada CLI de campañas; adaptadores, métricas,
+                                   agregación y worker aislado en módulos hermanos
 ```
 
 Reglas estructurales:
@@ -282,6 +284,7 @@ El mapa de capas de §7 es el **contrato vivo**. Reglas para mantenerlo útil:
 - **Anti-corruption en los bordes.** La traducción de tipos de herramienta externa (r2pipe/lief/angr/z3) a DTOs de dominio vive en el adaptador, no esparcida por los consumidores.
 - **Sin ciclos** entre módulos (ya en §7); cualquier ciclo es un problema de capas que se arregla, no se rodea.
 - **Upkeep**: cualquier cambio que renombre una capa, mueva un fichero clave o cambie un contrato de `protocols/` actualiza este mapa y el de §7 en el mismo commit.
+- **Herramientas de campaña**: el punto de entrada del benchmark adversarial se mantiene como fachada; sus responsabilidades viven en `scripts/adversarial_benchmark_{constants,tools,passes,metrics,campaign,execution,worker}.py` y se describen en `docs/adversarial-benchmark.md`.
 
 ---
 

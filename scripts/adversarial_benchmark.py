@@ -4,1126 +4,220 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import importlib.util
 import json
-import multiprocessing
-import os
-import re
 import shutil
 import sys
 import tempfile
-import time
-from collections import Counter
-from collections.abc import Callable, Mapping, Sequence
-from importlib import import_module
+from collections.abc import Sequence
 from pathlib import Path
-from queue import Empty
-from typing import Any, cast
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from r2morph.adapters.angr_import import import_angr_modules
-from r2morph.adapters.process import ProcessTimeoutError, run_process
-from r2morph.core.binary import Binary
-from r2morph.platform.elf_handler import ELFHandler
-from r2morph.platform.elf_structs import PT_LOAD
+from scripts.adversarial_benchmark_campaign import (
+    _adversarial_evidence_blockers,
+    _blocker_totals,
+    _campaign_summary,
+    _incomplete_tool_coverage,
+    _pass_reason_map,
+    _pass_status_count,
+    _pass_status_counts,
+    _release_signoff_blockers,
+    _tool_reason_map,
+    _tool_run_coverage_by_tool,
+    _tool_status_counts,
+    _tools_with_status,
+)
+from scripts.adversarial_benchmark_constants import (
+    _ADVERSARIAL_ALL_PASS_NAMES,
+    _ANGR_DECOMPILER_FUNCTION_LIMIT,
+    _ANSI_ESCAPE,
+    _BINARY_NINJA_PYTHON_PATH_ENV,
+    _BINARY_NINJA_PYTHON_PATHS,
+    _COMMAND_ENVIRONMENT,
+    _COMMAND_TIMEOUT_SECONDS,
+    _COMMANDS,
+    _DISASSEMBLY_LINE,
+    _EXPECTED_TOOLS,
+    _FULL_COVERAGE_PERCENT,
+    _GHIDRA_ANALYSIS_TIMEOUT_SECONDS,
+    _GHIDRA_COUNT_PATTERN,
+    _GHIDRA_DECOMPILER_PATTERN,
+    _GHIDRA_PROCESS_TIMEOUT_SECONDS,
+    _GHIDRA_SCRIPT,
+    _IDA_RESULT_SUFFIX,
+    _IDA_SCRIPT,
+    _IN_PROCESS_TOOL_TIMEOUT_SECONDS,
+    _IN_PROCESS_TOOLS,
+    _MAX_X86_INSTRUCTION_BYTES,
+    _PASS_STATUS_FIELDS,
+    _PF_EXECUTE,
+    _PYTHON_MODULES,
+    _TRITON_INSTRUCTION_BUDGET,
+)
+from scripts.adversarial_benchmark_execution import _benchmark_passes, _protected_copy
+from scripts.adversarial_benchmark_metrics import (
+    _accumulate_effectiveness_tool,
+    _analyzer_effectiveness_by_pass,
+    _coverage_percent,
+    _decompiler_baseline_unavailable_by_pass,
+    _decompiler_evidence_complete,
+    _decompiler_observations,
+    _finalize_effectiveness_tool_summary,
+    _measure_pair_tools,
+    _merge_tool_reason,
+    _missing_tool_slot_error,
+    _new_effectiveness_tool_summary,
+    _passes_without_applications,
+    _tool_duration_pair_count,
+    _tool_duration_seconds,
+    _tool_metric_deltas,
+    _tool_metric_pair_counts,
+    _tool_summary,
+)
+from scripts.adversarial_benchmark_passes import (
+    _capability_counts,
+    _diagnostic_reason,
+    _merge_capability_summary,
+    _merge_pass_reason,
+    _pass_result,
+    _pass_summary,
+    _severity_counts,
+)
+from scripts.adversarial_benchmark_tools import (
+    _METRICS,
+    _angr_metric,
+    _availability,
+    _binary_metric,
+    _binary_ninja_decompiler_metrics,
+    _binary_ninja_metric,
+    _configured_executable,
+    _executable_segment_bytes,
+    _file_digest,
+    _ghidra_metric,
+    _ida_metric,
+    _is_binary_ninja_license_error,
+    _measure_tool,
+    _measure_tool_bounded,
+    _measure_tool_unbounded,
+    _measure_tool_worker,
+    _objdump_metric,
+    _parse_adversarial_pass_names,
+    _parse_ghidra_decompiler_metrics,
+    _parse_ghidra_function_count,
+    _parse_ghidra_function_counts,
+    _prepare_optional_module_path,
+    _radare2_metric,
+    _tool_failure_result,
+    _ToolCapabilityUnavailableError,
+    _triton_metric,
+    _unicorn_metric,
+)
+
+__all__ = (
+    "CORPUS_PASS_NAMES",
+    "EXTENDED_MATURITY_PASS_NAMES",
+    "_ADVERSARIAL_ALL_PASS_NAMES",
+    "_ANGR_DECOMPILER_FUNCTION_LIMIT",
+    "_ANSI_ESCAPE",
+    "_APPLIED_COUNT_FIELDS",
+    "_BINARY_NINJA_PYTHON_PATHS",
+    "_BINARY_NINJA_PYTHON_PATH_ENV",
+    "_COMMANDS",
+    "_COMMAND_ENVIRONMENT",
+    "_COMMAND_TIMEOUT_SECONDS",
+    "_DISASSEMBLY_LINE",
+    "_EXPECTED_TOOLS",
+    "_FULL_COVERAGE_PERCENT",
+    "_GHIDRA_ANALYSIS_TIMEOUT_SECONDS",
+    "_GHIDRA_COUNT_PATTERN",
+    "_GHIDRA_DECOMPILER_PATTERN",
+    "_GHIDRA_PROCESS_TIMEOUT_SECONDS",
+    "_GHIDRA_SCRIPT",
+    "_IDA_RESULT_SUFFIX",
+    "_IDA_SCRIPT",
+    "_IN_PROCESS_TOOLS",
+    "_IN_PROCESS_TOOL_TIMEOUT_SECONDS",
+    "_MAX_X86_INSTRUCTION_BYTES",
+    "_METRICS",
+    "_PASS_STATUS_FIELDS",
+    "_PF_EXECUTE",
+    "_PYTHON_MODULES",
+    "_TRITON_INSTRUCTION_BUDGET",
+    "_ToolCapabilityUnavailableError",
+    "_accumulate_effectiveness_tool",
+    "_adversarial_evidence_blockers",
+    "_analyzer_effectiveness_by_pass",
+    "_angr_metric",
+    "_availability",
+    "_binary_metric",
+    "_binary_ninja_decompiler_metrics",
+    "_binary_ninja_metric",
+    "_blocker_totals",
+    "_campaign_summary",
+    "_capability_counts",
+    "_configured_executable",
+    "_coverage_percent",
+    "_decompiler_baseline_unavailable_by_pass",
+    "_decompiler_evidence_complete",
+    "_decompiler_observations",
+    "_diagnostic_reason",
+    "_executable_segment_bytes",
+    "_file_digest",
+    "_finalize_effectiveness_tool_summary",
+    "_ghidra_metric",
+    "_ida_metric",
+    "_incomplete_tool_coverage",
+    "_is_binary_ninja_license_error",
+    "_measure_pair_tools",
+    "_measure_tool",
+    "_measure_tool_bounded",
+    "_measure_tool_unbounded",
+    "_measure_tool_worker",
+    "_merge_capability_summary",
+    "_merge_pass_reason",
+    "_merge_tool_reason",
+    "_missing_tool_slot_error",
+    "_new_effectiveness_tool_summary",
+    "_objdump_metric",
+    "_parse_adversarial_pass_names",
+    "_parse_ghidra_decompiler_metrics",
+    "_parse_ghidra_function_count",
+    "_parse_ghidra_function_counts",
+    "_pass_reason_map",
+    "_pass_result",
+    "_pass_status_count",
+    "_pass_status_counts",
+    "_pass_summary",
+    "_passes_without_applications",
+    "_prepare_optional_module_path",
+    "_protected_copy",
+    "_radare2_metric",
+    "_release_signoff_blockers",
+    "_severity_counts",
+    "_tool_duration_pair_count",
+    "_tool_duration_seconds",
+    "_tool_failure_result",
+    "_tool_metric_deltas",
+    "_tool_metric_pair_counts",
+    "_tool_reason_map",
+    "_tool_run_coverage_by_tool",
+    "_tool_status_counts",
+    "_tool_summary",
+    "_tools_with_status",
+    "_triton_metric",
+    "_unicorn_metric",
+)
+
 from scripts.protection_maturity_baseline import (
     _APPLIED_COUNT_FIELDS,
     CORPUS_PASS_NAMES,
     DEFAULT_MUTATION_NAME,
     EXTENDED_MATURITY_PASS_NAMES,
-    _build_mutation_pass,
-    _parse_pass_names,
     _select_fixture_shard,
     build_generated_corpus,
     discover_executables,
 )
-from tests.integration.elf_emulator import emulate_exit_code
-
-_COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "idat", "ghidra": "ghidra"}
-_COMMAND_ENVIRONMENT = {"ida-pro": "IDA_HEADLESS", "ghidra": "GHIDRA_HEADLESS"}
-_PYTHON_MODULES = {
-    "angr": "angr",
-    "binary-ninja": "binaryninja",
-    "triton": "triton",
-    "unicorn": "unicorn",
-}
-_BINARY_NINJA_PYTHON_PATH_ENV = "BINARY_NINJA_PYTHON_PATH"
-_BINARY_NINJA_PYTHON_PATHS = (Path("/Applications/Binary Ninja.app/Contents/Resources/python"),)
-_EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "triton", "ida-pro", "ghidra")
-_DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
-_COMMAND_TIMEOUT_SECONDS = 30
-_GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
-_GHIDRA_PROCESS_TIMEOUT_SECONDS = _GHIDRA_ANALYSIS_TIMEOUT_SECONDS * 3
-_IN_PROCESS_TOOL_TIMEOUT_SECONDS = 180
-_IN_PROCESS_TOOLS = frozenset({"angr", "binary-ninja", "unicorn", "triton", "custom"})
-_FULL_COVERAGE_PERCENT = 100.0
-_PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
-_GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
-_GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
-_GHIDRA_DECOMPILER_PATTERN = re.compile(
-    r"R2MORPH_DECOMPILER=(?P<program>[^=\r\n]+)=(?P<entrypoints>\d+)=(?P<lines>\d+)=(?P<bytes>\d+)"
-)
-_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
-_IDA_SCRIPT = Path(__file__).with_name("ida") / "count_functions.py"
-_IDA_RESULT_SUFFIX = ".function-count"
-_PF_EXECUTE = 1
-_MAX_X86_INSTRUCTION_BYTES = 15
-_TRITON_INSTRUCTION_BUDGET = 50_000
-_ANGR_DECOMPILER_FUNCTION_LIMIT = 4
-_ADVERSARIAL_ALL_PASS_NAMES = tuple(dict.fromkeys((*CORPUS_PASS_NAMES, *EXTENDED_MATURITY_PASS_NAMES)))
-
-
-class _ToolCapabilityUnavailableError(RuntimeError):
-    """The analyzer is present but cannot execute this input's ISA."""
-
-
-def _tool_failure_result(tool: str, error: Exception) -> dict[str, object]:
-    if isinstance(error, _ToolCapabilityUnavailableError):
-        return {"tool": tool, "status": "unavailable", "reason": str(error)}
-    result: dict[str, object] = {"tool": tool, "status": "error", "error_type": type(error).__name__}
-    if str(error):
-        result["detail"] = str(error)
-    return result
-
-
-def _parse_adversarial_pass_names(value: str) -> tuple[str, ...]:
-    if value.strip().lower() == "all":
-        return _ADVERSARIAL_ALL_PASS_NAMES
-    return _parse_pass_names(value)
-
-
-def _configured_executable(tool: str) -> str | None:
-    environment_name = _COMMAND_ENVIRONMENT.get(tool)
-    if environment_name:
-        configured = os.environ.get(environment_name)
-        if configured:
-            return configured if Path(configured).is_file() else None
-    return shutil.which(_COMMANDS[tool])
-
-
-def _prepare_optional_module_path(tool: str) -> None:
-    """Expose an installed analyzer bundle before probing its Python module."""
-    if tool != "binary-ninja":
-        return
-    candidates = []
-    configured = os.environ.get(_BINARY_NINJA_PYTHON_PATH_ENV)
-    if configured:
-        candidates.append(Path(configured))
-    candidates.extend(_BINARY_NINJA_PYTHON_PATHS)
-    for candidate in candidates:
-        if candidate.is_dir() and str(candidate) not in sys.path:
-            sys.path.insert(0, str(candidate))
-
-
-def _availability(tool: str) -> tuple[bool, str]:
-    if tool == "angr":
-        imported = import_angr_modules()
-        if imported.available:
-            return True, "angr"
-        return False, "module 'angr' cannot be imported through the compatibility adapter"
-    if tool in _COMMANDS:
-        command = _configured_executable(tool)
-        return (True, command) if command else (False, f"executable {_COMMANDS[tool]!r} is unavailable")
-    _prepare_optional_module_path(tool)
-    module = _PYTHON_MODULES[tool]
-    if importlib.util.find_spec(module) is None:
-        return False, f"module {module!r} is unavailable"
-    try:
-        import_module(module)
-    # Optional analyzer imports can fail for ABI, license, or dependency reasons.
-    except Exception as error:
-        return False, f"module {module!r} cannot be imported: {type(error).__name__}: {error}"
-    return True, module
-
-
-def _radare2_metric(path: Path) -> dict[str, object]:
-    executable = shutil.which("r2")
-    if executable is None:
-        return {"status": "unavailable", "detail": "executable r2 is unavailable"}
-    try:
-        result = run_process([executable, "-q0", "-c", "aa;aflj", str(path)], timeout=_COMMAND_TIMEOUT_SECONDS)
-        functions = json.loads(result.stdout_text)
-    except (OSError, ProcessTimeoutError, json.JSONDecodeError) as error:
-        return {"status": "error", "detail": type(error).__name__}
-    metric: dict[str, object] = {
-        "status": "completed",
-        "return_code": result.returncode,
-        "functions": len(functions) if isinstance(functions, list) else 0,
-    }
-    function_address = next(
-        (
-            function.get("offset", function.get("addr"))
-            for function in functions
-            if isinstance(function, dict) and isinstance(function.get("offset", function.get("addr")), int)
-        ),
-        None,
-    )
-    if function_address is None:
-        metric.update(
-            {
-                "decompiler_status": "unavailable",
-                "decompiler_reason": "no recovered function entrypoint",
-                "decompiler_entrypoints": 0,
-                "decompiler_lines": 0,
-                "decompiler_bytes": 0,
-            }
-        )
-        return metric
-    try:
-        decompiler_result = run_process(
-            [
-                executable,
-                "-q0",
-                "-e",
-                "scr.color=false",
-                "-c",
-                f"aa;pdc @ {function_address};q",
-                str(path),
-            ],
-            timeout=_COMMAND_TIMEOUT_SECONDS,
-        )
-        decompiler_text = _ANSI_ESCAPE.sub("", decompiler_result.stdout_text)
-        decompiler_lines = [line for line in decompiler_text.splitlines() if line.strip()]
-        metric.update(
-            {
-                "decompiler_status": "completed" if decompiler_lines else "unavailable",
-                "decompiler_entrypoints": int(bool(decompiler_lines)),
-                "decompiler_lines": len(decompiler_lines),
-                "decompiler_bytes": len(decompiler_text.encode("utf-8")),
-            }
-        )
-        if not decompiler_lines:
-            metric["decompiler_reason"] = "decompiler returned no pseudocode"
-    except (OSError, ProcessTimeoutError) as error:
-        metric.update(
-            {
-                "decompiler_status": "error",
-                "decompiler_reason": type(error).__name__,
-                "decompiler_entrypoints": 0,
-                "decompiler_lines": 0,
-                "decompiler_bytes": 0,
-            }
-        )
-    return metric
-
-
-def _objdump_metric(path: Path) -> dict[str, object]:
-    executable = shutil.which("objdump")
-    if executable is None:
-        return {"status": "unavailable", "detail": "executable objdump is unavailable"}
-    try:
-        completed = run_process([executable, "-d", "--no-show-raw-insn", str(path)], timeout=_COMMAND_TIMEOUT_SECONDS)
-    except (OSError, ProcessTimeoutError) as error:
-        return {"status": "error", "detail": type(error).__name__}
-    count = sum(bool(_DISASSEMBLY_LINE.match(line)) for line in completed.stdout_text.splitlines())
-    return {"status": "completed", "return_code": completed.returncode, "instruction_lines": count}
-
-
-def _is_binary_ninja_license_error(error: RuntimeError) -> bool:
-    return "license" in str(error).lower()
-
-
-def _angr_metric(path: Path) -> dict[str, object]:
-    imported = import_angr_modules(project=True)
-    if not imported.available or imported.project is None:
-        raise _ToolCapabilityUnavailableError("module 'angr' cannot be imported through the compatibility adapter")
-    project_class = imported.project
-    started = time.perf_counter()
-    project = project_class(str(path), auto_load_libs=False)
-    cfg = project.analyses.CFGFast(normalize=True)
-    functions = sorted(
-        (
-            function
-            for function in cfg.kb.functions.values()
-            if isinstance(getattr(function, "addr", None), int)
-            and not bool(getattr(function, "is_simprocedure", False))
-            and not bool(getattr(function, "is_plt", False))
-        ),
-        key=lambda function: function.addr,
-    )[:_ANGR_DECOMPILER_FUNCTION_LIMIT]
-    decompiler_entrypoints = 0
-    decompiler_lines = 0
-    decompiler_bytes = 0
-    decompiler_failures = 0
-    for function in functions:
-        try:
-            result = project.analyses.Decompiler(function, cfg=cfg)
-            text = getattr(getattr(result, "codegen", None), "text", "")
-        except (AttributeError, RuntimeError, TypeError, ValueError):
-            decompiler_failures += 1
-            continue
-        if not isinstance(text, str) or not text.strip():
-            continue
-        decompiler_entrypoints += 1
-        decompiler_lines += sum(bool(line.strip()) for line in text.splitlines())
-        decompiler_bytes += len(text.encode("utf-8"))
-    metric: dict[str, object] = {
-        "status": "completed",
-        "functions": len(cfg.kb.functions),
-        "duration_seconds": time.perf_counter() - started,
-        "decompiler_status": "completed" if decompiler_entrypoints else "unavailable",
-        "decompiler_entrypoints": decompiler_entrypoints,
-        "decompiler_lines": decompiler_lines,
-        "decompiler_bytes": decompiler_bytes,
-        "decompiler_function_limit": _ANGR_DECOMPILER_FUNCTION_LIMIT,
-        "decompiler_failures": decompiler_failures,
-    }
-    if not decompiler_entrypoints:
-        metric["decompiler_reason"] = "angr produced no decompiler output"
-    return {
-        **metric,
-    }
-
-
-def _binary_ninja_metric(path: Path) -> dict[str, object]:
-    binaryninja = import_module("binaryninja")
-    started = time.perf_counter()
-    try:
-        with binaryninja.load(str(path), update_analysis=False) as view:
-            view.update_analysis_and_wait()
-            functions = tuple(view.functions)
-            decompiler = _binary_ninja_decompiler_metrics(functions)
-    except RuntimeError as error:
-        if _is_binary_ninja_license_error(error):
-            raise _ToolCapabilityUnavailableError("analyzer license is unavailable") from error
-        raise
-    return {
-        "status": "completed",
-        "functions": len(functions),
-        **decompiler,
-        "duration_seconds": time.perf_counter() - started,
-    }
-
-
-def _binary_ninja_decompiler_metrics(functions: Sequence[Any]) -> dict[str, object]:
-    """Collect bounded HLIL output so Binary Ninja is comparable to other analyzers."""
-    entrypoints = 0
-    lines = 0
-    byte_count = 0
-    failures = 0
-    ordered_functions = sorted(functions, key=lambda function: getattr(function, "start", 0))
-    for function in ordered_functions[:_ANGR_DECOMPILER_FUNCTION_LIMIT]:
-        try:
-            high_level_il = function.hlil
-            text = str(high_level_il)
-        except (AttributeError, RuntimeError, TypeError, ValueError):
-            failures += 1
-            continue
-        if not text.strip():
-            continue
-        entrypoints += 1
-        lines += sum(bool(line.strip()) for line in text.splitlines())
-        byte_count += len(text.encode("utf-8"))
-    metric: dict[str, object] = {
-        "decompiler_status": "completed" if entrypoints else "unavailable",
-        "decompiler_entrypoints": entrypoints,
-        "decompiler_lines": lines,
-        "decompiler_bytes": byte_count,
-        "decompiler_function_limit": _ANGR_DECOMPILER_FUNCTION_LIMIT,
-        "decompiler_failures": failures,
-    }
-    if not entrypoints:
-        metric["decompiler_reason"] = "Binary Ninja produced no HLIL output"
-    return metric
-
-
-def _unicorn_metric(path: Path) -> dict[str, object]:
-    started = time.perf_counter()
-    try:
-        exit_code = emulate_exit_code(path)
-    except Exception as error:
-        if type(error).__name__ == "UcError":
-            raise _ToolCapabilityUnavailableError(
-                "the installed x86 emulator does not support an instruction in this fixture"
-            ) from error
-        raise
-    return {"status": "completed", "exit_code": exit_code, "duration_seconds": time.perf_counter() - started}
-
-
-def _executable_segment_bytes(path: Path) -> tuple[tuple[int, bytes], ...]:
-    raw = path.read_bytes()
-    segments: list[tuple[int, bytes]] = []
-    for segment in ELFHandler(path).get_segments():
-        if segment["type"] != PT_LOAD or not int(segment["flags"]) & _PF_EXECUTE:
-            continue
-        offset = int(segment["offset"])
-        size = int(segment["filesz"])
-        end = offset + size
-        if offset < 0 or size < 0 or end > len(raw):
-            raise ValueError("executable ELF segment exceeds file bounds")
-        segments.append((int(segment["vaddr"]), raw[offset:end]))
-    if not segments:
-        raise ValueError("ELF contains no executable load segment")
-    return tuple(segments)
-
-
-def _triton_metric(path: Path) -> dict[str, object]:
-    triton = import_module("triton")
-    context = triton.TritonContext(triton.ARCH.X86_64)
-    started = time.perf_counter()
-    decoded = 0
-    supported = 0
-    symbolic_expressions = 0
-    invalid_bytes = 0
-    budget_exhausted = False
-    for address, code in _executable_segment_bytes(path):
-        offset = 0
-        while offset < len(code):
-            if decoded + invalid_bytes >= _TRITON_INSTRUCTION_BUDGET:
-                budget_exhausted = True
-                break
-            instruction = triton.Instruction(address + offset, code[offset : offset + _MAX_X86_INSTRUCTION_BYTES])
-            try:
-                result = context.processing(instruction)
-            except (RuntimeError, TypeError, ValueError):
-                invalid_bytes += 1
-                offset += 1
-                continue
-            size = instruction.getSize()
-            if size < 1:
-                invalid_bytes += 1
-                offset += 1
-                continue
-            decoded += 1
-            supported += result == triton.EXCEPTION.NO_FAULT
-            symbolic_expressions += len(instruction.getSymbolicExpressions())
-            offset += size
-        if budget_exhausted:
-            break
-    return {
-        "status": "completed",
-        "decoded_instructions": decoded,
-        "semantically_supported_instructions": supported,
-        "symbolic_expressions": symbolic_expressions,
-        "invalid_bytes": invalid_bytes,
-        "instruction_budget_exhausted": budget_exhausted,
-        "duration_seconds": time.perf_counter() - started,
-    }
-
-
-def _parse_ghidra_function_count(output: str) -> int:
-    match = _GHIDRA_COUNT_PATTERN.search(output)
-    if match is None:
-        raise ValueError("Ghidra function count marker is missing")
-    return int(match.group("count"))
-
-
-def _ida_metric(path: Path) -> dict[str, object]:
-    executable = _configured_executable("ida-pro")
-    if executable is None:
-        raise FileNotFoundError("IDA headless executable is unavailable")
-    started = time.perf_counter()
-    with tempfile.TemporaryDirectory(prefix="r2morph-ida-") as directory:
-        analysis_path = Path(directory) / path.name
-        result_path = Path(f"{analysis_path}{_IDA_RESULT_SUFFIX}")
-        shutil.copyfile(path, analysis_path)
-        result = run_process(
-            [executable, "-A", f"-S{_IDA_SCRIPT}", str(analysis_path)],
-            timeout=_GHIDRA_ANALYSIS_TIMEOUT_SECONDS,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"IDA headless exited with status {result.returncode}")
-        if not result_path.is_file():
-            raise RuntimeError("IDA function count result is missing")
-        count = int(result_path.read_text(encoding="ascii"))
-        decompiler_path = Path(f"{analysis_path}.decompiler")
-        decompiler = {"entrypoints": 0, "lines": 0, "bytes": 0}
-        if decompiler_path.is_file():
-            values = json.loads(decompiler_path.read_text(encoding="utf-8"))
-            if isinstance(values, dict):
-                decompiler = {field: int(values.get(field, 0)) for field in ("entrypoints", "lines", "bytes")}
-    metric: dict[str, object] = {
-        "status": "completed",
-        "functions": count,
-        "duration_seconds": time.perf_counter() - started,
-        "decompiler_status": "completed" if decompiler["entrypoints"] else "unavailable",
-        "decompiler_entrypoints": decompiler["entrypoints"],
-        "decompiler_lines": decompiler["lines"],
-        "decompiler_bytes": decompiler["bytes"],
-    }
-    if not decompiler["entrypoints"]:
-        metric["decompiler_reason"] = "no decompiler output was produced"
-    return metric
-
-
-def _parse_ghidra_function_counts(output: str) -> dict[str, int]:
-    counts = {
-        match.group("program"): int(match.group("count"))
-        for match in _GHIDRA_COUNT_PATTERN.finditer(output)
-        if match.group("program") is not None
-    }
-    if not counts:
-        raise ValueError("Ghidra function count markers are missing")
-    return counts
-
-
-def _parse_ghidra_decompiler_metrics(output: str) -> dict[str, dict[str, int]]:
-    return {
-        match.group("program"): {
-            "decompiler_entrypoints": int(match.group("entrypoints")),
-            "decompiler_lines": int(match.group("lines")),
-            "decompiler_bytes": int(match.group("bytes")),
-        }
-        for match in _GHIDRA_DECOMPILER_PATTERN.finditer(output)
-    }
-
-
-def _ghidra_metric(path: Path) -> dict[str, object]:
-    executable = _configured_executable("ghidra")
-    if executable is None:
-        raise FileNotFoundError("Ghidra headless executable is unavailable")
-    started = time.perf_counter()
-    with tempfile.TemporaryDirectory(prefix="r2morph-ghidra-") as project_dir:
-        result = run_process(
-            [
-                executable,
-                project_dir,
-                "analysis",
-                "-import",
-                path,
-                "-scriptPath",
-                _GHIDRA_SCRIPT,
-                "-postscript",
-                "CountFunctions.java",
-                "-analysisTimeoutPerFile",
-                str(_GHIDRA_ANALYSIS_TIMEOUT_SECONDS),
-                "-deleteProject",
-                "-okToDelete",
-            ],
-            timeout=_GHIDRA_PROCESS_TIMEOUT_SECONDS,
-        )
-    if result.returncode != 0:
-        raise RuntimeError(f"Ghidra headless exited with status {result.returncode}")
-    output = result.stdout_text + result.stderr_text
-    count = _parse_ghidra_function_count(output)
-    decompiler = _parse_ghidra_decompiler_metrics(output)
-    values = next(
-        iter(decompiler.values()), {"decompiler_entrypoints": 0, "decompiler_lines": 0, "decompiler_bytes": 0}
-    )
-    metric: dict[str, object] = {
-        "status": "completed",
-        "functions": count,
-        "duration_seconds": time.perf_counter() - started,
-        **values,
-        "decompiler_status": "completed" if values["decompiler_entrypoints"] else "unavailable",
-    }
-    if not values["decompiler_entrypoints"]:
-        metric["decompiler_reason"] = "no decompiler output was produced"
-    return metric
-
-
-def _binary_metric(path: Path) -> dict[str, object]:
-    with Binary(path) as binary:
-        binary.analyze("aa")
-        return {"status": "completed", "functions": len(binary.get_functions())}
-
-
-_METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
-    "radare2": _radare2_metric,
-    "objdump": _objdump_metric,
-    "angr": _angr_metric,
-    "binary-ninja": _binary_ninja_metric,
-    "unicorn": _unicorn_metric,
-    "triton": _triton_metric,
-    "ida-pro": _ida_metric,
-    "ghidra": _ghidra_metric,
-    "custom": _binary_metric,
-}
-
-
-def _measure_tool_unbounded(
-    tool: str,
-    original: Path,
-    protected: Path,
-    original_metric: Mapping[str, object] | None = None,
-) -> dict[str, object]:
-    if tool == "custom":
-        before = dict(original_metric) if original_metric is not None else _binary_metric(original)
-        after = _binary_metric(protected)
-        return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
-    available, reason = _availability(tool)
-    if not available:
-        return {"tool": tool, "status": "unavailable", "reason": reason}
-    measure = _METRICS.get(tool)
-    if measure is None:
-        return {"tool": tool, "status": "unavailable", "reason": "no local adapter configured"}
-    try:
-        before = dict(original_metric) if original_metric is not None else measure(original)
-        after = measure(protected)
-    except Exception as error:  # Tool boundary records failures without hiding the campaign result.
-        return _tool_failure_result(tool, error)
-    return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
-
-
-def _measure_tool_worker(
-    tool: str,
-    original: str,
-    protected: str,
-    result_queue: Any,
-    original_metric: dict[str, object] | None,
-) -> None:
-    """Run an in-process analyzer in a killable child process."""
-    try:
-        result_queue.put(_measure_tool_unbounded(tool, Path(original), Path(protected), original_metric))
-    except Exception as error:
-        result_queue.put(_tool_failure_result(tool, error))
-
-
-def _measure_tool_bounded(
-    tool: str,
-    original: Path,
-    protected: Path,
-    timeout: float = _IN_PROCESS_TOOL_TIMEOUT_SECONDS,
-    original_metric: Mapping[str, object] | None = None,
-) -> dict[str, object]:
-    """Preserve a tool row even when an in-process analyzer hangs."""
-    if tool not in _IN_PROCESS_TOOLS:
-        return _measure_tool_unbounded(tool, original, protected, original_metric)
-    context = multiprocessing.get_context("spawn")
-    result_queue = context.Queue(maxsize=1)
-    process = context.Process(
-        target=_measure_tool_worker,
-        args=(
-            tool,
-            str(original),
-            str(protected),
-            result_queue,
-            dict(original_metric) if original_metric is not None else None,
-        ),
-    )
-    process.start()
-    process.join(timeout)
-    if process.is_alive():
-        process.terminate()
-        process.join(5.0)
-        if process.is_alive():
-            process.kill()
-            process.join()
-        result_queue.close()
-        result_queue.join_thread()
-        return {
-            "tool": tool,
-            "status": "error",
-            "error_type": "ProcessTimeoutError",
-            "detail": f"analyzer exceeded {timeout} seconds",
-        }
-    try:
-        result = result_queue.get(timeout=1.0)
-    except Empty:
-        result = {
-            "tool": tool,
-            "status": "error",
-            "error_type": "ProcessExitWithoutResult",
-            "detail": f"analyzer worker exited with status {process.exitcode}",
-        }
-    finally:
-        result_queue.close()
-        result_queue.join_thread()
-    if not isinstance(result, dict) or result.get("tool") != tool:
-        return {
-            "tool": tool,
-            "status": "error",
-            "error_type": "InvalidWorkerResult",
-            "detail": "analyzer worker returned an invalid result",
-        }
-    return result
-
-
-def _measure_tool(
-    tool: str,
-    original: Path,
-    protected: Path,
-    original_metric: Mapping[str, object] | None = None,
-) -> dict[str, object]:
-    return _measure_tool_bounded(tool, original, protected, original_metric=original_metric)
-
-
-def _file_digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _protected_copy(original: Path, directory: Path, pass_name: str) -> tuple[Path, dict[str, object]]:
-    protected = directory / "protected"
-    shutil.copyfile(original, protected)
-    binary = Binary(protected, writable=True)
-    binary.open()
-    try:
-        # Several passes consume function, block, import, and code-cave
-        # metadata. The benchmark must exercise the same analyzed input path
-        # as the production pipeline before classifying a pass as no-op.
-        binary.analyze("aa")
-        stats = _build_mutation_pass(pass_name, 20260827).apply(binary)
-        binary.save()
-    finally:
-        binary.close()
-    return protected, _pass_result(stats, pass_name)
-
-
-def _capability_counts(records: object) -> dict[str, int]:
-    if not isinstance(records, list):
-        return {}
-    counts: dict[str, int] = {}
-    for record in records:
-        if not isinstance(record, dict):
-            continue
-        capability = record.get("capability")
-        if isinstance(capability, str) and capability:
-            counts[capability] = counts.get(capability, 0) + 1
-    return dict(sorted(counts.items()))
-
-
-def _severity_counts(records: object) -> dict[str, int]:
-    if not isinstance(records, list):
-        return {}
-    counts: dict[str, int] = {}
-    for record in records:
-        if not isinstance(record, dict):
-            continue
-        severity = record.get("severity")
-        if isinstance(severity, str) and severity:
-            counts[severity] = counts.get(severity, 0) + 1
-    return dict(sorted(counts.items()))
-
-
-def _diagnostic_reason(records: object) -> str | None:
-    if not isinstance(records, list):
-        return None
-    for record in records:
-        if not isinstance(record, dict):
-            continue
-        capability = record.get("capability", "unsupported capability")
-        reason = record.get("reason", "pass precondition was not met")
-        return f"{capability}: {reason}"
-    return None
-
-
-def _pass_result(stats: dict[str, object], pass_name: str = DEFAULT_MUTATION_NAME) -> dict[str, object]:
-    virtualized = stats.get("functions_virtualized", 0)
-    unsupported = stats.get("unsupported_functions_total", 0)
-    partial = stats.get("partial_virtualization_total", 0)
-    applied = next(
-        (value for field in _APPLIED_COUNT_FIELDS if isinstance(value := stats.get(field), int) and value > 0),
-        0,
-    )
-    if isinstance(applied, int) and applied > 0:
-        status = "applied"
-    elif (isinstance(unsupported, int) and unsupported > 0) or (isinstance(partial, int) and partial > 0):
-        status = "omitted"
-    else:
-        status = "no-op"
-    result: dict[str, object] = {
-        "pass_name": pass_name,
-        "status": status,
-    }
-    if pass_name == DEFAULT_MUTATION_NAME:
-        result["functions_virtualized"] = virtualized
-        result["unsupported_functions"] = unsupported
-        result["partial_virtualization"] = partial
-        reason = _diagnostic_reason(stats.get("unsupported_functions")) or _diagnostic_reason(
-            stats.get("partial_virtualization")
-        )
-        if reason is not None:
-            result["reason"] = reason
-        unsupported_capabilities = _capability_counts(stats.get("unsupported_functions"))
-        partial_capabilities = _capability_counts(stats.get("partial_virtualization"))
-        unsupported_severities = _severity_counts(stats.get("unsupported_functions"))
-        partial_severities = _severity_counts(stats.get("partial_virtualization"))
-        if unsupported_capabilities:
-            result["unsupported_capabilities"] = unsupported_capabilities
-        if partial_capabilities:
-            result["partial_virtualization_capabilities"] = partial_capabilities
-        if unsupported_severities:
-            result["unsupported_severities"] = unsupported_severities
-        if partial_severities:
-            result["partial_virtualization_severities"] = partial_severities
-    else:
-        result["mutations_applied"] = applied
-    return result
-
-
-def _merge_capability_summary(counters: dict[str, object], field: str, value: object) -> None:
-    if not isinstance(value, dict):
-        return
-    aggregate = counters.get(field)
-    if not isinstance(aggregate, dict):
-        aggregate = {}
-    for capability, count in value.items():
-        if isinstance(capability, str) and isinstance(count, int):
-            aggregate[capability] = aggregate.get(capability, 0) + count
-    if aggregate:
-        counters[field] = dict(sorted(aggregate.items()))
-
-
-def _merge_pass_reason(counters: dict[str, object], field: str, row: dict[str, object]) -> None:
-    reason = row.get("reason") or row.get("error_type") or "unspecified"
-    reasons = counters.get(field)
-    if not isinstance(reasons, dict):
-        reasons = {}
-    reasons[str(reason)] = reasons.get(str(reason), 0) + 1
-    counters[field] = dict(sorted(reasons.items()))
-
-
-def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, object]]:
-    summary: dict[str, dict[str, object]] = {}
-    for sample in samples:
-        rows = sample.get("passes", [])
-        if not isinstance(rows, list):
-            continue
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
-            pass_name = row.get("pass_name")
-            status = row.get("status")
-            if not isinstance(pass_name, str) or not isinstance(status, str):
-                continue
-            counters = summary.setdefault(
-                pass_name,
-                {
-                    "samples": 0,
-                    "applied": 0,
-                    "omitted": 0,
-                    "no_op": 0,
-                    "errors": 0,
-                    "functions_virtualized": 0,
-                    "unsupported_functions": 0,
-                    "partial_virtualization": 0,
-                },
-            )
-            counters["samples"] += 1
-            status_field = _PASS_STATUS_FIELDS.get(status)
-            if status_field is not None:
-                counters[status_field] += 1
-            if status == "omitted":
-                _merge_pass_reason(counters, "omission_reasons", row)
-            elif status == "error":
-                _merge_pass_reason(counters, "error_reasons", row)
-            for field in ("functions_virtualized", "unsupported_functions", "partial_virtualization"):
-                value = row.get(field)
-                if isinstance(value, int):
-                    counters[field] += value
-            if "mutations_applied" in row:
-                counters.setdefault("mutations_applied", 0)
-                value = row["mutations_applied"]
-                if isinstance(value, int):
-                    counters["mutations_applied"] += value
-            _merge_capability_summary(counters, "unsupported_capabilities", row.get("unsupported_capabilities"))
-            _merge_capability_summary(
-                counters,
-                "partial_virtualization_capabilities",
-                row.get("partial_virtualization_capabilities"),
-            )
-            _merge_capability_summary(counters, "unsupported_severities", row.get("unsupported_severities"))
-            _merge_capability_summary(
-                counters,
-                "partial_virtualization_severities",
-                row.get("partial_virtualization_severities"),
-            )
-    return dict(sorted(summary.items()))
-
-
-def _tool_duration_seconds(row: dict[str, object]) -> float:
-    duration = 0.0
-    for side in ("original", "protected"):
-        metrics = row.get(side)
-        if isinstance(metrics, dict) and isinstance(value := metrics.get("duration_seconds"), int | float):
-            duration += value
-    return duration
-
-
-def _tool_duration_pair_count(row: dict[str, object]) -> int:
-    original = row.get("original")
-    protected = row.get("protected")
-    if not isinstance(original, dict) or not isinstance(protected, dict):
-        return 0
-    return int(
-        isinstance(original.get("duration_seconds"), int | float)
-        and isinstance(protected.get("duration_seconds"), int | float)
-    )
-
-
-def _tool_metric_deltas(row: dict[str, object]) -> dict[str, float]:
-    original = row.get("original")
-    protected = row.get("protected")
-    if not isinstance(original, dict) or not isinstance(protected, dict):
-        return {}
-    deltas: dict[str, float] = {}
-    for key, original_value in original.items():
-        if key in {"duration_seconds", "return_code", "exit_code", "status"}:
-            continue
-        protected_value = protected.get(key)
-        if type(original_value) in {int, float} and type(protected_value) in {int, float}:
-            deltas[f"total_{key}_delta"] = protected_value - original_value
-    return deltas
-
-
-def _tool_metric_pair_counts(row: dict[str, object]) -> dict[str, int]:
-    original = row.get("original")
-    protected = row.get("protected")
-    if not isinstance(original, dict) or not isinstance(protected, dict):
-        return {}
-    counts: dict[str, int] = {}
-    for key, original_value in original.items():
-        if key in {"duration_seconds", "return_code", "exit_code", "status"}:
-            continue
-        protected_value = protected.get(key)
-        if type(original_value) in {int, float} and type(protected_value) in {int, float}:
-            counts[f"metric_{key}_pairs"] = 1
-    return counts
-
-
-def _merge_tool_reason(counters: dict[str, object], field: str, row: dict[str, object]) -> None:
-    reason = row.get("reason") or row.get("error_type") or row.get("detail") or "unspecified"
-    reasons = counters.get(field)
-    if not isinstance(reasons, dict):
-        reasons = {}
-    reasons[str(reason)] = reasons.get(str(reason), 0) + 1
-    counters[field] = dict(sorted(reasons.items()))
-
-
-def _tool_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, object]]:
-    summary: dict[str, dict[str, object]] = {}
-    for sample in samples:
-        rows = sample.get("tools", [])
-        if not isinstance(rows, list):
-            continue
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
-            tool = row.get("tool")
-            status = row.get("status")
-            if not isinstance(tool, str) or not isinstance(status, str):
-                continue
-            counters = summary.setdefault(
-                tool,
-                {
-                    "runs": 0,
-                    "completed": 0,
-                    "unavailable": 0,
-                    "errors": 0,
-                    "changed": 0,
-                    "duration_pairs": 0,
-                    "total_duration_seconds": 0.0,
-                },
-            )
-            counters["runs"] += 1
-            if status == "completed":
-                counters["completed"] += 1
-                counters["duration_pairs"] += _tool_duration_pair_count(row)
-                counters["total_duration_seconds"] += _tool_duration_seconds(row)
-                for key, delta in _tool_metric_deltas(row).items():
-                    counters[key] = counters.get(key, 0) + delta
-                for key, count in _tool_metric_pair_counts(row).items():
-                    counters[key] = counters.get(key, 0) + count
-                if row.get("changed") is True:
-                    counters["changed"] += 1
-            elif status == "unavailable":
-                counters["unavailable"] += 1
-                _merge_tool_reason(counters, "unavailable_reasons", row)
-            else:
-                counters["errors"] += 1
-                _merge_tool_reason(counters, "error_reasons", row)
-    return dict(sorted(summary.items()))
-
-
-def _decompiler_observations(row: dict[str, object]) -> dict[str, int]:
-    """Extract comparable pseudocode observations from an analyzer pair."""
-    original = row.get("original")
-    protected = row.get("protected")
-    if not isinstance(original, dict) or not isinstance(protected, dict):
-        return {}
-    original_status = original.get("decompiler_status")
-    protected_status = protected.get("decompiler_status")
-    if not isinstance(original_status, str) or not isinstance(protected_status, str):
-        return {}
-    baseline_unavailable = original_status == "unavailable"
-    observed = int(not baseline_unavailable)
-    completed_pairs = int(original_status == "completed" and protected_status == "completed")
-    result = {
-        "observed_pairs": observed,
-        "completed_pairs": completed_pairs,
-        "missing_pairs": int(observed and not completed_pairs),
-        "baseline_unavailable_pairs": int(baseline_unavailable),
-    }
-    applied = row.get("pass_status", "applied") == "applied"
-    result["applied_observed_pairs"] = int(applied and observed)
-    result["applied_completed_pairs"] = int(applied and observed and completed_pairs == 1)
-    result["applied_baseline_unavailable_pairs"] = int(applied and baseline_unavailable)
-    for field in ("decompiler_entrypoints", "decompiler_lines", "decompiler_bytes"):
-        original_value = original.get(field)
-        protected_value = protected.get(field)
-        if not isinstance(original_value, int | float) or not isinstance(protected_value, int | float):
-            continue
-        result[f"original_{field}"] = int(original_value)
-        result[f"protected_{field}"] = int(protected_value)
-        result[f"delta_{field}"] = int(protected_value - original_value)
-    return result
-
-
-def _new_effectiveness_tool_summary() -> dict[str, Any]:
-    return {
-        "runs": 0,
-        "completed": 0,
-        "unavailable": 0,
-        "errors": 0,
-        "changed": 0,
-        "metric_deltas": {},
-        "metric_pair_counts": {},
-    }
-
-
-def _accumulate_effectiveness_tool(tool_summary: dict[str, Any], row: dict[str, object]) -> None:
-    tool_summary["runs"] += 1
-    status = row.get("status")
-    if status == "completed":
-        tool_summary["completed"] += 1
-        tool_summary["changed"] += int(row.get("changed") is True)
-        for key, value in _tool_metric_deltas(row).items():
-            tool_summary["metric_deltas"][key] = tool_summary["metric_deltas"].get(key, 0) + value
-        for key, value in _tool_metric_pair_counts(row).items():
-            tool_summary["metric_pair_counts"][key] = tool_summary["metric_pair_counts"].get(key, 0) + value
-    elif status == "unavailable":
-        tool_summary["unavailable"] += 1
-    else:
-        tool_summary["errors"] += 1
-    observations = _decompiler_observations(row)
-    if observations:
-        decompiler = tool_summary.setdefault("decompiler", {})
-        for key, value in observations.items():
-            decompiler[key] = decompiler.get(key, 0) + value
-
-
-def _finalize_effectiveness_tool_summary(tool_summary: dict[str, Any]) -> None:
-    tool_summary["completion_percent"] = _coverage_percent(tool_summary["completed"], tool_summary["runs"])
-    decompiler = tool_summary.get("decompiler")
-    if isinstance(decompiler, dict):
-        decompiler["completion_percent"] = _coverage_percent(
-            decompiler["completed_pairs"],
-            decompiler["observed_pairs"],
-        )
-        decompiler["applied_completion_percent"] = _coverage_percent(
-            decompiler.get("applied_completed_pairs", 0),
-            decompiler.get("applied_observed_pairs", 0),
-        )
-
-
-def _decompiler_baseline_unavailable_by_pass(
-    effectiveness: Mapping[str, Mapping[str, Mapping[str, Any]]],
-) -> dict[str, dict[str, int]]:
-    gaps: dict[str, dict[str, int]] = {}
-    for pass_name, tools in effectiveness.items():
-        pass_gaps = {
-            tool: int(decompiler["applied_baseline_unavailable_pairs"])
-            for tool, summary in tools.items()
-            if isinstance(summary, Mapping)
-            and isinstance(decompiler := summary.get("decompiler"), Mapping)
-            and isinstance(decompiler.get("applied_baseline_unavailable_pairs"), int)
-            and decompiler["applied_baseline_unavailable_pairs"] > 0
-        }
-        if pass_gaps:
-            gaps[pass_name] = dict(sorted(pass_gaps.items()))
-    return dict(sorted(gaps.items()))
-
-
-def _decompiler_evidence_complete(decompiler: Mapping[str, Any], sample_count: int, applied_pairs: int) -> bool:
-    """Require complete coverage for pairs affected by the pass."""
-    if applied_pairs == 0:
-        return (
-            decompiler.get("applied_observed_pairs") == 0
-            and decompiler.get("applied_completed_pairs") == 0
-            and decompiler.get("applied_baseline_unavailable_pairs", 0) == 0
-            and decompiler.get("applied_completion_percent") == 0.0
-        )
-    applied_observed_pairs = decompiler.get("applied_observed_pairs", 0)
-    applied_baseline_unavailable_pairs = decompiler.get("applied_baseline_unavailable_pairs", 0)
-    return (
-        0 <= applied_pairs <= sample_count
-        and 0 < applied_observed_pairs <= applied_pairs
-        and applied_observed_pairs + applied_baseline_unavailable_pairs == applied_pairs
-        and decompiler.get("observed_pairs", 0) >= applied_observed_pairs
-        and decompiler.get("completed_pairs", 0) >= applied_observed_pairs
-        and decompiler.get("applied_completed_pairs") == applied_observed_pairs
-        and decompiler.get("applied_completion_percent") == _FULL_COVERAGE_PERCENT
-    )
-
-
-def _analyzer_effectiveness_by_pass(samples: list[dict[str, object]]) -> dict[str, dict[str, dict[str, Any]]]:
-    """Aggregate analyzer and decompiler evidence without hiding unavailable slots."""
-    summary: dict[str, dict[str, dict[str, Any]]] = {}
-    for sample in samples:
-        rows = sample.get("tools", [])
-        if not isinstance(rows, list):
-            continue
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
-            pass_name = row.get("pass_name")
-            tool = row.get("tool")
-            if not isinstance(pass_name, str) or not isinstance(tool, str):
-                continue
-            pass_summary = summary.setdefault(pass_name, {})
-            tool_summary = pass_summary.setdefault(tool, _new_effectiveness_tool_summary())
-            _accumulate_effectiveness_tool(tool_summary, row)
-    for pass_summary in summary.values():
-        for tool_summary in pass_summary.values():
-            _finalize_effectiveness_tool_summary(tool_summary)
-    return {name: dict(sorted(values.items())) for name, values in sorted(summary.items())}
-
-
-def _coverage_percent(observed: int, expected: int) -> float:
-    if expected == 0:
-        return 0.0
-    return round(observed / expected * 100.0, 2)
-
-
-def _passes_without_applications(report: dict[str, object]) -> tuple[str, ...]:
-    """Return selected passes that did not transform a corpus fixture."""
-    summary = report.get("pass_summary")
-    if not isinstance(summary, dict):
-        return ()
-    return tuple(
-        sorted(
-            name
-            for name, values in summary.items()
-            if isinstance(name, str) and isinstance(values, dict) and values.get("applied") == 0
-        )
-    )
-
-
-def _missing_tool_slot_error(report: dict[str, object]) -> str | None:
-    summary = report.get("summary")
-    if not isinstance(summary, dict):
-        return "analyzer tool slot validation requires a corpus benchmark report"
-    missing_runs = summary.get("missing_tool_runs")
-    missing_tools = summary.get("missing_tools")
-    if isinstance(missing_runs, int) and missing_runs == 0 and missing_tools == []:
-        return None
-    if isinstance(missing_tools, list) and missing_tools:
-        return "missing analyzer tool slots: " + ", ".join(str(tool) for tool in missing_tools)
-    return "missing analyzer tool runs"
-
-
-def _measure_pair_tools(
-    original: Path,
-    protected: Path,
-    original_metrics: dict[str, dict[str, object]] | None = None,
-    measurement_cache: dict[tuple[str, str], dict[str, object]] | None = None,
-    protected_digest: str | None = None,
-) -> list[dict[str, object]]:
-    cache = original_metrics if original_metrics is not None else {}
-    rows = []
-    for tool in (*_EXPECTED_TOOLS, "custom"):
-        cache_key = (tool, protected_digest) if protected_digest is not None else None
-        cached_row = measurement_cache.get(cache_key) if measurement_cache is not None and cache_key else None
-        row = dict(cached_row) if cached_row is not None else _measure_tool(tool, original, protected, cache.get(tool))
-        if measurement_cache is not None and cache_key is not None and cached_row is None:
-            measurement_cache[cache_key] = dict(row)
-        metric = row.get("original")
-        if row.get("status") == "completed" and isinstance(metric, dict):
-            cache[tool] = metric
-        rows.append(row)
-    return rows
 
 
 def benchmark_pair(
@@ -1135,40 +229,9 @@ def benchmark_pair(
     if not original.is_file():
         raise ValueError(f"original binary does not exist: {original}")
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
-        pass_rows: list[dict[str, object]] = []
-        tools: list[dict[str, object]] = []
-        original_metrics: dict[str, dict[str, object]] = {}
-        measurement_cache: dict[tuple[str, str], dict[str, object]] = {}
         if protected is None:
+            pass_rows, tools = _benchmark_passes(original, Path(directory), pass_names)
             protected_path = Path(directory) / "protected"
-            for pass_name in pass_names:
-                try:
-                    protected_path, pass_row = _protected_copy(original, Path(directory), pass_name)
-                except Exception as error:  # Transformation boundary records per-pass failures.
-                    pass_rows.append(
-                        {
-                            "pass_name": pass_name,
-                            "status": "error",
-                            "error_type": type(error).__name__,
-                        }
-                    )
-                    continue
-                pass_rows.append(pass_row)
-                protected_digest = _file_digest(protected_path)
-                tools.extend(
-                    {
-                        **tool,
-                        "pass_name": pass_name,
-                        "pass_status": pass_row["status"],
-                    }
-                    for tool in _measure_pair_tools(
-                        original,
-                        protected_path,
-                        original_metrics,
-                        measurement_cache,
-                        protected_digest,
-                    )
-                )
         else:
             protected_path = protected
             tools = _measure_pair_tools(original, protected_path)
@@ -1308,302 +371,6 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
     if corpus_scope is not None:
         merged["corpus_scope"] = corpus_scope
     return merged
-
-
-def _campaign_summary(
-    samples: list[dict[str, object]],
-    fixture_count: int,
-    pass_names: tuple[str, ...],
-) -> dict[str, object]:
-    expected_tools = (*_EXPECTED_TOOLS, "custom")
-    observed_passes = {
-        pass_name
-        for sample in samples
-        for row in sample.get("passes", [])
-        if isinstance(row, dict) and isinstance(pass_name := row.get("pass_name"), str)
-    }
-    observed_tools = {
-        tool
-        for sample in samples
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
-    }
-    observed_pass_runs_by_pass = Counter(
-        pass_name
-        for sample in samples
-        for row in sample.get("passes", [])
-        if isinstance(row, dict) and isinstance(pass_name := row.get("pass_name"), str)
-    )
-    observed_tool_runs_by_tool = Counter(
-        tool
-        for sample in samples
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and isinstance(tool := row.get("tool"), str)
-    )
-    observed_pass_runs = sum(1 for sample in samples for row in sample.get("passes", []) if isinstance(row, dict))
-    observed_tool_runs = sum(1 for sample in samples for row in sample.get("tools", []) if isinstance(row, dict))
-    applied_pass_runs = _pass_status_count(samples, "applied")
-    omitted_pass_runs = _pass_status_count(samples, "omitted")
-    error_pass_runs = _pass_status_count(samples, "error")
-    completed_tools = sum(
-        1
-        for sample in samples
-        for tool in sample["tools"]
-        if isinstance(tool, dict) and tool.get("status") == "completed"
-    )
-    unavailable_tools = sum(
-        1
-        for sample in samples
-        for tool in sample["tools"]
-        if isinstance(tool, dict) and tool.get("status") == "unavailable"
-    )
-    error_tools = sum(
-        1 for sample in samples for tool in sample["tools"] if isinstance(tool, dict) and tool.get("status") == "error"
-    )
-    completed_tool_names = _tools_with_status(samples, "completed")
-    unavailable_tool_names = _tools_with_status(samples, "unavailable")
-    error_tool_names = _tools_with_status(samples, "error")
-    completed_tools_by_tool = _tool_status_counts(samples, "completed")
-    unavailable_tools_by_tool = _tool_status_counts(samples, "unavailable")
-    error_tools_by_tool = _tool_status_counts(samples, "error")
-    expected_pass_runs = fixture_count * len(pass_names)
-    expected_tool_runs = expected_pass_runs * len(expected_tools)
-    missing_pass_runs_by_pass = {
-        pass_name: missing_runs
-        for pass_name in pass_names
-        if (missing_runs := fixture_count - observed_pass_runs_by_pass[pass_name]) > 0
-    }
-    missing_tool_runs_by_tool = {
-        tool: missing_runs
-        for tool in expected_tools
-        if (missing_runs := expected_pass_runs - observed_tool_runs_by_tool[tool]) > 0
-    }
-    non_completed_tool_runs_by_tool = {
-        tool: runs
-        for tool in expected_tools
-        if (
-            runs := missing_tool_runs_by_tool.get(tool, 0)
-            + unavailable_tools_by_tool.get(tool, 0)
-            + error_tools_by_tool.get(tool, 0)
-        )
-        > 0
-    }
-    non_completed_tool_runs = expected_tool_runs - completed_tools
-    analyzer_effectiveness = _analyzer_effectiveness_by_pass(samples)
-    summary: dict[str, object] = {
-        "expected_pass_count": len(pass_names),
-        "observed_pass_count": len(observed_passes),
-        "missing_passes": sorted(set(pass_names) - observed_passes),
-        "expected_pass_runs": expected_pass_runs,
-        "observed_pass_runs": observed_pass_runs,
-        "missing_pass_runs": expected_pass_runs - observed_pass_runs,
-        "pass_run_coverage_percent": _coverage_percent(observed_pass_runs, expected_pass_runs),
-        "applied_pass_runs": applied_pass_runs,
-        "applied_pass_run_percent": _coverage_percent(applied_pass_runs, observed_pass_runs),
-        "applied_pass_runs_by_pass": _pass_status_counts(samples, "applied"),
-        "omitted_pass_runs": omitted_pass_runs,
-        "omitted_pass_run_percent": _coverage_percent(omitted_pass_runs, observed_pass_runs),
-        "omitted_pass_runs_by_pass": _pass_status_counts(samples, "omitted"),
-        "omission_reasons_by_pass": _pass_reason_map(samples, "omitted"),
-        "error_pass_runs": error_pass_runs,
-        "error_pass_run_percent": _coverage_percent(error_pass_runs, observed_pass_runs),
-        "error_pass_runs_by_pass": _pass_status_counts(samples, "error"),
-        "error_reasons_by_pass": _pass_reason_map(samples, "error"),
-        "missing_pass_runs_by_pass": missing_pass_runs_by_pass,
-        "expected_tools": list(expected_tools),
-        "observed_tools": sorted(observed_tools),
-        "expected_tool_count": len(expected_tools),
-        "observed_tool_count": len(observed_tools),
-        "missing_tools": sorted(set(expected_tools) - observed_tools),
-        "expected_tool_runs": expected_tool_runs,
-        "observed_tool_runs": observed_tool_runs,
-        "missing_tool_runs": expected_tool_runs - observed_tool_runs,
-        "tool_run_coverage_percent": _coverage_percent(observed_tool_runs, expected_tool_runs),
-        "missing_tool_runs_by_tool": missing_tool_runs_by_tool,
-        "completed_tool_runs": completed_tools,
-        "completed_tool_count": len(completed_tool_names),
-        "completed_tools": completed_tool_names,
-        "completed_tool_runs_by_tool": completed_tools_by_tool,
-        "completed_tool_run_coverage_by_tool": _tool_run_coverage_by_tool(completed_tools_by_tool, expected_pass_runs),
-        "completed_tool_run_percent": _coverage_percent(completed_tools, observed_tool_runs),
-        "completed_tool_run_coverage_percent": _coverage_percent(completed_tools, expected_tool_runs),
-        "incomplete_tool_coverage": _incomplete_tool_coverage(
-            expected_tools,
-            expected_pass_runs,
-            {
-                "completed": completed_tools_by_tool,
-                "missing": missing_tool_runs_by_tool,
-                "unavailable": unavailable_tools_by_tool,
-                "error": error_tools_by_tool,
-            },
-        ),
-        "non_completed_tool_runs": non_completed_tool_runs,
-        "non_completed_tool_runs_by_tool": non_completed_tool_runs_by_tool,
-        "tools_without_full_completion": sorted(non_completed_tool_runs_by_tool),
-        "unavailable_tool_runs": unavailable_tools,
-        "unavailable_tool_count": len(unavailable_tool_names),
-        "unavailable_tools": unavailable_tool_names,
-        "unavailable_tool_run_percent": _coverage_percent(unavailable_tools, observed_tool_runs),
-        "unavailable_tool_runs_by_tool": unavailable_tools_by_tool,
-        "unavailable_reasons_by_tool": _tool_reason_map(samples, "unavailable"),
-        "error_tool_runs": error_tools,
-        "error_tool_count": len(error_tool_names),
-        "error_tools": error_tool_names,
-        "error_tool_run_percent": _coverage_percent(error_tools, observed_tool_runs),
-        "error_tool_runs_by_tool": error_tools_by_tool,
-        "error_reasons_by_tool": _tool_reason_map(samples, "error"),
-        "analyzer_effectiveness_by_pass": analyzer_effectiveness,
-        "decompiler_baseline_unavailable_pairs_by_pass": _decompiler_baseline_unavailable_by_pass(
-            analyzer_effectiveness
-        ),
-    }
-    summary["adversarial_evidence_blockers"] = _adversarial_evidence_blockers(summary, pass_names)
-    summary["adversarial_evidence_blocker_totals"] = _blocker_totals(
-        summary["adversarial_evidence_blockers"],
-        "total_adversarial_evidence_blockers",
-    )
-    return summary
-
-
-def _adversarial_evidence_blockers(
-    summary: dict[str, object],
-    pass_names: tuple[str, ...],
-) -> dict[str, object]:
-    blockers: dict[str, object] = {}
-    applied_by_pass = summary.get("applied_pass_runs_by_pass")
-    if isinstance(applied_by_pass, dict):
-        passes_without_applied_runs = sorted(
-            pass_name for pass_name in pass_names if applied_by_pass.get(pass_name, 0) == 0
-        )
-        if passes_without_applied_runs:
-            blockers["passes_without_applied_runs"] = passes_without_applied_runs
-    for field in (
-        "missing_passes",
-        "missing_pass_runs_by_pass",
-        "missing_tool_runs_by_tool",
-        "error_pass_runs_by_pass",
-        "incomplete_tool_coverage",
-        "non_completed_tool_runs_by_tool",
-        "tools_without_full_completion",
-        "unavailable_tool_runs_by_tool",
-        "unavailable_reasons_by_tool",
-        "decompiler_baseline_unavailable_pairs_by_pass",
-    ):
-        value = summary.get(field)
-        if isinstance(value, (list, dict)) and value:
-            blockers[field] = value
-    return blockers
-
-
-def _release_signoff_blockers(tool_summary: dict[str, object]) -> dict[str, object]:
-    unavailable = {
-        tool: summary["unavailable_reasons"]
-        for tool, summary in tool_summary.items()
-        if isinstance(tool, str)
-        and isinstance(summary, dict)
-        and summary.get("unavailable", 0) > 0
-        and isinstance(summary.get("unavailable_reasons"), dict)
-    }
-    return {"unavailable_analyzers": unavailable} if unavailable else {}
-
-
-def _blocker_totals(blockers: dict[str, object], total_field: str) -> dict[str, int]:
-    totals = {field: len(value) for field, value in blockers.items() if isinstance(value, (list, dict))}
-    totals["blocker_categories"] = len(blockers)
-    totals[total_field] = sum(count for field, count in totals.items() if field != "blocker_categories")
-    return dict(sorted(totals.items()))
-
-
-def _pass_status_count(samples: list[dict[str, object]], status: str) -> int:
-    return sum(
-        1
-        for sample in samples
-        for row in sample.get("passes", [])
-        if isinstance(row, dict) and row.get("status") == status
-    )
-
-
-def _pass_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
-    counts = Counter(
-        pass_name
-        for sample in samples
-        for row in sample.get("passes", [])
-        if isinstance(row, dict) and row.get("status") == status and isinstance(pass_name := row.get("pass_name"), str)
-    )
-    return dict(sorted(counts.items()))
-
-
-def _pass_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:
-    reasons: dict[str, Counter[str]] = {}
-    for sample in samples:
-        for row in sample.get("passes", []):
-            if not isinstance(row, dict) or row.get("status") != status:
-                continue
-            pass_name = row.get("pass_name")
-            if not isinstance(pass_name, str):
-                continue
-            reason = str(row.get("reason") or row.get("error_type") or "unspecified")
-            reasons.setdefault(pass_name, Counter())[reason] += 1
-    return {pass_name: dict(sorted(counts.items())) for pass_name, counts in sorted(reasons.items())}
-
-
-def _tool_status_counts(samples: list[dict[str, object]], status: str) -> dict[str, int]:
-    counts = Counter(
-        tool
-        for sample in samples
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and row.get("status") == status and isinstance(tool := row.get("tool"), str)
-    )
-    return dict(sorted(counts.items()))
-
-
-def _tools_with_status(samples: list[dict[str, object]], status: str) -> list[str]:
-    return sorted(
-        {
-            tool
-            for sample in samples
-            for row in sample.get("tools", [])
-            if isinstance(row, dict) and row.get("status") == status and isinstance(tool := row.get("tool"), str)
-        }
-    )
-
-
-def _tool_run_coverage_by_tool(counts: dict[str, int], expected_runs: int) -> dict[str, float]:
-    return {tool: _coverage_percent(count, expected_runs) for tool, count in sorted(counts.items())}
-
-
-def _incomplete_tool_coverage(
-    expected_tools: tuple[str, ...],
-    expected_runs: int,
-    counts_by_status: dict[str, dict[str, int]],
-) -> list[dict[str, object]]:
-    rows = []
-    for tool in expected_tools:
-        completed_runs = counts_by_status["completed"].get(tool, 0)
-        if completed_runs == expected_runs:
-            continue
-        rows.append(
-            {
-                "tool": tool,
-                "completed_runs": completed_runs,
-                "missing_runs": counts_by_status["missing"].get(tool, 0),
-                "unavailable_runs": counts_by_status["unavailable"].get(tool, 0),
-                "error_runs": counts_by_status["error"].get(tool, 0),
-                "completed_run_coverage_percent": _coverage_percent(completed_runs, expected_runs),
-            }
-        )
-    return rows
-
-
-def _tool_reason_map(samples: list[dict[str, object]], status: str) -> dict[str, dict[str, int]]:
-    reasons: dict[str, Counter[str]] = {}
-    for sample in samples:
-        for row in sample.get("tools", []):
-            if not isinstance(row, dict) or row.get("status") != status or not isinstance(tool := row.get("tool"), str):
-                continue
-            reason = str(row.get("reason") or row.get("error_type") or row.get("detail") or "unspecified")
-            reasons.setdefault(tool, Counter())[reason] += 1
-    return {tool: dict(sorted(counts.items())) for tool, counts in sorted(reasons.items())}
 
 
 def main(argv: Sequence[str] | None = None) -> None:
