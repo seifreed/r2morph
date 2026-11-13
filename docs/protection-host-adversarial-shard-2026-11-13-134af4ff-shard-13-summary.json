@@ -1,0 +1,65 @@
+{
+  "analyzer_diagnostics": {
+    "angr_unsupported_dirty_helpers": [
+      "amd64g_dirtyhelper_IN",
+      "amd64g_dirtyhelper_OUT"
+    ],
+    "interpretation": "The analyzer rows completed, but these diagnostics limit the decompiler measurements and are not semantic-equivalence evidence."
+  },
+  "analyzer_summary": {
+    "completed_tool_runs": 63,
+    "completed_tool_runs_by_tool": {
+      "angr": 9,
+      "custom": 9,
+      "ghidra": 9,
+      "ida-pro": 9,
+      "objdump": 9,
+      "radare2": 9,
+      "unicorn": 9
+    },
+    "error_tool_runs": 0,
+    "expected_tool_runs": 81,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 9
+      },
+      "triton": {
+        "module 'triton' is unavailable": 9
+      }
+    },
+    "unavailable_tool_runs": 18
+  },
+  "execution_context": {
+    "ghidra": "12.2",
+    "ida_pro": "9.5",
+    "keystone": "available",
+    "platform": "macOS arm64",
+    "python": "3.13.11",
+    "radare2": "6.2.6"
+  },
+  "fixture_shard": {
+    "count": 16,
+    "index": 13
+  },
+  "generated_at": "2026-11-13",
+  "measurement": "host-adversarial-codevirtualization-shard",
+  "pass_summary": {
+    "CodeVirtualization": {
+      "applied": 9,
+      "errors": 0,
+      "functions_virtualized": 9,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 9,
+      "unsupported_functions": 0
+    }
+  },
+  "provenance": "local-host-installed-analysis-tools",
+  "sample_count": 9,
+  "schema_version": 1,
+  "source_commit": "134af4ff210b594d46e9803299c2111cfbebfa90",
+  "source_report": "protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json",
+  "source_report_sha256": "d8399701087800f9cab1c25486439e4d5a8380dbdb8b268b1557d6e01487260a",
+  "status": "bounded-evidence"
+}

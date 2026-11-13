@@ -299,6 +299,20 @@ successful run.
   fixtures only; it does not close the full analyzer matrix or resistance gap.
   Evidence: [protection-adversarial-codevirtualization-2026-11-12-4db66d94-shard-12.json](protection-adversarial-codevirtualization-2026-11-12-4db66d94-shard-12.json)
   and [test_published_codevirtualization_adversarial_shard_12.py](../tests/unit/test_published_codevirtualization_adversarial_shard_12.py).
+  A follow-up shard on the same source commit applied CodeVirtualization to
+  nine more fixtures. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump,
+  and the custom analyzer completed 63/63 available runs with zero report
+  error rows. angr emitted unsupported `amd64g_dirtyhelper_IN` and
+  `amd64g_dirtyhelper_OUT` diagnostics, so its completed decompiler measurements
+  remain bounded and do not prove semantic equivalence. Binary Ninja's license
+  was invalid and Triton was unavailable, leaving 18/81 expected runs
+  unavailable. The raw report and hash-bound
+  summary are
+  [protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json](protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json)
+  and
+  [protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json](protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json).
+  This adds one pass-by-fixture slice and does not resolve the full matrix or
+  resistance gap.
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
@@ -384,6 +398,13 @@ The reports are hash-bound in
 with raw reports for each runner. This closes the declared cross-platform
 fuzz execution matrix only; semantic parity, analyzer resistance, and
 professional adversarial resistance remain separate open criteria.
+
+The current-main rerun at `134af4ff` is recorded in
+[protection-fuzz-wheel-platform-2026-11-13-134af4ff.json](protection-fuzz-wheel-platform-2026-11-13-134af4ff.json)
+and [workflow run 43331412474](https://github.com/seifreed/r2morph/actions/runs/43331412474).
+It completed the same nine targets on all three runners (540,000 runs, zero
+failures). This updates evidence freshness only; it does not close any of the
+three open 1.0 criteria.
 
 ## Blocker index
 

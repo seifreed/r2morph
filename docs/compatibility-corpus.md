@@ -592,6 +592,15 @@ runner. The raw campaign reports and hash-bound platform summary are
 This closes the declared wheel-fuzz execution matrix for these three runners;
 it does not establish cross-platform semantic parity or general resistance.
 
+Run [43331412474](https://github.com/seifreed/r2morph/actions/runs/43331412474)
+repeated the nine-target, 20,000-case installed-wheel campaign on current `main`
+commit `134af4ff`: 540,000 total target runs and zero failures across Ubuntu,
+macOS ARM64, and Windows. The reports and their hashes are retained in
+[`protection-fuzz-wheel-platform-2026-11-13-134af4ff.json`](protection-fuzz-wheel-platform-2026-11-13-134af4ff.json)
+and its three runner reports. This binds the existing fuzz scope to current
+`main`; it does not broaden that scope or establish semantic parity or
+resistance.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom
@@ -614,6 +623,23 @@ checks are
 and [`test_published_host_adversarial_shard.py`](../tests/unit/test_published_host_adversarial_shard.py).
 This adds fixture-level evidence only; it does not close all-analyzer coverage,
 the independent resistance review, or platform parity.
+
+A fourth deterministic host shard at `134af4ff` applied CodeVirtualization to
+nine more repository fixtures with zero unsupported functions, partial
+virtualizations, or pass errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn,
+radare2, objdump, and the custom analyzer completed 63/63 available runs with
+zero report error rows. angr emitted unsupported `amd64g_dirtyhelper_IN` and
+`amd64g_dirtyhelper_OUT` diagnostics, so its completed decompiler measurements
+are bounded and are not semantic-equivalence evidence. Binary Ninja was
+unavailable because its license was invalid, and Triton was unavailable
+because the module was not installed, leaving 18/81 expected analyzer runs
+unavailable. The raw output and
+hash-bound summary are
+[`protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json`](protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json)
+and
+[`protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json`](protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json).
+This adds nine fixture-level pairs; it does not complete the all-pass analyzer
+matrix or establish generalized resistance.
 
 The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core

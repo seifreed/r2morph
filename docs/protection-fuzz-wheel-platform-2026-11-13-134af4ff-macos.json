@@ -1,0 +1,23 @@
+{
+  "cases": 20000,
+  "failure_count": 0,
+  "failure_limit": 128,
+  "failures": [],
+  "max_payload": 4096,
+  "parser_diagnostic_counts": {
+    "macho_load_commands.warning": 418
+  },
+  "schema_version": 1,
+  "seed": 20261113,
+  "target_runs": {
+    "assembling": 20000,
+    "binary_parsers": 20000,
+    "binary_rewriter": 20000,
+    "elf_header_parser": 20000,
+    "macho_load_commands": 20000,
+    "pe_header_parser": 20000,
+    "relocations": 20000,
+    "vm_bytecode": 20000,
+    "vm_dispatcher": 20000
+  }
+}
