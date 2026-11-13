@@ -116,6 +116,9 @@ class OpaquePredicatePass(MutationPass):
             return 0
 
         num_predicates = min(self.max_predicates, len(basic_blocks) // 2)
+        if num_predicates == 0:
+            return 0
+
         arch_info = binary.get_arch_info()
         if str(arch_info.get("arch", "")).lower() not in {"x86", "x86_64", "amd64"}:
             logger.debug("Skipping opaque predicates: rel32 relocation is only implemented for x86")

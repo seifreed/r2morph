@@ -21,6 +21,19 @@ class _FunctionBinary:
         return [{"addr": 0x1000, "size": 32}, {"addr": 0x2000, "size": 32}]
 
 
+class _SingleBlockBinary:
+    class _R2:
+        @staticmethod
+        def cmd(_command: str) -> str:
+            return '[{"addr":4096,"size":32}]'
+
+    r2 = _R2()
+
+    @staticmethod
+    def get_arch_info() -> dict[str, str]:
+        raise AssertionError("single-block functions do not need architecture analysis")
+
+
 class _RecordingOpaquePredicatePass(OpaquePredicatePass):
     def __init__(self) -> None:
         super().__init__()
@@ -48,6 +61,14 @@ def test_opaque_predicate_apply_reuses_one_injector_across_functions():
     pass_obj.apply(_FunctionBinary())
 
     expect(len(set(pass_obj.injector_ids)) == 1)
+
+
+def test_opaque_predicate_skips_analysis_for_single_block_function():
+    pass_obj = OpaquePredicatePass()
+
+    mutations = pass_obj._insert_opaque_predicates(_SingleBlockBinary(), {"addr": 0x1000}, object())
+
+    expect(mutations == 0)
 
 
 def test_x86_opaque_predicates_require_dead_registers_and_flags():
