@@ -2071,7 +2071,7 @@ def test_evidence_workflow_artifacts_are_rerun_safe() -> None:
 def test_differential_workflow_keeps_main_campaigns_running() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
 
-    expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: true" in workflow)
+    expect("group: differential-corpus-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
 
 
 def test_differential_platform_validators_use_named_evidence_not_exact_counts() -> None:
