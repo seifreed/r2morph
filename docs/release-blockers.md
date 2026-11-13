@@ -516,6 +516,16 @@ It completed the same nine targets on all three runners (540,000 runs, zero
 failures). This updates evidence freshness only; it does not close any of the
 three open 1.0 criteria.
 
+Commit `03984513` adds deterministic fuzzing of the VM instruction decoder. A
+local Python 3.13.11 run covered ten targets with 5,000 cases each (50,000
+target runs, zero failures). Its raw output and hash-bound summary are
+[protection-fuzz-vm-decoder-2026-11-14-03984513-output.json](protection-fuzz-vm-decoder-2026-11-14-03984513-output.json)
+and
+[protection-fuzz-vm-decoder-2026-11-14-03984513.json](protection-fuzz-vm-decoder-2026-11-14-03984513.json).
+This is local source-tree evidence; the three-platform workflow for the commit
+is still pending. It expands decoder coverage but does not establish semantic
+equivalence, platform parity, or general resistance.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

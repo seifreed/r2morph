@@ -74,7 +74,7 @@ _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
-_CURRENT_FUZZ_REPORT = "protection-fuzz-format-aware-2026-11-11-95cff0fb.json"
+_CURRENT_FUZZ_REPORT = "protection-fuzz-vm-decoder-2026-11-14-03984513.json"
 _CURRENT_PUBLIC_CORPUS_REPORT = "protection-public-corpus-2026-11-11-43064188826.json"
 _CURRENT_HOST_SHARD_REPORT = "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-59898697.json"
@@ -639,7 +639,7 @@ def _review_fp_regression(root: Path) -> dict[str, object]:
 
 
 def _review_fuzz_artifact(root: Path) -> dict[str, object]:
-    """Validate the bounded campaign recorded for all nine fuzz targets."""
+    """Validate the bounded campaign recorded for all ten fuzz targets."""
     path = root / "docs" / _CURRENT_FUZZ_REPORT
     document = json.loads(path.read_text(encoding="utf-8"))
     cases = document.get("cases")
@@ -652,6 +652,7 @@ def _review_fuzz_artifact(root: Path) -> dict[str, object]:
         "macho_load_commands",
         "vm_dispatcher",
         "vm_bytecode",
+        "vm_instruction_decoder",
         "relocations",
         "binary_rewriter",
     }

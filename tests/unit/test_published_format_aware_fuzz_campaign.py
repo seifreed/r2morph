@@ -16,6 +16,8 @@ _WHEEL_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-2026-11-12-8d6ceb6a.json
 _WHEEL_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-2026-11-12-8d6ceb6a-output.json"
 _PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-12-df55c7a6.json"
 _CURRENT_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-13-134af4ff.json"
+_VM_DECODER_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513.json"
+_VM_DECODER_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513-output.json"
 _CURRENT_PLATFORM_RUN = 43_331_412_474
 _PLATFORM_RUNNERS = {"ubuntu-latest", "macos-15", "windows-latest"}
 _PLATFORM_WORKFLOW_RUN = 43_160_969_902
@@ -36,6 +38,9 @@ _EXPECTED_TARGETS = {
     "relocations",
     "binary_rewriter",
 }
+_VM_DECODER_TARGETS = _EXPECTED_TARGETS | {"vm_instruction_decoder"}
+_VM_DECODER_CASES = 5_000
+_VM_DECODER_COMMIT = "03984513ad24062d6767682afff957828489f023"
 
 
 def test_published_fuzz_campaign_covers_each_format_target() -> None:
@@ -244,3 +249,33 @@ def test_latest_platform_fuzz_campaign_does_not_expose_host_paths() -> None:
     )
 
     expect(not any(prefix in "".join(reports) for prefix in _HOST_PATH_PREFIXES))
+
+
+def test_vm_decoder_campaign_binds_summary_to_raw_report() -> None:
+    report = json.loads(_VM_DECODER_REPORT.read_text(encoding="utf-8"))
+    raw_hash = hashlib.sha256(_VM_DECODER_RAW_REPORT.read_bytes()).hexdigest()
+
+    expect(
+        report["commit"] == _VM_DECODER_COMMIT
+        and report["provenance"] == "local-source-tree"
+        and report["campaign_report_sha256"] == raw_hash
+    )
+
+
+def test_vm_decoder_campaign_covers_every_target_without_failures() -> None:
+    report = json.loads(_VM_DECODER_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["status"] == "passed"
+        and report["failure_count"] == 0
+        and report["cases"] == _VM_DECODER_CASES
+        and set(report["target_runs"]) == _VM_DECODER_TARGETS
+        and all(report["target_runs"][target] == _VM_DECODER_CASES for target in _VM_DECODER_TARGETS)
+        and report["total_target_runs"] == _VM_DECODER_CASES * len(_VM_DECODER_TARGETS)
+    )
+
+
+def test_vm_decoder_campaign_does_not_expose_host_paths() -> None:
+    report = _VM_DECODER_REPORT.read_text(encoding="utf-8") + _VM_DECODER_RAW_REPORT.read_text(encoding="utf-8")
+
+    expect(not any(prefix in report for prefix in _HOST_PATH_PREFIXES))

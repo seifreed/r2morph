@@ -1,0 +1,34 @@
+{
+  "campaign_report_sha256": "9060fec5fe86906580d7cd9ca2913ebed8c70d39c5f0f6397e846fb2e86d09ab",
+  "cases": 5000,
+  "commit": "03984513ad24062d6767682afff957828489f023",
+  "failure_count": 0,
+  "generated_at": "2026-11-14",
+  "max_payload": 4096,
+  "measurement": "continuous-fuzzing",
+  "parser_diagnostic_counts": {
+    "macho_load_commands.warning": 110
+  },
+  "provenance": "local-source-tree",
+  "runtime": {
+    "os": "macOS-arm64",
+    "package_source": "editable-source-tree",
+    "python": "3.13.11"
+  },
+  "schema_version": 1,
+  "seed": 20261113,
+  "status": "passed",
+  "target_runs": {
+    "assembling": 5000,
+    "binary_parsers": 5000,
+    "binary_rewriter": 5000,
+    "elf_header_parser": 5000,
+    "macho_load_commands": 5000,
+    "pe_header_parser": 5000,
+    "relocations": 5000,
+    "vm_bytecode": 5000,
+    "vm_dispatcher": 5000,
+    "vm_instruction_decoder": 5000
+  },
+  "total_target_runs": 50000
+}

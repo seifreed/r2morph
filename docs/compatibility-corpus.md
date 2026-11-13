@@ -636,6 +636,16 @@ and its three runner reports. This binds the existing fuzz scope to current
 `main`; it does not broaden that scope or establish semantic parity or
 resistance.
 
+Commit `03984513` adds a separate `vm_instruction_decoder` target. The local
+Python 3.13.11 source-tree run completed 5,000 cases on each of ten fuzz targets
+(50,000 target runs, zero failures); the raw report and hash-bound summary are
+[`protection-fuzz-vm-decoder-2026-11-14-03984513-output.json`](protection-fuzz-vm-decoder-2026-11-14-03984513-output.json)
+and
+[`protection-fuzz-vm-decoder-2026-11-14-03984513.json`](protection-fuzz-vm-decoder-2026-11-14-03984513.json).
+This expands decoder coverage only. The three-platform wheel workflow is still
+pending, and this report does not establish semantic equivalence, platform
+parity, or general resistance.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom
