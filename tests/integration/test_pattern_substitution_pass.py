@@ -99,6 +99,20 @@ def test_pattern_substitution_rejects_flag_incompatible_replacement() -> None:
     expect(not mutation_pass._preserves_flags(original, replacement))
 
 
+def test_pattern_substitution_uses_preassembled_raw_bytes(deterministic_pattern_subst_elf):
+    junk = Instruction(
+        mnemonic="db",
+        bytes="9090c3",
+        type="db",
+        opcode="; junk code (3 bytes)",
+    )
+
+    with Binary(deterministic_pattern_subst_elf) as binary:
+        assembled = PatternSubstitutionPass()._assemble_replacement(binary, 0, [junk])
+
+    expect(assembled == bytes.fromhex("9090c3"))
+
+
 def test_pattern_substitution_produces_valid_size_reducing_mutations(
     deterministic_pattern_subst_elf,
 ):

@@ -204,12 +204,19 @@ class PatternSubstitutionPass(MutationPass):
         """Assemble a generated instruction sequence to bytes, or None on failure."""
         all_bytes = b""
         for ins in replacement:
-            asm = ins.opcode.strip()
-            if not asm:
-                return None
-            inst_bytes = binary.assemble(asm, func_addr)
+            if ins.type == "db":
+                try:
+                    inst_bytes = bytes.fromhex(ins.bytes) if isinstance(ins.bytes, str) else ins.bytes
+                except ValueError:
+                    logger.debug("Skipping invalid raw-byte replacement")
+                    return None
+            else:
+                asm = ins.opcode.strip()
+                if not asm:
+                    return None
+                inst_bytes = binary.assemble(asm, func_addr)
             if not inst_bytes:
-                logger.debug(f"Failed to assemble replacement part: {asm}")
+                logger.debug("Failed to assemble replacement part: %s", getattr(ins, "opcode", ""))
                 return None
             all_bytes += inst_bytes
         return all_bytes
