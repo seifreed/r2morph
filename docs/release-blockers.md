@@ -90,6 +90,13 @@ successful run.
   [protection-platform-preview-run-2026-11-13-c45eb58e.json](protection-platform-preview-run-2026-11-13-c45eb58e.json).
   At this update, the workflow aggregate and its differential corpus jobs are
   still running; these reports therefore remain bounded preview evidence.
+  Run [`43390828239`](https://github.com/seifreed/r2morph/actions/runs/43390828239)
+  later completed 85/85 jobs on `acfc0995`: 22 passes had 23,892 classified
+  core/extended runs with zero errors or semantic failures; public compatibility
+  passed 360 samples, and VM parity passed 1,005 fixtures. All five platform
+  previews passed 73 cases, but explicitly make no parity claim. The maturity
+  evidence still contains 22 decompiler blockers. See the hash-bound
+  [run report](protection-differential-run-2026-11-13-43390828239.json).
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,

@@ -1,0 +1,153 @@
+{
+  "commit": "acfc0995825d2fe5fdbcd56d7763508a4512f596",
+  "differential": {
+    "core_applied_runs": 3565,
+    "core_classified_runs": 10860,
+    "core_error_runs": 0,
+    "core_failed_seed_runs": 0,
+    "core_omitted_runs": 7295,
+    "core_pass_count": 10,
+    "core_semantic_success_percent": 100.0,
+    "extended_applied_runs": 3374,
+    "extended_classified_runs": 13032,
+    "extended_error_runs": 0,
+    "extended_failed_seed_runs": 0,
+    "extended_omitted_runs": 9658,
+    "extended_pass_count": 12,
+    "extended_semantic_success_percent": 100.0,
+    "maturity_composition_cases": 2208,
+    "maturity_composition_failures": 0,
+    "maturity_decompiler_blockers": 22
+  },
+  "limitations": [
+    "Core and extended campaigns cover repository fixtures on Linux ELF x86-64; omitted runs are not successful transformations.",
+    "Five platform reports provide bounded preview cases only and do not establish cross-platform parity.",
+    "The maturity aggregate retains 22 decompiler evidence blockers; this run does not establish complete analyzer coverage or generalized resistance.",
+    "Workflow artifacts are retained by GitHub until 2027-02-11 and their file and archive hashes are recorded below."
+  ],
+  "measurement": "published-differential-and-preview-compatibility-run",
+  "platform_preview": {
+    "case_count": 73,
+    "complete_platforms": 5,
+    "error_count": 0,
+    "failure_count": 0,
+    "parity_claim": false,
+    "platform_count": 5,
+    "skipped_count": 0,
+    "status": "complete"
+  },
+  "public_compatibility": {
+    "differential_failed_samples": 0,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "sample_count": 360,
+    "shard_count": 4,
+    "static_recovery_failed_samples": 0,
+    "static_recovery_measurements": 2160,
+    "status": "passed"
+  },
+  "schema_version": 1,
+  "source_artifacts": [
+    {
+      "artifact_id": 14026235210,
+      "artifact_name": "differential-corpus-merged-43390828239-1",
+      "artifact_sha256": "4143f7b769f33e427e353243c233ddb63b248be33deef813d9e5c4eebb0a7f77",
+      "size_bytes": 17546450,
+      "files": [
+        {
+          "file": "differential-corpus-merged.json",
+          "sha256": "2ffcc664f77dc91eb72db67548c994cf015cacddc5df4c139636b73d9e2f25ac",
+          "size_bytes": 187926758
+        },
+        {
+          "file": "extended-maturity-merged.json",
+          "sha256": "91ee72fa8359721318d731ab147104ed829e3e40c03523867bdc42ab7ae2af24",
+          "size_bytes": 225523363
+        },
+        {
+          "file": "maturity-evidence-merged.json",
+          "sha256": "ad6389b3c068997f1974e162b62e47ff026dfbb0a6c6ab187cc001589d24cd83",
+          "size_bytes": 135977
+        },
+        {
+          "file": "public-compatibility-merged.json",
+          "sha256": "5d72b7531ce6a153bf072c7a12ec3442bb0cca579b28fc4169ce6bb545f733ff",
+          "size_bytes": 21911478
+        },
+        {
+          "file": "vm-semantic-contracts-merged.json",
+          "sha256": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75",
+          "size_bytes": 2088
+        }
+      ]
+    },
+    {
+      "artifact_id": 14023165793,
+      "artifact_name": "differential-platform-aggregate-43390828239-1",
+      "artifact_sha256": "7482c52e0861009232653c1ecea46c77c69eccafb43dc27245938010091eb0ff",
+      "size_bytes": 4947,
+      "files": [
+        {
+          "file": "platform-evidence-summary.json",
+          "sha256": "15407205577995d6f32809013b05e3fbfaaa8361738e03681fc325f46a997f94",
+          "size_bytes": 13087
+        }
+      ]
+    },
+    {
+      "artifact_id": 14024344240,
+      "artifact_name": "public-compatibility-corpus-aggregate-43390828239-1",
+      "artifact_sha256": "10a2e1593357b9e40e111865df24877bd0eea457e190b10775c623660266d621",
+      "size_bytes": 379,
+      "files": [
+        {
+          "file": "public-compatibility-aggregate.json",
+          "sha256": "4a799724c07a634100bf97affbd68e8151031546eabf19ab413860d23160a849",
+          "size_bytes": 335
+        }
+      ]
+    },
+    {
+      "artifact_id": 14023241281,
+      "artifact_name": "vm-semantic-campaign-merged-43390828239-1",
+      "artifact_sha256": "55f08d348f1c299afc4fce1a0f2692bd5ddd36d660f93e2d9f2c00f8316ba702",
+      "size_bytes": 114187,
+      "files": [
+        {
+          "file": "vm-semantic-campaign-merged.json",
+          "sha256": "067605ca7a31e78c7061663e3608c78576061246bbba5bb872d885314cb3a040",
+          "size_bytes": 2373413
+        }
+      ]
+    }
+  ],
+  "vm_semantic": {
+    "failed_count": 0,
+    "fixture_count": 1005,
+    "passed_count": 1005,
+    "qemu_completed_pairs": 1005,
+    "qemu_divergent_pairs": 0,
+    "qemu_missing_pairs": 0,
+    "qemu_unavailable_pairs": 0,
+    "seed_count": 3,
+    "status": "passed",
+    "target": {
+      "architecture": "x86-64",
+      "format": "ELF",
+      "os": "linux"
+    }
+  },
+  "workflow_jobs": {
+    "completed": 85,
+    "failed": 0,
+    "successful": 85
+  },
+  "workflow_run": 43390828239,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43390828239"
+}
