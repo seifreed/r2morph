@@ -1,0 +1,156 @@
+{
+  "analyzer_summary": {
+    "completed_tool_runs": 1386,
+    "completed_tool_runs_by_tool": {
+      "angr": 198,
+      "custom": 198,
+      "ghidra": 198,
+      "ida-pro": 198,
+      "objdump": 198,
+      "radare2": 198,
+      "unicorn": 198
+    },
+    "error_tool_runs": 0,
+    "expected_tool_runs": 1782,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 198
+      },
+      "triton": {
+        "module 'triton' is unavailable": 198
+      }
+    },
+    "unavailable_tool_runs": 396,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 198,
+      "triton": 198
+    }
+  },
+  "applied_pass_runs": 17,
+  "error_pass_runs": 0,
+  "execution_context": {
+    "ghidra": "12.2",
+    "ida_pro": "9.5",
+    "keystone": "available",
+    "platform": "macOS arm64",
+    "python": "3.13.11",
+    "radare2": "6.2.6"
+  },
+  "fixture_shard": {
+    "count": 16,
+    "index": 13
+  },
+  "generated_at": "2026-11-13",
+  "measurement": "host-adversarial-all-passes-shard",
+  "observed_log_diagnostics": {
+    "angr_calling_convention": "Some generated/fixture functions had no inferred calling convention.",
+    "angr_unsupported_dirty_helpers": [
+      "amd64g_dirtyhelper_IN",
+      "amd64g_dirtyhelper_OUT"
+    ]
+  },
+  "omitted_pass_runs": 0,
+  "pass_names": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "ConstantUnfolding",
+    "ControlFlowFlattening",
+    "DeadCodeInjection",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "PatternSubstitution",
+    "RegisterSubstitution",
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation"
+  ],
+  "pass_status_counts": {
+    "APIHashing": {
+      "no-op": 9
+    },
+    "AntiDisassembly": {
+      "no-op": 9
+    },
+    "BlockReordering": {
+      "no-op": 9
+    },
+    "CodeMobility": {
+      "no-op": 9
+    },
+    "CodeVirtualization": {
+      "applied": 9
+    },
+    "ConstantUnfolding": {
+      "applied": 2,
+      "no-op": 7
+    },
+    "ControlFlowFlattening": {
+      "no-op": 9
+    },
+    "DataFlowMutation": {
+      "no-op": 9
+    },
+    "DeadCodeInjection": {
+      "no-op": 9
+    },
+    "FunctionOutlining": {
+      "no-op": 9
+    },
+    "ImportObfuscation": {
+      "no-op": 9
+    },
+    "InstructionExpansion": {
+      "no-op": 9
+    },
+    "InstructionSubstitution": {
+      "applied": 2,
+      "no-op": 7
+    },
+    "NopInsertion": {
+      "no-op": 9
+    },
+    "OpaquePredicates": {
+      "no-op": 9
+    },
+    "PatternSubstitution": {
+      "applied": 2,
+      "no-op": 7
+    },
+    "PolymorphicEngine": {
+      "applied": 2,
+      "no-op": 7
+    },
+    "RegisterSubstitution": {
+      "no-op": 9
+    },
+    "SelfModifyingCode": {
+      "no-op": 9
+    },
+    "ShortJumpPatching": {
+      "no-op": 9
+    },
+    "StackStrings": {
+      "no-op": 9
+    },
+    "StringObfuscation": {
+      "no-op": 9
+    }
+  },
+  "provenance": "local-host-installed-analysis-tools",
+  "sample_count": 9,
+  "schema_version": 1,
+  "source_commit": "24b306eee35a2ca4b0a03703a9960f3476f12294",
+  "source_report": "protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json",
+  "source_report_sha256": "17075463bff27af38868face7caa606daede8206b6bf0f5a4a735fb64a343a88",
+  "status": "bounded-evidence"
+}

@@ -110,6 +110,27 @@ def test_readiness_tracks_current_host_shard_without_closing_open_criteria() -> 
     )
 
 
+def test_readiness_tracks_current_all_pass_host_shard_without_closing_open_criteria() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    criteria = readiness["criteria"]
+    reports = (
+        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json",
+        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json",
+    )
+
+    expect(
+        all(
+            report in criteria[criterion]["evidence"]
+            for report in reports
+            for criterion in ("all_named_adversarial_analyzers", "published_resistance_results")
+        )
+        and criteria["all_named_adversarial_analyzers"]["status"] == "open"
+        and criteria["published_resistance_results"]["status"] == "open"
+        and set(readiness["blocking_criteria"])
+        == {"all_named_adversarial_analyzers", "cross_platform_parity", "published_resistance_results"}
+    )
+
+
 def test_readiness_publishes_correctness_and_cost_for_all_declared_passes() -> None:
     readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
     core_path = _ROOT / "docs" / "protection-differential-2026-11-11-019a0551.json"

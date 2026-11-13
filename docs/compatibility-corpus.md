@@ -641,6 +641,20 @@ and
 This adds nine fixture-level pairs; it does not complete the all-pass analyzer
 matrix or establish generalized resistance.
 
+The follow-up at current `main` commit `24b306ee` ran all 22 declared passes
+over the same nine-fixture shard. It recorded 198 pass rows: 17 applied, 181
+no-op, zero omissions, and zero pass errors. The seven available analyzers each
+completed all 198 rows (1,386/1,782 runs); Binary Ninja and Triton were
+unavailable for 198 rows each. angr emitted unsupported `amd64g_dirtyhelper_IN`
+and `amd64g_dirtyhelper_OUT` diagnostics and could not infer some calling
+conventions, limiting its decompiler measurements. The report and hash-bound
+summary are
+[`protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json`](protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json`](protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json).
+This is one 9-fixture shard, not the full 362-sample matrix or generalized
+resistance evidence.
+
 The differential workflow at `019a0551` also completed its full 85-job
 aggregate. Across the declared Linux ELF x86-64 corpus, it recorded 10/10 core
 passes over 10,860 seeded runs, 3,565 applied transformations, zero errors,

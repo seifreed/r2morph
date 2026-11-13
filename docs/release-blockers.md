@@ -313,6 +313,18 @@ successful run.
   [protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json](protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json).
   This adds one pass-by-fixture slice and does not resolve the full matrix or
   resistance gap.
+  A subsequent current-main run applied all 22 declared pass names to the same
+  nine fixtures: 17 applied rows, 181 no-op rows, zero omissions, and zero
+  pass errors. IDA Pro, Ghidra, angr, Unicorn, radare2, objdump, and the custom
+  analyzer completed all 198 rows each. Binary Ninja and Triton were
+  unavailable, leaving 396/1,782 expected analyzer runs incomplete. angr also
+  emitted unsupported-dirty-helper and calling-convention diagnostics. The
+  hash-bound reports are
+  [protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json](protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json)
+  and
+  [protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json](protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json).
+  This is a single fixture shard and does not close the all-sample analyzer
+  matrix or establish general resistance.
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
 
