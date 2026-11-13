@@ -39,6 +39,7 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
             "macho_load_commands": 1,
             "vm_dispatcher": 1,
             "vm_bytecode": 1,
+            "vm_instruction_decoder": 1,
             "relocations": 1,
             "binary_rewriter": 1,
         }

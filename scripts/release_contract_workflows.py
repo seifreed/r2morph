@@ -309,6 +309,7 @@ def _check_corpus_workflows() -> None:
         "differential-fuzz-smoke.json",
         "binary_parsers",
         "vm_dispatcher",
+        "vm_instruction_decoder",
         "relocations",
         "binary_rewriter",
         "Upload differential fuzz smoke",

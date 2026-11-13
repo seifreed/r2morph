@@ -504,6 +504,7 @@ jobs:
               "macho_load_commands": 64,
               "vm_dispatcher": 64,
               "vm_bytecode": 64,
+              "vm_instruction_decoder": 64,
               "relocations": 64,
               "binary_rewriter": 64,
           }
@@ -1286,6 +1287,7 @@ jobs:
               "macho_load_commands": 64,
               "vm_dispatcher": 64,
               "vm_bytecode": 64,
+              "vm_instruction_decoder": 64,
               "relocations": 64,
               "binary_rewriter": 64,
           }

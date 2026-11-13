@@ -23,8 +23,17 @@ from r2morph.devirtualization.binary_rewriter_planning import (
     validate_patches,
 )
 from r2morph.mutations.code_virtualization_dispatch import bytecode_position_mask, decode_block
+from r2morph.mutations.code_virtualization_engine import decode_instruction
 from r2morph.mutations.code_virtualization_engine_codegen import _interpreter_asm
-from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
+from r2morph.mutations.code_virtualization_engine_common import (
+    GP_REGISTERS,
+    REGISTER32_INDEX,
+    REGISTER_INDEX,
+    RSP_INDEX,
+    SUPPORTED_MNEMONICS,
+    build_vm_scheme,
+    immediate_fits_width,
+)
 from r2morph.mutations.code_virtualization_engine_encoder import encode_bytecode
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedOp
 from r2morph.platform.elf_handler_parsing import parse_elf_header
@@ -48,6 +57,14 @@ _VM_INTERPRETER_SAMPLE_INTERVAL = 128
 _VM_INTERPRETER_ADDRESS = 0x401000
 _VM_BYTECODE_BASE = 0x402000
 _VM_BYTECODE_MAX_SIZE = 4096
+_VM_DECODER_CASE_COUNT = 4
+_VM_DECODER_MNEMONICS = tuple(sorted(SUPPORTED_MNEMONICS))
+_VM_DECODER_REGISTERS = tuple(
+    (name, index, width)
+    for registers, width in ((REGISTER_INDEX, 64), (REGISTER32_INDEX, 32))
+    for name, index in registers.items()
+    if index != RSP_INDEX
+)
 _FUZZ_TARGETS = (
     "assembling",
     "binary_parsers",
@@ -56,6 +73,7 @@ _FUZZ_TARGETS = (
     "macho_load_commands",
     "vm_dispatcher",
     "vm_bytecode",
+    "vm_instruction_decoder",
     "relocations",
     "binary_rewriter",
 )
@@ -199,6 +217,43 @@ def _vm_bytecode_case(seed: int, index: int) -> None:
             raise AssertionError("generated VM interpreter did not assemble")
 
 
+def _vm_instruction_decoder_case(seed: int, index: int, payload: bytes) -> None:
+    case_kind = _bounded_value(seed, index, 43, _VM_DECODER_CASE_COUNT - 1)
+    mnemonic = _VM_DECODER_MNEMONICS[_bounded_value(seed, index, 44, len(_VM_DECODER_MNEMONICS) - 1)]
+    dst_name, _, width = _VM_DECODER_REGISTERS[_bounded_value(seed, index, 45, len(_VM_DECODER_REGISTERS) - 1)]
+    same_width_registers = tuple(register for register in _VM_DECODER_REGISTERS if register[2] == width)
+    src_name, _, _ = same_width_registers[_bounded_value(seed, index, 46, len(same_width_registers) - 1)]
+    immediate = _bounded_value(seed, index, 47, 0x7FFFFFFF)
+    malformed_cases = (
+        f"{mnemonic} rsp, {src_name}",
+        f"{mnemonic} {dst_name}, [{src_name}]",
+        f"{mnemonic} {dst_name}, {src_name}, {src_name}",
+        f"{mnemonic} {dst_name}, {1 << 128}",
+    )
+    candidates = (
+        payload.decode("utf-8", errors="replace"),
+        f"{mnemonic} {dst_name}, {immediate}",
+        f"{mnemonic} {dst_name}, {src_name}",
+        malformed_cases[_bounded_value(seed, index, 48, len(malformed_cases) - 1)],
+    )
+    operation = decode_instruction(candidates[case_kind])
+    if operation is None:
+        return
+    if (
+        operation.mnemonic not in SUPPORTED_MNEMONICS
+        or operation.dst_index < 0
+        or operation.dst_index >= len(GP_REGISTERS)
+        or operation.dst_index == RSP_INDEX
+        or operation.width not in (32, 64)
+    ):
+        raise AssertionError("VM instruction decoder returned an invalid operation header")
+    if operation.is_immediate:
+        if not immediate_fits_width(operation.value, operation.width):
+            raise AssertionError("VM instruction decoder returned an out-of-range immediate")
+    elif operation.value < 0 or operation.value >= len(GP_REGISTERS) or operation.value == RSP_INDEX:
+        raise AssertionError("VM instruction decoder returned an invalid source register")
+
+
 def _relocation_case(seed: int, index: int) -> None:
     old_address = _bounded_value(seed, index, 25, 0xFFFFF) + _MIN_PATCH_ADDRESS
     new_address = _bounded_value(seed, index, 26, 0xFFFFF) + 0x200000
@@ -292,6 +347,7 @@ def _case_targets(
         ),
         ("vm_dispatcher", lambda: _dispatcher_case(seed, index)),
         ("vm_bytecode", lambda: _vm_bytecode_case(seed, index)),
+        ("vm_instruction_decoder", lambda: _vm_instruction_decoder_case(seed, index, payload)),
         ("relocations", lambda: _relocation_case(seed, index)),
         ("binary_rewriter", lambda: _rewrite_case(seed, index)),
     )

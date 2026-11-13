@@ -107,6 +107,7 @@ jobs:
               "macho_load_commands": cases,
               "vm_dispatcher": cases,
               "vm_bytecode": cases,
+              "vm_instruction_decoder": cases,
               "relocations": cases,
               "binary_rewriter": cases,
           }

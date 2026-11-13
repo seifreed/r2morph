@@ -1546,6 +1546,7 @@ def test_differential_aggregate_requires_every_format_parser_fuzz_target() -> No
                 "macho_load_commands",
                 "vm_dispatcher",
                 "vm_bytecode",
+                "vm_instruction_decoder",
                 "relocations",
                 "binary_rewriter",
             )
@@ -1708,6 +1709,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "macho_load_commands" in differential
         and "vm_dispatcher" in differential
         and "vm_bytecode" in differential
+        and "vm_instruction_decoder" in differential
         and "relocations" in differential
         and "binary_rewriter" in differential
         and "Upload differential fuzz smoke" in differential
