@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "source_commit": "6fd356091da722d95dbc0f51463629cb10ce41ed",
+  "workflow_run": 43413931661,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43413931661",
+  "platform_reports": {
+    "macos_arm64": {
+      "platform": "macOS ARM64",
+      "target": "native wheel-installed cross-format and mutation smoke",
+      "job_id": 131869810637,
+      "artifact_id": 14034306933,
+      "artifact_name": "cross-platform-differential-macos-arm64-43413931661-1",
+      "report": "protection-platform-macos-arm64-2026-11-13-6fd35609.xml",
+      "sha256": "6554bd0a20e4296199dcbc4fb2631d7bcdfc60e59bed180beb0512c2dc704b99",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows_pe": {
+      "platform": "Windows x86_64",
+      "target": "native wheel-installed PE mutation smoke",
+      "job_id": 131869810946,
+      "artifact_id": 14034735263,
+      "artifact_name": "cross-platform-differential-windows-pe-43413931661-1",
+      "report": "protection-platform-windows-pe-2026-11-13-6fd35609.xml",
+      "sha256": "8f7827c338fa31b38e00882b7ae8a7b47d0924dc7021aa1da0062cc5229c3f55",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "totals": {
+    "tests": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "scope": "Two native preview suites on the current main wheel: macOS ARM64 and Windows PE. This is not full platform parity or the five-platform preview aggregate."
+}

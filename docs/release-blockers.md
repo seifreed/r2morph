@@ -97,6 +97,13 @@ successful run.
   previews passed 73 cases, but explicitly make no parity claim. The maturity
   evidence still contains 22 decompiler blockers. See the hash-bound
   [run report](protection-differential-run-2026-11-13-43390828239.json).
+  On current `main` (`6fd35609`), run `43413931661` also completed the native
+  wheel-installed macOS ARM64 and Windows PE preview suites: 35 and 17 cases,
+  respectively, with zero failures, errors, or skips. Their raw JUnit files and
+  hashes are recorded in
+  [protection-platform-native-preview-run-2026-11-13-43413931661.json](protection-platform-native-preview-run-2026-11-13-43413931661.json).
+  This refreshes two platform slices on current `main`; it does not provide the
+  full five-platform aggregate or close cross-platform parity.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,
