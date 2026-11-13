@@ -85,7 +85,16 @@
         "docs/protection-platform-elf-x86-32-2026-11-13-c45eb58e.xml",
         "docs/protection-platform-native-preview-run-2026-11-13-43413931661.json",
         "docs/protection-platform-macos-arm64-2026-11-13-6fd35609.xml",
-        "docs/protection-platform-windows-pe-2026-11-13-6fd35609.xml"
+        "docs/protection-platform-windows-pe-2026-11-13-6fd35609.xml",
+        "docs/protection-differential-run-2026-11-13-43498875302.json",
+        "docs/protection-platform-evidence-2026-11-13-43498875302.json",
+        "docs/protection-public-compatibility-2026-11-13-43498875302.json",
+        "docs/protection-vm-semantic-2026-11-13-43498875302.json",
+        "docs/protection-platform-elf-arm-32-2026-11-13-43498875302.xml",
+        "docs/protection-platform-elf-arm64-2026-11-13-43498875302.xml",
+        "docs/protection-platform-elf-x86-32-2026-11-13-43498875302.xml",
+        "docs/protection-platform-macos-arm64-2026-11-13-43498875302.xml",
+        "docs/protection-platform-windows-pe-2026-11-13-43498875302.xml"
       ]
     },
     "documented_resistance_scope": {
@@ -107,7 +116,8 @@
         "docs/protection-differential-run-2026-11-12-43225790149.json",
         "docs/protection-differential-run-2026-11-13-43390828239.json",
         "docs/protection-public-compatibility-2026-11-12-43225790149.json",
-        "docs/protection-vm-semantic-2026-11-12-43225790149.json"
+        "docs/protection-vm-semantic-2026-11-12-43225790149.json",
+        "docs/protection-differential-run-2026-11-13-43498875302.json"
       ]
     },
     "published_correctness_results": {
@@ -122,7 +132,16 @@
         "docs/protection-differential-run-2026-11-12-43225790149.json",
         "docs/protection-differential-run-2026-11-13-43390828239.json",
         "docs/protection-public-compatibility-2026-11-12-43225790149.json",
-        "docs/protection-vm-semantic-2026-11-12-43225790149.json"
+        "docs/protection-vm-semantic-2026-11-12-43225790149.json",
+        "docs/protection-differential-run-2026-11-13-43498875302.json",
+        "docs/protection-platform-evidence-2026-11-13-43498875302.json",
+        "docs/protection-public-compatibility-2026-11-13-43498875302.json",
+        "docs/protection-vm-semantic-2026-11-13-43498875302.json",
+        "docs/protection-platform-elf-arm-32-2026-11-13-43498875302.xml",
+        "docs/protection-platform-elf-arm64-2026-11-13-43498875302.xml",
+        "docs/protection-platform-elf-x86-32-2026-11-13-43498875302.xml",
+        "docs/protection-platform-macos-arm64-2026-11-13-43498875302.xml",
+        "docs/protection-platform-windows-pe-2026-11-13-43498875302.xml"
       ]
     },
     "published_resistance_results": {

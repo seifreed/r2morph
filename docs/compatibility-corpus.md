@@ -54,6 +54,20 @@ per-job totals are retained in
 This records only those five bounded preview jobs, not the workflow-wide
 differential aggregate or full platform parity.
 
+The successful workflow run [`43498875302`](https://github.com/seifreed/r2morph/actions/runs/43498875302)
+on commit `b012cd0a` refreshed the full bounded campaign: the 10-pass core
+recorded 10,860 classified runs and the 12-pass extended campaign recorded
+13,032, both with 100% semantic success and zero failed seeds or errors. The
+separate VM campaign passed 1,005/1,005 fixtures with 1,005 matching QEMU pairs.
+The public corpus passed 360 samples over four shards and 2,160 static-recovery
+measurements with no failures. Five preview platforms completed 73 cases with
+no failures, errors, skips, or missing required cases. The hash-bound summary,
+retained reports, and JUnit files are
+[`protection-differential-run-2026-11-13-43498875302.json`](protection-differential-run-2026-11-13-43498875302.json).
+The preview remains bounded and does not establish full platform parity. The
+run still records 22 decompiler evidence blockers, and these correctness results
+do not establish general resistance.
+
 The Windows job now builds 32-bit PEs with MinGW and runs them under native
 Windows or Wine. Local 2026-11-12 regressions passed for NOP insertion, the
 four individual instruction, register, expansion, and constant-unfolding

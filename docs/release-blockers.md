@@ -97,6 +97,13 @@ successful run.
   previews passed 73 cases, but explicitly make no parity claim. The maturity
   evidence still contains 22 decompiler blockers. See the hash-bound
   [run report](protection-differential-run-2026-11-13-43390828239.json).
+  A subsequent full workflow run [`43498875302`](https://github.com/seifreed/r2morph/actions/runs/43498875302)
+  on `b012cd0a` reproduced the 23,892 core/extended classifications with zero
+  semantic failures, plus 1,005/1,005 VM fixtures, 360 public corpus samples,
+  and 73 passing cases across five preview platforms. Its retained aggregate is
+  [protection-differential-run-2026-11-13-43498875302.json](protection-differential-run-2026-11-13-43498875302.json).
+  The preview matrix leaves cross-platform parity unresolved; 22 decompiler
+  blockers remain, so platform parity and generalized resistance stay open.
   On current `main` (`6fd35609`), run `43413931661` also completed the native
   wheel-installed macOS ARM64 and Windows PE preview suites: 35 and 17 cases,
   respectively, with zero failures, errors, or skips. Their raw JUnit files and

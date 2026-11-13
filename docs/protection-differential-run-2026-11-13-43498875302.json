@@ -1,0 +1,204 @@
+{
+  "commit": "b012cd0adcc09c4d8dca0b7035bd6be7e09ab82a",
+  "differential": {
+    "core_applied_runs": 3565,
+    "core_classified_runs": 10860,
+    "core_error_runs": 0,
+    "core_failed_seed_runs": 0,
+    "core_omitted_runs": 7295,
+    "core_pass_count": 10,
+    "core_semantic_success_percent": 100.0,
+    "extended_applied_runs": 3374,
+    "extended_classified_runs": 13032,
+    "extended_error_runs": 0,
+    "extended_failed_seed_runs": 0,
+    "extended_omitted_runs": 9658,
+    "extended_pass_count": 12,
+    "extended_semantic_success_percent": 100.0,
+    "maturity_composition_cases": 2208,
+    "maturity_composition_errors": 0,
+    "maturity_composition_failures": 0,
+    "maturity_decompiler_blockers": 22
+  },
+  "limitations": [
+    "Preview platform reports cover only the enumerated cases and do not establish platform parity.",
+    "Core and extended seed campaigns cover the repository and generated x86-64 corpus; they do not establish all-format support.",
+    "The run provides differential correctness and bounded VM semantic evidence, not generalized resistance to professional reverse engineering.",
+    "Twenty-two maturity decompiler blockers remain in the analyzer evidence."
+  ],
+  "measurement": "published-differential-and-preview-compatibility-run",
+  "platform_preview": {
+    "case_count": 73,
+    "complete_platforms": 5,
+    "error_count": 0,
+    "failure_count": 0,
+    "parity_claim": false,
+    "platform_count": 5,
+    "platform_reports": {
+      "elf-arm-32": {
+        "errors": 0,
+        "failures": 0,
+        "file": "protection-platform-elf-arm-32-2026-11-13-43498875302.xml",
+        "skipped": 0,
+        "tests": 6
+      },
+      "elf-arm64": {
+        "errors": 0,
+        "failures": 0,
+        "file": "protection-platform-elf-arm64-2026-11-13-43498875302.xml",
+        "skipped": 0,
+        "tests": 7
+      },
+      "elf-x86-32": {
+        "errors": 0,
+        "failures": 0,
+        "file": "protection-platform-elf-x86-32-2026-11-13-43498875302.xml",
+        "skipped": 0,
+        "tests": 8
+      },
+      "macos-arm64": {
+        "errors": 0,
+        "failures": 0,
+        "file": "protection-platform-macos-arm64-2026-11-13-43498875302.xml",
+        "skipped": 0,
+        "tests": 35
+      },
+      "windows-pe": {
+        "errors": 0,
+        "failures": 0,
+        "file": "protection-platform-windows-pe-2026-11-13-43498875302.xml",
+        "skipped": 0,
+        "tests": 17
+      }
+    },
+    "skipped_count": 0,
+    "status": "complete",
+    "summary_report": "protection-platform-evidence-2026-11-13-43498875302.json"
+  },
+  "public_compatibility": {
+    "differential_failed_samples": 0,
+    "report": "protection-public-compatibility-2026-11-13-43498875302.json",
+    "sample_count": 360,
+    "shard_count": 4,
+    "static_recovery_failed_samples": 0,
+    "static_recovery_measurements": 2160,
+    "status": "passed"
+  },
+  "schema_version": 1,
+  "source_artifacts": [
+    {
+      "artifact": "differential-corpus-merged-43498875302-1",
+      "artifact_id": 14075639212,
+      "files": [
+        {
+          "file": "differential-corpus-merged.json",
+          "sha256": "1d41059030ef33f4dbb5e5e8f235f230e70d9e76360c93da37978166bad69963",
+          "size_bytes": 187926183
+        },
+        {
+          "file": "extended-maturity-merged.json",
+          "sha256": "cb04364422deb0d71853d935e648c946ebced02623275bfffc7a17015fdd30c4",
+          "size_bytes": 225523749
+        },
+        {
+          "file": "maturity-evidence-merged.json",
+          "sha256": "bd73dcfc060afdb1ec626643dae345b3d2dddd6f2d11f17b6733f962058647b0",
+          "size_bytes": 135977
+        },
+        {
+          "file": "public-compatibility-merged.json",
+          "sha256": "bea01d221f895f983126641c4ece4d8997875071673a59272b644fe96d56764c",
+          "size_bytes": 21911521
+        },
+        {
+          "file": "vm-semantic-contracts-merged.json",
+          "sha256": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75",
+          "size_bytes": 2088
+        }
+      ]
+    },
+    {
+      "artifact": "differential-platform-aggregate-43498875302-1",
+      "artifact_id": 14074234751,
+      "files": [
+        {
+          "file": "platform-evidence-summary.json",
+          "retained_as": "protection-platform-evidence-2026-11-13-43498875302.json",
+          "sha256": "15407205577995d6f32809013b05e3fbfaaa8361738e03681fc325f46a997f94",
+          "size_bytes": 13087
+        },
+        {
+          "file": "elf-arm-32-native.xml",
+          "retained_as": "protection-platform-elf-arm-32-2026-11-13-43498875302.xml",
+          "sha256": "83f13b11149bbf74952ba0c84a4ee557d7f505965c4e7b58f131a0641a87abeb",
+          "size_bytes": 1146
+        },
+        {
+          "file": "elf-arm64-native.xml",
+          "retained_as": "protection-platform-elf-arm64-2026-11-13-43498875302.xml",
+          "sha256": "e92c0b253a663c37a709d75e93de851555ce9c0b31ffba5db3be2169510fce38",
+          "size_bytes": 1294
+        },
+        {
+          "file": "elf-x86-32-native.xml",
+          "retained_as": "protection-platform-elf-x86-32-2026-11-13-43498875302.xml",
+          "sha256": "e095cf386b2caeaa108f4c1ff6297de2d428b96c2d545601c430926a72f5dce4",
+          "size_bytes": 1440
+        },
+        {
+          "file": "cross-platform-differential.xml",
+          "retained_as": "protection-platform-macos-arm64-2026-11-13-43498875302.xml",
+          "sha256": "f331a164b7d04c94a90dba70f580ed3f024fcceb6a66b84336a4405817b8b1ec",
+          "size_bytes": 5799
+        },
+        {
+          "file": "windows-format-differential.xml",
+          "retained_as": "protection-platform-windows-pe-2026-11-13-43498875302.xml",
+          "sha256": "38ae5958adc3aeffb28161e474afaa33933957f23ceaa3efdd841ea6a2efc20d",
+          "size_bytes": 2743
+        }
+      ]
+    },
+    {
+      "artifact": "public-compatibility-corpus-aggregate-43498875302-1",
+      "artifact_id": 14074764658,
+      "files": [
+        {
+          "file": "public-compatibility-aggregate.json",
+          "retained_as": "protection-public-compatibility-2026-11-13-43498875302.json",
+          "sha256": "4a799724c07a634100bf97affbd68e8151031546eabf19ab413860d23160a849",
+          "size_bytes": 335
+        }
+      ]
+    },
+    {
+      "artifact": "vm-semantic-campaign-merged-43498875302-1",
+      "artifact_id": 14075607771,
+      "files": [
+        {
+          "file": "vm-semantic-campaign-merged.json",
+          "retained_as": "protection-vm-semantic-2026-11-13-43498875302.json",
+          "sha256": "91d2a5d986d7e2e814f6d11cd8169785b6306f58f5435241847283d753170e8f",
+          "size_bytes": 2373511
+        }
+      ]
+    }
+  ],
+  "vm_semantic": {
+    "failed_count": 0,
+    "fixture_count": 1005,
+    "passed_count": 1005,
+    "qemu_completed_pairs": 1005,
+    "qemu_divergent_pairs": 0,
+    "qemu_missing_pairs": 0,
+    "qemu_unavailable_pairs": 0,
+    "status": "passed"
+  },
+  "workflow_jobs": {
+    "completed": 85,
+    "failed": 0,
+    "successful": 85
+  },
+  "workflow_run": 43498875302,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43498875302"
+}

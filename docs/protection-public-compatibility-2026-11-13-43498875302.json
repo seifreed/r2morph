@@ -1,0 +1,16 @@
+{
+  "differential_failed_samples": 0,
+  "passes": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "RegisterSubstitution"
+  ],
+  "sample_count": 360,
+  "schema_version": 1,
+  "shards": 4,
+  "static_recovery_failed_samples": 0,
+  "status": "passed"
+}
