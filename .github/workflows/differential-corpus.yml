@@ -15,7 +15,6 @@ concurrency:
       - ".github/scripts/install_radare2.sh"
       - "docs/compatibility-corpus.md"
       - "docs/pass-maturity.md"
-      - "docs/release-blockers.md"
       - "docs/independent-review-packet.md"
       - "docs/support-matrix.json"
       - "fixtures/dataset/**"
