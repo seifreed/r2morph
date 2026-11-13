@@ -1,0 +1,235 @@
+{
+  "analyzer_summary": {
+    "completed_tool_runs": 660,
+    "completed_tool_runs_by_tool": {
+      "angr": 110,
+      "custom": 110,
+      "ida-pro": 110,
+      "objdump": 110,
+      "radare2": 110,
+      "unicorn": 110
+    },
+    "error_tool_runs": 0,
+    "expected_tool_runs": 990,
+    "missing_tool_runs": 0,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 110
+      },
+      "ghidra": {
+        "executable 'ghidra' is unavailable": 110
+      },
+      "triton": {
+        "module 'triton' is unavailable": 110
+      }
+    },
+    "unavailable_tool_runs": 330,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 110,
+      "ghidra": 110,
+      "triton": 110
+    }
+  },
+  "applied_pass_runs": 12,
+  "error_pass_runs": 0,
+  "execution_context": {
+    "angr": "10.0.6",
+    "binary_ninja": "5.4.9678-dev; license unavailable",
+    "ghidra": "unavailable",
+    "ida_pro": "9.5",
+    "keystone": "available",
+    "macos": "27.2",
+    "platform": "macOS arm64",
+    "python": "3.12.16",
+    "radare2": "6.2.6",
+    "triton": "unavailable on macOS arm64",
+    "unicorn": "2.1.4"
+  },
+  "fixture_shard": {
+    "count": 32,
+    "index": 14
+  },
+  "observed_angr_diagnostics": {
+    "calling_convention": "No calling convention was inferred for _start and one subfunction.",
+    "decompiler_control_flow": "Some return-graph analyses reported a jump at the end of a return graph.",
+    "unhooked_addresses": [
+      "0x7002ce"
+    ],
+    "unsupported_dirty_helpers": [
+      "amd64g_dirtyhelper_IN",
+      "amd64g_dirtyhelper_OUT"
+    ]
+  },
+  "omitted_pass_runs": 0,
+  "pass_names": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "ConstantUnfolding",
+    "ControlFlowFlattening",
+    "DeadCodeInjection",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "PatternSubstitution",
+    "RegisterSubstitution",
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation"
+  ],
+  "pass_status_counts": {
+    "APIHashing": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "BlockReordering": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "CodeVirtualization": {
+      "applied": 5,
+      "error": 0,
+      "no-op": 0,
+      "omitted": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 4,
+      "error": 0,
+      "no-op": 1,
+      "omitted": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 2,
+      "error": 0,
+      "no-op": 3,
+      "omitted": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "PatternSubstitution": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 1,
+      "error": 0,
+      "no-op": 4,
+      "omitted": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "error": 0,
+      "no-op": 5,
+      "omitted": 0
+    }
+  },
+  "sample_count": 5,
+  "sample_names": [
+    "elf_vm_arith32_x86_64",
+    "elf_vm_fpcmpidxnb_x86_64",
+    "elf_vm_isa_x86_64",
+    "elf_vm_not_x86_64",
+    "elf_vm_pushpop_x86_64"
+  ],
+  "schema_version": 1,
+  "scope": "One repository-fixture shard (14 of 32); generated Linux corpus excluded on this host. Analyzer metrics are bounded structural observations and do not prove semantic equivalence or general resistance.",
+  "source_commit": "acfc0995825d2fe5fdbcd56d7763508a4512f596",
+  "source_report": "protection-host-adversarial-allpasses-2026-11-13-acfc0995-shard-14-32.json",
+  "source_report_sha256": "2a662c718c6829f0615b2c636e7ce1b69ec8163b28d598efe729961492c26e61"
+}

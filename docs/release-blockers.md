@@ -359,6 +359,18 @@ successful run.
   and [summary](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json).
   It is bounded evidence and does not close the analyzer matrix or general
   resistance criterion.
+  A 32-shard host run at source `acfc0995` measured five additional ELF
+  x86-64 fixtures across all 22 passes: 12 applications, zero pass errors or
+  omissions, and 110 completed IDA Pro measurements. angr, radare2, objdump,
+  Unicorn, and the custom analyzer also completed all 110 rows each. Binary
+  Ninja was unavailable because the local license was invalid; Ghidra and
+  Triton were unavailable on the host. The run completed 660/990 analyzer
+  slots with zero tool errors and no missing rows. Its generated Linux corpus
+  was not included on macOS. See the hash-bound
+  [raw report](protection-host-adversarial-allpasses-2026-11-13-acfc0995-shard-14-32.json)
+  and [summary](protection-host-adversarial-allpasses-2026-11-13-acfc0995-shard-14-32-summary.json).
+  This fills one bounded IDA slice; all-analyzer coverage and general
+  resistance remain open.
   The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)
   did not aggregate: shard 12 hit the six-hour job timeout, leaving 15/16
   reports. The benchmark now partitions the same declared scope into 32 jobs
