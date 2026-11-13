@@ -338,6 +338,16 @@ successful run.
   matrix or establish general resistance.
   Exit criteria: complete the declared analyzer slots, resolve the 17 reported
   evidence blockers, and retain comparable results for all 22 passes.
+  A second all-pass host shard at source `2c9be637` covered 11 fixtures and
+  242 pass rows: 30 applied, 212 no-op, zero omitted, and zero failed. Seven
+  analyzers completed all rows; Binary Ninja was blocked by license
+  availability and Triton was not installed, leaving 484/2,178 expected
+  analyzer slots unavailable. angr also reported unsupported dirty helpers,
+  missing calling conventions, and unhooked addresses. See the hash-bound
+  [raw report](protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json)
+  and [summary](protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json).
+  This additional bounded shard does not close the full matrix or general
+  resistance criterion.
 
 ## Resolved review gates
 

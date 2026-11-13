@@ -872,3 +872,18 @@ rows are explicit local IDA/Ghidra availability records. Binary Ninja was not
 measured in this historical run. The raw report is
 [`protection-adversarial-corpus-2026-09-06-a727f304.json`](protection-adversarial-corpus-2026-09-06-a727f304.json)
 (`SHA-256 484f818c144ba58e418443d8e1dc9bed97de74586825f8cce8fe2e374c40b60a`).
+
+The current-main all-pass host campaign at `2c9be637` adds fixture shard 14:
+11 repository fixtures across all 22 declared passes (242 pass rows), with 30
+applications, 212 no-ops, and no omitted or failed pass runs. Seven available
+analyzers completed all 242 rows each. Binary Ninja was unavailable because
+its license could not be used, and Triton was unavailable because the module
+was not installed; these account for 484 of 2,178 expected analyzer runs.
+angr reported unsupported dirty helpers, missing calling conventions, and
+unhooked addresses. The hash-bound raw report and summary are
+[`protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json`](protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json`](protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json).
+This is one repository-fixture shard; unavailable analyzers and bounded angr
+results mean it does not complete the analyzer matrix or demonstrate general
+resistance.

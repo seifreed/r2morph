@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "source_commit": "2c9be637f3e019b64a7d194e2d27d2ea7a243d28",
+  "source_report": "protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json",
+  "source_report_sha256": "76f3e12e38910d196057805af541bda90f1466a879d53983aeabe18bc096ae50",
+  "execution_context": {
+    "platform": "macOS arm64",
+    "macos": "27.2",
+    "python": "3.13.11",
+    "ida_pro": "9.5",
+    "ghidra": "12.2",
+    "radare2": "6.2.6",
+    "keystone": "available"
+  },
+  "fixture_shard": {
+    "count": 16,
+    "index": 14
+  },
+  "sample_count": 11,
+  "sample_names": [
+    "elf_cff_flagdead_x86_64",
+    "elf_vm_bt_x86_64",
+    "elf_vm_carry_rotate_x86_64",
+    "elf_vm_fpcmpidxnb_x86_64",
+    "elf_vm_fpidxnb_x86_64",
+    "elf_vm_fpriprel_x86_64",
+    "elf_vm_incdecsynth_x86_64",
+    "elf_vm_movq_x86_64",
+    "elf_vm_opmemidx_x86_64",
+    "elf_vm_rotate_x86_64",
+    "elf_vm_tls_x86_64"
+  ],
+  "pass_names": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "ConstantUnfolding",
+    "ControlFlowFlattening",
+    "DeadCodeInjection",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "PatternSubstitution",
+    "RegisterSubstitution",
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation"
+  ],
+  "pass_status_counts": {
+    "APIHashing": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "BlockReordering": {
+      "applied": 2,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeVirtualization": {
+      "applied": 11,
+      "no-op": 0,
+      "omitted": 0,
+      "error": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 7,
+      "no-op": 4,
+      "omitted": 0,
+      "error": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 1,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 1,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 5,
+      "no-op": 6,
+      "omitted": 0,
+      "error": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "PatternSubstitution": {
+      "applied": 1,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 2,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "no-op": 11,
+      "omitted": 0,
+      "error": 0
+    }
+  },
+  "applied_pass_runs": 30,
+  "error_pass_runs": 0,
+  "omitted_pass_runs": 0,
+  "analyzer_summary": {
+    "expected_tool_runs": 2178,
+    "completed_tool_runs": 1694,
+    "unavailable_tool_runs": 484,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tool_runs_by_tool": {
+      "angr": 242,
+      "custom": 242,
+      "ghidra": 242,
+      "ida-pro": 242,
+      "objdump": 242,
+      "radare2": 242,
+      "unicorn": 242
+    },
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 242,
+      "triton": 242
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 242
+      },
+      "triton": {
+        "module 'triton' is unavailable": 242
+      }
+    }
+  },
+  "observed_angr_diagnostics": {
+    "unsupported_dirty_helpers": [
+      "amd64g_dirtyhelper_IN",
+      "amd64g_dirtyhelper_OUT"
+    ],
+    "calling_convention": "Some fixture functions had no inferred calling convention.",
+    "unhooked_addresses": [
+      "0x7002ce",
+      "0x50021f"
+    ],
+    "decompiler_control_flow": "Some return-graph analyses reported a jump at the end of a return graph."
+  },
+  "scope": "One repository-fixture shard only. Analyzer metrics are bounded structural observations and do not prove semantic equivalence or general resistance."
+}

@@ -32,7 +32,9 @@
         "docs/protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json",
         "docs/protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json",
         "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json",
-        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json"
+        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json",
+        "docs/protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json",
+        "docs/protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -136,7 +138,9 @@
         "docs/protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13.json",
         "docs/protection-host-adversarial-shard-2026-11-13-134af4ff-shard-13-summary.json",
         "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13.json",
-        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json"
+        "docs/protection-host-adversarial-allpasses-2026-11-13-24b306ee-shard-13-summary.json",
+        "docs/protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14.json",
+        "docs/protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json"
       ]
     },
     "stable_api_cli": {
