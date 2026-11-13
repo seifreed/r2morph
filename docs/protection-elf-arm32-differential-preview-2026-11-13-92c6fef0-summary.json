@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_commit": "92c6fef05c930b6822daf7fefd2bcbd6b082d26f",
+  "workflow_run": 43339101882,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43339101882",
+  "artifact_id": 13998372789,
+  "artifact_name": "elf-arm-32-native-43339101882-1",
+  "report": "protection-elf-arm32-differential-preview-2026-11-13-92c6fef0.xml",
+  "report_sha256": "6234c33b94febfad13736beaca9cf43716ef5ce2680204e0503a331e71fc1a16",
+  "platform": "Linux x86_64 with QEMU ARM32",
+  "format": "ELF",
+  "architecture": "ARM32",
+  "summary": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 0.618
+  },
+  "scope": "Bounded ARM32 emulated preview cases. This report does not establish full ARM32 compatibility or parity with ELF x86_64."
+}

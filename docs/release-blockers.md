@@ -79,6 +79,11 @@ successful run.
   [protection-differential-run-2026-11-12-43165336266.json](protection-differential-run-2026-11-12-43165336266.json).
   This strengthens correctness and bounded preview evidence; it does not close
   the separate cross-platform parity criterion.
+  The current run `43339101882` has also completed its Windows PE (17 cases)
+  and ARM32 (6 cases) preview jobs with zero failures, errors, or skips. Their
+  hash-bound reports are recorded in `compatibility-corpus.md`; these bounded
+  job results do not complete the run's full matrix or establish platform
+  parity.
 
 - RB-003: VM semantic coverage is complete for the declared ELF x86-64 scope:
   memory, direct and indirect calls, ABI/varargs, ordinary unwinding, TLS/signals,

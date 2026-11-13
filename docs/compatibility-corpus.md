@@ -58,6 +58,19 @@ compiled case is an additional evidence point, not a support promotion.
 The Windows PE preview job also executes a real NOP-plus-register-substitution
 composition and validates the repaired PE checksum; it remains preview evidence
 and does not promote PE to the official support tier.
+The current differential run [`43339101882`](https://github.com/seifreed/r2morph/actions/runs/43339101882)
+has completed its Windows PE preview slice (17 tests) and ARM32 preview slice
+(6 tests), with no failures, errors, or skips. The retained JUnit reports and
+hash-bound summaries are the Windows PE report
+[`protection-windows-pe-differential-preview-2026-11-13-92c6fef0.xml`](protection-windows-pe-differential-preview-2026-11-13-92c6fef0.xml)
+and its summary
+[`protection-windows-pe-differential-preview-2026-11-13-92c6fef0-summary.json`](protection-windows-pe-differential-preview-2026-11-13-92c6fef0-summary.json),
+and the ARM32 report
+[`protection-elf-arm32-differential-preview-2026-11-13-92c6fef0.xml`](protection-elf-arm32-differential-preview-2026-11-13-92c6fef0.xml)
+with its summary
+[`protection-elf-arm32-differential-preview-2026-11-13-92c6fef0-summary.json`](protection-elf-arm32-differential-preview-2026-11-13-92c6fef0-summary.json).
+This is bounded preview evidence only; the full differential workflow and
+cross-platform parity criterion remain open.
 On 2026-11-10, the same PE test module ran locally on macOS 27.2 ARM64 with
 MinGW-w64 GCC 16.2 and Wine 11.0: seven generated-binary mutation tests passed
 and the Windows-only fixture test was skipped. This confirms an additional

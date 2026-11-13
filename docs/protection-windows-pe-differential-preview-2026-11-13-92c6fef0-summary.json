@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source_commit": "92c6fef05c930b6822daf7fefd2bcbd6b082d26f",
+  "workflow_run": 43339101882,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43339101882",
+  "artifact_id": 13998842683,
+  "artifact_name": "cross-platform-differential-windows-pe-43339101882-1",
+  "report": "protection-windows-pe-differential-preview-2026-11-13-92c6fef0.xml",
+  "report_sha256": "8a0bf3744f1213273987c1f96115940927bdd6abb6d386918fd742743f1bccc2",
+  "platform": "Windows x86_64",
+  "format": "PE",
+  "summary": {
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 22.791
+  },
+  "scope": "Bounded PE preview regression cases. This report does not establish full PE compatibility or parity with ELF x86_64."
+}

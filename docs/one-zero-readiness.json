@@ -61,7 +61,11 @@
         "docs/protection-platform-elf-arm64-2026-11-12-43225790149.xml",
         "docs/protection-platform-elf-x86-32-2026-11-12-43225790149.xml",
         "docs/protection-platform-macos-arm64-2026-11-12-43225790149.xml",
-        "docs/protection-platform-windows-pe-2026-11-12-43225790149.xml"
+        "docs/protection-platform-windows-pe-2026-11-12-43225790149.xml",
+        "docs/protection-windows-pe-differential-preview-2026-11-13-92c6fef0.xml",
+        "docs/protection-windows-pe-differential-preview-2026-11-13-92c6fef0-summary.json",
+        "docs/protection-elf-arm32-differential-preview-2026-11-13-92c6fef0.xml",
+        "docs/protection-elf-arm32-differential-preview-2026-11-13-92c6fef0-summary.json"
       ]
     },
     "documented_resistance_scope": {
