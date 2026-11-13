@@ -8,13 +8,18 @@ criterion remains open or in progress.
 
 ## Latest full CI verification of a code-bearing commit
 
-Commit `0134656bc95668af4ca5a40af07cb6e9166bd4dc` passed CI run
-[`43008805011`](https://github.com/seifreed/r2morph/actions/runs/43008805011)
+Commit `147a52f7e87265b51f8b8cd86a5b4f9b4e81d89f` passed CI run
+[`43505616930`](https://github.com/seifreed/r2morph/actions/runs/43505616930)
 with all 15 jobs successful. The run includes unit and integration suites,
 installed-wheel smoke tests, property and fuzz validation, lint and type
-checking, and macOS, Windows, and Ubuntu jobs on Python 3.12 and 3.13. This
-result verifies that code commit only; later code changes require their own
-successful run.
+checking, and macOS, Windows, and Ubuntu jobs on Python 3.12 and 3.13. The
+subsequent evidence-only commit `1b821f38701da2766cfd5f39a831f037798c5f75`
+passed the full local suite (6,740 passed, 225 skipped, 82.16% coverage) and
+the required static checks in a clean worktree. Its CI run
+[`43511386443`](https://github.com/seifreed/r2morph/actions/runs/43511386443)
+is still queued; the `147a52f` result therefore remains the latest completed
+remote CI evidence. These results do not close the separate open 1.0 criteria
+below.
 
 ## Resolved blockers
 
