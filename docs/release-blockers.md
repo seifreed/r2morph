@@ -393,6 +393,18 @@ successful run.
   included on macOS. See the hash-bound
   [raw report](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32.json)
   and [summary](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json).
+
+  The next current-main shard at `b012cd0a` covered five repository fixtures
+  across all 22 passes (110 rows): 10 applications, 100 no-ops, no omissions,
+  and no pass errors. Eight analyzers completed each row; Binary Ninja was
+  unavailable for all rows because its license was unavailable. Generated
+  Linux fixtures were not included, and 16 passes had no application in this
+  sample. The raw report and summary are
+  [protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32.json](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32.json)
+  and
+  [protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json).
+  This bounded fixture slice does not close the all-analyzer or general
+  resistance criteria.
   This adds a local Triton slice but leaves the all-analyzer matrix and general
   resistance criterion open.
   The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)

@@ -915,3 +915,15 @@ and
 [`protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json`](protection-host-adversarial-allpasses-2026-11-13-61f152e2-shard-16-32-summary.json).
 This bounded fixture slice does not establish general resistance or close the
 all-analyzer criterion.
+
+The next current-main slice at `b012cd0a` covers five repository fixtures across
+all 22 passes (110 rows): 10 applications, 100 no-ops, zero omissions, and zero
+pass errors. Eight analyzers completed all rows; Binary Ninja was unavailable
+for all 110 rows because its license was unavailable. The generated Linux
+fixtures were not part of this macOS run, and 16 passes had no application in
+these five fixtures. The hash-bound raw report and summary are
+[`protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32.json`](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json`](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json).
+This bounded sample does not close the analyzer matrix or establish general
+resistance.
