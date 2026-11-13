@@ -348,6 +348,17 @@ successful run.
   and [summary](protection-host-adversarial-allpasses-2026-11-13-2c9be637-shard-14-summary.json).
   This additional bounded shard does not close the full matrix or general
   resistance criterion.
+  A third all-pass host shard at source `5806a27d` covered 10 fixtures and 220
+  pass rows: 16 applied, 204 no-op, zero omitted, and zero failed. Six
+  analyzers completed every row; Unicorn missed 22 rows due an unsupported
+  fixture instruction, while Binary Ninja and Triton were unavailable for all
+  rows. This left 462/1,980 analyzer slots unavailable. angr diagnostics
+  included unsupported dirty helpers, unhooked addresses, and missing calling
+  conventions. See the hash-bound
+  [raw report](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15.json)
+  and [summary](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json).
+  It is bounded evidence and does not close the analyzer matrix or general
+  resistance criterion.
 
 ## Resolved review gates
 

@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "source_commit": "5806a27d3689a2f3fe2d647be25f74eaa3265a9a",
+  "source_report": "protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15.json",
+  "source_report_sha256": "55d56cc79e74fa90aeea78d5a659bce1d9a0aea2b3ba50a910642532f0d424ae",
+  "execution_context": {
+    "platform": "macOS arm64",
+    "macos": "27.2",
+    "python": "3.13.11",
+    "ida_pro": "9.5",
+    "ghidra": "12.2",
+    "radare2": "6.2.6",
+    "keystone": "available"
+  },
+  "fixture_shard": {
+    "count": 16,
+    "index": 15
+  },
+  "sample_count": 10,
+  "sample_names": [
+    "elf_vm_fparithmem_x86_64",
+    "elf_vm_fpconvert32_x86_64",
+    "elf_vm_fpengineconvert_x86_64",
+    "elf_vm_memarithsynth_x86_64",
+    "elf_vm_not_x86_64",
+    "elf_vm_pushpop_x86_64",
+    "elf_vm_riprelmicroop_x86_64",
+    "elf_vm_run_memarithfallback_x86_64",
+    "elf_vm_simdintarith_x86_64",
+    "elf_vm_vex128_x86_64"
+  ],
+  "pass_names": [
+    "BlockReordering",
+    "CodeVirtualization",
+    "ConstantUnfolding",
+    "ControlFlowFlattening",
+    "DeadCodeInjection",
+    "InstructionExpansion",
+    "InstructionSubstitution",
+    "NopInsertion",
+    "PatternSubstitution",
+    "RegisterSubstitution",
+    "AntiDisassembly",
+    "APIHashing",
+    "CodeMobility",
+    "DataFlowMutation",
+    "FunctionOutlining",
+    "ImportObfuscation",
+    "OpaquePredicates",
+    "PolymorphicEngine",
+    "SelfModifyingCode",
+    "ShortJumpPatching",
+    "StackStrings",
+    "StringObfuscation"
+  ],
+  "pass_status_counts": {
+    "APIHashing": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "BlockReordering": {
+      "applied": 1,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "CodeVirtualization": {
+      "applied": 10,
+      "no-op": 0,
+      "omitted": 0,
+      "error": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 2,
+      "no-op": 8,
+      "omitted": 0,
+      "error": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 1,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "PatternSubstitution": {
+      "applied": 1,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 1,
+      "no-op": 9,
+      "omitted": 0,
+      "error": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "no-op": 10,
+      "omitted": 0,
+      "error": 0
+    }
+  },
+  "applied_pass_runs": 16,
+  "error_pass_runs": 0,
+  "omitted_pass_runs": 0,
+  "analyzer_summary": {
+    "expected_tool_runs": 1980,
+    "completed_tool_runs": 1518,
+    "unavailable_tool_runs": 462,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tool_runs_by_tool": {
+      "angr": 220,
+      "custom": 220,
+      "ghidra": 220,
+      "ida-pro": 220,
+      "objdump": 220,
+      "radare2": 220,
+      "unicorn": 198
+    },
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 220,
+      "triton": 220,
+      "unicorn": 22
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 220
+      },
+      "triton": {
+        "module 'triton' is unavailable": 220
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 22
+      }
+    }
+  },
+  "observed_angr_diagnostics": {
+    "unsupported_dirty_helpers": [
+      "amd64g_dirtyhelper_IN",
+      "amd64g_dirtyhelper_OUT"
+    ],
+    "calling_convention": "Some fixture functions and call sites had no inferred calling convention.",
+    "unhooked_addresses": [
+      "0x5002ce"
+    ]
+  },
+  "scope": "One repository-fixture shard only. Analyzer metrics are bounded structural observations and do not prove semantic equivalence or general resistance."
+}

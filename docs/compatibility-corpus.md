@@ -887,3 +887,17 @@ and
 This is one repository-fixture shard; unavailable analyzers and bounded angr
 results mean it does not complete the analyzer matrix or demonstrate general
 resistance.
+
+The next current-main host shard at `5806a27d` covered 10 repository fixtures
+across all 22 passes (220 pass rows): 16 applications, 204 no-ops, zero
+omissions, and zero pass errors. Six analyzers completed all rows; Unicorn
+completed 198/220, while 22 runs were unavailable because its installed x86
+emulator lacked an instruction used by a fixture. Binary Ninja and Triton
+were unavailable for all 220 rows each (license and module availability,
+respectively), so 462/1,980 analyzer runs were unavailable in total. angr
+reported unsupported dirty helpers, unhooked addresses, and missing calling
+conventions. The hash-bound reports are
+[`protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15.json`](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json`](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json).
+This shard does not close the analyzer matrix or establish general resistance.
