@@ -19,6 +19,7 @@ from r2morph.analysis.flag_effects import FLAGS_RESOURCE_NAME, FLAGS_RESOURCE_SI
 from r2morph.analysis.liveness import LivenessAnalysis
 from r2morph.core.constants import (
     ARCH_BITS_64,
+    OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY,
     OPAQUE_PREDICATE_MIN_FUNCTION_SIZE,
     SIGNED_32_MAX,
     SIGNED_32_MIN,
@@ -73,6 +74,7 @@ class OpaquePredicatePass(MutationPass):
         logger.info("Applying opaque predicate mutations")
 
         functions = binary.get_functions()
+        functions = self._sample_functions(functions)
         injector = CodeCaveInjector(binary, protect_nop_instructions=True)
         total_mutations = 0
         funcs_mutated = 0
@@ -93,6 +95,23 @@ class OpaquePredicatePass(MutationPass):
             "mutations_applied": total_mutations,
             "functions_mutated": funcs_mutated,
         }
+
+    @staticmethod
+    def _sample_functions(functions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Select a deterministic, evenly spaced sample when functions exceed the analysis budget."""
+        function_count = len(functions)
+        analysis_limit = OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
+        if function_count <= analysis_limit:
+            return functions
+
+        spacing = (function_count - 1) / (analysis_limit - 1)
+        selected = [functions[int(index * spacing)] for index in range(analysis_limit)]
+        logger.warning(
+            "Opaque predicate analysis limited to %d of %d functions",
+            analysis_limit,
+            function_count,
+        )
+        return selected
 
     def _insert_opaque_predicates(self, binary: Any, func: dict[str, Any], injector: CodeCaveInjector) -> int:
         """

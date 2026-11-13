@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from tests.utils.assertions import expect
+
+_FUNCTION_ADDRESS_BASE = 0x1000
+_FUNCTION_SET_MULTIPLIER = 2
 
 
 class _PredicateAssembler:
@@ -19,6 +23,12 @@ class _PredicateAssembler:
 class _FunctionBinary:
     def get_functions(self) -> list[dict[str, int]]:
         return [{"addr": 0x1000, "size": 32}, {"addr": 0x2000, "size": 32}]
+
+
+class _ManyFunctionsBinary:
+    def get_functions(self) -> list[dict[str, int]]:
+        function_count = OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY * _FUNCTION_SET_MULTIPLIER
+        return [{"addr": _FUNCTION_ADDRESS_BASE + index, "size": 32} for index in range(function_count)]
 
 
 class _SingleBlockBinary:
@@ -38,9 +48,11 @@ class _RecordingOpaquePredicatePass(OpaquePredicatePass):
     def __init__(self) -> None:
         super().__init__()
         self.injector_ids: list[int] = []
+        self.function_addresses: list[int] = []
 
     def _insert_opaque_predicates(self, binary, func, injector):
         self.injector_ids.append(id(injector))
+        self.function_addresses.append(func["addr"])
         return 0
 
 
@@ -61,6 +73,20 @@ def test_opaque_predicate_apply_reuses_one_injector_across_functions():
     pass_obj.apply(_FunctionBinary())
 
     expect(len(set(pass_obj.injector_ids)) == 1)
+
+
+def test_opaque_predicate_function_analysis_samples_full_binary_within_budget(caplog):
+    pass_obj = _RecordingOpaquePredicatePass()
+
+    pass_obj.apply(_ManyFunctionsBinary())
+
+    expect(
+        len(pass_obj.function_addresses) == OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
+        and pass_obj.function_addresses[0] == _FUNCTION_ADDRESS_BASE
+        and pass_obj.function_addresses[-1]
+        == _FUNCTION_ADDRESS_BASE + OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY * _FUNCTION_SET_MULTIPLIER - 1
+        and "limited to" in caplog.text
+    )
 
 
 def test_opaque_predicate_skips_analysis_for_single_block_function():
