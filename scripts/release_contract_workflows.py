@@ -194,7 +194,7 @@ def _check_corpus_workflows() -> None:
         "--passes all",
         "--require-tool-slots",
         "--require-applied",
-        "--fixture-shard-count 16",
+        "--fixture-shard-count 32",
         "Validate adversarial campaign summary",
         "expected_tools",
         "observed_tools",

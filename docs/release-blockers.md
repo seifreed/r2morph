@@ -359,6 +359,12 @@ successful run.
   and [summary](protection-host-adversarial-allpasses-2026-11-13-5806a27d-shard-15-summary.json).
   It is bounded evidence and does not close the analyzer matrix or general
   resistance criterion.
+  The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)
+  did not aggregate: shard 12 hit the six-hour job timeout, leaving 15/16
+  reports. The benchmark now partitions the same declared scope into 32 jobs
+  to reduce per-job work. This scheduling change is not evidence of completion;
+  the analyzer and resistance criteria remain open until the 32-shard aggregate
+  succeeds.
 
 ## Resolved review gates
 

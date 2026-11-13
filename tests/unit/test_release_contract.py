@@ -65,6 +65,7 @@ _EXPECTED_ADVERSARIAL_TOOLS = [
     "ghidra",
     "custom",
 ]
+_EXPECTED_ADVERSARIAL_SHARDS = 32
 _CURRENT_ANGR_EVIDENCE = "docs/protection-adversarial-angr-local-2026-09-20.json"
 _CORPUS_SELECTED_EXPERIMENTAL_PASSES = {
     "dead-code-injection",
@@ -1608,7 +1609,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "adversarial fixture manifest drift" in adversarial
         and "incomplete tool coverage mismatch" in adversarial
         and "passes without applications" in adversarial
-        and "--fixture-shard-count 16" in adversarial
+        and "--fixture-shard-count 32" in adversarial
         and "Run VM resistance seed-diversity smoke" in adversarial
         and "scripts/protection_handler_clustering.py" in adversarial
         and '--output "$GITHUB_WORKSPACE/vm-resistance-seed-diversity.json"' in adversarial
@@ -1877,8 +1878,15 @@ def test_adversarial_workflow_provisions_reproducible_ghidra() -> None:
 def test_adversarial_workflow_allows_full_campaign_to_finish() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
     benchmark_job = workflow.split("  benchmark:\n", 1)[1].split("    steps:\n", 1)[0]
+    expected_shards = f"fixture_shard: [{', '.join(map(str, range(_EXPECTED_ADVERSARIAL_SHARDS)))}]"
 
-    expect("timeout-minutes: 360" in benchmark_job)
+    expect(
+        "timeout-minutes: 360" in benchmark_job
+        and expected_shards in benchmark_job
+        and f"--fixture-shard-count {_EXPECTED_ADVERSARIAL_SHARDS}" in workflow
+        and f"if len(paths) != {_EXPECTED_ADVERSARIAL_SHARDS}:" in workflow
+        and f"expected {_EXPECTED_ADVERSARIAL_SHARDS} adversarial shard reports" in workflow
+    )
 
 
 def test_differential_merge_step_closes_python_heredoc() -> None:
