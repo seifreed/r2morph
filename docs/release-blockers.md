@@ -605,6 +605,17 @@ This verifies wheel-backed fuzz execution on the three declared runners; it
 does not establish semantic equivalence, platform parity, or general
 resistance.
 
+The continuous fuzz workflow completed on the current production-code tree in
+[run 43559475263](https://github.com/seifreed/r2morph/actions/runs/43559475263),
+using source commit `84e1202f09bb5265c3b8f8a4f5b21dd541901bfe`. Linux,
+macOS ARM64, and Windows each built and installed the wheel and ran ten fuzz
+targets for 5,000 cases per target (150,000 target runs total, zero failures).
+All three reports counted 103 recoverable Mach-O parser warnings. Hash-bound
+reports are listed in
+[protection-fuzz-wheel-platform-2026-11-14-84e1202f.json](protection-fuzz-wheel-platform-2026-11-14-84e1202f.json).
+This improves fuzz coverage evidence only; it leaves semantic parity and
+adversarial resistance open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

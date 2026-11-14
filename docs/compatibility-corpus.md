@@ -1028,6 +1028,17 @@ and
 This adds bounded IDA measurements, not complete analyzer coverage or general
 resistance.
 
+The continuous fuzz workflow completed on Linux, macOS ARM64, and Windows for
+source commit `84e1202f09bb5265c3b8f8a4f5b21dd541901bfe` in
+[run 43559475263](https://github.com/seifreed/r2morph/actions/runs/43559475263).
+Each runner built and installed the wheel, then ran ten targets for 5,000
+cases each: 150,000 target runs total, with zero failures and 103 counted
+recoverable Mach-O parser warnings per runner. The platform summary binds the
+downloaded report hashes:
+[`protection-fuzz-wheel-platform-2026-11-14-84e1202f.json`](protection-fuzz-wheel-platform-2026-11-14-84e1202f.json).
+This adds current-main wheel fuzz evidence; it does not prove semantic
+equivalence, cross-platform behavioral parity, or general resistance.
+
 The scheduled 32-shard adversarial campaign then completed all 33 workflow jobs
 in [run 43526206403](https://github.com/seifreed/r2morph/actions/runs/43526206403).
 Its hash-bound summary and compressed merged report are

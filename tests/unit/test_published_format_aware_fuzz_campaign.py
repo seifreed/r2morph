@@ -21,6 +21,7 @@ _VM_DECODER_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14
 _VM_DECODER_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json"
 _LOCAL_WHEEL_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-local-2026-11-14-84e1202f.json"
 _LOCAL_WHEEL_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json"
+_LATEST_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-14-84e1202f.json"
 _CURRENT_PLATFORM_RUN = 43_331_412_474
 _VM_DECODER_PLATFORM_RUN = 43_527_087_277
 _PLATFORM_RUNNERS = {"ubuntu-latest", "macos-15", "windows-latest"}
@@ -49,6 +50,7 @@ _LOCAL_WHEEL_COMMIT = "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe"
 _LOCAL_WHEEL_CASES = 5_000
 _LOCAL_WHEEL_SEED = 20_261_114
 _LOCAL_WHEEL_TOTAL_TARGET_RUNS = _LOCAL_WHEEL_CASES * len(_VM_DECODER_TARGETS)
+_LATEST_PLATFORM_RUN = 43_559_475_263
 
 
 def test_published_fuzz_campaign_covers_each_format_target() -> None:
@@ -388,3 +390,70 @@ def test_vm_decoder_platform_campaign_does_not_expose_host_paths() -> None:
     )
 
     expect(not any(prefix in text for prefix in _HOST_PATH_PREFIXES))
+
+
+def test_continuous_fuzz_run_binds_to_successful_wheel_workflow() -> None:
+    report = json.loads(_LATEST_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["commit"] == "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe"
+        and report["workflow_run"] == _LATEST_PLATFORM_RUN
+        and report["provenance"] == "github-actions-installed-wheel"
+        and report["status"] == "passed"
+        and report["failure_count"] == 0
+    )
+
+
+def test_continuous_fuzz_run_covers_all_targets_on_every_runner() -> None:
+    report = json.loads(_LATEST_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["cases_per_target"] == _LOCAL_WHEEL_CASES
+        and report["target_count"] == len(_VM_DECODER_TARGETS)
+        and report["platform_count"] == len(_PLATFORM_RUNNERS)
+        and report["total_target_runs"] == _LOCAL_WHEEL_CASES * len(_VM_DECODER_TARGETS) * len(_PLATFORM_RUNNERS)
+        and {platform["runner"] for platform in report["platforms"]} == _PLATFORM_RUNNERS
+        and all(
+            platform["failure_count"] == 0
+            and set(platform["target_runs"]) == _VM_DECODER_TARGETS
+            and all(platform["target_runs"][target] == _LOCAL_WHEEL_CASES for target in _VM_DECODER_TARGETS)
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_continuous_fuzz_run_binds_each_downloaded_report_hash() -> None:
+    report = json.loads(_LATEST_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all(
+            hashlib.sha256(
+                (_ROOT / "docs" / platform["campaign_report"]).read_bytes().replace(b"\n", b"\r\n")
+                if platform["runner"] == "windows-latest"
+                else (_ROOT / "docs" / platform["campaign_report"]).read_bytes()
+            ).hexdigest()
+            == platform["campaign_report_sha256"]
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_continuous_fuzz_run_records_parser_warnings() -> None:
+    report = json.loads(_LATEST_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all(
+            platform["parser_diagnostic_counts"] == {"macho_load_commands.warning": 103}
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_continuous_fuzz_run_does_not_expose_host_paths() -> None:
+    report = json.loads(_LATEST_PLATFORM_REPORT.read_text(encoding="utf-8"))
+    artifact_text = _LATEST_PLATFORM_REPORT.read_text(encoding="utf-8")
+    artifact_text += "".join(
+        (_ROOT / "docs" / platform["campaign_report"]).read_text(encoding="utf-8") for platform in report["platforms"]
+    )
+
+    expect(not any(prefix in artifact_text for prefix in _HOST_PATH_PREFIXES))

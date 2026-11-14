@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "provenance": "github-actions-installed-wheel",
+  "commit": "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe",
+  "workflow_run": 43559475263,
+  "seed": 20261114,
+  "target_count": 10,
+  "cases_per_target": 5000,
+  "platform_count": 3,
+  "total_target_runs": 150000,
+  "failure_count": 0,
+  "platforms": [
+    {
+      "runner": "ubuntu-latest",
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-14-84e1202f-ubuntu-latest.json",
+      "campaign_report_sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+      "cases_per_target": 5000,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      }
+    },
+    {
+      "runner": "macos-15",
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-14-84e1202f-macos-15.json",
+      "campaign_report_sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+      "cases_per_target": 5000,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      }
+    },
+    {
+      "runner": "windows-latest",
+      "campaign_report": "protection-fuzz-wheel-platform-2026-11-14-84e1202f-windows-latest.json",
+      "campaign_report_sha256": "71c53a19cdf718d3375e426824fd5c60ab0e5d2c1e381ade49a13958a05715c2",
+      "cases_per_target": 5000,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      }
+    }
+  ],
+  "limitations": [
+    "Fuzz outcomes do not prove semantic equivalence for transformed binaries.",
+    "This campaign does not close cross-platform behavioral parity or general resistance criteria."
+  ]
+}
