@@ -5,6 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from tests.utils.assertions import expect
@@ -28,6 +29,8 @@ _RESISTANCE_SEED_COUNT = 10
 _GROWTH_FIXTURE_COUNT = 6
 _ZERO = 0
 _CHUNK_BYTES = 1024 * 1024
+_PATH_CONTEXT_BYTES = 256
+_HOST_PATH = re.compile(rb"(?:/(?:Users|home|tmp|root|workspace|private/tmp)/|[A-Za-z]:\\Users\\)")
 
 
 def _summary(path: Path) -> dict[str, object]:
@@ -50,6 +53,17 @@ def _uncompressed_digest(path: Path) -> tuple[str, int]:
             digest.update(chunk)
             byte_count += len(chunk)
     return digest.hexdigest(), byte_count
+
+
+def _contains_host_path(path: Path) -> bool:
+    trailing_bytes = b""
+    with gzip.open(path, "rb") as report:
+        for chunk in iter(lambda: report.read(_CHUNK_BYTES), b""):
+            content = trailing_bytes + chunk
+            if _HOST_PATH.search(content):
+                return True
+            trailing_bytes = content[-_PATH_CONTEXT_BYTES:]
+    return False
 
 
 def test_adversarial_run_archives_match_published_hashes() -> None:
@@ -123,3 +137,15 @@ def test_vm_resistance_run_keeps_human_review_and_release_gate_open() -> None:
         and summary["readiness"]["published_resistance_results"] == "open"
         and readiness["criteria"]["published_resistance_results"]["status"] == "open"
     )
+
+
+def test_published_adversarial_archives_do_not_disclose_host_paths() -> None:
+    campaign = _summary(_ADVERSARIAL_SUMMARY)
+    resistance = _summary(_RESISTANCE_SUMMARY)
+    archives = [
+        artifact["path"]
+        for artifacts in (campaign["archives"], resistance["artifacts"])
+        for artifact in artifacts.values()
+    ]
+
+    expect(not any(_contains_host_path(_ROOT / "docs" / path) for path in archives))
