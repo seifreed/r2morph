@@ -36,6 +36,17 @@ and [its raw report](protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json)
 This adds current-commit evidence for the local macOS host only; the
 three-runner fuzz campaign is still running and platform parity remains open.
 
+The VM resistance campaign was expanded on source commit `1ab0deb9` to 10 ELF
+fixtures and 32 seeds. Emulator-observed semantic parity and all tamper probes
+passed; progressive bytecode growth was supported on 7 fixtures. Native ELF
+execution was unavailable on this macOS host. A separate 100-seed handler
+analysis found 58 exact normalized matches across 25,500 handlers (0.227%),
+with no cluster larger than two and 100 distinct opcode assignments. This
+fails the current zero-match handler-diversity check, so the result is
+diagnostic evidence and the resistance gate remains open. Both reports are
+hash-bound in
+[`protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json`](protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json).
+
 ## Resolved blockers
 
 - The latest differential workflow, run

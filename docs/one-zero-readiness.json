@@ -249,7 +249,10 @@
         "docs/protection-vm-adversarial-2026-11-14-43615553431.xml.gz",
         "docs/protection-vm-bytecode-grammar-2026-11-14-43615553431.json.gz",
         "docs/protection-vm-seed-diversity-2026-11-14-43615553431.json.gz",
-        "tests/unit/test_published_adversarial_run_43615553431.py"
+        "tests/unit/test_published_adversarial_run_43615553431.py",
+        "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures.json.gz",
+        "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json",
+        "docs/protection-vm-handler-diversity-local-2026-11-14-100seeds.json"
       ]
     },
     "stable_api_cli": {
