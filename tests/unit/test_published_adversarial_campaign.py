@@ -22,6 +22,13 @@ _LATEST_SAMPLE_COUNT = 362
 _LATEST_PASS_RUNS = 7964
 _LATEST_COMPLETED_ANALYZER_RUNS = 55220
 _LATEST_EVIDENCE_BLOCKER_COUNT = 17
+_LOCAL_VM_REPORT = _ROOT / "docs" / "protection-vm-resistance-local-2026-11-14-84e1202f.json"
+_LOCAL_VM_RAW_REPORT = _ROOT / "docs" / "protection-vm-resistance-local-2026-11-14-84e1202f-macos.json"
+_LOCAL_VM_COMMIT = "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe"
+_LOCAL_VM_FIXTURE_COUNT = 10
+_LOCAL_VM_SEED_COUNT = 10
+_LOCAL_VM_BUILD_COUNT = _LOCAL_VM_FIXTURE_COUNT * _LOCAL_VM_SEED_COUNT
+_LOCAL_VM_PROGRESSIVE_GROWTH_FIXTURES = 7
 
 
 def test_adversarial_campaign_covers_every_pass_without_missing_rows() -> None:
@@ -112,3 +119,54 @@ def test_completed_adversarial_run_archives_full_evidence_without_closing_open_g
         and readiness["criteria"]["all_named_adversarial_analyzers"]["status"] == "open"
         and readiness["criteria"]["published_resistance_results"]["status"] == "open"
     )
+
+
+def test_current_local_vm_resistance_campaign_binds_wheel_and_raw_report() -> None:
+    report = json.loads(_LOCAL_VM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["commit"] == _LOCAL_VM_COMMIT
+        and report["provenance"] == "local-installed-wheel"
+        and hashlib.sha256(_LOCAL_VM_RAW_REPORT.read_bytes()).hexdigest() == report["campaign_report_sha256"]
+        and report["runtime"]["wheel_sha256"] == "1fb60f55b089838eb370b1ffe9be1a1193a6013577f7b01c117f294490428f26"
+    )
+
+
+def test_current_local_vm_resistance_campaign_passes_automated_scope() -> None:
+    summary = json.loads(_LOCAL_VM_REPORT.read_text(encoding="utf-8"))
+    campaign = json.loads(_LOCAL_VM_RAW_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        summary["fixture_count"] == campaign["fixture_count"] == _LOCAL_VM_FIXTURE_COUNT
+        and summary["seed_count"] == campaign["seed_count"] == _LOCAL_VM_SEED_COUNT
+        and sum(len(fixture["seed_campaign"]["builds"]) for fixture in campaign["fixtures"]) == _LOCAL_VM_BUILD_COUNT
+        and campaign["semantic_parity"]
+        and campaign["cross_fixture_distinct_artifacts"]
+        and campaign["all_tamper_probes_diverged"]
+        and campaign["adversarial_recovery_probe_observed"]
+        and campaign["progressive_growth_supported_fixture_count"] == _LOCAL_VM_PROGRESSIVE_GROWTH_FIXTURES
+        and all(fixture["seed_campaign"]["no_partial_virtualization"] for fixture in campaign["fixtures"])
+        and all(
+            not fixture["anti_tamper"][layer]["native_execution_available"]
+            for fixture in campaign["fixtures"]
+            for layer in ("single_layer", "nested")
+        )
+    )
+
+
+def test_current_local_vm_resistance_campaign_keeps_review_and_claim_open() -> None:
+    summary = json.loads(_LOCAL_VM_REPORT.read_text(encoding="utf-8"))
+    campaign = json.loads(_LOCAL_VM_RAW_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        summary["general_resistance_established"] is False
+        and summary["human_adversarial_review"] == "pending-human-adversarial-review"
+        and campaign["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
+        and summary["native_elf_execution"] == "unavailable-on-macos"
+    )
+
+
+def test_current_local_vm_resistance_campaign_does_not_expose_host_paths() -> None:
+    reports = _LOCAL_VM_REPORT.read_text(encoding="utf-8") + _LOCAL_VM_RAW_REPORT.read_text(encoding="utf-8")
+
+    expect(not any(prefix in reports for prefix in ("/Users/", "/Applications/", "/private/", "/home/")))

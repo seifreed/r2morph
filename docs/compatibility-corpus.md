@@ -698,6 +698,16 @@ and [raw report](protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json).
 This is one-host evidence only; the fresh three-runner campaign for the same
 commit is still pending and no platform-parity claim follows from it.
 
+The same installed wheel was also exercised locally against ten repository ELF
+VM fixtures and ten seeds (100 fixture-seed builds). Semantic parity, artifact,
+opcode, handler and dispatcher diversity, tamper divergence, and bounded
+recovery probes all passed. Progressive bytecode growth was observed on seven
+fixtures. macOS could not execute these ELF baselines natively, and the five
+generated Linux fixtures were unavailable on this host. The report keeps human
+review pending and explicitly does not establish general resistance; see the
+[hash-bound summary](protection-vm-resistance-local-2026-11-14-84e1202f.json)
+and [raw report](protection-vm-resistance-local-2026-11-14-84e1202f-macos.json).
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom

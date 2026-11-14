@@ -485,6 +485,16 @@ three-runner fuzz campaign is still running and platform parity remains open.
   and [the compressed raw report](protection-adversarial-run-2026-11-14-43526206403.json.gz).
   This closes the shard-completion gap only;
   analyzer coverage and general resistance remain open.
+  On the same wheel, a local macOS ARM64 rerun covered ten repository ELF
+  fixtures and ten seeds. Semantic parity and the automated diversity, tamper,
+  and bounded recovery checks passed; progressive growth was supported on
+  seven of ten fixtures. Native ELF execution was unavailable on macOS and the
+  five generated Linux fixtures were not included. The raw report and wheel-
+  hash-bound summary are
+  [protection-vm-resistance-local-2026-11-14-84e1202f-macos.json](protection-vm-resistance-local-2026-11-14-84e1202f-macos.json)
+  and
+  [protection-vm-resistance-local-2026-11-14-84e1202f.json](protection-vm-resistance-local-2026-11-14-84e1202f.json).
+  Human review remains pending and general resistance remains unproven.
 
 ## Resolved review gates
 

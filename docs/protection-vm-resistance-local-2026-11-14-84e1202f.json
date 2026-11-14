@@ -1,0 +1,32 @@
+{
+  "adversarial_recovery_probe_observed": true,
+  "all_tamper_probes_diverged": true,
+  "automated_validation_status": "completed",
+  "campaign_report": "protection-vm-resistance-local-2026-11-14-84e1202f-macos.json",
+  "campaign_report_sha256": "cc012a437fff07453963728ad00a5b7c111bb80c19d8c893eed88058853f126c",
+  "commit": "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe",
+  "cross_fixture_distinct_artifacts": true,
+  "dispatcher_diversity_observed": true,
+  "fixture_count": 10,
+  "generated_at": "2026-11-14",
+  "general_resistance_established": false,
+  "handler_diversity_observed": true,
+  "human_adversarial_review": "pending-human-adversarial-review",
+  "measurement": "vm-resistance-adversarial-smoke",
+  "native_elf_execution": "unavailable-on-macos",
+  "opcode_assignment_diversity_observed": true,
+  "progressive_growth_observed": true,
+  "progressive_growth_supported_fixture_count": 7,
+  "provenance": "local-installed-wheel",
+  "runtime": {
+    "architecture": "arm64",
+    "os": "macOS 27.2",
+    "package_source": "installed-wheel",
+    "python": "3.12.16",
+    "wheel": "r2morph-0.4.0a3-py3-none-any.whl",
+    "wheel_sha256": "1fb60f55b089838eb370b1ffe9be1a1193a6013577f7b01c117f294490428f26"
+  },
+  "schema_version": 1,
+  "seed_count": 10,
+  "semantic_parity": true
+}
