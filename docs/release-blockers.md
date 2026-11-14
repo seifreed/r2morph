@@ -683,13 +683,26 @@ Their evidence quality is automated smoke, and human adversarial review
 remains pending.
 
 A separate local run on source commit `8ab01d2f` applied CodeVirtualization to
-one fixture. IDA Pro 9.5 and Ghidra 12.2 both completed; IDA reported +1 function, +26
-decompiler lines, and +939 bytes, while Ghidra reported +2 functions, +35
-lines, and +607 bytes. Binary Ninja remained unavailable because its license was unavailable,
-and Triton was unavailable on macOS ARM64. The raw report and hash-bound
+one fixture. IDA Pro 9.5 and Ghidra 12.2 both completed; IDA reported +1
+function, +26 decompiler lines, and +939 bytes, while Ghidra reported +2
+functions, +35 lines, and +607 bytes. Binary Ninja remained unavailable
+because its license was unavailable, and Triton was unavailable on macOS
+ARM64. The raw report and hash-bound
 [summary](protection-adversarial-local-analyzer-2026-11-14-8ab01d2f-summary.json)
 are retained. This adds a current local IDA/Ghidra slice but does not close the
 all-analyzer or general resistance criteria.
+
+A local all-pass run on source commit `fadc0e63` covered shard 0/32: four
+repository ELF x86-64 fixtures across all 22 passes, producing 88 pass rows
+and 792 expected analyzer rows. IDA Pro 9.5 and Ghidra 12.2 completed all 88
+rows; the other available local analyzers completed as well, for 616 total
+completions and zero tool errors. Binary Ninja and Triton were unavailable
+for all 88 rows each. Ten transformations applied, with zero pass errors;
+the remaining 78 no-op rows are retained rather than counted as coverage
+gaps. This is a bounded local analyzer shard and leaves both all-analyzer
+coverage and general resistance open. Its compressed report and manifest are
+[here](protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz)
+and [here](protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63-summary.json).
 
 ## Blocker index
 

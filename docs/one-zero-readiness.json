@@ -56,7 +56,9 @@
         "docs/protection-adversarial-run-2026-11-14-43592902305.json",
         "docs/protection-adversarial-corpus-2026-11-14-43592902305.json.gz",
         "docs/protection-adversarial-local-analyzer-2026-11-14-8ab01d2f.json",
-        "docs/protection-adversarial-local-analyzer-2026-11-14-8ab01d2f-summary.json"
+        "docs/protection-adversarial-local-analyzer-2026-11-14-8ab01d2f-summary.json",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63-summary.json"
       ]
     },
     "complete_compatibility_contract": {

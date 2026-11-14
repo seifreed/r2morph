@@ -1,0 +1,327 @@
+{
+  "analyzer_coverage": {
+    "by_tool": {
+      "angr": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 88
+        }
+      },
+      "custom": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 88
+        }
+      },
+      "unicorn": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      }
+    },
+    "completed_runs": 616,
+    "error_runs": 0,
+    "expected_runs": 792,
+    "unavailable_runs": 176
+  },
+  "fixture_count": 4,
+  "fixture_shard": {
+    "count": 32,
+    "index": 0
+  },
+  "fixtures": [
+    {
+      "name": "elf_switch_pie_x86_64",
+      "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f",
+      "size_bytes": 13296
+    },
+    {
+      "name": "elf_vm_arith_x86_64",
+      "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_vm_fpengineidxnb_x86_64",
+      "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07",
+      "size_bytes": 4728
+    },
+    {
+      "name": "elf_vm_movabs_x86_64",
+      "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3",
+      "size_bytes": 4776
+    }
+  ],
+  "limitations": [
+    "Binary Ninja was unavailable because the local license was unavailable.",
+    "Triton was unavailable in the macOS ARM64 environment.",
+    "The four-fixture shard is bounded evidence and does not establish general analyzer coverage or resistance.",
+    "Sixteen passes did not apply to this small fixture selection; their no-op rows are retained explicitly."
+  ],
+  "pass_count_per_fixture": 22,
+  "pass_rows": 88,
+  "pass_status_totals": {
+    "applied": 10,
+    "errors": 0,
+    "no_op": 78,
+    "omitted": 0
+  },
+  "passes": {
+    "APIHashing": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "BlockReordering": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 4,
+      "errors": 0,
+      "functions_virtualized": 5,
+      "no_op": 0,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 3,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 3,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "PatternSubstitution": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 3,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 3,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 4,
+      "partial_virtualization": 0,
+      "samples": 4,
+      "unsupported_functions": 0
+    }
+  },
+  "platform": "macOS ARM64",
+  "provenance": "local-source-tree",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "report": "protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz",
+  "report_sha256": "fee4d8554071981ecb4a9d2790bf8d61bd6ef48dde1e479775672b16676a8d03",
+  "schema_version": 1,
+  "scope": {
+    "corpus": "four repository Linux ELF x86-64 fixtures in shard 0 of 32",
+    "resistance_claim": "none; bounded all-pass analyzer evidence only"
+  },
+  "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+  "uncompressed_bytes": 673538,
+  "uncompressed_sha256": "7803a2ef35bcc975dd250b1edb3b76348f49f3c292fc49c39e87eb55f25aa358"
+}
