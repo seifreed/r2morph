@@ -1,3 +1,4 @@
+from io import StringIO
 from pathlib import Path
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.core.constants import OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from r2morph.utils.logging import setup_logging, shutdown_logging
 from tests.utils.assertions import expect
 
 _FUNCTION_ADDRESS_BASE = 0x1000
@@ -75,18 +77,23 @@ def test_opaque_predicate_apply_reuses_one_injector_across_functions():
     expect(len(set(pass_obj.injector_ids)) == 1)
 
 
-def test_opaque_predicate_function_analysis_samples_full_binary_within_budget(caplog):
+def test_opaque_predicate_function_analysis_samples_full_binary_within_budget():
     pass_obj = _RecordingOpaquePredicatePass()
+    log_output = StringIO()
+    setup_logging(level="WARNING", stream=log_output, environ={})
 
-    pass_obj.apply(_ManyFunctionsBinary())
+    try:
+        pass_obj.apply(_ManyFunctionsBinary())
 
-    expect(
-        len(pass_obj.function_addresses) == OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
-        and pass_obj.function_addresses[0] == _FUNCTION_ADDRESS_BASE
-        and pass_obj.function_addresses[-1]
-        == _FUNCTION_ADDRESS_BASE + OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY * _FUNCTION_SET_MULTIPLIER - 1
-        and "limited to" in caplog.text
-    )
+        expect(
+            len(pass_obj.function_addresses) == OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY
+            and pass_obj.function_addresses[0] == _FUNCTION_ADDRESS_BASE
+            and pass_obj.function_addresses[-1]
+            == _FUNCTION_ADDRESS_BASE + OPAQUE_PREDICATE_MAX_FUNCTIONS_PER_BINARY * _FUNCTION_SET_MULTIPLIER - 1
+            and "limited to" in log_output.getvalue()
+        )
+    finally:
+        shutdown_logging()
 
 
 def test_opaque_predicate_skips_analysis_for_single_block_function():
