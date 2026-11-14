@@ -21,7 +21,13 @@
   "cross_seed_nearest_similarity_max": 0.9523809523809523,
   "cross_seed_nearest_similarity_mean": 0.6596274996282119,
   "cross_seed_normalised_cluster_count": 0,
+  "dispatch_variant_unique_count": 2,
+  "dispatch_variant_values": [
+    0,
+    1
+  ],
   "first_seed": 20260820,
+  "opcode_assignment_unique_count": 10,
   "schema_version": 2,
   "seed_count": 10,
   "seeds": [

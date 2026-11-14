@@ -38,12 +38,6 @@ _ADVERSARIAL_VALIDATION = {
 }
 
 
-def _handler_bodies(seed: int) -> list[str]:
-    scheme = build_vm_scheme(randomness.Random(seed))
-    assembly = _interpreter_asm(0, scheme, has_fp=True)
-    return [match.group(2) for match in _HANDLER_PATTERN.finditer(assembly)]
-
-
 def _normalise_body(body: str) -> tuple[str, ...]:
     instructions: list[str] = []
     for line in body.splitlines():
@@ -74,8 +68,18 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
     seed_rows: list[dict[str, object]] = []
     all_signatures: list[str] = []
     all_normalised: list[list[tuple[str, ...]]] = []
+    opcode_assignment_hashes: set[str] = set()
+    dispatch_variants: set[int] = set()
     for seed in range(first_seed, first_seed + count):
-        bodies = _handler_bodies(seed)
+        scheme = build_vm_scheme(randomness.Random(seed))
+        opcode_assignment = json.dumps(
+            sorted((key, indices) for key, indices in scheme.dup.items()),
+            separators=(",", ":"),
+        )
+        opcode_assignment_hashes.add(hashlib.sha256(opcode_assignment.encode("ascii")).hexdigest())
+        dispatch_variants.add(scheme.dispatch_variant)
+        assembly = _interpreter_asm(0, scheme, has_fp=True)
+        bodies = [match.group(2) for match in _HANDLER_PATTERN.finditer(assembly)]
         normalised = [_normalise_body(body) for body in bodies]
         signatures = [_digest(signature) for signature in normalised]
         all_normalised.append(normalised)
@@ -98,6 +102,9 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
         "first_seed": first_seed,
         "seed_count": count,
         "seeds": seed_rows,
+        "opcode_assignment_unique_count": len(opcode_assignment_hashes),
+        "dispatch_variant_values": sorted(dispatch_variants),
+        "dispatch_variant_unique_count": len(dispatch_variants),
         "cross_seed_exact_normalised_matches": repeated,
         "cross_seed_exact_normalised_match_rate": repeated / len(all_signatures) if all_signatures else 0.0,
         "cross_seed_has_exact_normalised_matches": repeated > 0,

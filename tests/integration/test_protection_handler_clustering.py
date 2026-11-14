@@ -14,6 +14,8 @@ _EXPECTED_SCHEMA_VERSION = 2
 _EXPECTED_NEAREST_COMPARISONS = 510
 _EXPECTED_ABOVE_THRESHOLD = 72
 _EXPECTED_ABOVE_THRESHOLD_PERCENT = 14.117647058823529
+_EXPECTED_OPCODE_ASSIGNMENT_COUNT = 3
+_EXPECTED_DISPATCH_VARIANT_COUNT = 2
 _EXPECTED_ADVERSARIAL_STATUS = "pending-human-adversarial-review"
 
 
@@ -25,6 +27,9 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         and result["cross_seed_exact_normalised_matches"] == 0
         and result["cross_seed_has_exact_normalised_matches"] is False
         and result["cross_seed_nearest_similarity_comparisons"] == _EXPECTED_NEAREST_COMPARISONS
+        and result["opcode_assignment_unique_count"] == _EXPECTED_OPCODE_ASSIGNMENT_COUNT
+        and result["dispatch_variant_values"] == [0, 1]
+        and result["dispatch_variant_unique_count"] == _EXPECTED_DISPATCH_VARIANT_COUNT
         and result["cross_seed_nearest_similarity_above_threshold"] == _EXPECTED_ABOVE_THRESHOLD
         and result["cross_seed_nearest_similarity_above_threshold_percent"] == _EXPECTED_ABOVE_THRESHOLD_PERCENT
         and result["adversarial_validation"]["status"] == _EXPECTED_ADVERSARIAL_STATUS
@@ -52,4 +57,6 @@ def test_handler_clustering_maturity_doc_matches_report() -> None:
         )
         in document
         and f"exact normalized matches `{report['cross_seed_exact_normalised_matches']}`" in document
+        and f"{report['opcode_assignment_unique_count']}/{report['seed_count']} opcode assignments differ" in document
+        and "both dispatcher variants occur" in document
     )
