@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "source_commit": "334f6626a38bfdbf933ecaf5afdc4312a6d61d98",
+  "workflow": "Adversarial Analysis Benchmark",
+  "workflow_run": 43592902305,
+  "run_attempt": 1,
+  "run_started_at_utc": "2026-11-14T12:03:11Z",
+  "run_completed_at_utc": "2026-11-14T14:28:32Z",
+  "report": "protection-adversarial-corpus-2026-11-14-43592902305.json.gz",
+  "report_bytes": 1212784,
+  "report_sha256": "8a52cc1a60e986e73ec258d43dfcab0ef338b7d9446e8c3ebaa9511f04b9186b",
+  "uncompressed_report_bytes": 44759335,
+  "uncompressed_report_sha256": "9bf7cf6721d2b8989f41cd5f77255df3cf8c9e6db8d479625662d706a46a0b1d",
+  "scope": {
+    "corpus": "dataset",
+    "samples": 362,
+    "generated_fixtures": 200,
+    "passes": 22,
+    "expected_pass_runs": 7964,
+    "expected_tool_runs": 71676
+  },
+  "results": {
+    "applied_pass_runs": 2341,
+    "pass_run_coverage_percent": 100.0,
+    "completed_tool_runs": 55220,
+    "completed_tool_run_coverage_percent": 77.04,
+    "error_tool_runs": 0,
+    "unavailable_tool_runs": 16456,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "tools_without_full_completion": [
+      "binary-ninja",
+      "ida-pro",
+      "unicorn"
+    ],
+    "blocker_totals": {
+      "blocker_categories": 6,
+      "decompiler_baseline_unavailable_pairs_by_pass": 2,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 17,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "code_virtualization": {
+      "applied": 362,
+      "errors": 0,
+      "functions_virtualized": 636,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 362,
+      "unsupported_capabilities": {
+        "exceptions_and_unwinding": 14,
+        "ssa_liveness": 14
+      },
+      "unsupported_functions": 14,
+      "unsupported_severities": {
+        "error": 28
+      }
+    },
+    "analyzer_completion": {
+      "angr": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "runs": 7964,
+        "completed": 0,
+        "errors": 0,
+        "unavailable": 7964
+      },
+      "custom": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "runs": 7964,
+        "completed": 0,
+        "errors": 0,
+        "unavailable": 7964
+      },
+      "objdump": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "radare2": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "triton": {
+        "runs": 7964,
+        "completed": 7964,
+        "errors": 0,
+        "unavailable": 0
+      },
+      "unicorn": {
+        "runs": 7964,
+        "completed": 7436,
+        "errors": 0,
+        "unavailable": 528
+      }
+    }
+  },
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "limitations": [
+    "Binary Ninja and IDA Pro were unavailable in this Linux workflow environment for every pass/sample pair.",
+    "Unicorn could not execute 528 inputs because the installed x86 emulator lacked an instruction capability.",
+    "The report measures bounded static/dynamic analyzer observations; it does not prove generalized resistance.",
+    "The VM resistance artifacts for this run still mark human adversarial validation pending."
+  ]
+}

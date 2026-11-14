@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "source_commit": "334f6626a38bfdbf933ecaf5afdc4312a6d61d98",
+  "workflow": "Adversarial Analysis Benchmark",
+  "workflow_run": 43592902305,
+  "run_attempt": 1,
+  "artifacts": {
+    "vm-resistance": {
+      "report": "protection-vm-resistance-adversarial-2026-11-14-43592902305.json.gz",
+      "report_sha256": "09839a657e59ebc91435927de2c2f2e8d41ed24b5600db67f9ac5974a2cee6a6",
+      "report_bytes": 15384,
+      "uncompressed_sha256": "97a72c55ba9390c751e6fe1c0ddabe4a3053f84b952a0bfda9aab34d08d4c530",
+      "uncompressed_bytes": 373307
+    },
+    "seed-diversity": {
+      "report": "protection-vm-seed-diversity-2026-11-14-43592902305.json.gz",
+      "report_sha256": "26335a222f0f31f6b91be10fc39f5ae808f30733f580e7cba94d34d3371e441e",
+      "report_bytes": 484,
+      "uncompressed_sha256": "077a49437857b5ea724944029cb8d1f83ffb3b5f341660a5b7c5822375ea4815",
+      "uncompressed_bytes": 2728
+    },
+    "bytecode-grammar": {
+      "report": "protection-vm-bytecode-grammar-2026-11-14-43592902305.json.gz",
+      "report_sha256": "5d5c918fac61c5f3867d6ea0a1b9e3ad9584e64d1ac3fceab2414b16ed1dd29d",
+      "report_bytes": 709,
+      "uncompressed_sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef",
+      "uncompressed_bytes": 3771
+    }
+  },
+  "measurement": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "automated_status": "completed",
+    "fixture_count": 15,
+    "seed_count": 10,
+    "semantic_parity": true,
+    "cross_fixture_distinct_artifacts": true,
+    "opcode_assignment_diversity_observed": true,
+    "dispatcher_diversity_observed": true,
+    "handler_diversity_observed": true,
+    "bytecode_grammar_diversity_observed": true,
+    "all_tamper_probes_diverged": true,
+    "adversarial_recovery_probe_observed": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 6,
+    "seed_exact_normalised_matches": 0,
+    "seed_pairwise_comparisons": 2295,
+    "seed_similarity_above_threshold": 401,
+    "seed_similarity_threshold": 0.8,
+    "target_handler_stride_values": [
+      3,
+      4,
+      5
+    ],
+    "handler_stride_unique_count": 12
+  },
+  "human_adversarial_review": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "pending_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
+  "readiness": {
+    "published_resistance_results": "open"
+  },
+  "limitations": [
+    "This is an automated smoke on 15 fixtures and 10 seeds, not broad independent devirtualization testing.",
+    "Progressive growth was supported on only 6 of 15 fixtures.",
+    "Human adversarial validation remains pending, including ISA opcode, handler, dispatcher, anti-tamper, and progressive-protection review."
+  ]
+}

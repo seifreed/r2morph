@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "source_commit": "8ab01d2fac1e61f812252f37dc84fab54c1e8c2f",
+  "provenance": "local-source-tree",
+  "report": "protection-adversarial-local-analyzer-2026-11-14-8ab01d2f.json",
+  "report_sha256": "746b7afe648b6770b77fcb056bca8cafd3280ab5d8c3216c05c2fced10285f74",
+  "fixture": "elf_vm_arith_x86_64",
+  "fixture_sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+  "pass": {
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "pass_name": "CodeVirtualization",
+    "status": "applied",
+    "unsupported_functions": 0
+  },
+  "completed_analyzers": [
+    "angr",
+    "custom",
+    "ghidra",
+    "ida-pro",
+    "objdump",
+    "radare2",
+    "unicorn"
+  ],
+  "unavailable_analyzers": {
+    "binary-ninja": {
+      "analyzer license is unavailable": 1
+    },
+    "triton": {
+      "module 'triton' is unavailable": 1
+    }
+  },
+  "tool_errors": {},
+  "ida_pro": {
+    "status": "completed",
+    "functions_delta": 1,
+    "decompiler_lines_delta": 26,
+    "decompiler_bytes_delta": 939
+  },
+  "ghidra": {
+    "status": "completed",
+    "functions_delta": 2,
+    "decompiler_lines_delta": 35,
+    "decompiler_bytes_delta": 607
+  },
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "limitations": [
+    "This measures one fixture and one applied CodeVirtualization pass only.",
+    "Binary Ninja was unavailable because the local license was unavailable; Triton was unavailable on macOS ARM64.",
+    "The observed function and decompiler-output deltas are not evidence of general resistance."
+  ]
+}

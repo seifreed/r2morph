@@ -52,7 +52,11 @@
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json",
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json",
         "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json",
-        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json"
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json",
+        "docs/protection-adversarial-run-2026-11-14-43592902305.json",
+        "docs/protection-adversarial-corpus-2026-11-14-43592902305.json.gz",
+        "docs/protection-adversarial-local-analyzer-2026-11-14-8ab01d2f.json",
+        "docs/protection-adversarial-local-analyzer-2026-11-14-8ab01d2f-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -217,7 +221,13 @@
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json",
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json",
         "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json",
-        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json"
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json",
+        "docs/protection-adversarial-run-2026-11-14-43592902305.json",
+        "docs/protection-adversarial-corpus-2026-11-14-43592902305.json.gz",
+        "docs/protection-vm-resistance-run-2026-11-14-43592902305.json",
+        "docs/protection-vm-resistance-adversarial-2026-11-14-43592902305.json.gz",
+        "docs/protection-vm-seed-diversity-2026-11-14-43592902305.json.gz",
+        "docs/protection-vm-bytecode-grammar-2026-11-14-43592902305.json.gz"
       ]
     },
     "stable_api_cli": {

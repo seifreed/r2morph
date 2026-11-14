@@ -660,6 +660,37 @@ and [raw report](protection-adversarial-local-multianalyzer-two-fixture-2026-11-
 This remains a two-fixture local calibration; 20 passes did not apply, and the
 all-analyzer and generalized-resistance criteria remain open.
 
+The adversarial workflow on source commit `334f6626` completed all 32 fixture
+shards. It covered 362 samples, including 200 generated fixtures, across 22
+passes: 7,964 pass rows and 71,676 expected analyzer rows. It recorded 55,220
+completed analyzer rows (77.04%), 16,456 unavailable rows, and zero tool
+errors. Binary Ninja and IDA Pro were unavailable for all rows in that Linux
+workflow; Unicorn lacked support for an instruction in 528 rows. The
+CodeVirtualization pass applied to all 362 samples and virtualized 636
+functions, while 14 functions were rejected for exception/unwind or SSA
+liveness capability gaps. The 44.8 MB raw report is retained compressed with
+hashes in
+[the run summary](protection-adversarial-run-2026-11-14-43592902305.json) and
+[the report archive](protection-adversarial-corpus-2026-11-14-43592902305.json.gz).
+
+The same workflow's VM resistance smoke preserved semantic parity across 15
+fixtures and 10 seeds, observed cross-fixture and seed diversity, and had all
+tested tamper probes diverge. Progressive bytecode growth was supported on 6
+of 15 fixtures; normalized output still had 401 above-threshold similarities
+among 2,295 seed comparisons. The hash-bound reports are
+[summarized here](protection-vm-resistance-run-2026-11-14-43592902305.json).
+Their evidence quality is automated smoke, and human adversarial review
+remains pending.
+
+A separate local run on source commit `8ab01d2f` applied CodeVirtualization to
+one fixture. IDA Pro 9.5 and Ghidra 12.2 both completed; IDA reported +1 function, +26
+decompiler lines, and +939 bytes, while Ghidra reported +2 functions, +35
+lines, and +607 bytes. Binary Ninja remained unavailable because its license was unavailable,
+and Triton was unavailable on macOS ARM64. The raw report and hash-bound
+[summary](protection-adversarial-local-analyzer-2026-11-14-8ab01d2f-summary.json)
+are retained. This adds a current local IDA/Ghidra slice but does not close the
+all-analyzer or general resistance criteria.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
