@@ -522,9 +522,16 @@ target runs, zero failures). Its raw output and hash-bound summary are
 [protection-fuzz-vm-decoder-2026-11-14-03984513-output.json](protection-fuzz-vm-decoder-2026-11-14-03984513-output.json)
 and
 [protection-fuzz-vm-decoder-2026-11-14-03984513.json](protection-fuzz-vm-decoder-2026-11-14-03984513.json).
-This is local source-tree evidence; the three-platform workflow for the commit
-is still pending. It expands decoder coverage but does not establish semantic
-equivalence, platform parity, or general resistance.
+The installed-wheel campaign for the same commit then passed on Ubuntu,
+macOS ARM64, and Windows in
+[workflow run 43527087277](https://github.com/seifreed/r2morph/actions/runs/43527087277):
+150,000 target runs across three runners, zero failures, and 103 counted
+recoverable Mach-O parser warnings per runner. Its per-runner reports and
+hash-bound aggregate are
+[protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json](protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json).
+This verifies wheel-backed fuzz execution on the three declared runners; it
+does not establish semantic equivalence, platform parity, or general
+resistance.
 
 ## Blocker index
 

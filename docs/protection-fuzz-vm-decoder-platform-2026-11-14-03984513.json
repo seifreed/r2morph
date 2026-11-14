@@ -1,0 +1,92 @@
+{
+  "cases_per_target": 5000,
+  "commit": "03984513ad24062d6767682afff957828489f023",
+  "failure_count": 0,
+  "generated_at": "2026-11-14",
+  "measurement": "continuous-fuzzing",
+  "platform_count": 3,
+  "platforms": [
+    {
+      "campaign_report": "protection-fuzz-vm-decoder-platform-2026-11-14-03984513-ubuntu-latest.json",
+      "campaign_report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "cases_per_target": 5000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "python": "3.12",
+      "runner": "ubuntu-latest",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000
+    },
+    {
+      "campaign_report": "protection-fuzz-vm-decoder-platform-2026-11-14-03984513-macos-15.json",
+      "campaign_report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "cases_per_target": 5000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "python": "3.12",
+      "runner": "macos-15",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000
+    },
+    {
+      "campaign_report": "protection-fuzz-vm-decoder-platform-2026-11-14-03984513-windows-latest.json",
+      "campaign_report_sha256": "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+      "cases_per_target": 5000,
+      "failure_count": 0,
+      "package_source": "installed-wheel",
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "python": "3.12",
+      "runner": "windows-latest",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "total_target_runs": 50000
+    }
+  ],
+  "provenance": "github-actions-installed-wheel",
+  "schema_version": 1,
+  "seed": 20260827,
+  "status": "passed",
+  "target_count": 10,
+  "total_target_runs": 150000,
+  "workflow_run": 43527087277
+}

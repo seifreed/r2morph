@@ -18,7 +18,9 @@ _PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-12-d
 _CURRENT_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026-11-13-134af4ff.json"
 _VM_DECODER_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513.json"
 _VM_DECODER_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513-output.json"
+_VM_DECODER_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json"
 _CURRENT_PLATFORM_RUN = 43_331_412_474
+_VM_DECODER_PLATFORM_RUN = 43_527_087_277
 _PLATFORM_RUNNERS = {"ubuntu-latest", "macos-15", "windows-latest"}
 _PLATFORM_WORKFLOW_RUN = 43_160_969_902
 _WORKFLOW_RUN = 43_067_351_979
@@ -279,3 +281,71 @@ def test_vm_decoder_campaign_does_not_expose_host_paths() -> None:
     report = _VM_DECODER_REPORT.read_text(encoding="utf-8") + _VM_DECODER_RAW_REPORT.read_text(encoding="utf-8")
 
     expect(not any(prefix in report for prefix in _HOST_PATH_PREFIXES))
+
+
+def test_vm_decoder_platform_campaign_binds_to_successful_wheel_workflow() -> None:
+    report = json.loads(_VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["commit"] == _VM_DECODER_COMMIT
+        and report["workflow_run"] == _VM_DECODER_PLATFORM_RUN
+        and report["provenance"] == "github-actions-installed-wheel"
+        and report["failure_count"] == 0
+        and report["status"] == "passed"
+    )
+
+
+def test_vm_decoder_platform_campaign_covers_all_targets_on_every_runner() -> None:
+    report = json.loads(_VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["cases_per_target"] == _VM_DECODER_CASES
+        and report["target_count"] == len(_VM_DECODER_TARGETS)
+        and report["platform_count"] == len(_PLATFORM_RUNNERS)
+        and report["total_target_runs"] == _VM_DECODER_CASES * len(_VM_DECODER_TARGETS) * len(_PLATFORM_RUNNERS)
+        and {platform["runner"] for platform in report["platforms"]} == _PLATFORM_RUNNERS
+        and all(
+            platform["cases_per_target"] == _VM_DECODER_CASES
+            and platform["failure_count"] == 0
+            and set(platform["target_runs"]) == _VM_DECODER_TARGETS
+            and all(platform["target_runs"][target] == _VM_DECODER_CASES for target in _VM_DECODER_TARGETS)
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_vm_decoder_platform_campaign_binds_each_downloaded_report_hash() -> None:
+    report = json.loads(_VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all(
+            hashlib.sha256(
+                (_ROOT / "docs" / platform["campaign_report"]).read_bytes().replace(b"\n", b"\r\n")
+                if platform["runner"] == "windows-latest"
+                else (_ROOT / "docs" / platform["campaign_report"]).read_bytes()
+            ).hexdigest()
+            == platform["campaign_report_sha256"]
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_vm_decoder_platform_campaign_records_recoverable_parser_warnings() -> None:
+    report = json.loads(_VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        all(
+            platform["parser_diagnostic_counts"] == {"macho_load_commands.warning": 103}
+            for platform in report["platforms"]
+        )
+    )
+
+
+def test_vm_decoder_platform_campaign_does_not_expose_host_paths() -> None:
+    report = json.loads(_VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8"))
+    text = _VM_DECODER_PLATFORM_REPORT.read_text(encoding="utf-8")
+    text += "".join(
+        (_ROOT / "docs" / platform["campaign_report"]).read_text(encoding="utf-8") for platform in report["platforms"]
+    )
+
+    expect(not any(prefix in text for prefix in _HOST_PATH_PREFIXES))

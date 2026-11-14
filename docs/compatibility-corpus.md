@@ -642,9 +642,16 @@ Python 3.13.11 source-tree run completed 5,000 cases on each of ten fuzz targets
 [`protection-fuzz-vm-decoder-2026-11-14-03984513-output.json`](protection-fuzz-vm-decoder-2026-11-14-03984513-output.json)
 and
 [`protection-fuzz-vm-decoder-2026-11-14-03984513.json`](protection-fuzz-vm-decoder-2026-11-14-03984513.json).
-This expands decoder coverage only. The three-platform wheel workflow is still
-pending, and this report does not establish semantic equivalence, platform
-parity, or general resistance.
+The installed-wheel workflow for this commit completed successfully on Ubuntu,
+macOS ARM64, and Windows in
+[run 43527087277](https://github.com/seifreed/r2morph/actions/runs/43527087277).
+It covered ten targets with 5,000 cases each per runner (150,000 target runs
+total), with zero failures and 103 counted recoverable Mach-O parser warnings
+per runner. The three raw reports and their hash-bound aggregate are recorded
+in
+[`protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json`](protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json).
+This adds wheel-backed decoder fuzz evidence on all three runners; it does not
+establish semantic equivalence, platform parity, or general resistance.
 
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
