@@ -688,6 +688,16 @@ in
 This adds wheel-backed decoder fuzz evidence on all three runners; it does not
 establish semantic equivalence, platform parity, or general resistance.
 
+On current commit `84e1202f`, I also rebuilt and installed the wheel locally on
+macOS 27.2 ARM64 with Python 3.12.16, then ran the same ten-target campaign
+with seed `20261114`: 50,000 target runs and zero failures. The report records
+103 recoverable Mach-O parser warnings and binds the run to the installed
+wheel's SHA-256. See the
+[`local wheel summary`](protection-fuzz-wheel-local-2026-11-14-84e1202f.json)
+and [raw report](protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json).
+This is one-host evidence only; the fresh three-runner campaign for the same
+commit is still pending and no platform-parity claim follows from it.
+
 A second host analyzer shard ran CodeVirtualization on 11 additional ELF x86-64
 fixtures. All 11 transformations applied without unsupported functions or pass
 errors. IDA Pro 9.5, Ghidra 12.2, angr, Unicorn, radare2, objdump, and the custom

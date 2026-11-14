@@ -19,6 +19,8 @@ _CURRENT_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-platform-2026
 _VM_DECODER_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513.json"
 _VM_DECODER_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-2026-11-14-03984513-output.json"
 _VM_DECODER_PLATFORM_REPORT = _ROOT / "docs" / "protection-fuzz-vm-decoder-platform-2026-11-14-03984513.json"
+_LOCAL_WHEEL_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-local-2026-11-14-84e1202f.json"
+_LOCAL_WHEEL_RAW_REPORT = _ROOT / "docs" / "protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json"
 _CURRENT_PLATFORM_RUN = 43_331_412_474
 _VM_DECODER_PLATFORM_RUN = 43_527_087_277
 _PLATFORM_RUNNERS = {"ubuntu-latest", "macos-15", "windows-latest"}
@@ -43,6 +45,10 @@ _EXPECTED_TARGETS = {
 _VM_DECODER_TARGETS = _EXPECTED_TARGETS | {"vm_instruction_decoder"}
 _VM_DECODER_CASES = 5_000
 _VM_DECODER_COMMIT = "03984513ad24062d6767682afff957828489f023"
+_LOCAL_WHEEL_COMMIT = "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe"
+_LOCAL_WHEEL_CASES = 5_000
+_LOCAL_WHEEL_SEED = 20_261_114
+_LOCAL_WHEEL_TOTAL_TARGET_RUNS = _LOCAL_WHEEL_CASES * len(_VM_DECODER_TARGETS)
 
 
 def test_published_fuzz_campaign_covers_each_format_target() -> None:
@@ -191,6 +197,39 @@ def test_current_platform_fuzz_campaign_does_not_expose_host_paths() -> None:
     )
 
     expect(not any(prefix in "".join(reports) for prefix in _HOST_PATH_PREFIXES))
+
+
+def test_current_local_wheel_fuzz_campaign_binds_to_source_and_wheel() -> None:
+    report = json.loads(_LOCAL_WHEEL_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        report["commit"] == _LOCAL_WHEEL_COMMIT
+        and report["provenance"] == "local-installed-wheel"
+        and hashlib.sha256(_LOCAL_WHEEL_RAW_REPORT.read_bytes()).hexdigest() == report["campaign_report_sha256"]
+        and report["runtime"]["wheel_sha256"] == "1fb60f55b089838eb370b1ffe9be1a1193a6013577f7b01c117f294490428f26"
+    )
+
+
+def test_current_local_wheel_fuzz_campaign_passes_all_targets() -> None:
+    summary = json.loads(_LOCAL_WHEEL_REPORT.read_text(encoding="utf-8"))
+    campaign = json.loads(_LOCAL_WHEEL_RAW_REPORT.read_text(encoding="utf-8"))
+
+    expect(
+        summary["status"] == "passed"
+        and summary["failure_count"] == 0
+        and summary["target_count"] == len(_VM_DECODER_TARGETS)
+        and summary["total_target_runs"] == _LOCAL_WHEEL_TOTAL_TARGET_RUNS
+        and campaign["seed"] == summary["seed"] == _LOCAL_WHEEL_SEED
+        and campaign["failure_count"] == 0
+        and set(campaign["target_runs"]) == _VM_DECODER_TARGETS
+        and all(count == _LOCAL_WHEEL_CASES for count in campaign["target_runs"].values())
+    )
+
+
+def test_current_local_wheel_fuzz_campaign_does_not_expose_host_paths() -> None:
+    reports = _LOCAL_WHEEL_REPORT.read_text(encoding="utf-8") + _LOCAL_WHEEL_RAW_REPORT.read_text(encoding="utf-8")
+
+    expect(not any(prefix in reports for prefix in _HOST_PATH_PREFIXES))
 
 
 def test_latest_platform_fuzz_campaign_binds_to_the_current_commit_and_run() -> None:

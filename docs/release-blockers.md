@@ -27,6 +27,15 @@ and
 [protection-platform-macos-arm64-2026-11-14-60dfc8d.xml](protection-platform-macos-arm64-2026-11-14-60dfc8d.xml).
 This is bounded preview evidence and leaves cross-platform parity open.
 
+On the current source commit `84e1202f`, a fresh wheel-backed fuzz campaign
+passed locally on macOS 27.2 ARM64 with Python 3.12.16: 5,000 cases for each of
+10 targets (50,000 target runs), zero failures, and 103 counted recoverable
+Mach-O parser warnings. The raw result and wheel hash are retained in
+[the local campaign summary](protection-fuzz-wheel-local-2026-11-14-84e1202f.json)
+and [its raw report](protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json).
+This adds current-commit evidence for the local macOS host only; the
+three-runner fuzz campaign is still running and platform parity remains open.
+
 ## Resolved blockers
 
 - The latest differential workflow, run

@@ -1,0 +1,23 @@
+{
+  "cases_per_target": 5000,
+  "campaign_report": "protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json",
+  "campaign_report_sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+  "commit": "84e1202f09bb5265c3b8f8a4f5b21dd541901bfe",
+  "failure_count": 0,
+  "generated_at": "2026-11-14",
+  "measurement": "continuous-fuzzing",
+  "provenance": "local-installed-wheel",
+  "runtime": {
+    "architecture": "arm64",
+    "os": "macOS 27.2",
+    "package_source": "installed-wheel",
+    "python": "3.12.16",
+    "wheel": "r2morph-0.4.0a3-py3-none-any.whl",
+    "wheel_sha256": "1fb60f55b089838eb370b1ffe9be1a1193a6013577f7b01c117f294490428f26"
+  },
+  "schema_version": 1,
+  "seed": 20261114,
+  "status": "passed",
+  "target_count": 10,
+  "total_target_runs": 50000
+}
