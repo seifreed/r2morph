@@ -6,19 +6,15 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
-## Latest full CI verification of a code-bearing commit
+## Latest full CI verification on main
 
-Commit `147a52f7e87265b51f8b8cd86a5b4f9b4e81d89f` passed CI run
-[`43505616930`](https://github.com/seifreed/r2morph/actions/runs/43505616930)
-with all 15 jobs successful. The run includes unit and integration suites,
-installed-wheel smoke tests, property and fuzz validation, lint and type
-checking, and macOS, Windows, and Ubuntu jobs on Python 3.12 and 3.13. The
-subsequent evidence-only commit `1b821f38701da2766cfd5f39a831f037798c5f75`
-passed the full local suite (6,740 passed, 225 skipped, 82.16% coverage) and
-the required static checks in a clean worktree. Its CI run
-[`43511386443`](https://github.com/seifreed/r2morph/actions/runs/43511386443)
-is still queued; the `147a52f` result therefore remains the latest completed
-remote CI evidence. These results do not close the separate open 1.0 criteria
+Commit `72697b8b02e3fd6b7aac6f2ed1cca60d38d94971` passed CI run
+[`43534838676`](https://github.com/seifreed/r2morph/actions/runs/43534838676)
+with all 15 jobs successful and none skipped. The run includes unit and
+integration suites, installed-wheel and product smoke tests, property and fuzz
+validation, lint and type checking, and Linux, macOS, and Windows jobs on
+Python 3.12 and 3.13. These results verify the current main tree; they do not
+close the separate open 1.0 parity, analyzer-coverage, or resistance criteria
 below.
 
 ## Resolved blockers
