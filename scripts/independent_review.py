@@ -11,6 +11,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from git import Repo
+from git.exc import BadName, InvalidGitRepositoryError
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from r2morph.platform.elf_handler_parsing import parse_elf_header
@@ -67,7 +70,7 @@ _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "Binary Ninja is deliberately on hold",
     "anti-tamper and progressive bytecode protection",
-    "Independent human review records signoff",
+    "Independent human review records approval",
 )
 _CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
 _CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
@@ -126,7 +129,27 @@ def _human_review_signoff(root: Path) -> dict[str, Any] | None:
         record.get("specialist_expertise_confirmation"), str
     ):
         raise ValueError("human review signoff must record its independence and expertise confirmations")
+    if not _reviewed_tree_is_current(root, record["reviewed_commit"]):
+        return None
     return record
+
+
+def _reviewed_tree_is_current(root: Path, reviewed_commit: str) -> bool:
+    try:
+        repository = Repo(root, search_parent_directories=False)
+        reviewed = repository.commit(reviewed_commit)
+        current = repository.head.commit
+    except (BadName, InvalidGitRepositoryError):
+        return False
+    if repository.is_dirty(untracked_files=False):
+        return False
+    merge_bases = repository.merge_base(reviewed, current)
+    if not any(base.hexsha == reviewed.hexsha for base in merge_bases):
+        return False
+    changed_paths = {
+        path for change in reviewed.diff(current) for path in (change.a_path, change.b_path) if path is not None
+    }
+    return changed_paths <= {"docs/human-review-signoff.json"}
 
 
 def _review_virtualization(root: Path) -> dict[str, object]:
@@ -282,20 +305,14 @@ def _review_vm_fail_closed_diagnostics(root: Path) -> dict[str, object]:
 def _review_vm_resistance_adversarial_scope(root: Path) -> dict[str, object]:
     handler = json.loads((root / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((root / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
-    signoff = _human_review_signoff(root)
     passed = (
         handler.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
         and bytecode.get("adversarial_validation") == _EXPECTED_VM_ADVERSARIAL_VALIDATION
-        and signoff is not None
     )
     return _check(
         "vm_resistance_adversarial_scope",
         passed,
-        (
-            "automated resistance evidence is paired with an independent human signoff"
-            if signoff is not None
-            else "independent human signoff is missing"
-        ),
+        "automated resistance evidence keeps human adversarial validation explicitly pending",
     )
 
 
@@ -807,7 +824,7 @@ def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]
             "reason": (
                 f"independent human review approved commit {human_signoff['reviewed_commit']}"
                 if human_signoff is not None
-                else "automated evidence is not a substitute for external human review"
+                else "current production tree lacks a matching independent human review"
             ),
         },
         "checks": checks,
@@ -815,7 +832,7 @@ def review(root: Path, adversarial_report: Path | None = None) -> dict[str, Any]
         "limitations": (
             ["Human approval applies only to the reviewed commit."]
             if human_signoff is not None
-            else ["This artifact is not a substitute for an external human review."]
+            else ["The production tree changed after the recorded human review."]
         ),
     }
 

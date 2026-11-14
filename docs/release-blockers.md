@@ -503,9 +503,11 @@ This is bounded preview evidence and leaves cross-platform parity open.
   Exit criteria: the
   approval remains bound to the reviewed commit; implementation changes require
   another independent review.
-- RB-007: Independent human review records signoff for the reviewed VM commit and
-  the release decision now reports `signoff-recorded`. The
-  `human_signoff` and `release_decision` fields record this state. Evidence map:
+- RB-007: Independent human review records approval for commit
+  `a111f923df43a66826b71ab70db8a484532fbf3b`. Later production changes make that
+  approval stale for the current tree; the automated report now records
+  `human_signoff: not-attested` and `release_decision: block-vm-milestone`.
+  The release workflow requires a matching review of the final tree. Evidence map:
   [human-review-signoff.json](human-review-signoff.json),
   [independent-review.json](independent-review.json). Exit criteria: preserve
   the review record and require a new review when the reviewed implementation

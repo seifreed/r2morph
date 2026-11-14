@@ -1421,13 +1421,25 @@ def test_release_contract_rejects_failed_independent_review_check() -> None:
     expect(rejected)
 
 
-def test_release_contract_rejects_independent_review_without_vm_block() -> None:
+def test_release_contract_rejects_signoff_decision_without_current_attestation() -> None:
     report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
-    report["release_decision"]["status"] = "block-vm-milestone"
+    report["release_decision"]["status"] = "signoff-recorded"
 
     rejected = False
     try:
         _validate_independent_review_artifact(report)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
+def test_release_contract_blocks_release_for_stale_human_signoff() -> None:
+    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+
+    rejected = False
+    try:
+        _validate_independent_review_artifact(report, require_current_human_signoff=True)
     except ValueError:
         rejected = True
 
@@ -1496,7 +1508,7 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
 
     expect(
         "Validate support contract" in workflow
-        and "run: python scripts/check_release_contract.py" in workflow
+        and "run: python scripts/check_release_contract.py --require-current-human-signoff" in workflow
         and "Require green validation workflows for release commit" in workflow
         and "for workflow_file in ci.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml"
         in workflow

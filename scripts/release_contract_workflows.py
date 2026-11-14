@@ -133,7 +133,7 @@ def _check_release_workflow() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     for fragment in (
         "Validate support contract",
-        "run: python scripts/check_release_contract.py",
+        "run: python scripts/check_release_contract.py --require-current-human-signoff",
         "Require release commit on main",
         'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
         "sbom.cdx.json",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import tomllib
@@ -239,7 +240,10 @@ __all__ = (
 )
 
 
-def main() -> int:
+def main(arguments: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--require-current-human-signoff", action="store_true")
+    args = parser.parse_args(arguments or [])
     try:
         package_version = _check_version()
         _check_one_zero_release_gate(
@@ -258,7 +262,7 @@ def main() -> int:
         _check_changelog(package_version)
         _check_inventory()
         _check_vm_resistance_artifacts()
-        _check_independent_review_artifact()
+        _check_independent_review_artifact(args.require_current_human_signoff)
         _check_independent_review_packet_claims()
         _check_adversarial_benchmark_artifacts()
         _check_angr_runtime_available()
@@ -281,4 +285,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

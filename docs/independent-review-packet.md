@@ -260,8 +260,12 @@ the aggregate counters alone.
 
 ## Sign-off
 
-Current automated report: `human_signoff: attested`;
-`release_decision: signoff-recorded`.
+Current automated report: `human_signoff: not-attested`;
+`release_decision: block-vm-milestone`.
+
+The approval below remains valid for its reviewed commit. The production tree
+has changed since then, so the stable-release gate requires a new review of the
+final tree and a commit that records only that signoff.
 
 ### Historical agent review record (not current human sign-off)
 
@@ -286,5 +290,5 @@ reviewer acted independently of the authoring team and has specialist
 experience in binary rewriting and virtualization. The signoff is recorded
 from that explicit confirmation and is not cryptographically signed.
 
-This approval applies to the reviewed commit only. Changes to the reviewed VM
-implementation require a new independent review.
+This approval applies to the reviewed commit only. Changes to production code,
+build configuration, or release automation require a new independent review.

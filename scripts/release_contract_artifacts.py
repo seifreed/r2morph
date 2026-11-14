@@ -9,9 +9,11 @@ from collections.abc import Callable
 
 try:
     from scripts.adversarial_benchmark import _tool_summary
+    from scripts.independent_review import _human_review_signoff
     from scripts.independent_review import review as build_independent_review
 except ModuleNotFoundError:
     from adversarial_benchmark import _tool_summary
+    from independent_review import _human_review_signoff
     from independent_review import review as build_independent_review
 
 try:
@@ -150,28 +152,33 @@ def _check_vm_resistance_artifacts() -> None:
     _validate_vm_resistance_artifacts(handler, bytecode)
 
 
-def _validate_independent_review_artifact(report: dict[str, object]) -> None:
+def _validate_independent_review_artifact(
+    report: dict[str, object], require_current_human_signoff: bool = False
+) -> None:
     if report.get("passed") is not True:
-        raise ValueError("independent review artifact must pass")
+        raise ValueError("automated independent review artifact must pass")
     human_review = report.get("human_review")
-    signoff = json.loads((ROOT / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
-    if (
-        report.get("human_signoff") != "attested"
-        or not isinstance(human_review, dict)
-        or human_review != signoff
-        or human_review.get("result") != "APPROVE"
-        or human_review.get("independent") is not True
-        or human_review.get("findings") != []
-    ):
-        raise ValueError("independent review artifact must include approved independent human signoff")
+    signoff = _human_review_signoff(ROOT)
     release_decision = report.get("release_decision")
-    if (
-        not isinstance(release_decision, dict)
+    if not isinstance(release_decision, dict):
+        raise ValueError("independent review artifact must record the release decision")
+    if signoff is None:
+        if require_current_human_signoff:
+            raise ValueError("release requires independent human approval for the current source tree")
+        if (
+            report.get("human_signoff") != "not-attested"
+            or human_review is not None
+            or release_decision.get("status") != "block-vm-milestone"
+            or release_decision.get("reason") != "current production tree lacks a matching independent human review"
+        ):
+            raise ValueError("independent review artifact must report the stale human-review blocker")
+    elif (
+        report.get("human_signoff") != "attested"
+        or human_review != signoff
         or release_decision.get("status") != "signoff-recorded"
-        or release_decision.get("reason")
-        != f"independent human review approved commit {human_review['reviewed_commit']}"
+        or release_decision.get("reason") != f"independent human review approved commit {signoff['reviewed_commit']}"
     ):
-        raise ValueError("independent review artifact must record the human review decision")
+        raise ValueError("independent review artifact must match the current independent human signoff")
     checks = report.get("checks")
     if not isinstance(checks, list):
         raise ValueError("independent review artifact must contain checks")
@@ -187,16 +194,21 @@ def _validate_independent_review_freshness(report: dict[str, object]) -> None:
         raise ValueError("independent review artifact must match the current review output")
 
 
-def _check_independent_review_artifact() -> None:
+def _check_independent_review_artifact(require_current_human_signoff: bool = False) -> None:
     report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
-    _validate_independent_review_artifact(report)
+    _validate_independent_review_artifact(report, require_current_human_signoff)
     _validate_independent_review_freshness(report)
 
 
 def _check_independent_review_packet_claims() -> None:
     packet = " ".join((ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
+    report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    release_decision = report.get("release_decision")
+    if not isinstance(release_decision, dict):
+        raise ValueError("independent review packet requires a release decision")
+    release_status = release_decision.get("status")
     for fragment in (
-        "release_decision: signoff-recorded",
+        f"release_decision: {release_status}",
         "Reviewer: Marc Rivero Lopez",
         "Result: APPROVE",
         "specialist experience in binary rewriting and virtualization",

@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import cast
 
+from git import Repo
+
 from scripts.independent_review import (
     _EXPECTED_BENCHMARK_TOOLS,
     _human_review_signoff,
@@ -11,6 +13,37 @@ from scripts.independent_review import (
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
+
+
+def _commit_file(root: Path, relative_path: str, message: str) -> str:
+    repository = Repo(root)
+    repository.index.add([relative_path])
+    return repository.index.commit(message).hexsha
+
+
+def _create_review_repository(root: Path) -> str:
+    repository = Repo.init(root)
+    with repository.config_writer() as config:
+        config.set_value("user", "name", "Review Test")
+        config.set_value("user", "email", "review-test@example.invalid")
+    source = root / "r2morph" / "module.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("VALUE = 1\n", encoding="utf-8")
+    return _commit_file(root, "r2morph/module.py", "Add reviewed source")
+
+
+def _review_signoff(reviewed_commit: str) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "reviewer": "Independent specialist",
+        "review_date_utc": "2026-11-08",
+        "result": "APPROVE",
+        "reviewed_commit": reviewed_commit,
+        "independent": True,
+        "independence_confirmation": "confirmed",
+        "specialist_expertise_confirmation": "confirmed",
+        "findings": [],
+    }
 
 
 def _live_campaign_report() -> dict[str, object]:
@@ -66,16 +99,41 @@ def test_independent_review_rejects_live_campaign_without_ghidra(tmp_path: Path)
     expect(check["status"] == "failed")
 
 
-def test_independent_review_passes_published_artifacts() -> None:
+def test_independent_review_reports_signoff_freshness() -> None:
     report = review(_ROOT)
-    signoff = json.loads((_ROOT / "docs" / "human-review-signoff.json").read_text(encoding="utf-8"))
+    signoff = _human_review_signoff(_ROOT)
 
     expect(
-        report["passed"] is True
-        and report["human_signoff"] == "attested"
+        report["human_signoff"] == ("attested" if signoff is not None else "not-attested")
         and report["human_review"] == signoff
-        and report["release_decision"]["status"] == "signoff-recorded"
+        and report["release_decision"]["status"]
+        == ("signoff-recorded" if signoff is not None else "block-vm-milestone")
     )
+
+
+def test_human_review_accepts_signoff_only_commit(tmp_path: Path) -> None:
+    reviewed_commit = _create_review_repository(tmp_path)
+    signoff = _review_signoff(reviewed_commit)
+    signoff_path = tmp_path / "docs" / "human-review-signoff.json"
+    signoff_path.parent.mkdir()
+    signoff_path.write_text(json.dumps(signoff), encoding="utf-8")
+    _commit_file(tmp_path, "docs/human-review-signoff.json", "Record independent review")
+
+    expect(_human_review_signoff(tmp_path) == signoff)
+
+
+def test_human_review_rejects_signoff_after_source_change(tmp_path: Path) -> None:
+    reviewed_commit = _create_review_repository(tmp_path)
+    signoff = _review_signoff(reviewed_commit)
+    signoff_path = tmp_path / "docs" / "human-review-signoff.json"
+    signoff_path.parent.mkdir()
+    signoff_path.write_text(json.dumps(signoff), encoding="utf-8")
+    _commit_file(tmp_path, "docs/human-review-signoff.json", "Record independent review")
+    source = tmp_path / "r2morph" / "module.py"
+    source.write_text("VALUE = 2\n", encoding="utf-8")
+    _commit_file(tmp_path, "r2morph/module.py", "Change reviewed source")
+
+    expect(_human_review_signoff(tmp_path) is None)
 
 
 def test_independent_review_includes_corpus_benchmark_check() -> None:

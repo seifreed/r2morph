@@ -69,7 +69,7 @@ jobs:
           PY
 
       - name: Validate support contract
-        run: python scripts/check_release_contract.py
+        run: python scripts/check_release_contract.py --require-current-human-signoff
 
       - name: Require green validation workflows for release commit
         env:

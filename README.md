@@ -195,9 +195,10 @@ the slot is on hold. Separately, the 159-sample evidence summarized in
 and `159 samples, 0 IDA errors`. These are campaign-specific
 results: availability in one campaign does not fill unavailable rows in another,
 and the all-named-analyzers 1.0 criterion remains open.
-The VM review packet records `human_signoff: attested` and
-`release_decision: signoff-recorded`. Human independent review approved the
-reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. The project owner
+The current automated report records `human_signoff: not-attested` and
+`release_decision: block-vm-milestone`, because the production tree changed
+after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human
+independent review approved the reviewed commit only. The project owner
 confirms Marc Rivero Lopez's independence and specialist experience in binary
 rewriting and virtualization. He reviewed memory, direct/indirect calls,
 returns, flags, FP/SIMD, varargs/ABI,
@@ -207,8 +208,9 @@ include instruction address, mnemonic, type, size, bounded opcode preview,
 capability, and reason. The review covered VM ISA/opcode diversification,
 dispatcher/handler alternatives, superinstructions, anti-tamper, and progressive
 bytecode protection, fuzz properties, failure handling, and bounded report
-data. This approval applies to that commit; changes to the reviewed VM
-implementation require a new independent review.
+data. This approval applies to that commit only; stable release validation now
+requires a review of the final production tree, with a separate signoff-only
+commit.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 12 handler stride values, and
 target handler stride diversity recorded in

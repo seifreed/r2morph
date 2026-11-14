@@ -51,7 +51,7 @@
       "status": "passed"
     },
     {
-      "detail": "automated resistance evidence is paired with an independent human signoff",
+      "detail": "automated resistance evidence keeps human adversarial validation explicitly pending",
       "name": "vm_resistance_adversarial_scope",
       "status": "passed"
     },
@@ -136,25 +136,15 @@
       "status": "passed"
     }
   ],
-  "human_review": {
-    "findings": [],
-    "independence_confirmation": "confirmed by the project owner on 2026-11-09",
-    "independent": true,
-    "result": "APPROVE",
-    "review_date_utc": "2026-11-08",
-    "reviewed_commit": "a111f923df43a66826b71ab70db8a484532fbf3b",
-    "reviewer": "Marc Rivero Lopez",
-    "schema_version": 1,
-    "specialist_expertise_confirmation": "binary rewriting and virtualization experience confirmed by the project owner on 2026-11-09"
-  },
-  "human_signoff": "attested",
+  "human_review": null,
+  "human_signoff": "not-attested",
   "limitations": [
-    "Human approval applies only to the reviewed commit."
+    "The production tree changed after the recorded human review."
   ],
   "passed": true,
   "release_decision": {
-    "reason": "independent human review approved commit a111f923df43a66826b71ab70db8a484532fbf3b",
-    "status": "signoff-recorded"
+    "reason": "current production tree lacks a matching independent human review",
+    "status": "block-vm-milestone"
   },
   "review_type": "automated-independent-second-pass",
   "schema_version": 1
