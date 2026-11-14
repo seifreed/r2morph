@@ -728,6 +728,19 @@ commits and fixture hashes:
 This evidence remains a bounded local sample and does not close analyzer
 coverage, differential correctness, or resistance criteria.
 
+The Linux all-pass workflow run on source commit `fadc0e63` has published 20
+of its 32 shard artifacts so far. Those shards cover 139 unique samples and
+3,058 sample/pass rows; all 27,522 expected tool slots are present with zero
+reported adapter or pass errors. Triton, Ghidra, angr, radare2, objdump, and
+the project analyzer completed every row. IDA Pro and Binary Ninja were not
+installed on the Ubuntu runner, and Unicorn could not emulate an instruction
+in 352 rows. The run therefore confirms Triton availability on Linux while
+leaving all-analyzer coverage open. Its collected reports and artifact
+digests are retained in the [partial bundle](protection-adversarial-host-partial-2026-11-14-fadc0e63.json.gz)
+and [summary](protection-adversarial-host-partial-2026-11-14-fadc0e63-summary.json).
+The campaign was still in progress when collected; this partial result makes
+no general resistance claim.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

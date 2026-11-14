@@ -1,0 +1,144 @@
+{
+  "bundle": "protection-adversarial-host-partial-2026-11-14-fadc0e63.json.gz",
+  "bundle_bytes": 705507,
+  "bundle_sha256": "1e25f93f404d27df396a3cdc454b39f5b88e23778e22f455e9845c28993bb97d",
+  "completed_shard_indices": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    16,
+    17,
+    21,
+    23,
+    24,
+    29,
+    31
+  ],
+  "completed_shards": 20,
+  "completed_tool_runs": 21054,
+  "distinct_sample_count": 139,
+  "error_tool_runs": 0,
+  "expected_shards": 32,
+  "expected_tool_runs": 27522,
+  "limitations": [
+    "This is an incomplete 20-of-32-shard view of the 2026-11-14 workflow run; the remaining shards were still pending or running when collected.",
+    "Binary Ninja and IDA Pro were unavailable on the Ubuntu runner; local IDA evidence covers a separate bounded 12-fixture sample only.",
+    "Unicorn reported 352 fixture/pass rows unavailable because its installed emulator does not support an instruction in the fixture.",
+    "A partial campaign does not establish general analyzer effectiveness or VM resistance."
+  ],
+  "pass_count_per_sample": 22,
+  "pass_rows": 3058,
+  "pass_status_totals": {
+    "applied": 936,
+    "errors": 0,
+    "no_op": 2122,
+    "omitted": 0
+  },
+  "production_source_unchanged_through_commit": "8a293bfc52f6bcdb994884331796ec7249f26a78",
+  "remaining_shard_indices": [
+    0,
+    8,
+    15,
+    18,
+    19,
+    20,
+    22,
+    25,
+    26,
+    27,
+    28,
+    30
+  ],
+  "sample_count": 139,
+  "schema_version": 1,
+  "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+  "source_scope_commit": "8a293bfc52f6bcdb994884331796ec7249f26a78",
+  "tool_coverage": {
+    "angr": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "binary-ninja": {
+      "completed": 0,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 3058
+    },
+    "custom": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "ghidra": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "ida-pro": {
+      "completed": 0,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 3058
+    },
+    "objdump": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "radare2": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "triton": {
+      "completed": 3058,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 0
+    },
+    "unicorn": {
+      "completed": 2706,
+      "errors": 0,
+      "runs": 3058,
+      "unavailable": 352
+    }
+  },
+  "unavailable_reasons": {
+    "angr": {},
+    "binary-ninja": {
+      "module 'binaryninja' is unavailable": 3058
+    },
+    "custom": {},
+    "ghidra": {},
+    "ida-pro": {
+      "executable 'idat' is unavailable": 3058
+    },
+    "objdump": {},
+    "radare2": {},
+    "triton": {},
+    "unicorn": {
+      "the installed x86 emulator does not support an instruction in this fixture": 352
+    }
+  },
+  "unavailable_tool_runs": 6468,
+  "uncompressed_bytes": 24568756,
+  "uncompressed_sha256": "3968d805a75c80649e551cc3334be6d22f274861103f1ae1384d5cbb1f60bf0c",
+  "workflow": "Adversarial Analysis Benchmark",
+  "workflow_run_id": 43615553431
+}

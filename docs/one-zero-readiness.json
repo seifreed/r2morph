@@ -62,7 +62,9 @@
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-2237bacc.json.gz",
         "docs/protection-adversarial-local-allpasses-shards-2026-11-14-2237bacc-summary.json",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-654dc023.json.gz",
-        "docs/protection-adversarial-local-allpasses-shards-2026-11-14-654dc023-summary.json"
+        "docs/protection-adversarial-local-allpasses-shards-2026-11-14-654dc023-summary.json",
+        "docs/protection-adversarial-host-partial-2026-11-14-fadc0e63.json.gz",
+        "docs/protection-adversarial-host-partial-2026-11-14-fadc0e63-summary.json"
       ]
     },
     "complete_compatibility_contract": {
