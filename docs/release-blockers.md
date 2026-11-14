@@ -629,6 +629,24 @@ and
 This is one fixture and one pass; it does not close the named-analyzer matrix
 or establish general resistance.
 
+A follow-up local source-tree run at `87af8f71` evaluated all 22 declared
+passes on that fixture with IDA Pro 9.5, Ghidra 12.2, and a local build of
+Triton from upstream source commit `0ff0315021c416995e169334b25eb84f818caaeb`.
+Only CodeVirtualization and InstructionSubstitution applied; the other 20
+passes were explicit no-ops on this input. For CodeVirtualization, IDA reported
++26 decompiler lines and +939 bytes; Ghidra reported +35 lines and +607 bytes.
+Triton processed the protected image with 3,861 decoded instructions, 3,850
+semantically supported instructions, 29 invalid bytes, and no exhausted
+instruction budget. One function was fully virtualized with no partial or
+unsupported functions. Across the 198 expected pass/analyzer rows, 176
+completed without errors; Binary Ninja's API explicitly rejected the local
+license for all 22 passes. The raw report and its hash-bound summary are
+[protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json](protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json)
+and
+[protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json](protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json).
+This is still one fixture, and 20 passes did not apply; the all-analyzer and
+generalized-resistance criteria remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

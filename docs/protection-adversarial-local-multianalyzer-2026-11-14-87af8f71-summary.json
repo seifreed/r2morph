@@ -1,0 +1,413 @@
+{
+  "analyzers": {
+    "angr": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "binary-ninja": {
+      "completed": 0,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 22,
+      "unavailable_reasons": {
+        "analyzer license is unavailable": 22
+      }
+    },
+    "custom": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "ghidra": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "ida-pro": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "objdump": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "radare2": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "triton": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    },
+    "unicorn": {
+      "completed": 22,
+      "errors": 0,
+      "runs": 22,
+      "unavailable": 0
+    }
+  },
+  "applied_code_virtualization_deltas": {
+    "angr": {
+      "original": {
+        "decompiler_bytes": 56,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 4,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.04945024999324232,
+        "functions": 2,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 63,
+        "decompiler_entrypoints": 2,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 7,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.051392291992669925,
+        "functions": 3,
+        "status": "completed"
+      }
+    },
+    "custom": {
+      "original": {
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "functions": 3,
+        "status": "completed"
+      }
+    },
+    "ghidra": {
+      "original": {
+        "decompiler_bytes": 212,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_status": "completed",
+        "duration_seconds": 5.960062291007489,
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 819,
+        "decompiler_entrypoints": 3,
+        "decompiler_lines": 47,
+        "decompiler_status": "completed",
+        "duration_seconds": 5.26659437501803,
+        "functions": 3,
+        "status": "completed"
+      }
+    },
+    "ida-pro": {
+      "original": {
+        "decompiler_bytes": 43,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 4,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.434572166996077,
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 982,
+        "decompiler_entrypoints": 2,
+        "decompiler_lines": 30,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.862213042011717,
+        "functions": 2,
+        "status": "completed"
+      }
+    },
+    "objdump": {
+      "original": {
+        "instruction_lines": 6,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "instruction_lines": 12,
+        "return_code": 0,
+        "status": "completed"
+      }
+    },
+    "radare2": {
+      "original": {
+        "decompiler_bytes": 261,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 10,
+        "decompiler_status": "completed",
+        "functions": 1,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 2099,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 88,
+        "decompiler_status": "completed",
+        "functions": 3,
+        "return_code": 0,
+        "status": "completed"
+      }
+    },
+    "triton": {
+      "original": {
+        "decoded_instructions": 6,
+        "duration_seconds": 0.0016064999799709767,
+        "instruction_budget_exhausted": false,
+        "invalid_bytes": 0,
+        "semantically_supported_instructions": 6,
+        "status": "completed",
+        "symbolic_expressions": 30
+      },
+      "protected": {
+        "decoded_instructions": 3861,
+        "duration_seconds": 0.1201022089808248,
+        "instruction_budget_exhausted": false,
+        "invalid_bytes": 29,
+        "semantically_supported_instructions": 3850,
+        "status": "completed",
+        "symbolic_expressions": 20768
+      }
+    },
+    "unicorn": {
+      "original": {
+        "duration_seconds": 0.002581832988653332,
+        "exit_code": 45,
+        "status": "completed"
+      },
+      "protected": {
+        "duration_seconds": 0.10364841599948704,
+        "exit_code": 45,
+        "status": "completed"
+      }
+    }
+  },
+  "fixture": "elf_vm_arith_x86_64",
+  "fixture_sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+  "pass_count": 22,
+  "pass_status_counts": {
+    "applied": 2,
+    "no-op": 20
+  },
+  "passes": [
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "BlockReordering",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 1,
+      "mutations_applied": 0,
+      "name": "CodeVirtualization",
+      "partial_virtualization": 0,
+      "status": "applied",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "ConstantUnfolding",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "ControlFlowFlattening",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "DeadCodeInjection",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "InstructionExpansion",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "name": "InstructionSubstitution",
+      "partial_virtualization": 0,
+      "status": "applied",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "NopInsertion",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "PatternSubstitution",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "RegisterSubstitution",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "AntiDisassembly",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "APIHashing",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "CodeMobility",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "DataFlowMutation",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "FunctionOutlining",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "ImportObfuscation",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "OpaquePredicates",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "PolymorphicEngine",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "SelfModifyingCode",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "ShortJumpPatching",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "StackStrings",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    },
+    {
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "name": "StringObfuscation",
+      "partial_virtualization": 0,
+      "status": "no-op",
+      "unsupported_functions": 0
+    }
+  ],
+  "provenance": "local-source-tree",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "report_sha256": "bb1b4303798fdf09488044b4aeff5f103ce87f9194f5253c660a40bcf10929e4",
+  "source_commit": "87af8f7157a0d398107248763508081566dbc712",
+  "tool_coverage": {
+    "completed_run_coverage_percent": 88.89,
+    "completed_runs": 176,
+    "error_runs": 0,
+    "expected_runs": 198,
+    "unavailable_tools": [
+      "binary-ninja"
+    ]
+  },
+  "triton_build": {
+    "build": "local CMake release, Python 3.13 bindings, system Capstone 5.0.9, SMT interface disabled",
+    "source_commit": "0ff0315021c416995e169334b25eb84f818caaeb",
+    "upstream": "https://github.com/JonathanSalwan/Triton"
+  },
+  "triton_code_virtualization": {
+    "decoded_instructions": 3861,
+    "instruction_budget_exhausted": false,
+    "invalid_bytes": 29,
+    "semantically_supported_instructions": 3850
+  }
+}
