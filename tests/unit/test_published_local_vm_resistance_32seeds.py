@@ -16,7 +16,9 @@ _HANDLERS = _ROOT / "docs/protection-vm-handler-diversity-local-2026-11-14-100se
 _FIXTURE_COUNT = 10
 _SEED_COUNT = 32
 _HANDLER_SEED_COUNT = 100
-_HANDLER_COLLISION_COUNT = 58
+_HANDLER_REPORT_SCHEMA_VERSION = 3
+_HANDLER_COLLISION_COUNT = 54
+_WITHIN_SEED_HANDLER_COLLISION_COUNT = 0
 _HANDLER_COUNT_PER_SEED = 255
 _LARGEST_HANDLER_CLUSTER = 2
 _PROGRESSIVE_GROWTH_FIXTURE_COUNT = 7
@@ -66,9 +68,12 @@ def test_local_vm_handler_diversity_records_the_100_seed_collision_rate() -> Non
     expect(
         artifact["sha256"] == hashlib.sha256(_HANDLERS.read_bytes()).hexdigest()
         and report["seed_count"] == _HANDLER_SEED_COUNT
+        and report["schema_version"] == _HANDLER_REPORT_SCHEMA_VERSION
         and report["opcode_assignment_unique_count"] == _HANDLER_SEED_COUNT
         and report["cross_seed_exact_normalised_matches"] == _HANDLER_COLLISION_COUNT
         and report["cross_seed_largest_normalised_cluster"] == _LARGEST_HANDLER_CLUSTER
+        and report["within_seed_exact_normalised_matches"] == _WITHIN_SEED_HANDLER_COLLISION_COUNT
+        and report["within_seed_has_exact_normalised_matches"] is False
         and artifact["handler_count"] == _HANDLER_SEED_COUNT * _HANDLER_COUNT_PER_SEED
         and artifact["match_rate"] == report["cross_seed_exact_normalised_match_rate"]
     )

@@ -8,13 +8,13 @@
       "uncompressed_size_bytes": 551430
     },
     "handler_diversity": {
-      "exact_normalized_matches": 58,
+      "exact_normalized_matches": 54,
       "handler_count": 25500,
       "largest_cluster": 2,
-      "match_rate": 0.0022745098039215687,
+      "match_rate": 0.0021176470588235292,
       "path": "protection-vm-handler-diversity-local-2026-11-14-100seeds.json",
       "seed_count": 100,
-      "sha256": "68ee69f4bdc15ca97213ba7db0aebe8063a6179b719a1997576a28408b41f402"
+      "sha256": "86fdcbd61325c4ef2e6429ecc3818087478b04506266b7506510b29e5c1feaeb"
     }
   },
   "campaign": {

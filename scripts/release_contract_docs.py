@@ -203,6 +203,7 @@ def _check_pass_maturity_gap_summary(matrix: dict[str, object]) -> None:
         f"{summary['vm_resistance_blocker_totals']['total_vm_resistance_blockers']} VM resistance blockers",
         f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
         f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
+        f"{handler['within_seed_exact_normalised_matches']} exact normalized within-seed handler matches",
         f"{bytecode['all_handler_stride_unique_count']} handler stride values",
         "target handler stride diversity",
         "not human approval of anti-tamper or progressive bytecode protection",
@@ -316,6 +317,7 @@ def _check_readme_vm_resistance_summary() -> None:
     for fragment in (
         f"{handler['seed_count']} seeds with {VM_HANDLER_COUNT} handlers per seed",
         f"{handler['cross_seed_exact_normalised_matches']} exact normalized cross-seed handler matches",
+        f"{handler['within_seed_exact_normalised_matches']} exact normalized within-seed handler matches",
         f"{bytecode['all_handler_stride_unique_count']} handler stride values",
         "target handler stride diversity",
         "protection-handler-clustering.json",

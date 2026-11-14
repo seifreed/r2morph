@@ -104,6 +104,17 @@ def _validate_bytecode_diversification(bytecode: dict[str, object]) -> None:
         raise ValueError("bytecode grammar artifact must preserve per-seed target handler diversity")
 
 
+def _validate_handler_uniqueness(handler: dict[str, object]) -> None:
+    if handler.get("cross_seed_has_exact_normalised_matches") is not False:
+        raise ValueError("handler clustering must not contain exact cross-seed matches")
+    if handler.get("cross_seed_largest_normalised_cluster") != 1:
+        raise ValueError("handler clustering must keep normalized clusters unique")
+    if handler.get("within_seed_has_exact_normalised_matches") is not False:
+        raise ValueError("handler clustering must not contain within-seed exact matches")
+    if handler.get("within_seed_largest_normalised_cluster") != 1:
+        raise ValueError("handler clustering must keep within-seed normalized clusters unique")
+
+
 def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict[str, object]) -> None:
     if handler.get("seed_count") != VM_RESISTANCE_SEED_COUNT or bytecode.get("seed_count") != VM_RESISTANCE_SEED_COUNT:
         raise ValueError("VM resistance artifacts must cover ten seeds")
@@ -111,10 +122,7 @@ def _validate_vm_resistance_artifacts(handler: dict[str, object], bytecode: dict
         raise ValueError("handler clustering artifact must preserve pending adversarial validation scope")
     if bytecode.get("adversarial_validation") != VM_ADVERSARIAL_VALIDATION:
         raise ValueError("bytecode grammar artifact must preserve pending adversarial validation scope")
-    if handler.get("cross_seed_has_exact_normalised_matches") is not False:
-        raise ValueError("handler clustering must not contain exact cross-seed matches")
-    if handler.get("cross_seed_largest_normalised_cluster") != 1:
-        raise ValueError("handler clustering must keep normalized clusters unique")
+    _validate_handler_uniqueness(handler)
     similarity_mean = handler.get("cross_seed_nearest_similarity_mean")
     similarity_threshold = handler.get("similarity_threshold")
     if not isinstance(similarity_mean, int | float) or not isinstance(similarity_threshold, int | float):

@@ -23,7 +23,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
 )
 from r2morph.mutations.code_virtualization_engine_encoder import EngineOp
 from r2morph.mutations.code_virtualization_engine_encoder import encode_bytecode as _encode_bytecode
-from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT, build_frame_layout
+from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT, FrameLayout, build_frame_layout
 from r2morph.mutations.code_virtualization_engine_handlers import EngineHandlerGenerator
 from r2morph.mutations.code_virtualization_engine_isa import build_engine_isa_spec
 from r2morph.mutations.code_virtualization_engine_rename import rename_body
@@ -43,6 +43,49 @@ def encode_bytecode(
 ) -> bytes:
     """Serialize operations to engine bytecode."""
     return _encode_bytecode(ops, scheme, checksum, bytecode_base)
+
+
+def _handler_body_variant(body_seed: int, index: int, duplicate_variant: int | None) -> int:
+    variant = random.Random(body_seed ^ (index << 1)).randrange(4) if body_seed else 0
+    return (variant & 1) | duplicate_variant if duplicate_variant is not None else variant
+
+
+def _duplicate_body_variants(scheme: VMScheme) -> dict[int, int]:
+    return {
+        index: variant << 1
+        for indices in scheme.dup.values()
+        if len(indices) > 1
+        for variant, index in enumerate(indices)
+    }
+
+
+def _handler_arithmetic_variant(scheme: VMScheme, index: int, canonical_variant: int) -> int:
+    return (
+        random.Random((scheme.engine_isa_seed << 16) ^ index).randrange(1 << ARITH_VARIANT_BITS)
+        if scheme.engine_isa_seed
+        else canonical_variant
+    )
+
+
+def _vm_exit_asm(
+    continuation_vaddr: int,
+    scheme: VMScheme,
+    layout: FrameLayout,
+    has_fp: bool,
+    vex_destinations: frozenset[int],
+) -> str:
+    slot = scheme.slot_perm
+    save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
+    lines = ["vm_exit:\n"]
+    for index in save_order:
+        lines.append(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp + {slot[index] * 8}]\n")
+    if has_fp:
+        for xmm in range(16):
+            if xmm in vex_destinations:
+                lines.append(f"  vpxor ymm{xmm}, ymm{xmm}, ymm{xmm}\n")
+            lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
+    lines.append(f"  add rsp, {scheme.frame_size}\n  jmp {hex(continuation_vaddr)}\n")
+    return "".join(lines)
 
 
 def _interpreter_asm(
@@ -68,6 +111,7 @@ def _interpreter_asm(
     # opcode->operation map is not one-to-one and the duplicates share no byte
     # signature. ``total`` is the dispatch-table width and the bounds-guard limit.
     index_to_key = {index: op_key for op_key, indices in scheme.dup.items() for index in indices}
+    duplicate_body_variants = _duplicate_body_variants(scheme)
     total = len(index_to_key)
     junk_rng = random.Random(scheme.junk_seed)
     # This build's frame-region offsets (checksum/xmm/vsp/vstack): relocated per
@@ -205,37 +249,26 @@ def _interpreter_asm(
         # The arithmetic fold has no cross-handler encoding coupling; the addressing
         # personality stays per-build. engine_isa_seed 0 keeps the canonical fold, so
         # builds that opt out of the ISA personality stay byte-identical.
-        arith_variant = (
-            random.Random((scheme.engine_isa_seed << 16) ^ index).randrange(1 << ARITH_VARIANT_BITS)
-            if scheme.engine_isa_seed
-            else isa.arith_variant
-        )
+        arith_variant = _handler_arithmetic_variant(scheme, index, isa.arith_variant)
         # Reachable head junk makes duplicate handlers diverge in executed code, and
         # a per-handler scratch-register bijection makes the body itself diverge, so
         # duplicate handlers share neither junk nor register-allocation fingerprint.
         handlers.set_record_padding(scheme.record_padding[index] if scheme.record_padding else 0)
         handlers.handler_index = index
+        body_variant = _handler_body_variant(scheme.body_seed, index, duplicate_body_variants.get(index))
         body = rename_body(
             handlers.handler_body(
                 mnemonic,
                 is_immediate,
                 width,
                 arith_variant,
-                body_variant=(random.Random(scheme.body_seed ^ (index << 1)).randrange(4) if scheme.body_seed else 0),
+                body_variant=body_variant,
             ),
             random.Random(scheme.body_seed ^ index),
         )
         lines.append(f"h_{index}:\n{state_decode}{_live_junk_asm(junk_rng, index)}{body}")
 
-    lines.append("vm_exit:\n")
-    for index in save_order:
-        lines.append(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp + {slot[index] * 8}]\n")
-    if has_fp:
-        for xmm in range(16):
-            if xmm in vex_destinations:
-                lines.append(f"  vpxor ymm{xmm}, ymm{xmm}, ymm{xmm}\n")
-            lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
-    lines.append(f"  add rsp, {frame_size}\n  jmp {hex(continuation_vaddr)}\n")
+    lines.append(_vm_exit_asm(continuation_vaddr, scheme, layout, has_fp, vex_destinations))
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
     # The bootstrap table and tracer-constant island trail the main table, outside

@@ -216,6 +216,8 @@ def _check_corpus_workflows() -> None:
         "pending-human-adversarial-review",
         "cross_seed_has_exact_normalised_matches",
         "cross_seed_largest_normalised_cluster",
+        "within_seed_has_exact_normalised_matches",
+        "within_seed_largest_normalised_cluster",
         "cross_seed_nearest_similarity_mean",
         "similarity_threshold",
         'cp -R docs "$wheel_root"/',

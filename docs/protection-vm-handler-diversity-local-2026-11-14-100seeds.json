@@ -11,16 +11,16 @@
     ],
     "status": "pending-human-adversarial-review"
   },
-  "cross_seed_exact_normalised_match_rate": 0.0022745098039215687,
-  "cross_seed_exact_normalised_matches": 58,
+  "cross_seed_exact_normalised_match_rate": 0.0021176470588235292,
+  "cross_seed_exact_normalised_matches": 54,
   "cross_seed_has_exact_normalised_matches": true,
   "cross_seed_largest_normalised_cluster": 2,
-  "cross_seed_nearest_similarity_above_threshold": 9014,
-  "cross_seed_nearest_similarity_above_threshold_percent": 35.706080411962766,
+  "cross_seed_nearest_similarity_above_threshold": 9037,
+  "cross_seed_nearest_similarity_above_threshold_percent": 35.797187561893445,
   "cross_seed_nearest_similarity_comparisons": 25245,
   "cross_seed_nearest_similarity_max": 1.0,
-  "cross_seed_nearest_similarity_mean": 0.7034904476362717,
-  "cross_seed_normalised_cluster_count": 29,
+  "cross_seed_nearest_similarity_mean": 0.7036104718646956,
+  "cross_seed_normalised_cluster_count": 27,
   "dispatch_variant_unique_count": 2,
   "dispatch_variant_values": [
     0,
@@ -28,7 +28,7 @@
   ],
   "first_seed": 20260820,
   "opcode_assignment_unique_count": 100,
-  "schema_version": 2,
+  "schema_version": 3,
   "seed_count": 100,
   "seeds": [
     {
@@ -278,8 +278,8 @@
     },
     {
       "handler_count": 255,
-      "largest_normalised_cluster": 2,
-      "normalised_unique_count": 254,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
       "raw_unique_count": 255,
       "seed": 20260855
     },
@@ -439,8 +439,8 @@
     },
     {
       "handler_count": 255,
-      "largest_normalised_cluster": 2,
-      "normalised_unique_count": 254,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
       "raw_unique_count": 255,
       "seed": 20260878
     },
@@ -732,5 +732,10 @@
       "seed": 20260919
     }
   ],
-  "similarity_threshold": 0.8
+  "similarity_threshold": 0.8,
+  "within_seed_exact_normalised_match_rate": 0.0,
+  "within_seed_exact_normalised_matches": 0,
+  "within_seed_has_exact_normalised_matches": false,
+  "within_seed_largest_normalised_cluster": 1,
+  "within_seed_normalised_cluster_count": 0
 }

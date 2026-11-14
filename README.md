@@ -214,7 +214,8 @@ data. This approval applies to that commit only; stable release validation now
 requires a review of the final production tree, with a separate signoff-only
 commit.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
-0 exact normalized cross-seed handler matches, 12 handler stride values, and
+0 exact normalized cross-seed handler matches, 0 exact normalized within-seed
+handler matches, 12 handler stride values, and
 target handler stride diversity recorded in
 [`docs/protection-handler-clustering.json`](docs/protection-handler-clustering.json)
 and [`docs/protection-bytecode-grammar.json`](docs/protection-bytecode-grammar.json).

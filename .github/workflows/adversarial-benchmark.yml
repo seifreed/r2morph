@@ -290,6 +290,10 @@ jobs:
               raise SystemExit("handler clustering has exact cross-seed matches")
           if report["cross_seed_largest_normalised_cluster"] != 1:
               raise SystemExit(f"unexpected largest cluster: {report['cross_seed_largest_normalised_cluster']}")
+          if report["within_seed_has_exact_normalised_matches"]:
+              raise SystemExit("handler clustering has exact within-seed matches")
+          if report["within_seed_largest_normalised_cluster"] != 1:
+              raise SystemExit(f"unexpected within-seed largest cluster: {report['within_seed_largest_normalised_cluster']}")
           if report["cross_seed_nearest_similarity_mean"] >= report["similarity_threshold"]:
               raise SystemExit("mean handler similarity reached the configured threshold")
           if grammar["seed_count"] != 10 or grammar["seeds_without_target_handlers"] != 0:

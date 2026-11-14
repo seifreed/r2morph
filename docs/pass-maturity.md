@@ -279,7 +279,8 @@ cross-family fixtures (calls, C++, memory, threads, and `xlat`). The generated s
 selected by name from the reproducible Linux corpus so fixture drift fails
 closed before measurement. The committed 15-fixture artifact below is the
 authoritative local evidence for the automated campaign.
-0 exact normalized cross-seed handler matches, 12 handler stride values, and
+0 exact normalized cross-seed handler matches, 0 exact normalized within-seed
+handler matches, 12 handler stride values, and
 target handler stride diversity. These are resistance indicators, not human
 approval of anti-tamper or progressive bytecode protection. The generated
 artifacts also carry `adversarial_validation.status` as

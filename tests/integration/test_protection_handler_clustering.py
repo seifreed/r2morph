@@ -10,10 +10,10 @@ from tests.utils.assertions import expect
 
 _REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-handler-clustering.json"
 _MATURITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "protection-maturity.md"
-_EXPECTED_SCHEMA_VERSION = 2
+_EXPECTED_SCHEMA_VERSION = 3
 _EXPECTED_NEAREST_COMPARISONS = 510
-_EXPECTED_ABOVE_THRESHOLD = 72
-_EXPECTED_ABOVE_THRESHOLD_PERCENT = 14.117647058823529
+_EXPECTED_ABOVE_THRESHOLD = 70
+_EXPECTED_ABOVE_THRESHOLD_PERCENT = 13.725490196078432
 _EXPECTED_OPCODE_ASSIGNMENT_COUNT = 3
 _EXPECTED_DISPATCH_VARIANT_COUNT = 2
 _EXPECTED_ADVERSARIAL_STATUS = "pending-human-adversarial-review"
@@ -26,6 +26,8 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         result["schema_version"] == _EXPECTED_SCHEMA_VERSION
         and result["cross_seed_exact_normalised_matches"] == 0
         and result["cross_seed_has_exact_normalised_matches"] is False
+        and result["within_seed_exact_normalised_matches"] == 0
+        and result["within_seed_has_exact_normalised_matches"] is False
         and result["cross_seed_nearest_similarity_comparisons"] == _EXPECTED_NEAREST_COMPARISONS
         and result["opcode_assignment_unique_count"] == _EXPECTED_OPCODE_ASSIGNMENT_COUNT
         and result["dispatch_variant_values"] == [0, 1]
@@ -36,6 +38,16 @@ def test_measure_handler_clustering_records_cross_seed_similarity() -> None:
         and result["adversarial_validation"]["evidence_quality"] == "seed-diversity-only"
         and "human-adversarial-validation" in result["adversarial_validation"]["pending_scope"]
         and not (result["cross_seed_nearest_similarity_mean"] <= 0.0)
+    )
+
+
+def test_measure_handler_clustering_duplicate_opcodes_have_no_within_seed_matches() -> None:
+    result = measure(20260855, 1)
+
+    expect(
+        result["cross_seed_exact_normalised_matches"] == 0
+        and result["within_seed_exact_normalised_matches"] == 0
+        and result["within_seed_largest_normalised_cluster"] == 1
     )
 
 
@@ -56,7 +68,8 @@ def test_handler_clustering_maturity_doc_matches_report() -> None:
             f"`{report['cross_seed_nearest_similarity_comparisons']:,}` comparisons"
         )
         in document
-        and f"exact normalized matches `{report['cross_seed_exact_normalised_matches']}`" in document
+        and (f"exact normalized cross-seed matches `{report['cross_seed_exact_normalised_matches']}`" in document)
+        and (f"within-seed matches `{report['within_seed_exact_normalised_matches']}`" in document)
         and f"{report['opcode_assignment_unique_count']}/{report['seed_count']} opcode assignments differ" in document
         and "both dispatcher variants occur" in document
     )

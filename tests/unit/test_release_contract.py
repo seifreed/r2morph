@@ -1317,6 +1317,20 @@ def test_release_contract_rejects_vm_handler_similarity_regression() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_vm_handler_within_seed_duplicates() -> None:
+    handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
+    bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
+    handler["within_seed_has_exact_normalised_matches"] = True
+
+    rejected = False
+    try:
+        _validate_vm_resistance_artifacts(handler, bytecode)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_vm_handler_similarity_rate_regression() -> None:
     handler = json.loads((_ROOT / "docs" / "protection-handler-clustering.json").read_text(encoding="utf-8"))
     bytecode = json.loads((_ROOT / "docs" / "protection-bytecode-grammar.json").read_text(encoding="utf-8"))
@@ -1631,6 +1645,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "pending-human-adversarial-review" in adversarial
         and "cross_seed_has_exact_normalised_matches" in adversarial
         and "cross_seed_largest_normalised_cluster" in adversarial
+        and "within_seed_has_exact_normalised_matches" in adversarial
+        and "within_seed_largest_normalised_cluster" in adversarial
         and "cross_seed_nearest_similarity_mean" in adversarial
         and "similarity_threshold" in adversarial
         and 'cp -R docs "$wheel_root"/' in adversarial

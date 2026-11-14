@@ -468,7 +468,9 @@ def _corpus_validation_flags(report: dict[str, object]) -> tuple[bool, bool, boo
         diversity.get("dispatcher_unique_count") == report.get("seed_count"),
         opcode.get("all_assignments_unique") is True,
         handlers.get("cross_seed_has_exact_normalised_matches") is False
-        and handlers.get("cross_seed_largest_normalised_cluster") == 1,
+        and handlers.get("cross_seed_largest_normalised_cluster") == 1
+        and handlers.get("within_seed_has_exact_normalised_matches") is False
+        and handlers.get("within_seed_largest_normalised_cluster") == 1,
         grammar.get("target_stride_diverse") is True and grammar.get("seeds_without_target_handlers") == 0,
         adversarial_probe_passed,
     )

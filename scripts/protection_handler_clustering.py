@@ -24,6 +24,7 @@ _LABEL_PATTERN = re.compile(r"\b(?:h|opaque)_\d+\b")
 _NUMBER_PATTERN = re.compile(r"(?<![A-Za-z_])(?:0x[0-9A-Fa-f]+|\d+)(?![A-Za-z_])")
 _REGISTER_PATTERN = re.compile(r"\b(?:e?[abcd]x|e?[sd]i|e?bp|e?sp|r(?:[0-9]+|[abcd]x|[sd]i|bp|sp)[bwdq]?|xmm[0-9]+)\b")
 _SIMILARITY_THRESHOLD = 0.8
+_SINGLE_HANDLER_COUNT = 1
 _ADVERSARIAL_VALIDATION = {
     "status": "pending-human-adversarial-review",
     "evidence_quality": "seed-diversity-only",
@@ -62,11 +63,37 @@ def _nearest_similarities(source: list[tuple[str, ...]], candidates: list[tuple[
     ]
 
 
+def _exact_match_metrics(signatures_by_seed: list[list[str]]) -> dict[str, int | float | bool]:
+    per_seed_counts = [Counter(signatures) for signatures in signatures_by_seed]
+    seed_count_by_signature = Counter(signature for counts in per_seed_counts for signature in counts)
+    cross_seed_signatures = {
+        signature for signature, count in seed_count_by_signature.items() if count > _SINGLE_HANDLER_COUNT
+    }
+    cross_seed_matches = sum(counts[signature] for counts in per_seed_counts for signature in cross_seed_signatures)
+    within_seed_clusters = [
+        count for counts in per_seed_counts for count in counts.values() if count > _SINGLE_HANDLER_COUNT
+    ]
+    within_seed_matches = sum(within_seed_clusters)
+    handler_count = sum(map(len, signatures_by_seed))
+    return {
+        "cross_seed_exact_normalised_matches": cross_seed_matches,
+        "cross_seed_exact_normalised_match_rate": cross_seed_matches / handler_count if handler_count else 0.0,
+        "cross_seed_has_exact_normalised_matches": bool(cross_seed_signatures),
+        "cross_seed_normalised_cluster_count": len(cross_seed_signatures),
+        "cross_seed_largest_normalised_cluster": max(seed_count_by_signature.values(), default=0),
+        "within_seed_exact_normalised_matches": within_seed_matches,
+        "within_seed_exact_normalised_match_rate": within_seed_matches / handler_count if handler_count else 0.0,
+        "within_seed_has_exact_normalised_matches": bool(within_seed_clusters),
+        "within_seed_normalised_cluster_count": len(within_seed_clusters),
+        "within_seed_largest_normalised_cluster": max(within_seed_clusters, default=1),
+    }
+
+
 def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dict[str, object]:
     if count < 1 or count > _MAX_SEEDS:
         raise ValueError(f"count must be between 1 and {_MAX_SEEDS}")
     seed_rows: list[dict[str, object]] = []
-    all_signatures: list[str] = []
+    signatures_by_seed: list[list[str]] = []
     all_normalised: list[list[tuple[str, ...]]] = []
     opcode_assignment_hashes: set[str] = set()
     dispatch_variants: set[int] = set()
@@ -83,7 +110,7 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
         normalised = [_normalise_body(body) for body in bodies]
         signatures = [_digest(signature) for signature in normalised]
         all_normalised.append(normalised)
-        all_signatures.extend(signatures)
+        signatures_by_seed.append(signatures)
         seed_rows.append(
             {
                 "seed": seed,
@@ -93,23 +120,18 @@ def measure(first_seed: int = _DEFAULT_SEED, count: int = _DEFAULT_COUNT) -> dic
                 "largest_normalised_cluster": Counter(signatures).most_common(1)[0][1] if signatures else 0,
             }
         )
-    counts = Counter(all_signatures)
-    repeated = sum(value for value in counts.values() if value > 1)
     nearest = [score for left, right in pairwise(all_normalised) for score in _nearest_similarities(left, right)]
     above_threshold = sum(score >= _SIMILARITY_THRESHOLD for score in nearest)
+    exact_match_metrics = _exact_match_metrics(signatures_by_seed)
     return {
-        "schema_version": 2,
+        "schema_version": 3,
         "first_seed": first_seed,
         "seed_count": count,
         "seeds": seed_rows,
         "opcode_assignment_unique_count": len(opcode_assignment_hashes),
         "dispatch_variant_values": sorted(dispatch_variants),
         "dispatch_variant_unique_count": len(dispatch_variants),
-        "cross_seed_exact_normalised_matches": repeated,
-        "cross_seed_exact_normalised_match_rate": repeated / len(all_signatures) if all_signatures else 0.0,
-        "cross_seed_has_exact_normalised_matches": repeated > 0,
-        "cross_seed_normalised_cluster_count": sum(value > 1 for value in counts.values()),
-        "cross_seed_largest_normalised_cluster": max(counts.values(), default=0),
+        **exact_match_metrics,
         "cross_seed_nearest_similarity_comparisons": len(nearest),
         "cross_seed_nearest_similarity_mean": sum(nearest) / len(nearest) if nearest else 0.0,
         "cross_seed_nearest_similarity_max": max(nearest, default=0.0),
