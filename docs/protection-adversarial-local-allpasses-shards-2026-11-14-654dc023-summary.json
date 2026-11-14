@@ -1,0 +1,460 @@
+{
+  "analyzer_coverage": {
+    "by_tool": {
+      "angr": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 264,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 264
+        }
+      },
+      "custom": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "ghidra": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "ida-pro": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "objdump": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "radare2": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 264,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 264
+        }
+      },
+      "unicorn": {
+        "completed": 264,
+        "errors": 0,
+        "runs": 264,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      }
+    },
+    "completed_runs": 1848,
+    "error_runs": 0,
+    "expected_runs": 2376,
+    "unavailable_runs": 528
+  },
+  "fixture_count": 12,
+  "fixtures": [
+    {
+      "name": "elf_switch_pie_x86_64",
+      "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f",
+      "size_bytes": 13296
+    },
+    {
+      "name": "elf_vm_arith_x86_64",
+      "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_vm_fpenginearithrip_x86_64",
+      "sha256": "ba7b568f657961dbd363cf617fa3bde1a86d71a61390999115a0b40da0a5bd13",
+      "size_bytes": 13152
+    },
+    {
+      "name": "elf_vm_fpengineidxnb_x86_64",
+      "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07",
+      "size_bytes": 4728
+    },
+    {
+      "name": "elf_vm_lea32_x86_64",
+      "sha256": "d47f12615bc30b1c123e92c6d18afefbcc14470b967349db234dd1ef62653487",
+      "size_bytes": 4776
+    },
+    {
+      "name": "elf_vm_leaidx_x86_64",
+      "sha256": "d7b414685432996db3ae49b5ac10bc951d79effce167eec3c8667b70f12ebd78",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_vm_leaidxnb_x86_64",
+      "sha256": "f15c47e5bf80f4e179c1d097e364e01fab1de94786b25de765662919f9a5c9db",
+      "size_bytes": 4776
+    },
+    {
+      "name": "elf_vm_movabs_x86_64",
+      "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3",
+      "size_bytes": 4776
+    },
+    {
+      "name": "elf_vm_pie_x86_64",
+      "sha256": "19515c65476a8197da172be230e0e1ccc670828973908f1c2b2a192c1e13862f",
+      "size_bytes": 13288
+    },
+    {
+      "name": "elf_vm_prologue_x86_64",
+      "sha256": "098ce19848d036aed38b6ffb32f6c4b9ac3ce717ceda955322975f8c1bf4ca9b",
+      "size_bytes": 4640
+    },
+    {
+      "name": "elf_vm_run_movxfallback_x86_64",
+      "sha256": "e988ca4cccc0b33764ecc331fe84b5a5758101186db0028323f20a28a50c2e97",
+      "size_bytes": 4736
+    },
+    {
+      "name": "elf_vm_shift_x86_64",
+      "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29",
+      "size_bytes": 4736
+    }
+  ],
+  "limitations": [
+    "Binary Ninja was unavailable because the local license was unavailable.",
+    "Triton was unavailable in the macOS ARM64 environment.",
+    "Twelve fixtures are a bounded local shard sample and do not establish general analyzer coverage or resistance.",
+    "Most passes did not apply to these fixtures; their no-op rows are preserved explicitly.",
+    "The newest shard emitted angr unsupported-dirty-helper and unhooked-address warnings despite zero reported adapter errors."
+  ],
+  "pass_count_per_fixture": 22,
+  "pass_rows": 264,
+  "pass_status_totals": {
+    "applied": 24,
+    "errors": 0,
+    "no_op": 240,
+    "omitted": 0
+  },
+  "passes": {
+    "APIHashing": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "BlockReordering": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 12,
+      "errors": 0,
+      "functions_virtualized": 14,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "no_op": 11,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "no_op": 11,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 1,
+      "no_op": 11,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 3,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 3,
+      "no_op": 9,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "PatternSubstitution": {
+      "applied": 3,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 4,
+      "no_op": 9,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 3,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 4,
+      "no_op": 9,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "mutations_applied": 0,
+      "no_op": 12,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 12,
+      "unsupported_functions": 0
+    }
+  },
+  "platform": "macOS ARM64",
+  "provenance": "local-source-tree",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus": "twelve repository Linux ELF x86-64 fixtures, all 22 passes",
+    "fixture_shards": "0/32, 1/32, and 2/32",
+    "resistance_claim": "none; bounded local analyzer evidence only"
+  },
+  "shards": [
+    {
+      "fixture_count": 4,
+      "fixture_shard": {
+        "count": 32,
+        "index": 0
+      },
+      "pass_rows": 88,
+      "report": "protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz",
+      "report_bytes": 18650,
+      "report_sha256": "fee4d8554071981ecb4a9d2790bf8d61bd6ef48dde1e479775672b16676a8d03",
+      "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+      "uncompressed_bytes": 673538,
+      "uncompressed_sha256": "7803a2ef35bcc975dd250b1edb3b76348f49f3c292fc49c39e87eb55f25aa358"
+    },
+    {
+      "fixture_count": 4,
+      "fixture_shard": {
+        "count": 32,
+        "index": 1
+      },
+      "pass_rows": 88,
+      "report": "protection-adversarial-local-allpasses-shard-2026-11-14-2237bacc.json.gz",
+      "report_bytes": 18117,
+      "report_sha256": "149a8925b0ac9aabce3782e713b6e6ddbaa5b4f1888af80d170675bb2bb76b22",
+      "source_commit": "2237bacc13ca9818fc51fcce3d321287c0ea2570",
+      "uncompressed_bytes": 669861,
+      "uncompressed_sha256": "54b3b12d95ee510af2aabc29f8a965611780c14ef1f8a707861f67ad4e43ccfe"
+    },
+    {
+      "fixture_count": 4,
+      "fixture_shard": {
+        "count": 32,
+        "index": 2
+      },
+      "pass_rows": 88,
+      "report": "protection-adversarial-local-allpasses-shard-2026-11-14-654dc023.json.gz",
+      "report_bytes": 17925,
+      "report_sha256": "8f7b63ae00de916311f602b9292f991cba38029e5e90af54091b34a0c1093fcb",
+      "source_commit": "654dc023458e29bc85e3de2e32314a53746d8f49",
+      "uncompressed_bytes": 669859,
+      "uncompressed_sha256": "cb597e192a204441937f2ddba099584f135f31f8974db22e71cd851f555f4b7c"
+    }
+  ],
+  "source_code_delta_between_shards": "No production source files changed between the two source commits.",
+  "source_commits": [
+    "2237bacc13ca9818fc51fcce3d321287c0ea2570",
+    "654dc023458e29bc85e3de2e32314a53746d8f49",
+    "fadc0e6302ba722f5e397cdafe70f33506baea99"
+  ]
+}

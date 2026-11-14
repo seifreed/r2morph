@@ -714,6 +714,20 @@ own source commit and fixture hashes:
 [summary](protection-adversarial-local-allpasses-shards-2026-11-14-2237bacc-summary.json).
 This expands bounded local coverage but leaves both release criteria open.
 
+A third shard at source commit `654dc023` adds four more distinct fixtures.
+Across 12 fixtures, the local campaign records 264 pass rows and 2,376
+expected analyzer rows; 1,848 completed and 528 are unavailable because
+Binary Ninja lacks a local license and Triton is unavailable on macOS ARM64.
+IDA Pro and Ghidra each completed all 264 rows. Twenty-four transformations
+applied, 240 rows were explicit no-ops, and no pass or adapter errors were
+reported. angr emitted unsupported-dirty-helper and unhooked-address warnings
+during this shard; the report preserves its completed status and the warning
+is recorded as a limitation. The three-shard manifest binds reports to source
+commits and fixture hashes:
+[summary](protection-adversarial-local-allpasses-shards-2026-11-14-654dc023-summary.json).
+This evidence remains a bounded local sample and does not close analyzer
+coverage, differential correctness, or resistance criteria.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
