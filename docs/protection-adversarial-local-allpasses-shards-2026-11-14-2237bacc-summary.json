@@ -1,0 +1,381 @@
+{
+  "analyzer_coverage": {
+    "by_tool": {
+      "angr": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 176,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 176
+        }
+      },
+      "custom": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "ghidra": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "ida-pro": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "objdump": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "radare2": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 176,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 176
+        }
+      },
+      "unicorn": {
+        "completed": 176,
+        "errors": 0,
+        "runs": 176,
+        "unavailable": 0,
+        "unavailable_reasons": {}
+      }
+    },
+    "completed_runs": 1232,
+    "error_runs": 0,
+    "expected_runs": 1584,
+    "unavailable_runs": 352
+  },
+  "fixture_count": 8,
+  "fixtures": [
+    {
+      "name": "elf_switch_pie_x86_64",
+      "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f",
+      "size_bytes": 13296
+    },
+    {
+      "name": "elf_vm_arith_x86_64",
+      "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_vm_fpengineidxnb_x86_64",
+      "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07",
+      "size_bytes": 4728
+    },
+    {
+      "name": "elf_vm_leaidx_x86_64",
+      "sha256": "d7b414685432996db3ae49b5ac10bc951d79effce167eec3c8667b70f12ebd78",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_vm_leaidxnb_x86_64",
+      "sha256": "f15c47e5bf80f4e179c1d097e364e01fab1de94786b25de765662919f9a5c9db",
+      "size_bytes": 4776
+    },
+    {
+      "name": "elf_vm_movabs_x86_64",
+      "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3",
+      "size_bytes": 4776
+    },
+    {
+      "name": "elf_vm_pie_x86_64",
+      "sha256": "19515c65476a8197da172be230e0e1ccc670828973908f1c2b2a192c1e13862f",
+      "size_bytes": 13288
+    },
+    {
+      "name": "elf_vm_shift_x86_64",
+      "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29",
+      "size_bytes": 4736
+    }
+  ],
+  "limitations": [
+    "Binary Ninja was unavailable because the local license was unavailable.",
+    "Triton was unavailable in the macOS ARM64 environment.",
+    "Eight fixtures are a bounded local shard sample and do not establish general analyzer coverage or resistance.",
+    "Most passes did not apply to these fixtures; their no-op rows are preserved explicitly."
+  ],
+  "pass_count_per_fixture": 22,
+  "pass_rows": 176,
+  "pass_status_totals": {
+    "applied": 18,
+    "errors": 0,
+    "no_op": 158,
+    "omitted": 0
+  },
+  "passes": {
+    "APIHashing": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "BlockReordering": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 8,
+      "errors": 0,
+      "functions_virtualized": 10,
+      "no_op": 0,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 7,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 7,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 1,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 7,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 3,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 5,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "PatternSubstitution": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 6,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 6,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 8,
+      "partial_virtualization": 0,
+      "samples": 8,
+      "unsupported_functions": 0
+    }
+  },
+  "platform": "macOS ARM64",
+  "provenance": "local-source-tree",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus": "eight repository Linux ELF x86-64 fixtures, all 22 passes",
+    "fixture_shards": "0/32 and 1/32",
+    "resistance_claim": "none; bounded local analyzer evidence only"
+  },
+  "shards": [
+    {
+      "fixture_count": 4,
+      "fixture_shard": {
+        "count": 32,
+        "index": 0
+      },
+      "pass_rows": 88,
+      "report": "protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz",
+      "report_bytes": 18650,
+      "report_sha256": "fee4d8554071981ecb4a9d2790bf8d61bd6ef48dde1e479775672b16676a8d03",
+      "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+      "uncompressed_bytes": 673538,
+      "uncompressed_sha256": "7803a2ef35bcc975dd250b1edb3b76348f49f3c292fc49c39e87eb55f25aa358"
+    },
+    {
+      "fixture_count": 4,
+      "fixture_shard": {
+        "count": 32,
+        "index": 1
+      },
+      "pass_rows": 88,
+      "report": "protection-adversarial-local-allpasses-shard-2026-11-14-2237bacc.json.gz",
+      "report_bytes": 18117,
+      "report_sha256": "149a8925b0ac9aabce3782e713b6e6ddbaa5b4f1888af80d170675bb2bb76b22",
+      "source_commit": "2237bacc13ca9818fc51fcce3d321287c0ea2570",
+      "uncompressed_bytes": 669861,
+      "uncompressed_sha256": "54b3b12d95ee510af2aabc29f8a965611780c14ef1f8a707861f67ad4e43ccfe"
+    }
+  ],
+  "source_code_delta_between_shards": "No production source files changed between the two source commits.",
+  "source_commits": [
+    "2237bacc13ca9818fc51fcce3d321287c0ea2570",
+    "fadc0e6302ba722f5e397cdafe70f33506baea99"
+  ]
+}

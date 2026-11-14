@@ -704,6 +704,16 @@ coverage and general resistance open. Its compressed report and manifest are
 [here](protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63.json.gz)
 and [here](protection-adversarial-local-allpasses-shard-2026-11-14-fadc0e63-summary.json).
 
+A second local shard at source commit `2237bacc` adds four distinct fixtures
+across the same 22 passes. The two shards now cover eight fixtures, 176 pass
+rows, and 1,584 expected analyzer rows; 1,232 completed with zero tool errors.
+IDA Pro and Ghidra completed all 176 rows each. Binary Ninja and Triton remain
+unavailable for 176 rows each. Eighteen transformations applied and the other
+158 rows are explicit no-ops. The combined manifest binds each report to its
+own source commit and fixture hashes:
+[summary](protection-adversarial-local-allpasses-shards-2026-11-14-2237bacc-summary.json).
+This expands bounded local coverage but leaves both release criteria open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
