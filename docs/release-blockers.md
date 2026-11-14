@@ -728,18 +728,28 @@ commits and fixture hashes:
 This evidence remains a bounded local sample and does not close analyzer
 coverage, differential correctness, or resistance criteria.
 
-The Linux all-pass workflow run on source commit `fadc0e63` has published 20
-of its 32 shard artifacts so far. Those shards cover 139 unique samples and
-3,058 sample/pass rows; all 27,522 expected tool slots are present with zero
-reported adapter or pass errors. Triton, Ghidra, angr, radare2, objdump, and
-the project analyzer completed every row. IDA Pro and Binary Ninja were not
-installed on the Ubuntu runner, and Unicorn could not emulate an instruction
-in 352 rows. The run therefore confirms Triton availability on Linux while
-leaving all-analyzer coverage open. Its collected reports and artifact
-digests are retained in the [partial bundle](protection-adversarial-host-partial-2026-11-14-fadc0e63.json.gz)
-and [summary](protection-adversarial-host-partial-2026-11-14-fadc0e63-summary.json).
-The campaign was still in progress when collected; this partial result makes
-no general resistance claim.
+The complete Linux all-pass workflow run on source commit `fadc0e63` finished
+successfully with all 33 jobs, including all 32 shards and the aggregate. Across
+362 samples and 22 passes, it recorded 7,964/7,964 expected pass rows and
+71,676 analyzer slots: 55,220 completed (77.04%), 16,456 unavailable, and zero
+missing or errored tool rows. Binary Ninja and IDA Pro were unavailable for all
+pass rows, while Unicorn lacked support for an instruction in 528 rows. The
+CodeVirtualization pass applied to all 362 samples and virtualized 636
+functions; 14 additional functions remained unsupported for exception/unwind
+or SSA liveness capability gaps. The full reports are retained in the
+[hash-bound run summary](protection-adversarial-run-2026-11-14-43615553431.json),
+[corpus archive](protection-adversarial-corpus-2026-11-14-43615553431.json.gz),
+and [maturity archive](protection-adversarial-maturity-2026-11-14-43615553431.json.gz).
+The run is bounded evidence and leaves all-analyzer coverage open.
+
+The same run's VM resistance smoke preserved semantic parity across 15 fixtures
+and 10 seeds. It observed opcode assignment, handler, dispatcher, and bytecode
+grammar diversity; all tested tamper probes diverged, and progressive bytecode
+growth was supported on 6 fixtures. This remains automated smoke evidence, with
+human adversarial review pending. Its reports and SHA-256 digests are retained
+in the [VM evidence summary](protection-vm-resistance-run-2026-11-14-43615553431.json)
+and linked archives. The result does not establish generalized resistance and
+the release criterion remains open.
 
 ## Blocker index
 

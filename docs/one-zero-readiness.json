@@ -64,7 +64,11 @@
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-654dc023.json.gz",
         "docs/protection-adversarial-local-allpasses-shards-2026-11-14-654dc023-summary.json",
         "docs/protection-adversarial-host-partial-2026-11-14-fadc0e63.json.gz",
-        "docs/protection-adversarial-host-partial-2026-11-14-fadc0e63-summary.json"
+        "docs/protection-adversarial-host-partial-2026-11-14-fadc0e63-summary.json",
+        "docs/protection-adversarial-run-2026-11-14-43615553431.json",
+        "docs/protection-adversarial-corpus-2026-11-14-43615553431.json.gz",
+        "docs/protection-adversarial-maturity-2026-11-14-43615553431.json.gz",
+        "tests/unit/test_published_adversarial_run_43615553431.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -235,7 +239,13 @@
         "docs/protection-vm-resistance-run-2026-11-14-43592902305.json",
         "docs/protection-vm-resistance-adversarial-2026-11-14-43592902305.json.gz",
         "docs/protection-vm-seed-diversity-2026-11-14-43592902305.json.gz",
-        "docs/protection-vm-bytecode-grammar-2026-11-14-43592902305.json.gz"
+        "docs/protection-vm-bytecode-grammar-2026-11-14-43592902305.json.gz",
+        "docs/protection-vm-resistance-run-2026-11-14-43615553431.json",
+        "docs/protection-vm-adversarial-2026-11-14-43615553431.json.gz",
+        "docs/protection-vm-adversarial-2026-11-14-43615553431.xml.gz",
+        "docs/protection-vm-bytecode-grammar-2026-11-14-43615553431.json.gz",
+        "docs/protection-vm-seed-diversity-2026-11-14-43615553431.json.gz",
+        "tests/unit/test_published_adversarial_run_43615553431.py"
       ]
     },
     "stable_api_cli": {

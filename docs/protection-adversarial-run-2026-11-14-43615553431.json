@@ -1,0 +1,119 @@
+{
+  "archives": {
+    "corpus": {
+      "path": "protection-adversarial-corpus-2026-11-14-43615553431.json.gz",
+      "sha256": "ec61266affeeceda7a88dad3fdebda8e578c040f1814c7c00ae94c4e373c5520",
+      "size_bytes": 1213270,
+      "uncompressed_sha256": "1d2969ca4794a6c26e66a9f5d01bd60a71164c4c3fab3d2c29de2393bf72c7fa",
+      "uncompressed_size_bytes": 44759337
+    },
+    "maturity": {
+      "path": "protection-adversarial-maturity-2026-11-14-43615553431.json.gz",
+      "sha256": "9d1e8111740bdefff3005359b968869e2ac6fbb2223c8e184f770798a44f360c",
+      "size_bytes": 15492,
+      "uncompressed_sha256": "d09885d4a417feee12e5efdbbe80f202cc90084ffbe2dfa17795a89934d98a9c",
+      "uncompressed_size_bytes": 152720
+    }
+  },
+  "limitations": [
+    "Binary Ninja and IDA Pro were unavailable for every sample/pass pair; neither analyzer result is claimed.",
+    "Unicorn could not execute 528 rows because the installed emulator lacks an instruction capability.",
+    "The 362-sample, 22-pass campaign is bounded evidence and does not establish generalized resistance.",
+    "The VM resistance smoke remains automated evidence with human adversarial review pending.",
+    "The evidence source commit is fadc0e63; production files under r2morph/ and scripts/ are unchanged through the current main source scope commit."
+  ],
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "applied_pass_runs": 2341,
+    "blocker_totals": {
+      "blocker_categories": 6,
+      "decompiler_baseline_unavailable_pairs_by_pass": 2,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 17,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "code_virtualization": {
+      "applied": 362,
+      "errors": 0,
+      "functions_virtualized": 636,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 362,
+      "unsupported_capabilities": {
+        "exceptions_and_unwinding": 14,
+        "ssa_liveness": 14
+      },
+      "unsupported_functions": 14,
+      "unsupported_severities": {
+        "error": 28
+      }
+    },
+    "completed_tool_run_coverage_percent": 77.04,
+    "completed_tool_runs": 55220,
+    "error_pass_runs": 0,
+    "error_tool_runs": 0,
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "pass_run_coverage_percent": 100.0,
+    "tools_without_full_completion": [
+      "binary-ninja",
+      "ida-pro",
+      "unicorn"
+    ],
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "unavailable_tool_runs": 16456,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    }
+  },
+  "schema_version": 1,
+  "scope": {
+    "expected_pass_runs": 7964,
+    "expected_tool_runs": 71676,
+    "families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "generated_fixtures": 200,
+    "passes": 22,
+    "samples": 362
+  },
+  "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+  "source_scope_commit": "16eedca70d31564f45a7d8911ceb549882f3df09",
+  "workflow": {
+    "completed_at_utc": "2026-11-14T18:47:07Z",
+    "conclusion": "success",
+    "current_main_runtime_source_unchanged_since_source_commit": true,
+    "jobs": {
+      "failed": 0,
+      "skipped": 0,
+      "successful": 33,
+      "total": 33
+    },
+    "name": "Adversarial Analysis Benchmark",
+    "run_id": 43615553431,
+    "started_at_utc": "2026-11-14T16:25:48Z",
+    "status": "completed",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43615553431"
+  }
+}

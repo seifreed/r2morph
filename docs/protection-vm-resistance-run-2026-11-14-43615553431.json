@@ -1,0 +1,69 @@
+{
+  "artifacts": {
+    "bytecode_grammar": {
+      "path": "protection-vm-bytecode-grammar-2026-11-14-43615553431.json.gz",
+      "sha256": "5d5c918fac61c5f3867d6ea0a1b9e3ad9584e64d1ac3fceab2414b16ed1dd29d",
+      "size_bytes": 709,
+      "uncompressed_sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef",
+      "uncompressed_size_bytes": 3771
+    },
+    "resistance": {
+      "path": "protection-vm-adversarial-2026-11-14-43615553431.json.gz",
+      "sha256": "d0d280f48c63a80bb573ff80feb880abb87bac3ee9d1f5793292e6ab294e7417",
+      "size_bytes": 15381,
+      "uncompressed_sha256": "48c4a8b41c66d1004526c89527c9bd7f7effc79934dd4070b85e3c4e77318900",
+      "uncompressed_size_bytes": 375932
+    },
+    "resistance_junit": {
+      "path": "protection-vm-adversarial-2026-11-14-43615553431.xml.gz",
+      "sha256": "44445f26bd28339721cbca35b36cde7fb1dcc10e8b3c0841a2804197a6cb323a",
+      "size_bytes": 544,
+      "uncompressed_sha256": "6b1e03bc3aeaaf689d73e377ae4815a26a59716f5cdd925011c7f4633680d050",
+      "uncompressed_size_bytes": 1812
+    },
+    "seed_diversity": {
+      "path": "protection-vm-seed-diversity-2026-11-14-43615553431.json.gz",
+      "sha256": "c81adf007a4a051b9a94ef71e182e5e43ea81266f72595cf445f5d27a8b0da84",
+      "size_bytes": 523,
+      "uncompressed_sha256": "a6705e79e19a77d0d4e3ec84655d5f1148d7a8dc1a63b8b462dad13f1dafe3a8",
+      "uncompressed_size_bytes": 2855
+    }
+  },
+  "human_adversarial_review": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "pending_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
+  "measurement": {
+    "adversarial_recovery_probe_observed": true,
+    "all_tamper_probes_diverged": true,
+    "bytecode_grammar_diversity_observed": true,
+    "bytecode_grammar_seed_count": 10,
+    "bytecode_grammar_unique_handler_strides": 12,
+    "cross_fixture_distinct_artifacts": true,
+    "dispatcher_diversity_observed": true,
+    "fixture_count": 15,
+    "handler_diversity_observed": true,
+    "opcode_assignment_diversity_observed": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 6,
+    "seed_count": 10,
+    "seed_diversity_opcode_assignments": 10,
+    "seed_diversity_seed_count": 10,
+    "semantic_parity": true
+  },
+  "readiness": {
+    "published_resistance_results": "open"
+  },
+  "schema_version": 1,
+  "source_commit": "fadc0e6302ba722f5e397cdafe70f33506baea99",
+  "workflow_run": 43615553431,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43615553431"
+}
