@@ -1,0 +1,104 @@
+{
+  "archive": {
+    "path": "protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8.json.gz",
+    "sha256": "59292f8b89b2a91d84d6bc718aac3e1d606f4ed83c74d8a92b68aa77c96a45d4",
+    "size_bytes": 16084,
+    "uncompressed_sha256": "d1b45a447068cff2c7bd173765ffbfd7703383dd74ccaadd2bfb6dae005cf998",
+    "uncompressed_size_bytes": 670101
+  },
+  "limitations": [
+    "This bounded local shard covers four repository fixtures and does not establish general analyzer coverage, platform parity, or generalized resistance.",
+    "Binary Ninja was unavailable because its local license was unavailable; Triton was unavailable on macOS ARM64.",
+    "Eighty of 88 pass rows were explicit no-ops; eight rows applied transformations.",
+    "angr emitted unsupported dirty-helper and unhooked-address diagnostics during analysis."
+  ],
+  "platform": "macOS ARM64",
+  "readiness": {
+    "all_named_adversarial_analyzers": "open"
+  },
+  "results": {
+    "applied_pass_rows": 8,
+    "completed_tool_rows": 616,
+    "error_pass_rows": 0,
+    "error_tool_rows": 0,
+    "missing_tool_rows": 0,
+    "no_op_pass_rows": 80,
+    "tool_rows_by_tool": {
+      "angr": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 88
+        }
+      },
+      "custom": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 88
+        }
+      },
+      "unicorn": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      }
+    },
+    "unavailable_tool_rows": 176
+  },
+  "schema_version": 1,
+  "scope": {
+    "completed_analyzer_rows": 616,
+    "dataset": "repository-fixtures",
+    "expected_analyzer_rows": 792,
+    "fixture_count": 4,
+    "fixture_shard": {
+      "count": 32,
+      "index": 3
+    },
+    "pass_count": 22,
+    "pass_rows": 88
+  },
+  "source_commit": "3af283d89d4e23c042f750881024949560e13bdb"
+}

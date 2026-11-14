@@ -70,7 +70,9 @@
         "docs/protection-adversarial-maturity-2026-11-14-43615553431.json.gz",
         "tests/unit/test_published_adversarial_run_43615553431.py",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4.json.gz",
-        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4-summary.json"
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4-summary.json",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8.json.gz",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8-summary.json"
       ]
     },
     "complete_compatibility_contract": {

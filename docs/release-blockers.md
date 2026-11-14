@@ -755,6 +755,18 @@ and
 This bounded shard adds IDA coverage but leaves the all-analyzer criterion
 open.
 
+A follow-up run of the same deterministic shard on source commit `3af283d8`
+configured both IDA Pro and Ghidra headless explicitly. Across the same four
+fixtures and 22 passes, it completed 616/792 analyzer rows with zero tool or
+pass errors and zero missing rows. IDA Pro and Ghidra each completed all 88
+rows; Binary Ninja remained unavailable because its local license was not
+available, and Triton was unavailable on macOS ARM64. Eight pass rows applied
+and 80 were no-ops. angr again reported unsupported dirty helpers and an
+unhooked address. The bounded, hash-bound artifact is recorded in the
+[shard summary](protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8-summary.json)
+and its compressed report. This closes the missing Ghidra evidence for this
+shard only; all-analyzer coverage and generalized resistance remain open.
+
 The complete Linux all-pass workflow run on source commit `fadc0e63` finished
 successfully with all 33 jobs, including all 32 shards and the aggregate. Across
 362 samples and 22 passes, it recorded 7,964/7,964 expected pass rows and
