@@ -29,7 +29,6 @@ from scripts.support_matrix import _vm_semantic_gap_scope, build_matrix
 from scripts.virtualization_coverage import build_coverage_inventory
 
 _EXPECTED_BENCHMARK_TOOLS = set(_EXPECTED_TOOLS) | {"custom"}
-_EXPECTED_CORPUS_TOOLS = _EXPECTED_BENCHMARK_TOOLS - {"binary-ninja"}
 _EXPECTED_MATURITY_BLOCKER_FIELDS: set[str] = set()
 _EXPECTED_VM_ADVERSARIAL_VALIDATION = {
     "evidence_quality": "seed-diversity-only",
@@ -72,8 +71,7 @@ _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "anti-tamper and progressive bytecode protection",
     "Independent human review records approval",
 )
-_CURRENT_CORPUS_REPORT = "protection-adversarial-corpus-2026-09-06-a727f304.json"
-_CURRENT_GHIDRA_REPORT = "protection-ghidra-corpus-2026-09-04-88258a05.json"
+_CURRENT_CORPUS_RUN_REPORT = "protection-adversarial-run-2026-11-14-43615553431.json"
 _CURRENT_IDA_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942.json"
 _CURRENT_IDA_SUMMARY_REPORT = "protection-ida-mcp-corpus-2026-09-06-646e0942-summary.json"
 _CURRENT_FP_REGRESSION_REPORT = "protection-fppackedidxnb-ida-2026-09-06-a3b8c6e.json"
@@ -82,6 +80,13 @@ _CURRENT_PUBLIC_CORPUS_REPORT = "protection-public-corpus-2026-11-11-43064188826
 _CURRENT_HOST_SHARD_REPORT = "protection-host-adversarial-shard-2026-11-11-b8d112a7-shard-01.json"
 _CURRENT_ANGR_LOCAL_REPORT = "protection-adversarial-angr-local-2026-09-18-59898697.json"
 _EXPECTED_CORPUS_SAMPLE_COUNT = 159
+_CURRENT_CORPUS_SAMPLES = 362
+_CURRENT_CORPUS_PASSES = 22
+_CURRENT_CORPUS_PASS_RUNS = 7964
+_CURRENT_CORPUS_TOOL_RUNS = 71676
+_CURRENT_CORPUS_COMPLETED_TOOL_RUNS = 55220
+_CURRENT_CORPUS_UNAVAILABLE_TOOL_RUNS = 16456
+_CURRENT_CORPUS_WORKFLOW_RUN_ID = 43615553431
 _HOST_SHARD_SAMPLE_COUNT = 11
 _HOST_SHARD_EXPECTED_TOOL_RUNS = 99
 _HOST_SHARD_COMPLETED_TOOL_RUNS = 77
@@ -452,70 +457,38 @@ def _review_angr_binary_ninja_availability(root: Path) -> dict[str, object]:
     )
 
 
+def _current_corpus_run(root: Path) -> dict[str, Any]:
+    path = root / "docs" / _CURRENT_CORPUS_RUN_REPORT
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def _review_corpus_benchmark(root: Path) -> dict[str, object]:
-    path = root / "docs" / _CURRENT_CORPUS_REPORT
-    document = json.loads(path.read_text(encoding="utf-8"))
-    samples = document.get("samples", [])
-    expected_count = document.get("sample_count")
-    sample_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
-    rows_valid = True
-    for sample in samples if isinstance(samples, list) else []:
-        if not isinstance(sample, dict):
-            rows_valid = False
-            break
-        tool_rows = sample.get("tools", [])
-        pass_rows = sample.get("passes", [])
-        tool_names = {row.get("tool") for row in tool_rows if isinstance(row, dict)}
-        pass_names = {row.get("pass_name") for row in pass_rows if isinstance(row, dict)}
-        if tool_names != _EXPECTED_CORPUS_TOOLS or "CodeVirtualization" not in pass_names:
-            rows_valid = False
-            break
-        if any(
-            not isinstance(row.get("status"), str) or row.get("status") not in {"completed", "unavailable", "error"}
-            for row in tool_rows
-            if isinstance(row, dict)
-        ):
-            rows_valid = False
-            break
-        if any(
-            not isinstance(row.get("error_type"), str) or not row["error_type"]
-            for row in tool_rows
-            if isinstance(row, dict) and row.get("status") == "error"
-        ):
-            rows_valid = False
-            break
-    summary = document.get("summary", {})
-    completed = sum(
-        1
-        for sample in samples
-        if isinstance(samples, list) and isinstance(sample, dict)
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and row.get("status") == "completed"
+    document = _current_corpus_run(root)
+    scope = document.get("scope", {})
+    results = document.get("results", {})
+    workflow = document.get("workflow", {})
+    jobs = workflow.get("jobs", {})
+    passed = (
+        document.get("schema_version") == 1
+        and scope.get("samples") == _CURRENT_CORPUS_SAMPLES
+        and scope.get("passes") == _CURRENT_CORPUS_PASSES
+        and scope.get("expected_pass_runs") == _CURRENT_CORPUS_PASS_RUNS
+        and scope.get("expected_tool_runs") == _CURRENT_CORPUS_TOOL_RUNS
+        and results.get("completed_tool_runs") == _CURRENT_CORPUS_COMPLETED_TOOL_RUNS
+        and results.get("error_tool_runs") == results.get("missing_tool_runs") == 0
+        and results.get("unavailable_tool_runs") == _CURRENT_CORPUS_UNAVAILABLE_TOOL_RUNS
+        and results.get("tools_without_full_completion") == ["binary-ninja", "ida-pro", "unicorn"]
+        and workflow.get("run_id") == _CURRENT_CORPUS_WORKFLOW_RUN_ID
+        and workflow.get("status") == "completed"
+        and workflow.get("conclusion") == "success"
+        and workflow.get("current_main_runtime_source_unchanged_since_source_commit") is True
+        and jobs == {"failed": 0, "skipped": 0, "successful": 33, "total": 33}
     )
-    unavailable = sum(
-        1
-        for sample in samples
-        if isinstance(samples, list) and isinstance(sample, dict)
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and row.get("status") == "unavailable"
-    )
-    errors = sum(
-        1
-        for sample in samples
-        if isinstance(samples, list) and isinstance(sample, dict)
-        for row in sample.get("tools", [])
-        if isinstance(row, dict) and row.get("status") == "error"
-    )
-    summary_valid = summary == {
-        "completed_tool_runs": completed,
-        "error_tool_runs": errors,
-        "unavailable_tool_runs": unavailable,
-    }
-    passed = sample_valid and rows_valid and summary_valid
     return _check(
         "adversarial_corpus_evidence",
         passed,
-        f"{expected_count} samples, {completed} completed tool runs, {errors} errors",
+        f"{scope.get('samples')} samples, {results.get('completed_tool_runs')} completed tool runs, "
+        f"{results.get('error_tool_runs')} errors",
     )
 
 
@@ -545,55 +518,31 @@ def _review_host_adversarial_shard(root: Path) -> dict[str, object]:
 
 
 def _review_ghidra_corpus(root: Path) -> dict[str, object]:
-    path = root / "docs" / _CURRENT_GHIDRA_REPORT
-    document = json.loads(path.read_text(encoding="utf-8"))
-    samples = document.get("samples", [])
-    expected_count = document.get("sample_count")
-    rows_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
-    completed = 0
-    for sample in samples if isinstance(samples, list) else []:
-        tools = sample.get("tools", []) if isinstance(sample, dict) else []
-        row = tools[0] if len(tools) == 1 and isinstance(tools[0], dict) else None
-        if row is None or row.get("tool") != "ghidra" or row.get("status") != "completed":
-            rows_valid = False
-            continue
-        original = row.get("original", {})
-        protected = row.get("protected", {})
-        if original.get("status") != "completed" or protected.get("status") != "completed":
-            rows_valid = False
-            continue
-        completed += 2
-    summary = document.get("summary", {})
-    summary_valid = summary == {
-        "completed_analysis_runs": completed,
-        "error_analysis_runs": 0,
-        "timeout_analysis_runs": 0,
-    }
-    passed = rows_valid and summary_valid
-    return _check("ghidra_corpus_evidence", passed, f"{expected_count} samples, {completed} completed analyses")
+    document = _current_corpus_run(root)
+    results = document.get("results", {})
+    unavailable = results.get("unavailable_tool_runs_by_tool", {})
+    completed = _CURRENT_CORPUS_PASS_RUNS - unavailable.get("ghidra", 0)
+    passed = (
+        document.get("workflow", {}).get("run_id") == _CURRENT_CORPUS_WORKFLOW_RUN_ID
+        and results.get("error_tool_runs") == results.get("missing_tool_runs") == 0
+        and completed == _CURRENT_CORPUS_PASS_RUNS
+        and "ghidra" not in results.get("tools_without_full_completion", [])
+    )
+    return _check("ghidra_corpus_evidence", passed, f"{completed} completed Ghidra tool runs")
 
 
 def _review_triton_corpus(root: Path) -> dict[str, object]:
-    path = root / "docs" / _CURRENT_CORPUS_REPORT
-    document = json.loads(path.read_text(encoding="utf-8"))
-    samples = document.get("samples", [])
-    expected_count = document.get("sample_count")
-    completed = 0
-    rows_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
-    for sample in samples if isinstance(samples, list) else []:
-        tool_rows = sample.get("tools", []) if isinstance(sample, dict) else []
-        triton_rows = [row for row in tool_rows if isinstance(row, dict) and row.get("tool") == "triton"]
-        if len(triton_rows) != 1 or triton_rows[0].get("status") != "completed":
-            rows_valid = False
-            continue
-        original = triton_rows[0].get("original", {})
-        protected = triton_rows[0].get("protected", {})
-        if original.get("status") != "completed" or protected.get("status") != "completed":
-            rows_valid = False
-            continue
-        completed += 1
-    passed = rows_valid and completed == expected_count
-    return _check("triton_corpus_evidence", passed, f"{expected_count} samples, {completed} Triton runs")
+    document = _current_corpus_run(root)
+    results = document.get("results", {})
+    unavailable = results.get("unavailable_tool_runs_by_tool", {})
+    completed = _CURRENT_CORPUS_PASS_RUNS - unavailable.get("triton", 0)
+    passed = (
+        document.get("workflow", {}).get("run_id") == _CURRENT_CORPUS_WORKFLOW_RUN_ID
+        and results.get("error_tool_runs") == results.get("missing_tool_runs") == 0
+        and completed == _CURRENT_CORPUS_PASS_RUNS
+        and "triton" not in results.get("tools_without_full_completion", [])
+    )
+    return _check("triton_corpus_evidence", passed, f"{completed} completed Triton tool runs")
 
 
 def _review_ida_corpus(root: Path) -> dict[str, object]:

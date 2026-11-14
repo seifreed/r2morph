@@ -189,12 +189,14 @@ Binary Ninja is an explicit analyzer slot; the focused local
 fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The current installed API is importable, but the headless benchmark reports
 `analyzer license is unavailable`; this remains an explicit evidence gap while
-the slot is on hold. Separately, the 159-sample evidence summarized in
-[`docs/independent-review.json`](docs/independent-review.json) records
-`159 samples, 159 Triton runs`, `159 samples, 318 completed analyses` for IDA,
-and `159 samples, 0 IDA errors`. These are campaign-specific
-results: availability in one campaign does not fill unavailable rows in another,
-and the all-named-analyzers 1.0 criterion remains open.
+the slot is on hold. The 2026-11-14 adversarial campaign summary records 362
+samples across 22 passes, with `7964 completed Ghidra tool runs` and
+`7964 completed Triton tool runs`; Binary Ninja, IDA Pro, and some Unicorn rows
+remain unavailable. The separate 159-sample IDA MCP campaign records
+`159 samples, 318 completed analyses` and `159 samples, 0 IDA errors`. These
+are campaign-specific results: availability in one campaign does not fill unavailable rows in another,
+and the all-named-analyzers 1.0 criterion remains open. See
+[`docs/protection-adversarial-run-2026-11-14-43615553431.json`](docs/protection-adversarial-run-2026-11-14-43615553431.json).
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

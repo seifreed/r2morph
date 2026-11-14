@@ -142,6 +142,27 @@ def test_independent_review_includes_corpus_benchmark_check() -> None:
     expect(any(check["name"] == "adversarial_corpus_evidence" for check in report["checks"]))
 
 
+def test_independent_review_uses_latest_adversarial_corpus_run() -> None:
+    report = review(_ROOT)
+    check = next(item for item in report["checks"] if item["name"] == "adversarial_corpus_evidence")
+
+    expect(check["status"] == "passed" and check["detail"] == "362 samples, 55220 completed tool runs, 0 errors")
+
+
+def test_independent_review_reports_current_ghidra_corpus_coverage() -> None:
+    report = review(_ROOT)
+    check = next(item for item in report["checks"] if item["name"] == "ghidra_corpus_evidence")
+
+    expect(check["status"] == "passed" and check["detail"] == "7964 completed Ghidra tool runs")
+
+
+def test_independent_review_reports_current_triton_corpus_coverage() -> None:
+    report = review(_ROOT)
+    check = next(item for item in report["checks"] if item["name"] == "triton_corpus_evidence")
+
+    expect(check["status"] == "passed" and check["detail"] == "7964 completed Triton tool runs")
+
+
 def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> None:
     report = review(_ROOT)
     names = {check["name"] for check in report["checks"]}

@@ -81,7 +81,7 @@
       "status": "passed"
     },
     {
-      "detail": "159 samples, 939 completed tool runs, 15 errors",
+      "detail": "362 samples, 55220 completed tool runs, 0 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
     },
@@ -96,12 +96,12 @@
       "status": "passed"
     },
     {
-      "detail": "159 samples, 318 completed analyses",
+      "detail": "7964 completed Ghidra tool runs",
       "name": "ghidra_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "159 samples, 159 Triton runs",
+      "detail": "7964 completed Triton tool runs",
       "name": "triton_corpus_evidence",
       "status": "passed"
     },
