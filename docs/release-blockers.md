@@ -647,6 +647,19 @@ and
 This is still one fixture, and 20 passes did not apply; the all-analyzer and
 generalized-resistance criteria remain open.
 
+A follow-up local source-tree campaign at commit `f1fec959` measured the same
+22 passes on both `elf_vm_arith_x86_64` and `elf_x86_64`. CodeVirtualization
+and InstructionSubstitution applied to both samples; the other 20 passes were
+no-ops on both. All 44 IDA Pro, Ghidra, Triton, angr, radare2, objdump, Unicorn,
+and custom analyzer rows completed without errors. Binary Ninja's 44 rows are
+explicitly unavailable because the local license was unavailable, giving 352
+completed and 44 unavailable rows out of 396. Fixture hashes, per-pass states,
+analyzer coverage, and the raw-report hash are recorded in the
+[summary](protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json)
+and [raw report](protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json).
+This remains a two-fixture local calibration; 20 passes did not apply, and the
+all-analyzer and generalized-resistance criteria remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

@@ -50,7 +50,9 @@
         "docs/protection-adversarial-local-ida-2026-11-14-1946be26.json",
         "docs/protection-adversarial-local-ida-2026-11-14-1946be26-summary.json",
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json",
-        "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json"
+        "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json",
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json",
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -205,7 +207,9 @@
         "docs/protection-adversarial-local-ida-2026-11-14-1946be26.json",
         "docs/protection-adversarial-local-ida-2026-11-14-1946be26-summary.json",
         "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71.json",
-        "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json"
+        "docs/protection-adversarial-local-multianalyzer-2026-11-14-87af8f71-summary.json",
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json",
+        "docs/protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959-summary.json"
       ]
     },
     "stable_api_cli": {

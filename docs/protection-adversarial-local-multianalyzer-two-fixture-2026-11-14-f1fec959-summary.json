@@ -1,0 +1,302 @@
+{
+  "analyzer_coverage": {
+    "by_tool": {
+      "angr": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 44,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 44
+        }
+      },
+      "custom": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      },
+      "unicorn": {
+        "completed": 44,
+        "errors": 0,
+        "runs": 44,
+        "unavailable": 0
+      }
+    },
+    "completed_runs": 352,
+    "error_runs": 0,
+    "expected_runs": 396,
+    "unavailable_runs": 44
+  },
+  "fixture_count": 2,
+  "fixtures": [
+    {
+      "name": "elf_vm_arith_x86_64",
+      "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+      "size_bytes": 4632
+    },
+    {
+      "name": "elf_x86_64",
+      "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a",
+      "size_bytes": 816
+    }
+  ],
+  "pass_count_per_fixture": 22,
+  "pass_rows": 44,
+  "pass_status_totals": {
+    "applied": 4,
+    "errors": 0,
+    "no_op": 40,
+    "omitted": 0
+  },
+  "passes": {
+    "APIHashing": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "AntiDisassembly": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "BlockReordering": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "CodeMobility": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "CodeVirtualization": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 2,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "ConstantUnfolding": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "ControlFlowFlattening": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "DataFlowMutation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "DeadCodeInjection": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "FunctionOutlining": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "ImportObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "InstructionExpansion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "InstructionSubstitution": {
+      "applied": 2,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "NopInsertion": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "OpaquePredicates": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "PatternSubstitution": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "PolymorphicEngine": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "RegisterSubstitution": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "SelfModifyingCode": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "ShortJumpPatching": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "StackStrings": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    },
+    "StringObfuscation": {
+      "applied": 0,
+      "errors": 0,
+      "functions_virtualized": 0,
+      "no_op": 2,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "unsupported_functions": 0
+    }
+  },
+  "provenance": "local-source-tree",
+  "raw_report": "protection-adversarial-local-multianalyzer-two-fixture-2026-11-14-f1fec959.json",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "report_sha256": "8ed2b90e49ed8d948e3bad18672bc1abe062a0b8e77cbbf2211da862eaa4f81f",
+  "schema_version": 1,
+  "scope": {
+    "binary_ninja": "unavailable because the local license was unavailable",
+    "platform": "Linux ELF x86-64 fixtures analyzed on macOS ARM64",
+    "resistance_claim": "none; bounded local analyzer evidence only"
+  },
+  "source_commit": "f1fec9591cc7759ca5303a02f97d43d083ea9ea6"
+}
