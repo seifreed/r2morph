@@ -1,0 +1,180 @@
+{
+  "archive": {
+    "path": "docs/protection-adversarial-run-2026-11-14-43526206403.json.gz",
+    "sha256": "76422951c7b04d5992ef06492c038f596bd9c80b9850c1e431b6299bf6e8f31c",
+    "uncompressed_bytes": 44759883,
+    "uncompressed_sha256": "2b207e0e458bd56fef0aa1e7e2e7debad670c41543ae40d9b1ec932da083a94f"
+  },
+  "measurement": "completed-adversarial-benchmark-run",
+  "results": {
+    "analyzer_errors": 0,
+    "applied_pass_runs": 2341,
+    "completed_analyzer_percent": 77.04,
+    "completed_analyzer_runs": 55220,
+    "completed_runs_by_tool": {
+      "angr": 7964,
+      "custom": 7964,
+      "ghidra": 7964,
+      "objdump": 7964,
+      "radare2": 7964,
+      "triton": 7964,
+      "unicorn": 7436
+    },
+    "evidence_blocker_totals": {
+      "blocker_categories": 6,
+      "decompiler_baseline_unavailable_pairs_by_pass": 2,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 17,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "evidence_blockers": {
+      "decompiler_baseline_unavailable_pairs_by_pass": {
+        "CodeVirtualization": {
+          "angr": 2
+        },
+        "ConstantUnfolding": {
+          "angr": 1
+        }
+      },
+      "incomplete_tool_coverage": [
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "binary-ninja",
+          "unavailable_runs": 7964
+        },
+        {
+          "completed_run_coverage_percent": 93.37,
+          "completed_runs": 7436,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "unicorn",
+          "unavailable_runs": 528
+        },
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "ida-pro",
+          "unavailable_runs": 7964
+        }
+      ],
+      "non_completed_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      },
+      "tools_without_full_completion": [
+        "binary-ninja",
+        "ida-pro",
+        "unicorn"
+      ],
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 7964
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 7964
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 528
+        }
+      },
+      "unavailable_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      }
+    },
+    "expected_analyzer_runs": 71676,
+    "missing_pass_runs": 0,
+    "no_op_pass_runs": 5623,
+    "observed_analyzer_runs": 71676,
+    "pass_errors": 0,
+    "unavailable_analyzer_runs": 16456,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "unavailable_runs_by_tool": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    }
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus": "dataset",
+    "expected_pass_runs": 7964,
+    "observed_pass_runs": 7964,
+    "pass_count": 22,
+    "sample_count": 362
+  },
+  "vm_resistance_smoke": {
+    "automated_validation": {
+      "checks": [
+        "semantic-parity-across-fixtures-and-seeds",
+        "cross-fixture-artifact-diversity",
+        "opcode-assignment-diversity",
+        "dispatcher-diversity",
+        "handler-diversity",
+        "bytecode-grammar-diversity",
+        "single-and-nested-anti-tamper",
+        "progressive-bytecode-growth",
+        "bounded-adversarial-recovery-probe"
+      ],
+      "evidence_quality": "automated-adversarial-smoke",
+      "status": "completed"
+    },
+    "fixture_count": 15,
+    "general_resistance_established": false,
+    "human_adversarial_review": {
+      "evidence_quality": "automated-adversarial-smoke",
+      "pending_scope": [
+        "human-adversarial-validation",
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection"
+      ],
+      "status": "pending-human-adversarial-review"
+    },
+    "reports": {
+      "bytecode_grammar": {
+        "path": "docs/protection-adversarial-bytecode-grammar-2026-11-14-43526206403.json",
+        "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef"
+      },
+      "seed_diversity": {
+        "path": "docs/protection-adversarial-seed-diversity-2026-11-14-43526206403.json",
+        "sha256": "077a49437857b5ea724944029cb8d1f83ffb3b5f341660a5b7c5822375ea4815"
+      },
+      "vm_resistance": {
+        "path": "docs/protection-adversarial-vm-resistance-2026-11-14-43526206403.json",
+        "sha256": "97a72c55ba9390c751e6fe1c0ddabe4a3053f84b952a0bfda9aab34d08d4c530"
+      }
+    },
+    "seed_count": 10,
+    "semantic_parity": true
+  },
+  "workflow": {
+    "conclusion": "success",
+    "name": "Adversarial Analysis Benchmark",
+    "run_id": 43526206403,
+    "source_commit": "5f02052e80346ab7c474ac72bf355586c97beae5",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43526206403"
+  }
+}

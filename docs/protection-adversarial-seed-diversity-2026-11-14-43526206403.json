@@ -1,0 +1,100 @@
+{
+  "adversarial_validation": {
+    "evidence_quality": "seed-diversity-only",
+    "pending_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
+  "cross_seed_exact_normalised_match_rate": 0.0,
+  "cross_seed_exact_normalised_matches": 0,
+  "cross_seed_has_exact_normalised_matches": false,
+  "cross_seed_largest_normalised_cluster": 1,
+  "cross_seed_nearest_similarity_above_threshold": 401,
+  "cross_seed_nearest_similarity_above_threshold_percent": 17.47276688453159,
+  "cross_seed_nearest_similarity_comparisons": 2295,
+  "cross_seed_nearest_similarity_max": 0.9523809523809523,
+  "cross_seed_nearest_similarity_mean": 0.6596274996282119,
+  "cross_seed_normalised_cluster_count": 0,
+  "first_seed": 20260820,
+  "schema_version": 2,
+  "seed_count": 10,
+  "seeds": [
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260820
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260821
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260822
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260823
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260824
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260825
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260826
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260827
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260828
+    },
+    {
+      "handler_count": 255,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 255,
+      "raw_unique_count": 255,
+      "seed": 20260829
+    }
+  ],
+  "similarity_threshold": 0.8
+}

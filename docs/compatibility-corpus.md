@@ -958,3 +958,15 @@ and
 [`protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json`](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json).
 This bounded sample does not close the analyzer matrix or establish general
 resistance.
+
+The scheduled 32-shard adversarial campaign then completed all 33 workflow jobs
+in [run 43526206403](https://github.com/seifreed/r2morph/actions/runs/43526206403).
+Its hash-bound summary and compressed merged report are
+[`protection-adversarial-run-2026-11-14-43526206403.json`](protection-adversarial-run-2026-11-14-43526206403.json)
+and
+[`protection-adversarial-run-2026-11-14-43526206403.json.gz`](protection-adversarial-run-2026-11-14-43526206403.json.gz).
+The campaign completed every pass row with zero pass errors, but only 77.04% of
+analyzer runs completed: Binary Ninja and IDA Pro were unavailable and Unicorn
+could not emulate 528 fixture instructions. Its VM resistance smoke remains
+pending human adversarial review; these results do not establish general
+resistance or cross-platform parity.

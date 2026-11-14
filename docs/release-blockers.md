@@ -418,9 +418,26 @@ below.
   The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)
   did not aggregate: shard 12 hit the six-hour job timeout, leaving 15/16
   reports. The benchmark now partitions the same declared scope into 32 jobs
-  to reduce per-job work. This scheduling change is not evidence of completion;
-  the analyzer and resistance criteria remain open until the 32-shard aggregate
-  succeeds.
+  to reduce per-job work. That scheduling change was not itself evidence of
+  completion.
+  The follow-up at source `5f02052e` completed the 32 shards and aggregate in
+  [run 43526206403](https://github.com/seifreed/r2morph/actions/runs/43526206403)
+  (33/33 jobs successful). It measured 362 corpus samples across all 22 passes
+  (7,964 pass rows): 2,341 applied runs, zero pass errors, omissions, or missing
+  rows. Seven of nine tools completed all 7,964 rows; 55,220/71,676 expected
+  analyzer runs completed overall (77.04%), with 17 evidence blockers. Binary
+  Ninja and IDA Pro were unavailable for all rows; Unicorn lacked support for
+  528 fixture instructions; angr had three unavailable applied baseline pairs.
+  The VM smoke covered 15 fixtures and ten seeds with semantic parity, distinct
+  artifacts, handler/dispatcher/opcode diversity, and divergent tamper probes.
+  Its automated report remains pending human adversarial review and does not
+  establish general resistance. The core runtime and adversarial benchmark
+  implementation files are unchanged on current `main`; the archived aggregate,
+  three VM reports, hashes, and extracted counts are in
+  [protection-adversarial-run-2026-11-14-43526206403.json](protection-adversarial-run-2026-11-14-43526206403.json)
+  and [the compressed raw report](protection-adversarial-run-2026-11-14-43526206403.json.gz).
+  This closes the shard-completion gap only;
+  analyzer coverage and general resistance remain open.
 
 ## Resolved review gates
 
