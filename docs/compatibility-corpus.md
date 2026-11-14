@@ -994,6 +994,20 @@ and
 This bounded sample does not close the analyzer matrix or establish general
 resistance.
 
+The next current-main host slice at `eb1fa600` measured six additional
+repository fixtures across all 22 passes (132 rows): 15 applications, zero
+omissions, and zero pass errors. IDA Pro 9.5 completed all 132 rows. Seven
+analyzers completed 902 of 1,188 expected runs; Binary Ninja's local license
+was invalid, Triton was unavailable on macOS ARM64, and Unicorn could not
+emulate one pair in 22 pass rows. No tool errors or missing rows were recorded.
+The generated Linux corpus was not included. The raw report and hash-bound
+summary are
+[`protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json`](protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json)
+and
+[`protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json`](protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json).
+This adds bounded IDA measurements, not complete analyzer coverage or general
+resistance.
+
 The scheduled 32-shard adversarial campaign then completed all 33 workflow jobs
 in [run 43526206403](https://github.com/seifreed/r2morph/actions/runs/43526206403).
 Its hash-bound summary and compressed merged report are

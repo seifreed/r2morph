@@ -436,6 +436,20 @@ This is bounded preview evidence and leaves cross-platform parity open.
   [protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json](protection-host-adversarial-allpasses-2026-11-13-b012cd0a-shard-17-32-summary.json).
   This bounded fixture slice does not close the all-analyzer or general
   resistance criteria.
+  The following current-main shard at `eb1fa600` measured six more repository
+  fixtures across all 22 passes (132 rows): 15 applications, zero omissions,
+  and zero pass errors. IDA Pro 9.5 completed all 132 rows; angr, Ghidra,
+  radare2, objdump, the custom analyzer, and Unicorn completed 902 tool rows
+  overall. Binary Ninja was unavailable because its local license was invalid,
+  Triton was unavailable on macOS ARM64, and Unicorn could not emulate one
+  original/protected pair across 22 pass rows. There were no tool errors or
+  missing rows. The generated Linux corpus was not included. The hash-bound
+  report and summary are
+  [protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json](protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json)
+  and
+  [protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json](protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json).
+  This adds a bounded IDA slice, but leaves the all-analyzer and resistance
+  criteria open.
   This adds a local Triton slice but leaves the all-analyzer matrix and general
   resistance criterion open.
   The full GitHub campaign at [run 43347265883](https://github.com/seifreed/r2morph/actions/runs/43347265883)
