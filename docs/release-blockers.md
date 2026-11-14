@@ -8,14 +8,15 @@ criterion remains open or in progress.
 
 ## Latest full CI verification on main
 
-Commit `72697b8b02e3fd6b7aac6f2ed1cca60d38d94971` passed CI run
-[`43534838676`](https://github.com/seifreed/r2morph/actions/runs/43534838676)
+Commit `e843192a45026f764c9a65e4403e6a5e28bc1037` passed CI run
+[`43549915916`](https://github.com/seifreed/r2morph/actions/runs/43549915916)
 with all 15 jobs successful and none skipped. The run includes unit and
 integration suites, installed-wheel and product smoke tests, property and fuzz
 validation, lint and type checking, and Linux, macOS, and Windows jobs on
-Python 3.12 and 3.13. These results verify the current main tree; they do not
-close the separate open 1.0 parity, analyzer-coverage, or resistance criteria
-below.
+Python 3.12 and 3.13. The subsequent release-signoff change at `576f705c` also
+passed its full local suite (6,770 passed, 225 skipped); its GitHub CI run
+`43558227580` is still queued as of this update. Neither run closes the separate
+open 1.0 parity, analyzer-coverage, or resistance criteria below.
 
 The seven-module native macOS ARM64 platform preview was also built from
 `60dfc8da`, installed from its wheel, and executed locally on macOS 27.2 with
