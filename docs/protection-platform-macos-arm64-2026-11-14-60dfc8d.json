@@ -1,0 +1,37 @@
+{
+  "claim_scope": "bounded native platform preview; does not establish full cross-platform parity",
+  "execution": "installed-wheel",
+  "host": {
+    "machine": "arm64",
+    "os": "macOS-27.2-arm64-arm-64bit",
+    "python": "3.12.16"
+  },
+  "package": {
+    "filename": "r2morph-0.4.0a3-py3-none-any.whl",
+    "sha256": "39c2d5ca2c05e3147fa51d339eab8200e1b00a3cb6e7054122ec214195e9a91b"
+  },
+  "platform": "macOS ARM64",
+  "radare2_version": "6.2.6",
+  "report": "protection-platform-macos-arm64-2026-11-14-60dfc8d.xml",
+  "report_bytes": 5902,
+  "report_sha256": "3334bbef5c79e0b4f87b0681f6c13f4c84167cd6ffbe5299458c7ff6f4c2b826",
+  "run_at_utc": "2026-11-14T02:24:31+00:00",
+  "schema_version": 1,
+  "source_commit": "60dfc8da7fa4489a9d99e96e39a47697cb46165c",
+  "suite": [
+    "tests/integration/test_binary_rewriter_formats_real.py",
+    "tests/integration/test_platform_deeper.py",
+    "tests/integration/test_mutation_nop_insertion_arm64.py",
+    "tests/integration/test_mutation_register_substitution_arm64.py",
+    "tests/integration/test_mutations_x86_compiled_binary.py",
+    "tests/integration/test_mutation_passes_end_to_end_more2.py",
+    "tests/integration/test_code_virtualization_target_support_real.py"
+  ],
+  "summary": {
+    "duration_seconds": 8.345,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 35
+  }
+}

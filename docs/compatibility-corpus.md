@@ -20,6 +20,18 @@ benchmark. An aggregate job validates that the shard artifacts form one
 complete, duplicate-free matrix before publishing the bounded evidence. This is additional
 continuous Linux ELF x86-64 corpus evidence; it does not claim PE, Mach-O, ARM,
 or AArch64 parity.
+
+On 2026-11-14, the current-main source commit `60dfc8da` was built as a wheel,
+installed into an isolated Python 3.12.16 environment, and tested natively on
+macOS ARM64 with the seven-module platform preview suite used by the workflow.
+All 35 cases passed with zero failures, errors, or skips. The hash-bound JUnit
+report and wheel hash are recorded in
+[`protection-platform-macos-arm64-2026-11-14-60dfc8d.json`](protection-platform-macos-arm64-2026-11-14-60dfc8d.json)
+and
+[`protection-platform-macos-arm64-2026-11-14-60dfc8d.xml`](protection-platform-macos-arm64-2026-11-14-60dfc8d.xml).
+This adds current-main native preview evidence; it does not establish full
+cross-platform parity.
+
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
 native ELF ARM64, native ELF ARM32, and native ELF x86 32-bit JUnit artifacts into
 `differential-platform-aggregate`. Run

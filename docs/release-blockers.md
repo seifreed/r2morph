@@ -17,6 +17,15 @@ Python 3.12 and 3.13. These results verify the current main tree; they do not
 close the separate open 1.0 parity, analyzer-coverage, or resistance criteria
 below.
 
+The seven-module native macOS ARM64 platform preview was also built from
+`60dfc8da`, installed from its wheel, and executed locally on macOS 27.2 with
+Python 3.12.16 and radare2 6.2.6. All 35 cases passed with zero failures,
+errors, or skips; the JUnit report and wheel SHA-256 are retained in
+[protection-platform-macos-arm64-2026-11-14-60dfc8d.json](protection-platform-macos-arm64-2026-11-14-60dfc8d.json)
+and
+[protection-platform-macos-arm64-2026-11-14-60dfc8d.xml](protection-platform-macos-arm64-2026-11-14-60dfc8d.xml).
+This is bounded preview evidence and leaves cross-platform parity open.
+
 ## Resolved blockers
 
 - The latest differential workflow, run
