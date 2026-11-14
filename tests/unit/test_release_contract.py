@@ -1881,9 +1881,9 @@ def test_adversarial_workflow_provisions_reproducible_ghidra() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
 
     expect(
-        "actions/setup-java@v4" in workflow
+        "actions/setup-java@v6" in workflow
         and 'java-version: "21"' in workflow
-        and "actions/cache@v4" in workflow
+        and "actions/cache@v6" in workflow
         and "GHIDRA_HEADLESS=$ghidra_dir/support/analyzeHeadless" in workflow
         and "sha256sum --check" in workflow
         and "93a5d11a9ad510622acaaf908c556a7b9b764d338e78a7567f3689bf5081fd54" in workflow
