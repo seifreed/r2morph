@@ -616,6 +616,18 @@ reports are listed in
 This improves fuzz coverage evidence only; it leaves semantic parity and
 adversarial resistance open.
 
+The manually dispatched continuous-fuzz workflow then passed all three
+platform jobs on source commit `350c0d79` in
+[run 43631586471](https://github.com/seifreed/r2morph/actions/runs/43631586471).
+Linux, macOS ARM64, and Windows each built and installed the wheel and completed
+5,000 cases for all ten targets: 150,000 target runs total with zero failures.
+Each runner recorded 103 recoverable Mach-O parser warnings. The report files
+and their SHA-256 digests are
+[bound in this summary](protection-fuzz-continuous-run-2026-11-14-43631586471.json).
+The fuzzed runtime and campaign inputs are unchanged through the current main
+tree; later commits only published evidence and added tests. This is fuzzing
+evidence, not proof of semantic equivalence or platform parity.
+
 A local source-tree campaign at commit `1946be26` exercised the real
 `CodeVirtualization` pass on fixture `elf_vm_arith_x86_64`. One function was
 fully virtualized; IDA Pro 9.5 completed both sides and reported 26 additional

@@ -1,0 +1,119 @@
+{
+  "fuzz_scope_unchanged_since_source_commit": true,
+  "limitations": [
+    "This run fuzzes parsers and rewriting paths; it does not prove semantic equivalence or supported-platform parity.",
+    "Each platform recorded 103 recoverable Mach-O parser warnings and zero fuzz failures.",
+    "The successful source scope is unchanged through the current main commit; later changes only updated evidence and tests."
+  ],
+  "platforms": {
+    "macos-15": {
+      "cases": 5000,
+      "display_name": "macOS ARM64",
+      "failure_count": 0,
+      "max_payload": 4096,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "protection-fuzz-continuous-2026-11-14-43631586471-macos-15.json",
+      "schema_version": 1,
+      "seed": 20261114,
+      "sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+      "size_bytes": 537,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "ubuntu-latest": {
+      "cases": 5000,
+      "display_name": "Linux",
+      "failure_count": 0,
+      "max_payload": 4096,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "protection-fuzz-continuous-2026-11-14-43631586471-ubuntu-latest.json",
+      "schema_version": 1,
+      "seed": 20261114,
+      "sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+      "size_bytes": 537,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "windows-latest": {
+      "cases": 5000,
+      "display_name": "Windows",
+      "failure_count": 0,
+      "max_payload": 4096,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "protection-fuzz-continuous-2026-11-14-43631586471-windows-latest.json",
+      "schema_version": 1,
+      "seed": 20261114,
+      "sha256": "796d694c1c0e27dd68561d2eb26f47a48cb76a20986ff39c59cda9002009d423",
+      "size_bytes": 537,
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    }
+  },
+  "schema_version": 1,
+  "scope": {
+    "cases_per_platform": 5000,
+    "max_payload_bytes": 4096,
+    "seed": 20261114,
+    "target_runs_per_platform": 50000,
+    "targets": [
+      "assembling",
+      "binary_parsers",
+      "elf_header_parser",
+      "pe_header_parser",
+      "macho_load_commands",
+      "vm_dispatcher",
+      "vm_bytecode",
+      "vm_instruction_decoder",
+      "relocations",
+      "binary_rewriter"
+    ],
+    "total_target_runs": 150000
+  },
+  "scope_commit": "8403661b",
+  "source_commit": "350c0d79b6ff2ae712b4fe26f7abd1654ed3467e",
+  "workflow": {
+    "conclusion": "success",
+    "name": "Continuous Fuzzing",
+    "run_id": 43631586471,
+    "status": "completed",
+    "successful_platform_jobs": 3,
+    "total_platform_jobs": 3,
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43631586471"
+  }
+}
