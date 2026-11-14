@@ -13,8 +13,10 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _ADVERSARIAL_SUMMARY = _ROOT / "docs/protection-adversarial-run-2026-11-14-43615553431.json"
 _RESISTANCE_SUMMARY = _ROOT / "docs/protection-vm-resistance-run-2026-11-14-43615553431.json"
+_LOCAL_SHARD_SUMMARY = _ROOT / "docs/protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4-summary.json"
 _SOURCE_COMMIT = "fadc0e6302ba722f5e397cdafe70f33506baea99"
 _SCOPE_COMMIT = "16eedca70d31564f45a7d8911ceb549882f3df09"
+_LOCAL_SOURCE_COMMIT = "14df3fb4"
 _WORKFLOW_RUN = 43_615_553_431
 _SAMPLE_COUNT = 362
 _PASS_COUNT = 22
@@ -27,6 +29,12 @@ _ADVERSARIAL_BLOCKER_COUNT = 17
 _RESISTANCE_FIXTURE_COUNT = 15
 _RESISTANCE_SEED_COUNT = 10
 _GROWTH_FIXTURE_COUNT = 6
+_LOCAL_SHARD_FIXTURE_COUNT = 4
+_LOCAL_SHARD_PASS_ROWS = 88
+_LOCAL_SHARD_APPLIED_ROWS = 8
+_LOCAL_SHARD_NO_OP_ROWS = 80
+_LOCAL_SHARD_COMPLETED_TOOL_ROWS = 528
+_LOCAL_SHARD_UNAVAILABLE_TOOL_ROWS = 264
 _ZERO = 0
 _CHUNK_BYTES = 1024 * 1024
 _PATH_CONTEXT_BYTES = 256
@@ -139,12 +147,52 @@ def test_vm_resistance_run_keeps_human_review_and_release_gate_open() -> None:
     )
 
 
+def test_local_analyzer_shard_archive_matches_published_hashes() -> None:
+    summary = _summary(_LOCAL_SHARD_SUMMARY)
+    archive = summary["archive"]
+    report = _ROOT / "docs" / archive["path"]
+    raw_digest, raw_size = _uncompressed_digest(report)
+
+    expect(
+        archive["sha256"] == _digest(report)
+        and archive["size_bytes"] == report.stat().st_size
+        and archive["uncompressed_sha256"] == raw_digest
+        and archive["uncompressed_size_bytes"] == raw_size
+    )
+
+
+def test_local_analyzer_shard_records_ida_and_preserves_analyzer_blockers() -> None:
+    summary = _summary(_LOCAL_SHARD_SUMMARY)
+    results = summary["results"]
+    readiness = _summary(_ROOT / "docs/one-zero-readiness.json")
+
+    expect(
+        summary["source_commit"].startswith(_LOCAL_SOURCE_COMMIT)
+        and summary["scope"]["fixture_shard"] == {"count": 32, "index": 3}
+        and summary["scope"]["fixture_count"] == _LOCAL_SHARD_FIXTURE_COUNT
+        and summary["scope"]["pass_count"] == _PASS_COUNT
+        and summary["scope"]["pass_rows"] == _LOCAL_SHARD_PASS_ROWS
+        and results["applied_pass_rows"] == _LOCAL_SHARD_APPLIED_ROWS
+        and results["no_op_pass_rows"] == _LOCAL_SHARD_NO_OP_ROWS
+        and results["error_pass_rows"] == _ZERO
+        and results["completed_tool_rows"] == _LOCAL_SHARD_COMPLETED_TOOL_ROWS
+        and results["unavailable_tool_rows"] == _LOCAL_SHARD_UNAVAILABLE_TOOL_ROWS
+        and results["tool_rows_by_tool"]["ida-pro"]["completed"] == _LOCAL_SHARD_PASS_ROWS
+        and results["tool_rows_by_tool"]["ida-pro"]["errors"] == _ZERO
+        and results["tool_rows_by_tool"]["binary-ninja"]["unavailable"] == _LOCAL_SHARD_PASS_ROWS
+        and results["tool_rows_by_tool"]["ghidra"]["unavailable"] == _LOCAL_SHARD_PASS_ROWS
+        and results["tool_rows_by_tool"]["triton"]["unavailable"] == _LOCAL_SHARD_PASS_ROWS
+        and readiness["criteria"]["all_named_adversarial_analyzers"]["status"] == "open"
+    )
+
+
 def test_published_adversarial_archives_do_not_disclose_host_paths() -> None:
     campaign = _summary(_ADVERSARIAL_SUMMARY)
     resistance = _summary(_RESISTANCE_SUMMARY)
+    local_shard = _summary(_LOCAL_SHARD_SUMMARY)
     archives = [
         artifact["path"]
-        for artifacts in (campaign["archives"], resistance["artifacts"])
+        for artifacts in (campaign["archives"], resistance["artifacts"], {"report": local_shard["archive"]})
         for artifact in artifacts.values()
     ]
 

@@ -1,0 +1,113 @@
+{
+  "archive": {
+    "path": "protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4.json.gz",
+    "sha256": "c6a76b3ea98c05d2aecd5d7ba8ef19493b9ec5413238077c6ae015605b41ada0",
+    "size_bytes": 15066,
+    "uncompressed_sha256": "aa49749e337bcb527f118e5035c14798b8ec099b6fcd8f262ce3d4c86e778ffe",
+    "uncompressed_size_bytes": 591052
+  },
+  "limitations": [
+    "This shard covers four repository fixtures and does not establish general analyzer coverage or resistance.",
+    "Binary Ninja was unavailable because its local license was unavailable; Ghidra and Triton were not installed.",
+    "Nineteen pass rows were no-ops; the report preserves them as such.",
+    "angr emitted unsupported dirty-helper and unhooked-address diagnostics during analysis."
+  ],
+  "platform": "macOS ARM64",
+  "readiness": {
+    "all_named_adversarial_analyzers": "open"
+  },
+  "results": {
+    "adversarial_evidence_blockers": {
+      "blocker_categories": 6,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "passes_without_applied_runs": 19,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 34,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "applied_pass_rows": 8,
+    "completed_tool_rows": 528,
+    "error_pass_rows": 0,
+    "no_op_pass_rows": 80,
+    "tool_rows_by_tool": {
+      "angr": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 88
+        }
+      },
+      "custom": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "executable 'ghidra' is unavailable": 88
+        }
+      },
+      "ida-pro": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 88
+        }
+      },
+      "unicorn": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      }
+    },
+    "unavailable_tool_rows": 264
+  },
+  "schema_version": 1,
+  "scope": {
+    "dataset": "repository-fixtures",
+    "fixture_count": 4,
+    "fixture_shard": {
+      "count": 32,
+      "index": 3
+    },
+    "pass_count": 22,
+    "pass_rows": 88
+  },
+  "source_commit": "14df3fb416f31e7bf9802b94e735721217425c97"
+}

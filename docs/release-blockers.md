@@ -728,6 +728,21 @@ commits and fixture hashes:
 This evidence remains a bounded local sample and does not close analyzer
 coverage, differential correctness, or resistance criteria.
 
+The fourth local shard at source commit `14df3fb4` covers four additional
+repository fixtures across the same 22 passes, adding 88 pass rows and 792
+expected analyzer slots. IDA Pro completed all 88 rows; six analyzers completed
+528 rows total with zero adapter or pass errors. Binary Ninja was unavailable
+because its license was unavailable, Ghidra's headless executable was not
+installed, and Triton was unavailable. Eight pass rows applied and the other
+80 were explicit no-ops. angr emitted unsupported-dirty-helper and
+unhooked-address diagnostics, which remain a limitation. The report and
+hash-bound manifest are
+[here](protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4.json.gz)
+and
+[here](protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4-summary.json).
+This bounded shard adds IDA coverage but leaves the all-analyzer criterion
+open.
+
 The complete Linux all-pass workflow run on source commit `fadc0e63` finished
 successfully with all 33 jobs, including all 32 shards and the aggregate. Across
 362 samples and 22 passes, it recorded 7,964/7,964 expected pass rows and
