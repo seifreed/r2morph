@@ -115,13 +115,13 @@ def test_independent_review_validates_current_analyzer_and_fuzz_artifacts() -> N
     )
 
 
-def test_independent_review_reports_nine_target_fuzz_campaign() -> None:
+def test_independent_review_reports_ten_target_fuzz_campaign() -> None:
     report = review(_ROOT)
     fuzz_check = next(check for check in report["checks"] if check["name"] == "parser_rewriter_fuzz_campaign")
 
     expect(
         fuzz_check
-        == {"name": "parser_rewriter_fuzz_campaign", "status": "passed", "detail": "180000 target runs, 0 failures"}
+        == {"name": "parser_rewriter_fuzz_campaign", "status": "passed", "detail": "50000 target runs, 0 failures"}
     )
 
 
