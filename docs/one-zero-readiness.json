@@ -107,7 +107,15 @@
         "docs/protection-platform-windows-pe-2026-11-13-43498875302.xml",
         "docs/protection-differential-run-2026-11-14-43534838628.json",
         "docs/protection-platform-macos-arm64-2026-11-14-60dfc8d.json",
-        "docs/protection-platform-macos-arm64-2026-11-14-60dfc8d.xml"
+        "docs/protection-platform-macos-arm64-2026-11-14-60dfc8d.xml",
+        "docs/protection-platform-preview-run-2026-11-14-334f6626.json",
+        "docs/protection-platform-macos-arm64-2026-11-14-334f6626-ci.xml",
+        "docs/protection-platform-windows-pe-2026-11-14-334f6626.xml",
+        "docs/protection-platform-elf-arm-32-2026-11-14-334f6626.xml",
+        "docs/protection-platform-elf-arm64-2026-11-14-334f6626.xml",
+        "docs/protection-platform-elf-x86-32-2026-11-14-334f6626.xml",
+        "docs/protection-platform-macos-arm64-2026-11-14-334f6626.json",
+        "docs/protection-platform-macos-arm64-2026-11-14-334f6626.xml"
       ]
     },
     "documented_resistance_scope": {

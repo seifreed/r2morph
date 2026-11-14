@@ -32,6 +32,27 @@ and
 This adds current-main native preview evidence; it does not establish full
 cross-platform parity.
 
+The source commit `334f6626a38bfdbf933ecaf5afdc4312a6d61d98` was also built as
+a wheel, installed into an isolated Python 3.13.11 environment, and tested on
+macOS ARM64 outside the checkout. The workflow's seven-module platform smoke
+passed all 35 cases with zero failures, errors, or skips. The JUnit host name
+is redacted; the report hash and wheel hash are recorded in
+[`protection-platform-macos-arm64-2026-11-14-334f6626.json`](protection-platform-macos-arm64-2026-11-14-334f6626.json)
+and
+[`protection-platform-macos-arm64-2026-11-14-334f6626.xml`](protection-platform-macos-arm64-2026-11-14-334f6626.xml).
+This refreshes the macOS ARM64 slice only; Windows PE, ELF ARM32, ELF AArch64,
+ELF x86-32, and full cross-platform parity remain open.
+
+The complete differential workflow for the same source commit then completed
+all five declared preview slices: macOS ARM64, Windows PE, ELF ARM32, ELF
+AArch64, and ELF x86-32. All 73 selected cases passed with zero failures,
+errors, or skips. The aggregate records the workflow run ID and per-report
+hashes in
+[`protection-platform-preview-run-2026-11-14-334f6626.json`](protection-platform-preview-run-2026-11-14-334f6626.json);
+the five sanitized JUnit reports are linked there. This confirms the bounded
+preview matrix on the current commit while leaving full cross-platform parity
+open.
+
 The differential workflow also aggregates the independent PE, Mach-O ARM64,
 native ELF ARM64, native ELF ARM32, and native ELF x86 32-bit JUnit artifacts into
 `differential-platform-aggregate`. Run

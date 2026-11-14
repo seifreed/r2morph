@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "source_commit": "334f6626a38bfdbf933ecaf5afdc4312a6d61d98",
+  "workflow": "Differential Corpus By Pass",
+  "workflow_run": 43590514259,
+  "run_attempt": 1,
+  "scope": "bounded five-platform differential preview; does not establish full cross-platform parity",
+  "platform_reports": {
+    "macos_arm64": {
+      "report": "protection-platform-macos-arm64-2026-11-14-334f6626-ci.xml",
+      "sha256": "22a63ae99f8092eef11f749d26c193b47e515269c45773871da5bf6547ca41f4",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows_pe": {
+      "report": "protection-platform-windows-pe-2026-11-14-334f6626.xml",
+      "sha256": "80ff6f8ab7d4e1e5cbd8f9cb034a03b69179d330ea25f25d6e6449e1f6c8ef80",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_arm32": {
+      "report": "protection-platform-elf-arm-32-2026-11-14-334f6626.xml",
+      "sha256": "cb10b384a49ca49a1b0a24ab383a341152b11ec6545dc3ce417d48907ca0c65b",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_arm64": {
+      "report": "protection-platform-elf-arm64-2026-11-14-334f6626.xml",
+      "sha256": "4dd7225da39e50dee430ac69176d5edada244f0c4e2ccac45f8fcc963c801d1b",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_x86_32": {
+      "report": "protection-platform-elf-x86-32-2026-11-14-334f6626.xml",
+      "sha256": "41978b2a3241398ec328aff97c261fabc7ef96cc8255885283433cb6968c224d",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "totals": {
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "readiness": {
+    "cross_platform_parity": "open"
+  },
+  "limitations": [
+    "The report covers the five declared preview slices and selected mutation cases only.",
+    "ELF ARM32 uses emulation; this is not a claim of native execution on every target architecture.",
+    "Passing preview cases do not establish broad binary-format or cross-platform parity."
+  ]
+}
