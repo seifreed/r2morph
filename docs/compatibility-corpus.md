@@ -636,6 +636,29 @@ and its three runner reports. This binds the existing fuzz scope to current
 `main`; it does not broaden that scope or establish semantic parity or
 resistance.
 
+The November 14 differential workflow completed all 85 jobs in
+[run 43534838628](https://github.com/seifreed/r2morph/actions/runs/43534838628)
+on source commit `72697b8b`. Its ten-pass core campaign classified 10,860
+executions (3,565 applied transformations) and its twelve-pass extension
+classified 13,032 (3,374 applied); both recorded zero errors, failed seeds, or
+semantic failures. The public matrix passed 360 samples and 2,160 radare2
+static-recovery measurements. VM semantic parity passed 1,005/1,005 fixtures
+against QEMU across three seeds. The five platform previews passed 73 cases,
+with zero failures, errors, or skips. These bounded platform previews do not
+establish parity with official Linux ELF x86-64.
+
+The same run completed 48 fuzz shards (3,072 cases and 30,720 target runs over
+ten parser, rewriting, assembly, relocation, and VM targets) with zero
+failures. It recorded 192 recoverable Mach-O parser diagnostics. Composition
+testing covered 2,208 cases across 44 directional pass pairs with zero errors
+or failures. The maturity result still has 22 decompiler blockers; the public
+corpus did not have IDA Pro, Binary Ninja, or Ghidra available. This evidence
+strengthens published differential correctness and cost results but does not
+close cross-platform parity, complete analyzer coverage, or general resistance.
+The hash-checked summary and compressed source reports are
+[`protection-differential-run-2026-11-14-43534838628.json`](protection-differential-run-2026-11-14-43534838628.json)
+and its referenced archives.
+
 Commit `03984513` adds a separate `vm_instruction_decoder` target. The local
 Python 3.13.11 source-tree run completed 5,000 cases on each of ten fuzz targets
 (50,000 target runs, zero failures); the raw report and hash-bound summary are

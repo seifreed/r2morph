@@ -1,0 +1,185 @@
+{
+  "archives": {
+    "core": {
+      "path": "docs/protection-differential-core-2026-11-14-43534838628.json.gz",
+      "sha256": "d4adde06dc38093b94f86a63b30a4632b99d447e99c11826287c5f24598cf392",
+      "size_bytes": 6713252,
+      "uncompressed_sha256": "df0159e018e25842c94e07ca4d8d0bf634e0bc74692d3d92a548ae6651ed40cd",
+      "uncompressed_size_bytes": 187933108
+    },
+    "extended": {
+      "path": "docs/protection-differential-extended-2026-11-14-43534838628.json.gz",
+      "sha256": "9077bdc33e1cb9060a4e30726fac89e3a60c8421507bf49ab3b2f4a64dd97e8b",
+      "size_bytes": 8079862,
+      "uncompressed_sha256": "e5e54228252e929f44b6ca362100cf3e09989fbf89ab981626e5a0f9d610557b",
+      "uncompressed_size_bytes": 225531862
+    },
+    "fuzz": {
+      "path": "docs/protection-differential-fuzz-2026-11-14-43534838628.json.gz",
+      "sha256": "2906ac96ce7c46552a91449f98b7410cdf6bde690ff43c6478ec54673ed0dd2b",
+      "size_bytes": 671,
+      "uncompressed_sha256": "2a625cddc03fb30b28c7056747b811a2bb778da7d672312b91f35da8e872153d",
+      "uncompressed_size_bytes": 26902
+    },
+    "maturity": {
+      "path": "docs/protection-differential-maturity-2026-11-14-43534838628.json.gz",
+      "sha256": "4cc2863cbb760c5859c4e5b31114bf7312348f89d8f9fac853806bd77d5a58cf",
+      "size_bytes": 14785,
+      "uncompressed_sha256": "bd73dcfc060afdb1ec626643dae345b3d2dddd6f2d11f17b6733f962058647b0",
+      "uncompressed_size_bytes": 135977
+    },
+    "platform": {
+      "path": "docs/protection-differential-platform-2026-11-14-43534838628.json.gz",
+      "sha256": "f5ba79b23a9a058dd2b334aba850eab644dfd2f29c889154d85e9aaa32b718bd",
+      "size_bytes": 1161,
+      "uncompressed_sha256": "15407205577995d6f32809013b05e3fbfaaa8361738e03681fc325f46a997f94",
+      "uncompressed_size_bytes": 13087
+    },
+    "public": {
+      "path": "docs/protection-differential-public-2026-11-14-43534838628.json.gz",
+      "sha256": "d3efff93155173d66a664e8a1b7712d181a1c86eaed26a754e009a7f69a604a2",
+      "size_bytes": 473229,
+      "uncompressed_sha256": "4f8f80a15e9c33c9f0550da05e6daf494ff78e7914c6a709ebf3f6511f97fcd1",
+      "uncompressed_size_bytes": 21911368
+    },
+    "vm": {
+      "path": "docs/protection-differential-vm-2026-11-14-43534838628.json.gz",
+      "sha256": "9ad71093e7d159042a1f13d95b102e35b390f474103309a0df59033ab7d6aab0",
+      "size_bytes": 102374,
+      "uncompressed_sha256": "c43c5a14c80de21d460d46917f7083f880c3c76d347f868a0fe5d3e35edca5ef",
+      "uncompressed_size_bytes": 2373500
+    },
+    "vm_contracts": {
+      "path": "docs/protection-differential-vm_contracts-2026-11-14-43534838628.json.gz",
+      "sha256": "1dfce80045347ee38b475b9b24ccfd20cfa1f39c9251feb242c6f969c6a4c731",
+      "size_bytes": 518,
+      "uncompressed_sha256": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75",
+      "uncompressed_size_bytes": 2088
+    }
+  },
+  "limitations": [
+    "This run is bounded to the published fixture and corpus matrix; zero observed failures do not prove arbitrary-binary correctness.",
+    "The five cross-platform slices are preview evidence and do not establish parity with official Linux ELF x86-64.",
+    "The public compatibility campaign used radare2 for static recovery; IDA Pro, Binary Ninja, and Ghidra were unavailable in its CI environment.",
+    "The maturity aggregate retains 22 decompiler blockers; analyzer coverage and general VM resistance remain open.",
+    "The cost values are observed corpus measurements, not controlled performance benchmarks."
+  ],
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_correctness_results": "complete",
+    "published_cost_results": "complete",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "composition": {
+      "cases": 2208,
+      "directional_pairs": 44,
+      "errors": 0,
+      "failures": 0
+    },
+    "core": {
+      "pass_count": 10,
+      "total_applied_runs": 3565,
+      "total_classified_runs": 10860,
+      "total_error_runs": 0,
+      "total_failed_seed_runs": 0,
+      "total_omitted_runs": 7295,
+      "total_output_size_delta_bytes": 64374555
+    },
+    "extended": {
+      "pass_count": 12,
+      "total_applied_runs": 3374,
+      "total_classified_runs": 13032,
+      "total_error_runs": 0,
+      "total_failed_seed_runs": 0,
+      "total_omitted_runs": 9658,
+      "total_output_size_delta_bytes": 0
+    },
+    "fuzz": {
+      "cases": 3072,
+      "failures": 0,
+      "parser_diagnostics": 192,
+      "seeds": [
+        20260827
+      ],
+      "shards": 48,
+      "target_runs": {
+        "assembling": 3072,
+        "binary_parsers": 3072,
+        "binary_rewriter": 3072,
+        "elf_header_parser": 3072,
+        "macho_load_commands": 3072,
+        "pe_header_parser": 3072,
+        "relocations": 3072,
+        "vm_bytecode": 3072,
+        "vm_dispatcher": 3072,
+        "vm_instruction_decoder": 3072
+      },
+      "total_target_runs": 30720
+    },
+    "maturity": {
+      "affected_instruction_blockers": 0,
+      "behavioral_false_positive_blockers": 0,
+      "composition_blockers": 0,
+      "decompiler_blockers": 22,
+      "performance_blockers": 0
+    },
+    "platform_previews": {
+      "case_count": 73,
+      "errors": 0,
+      "failures": 0,
+      "platform_count": 5,
+      "platforms": {
+        "elf-arm-32": 6,
+        "elf-arm64": 7,
+        "elf-x86-32": 8,
+        "macos-arm64": 35,
+        "windows-pe": 17
+      },
+      "skips": 0
+    },
+    "public_compatibility": {
+      "decompiler_analyzers_omitted": [
+        "binary_ninja",
+        "ghidra",
+        "ida_pro"
+      ],
+      "failed_samples": 0,
+      "passed_samples": 360,
+      "samples": 360,
+      "static_recovery_analyzer": "radare2",
+      "static_recovery_failures": 0,
+      "static_recovery_samples": 2160
+    },
+    "vm_semantics": {
+      "failed": 0,
+      "fixtures": 1005,
+      "passed": 1005,
+      "qemu_completed_pairs": 1005,
+      "qemu_divergent_pairs": 0,
+      "qemu_missing_pairs": 0,
+      "qemu_unavailable_pairs": 0,
+      "seeds": [
+        20260916,
+        20260917,
+        20260918
+      ]
+    }
+  },
+  "schema_version": 1,
+  "workflow": {
+    "conclusion": "success",
+    "current_main_runtime_source_unchanged_since_source_commit": true,
+    "jobs": {
+      "failed": 0,
+      "skipped": 0,
+      "successful": 85,
+      "total": 85
+    },
+    "run_id": 43534838628,
+    "source_commit": "72697b8b02e3fd6b7aac6f2ed1cca60d38d94971",
+    "status": "completed",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43534838628"
+  }
+}

@@ -19,6 +19,20 @@ below.
 
 ## Resolved blockers
 
+- The latest differential workflow, run
+  [`43534838628`](https://github.com/seifreed/r2morph/actions/runs/43534838628),
+  completed 85/85 jobs on `72697b8b`. Core and extended campaigns classified
+  23,892 executions across 22 passes, with 6,939 applications and zero errors,
+  failed seeds, or semantic failures. The public corpus passed 360 samples;
+  QEMU parity passed 1,005 VM fixtures; all five platform previews passed 73
+  cases; and 48 fuzz shards completed 30,720 target runs with zero failures.
+  This refreshes published correctness and cost evidence. It does not close
+  the separate parity, all-analyzer, or resistance criteria: the previews are
+  bounded, 22 decompiler maturity blockers remain, and the public static
+  recovery run used radare2 only. The source reports are retained and
+  hash-checked in
+  [protection-differential-run-2026-11-14-43534838628.json](protection-differential-run-2026-11-14-43534838628.json).
+
 - The 1.0 compatibility contract is explicit across all 264 pass/format/
   architecture cells. Each cell records declared support, observed status, and
   evidence; unsupported cells cannot carry evidence, and generated-matrix
