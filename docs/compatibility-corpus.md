@@ -648,6 +648,19 @@ and its three runner reports. This binds the existing fuzz scope to current
 `main`; it does not broaden that scope or establish semantic parity or
 resistance.
 
+A bounded local adversarial run on the same production-code tree exercised
+`CodeVirtualization` on `elf_vm_arith_x86_64` and virtualized one function
+without partial or unsupported functions. IDA Pro 9.5 completed both baseline
+and protected analysis; its decompiler output grew by 26 lines and 939 bytes.
+The report records Binary Ninja as unavailable because its license was
+unavailable, and Ghidra and Triton as unavailable on this host. Raw evidence
+and its hash-bound summary are
+[`protection-adversarial-local-ida-2026-11-14-1946be26.json`](protection-adversarial-local-ida-2026-11-14-1946be26.json)
+and
+[`protection-adversarial-local-ida-2026-11-14-1946be26-summary.json`](protection-adversarial-local-ida-2026-11-14-1946be26-summary.json).
+This adds one real IDA-backed pair only; the full analyzer matrix and general
+resistance criteria remain open.
+
 The November 14 differential workflow completed all 85 jobs in
 [run 43534838628](https://github.com/seifreed/r2morph/actions/runs/43534838628)
 on source commit `72697b8b`. Its ten-pass core campaign classified 10,860

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "provenance": "local-source-tree",
+  "source_commit": "1946be26",
+  "report": "protection-adversarial-local-ida-2026-11-14-1946be26.json",
+  "report_sha256": "b8e186df69ee0acb5dfc406258a1283e751741d0eef838a3fd1c5b9fa721f64e",
+  "fixture": "elf_vm_arith_x86_64",
+  "pass": {
+    "name": "CodeVirtualization",
+    "status": "applied",
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "unsupported_functions": 0
+  },
+  "ida_pro": {
+    "status": "completed",
+    "functions_delta": 1,
+    "decompiler_lines_delta": 26,
+    "decompiler_bytes_delta": 939
+  },
+  "tool_statuses": {
+    "radare2": "completed",
+    "objdump": "completed",
+    "angr": "completed",
+    "binary-ninja": "unavailable",
+    "unicorn": "completed",
+    "triton": "unavailable",
+    "ida-pro": "completed",
+    "ghidra": "unavailable",
+    "custom": "completed"
+  },
+  "unavailable_reasons": {
+    "binary-ninja": "analyzer license is unavailable",
+    "triton": "module 'triton' is unavailable",
+    "ghidra": "executable 'ghidra' is unavailable"
+  },
+  "limitations": [
+    "This is one repository fixture and one applied CodeVirtualization pass, not the full corpus matrix.",
+    "Binary Ninja was unavailable because its license was unavailable; Ghidra and Triton were unavailable on this host.",
+    "A function-count and decompiler-output delta is not evidence of general resistance to reverse engineering."
+  ]
+}

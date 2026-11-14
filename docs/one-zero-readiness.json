@@ -46,7 +46,9 @@
         "docs/protection-adversarial-run-2026-11-14-43526206403.json",
         "docs/protection-adversarial-run-2026-11-14-43526206403.json.gz",
         "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json",
-        "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json"
+        "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json",
+        "docs/protection-adversarial-local-ida-2026-11-14-1946be26.json",
+        "docs/protection-adversarial-local-ida-2026-11-14-1946be26-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -197,7 +199,9 @@
         "docs/protection-adversarial-seed-diversity-2026-11-14-43526206403.json",
         "docs/protection-adversarial-bytecode-grammar-2026-11-14-43526206403.json",
         "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32.json",
-        "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json"
+        "docs/protection-host-adversarial-allpasses-2026-11-14-eb1fa600-shard-18-32-summary.json",
+        "docs/protection-adversarial-local-ida-2026-11-14-1946be26.json",
+        "docs/protection-adversarial-local-ida-2026-11-14-1946be26-summary.json"
       ]
     },
     "stable_api_cli": {

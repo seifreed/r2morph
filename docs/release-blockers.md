@@ -616,6 +616,19 @@ reports are listed in
 This improves fuzz coverage evidence only; it leaves semantic parity and
 adversarial resistance open.
 
+A local source-tree campaign at commit `1946be26` exercised the real
+`CodeVirtualization` pass on fixture `elf_vm_arith_x86_64`. One function was
+fully virtualized; IDA Pro 9.5 completed both sides and reported 26 additional
+decompiler lines and 939 additional bytes for the protected binary. The same
+run explicitly records Binary Ninja as unavailable due to license status and
+Ghidra/Triton as unavailable on the host. Its raw report and hash-bound summary
+are
+[protection-adversarial-local-ida-2026-11-14-1946be26.json](protection-adversarial-local-ida-2026-11-14-1946be26.json)
+and
+[protection-adversarial-local-ida-2026-11-14-1946be26-summary.json](protection-adversarial-local-ida-2026-11-14-1946be26-summary.json).
+This is one fixture and one pass; it does not close the named-analyzer matrix
+or establish general resistance.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
