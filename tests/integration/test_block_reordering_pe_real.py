@@ -1,5 +1,6 @@
 """Native execution regression for PE block reordering."""
 
+import os
 import platform
 import shutil
 from pathlib import Path
@@ -53,17 +54,22 @@ def _build_pe_binary(directory: Path, compiler: str) -> Path:
     return binary
 
 
-def _run_pe(binary: Path, runtime: str | None) -> Any:
+def _run_pe(binary: Path, runtime: str | None, wine_prefix: Path) -> Any:
     arguments = [str(value) for value in _INPUTS]
     command = [str(binary), *arguments] if runtime is None else [runtime, str(binary), *arguments]
+    env = None
+    if runtime is not None:
+        env = os.environ.copy()
+        env["WINEPREFIX"] = str(wine_prefix)
     # Wine combines host diagnostics with stderr; compare the child's exit and stdout.
-    return run_command(command, text=True, timeout=_PE_EXECUTION_TIMEOUT_SECONDS)
+    return run_command(command, text=True, timeout=_PE_EXECUTION_TIMEOUT_SECONDS, env=env)
 
 
 def test_pe_x86_64_block_reordering_preserves_native_observables(tmp_path: Path) -> None:
     compiler, runtime = _pe_toolchain()
     binary_path = _build_pe_binary(tmp_path, compiler)
-    original = _run_pe(binary_path, runtime)
+    wine_prefix = tmp_path / "wine-prefix"
+    original = _run_pe(binary_path, runtime, wine_prefix)
     expect(len(set(original.stdout.splitlines())) > 1, "PE fixture inputs did not exercise distinct outcomes")
 
     with Binary(binary_path, writable=True) as binary:
@@ -74,7 +80,7 @@ def test_pe_x86_64_block_reordering_preserves_native_observables(tmp_path: Path)
     expect(result["mutations_applied"] > 0, f"PE x86-64 block reordering made no change: {result!r}")
     expect(handler.fix_checksum(), "failed to repair the PE checksum after block reordering")
     expect(handler.validate_integrity()[0], "PE integrity validation failed after block reordering")
-    mutated = _run_pe(binary_path, runtime)
+    mutated = _run_pe(binary_path, runtime, wine_prefix)
 
     expect(
         (mutated.returncode, mutated.stdout) == (original.returncode, original.stdout),
