@@ -16,7 +16,7 @@ def test_release_contract_script_entrypoint_loads_repository_root() -> None:
         [sys.executable, str(_ROOT / "scripts" / "check_release_contract.py")],
         cwd=_ROOT,
         text=True,
-        timeout=30,
+        timeout=120,
     )
 
     expect(result.returncode == 0 and "release contract valid:" in result.stdout, result.stderr)

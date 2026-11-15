@@ -1,12 +1,14 @@
 """Real-process contract for the external process adapter."""
 
+import asyncio
+import os
 import sys
 import time
 from pathlib import Path
 
 import pytest
 
-from r2morph.adapters.process import ProcessTimeoutError, _resolve_executable, run_process
+from r2morph.adapters.process import ProcessTimeoutError, _resolve_executable, _terminate_process_tree, run_process
 from tests.utils.assertions import expect
 
 
@@ -45,3 +47,17 @@ def test_run_process_timeout_terminates_descendant_processes(tmp_path: Path) -> 
 
     time.sleep(0.7)
     expect(not marker.exists())
+
+
+def test_terminate_process_tree_accepts_process_that_already_exited() -> None:
+    async def start_exit_and_cleanup() -> None:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-c",
+            "pass",
+            start_new_session=os.name == "posix",
+        )
+        await process.wait()
+        await _terminate_process_tree(process)
+
+    asyncio.run(start_exit_and_cleanup())

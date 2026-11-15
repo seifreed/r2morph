@@ -112,7 +112,8 @@ async def _run_process(
 
 async def _terminate_process_tree(process: asyncio.subprocess.Process) -> None:
     if os.name == "posix":
-        os.killpg(process.pid, signal.SIGKILL)
+        with suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
     else:
         try:
             killer = await asyncio.create_subprocess_exec(
