@@ -1,0 +1,45 @@
+{
+  "cases_per_target_per_platform": 5000,
+  "failures_per_platform": 0,
+  "parser_diagnostics_per_platform": {
+    "macho_load_commands.warning": 108
+  },
+  "reports": {
+    "macos-15": {
+      "artifact_name": "continuous-fuzz-report-macos-15",
+      "job_conclusion": "success",
+      "path": "docs/continuous-fuzz-2026-11-15-09310435-macos.json",
+      "sha256": "b0f0b14824dd0bb84344637ed485108abd794b6a9c52afedcdab05b60a5aaa94",
+      "source_artifact_sha256": "b0f0b14824dd0bb84344637ed485108abd794b6a9c52afedcdab05b60a5aaa94"
+    },
+    "ubuntu-latest": {
+      "artifact_name": "continuous-fuzz-report-ubuntu-latest",
+      "job_conclusion": "success",
+      "path": "docs/continuous-fuzz-2026-11-15-09310435-ubuntu.json",
+      "sha256": "b0f0b14824dd0bb84344637ed485108abd794b6a9c52afedcdab05b60a5aaa94",
+      "source_artifact_sha256": "b0f0b14824dd0bb84344637ed485108abd794b6a9c52afedcdab05b60a5aaa94"
+    },
+    "windows-latest": {
+      "artifact_name": "continuous-fuzz-report-windows-latest",
+      "job_conclusion": "success",
+      "path": "docs/continuous-fuzz-2026-11-15-09310435-windows.json",
+      "sha256": "b0f0b14824dd0bb84344637ed485108abd794b6a9c52afedcdab05b60a5aaa94",
+      "source_artifact_sha256": "c2747f6e5d0a7b8c88e9cae749ffe77a3b12de04f0ac53a550e4806425e2954e"
+    }
+  },
+  "schema_version": 1,
+  "scope_limitations": [
+    "The campaign validates bounded generated inputs; it does not establish arbitrary-input semantic equivalence.",
+    "The reports contain recoverable Mach-O parser warning counts that are not classified as failures.",
+    "The campaign is not independent adversarial validation or cross-platform behavioral parity evidence."
+  ],
+  "seed": 20261115,
+  "source_revision": "0931043552012b20cc8338dd84fc2d42463a688b",
+  "target_count": 10,
+  "target_runs_per_platform": 50000,
+  "target_runs_total": 150000,
+  "workflow": "Continuous Fuzzing",
+  "workflow_conclusion": "success",
+  "workflow_run_id": 43672705546,
+  "workflow_run_url": "https://github.com/seifreed/r2morph/actions/runs/43672705546"
+}

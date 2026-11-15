@@ -34,6 +34,19 @@ bounded multi-platform fuzzing for this implementation revision. They do not
 establish arbitrary-input semantic equivalence, cross-platform behavioral
 parity, or independent adversarial validation.
 
+A second manually dispatched run [`43672705546`](https://github.com/seifreed/r2morph/actions/runs/43672705546)
+used seed `20261115` on source commit `09310435`, with the same 5,000 cases per
+target on Ubuntu, macOS, and Windows. All 150,000 target runs completed without
+failures. The reports recorded 108 `macho_load_commands.warning` diagnostics
+per platform. Their report hashes and source revision are retained in the
+[second-seed summary](continuous-fuzz-2026-11-15-09310435-summary.json) and its
+[Ubuntu](continuous-fuzz-2026-11-15-09310435-ubuntu.json),
+[macOS](continuous-fuzz-2026-11-15-09310435-macos.json), and
+[Windows](continuous-fuzz-2026-11-15-09310435-windows.json) reports. This
+independent seed broadens bounded fuzz input coverage; it does not establish
+arbitrary-input semantic equivalence, cross-platform parity, or independent
+adversarial validation.
+
 The handler generator was re-measured on source commit `f8586a1b` across 32
 seeds, with 255 handlers per generated interpreter. All 32 opcode assignments
 differed, both dispatcher variants occurred, and there were zero exact
