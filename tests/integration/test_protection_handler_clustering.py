@@ -12,8 +12,8 @@ _REPORT = Path(__file__).resolve().parents[2] / "docs" / "protection-handler-clu
 _MATURITY_DOC = Path(__file__).resolve().parents[2] / "docs" / "protection-maturity.md"
 _EXPECTED_SCHEMA_VERSION = 3
 _EXPECTED_NEAREST_COMPARISONS = 510
-_EXPECTED_ABOVE_THRESHOLD = 70
-_EXPECTED_ABOVE_THRESHOLD_PERCENT = 13.725490196078432
+_EXPECTED_ABOVE_THRESHOLD = 67
+_EXPECTED_ABOVE_THRESHOLD_PERCENT = 13.137254901960786
 _EXPECTED_OPCODE_ASSIGNMENT_COUNT = 3
 _EXPECTED_DISPATCH_VARIANT_COUNT = 2
 _EXPECTED_ADVERSARIAL_STATUS = "pending-human-adversarial-review"
@@ -49,6 +49,12 @@ def test_measure_handler_clustering_duplicate_opcodes_have_no_within_seed_matche
         and result["within_seed_exact_normalised_matches"] == 0
         and result["within_seed_largest_normalised_cluster"] == 1
     )
+
+
+def test_fp_conversion_handlers_diverge_for_known_cross_seed_pair() -> None:
+    result = measure(20260828, 10)
+
+    expect(result["cross_seed_exact_normalised_matches"] == 0)
 
 
 def test_handler_clustering_report_matches_current_measurement() -> None:

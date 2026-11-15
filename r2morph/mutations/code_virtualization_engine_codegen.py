@@ -46,8 +46,8 @@ def encode_bytecode(
 
 
 def _handler_body_variant(body_seed: int, index: int, duplicate_variant: int | None) -> int:
-    variant = random.Random(body_seed ^ (index << 1)).randrange(4) if body_seed else 0
-    return (variant & 1) | duplicate_variant if duplicate_variant is not None else variant
+    variant = random.Random(body_seed ^ (index << 1)).randrange(8) if body_seed else 0
+    return (variant & 5) | duplicate_variant if duplicate_variant is not None else variant
 
 
 def _duplicate_body_variants(scheme: VMScheme) -> dict[int, int]:

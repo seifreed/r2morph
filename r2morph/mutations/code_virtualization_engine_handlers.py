@@ -88,7 +88,7 @@ class EngineHandlerGenerator:
                     self.advance_variant,
                 ),
             )
-        fp_body = self._fp_handler_body(mnemonic, width)
+        fp_body = self._fp_handler_body(mnemonic, width, body_variant)
         if fp_body is not None:
             return fp_body
         if mnemonic in _MEM_OP_KINDS:
@@ -373,23 +373,30 @@ class EngineHandlerGenerator:
             f"  shl r9, 4\n  lea r11, [rsp + r9 + {self.layout.xmm_offset}]\n"
         )
 
-    def _fp_convert_handler_body(self, kind: str, fp_width: int) -> str:
+    def _fp_convert_handler_body(self, kind: str, fp_width: int, body_variant: int) -> str:
         direction, gp_width = kind[:6], int(kind[6:])
         off = pair_offsets("xmm", "gp", self.scheme.field_perm)
         suffix = "sd" if fp_width == _QWORD_WIDTH_BITS else "ss"
+        xmm_move = "movdqu" if body_variant & 1 else "movups"
+        gp_slot = "[rsp + r9*8]"
+        gp_address = ""
+        if body_variant & 4:
+            gp_address = "  lea r11, [rsp + r9*8]\n"
+            gp_slot = "[r11]"
         body = (
             f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
-            f"  shl r8, 4\n  lea r10, [rsp + r8 + {self.layout.xmm_offset}]\n"
-            "  movups xmm0, xmmword ptr [r10]\n"
+            + gp_address
+            + f"  shl r8, 4\n  lea r10, [rsp + r8 + {self.layout.xmm_offset}]\n"
+            + f"  {xmm_move} xmm0, xmmword ptr [r10]\n"
         )
         if direction == "cvti2f":
             source = "rax" if gp_width == _QWORD_WIDTH_BITS else "eax"
-            body += f"  mov {source}, {'qword' if gp_width == _QWORD_WIDTH_BITS else 'dword'} ptr [rsp + r9*8]\n"
-            body += f"  cvtsi2{suffix} xmm0, {source}\n  movups xmmword ptr [r10], xmm0\n"
+            body += f"  mov {source}, {'qword' if gp_width == _QWORD_WIDTH_BITS else 'dword'} ptr {gp_slot}\n"
+            body += f"  cvtsi2{suffix} xmm0, {source}\n  {xmm_move} xmmword ptr [r10], xmm0\n"
         else:
             target = "rax" if gp_width == _QWORD_WIDTH_BITS else "eax"
-            body += f"  cvtt{suffix}2si {target}, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
+            body += f"  cvtt{suffix}2si {target}, xmm0\n  mov qword ptr {gp_slot}, rax\n"
         return body + self._advance(3) + "  jmp vm_dispatch\n"
 
     def _fp_packed_arith_handler_body(self, mnemonic: str | None) -> str:
@@ -536,7 +543,7 @@ class EngineHandlerGenerator:
             body += "  movups xmm0, xmmword ptr [r11]\n  movups xmmword ptr [r10], xmm0\n"
         return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
-    def _fp_handler_body(self, mnemonic: str, width: int) -> str | None:
+    def _fp_handler_body(self, mnemonic: str, width: int, body_variant: int) -> str | None:
         body = None
         if mnemonic in _FP_SCALAR_VEX_ARITH_KINDS:
             body = self._fp_scalar_vex_arith_handler_body(self.handler_index)
@@ -553,7 +560,7 @@ class EngineHandlerGenerator:
         elif mnemonic in _FP_ARITH_MEM_KINDS:
             body = self._fp_arith_mem_handler_body(mnemonic, width)
         elif mnemonic in _FP_CONVERT_KINDS:
-            body = self._fp_convert_handler_body(mnemonic, width)
+            body = self._fp_convert_handler_body(mnemonic, width, body_variant)
         elif mnemonic in _FP_ARITH_KINDS:
             body = self._fp_arith_handler_body(mnemonic, width)
         elif mnemonic in _FP_MEM_KINDS:

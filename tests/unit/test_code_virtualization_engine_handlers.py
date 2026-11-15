@@ -34,6 +34,42 @@ def test_handler_body_variant_uses_equivalent_vip_advance_form() -> None:
     expect("add rsi" in add_form and "lea rsi" in lea_form)
 
 
+def test_fp_convert_body_variant_uses_equivalent_sse2_move_encoding() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    canonical = generator.handler_body("cvti2f64", False, 64, 0, body_variant=0)
+    diversified = generator.handler_body("cvti2f64", False, 64, 0, body_variant=1)
+
+    expect(
+        "movups xmm0, xmmword ptr [r10]" in canonical
+        and "movdqu xmm0, xmmword ptr [r10]" in diversified
+        and canonical.replace("movups", "xmmmove") == diversified.replace("movdqu", "xmmmove")
+    )
+
+
+def test_fp_convert_body_variant_keeps_vip_advance_form() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    body = generator.handler_body("cvti2f64", False, 64, 0, body_variant=2)
+
+    expect("lea rsi, [rsi + 3]" in body)
+
+
+def test_fp_convert_body_variant_precomputes_gp_slot_address() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    body = generator.handler_body("cvti2f64", False, 64, 0, body_variant=4)
+
+    expect(
+        "lea r11, [rsp + r9*8]" in body
+        and "mov rax, qword ptr [r11]" in body
+        and "mov rax, qword ptr [rsp + r9*8]" not in body
+    )
+
+
 def test_packed_byte_shuffle_handler_emits_ssse3_operation() -> None:
     scheme = build_vm_scheme(randomness.Random(20260820))
     generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
