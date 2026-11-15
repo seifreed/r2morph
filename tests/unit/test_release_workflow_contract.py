@@ -88,6 +88,21 @@ def test_release_artifacts_are_attested_before_pypi_publish() -> None:
     )
 
 
+def test_release_workflow_limits_write_permissions_to_required_jobs() -> None:
+    workflow: dict[str, Any] = yaml.safe_load((_ROOT / ".github" / "workflows" / "release.yml").read_text())
+    jobs = workflow["jobs"]
+
+    expect(
+        workflow["permissions"] == {"contents": "read", "actions": "read"}
+        and jobs["create-release"]["permissions"]["contents"] == "write"
+        and all(
+            job.get("permissions", {}).get("contents", "read") == "read"
+            for name, job in jobs.items()
+            if name != "create-release"
+        )
+    )
+
+
 def test_installed_wheel_jobs_run_the_public_api_and_cli_contract() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 

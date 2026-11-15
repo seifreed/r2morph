@@ -132,6 +132,7 @@ def _check_windows_download_contract() -> None:
 def _check_release_workflow() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     for fragment in (
+        "permissions:\n  contents: read\n  actions: read",
         "Validate support contract",
         "run: python scripts/check_release_contract.py --require-current-human-signoff",
         "Require release commit on main",
@@ -153,6 +154,7 @@ def _check_release_workflow() -> None:
         '--workflow "$workflow_file"',
         '--commit "$GITHUB_SHA"',
         'if [[ "$conclusion" != "success" ]]; then',
+        "permissions:\n      actions: read\n      contents: write",
     ):
         if fragment not in workflow:
             raise ValueError(f"release workflow is missing: {fragment}")

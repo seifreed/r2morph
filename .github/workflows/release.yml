@@ -7,7 +7,7 @@ name: Release
       - 'v*.*.*'
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 concurrency:
