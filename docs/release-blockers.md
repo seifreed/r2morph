@@ -120,8 +120,7 @@ both original and protected measurements. Binary Ninja's module and IDA's
 instruction in this fixture. The hash-bound [shard summary](protection-adversarial-shard-2026-11-15-43682458593-06-summary.json)
 and [raw report](protection-adversarial-shard-2026-11-15-43682458593-06.json)
 retain these exact counts. This single-fixture shard adds Triton evidence but
-does not close all-analyzer coverage or resistance; the 32-shard workflow is
-still running.
+does not close all-analyzer coverage or resistance.
 
 The retained package includes 23 successfully completed shards from the same
 32-shard workflow. Their reports cover 192 distinct fixtures and the same 22
@@ -134,6 +133,19 @@ binds each report hash and successful job to the compressed
 [report bundle](protection-adversarial-partial-run-2026-11-15-43682458593.json.gz).
 These bounded results leave complete analyzer coverage and generalized
 resistance open.
+
+The original run completed with 31 successful shards and one failed shard:
+`OpaquePredicates` exceeded its 180-second worker budget on
+`generated_cpp_exceptions_clangxx-static-o2`, causing the aggregate validator
+to reject the run. A local profile attributed the dominant pass cost to
+repeated register-alias construction in liveness analysis; commit `0e39d3ab`
+caches those aliases and reduced the measured worker time from 22.405 to
+10.151 seconds while producing byte-identical output. The profile is retained
+in [the liveness report](profiling/2026-11-15-liveness-alias-cache.md). A full
+rerun on the optimized source, workflow
+[`43691585628`](https://github.com/seifreed/r2morph/actions/runs/43691585628),
+is in progress. The 23-shard package above remains explicitly partial and does
+not count the failed run as complete evidence.
 
 ## Latest full CI verification on main
 
