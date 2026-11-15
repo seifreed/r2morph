@@ -8,16 +8,23 @@ criterion remains open or in progress.
 
 ## Latest completed CI validation
 
-CI run [`43692391972`](https://github.com/seifreed/r2morph/actions/runs/43692391972)
-completed all 15 jobs successfully on source commit `2b8370a3`. The run covered
-the installed-wheel smoke, integration and product tests, property/fuzz checks,
-type checking, linting, and the Linux, macOS, and Windows Python matrix. The
-changes from that source commit through current `main` (`b8ff15f7`) contain
-only evidence/docs and a regression test; no runtime, workflow, or packaging
-files changed. CI for the exact current commit is still pending, so this
-records a clean implementation baseline without claiming the current-head CI
-gate is complete. The release-readiness ledger remains blocked by analyzer
-coverage, cross-platform parity, and resistance evidence.
+CI run [`43701797813`](https://github.com/seifreed/r2morph/actions/runs/43701797813)
+completed all 15 jobs successfully on source commit `670a967c`. It covered the
+installed-wheel smoke, integration and product tests, property/fuzz checks,
+type checking, linting, the Linux, macOS, and Windows Python matrix, and broad
+Linux coverage on Python 3.12. Changes through audited source `fc21d286` only
+update the Windows differential workflow and its regression contracts; no
+package runtime code changed.
+
+On `fc21d286`, the local full suite passed on Python 3.14 with 6,923 passed,
+225 skipped, and 82.15% coverage. GitHub CI run
+[`43703694686`](https://github.com/seifreed/r2morph/actions/runs/43703694686)
+is still running: macOS 15 / Python 3.12 passed and property/fuzz validation
+is in progress; its other jobs are queued. The matching Windows PE
+differential workflow [`43703694688`](https://github.com/seifreed/r2morph/actions/runs/43703694688)
+and dependent adversarial benchmark [`43703700102`](https://github.com/seifreed/r2morph/actions/runs/43703700102)
+are pending. These results do not claim complete current-head CI or close the
+analyzer-coverage, cross-platform-parity, and resistance criteria.
 
 ## Current-main continuous fuzz campaign
 
