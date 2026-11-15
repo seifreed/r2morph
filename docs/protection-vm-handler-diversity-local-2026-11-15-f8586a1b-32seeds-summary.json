@@ -1,0 +1,33 @@
+{
+  "limitations": [
+    "Each seed measures one generated interpreter with 255 handlers; it is not the 10-fixture runtime campaign.",
+    "Zero exact normalized duplicates does not establish low structural similarity or resistance to a determined analyst.",
+    "Independent human adversarial validation remains pending."
+  ],
+  "measurement": {
+    "cross_seed_exact_normalised_matches": 0,
+    "cross_seed_largest_normalised_cluster": 1,
+    "cross_seed_nearest_similarity_above_threshold": 3439,
+    "cross_seed_nearest_similarity_comparisons": 7905,
+    "cross_seed_nearest_similarity_max": 0.9836512261580381,
+    "cross_seed_nearest_similarity_mean": 0.7231755560494099,
+    "dispatch_variant_unique_count": 2,
+    "dispatch_variant_values": [
+      0,
+      1
+    ],
+    "first_seed": 20260820,
+    "handler_count_per_seed": 255,
+    "opcode_assignment_unique_count": 32,
+    "seed_count": 32,
+    "within_seed_exact_normalised_matches": 0,
+    "within_seed_largest_normalised_cluster": 1
+  },
+  "provenance": "local-current-main-tree",
+  "report": {
+    "path": "protection-vm-handler-diversity-local-2026-11-15-f8586a1b-32seeds.json",
+    "sha256": "46666e04f771cf8ecfc59a5a10a7ecdb4412695891a1514ed2dbba724ab79de6"
+  },
+  "schema_version": 1,
+  "source_commit": "f8586a1beb0068d53bcc9ebaf3009ce0e2e8e375"
+}

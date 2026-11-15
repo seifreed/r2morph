@@ -20,12 +20,17 @@ the current parser/VM/rewriter fuzzing evidence gap for those bounded inputs,
 but does not establish arbitrary-input semantic equivalence or independent
 adversarial validation.
 
-The current handler generator was also measured across 32 seeds on source
-commit `7374619a`. It produced 32 distinct opcode assignments and zero exact
-normalized collisions within an individual seed; four exact normalized
-matches remain between different seeds, so cross-seed handler diversity is
-still incomplete. The [hash-bound measurement summary](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
-records the result and limitations.
+The handler generator was re-measured on source commit `f8586a1b` across 32
+seeds, with 255 handlers per generated interpreter. All 32 opcode assignments
+differed, both dispatcher variants occurred, and there were zero exact
+normalized collisions within or across seeds. The nearest-handler similarity
+mean was `0.723` and `3,439` of `7,905` comparisons were at least `0.8`, so
+zero exact matches do not imply low structural similarity. This campaign
+measures one interpreter per seed, not the 10-fixture runtime campaign. The
+[hash-bound measurement summary](protection-vm-handler-diversity-local-2026-11-15-f8586a1b-32seeds-summary.json)
+records the result and limitations; the earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
+remains as historical evidence. Current-source multi-fixture validation and
+independent human adversarial review remain open.
 
 ## Latest full CI verification on main
 
