@@ -6,6 +6,19 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Latest completed CI validation
+
+CI run [`43692391972`](https://github.com/seifreed/r2morph/actions/runs/43692391972)
+completed all 15 jobs successfully on source commit `2b8370a3`. The run covered
+the installed-wheel smoke, integration and product tests, property/fuzz checks,
+type checking, linting, and the Linux, macOS, and Windows Python matrix. The
+changes from that source commit through current `main` (`b8ff15f7`) contain
+only evidence/docs and a regression test; no runtime, workflow, or packaging
+files changed. CI for the exact current commit is still pending, so this
+records a clean implementation baseline without claiming the current-head CI
+gate is complete. The release-readiness ledger remains blocked by analyzer
+coverage, cross-platform parity, and resistance evidence.
+
 ## Current-main continuous fuzz campaign
 
 Workflow run [`43654009381`](https://github.com/seifreed/r2morph/actions/runs/43654009381)
