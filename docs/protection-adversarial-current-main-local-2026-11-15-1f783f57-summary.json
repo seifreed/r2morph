@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "source_commit": "1f783f57df5505d3b7d18b722f432d1a4b400252",
+  "source_report": "protection-adversarial-current-main-local-2026-11-15-1f783f57.json",
+  "source_report_sha256": "8cc42ce663455d9c01e4beef3baa121f19994c3f249651cee4ad4dd65fe25255",
+  "fixture": {
+    "name": "elf_vm_arith_x86_64",
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "execution_context": {
+    "platform": "Darwin arm64",
+    "python": "3.14.10",
+    "ida_pro": "9.5",
+    "ghidra": "12.2"
+  },
+  "scope": {
+    "passes": [
+      "CodeVirtualization"
+    ],
+    "pass_status": "applied",
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "unsupported_functions": 0
+  },
+  "analyzer_summary": {
+    "expected_tool_runs": 9,
+    "completed_tool_runs": 7,
+    "unavailable_tool_runs": 2,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ghidra",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": "analyzer license is unavailable",
+      "triton": "module 'triton' is unavailable"
+    }
+  },
+  "observations": {
+    "unicorn_original_exit_code": 45,
+    "unicorn_protected_exit_code": 45,
+    "ida_original_and_protected_decompilation": "completed",
+    "ghidra_original_and_protected_decompilation": "completed",
+    "binary_ninja_license": "unavailable",
+    "triton_module": "unavailable on this host"
+  },
+  "limitations": [
+    "One fixture and one applied pass do not establish full analyzer coverage or generalized resistance.",
+    "Binary Ninja rejected analysis because its license was unavailable to the benchmark process.",
+    "Triton is not installed on this macOS arm64 host.",
+    "This local measurement does not replace the Linux x86-64 CI campaign."
+  ]
+}

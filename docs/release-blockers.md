@@ -56,11 +56,28 @@ The IDA adapter now preserves decompiler outcomes as completed, unavailable,
 error, or partial and records only bounded error type/count fields. It no
 longer turns a decompiler exception into zero-valued metrics. The regression
 contract is `tests/unit/test_adversarial_ida_decompiler_result.py`; native
-headless execution was not available on this host (`idat` is absent), so this
-change does not add analyzer coverage or change resistance conclusions.
+headless execution was not available during that earlier run because `idat`
+was not on `PATH`, so it added no analyzer coverage or resistance evidence.
 The full Python 3.14.10 suite with this adapter update passed 6,936 tests,
 skipped 225, and reached 82.15% coverage; the five focused IDA result tests
 also pass independently.
+
+A fresh local run on source `1f783f57` located IDA 9.5 in its application
+bundle and applied `CodeVirtualization` to `elf_vm_arith_x86_64`. IDA and
+Ghidra 12.2 both completed decompilation; angr, radare2, objdump, Unicorn, and
+the custom analyzer also completed, with no tool errors or missing rows.
+Unicorn returned 45 for both original and transformed binaries. Binary Ninja
+reported an unavailable license to the benchmark process, while Triton was
+not installed on this macOS ARM64 host. The hash-bound [summary](protection-adversarial-current-main-local-2026-11-15-1f783f57-summary.json)
+and [raw report](protection-adversarial-current-main-local-2026-11-15-1f783f57.json)
+retain the results. This is one fixture and one applied pass; all-analyzer
+coverage and generalized resistance remain open.
+
+The full local suite for the evidence update passed with 6,943 passed, 225
+skipped, and 82.14% coverage under Python 3.14.10. Black, Ruff, mypy, and
+Bandit passed on a clean worktree; pip-audit reported no known vulnerabilities
+for the fully resolved Linux/Python 3.13 dependency set, including optional
+extras.
 
 ## Current-main continuous fuzz campaign
 
