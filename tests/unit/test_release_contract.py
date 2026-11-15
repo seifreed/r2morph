@@ -2088,7 +2088,7 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "string_obfuscation_pe_x86_64_preserves_native_execution" in windows_job
         and "tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
-        and "expected 17" in windows_job
+        and "expected 18" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "test_multiple_mutation_passes_on_x86_binary" in windows_job
