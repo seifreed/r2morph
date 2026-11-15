@@ -1,0 +1,243 @@
+{
+  "compatible_fixture_count": 1,
+  "fixtures": [
+    {
+      "all_semantic_equal": true,
+      "baseline": {
+        "metrics": {
+          "analysis_duration_seconds": 0.0014220000011846423,
+          "architecture": "x86_64",
+          "bits": 64,
+          "format": "ELF",
+          "number_of_basic_blocks": 1,
+          "number_of_cfg_edges": 0,
+          "number_of_functions": 1,
+          "number_of_imports": 0,
+          "number_of_instructions": 8,
+          "number_of_references": 2,
+          "number_of_strings": 0
+        },
+        "status": "completed"
+      },
+      "baseline_qemu": {
+        "duration_seconds": 0.004267208001692779,
+        "exit_code": 69,
+        "status": "completed"
+      },
+      "baseline_runtime": {
+        "argv": [],
+        "created_files": {},
+        "duration_seconds": 0.006492000000434928,
+        "return_code": 69,
+        "status": "completed",
+        "stderr": {
+          "preview_hex": "",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        },
+        "stdout": {
+          "preview_hex": "",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "size": 0
+        }
+      },
+      "baseline_runtime_inputs": [
+        {
+          "argv": [],
+          "created_files": {},
+          "duration_seconds": 0.0014430409937631339,
+          "return_code": 69,
+          "status": "completed",
+          "stderr": {
+            "preview_hex": "",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "size": 0
+          },
+          "stdout": {
+            "preview_hex": "",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "size": 0
+          }
+        }
+      ],
+      "baseline_sha256": "ac58d651a1110013d10f545fba83d7ec653da37e902d25a69904d4e067b436c0",
+      "baseline_size": 1008,
+      "baseline_unicorn": {
+        "duration_seconds": 0.0013228750030975789,
+        "exit_code": 69,
+        "load_bias": 0,
+        "status": "completed"
+      },
+      "failed_runs": 0,
+      "runs": [
+        {
+          "affected_instruction_evidence_status": "complete",
+          "affected_instruction_mnemonics": [
+            "exit",
+            "icall",
+            "jmp",
+            "op"
+          ],
+          "affected_instruction_record_count": 1,
+          "after": {
+            "metrics": {
+              "analysis_duration_seconds": 0.0033810409950092435,
+              "architecture": "x86_64",
+              "bits": 64,
+              "format": "ELF",
+              "number_of_basic_blocks": 12,
+              "number_of_cfg_edges": 17,
+              "number_of_functions": 1,
+              "number_of_imports": 0,
+              "number_of_instructions": 93,
+              "number_of_references": 4,
+              "number_of_strings": 0
+            },
+            "status": "completed"
+          },
+          "analysis_scope": {
+            "mode": "bounded-static-address-scope",
+            "selected_functions": 1,
+            "total_functions": 1
+          },
+          "functions_virtualized": 1,
+          "mutations_applied": 0,
+          "output_sha256": "007f4ca8ebc42e0d88bef370dd4182e59d2e09910de6396378661dc23f985ed8",
+          "output_size": 25533,
+          "qemu": {
+            "duration_seconds": 0.003854291993775405,
+            "exit_code": 69,
+            "status": "completed"
+          },
+          "runtime": {
+            "argv": [],
+            "created_files": {},
+            "duration_seconds": 0.0021465000027092174,
+            "return_code": 69,
+            "status": "completed",
+            "stderr": {
+              "preview_hex": "",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "size": 0
+            },
+            "stdout": {
+              "preview_hex": "",
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "size": 0
+            }
+          },
+          "runtime_input_observable_equal": true,
+          "runtime_inputs": [
+            {
+              "argv": [],
+              "created_files": {},
+              "duration_seconds": 0.0017770000122254714,
+              "return_code": 69,
+              "status": "completed",
+              "stderr": {
+                "preview_hex": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "size": 0
+              },
+              "stdout": {
+                "preview_hex": "",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "size": 0
+              }
+            }
+          ],
+          "runtime_observable_equal": true,
+          "seed": 20261115,
+          "status": "passed",
+          "total_bytecode_bytes": 24525,
+          "total_instructions": 12,
+          "transform_duration_seconds": 0.18627395799558144,
+          "transformation": {
+            "functions_virtualized": 1,
+            "pass_name": "code-virtualization",
+            "status": "applied"
+          },
+          "unicorn": {
+            "duration_seconds": 0.0845901670109015,
+            "exit_code": 69,
+            "load_bias": 0,
+            "status": "completed"
+          }
+        }
+      ],
+      "sample": "elf_vm_varargs_x86_64",
+      "seeds": [
+        20261115
+      ],
+      "successful_runs": 1
+    }
+  ],
+  "measurement": "protection-maturity-corpus",
+  "pass_name": "CodeVirtualization",
+  "schema_version": 2,
+  "summary": {
+    "affected_instruction_applied_runs": 1,
+    "affected_instruction_complete_runs": 1,
+    "affected_instruction_coverage_percent": 100.0,
+    "affected_instruction_missing_runs": 0,
+    "affected_instruction_mnemonics": [
+      "exit",
+      "icall",
+      "jmp",
+      "op"
+    ],
+    "affected_instruction_record_count": 1,
+    "applied_runs": 1,
+    "behavioral_false_positive_observations": 0,
+    "behavioral_false_positive_rate_percent": 0.0,
+    "behavioral_validation_missing_observations": 0,
+    "behavioral_validation_observations": 1,
+    "complete_evidence_coverage_percent": 100.0,
+    "complete_evidence_missing_runs": 0,
+    "complete_evidence_runs": 1,
+    "error_reasons": {},
+    "error_runs": 0,
+    "error_severities": {},
+    "failed_seed_runs": 0,
+    "independent_semantic_false_positive_observations": 0,
+    "independent_semantic_false_positive_rate_percent": 0.0,
+    "independent_semantic_missing_observations": 0,
+    "independent_semantic_observations": 1,
+    "max_output_size_delta_bytes": 24525,
+    "min_output_size_delta_bytes": 24525,
+    "omission_reasons": {},
+    "omission_severities": {},
+    "omitted_runs": 0,
+    "output_size_complete_runs": 1,
+    "output_size_coverage_percent": 100.0,
+    "output_size_missing_runs": 0,
+    "runtime_duration_complete_runs": 1,
+    "runtime_duration_coverage_percent": 100.0,
+    "runtime_duration_missing_runs": 0,
+    "runtime_observable_complete_runs": 1,
+    "runtime_observable_coverage_percent": 100.0,
+    "runtime_observable_failure_reasons": {},
+    "runtime_observable_failures": 0,
+    "runtime_observable_missing_runs": 0,
+    "runtime_observable_passes": 1,
+    "semantic_failures": 0,
+    "semantic_passes": 1,
+    "static_metric_complete_runs": 1,
+    "static_metric_coverage_percent": 100.0,
+    "static_metric_missing_runs": 0,
+    "successful_seed_runs": 1,
+    "total_output_size_delta_bytes": 24525,
+    "total_runtime_duration_delta_seconds": -0.00434549999772571,
+    "total_static_number_of_basic_blocks_delta": 11,
+    "total_static_number_of_cfg_edges_delta": 17,
+    "total_static_number_of_functions_delta": 0,
+    "total_static_number_of_imports_delta": 0,
+    "total_static_number_of_instructions_delta": 85,
+    "total_static_number_of_references_delta": 2,
+    "total_static_number_of_strings_delta": 0,
+    "total_transform_duration_seconds": 0.18627395799558144,
+    "transform_duration_complete_runs": 1,
+    "transform_duration_coverage_percent": 100.0,
+    "transform_duration_missing_runs": 0
+  }
+}

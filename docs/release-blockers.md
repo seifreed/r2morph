@@ -17,14 +17,34 @@ update the Windows differential workflow and its regression contracts; no
 package runtime code changed.
 
 On `fc21d286`, the local full suite passed on Python 3.14 with 6,923 passed,
-225 skipped, and 82.15% coverage. GitHub CI run
+225 skipped, and 82.15% coverage. At 2026-11-15 11:22 UTC, GitHub CI run
 [`43703694686`](https://github.com/seifreed/r2morph/actions/runs/43703694686)
-is still running: macOS 15 / Python 3.12 passed and property/fuzz validation
-is in progress; its other jobs are queued. The matching Windows PE
-differential workflow [`43703694688`](https://github.com/seifreed/r2morph/actions/runs/43703694688)
-and dependent adversarial benchmark [`43703700102`](https://github.com/seifreed/r2morph/actions/runs/43703700102)
-are pending. These results do not claim complete current-head CI or close the
-analyzer-coverage, cross-platform-parity, and resistance criteria.
+was still running: every completed job had passed, with Linux / Python 3.12
+still in progress. The matching Windows PE differential workflow
+[`43703694688`](https://github.com/seifreed/r2morph/actions/runs/43703694688)
+and dependent adversarial benchmark
+[`43703700102`](https://github.com/seifreed/r2morph/actions/runs/43703700102)
+were pending. CI for source `49649d9e` was also queued. These results do not
+claim complete current-head CI or close the analyzer-coverage,
+cross-platform-parity, and resistance criteria.
+
+An additional one-fixture differential run on source `49649d9e` applied
+`CodeVirtualization` to `elf_vm_varargs_x86_64` under Linux arm64 with QEMU
+x86-64 user emulation. The original and transformed programs both returned
+`69`; stdout and stderr hashes matched, Unicorn agreed, and the run recorded
+100% complete-evidence coverage. The protected output grew by 24,525 bytes,
+with 85 additional instructions, 11 basic blocks, and 17 CFG edges. A separate
+manual decompiler check produced pseudocode for the original variadic function
+and the protected dispatcher; it is explicitly excluded from automated
+analyzer-slot counts. The hash-bound [summary](protection-differential-varargs-local-2026-11-15-49649d9e-summary.json)
+and [raw report](protection-differential-varargs-local-2026-11-15-49649d9e.json)
+retain the measurements. This is one emulated fixture and one applied pass,
+not native x86-64 platform parity or generalized resistance; the corresponding
+readiness criteria remain open.
+
+On Python 3.14.10, the full suite at `49649d9e` passed with 6,931 passed,
+225 skipped, and 82.14% coverage. The focused published-evidence and release
+gate checks passed again after adding the hash-bound artifacts.
 
 ## Current-main continuous fuzz campaign
 

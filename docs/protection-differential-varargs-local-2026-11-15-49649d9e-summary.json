@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "source_commit": "49649d9e5b7f7bb1c5d98279fa8fec56553af2cb",
+  "source_report": "protection-differential-varargs-local-2026-11-15-49649d9e.json",
+  "source_report_sha256": "8349035f7eacfdde2f2e0175465d68bd523e0e1d3d4208eb654fc61099f873ad",
+  "fixture": {
+    "name": "elf_vm_varargs_x86_64",
+    "path": "fixtures/dataset/elf_vm_varargs_x86_64",
+    "sha256": "ac58d651a1110013d10f545fba83d7ec653da37e902d25a69904d4e067b436c0"
+  },
+  "execution_context": {
+    "runtime": "Linux arm64 with x86-64 user-mode emulation",
+    "python": "3.12.16",
+    "qemu_x86_64": "10.0.13",
+    "radare2": "6.2.2"
+  },
+  "scope": {
+    "passes": [
+      "CodeVirtualization"
+    ],
+    "fixture_count": 1,
+    "runs": 1,
+    "applied_runs": 1,
+    "functions_virtualized": 1,
+    "complete_evidence_coverage_percent": 100.0
+  },
+  "observations": {
+    "original_runtime_exit_code": 69,
+    "protected_runtime_exit_code": 69,
+    "original_qemu_exit_code": 69,
+    "protected_qemu_exit_code": 69,
+    "original_unicorn_exit_code": 69,
+    "protected_unicorn_exit_code": 69,
+    "stdout_sha256_matches": true,
+    "stderr_sha256_matches": true,
+    "protected_size_bytes": 25533,
+    "protected_size_delta_bytes": 24525,
+    "protected_instruction_delta": 85,
+    "protected_basic_block_delta": 11,
+    "protected_cfg_edge_delta": 17
+  },
+  "manual_decompiler_observation": {
+    "decompiler": "IDA Pro via connected analysis session",
+    "original": {
+      "function": "sum_variadic",
+      "address": "0x20113f",
+      "decompilation_completed": true,
+      "basic_blocks": 6,
+      "cyclomatic_complexity": 2
+    },
+    "protected": {
+      "function": "_start",
+      "address": "0x2013f0",
+      "decompilation_completed": true,
+      "basic_blocks": 12,
+      "cyclomatic_complexity": 7
+    },
+    "counted_as_benchmark_tool_slot": false
+  },
+  "limitations": [
+    "This is one fixture, one seed, and one applied pass; it does not establish generalized correctness or resistance.",
+    "The runtime campaign ran on Linux arm64 using QEMU user-mode x86-64 emulation, not on a native x86-64 Linux runner.",
+    "The manual decompiler observation is a bounded snapshot and is not included in the automated analyzer-slot totals.",
+    "The size and structural deltas are single-run observations, not performance claims."
+  ]
+}
