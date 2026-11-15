@@ -1,0 +1,300 @@
+{
+  "original": "original",
+  "protected": "protected",
+  "release_signoff_blocker_totals": {
+    "blocker_categories": 1,
+    "total_release_signoff_blockers": 2,
+    "unavailable_analyzers": 2
+  },
+  "release_signoff_blockers": {
+    "unavailable_analyzers": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 1
+      },
+      "triton": {
+        "module 'triton' is unavailable": 1
+      }
+    }
+  },
+  "schema_version": 3,
+  "tool_summary": {
+    "angr": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_failures_pairs": 1,
+      "metric_decompiler_function_limit_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": -15,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_failures_delta": 0,
+      "total_decompiler_function_limit_delta": 0,
+      "total_decompiler_lines_delta": 0,
+      "total_duration_seconds": 0.058869499996944796,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "binary-ninja": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "analyzer license is unavailable": 1
+      }
+    },
+    "custom": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 2,
+      "unavailable": 0
+    },
+    "ghidra": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 59,
+      "total_decompiler_entrypoints_delta": 1,
+      "total_decompiler_lines_delta": 16,
+      "total_duration_seconds": 9.032341207996069,
+      "total_functions_delta": 1,
+      "unavailable": 0
+    },
+    "ida-pro": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 338,
+      "total_decompiler_entrypoints_delta": 2,
+      "total_decompiler_lines_delta": 21,
+      "total_duration_seconds": 7.13006037499872,
+      "total_functions_delta": 2,
+      "unavailable": 0
+    },
+    "objdump": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_instruction_lines_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_instruction_lines_delta": 7,
+      "unavailable": 0
+    },
+    "radare2": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 1179,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_lines_delta": 45,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 2,
+      "unavailable": 0
+    },
+    "triton": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "module 'triton' is unavailable": 1
+      }
+    },
+    "unicorn": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.07418187499570195,
+      "unavailable": 0
+    }
+  },
+  "tools": [
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 261,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 10,
+        "decompiler_status": "completed",
+        "functions": 1,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 1440,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 55,
+        "decompiler_status": "completed",
+        "functions": 3,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "radare2"
+    },
+    {
+      "changed": true,
+      "original": {
+        "instruction_lines": 6,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "instruction_lines": 13,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "objdump"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 56,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 4,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.03290333400218515,
+        "functions": 2,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 41,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 4,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.02596616599475965,
+        "functions": 2,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "angr"
+    },
+    {
+      "reason": "analyzer license is unavailable",
+      "status": "unavailable",
+      "tool": "binary-ninja"
+    },
+    {
+      "changed": true,
+      "original": {
+        "duration_seconds": 0.003772374999243766,
+        "exit_code": 45,
+        "status": "completed"
+      },
+      "protected": {
+        "duration_seconds": 0.07040949999645818,
+        "exit_code": 45,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "unicorn"
+    },
+    {
+      "reason": "module 'triton' is unavailable",
+      "status": "unavailable",
+      "tool": "triton"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 43,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 4,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.128329749997647,
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 381,
+        "decompiler_entrypoints": 3,
+        "decompiler_lines": 25,
+        "decompiler_status": "completed",
+        "duration_seconds": 3.0017306250010733,
+        "functions": 3,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "ida-pro"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 212,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.734667832999548,
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "decompiler_bytes": 271,
+        "decompiler_entrypoints": 2,
+        "decompiler_lines": 28,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.297673374996521,
+        "functions": 2,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "ghidra"
+    },
+    {
+      "changed": true,
+      "original": {
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "functions": 3,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "custom"
+    }
+  ]
+}

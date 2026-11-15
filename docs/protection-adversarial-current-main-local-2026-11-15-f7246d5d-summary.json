@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "source_commit": "f7246d5d7798a373cf1b7fb7801502a6606f88b1",
+  "provenance": "local-source-tree",
+  "report": {
+    "path": "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d.json",
+    "sha256": "eb4b008d37b52af06df2efd2566e8feb3ca17ec5ddff3d9d8cd8893dbbbe0ea8",
+    "size_bytes": 7923
+  },
+  "fixture": {
+    "name": "elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+    "protected_sha256": "8541af30b6f87210281658ca17fdf6de3feacef75025a65cc2d6225517f79425",
+    "pass": "CodeVirtualization",
+    "seed": 20260820,
+    "functions_virtualized": 1,
+    "unsupported_functions": 0,
+    "partial_virtualization": 0
+  },
+  "analyzers": {
+    "radare2": {
+      "status": "completed"
+    },
+    "objdump": {
+      "status": "completed"
+    },
+    "angr": {
+      "status": "completed"
+    },
+    "binary-ninja": {
+      "status": "unavailable",
+      "reason": "analyzer license is unavailable"
+    },
+    "unicorn": {
+      "status": "completed"
+    },
+    "triton": {
+      "status": "unavailable",
+      "reason": "module 'triton' is unavailable"
+    },
+    "ida-pro": {
+      "status": "completed"
+    },
+    "ghidra": {
+      "status": "completed"
+    },
+    "custom": {
+      "status": "completed"
+    }
+  },
+  "measurement": {
+    "expected_tool_slots": 9,
+    "completed_tool_slots": 7,
+    "unavailable_tool_slots": 2,
+    "error_tool_slots": 0,
+    "unavailable_analyzers": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 1
+      },
+      "triton": {
+        "module 'triton' is unavailable": 1
+      }
+    },
+    "ida_function_delta": 2,
+    "ida_decompiler_bytes_delta": 338,
+    "ghidra_function_delta": 1,
+    "ghidra_decompiler_bytes_delta": 59,
+    "unicorn_exit_code_original": 45,
+    "unicorn_exit_code_protected": 45
+  },
+  "limitations": [
+    "This measures one fixture and one applied CodeVirtualization pass only.",
+    "Analyzer function counts and pseudocode deltas do not establish generalized resistance.",
+    "Binary Ninja was unavailable because its license was unavailable on the host.",
+    "Triton was unavailable in the macOS ARM64 benchmark environment.",
+    "This is a bounded local-source measurement, not a release CI campaign."
+  ],
+  "observed_diagnostics": [
+    "angr: Address 0x7002ce is not hooked"
+  ]
+}

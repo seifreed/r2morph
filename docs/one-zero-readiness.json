@@ -73,7 +73,9 @@
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-14df3fb4-summary.json",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8.json.gz",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-14-3af283d8-summary.json",
-        "docs/protection-current-main-vm-call-analysis-2026-11-15.json"
+        "docs/protection-current-main-vm-call-analysis-2026-11-15.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -259,7 +261,9 @@
         "docs/protection-vm-handler-diversity-local-2026-11-15-f8586a1b-32seeds.json",
         "docs/protection-vm-handler-diversity-local-2026-11-15-f8586a1b-32seeds-summary.json",
         "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures.json.gz",
-        "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures-summary.json"
+        "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures-summary.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json"
       ]
     },
     "stable_api_cli": {

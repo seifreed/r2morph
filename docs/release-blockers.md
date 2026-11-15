@@ -41,6 +41,19 @@ adversarial review; the `published_resistance_results` criterion therefore
 remains open. The earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
 remains as historical evidence.
 
+A current-main local analyzer measurement on `f7246d5d` also completed the
+`elf_vm_arith_x86_64` CodeVirtualization pair with IDA Pro 9.5, Ghidra 12.2,
+radare2, angr, objdump, Unicorn, and the custom analyzer. IDA and Ghidra both
+produced pseudocode for the protected fixture, and Unicorn observed exit code
+45 for both original and protected binaries. Seven of nine expected analyzer
+slots completed with zero tool errors; Binary Ninja remained unavailable due
+to its license, and Triton was unavailable on the macOS ARM64 host. angr logged
+an unhooked-address warning while its metric completed. This is one fixture
+and one applied pass, so it adds current-source evidence without closing the
+all-analyzer or resistance gates. The hash-bound [report summary](protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json)
+and its [raw report](protection-adversarial-current-main-local-2026-11-15-f7246d5d.json)
+retain the exact measurements and limitations.
+
 ## Latest full CI verification on main
 
 Commit `e843192a45026f764c9a65e4403e6a5e28bc1037` passed CI run
