@@ -1,0 +1,50 @@
+{
+  "fixture": {
+    "mutations_applied": 13,
+    "name": "generated_cpp_exceptions_clangxx-static-o2",
+    "pass": "OpaquePredicates",
+    "protected_sha256": "67b3f6ab6ea017381dde85a13090d6fefe95ba4868ac98dea2aff1a5d87c2d45",
+    "sha256": "5fa4463ab3b4eb5862269893a9bad0c0ec94d345791ba30ffe89c0cb9dd84f3c"
+  },
+  "host": {
+    "architecture": "ARM64",
+    "os": "macOS",
+    "python": "3.14.10",
+    "radare2": "6.2.6"
+  },
+  "limitations": [
+    "One generated ELF x86-64 fixture and one OpaquePredicates pass only.",
+    "Only four of nine analyzer slots completed on this macOS ARM64 host.",
+    "Binary Ninja was unavailable because its license was unavailable.",
+    "IDA Pro, Ghidra, and Triton were unavailable in this environment; Unicorn did not support an instruction in the fixture.",
+    "Python 3.14.10 is outside the declared supported range; this local-source result is not release CI.",
+    "The measurement does not establish generalized cross-platform parity or resistance."
+  ],
+  "measurement": {
+    "completed_analyzers": [
+      "angr",
+      "custom",
+      "objdump",
+      "radare2"
+    ],
+    "completed_tool_slots": 4,
+    "error_tool_slots": 0,
+    "expected_tool_slots": 9,
+    "unavailable_analyzers": {
+      "binary-ninja": "analyzer license is unavailable",
+      "ghidra": "executable 'ghidra' is unavailable",
+      "ida-pro": "executable 'idat' is unavailable",
+      "triton": "module 'triton' is unavailable",
+      "unicorn": "the installed x86 emulator does not support an instruction in this fixture"
+    },
+    "unavailable_tool_slots": 5
+  },
+  "provenance": "local-source-tree",
+  "report": {
+    "path": "docs/protection-adversarial-local-opaque-2026-11-15-d8b9573c.json",
+    "sha256": "6f41d0557d3ca02fe36d3dbbceea7d293b8390e57032f9a41c0579b00853028d",
+    "size_bytes": 24445
+  },
+  "schema_version": 1,
+  "source_commit": "d8b9573cfc985fd499db05aa904beb6a7c508a3c"
+}

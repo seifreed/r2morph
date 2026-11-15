@@ -150,6 +150,15 @@ is in progress; it will test reproducibility, not validate the alias-cache
 change. The 23-shard package above remains explicitly partial and does not
 count the failed run as complete evidence.
 
+The same C++ exception fixture was also transformed locally on the current
+source commit with `OpaquePredicates` (13 mutations) and measured against all
+nine analyzer slots. angr, radare2, objdump, and the custom analyzer completed
+without tool errors; Binary Ninja, Unicorn, Triton, IDA Pro, and Ghidra were
+unavailable on the macOS ARM64 host. The hash-bound [local report summary](protection-adversarial-local-opaque-2026-11-15-d8b9573c-summary.json)
+links the raw [analyzer report](protection-adversarial-local-opaque-2026-11-15-d8b9573c.json).
+This adds one applied-pass analyzer slice and leaves the all-analyzer criterion
+open.
+
 ## Latest full CI verification on main
 
 The latest completed GitHub CI run checked here is
