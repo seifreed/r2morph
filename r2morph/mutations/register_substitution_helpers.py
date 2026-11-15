@@ -216,7 +216,7 @@ _X86_REGISTER_FAMILIES: dict[str, list[str]] = {
 }
 
 
-def get_register_class(arch: str) -> dict[str, list[str]]:
+def get_register_class(arch: str, binary_format: str | None = None) -> dict[str, list[str]]:
     """Get register classes for architecture."""
     if arch in ["x86", "x64"]:
         arch_family = arch
@@ -226,7 +226,16 @@ def get_register_class(arch: str) -> dict[str, list[str]]:
         arch_family = "arm"
     else:
         return {}
-    return REGISTER_CLASSES.get(arch_family, {})
+    register_classes = REGISTER_CLASSES.get(arch_family, {})
+    if arch_family == "x64" and (binary_format or "").strip().casefold() in {"pe", "pe32", "pe32+"}:
+        return {
+            **register_classes,
+            "caller_saved": [
+                register for register in register_classes["caller_saved"] if register not in {"rsi", "rdi"}
+            ],
+            "callee_saved": [*register_classes["callee_saved"], "rsi", "rdi"],
+        }
+    return register_classes
 
 
 # Calls and system calls pass arguments / leave return values in registers by ABI,
@@ -697,9 +706,10 @@ def find_substitution_candidates(
     instructions: list[dict[str, Any]],
     arch: str,
     extra_pinned_registers: set[str] | None = None,
+    binary_format: str | None = None,
 ) -> list[tuple[str, str]]:
     """Find valid register substitution opportunities."""
-    register_classes = get_register_class(arch)
+    register_classes = get_register_class(arch, binary_format)
     if not register_classes:
         return []
 
@@ -902,6 +912,8 @@ def select_candidates(
 ) -> list[tuple[dict[str, Any], list[dict[str, Any]], list[tuple[str, str]]]]:
     """Select functions with substitution candidates."""
     result = []
+    get_arch_info = getattr(binary, "get_arch_info", None)
+    binary_format = get_arch_info().get("format") if callable(get_arch_info) else None
     for func in functions:
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
             continue
@@ -918,8 +930,18 @@ def select_candidates(
             # ARM64 call-preserving substitution needs interprocedural ABI
             # liveness; skip the function until that proof is available.
             continue
-        candidates = find_substitution_candidates(instructions, arch, caller_live_registers(binary, func_addr))
+        candidates = find_substitution_candidates(
+            instructions,
+            arch,
+            caller_live_registers(binary, func_addr),
+            binary_format,
+        )
         if not candidates:
+            logger.debug(
+                "No safe register substitutions for %s (%d instructions)",
+                func.get("name"),
+                len(instructions),
+            )
             continue
         if random.random() > probability:
             continue

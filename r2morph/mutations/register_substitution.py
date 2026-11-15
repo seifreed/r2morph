@@ -112,11 +112,16 @@ class RegisterSubstitutionPass(MutationPass):
             },
         )
 
-    def _get_register_class(self, arch: str) -> dict[str, list[str]]:
-        return get_register_class(arch)
+    def _get_register_class(self, arch: str, binary_format: str | None = None) -> dict[str, list[str]]:
+        return get_register_class(arch, binary_format)
 
-    def _find_substitution_candidates(self, instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
-        return find_substitution_candidates(instructions, arch)
+    def _find_substitution_candidates(
+        self,
+        instructions: list[dict[str, Any]],
+        arch: str,
+        binary_format: str | None = None,
+    ) -> list[tuple[str, str]]:
+        return find_substitution_candidates(instructions, arch, binary_format=binary_format)
 
     def _count_register_uses(self, instructions: list[dict[str, Any]], register: str) -> int:
         return count_register_uses(instructions, register)
@@ -260,6 +265,7 @@ class RegisterSubstitutionPass(MutationPass):
         arch_info = binary.get_arch_info()
         arch = arch_info.get("arch", "unknown")
         bits = arch_info.get("bits", 0)
+        binary_format = arch_info.get("format")
 
         arch_key = arch
         if arch == "x86" and bits == ARCH_BITS_64:
@@ -267,7 +273,7 @@ class RegisterSubstitutionPass(MutationPass):
         elif arch == "arm" and bits == ARCH_BITS_64:
             arch_key = "arm64"
 
-        register_classes = self._get_register_class(arch_key)
+        register_classes = self._get_register_class(arch_key, binary_format)
         if not register_classes:
             logger.warning(f"No register classes defined for architecture: {arch}")
             return {

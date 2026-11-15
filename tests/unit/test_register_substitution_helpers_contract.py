@@ -31,6 +31,19 @@ class _Binary:
         raise ValueError(addr)
 
 
+class _WindowsPEBinary:
+    def get_arch_info(self):
+        return {"format": "PE"}
+
+    def get_function_disasm(self, addr: int):
+        expect(addr == _EXPECTED_ADDR_4096)
+        return [
+            {"disasm": "mov r10, 7"},
+            {"disasm": "add r10, 2"},
+            {"disasm": "ret"},
+        ]
+
+
 class _CallerLivenessBinary:
     def get_xrefs_to(self, address: int):
         expect(address == _CALLEE_ADDRESS)
@@ -56,6 +69,25 @@ def test_register_substitution_helpers_cover_the_core_paths() -> None:
     expect(not (is_safe_size_extension_substitution("movzx eax, bl", "bl", "cl") is not True))
     expect(not (is_safe_lea_substitution("lea rax, [rbx + rcx*4]", "rax", "r8") is not True))
     expect(select_candidates(binary, functions, "x86", 1.0, 2)[0][0]["name"] == "main")
+
+
+def test_get_register_class_for_pe_x64_uses_windows_abi() -> None:
+    register_classes = get_register_class("x64", "PE")
+
+    expect(
+        register_classes["caller_saved"] == ["rax", "rcx", "rdx", "r8", "r9", "r10", "r11"]
+        and {"rsi", "rdi"}.issubset(register_classes["callee_saved"])
+    )
+
+
+def test_register_substitution_selector_forwards_pe_x64_abi() -> None:
+    pass_obj = RegisterSubstitutionPass({"probability": 1.0, "max_substitutions_per_function": 100})
+    functions = [{"name": "pe_x64", "offset": _EXPECTED_ADDR_4096, "size": 64}]
+
+    selected = pass_obj._select_candidates(_WindowsPEBinary(), functions, "x64")
+    targets = {target for _, _, substitutions in selected for _, target in substitutions}
+
+    expect(not targets.intersection({"rsi", "rdi"}))
 
 
 def test_find_substitution_candidates_with_syscall_excludes_abi_number_register() -> None:

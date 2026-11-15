@@ -1,5 +1,6 @@
 """Native execution regression for PE block reordering."""
 
+import logging
 import os
 import platform
 import shutil
@@ -65,7 +66,10 @@ def _run_pe(binary: Path, runtime: str | None, wine_prefix: Path) -> Any:
     return run_command(command, text=True, timeout=_PE_EXECUTION_TIMEOUT_SECONDS, env=env)
 
 
-def test_pe_x86_64_block_reordering_preserves_native_observables(tmp_path: Path) -> None:
+def test_pe_x86_64_block_reordering_preserves_native_observables(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.DEBUG, logger="r2morph.mutations.block_reordering_relocation")
     compiler, runtime = _pe_toolchain()
     binary_path = _build_pe_binary(tmp_path, compiler)
     wine_prefix = tmp_path / "wine-prefix"
@@ -77,7 +81,11 @@ def test_pe_x86_64_block_reordering_preserves_native_observables(tmp_path: Path)
         result = BlockReorderingPass({"probability": 1.0, "max_functions": 100, "seed": 1}).apply(binary)
 
     handler = PEHandler(binary_path)
-    expect(result["mutations_applied"] > 0, f"PE x86-64 block reordering made no change: {result!r}")
+    reorder_diagnostics = [record.getMessage() for record in caplog.records if "branchy" in record.getMessage()]
+    expect(
+        result["mutations_applied"] > 0,
+        f"PE x86-64 block reordering made no change: {result!r}; " f"reorder_diagnostics={reorder_diagnostics!r}",
+    )
     expect(handler.fix_checksum(), "failed to repair the PE checksum after block reordering")
     expect(handler.validate_integrity()[0], "PE integrity validation failed after block reordering")
     mutated = _run_pe(binary_path, runtime, wine_prefix)

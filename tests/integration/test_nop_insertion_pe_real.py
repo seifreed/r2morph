@@ -1,3 +1,4 @@
+import logging
 import platform
 import shutil
 import subprocess
@@ -238,7 +239,10 @@ def test_instruction_substitution_pe_x86_64_preserves_native_execution(tmp_path:
     )
 
 
-def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Path) -> None:
+def test_register_substitution_pe_x86_64_preserves_native_execution(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.DEBUG, logger="r2morph.mutations.register_substitution_helpers")
     compiler, runtime = _pe_toolchain()
 
     source = tmp_path / "register_sample.c"
@@ -266,7 +270,11 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(tmp_path: Pa
         binary.analyze("aa")
         result = RegisterSubstitutionPass({"probability": 1.0, "seed": 1337}).apply(binary)
 
-    expect(result["mutations_applied"] > 0)
+    expect(
+        result["mutations_applied"] > 0,
+        f"PE register substitution made no change: {result!r}; "
+        f"candidate_diagnostics={[record.getMessage() for record in caplog.records]!r}",
+    )
     expect(handler.fix_checksum())
     expect(handler.validate_integrity()[0])
 
@@ -348,7 +356,10 @@ def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: P
         first_result["mutations_applied"] > 0
         and second_result["mutations_applied"] > 0
         and mutated_execution.returncode == original_execution.returncode == 0,
-        "PE Tier 1 composition changed the native execution result",
+        f"PE Tier 1 composition changed the native execution result: "
+        f"first={first_result!r}, second={second_result!r}, "
+        f"original_returncode={original_execution.returncode}, "
+        f"mutated_returncode={mutated_execution.returncode}",
     )
 
 
