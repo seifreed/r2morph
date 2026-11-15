@@ -54,6 +54,18 @@ _CAMPAIGNS = (
             "windows-latest": "c2747f6e5d0a7b8c88e9cae749ffe77a3b12de04f0ac53a550e4806425e2954e",
         },
     ),
+    (
+        "docs/continuous-fuzz-2026-11-15-0e39d3a-summary.json",
+        43_678_223_817,
+        "0e39d3ab5c24ec9100d602986f1cac9aa54ffa88",
+        20260827,
+        103,
+        {
+            "macos-15": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+            "ubuntu-latest": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+            "windows-latest": "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+        },
+    ),
 )
 
 
