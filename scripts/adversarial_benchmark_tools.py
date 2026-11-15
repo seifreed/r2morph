@@ -403,25 +403,68 @@ def _ida_metric(path: Path) -> dict[str, object]:
             raise RuntimeError(f"IDA headless exited with status {result.returncode}")
         if not result_path.is_file():
             raise RuntimeError("IDA function count result is missing")
-        count = int(result_path.read_text(encoding="ascii"))
-        decompiler_path = Path(f"{analysis_path}.decompiler")
-        decompiler = {"entrypoints": 0, "lines": 0, "bytes": 0}
-        if decompiler_path.is_file():
-            values = json.loads(decompiler_path.read_text(encoding="utf-8"))
-            if isinstance(values, dict):
-                decompiler = {field: int(values.get(field, 0)) for field in ("entrypoints", "lines", "bytes")}
+        count, decompiler = _read_ida_results(analysis_path)
     metric: dict[str, object] = {
         "status": "completed",
         "functions": count,
         "duration_seconds": time.perf_counter() - started,
-        "decompiler_status": "completed" if decompiler["entrypoints"] else "unavailable",
+        "decompiler_status": decompiler["status"],
         "decompiler_entrypoints": decompiler["entrypoints"],
         "decompiler_lines": decompiler["lines"],
         "decompiler_bytes": decompiler["bytes"],
     }
-    if not decompiler["entrypoints"]:
-        metric["decompiler_reason"] = "no decompiler output was produced"
+    for field in ("reason", "error_type", "error_count"):
+        if field in decompiler:
+            metric[f"decompiler_{field}"] = decompiler[field]
     return metric
+
+
+def _normalize_ida_decompiler_result(value: object) -> dict[str, object]:
+    """Preserve bounded decompiler status without exposing raw tool messages."""
+    if not isinstance(value, dict):
+        return {
+            "status": "unavailable",
+            "reason": "no decompiler output was produced",
+            "entrypoints": 0,
+            "lines": 0,
+            "bytes": 0,
+            "error_count": 0,
+        }
+    status = value.get("status")
+    if status not in {"completed", "unavailable", "error", "partial"}:
+        return {
+            "status": "error",
+            "reason": "invalid decompiler result",
+            "entrypoints": 0,
+            "lines": 0,
+            "bytes": 0,
+            "error_count": 0,
+        }
+    result: dict[str, object] = {"status": status}
+    for field in ("entrypoints", "lines", "bytes", "error_count"):
+        number = value.get(field, 0)
+        result[field] = number if isinstance(number, int) and not isinstance(number, bool) and number >= 0 else 0
+    reason = value.get("reason")
+    error_type = value.get("error_type")
+    if isinstance(reason, str) and reason in {
+        "decompiler plugin is unavailable",
+        "decompiler plugin could not be initialized",
+        "decompiler module is unavailable",
+        "decompiler produced no pseudocode",
+    }:
+        result["reason"] = reason
+    if isinstance(error_type, str) and error_type.isidentifier():
+        result["error_type"] = error_type
+    return result
+
+
+def _read_ida_results(analysis_path: Path) -> tuple[int, dict[str, object]]:
+    """Read IDA result files and retain decompiler failure classification."""
+    result_path = Path(f"{analysis_path}{_IDA_RESULT_SUFFIX}")
+    count = int(result_path.read_text(encoding="ascii"))
+    decompiler_path = Path(f"{analysis_path}.decompiler")
+    value = json.loads(decompiler_path.read_text(encoding="utf-8")) if decompiler_path.is_file() else None
+    return count, _normalize_ida_decompiler_result(value)
 
 
 def _parse_ghidra_function_counts(output: str) -> dict[str, int]:

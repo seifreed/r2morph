@@ -17,15 +17,21 @@ update the Windows differential workflow and its regression contracts; no
 package runtime code changed.
 
 On `fc21d286`, the local full suite passed on Python 3.14 with 6,923 passed,
-225 skipped, and 82.15% coverage. At 2026-11-15 11:22 UTC, GitHub CI run
+225 skipped, and 82.15% coverage. CI run
 [`43703694686`](https://github.com/seifreed/r2morph/actions/runs/43703694686)
-was still running: every completed job had passed, with Linux / Python 3.12
-still in progress. The matching Windows PE differential workflow
+then completed all 15 jobs successfully, including Linux / Python 3.12. The
+matching Windows PE differential workflow
 [`43703694688`](https://github.com/seifreed/r2morph/actions/runs/43703694688)
 and dependent adversarial benchmark
 [`43703700102`](https://github.com/seifreed/r2morph/actions/runs/43703700102)
-were pending. CI for source `49649d9e` was also queued. These results do not
-claim complete current-head CI or close the analyzer-coverage,
+were cancelled before completion. For source `1cf69382`, CI
+[`43708730522`](https://github.com/seifreed/r2morph/actions/runs/43708730522)
+is running, and differential workflow
+[`43708730512`](https://github.com/seifreed/r2morph/actions/runs/43708730512)
+is queued; its dependent adversarial benchmark
+[`43708735434`](https://github.com/seifreed/r2morph/actions/runs/43708735434)
+was cancelled and awaits the differential workflow result. These results do
+not claim complete current-head CI or close the analyzer-coverage,
 cross-platform-parity, and resistance criteria.
 
 An additional one-fixture differential run on source `49649d9e` applied
@@ -45,6 +51,16 @@ readiness criteria remain open.
 On Python 3.14.10, the full suite at `49649d9e` passed with 6,931 passed,
 225 skipped, and 82.14% coverage. The focused published-evidence and release
 gate checks passed again after adding the hash-bound artifacts.
+
+The IDA adapter now preserves decompiler outcomes as completed, unavailable,
+error, or partial and records only bounded error type/count fields. It no
+longer turns a decompiler exception into zero-valued metrics. The regression
+contract is `tests/unit/test_adversarial_ida_decompiler_result.py`; native
+headless execution was not available on this host (`idat` is absent), so this
+change does not add analyzer coverage or change resistance conclusions.
+The full Python 3.14.10 suite with this adapter update passed 6,936 tests,
+skipped 225, and reached 82.15% coverage; the five focused IDA result tests
+also pass independently.
 
 ## Current-main continuous fuzz campaign
 

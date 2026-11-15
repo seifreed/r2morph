@@ -11,7 +11,14 @@ import ida_pro
 ida_auto.auto_wait()
 input_path = ida_nalt.get_input_file_path()
 Path(f"{input_path}.function-count").write_text(str(ida_funcs.get_func_qty()), encoding="ascii")
-decompiler = {"entrypoints": 0, "lines": 0, "bytes": 0}
+decompiler = {
+    "status": "unavailable",
+    "reason": "decompiler plugin is unavailable",
+    "entrypoints": 0,
+    "lines": 0,
+    "bytes": 0,
+    "error_count": 0,
+}
 try:
     import ida_hexrays
     import ida_lines
@@ -28,7 +35,19 @@ try:
             decompiler["entrypoints"] += 1
             decompiler["lines"] += len(lines)
             decompiler["bytes"] += len("\n".join(lines).encode("utf-8"))
-except (ImportError, RuntimeError, TypeError, ValueError):
-    pass
+        decompiler["status"] = "completed" if decompiler["entrypoints"] else "unavailable"
+        if decompiler["entrypoints"]:
+            decompiler.pop("reason")
+        else:
+            decompiler["reason"] = "decompiler produced no pseudocode"
+    else:
+        decompiler["reason"] = "decompiler plugin could not be initialized"
+except ImportError:
+    decompiler["reason"] = "decompiler module is unavailable"
+except (RuntimeError, TypeError, ValueError) as error:
+    decompiler["status"] = "partial" if decompiler["entrypoints"] else "error"
+    decompiler["error_type"] = type(error).__name__
+    decompiler["error_count"] = 1
+    decompiler.pop("reason")
 Path(f"{input_path}.decompiler").write_text(json.dumps(decompiler), encoding="utf-8")
 ida_pro.qexit(0)
