@@ -133,6 +133,18 @@ another bounded three-platform fuzz campaign. They do not establish arbitrary
 input semantic equivalence, cross-platform behavioral parity, or independent
 adversarial validation.
 
+Continuous fuzz workflow [`43719827578`](https://github.com/seifreed/r2morph/actions/runs/43719827578)
+also passed on source `ec0cfa8e` across Ubuntu, macOS, and Windows. Each runner
+completed 5,000 cases against each of 10 targets: 150,000 target runs total,
+with zero failures. The three reports and their SHA-256 hashes are pinned in
+the [summary](continuous-fuzz-2026-11-15-43719827578-summary.json). The
+Windows JSON is stored with normalized LF line endings; its original artifact
+SHA-256 is also preserved in the summary. Each platform retained 103
+`macho_load_commands.warning` diagnostics for malformed inputs; they remain
+visible and are not counted as campaign failures. This
+bounded run adds current-source fuzz evidence but does not prove arbitrary
+input equivalence or cross-platform behavioral parity.
+
 The handler generator was re-measured on source commit `f8586a1b` across 32
 seeds, with 255 handlers per generated interpreter. All 32 opcode assignments
 differed, both dispatcher variants occurred, and there were zero exact
@@ -166,6 +178,19 @@ and one applied pass, so it adds current-source evidence without closing the
 all-analyzer or resistance gates. The hash-bound [report summary](protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json)
 and its [raw report](protection-adversarial-current-main-local-2026-11-15-f7246d5d.json)
 retain the exact measurements and limitations.
+
+A repeat on `ec0cfa8e` built upstream Triton from source for the isolated
+Python 3.13 environment and reran the same fixture/pass pair. Triton decoded
+3,861 instructions in the protected binary and reported semantic support for
+3,850; IDA Pro 9.5, Ghidra 12.2, angr, radare2, objdump, Unicorn, and the custom
+analyzer also completed. Unicorn returned 45 for both binaries. Eight of nine
+analyzer slots completed with zero tool errors. Binary Ninja remained
+unavailable because its license was unavailable to the benchmark process.
+The source report, fixture hash, and upstream Triton revision are pinned in
+the [summary](protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json)
+and [raw report](protection-adversarial-current-main-local-2026-11-15-ec0cfa8e.json).
+This is still one fixture and one applied pass; all-analyzer coverage and
+generalized resistance remain open.
 
 A fresh local run on current source `cbc61cef` applied CodeVirtualization to
 the same `elf_vm_arith_x86_64` fixture. IDA Pro 9.5 and Ghidra 12.2 both

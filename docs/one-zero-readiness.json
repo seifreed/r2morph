@@ -93,7 +93,9 @@
         "tests/unit/test_published_local_adversarial_allpasses_55369212.py",
         "docs/protection-adversarial-current-main-local-2026-11-15-1f783f57.json",
         "docs/protection-adversarial-current-main-local-2026-11-15-1f783f57-summary.json",
-        "tests/unit/test_published_local_adversarial_current_main_1f783f57.py"
+        "tests/unit/test_published_local_adversarial_current_main_1f783f57.py",
+        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -290,7 +292,9 @@
         "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures.json.gz",
         "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures-summary.json",
         "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d.json",
-        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json"
+        "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e.json",
+        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json"
       ]
     },
     "stable_api_cli": {
