@@ -78,7 +78,10 @@
         "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json",
         "docs/protection-adversarial-shard-2026-11-15-43682458593-06-summary.json",
         "docs/protection-adversarial-shard-2026-11-15-43682458593-06.json",
-        "tests/unit/test_published_adversarial_shard_43682458593.py"
+        "tests/unit/test_published_adversarial_shard_43682458593.py",
+        "docs/protection-adversarial-partial-run-2026-11-15-43682458593-summary.json",
+        "docs/protection-adversarial-partial-run-2026-11-15-43682458593.json.gz",
+        "tests/unit/test_published_adversarial_partial_run_43682458593.py"
       ]
     },
     "complete_compatibility_contract": {
