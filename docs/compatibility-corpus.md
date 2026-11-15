@@ -204,6 +204,17 @@ This closes the declared LSDA/landing-pad gate for the generated Linux ELF
 x86-64 C++ corpus, not the broader cross-platform parity gap or unsupported
 language/ABI combinations.
 
+A fresh local CodeVirtualization analysis on source `cbc61cef` transformed one
+`elf_vm_arith_x86_64` fixture with no unsupported functions. IDA Pro 9.5 and
+Ghidra 12.2 both completed decompilation of the original and protected
+binaries; Unicorn observed exit code 45 for each. Seven of nine analyzer slots
+completed with no tool errors. Binary Ninja's license was unavailable and
+Triton was not installed. The raw report and hash-bound summary are
+[`protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef.json`](protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef.json)
+and
+[`protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json`](protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json).
+This is one local fixture and pass, not general parity or resistance evidence.
+
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
 It builds twenty-two temporary ELF x86-64 images: nine C images covering GCC

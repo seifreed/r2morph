@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "source_commit": "cbc61cefe352b94eb420e4b0d4acbd72f041840e",
+  "source_report": "protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef.json",
+  "source_report_sha256": "65ed82ee5c74696e65a7cd0981ac863a8cab873a3f7476ff355ce47c73ca1f5e",
+  "fixture": {
+    "name": "elf_vm_arith_x86_64",
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "execution_context": {
+    "platform": "macOS arm64",
+    "python": "3.12.16",
+    "ida_pro": "9.5",
+    "ghidra": "12.2"
+  },
+  "scope": {
+    "passes": ["CodeVirtualization"],
+    "pass_status": "applied",
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "unsupported_functions": 0
+  },
+  "analyzer_summary": {
+    "expected_tool_runs": 9,
+    "completed_tool_runs": 7,
+    "unavailable_tool_runs": 2,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ghidra",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": "analyzer license is unavailable",
+      "triton": "module 'triton' is unavailable"
+    }
+  },
+  "observations": {
+    "unicorn_original_exit_code": 45,
+    "unicorn_protected_exit_code": 45,
+    "ida_original_and_protected_decompilation": "completed",
+    "ghidra_original_and_protected_decompilation": "completed"
+  },
+  "limitations": [
+    "One fixture and one applied pass do not establish full analyzer coverage or generalized resistance.",
+    "Binary Ninja could not analyze the fixture because its license was unavailable.",
+    "Triton could not analyze the fixture because its Python module was unavailable.",
+    "The measurement ran on macOS arm64, not the official Linux ELF x86-64 target."
+  ]
+}

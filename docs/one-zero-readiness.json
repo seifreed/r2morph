@@ -84,7 +84,10 @@
         "tests/unit/test_published_adversarial_partial_run_43682458593.py",
         "docs/protection-adversarial-local-opaque-2026-11-15-d8b9573c.json",
         "docs/protection-adversarial-local-opaque-2026-11-15-d8b9573c-summary.json",
-        "tests/unit/test_published_local_opaque_adversarial_d8b9573c.py"
+        "tests/unit/test_published_local_opaque_adversarial_d8b9573c.py",
+        "docs/protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef.json",
+        "docs/protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json",
+        "tests/unit/test_published_local_codevirtualization_analyzers_cbc61cef.py"
       ]
     },
     "complete_compatibility_contract": {

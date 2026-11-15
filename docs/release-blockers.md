@@ -107,6 +107,17 @@ all-analyzer or resistance gates. The hash-bound [report summary](protection-adv
 and its [raw report](protection-adversarial-current-main-local-2026-11-15-f7246d5d.json)
 retain the exact measurements and limitations.
 
+A fresh local run on current source `cbc61cef` applied CodeVirtualization to
+the same `elf_vm_arith_x86_64` fixture. IDA Pro 9.5 and Ghidra 12.2 both
+completed original/protected decompilation, and Unicorn observed exit code 45
+for both binaries. Seven of nine analyzer slots completed without errors;
+Binary Ninja was present but its license was unavailable, and Triton was not
+installed. The report hash, fixture hash, tool outcomes, and limitations are
+bound in the [summary](protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json)
+and [raw report](protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef.json).
+This confirms the local IDA/Ghidra setup for one fixture and one pass, but does
+not close all-analyzer coverage or establish generalized resistance.
+
 The differential workflow [`43678223812`](https://github.com/seifreed/r2morph/actions/runs/43678223812)
 produced two separately validated aggregate artifacts from source commit
 `0e39d3ab`. Its five platform smoke reports cover 73 cases across ELF ARM32,
