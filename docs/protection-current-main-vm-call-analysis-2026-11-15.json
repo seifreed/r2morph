@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "source_commit": "47dcc6a24f644c42ffe5e540a7d9aadb91df2191",
+  "provenance": "local-current-main-tree",
+  "fixture": "elf_vm_call_x86_64",
+  "seed": 20261115,
+  "transformation": {
+    "name": "CodeVirtualization",
+    "status": "applied",
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "unsupported_functions": 0,
+    "structural_validation": "passed",
+    "original_size_bytes": 4664,
+    "protected_size_bytes": 22136,
+    "size_delta_bytes": 17472,
+    "size_growth_percent": 374.61,
+    "original_sha256": "a74b830c273088e2b58458e5227b839d0a1e07b422e34dfa6c42db5e10e08754",
+    "protected_sha256": "efbbc8346dd96b1cc17fabb7d60fc3a13f6df4488f68caa1cdede9a5e699665c"
+  },
+  "ida_pro": {
+    "analysis_status": "completed",
+    "original": {
+      "function_count": 2,
+      "segment_count": 2,
+      "entry_points": ["twice", "_start"],
+      "decompilation": {
+        "twice": "completed",
+        "_start": "completed"
+      }
+    },
+    "protected": {
+      "function_count": 3,
+      "segment_count": 3,
+      "entry_points": ["twice", "_start", "_end"],
+      "decompilation": {
+        "twice": "completed",
+        "_start": "completed",
+        "0x402000": "no_function"
+      }
+    }
+  },
+  "limitations": [
+    "Single ELF x86-64 fixture; this is not a corpus-wide resistance result.",
+    "Native execution was not performed on the macOS analysis host.",
+    "IDA survey listed 0x402000 as an entry point, while function analysis found no function there.",
+    "Structural validation does not establish semantic parity or runtime correctness.",
+    "The analyzer version was not captured by the local analysis interface."
+  ]
+}
