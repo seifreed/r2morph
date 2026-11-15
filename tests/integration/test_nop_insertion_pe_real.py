@@ -259,6 +259,7 @@ def test_register_substitution_pe_x86_64_preserves_native_execution(
         "    cell = cell / 2U;\n"
         "  }\n"
         '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
+        '  __asm__ volatile("movl $7, %%r10d\\n" ::: "r10");\n'
         "  return (int)(cell ^ (uint32_t)value);\n"
         "}\n"
         "int main(void) { return transform(41) != 84; }\n"
