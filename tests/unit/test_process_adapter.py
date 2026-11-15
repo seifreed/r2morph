@@ -2,14 +2,18 @@
 
 import asyncio
 import os
+import signal
 import sys
 import time
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
 
 from r2morph.adapters.process import ProcessTimeoutError, _resolve_executable, _terminate_process_tree, run_process
 from tests.utils.assertions import expect
+
+_DETACHED_PIPE_CLEANUP_LIMIT_SECONDS = 2.5
 
 
 def test_run_process_captures_stdout() -> None:
@@ -47,6 +51,31 @@ def test_run_process_timeout_terminates_descendant_processes(tmp_path: Path) -> 
 
     time.sleep(0.7)
     expect(not marker.exists())
+
+
+def test_run_process_timeout_returns_before_detached_descendant_closes_pipes(tmp_path: Path) -> None:
+    child_pid_file = tmp_path / "child-pid"
+    child_code = (
+        "import os, pathlib, time; "
+        f"pathlib.Path({str(child_pid_file)!r}).write_text(str(os.getpid())); "
+        "time.sleep(3)"
+    )
+    parent_code = (
+        "import subprocess, sys, time; "
+        f"subprocess.Popen([sys.executable, '-c', {child_code!r}], start_new_session=(os.name == 'posix')); "
+        "time.sleep(30)"
+    )
+    started = time.monotonic()
+    try:
+        with pytest.raises(ProcessTimeoutError):
+            run_process([Path(sys.executable), "-c", f"import os; {parent_code}"], timeout=0.2)
+    finally:
+        if os.name == "posix" and child_pid_file.exists():
+            child_pid = int(child_pid_file.read_text(encoding="utf-8"))
+            with suppress(ProcessLookupError):
+                os.kill(child_pid, signal.SIGKILL)
+
+    expect(time.monotonic() - started < _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS)
 
 
 def test_terminate_process_tree_accepts_process_that_already_exited() -> None:

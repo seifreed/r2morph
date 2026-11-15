@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 from r2morph.utils.logging import observed_operation
 
@@ -102,10 +103,15 @@ async def _run_process(
         cwd=context.cwd,
         start_new_session=os.name == "posix",
     )
+    communication = asyncio.create_task(process.communicate(context.input_bytes))
     try:
-        stdout, stderr = await asyncio.wait_for(process.communicate(context.input_bytes), timeout)
+        stdout, stderr = await asyncio.wait_for(asyncio.shield(communication), timeout)
     except TimeoutError:
-        await _terminate_process_tree(process)
+        try:
+            await _terminate_process_tree(process)
+        finally:
+            communication.cancel()
+            await asyncio.gather(communication, return_exceptions=True)
         raise ProcessTimeoutError(f"Process exceeded {timeout} seconds") from None
     return ProcessResult(stdout=stdout, stderr=stderr, returncode=process.returncode or 0)
 
@@ -130,7 +136,13 @@ async def _terminate_process_tree(process: asyncio.subprocess.Process) -> None:
                 _kill_if_running(process)
         except OSError:
             _kill_if_running(process)
-    await process.communicate()
+    transport = cast(Any, process)._transport
+    for file_descriptor in (1, 2):
+        pipe_transport = transport.get_pipe_transport(file_descriptor)
+        if pipe_transport is not None:
+            # asyncio.Process has no public way to close pipes held by descendants.
+            pipe_transport.close()
+    await process.wait()
 
 
 def _kill_if_running(process: asyncio.subprocess.Process) -> None:
