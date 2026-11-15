@@ -26,11 +26,20 @@ differed, both dispatcher variants occurred, and there were zero exact
 normalized collisions within or across seeds. The nearest-handler similarity
 mean was `0.723` and `3,439` of `7,905` comparisons were at least `0.8`, so
 zero exact matches do not imply low structural similarity. This campaign
-measures one interpreter per seed, not the 10-fixture runtime campaign. The
-[hash-bound measurement summary](protection-vm-handler-diversity-local-2026-11-15-f8586a1b-32seeds-summary.json)
-records the result and limitations; the earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
-remains as historical evidence. Current-source multi-fixture validation and
-independent human adversarial review remain open.
+measures one interpreter per seed. A separate current-source run on the same
+implementation commit `f8586a1b` then covered 10 ELF x86-64 fixtures across 32
+seeds each: all 320 artifacts were distinct, emulator-observed exit codes
+matched their baselines, all 160 single-layer and nested tamper probes
+diverged, and every fixture had zero exact normalized handler collisions
+across and within seeds. Opcode, dispatcher, and bytecode grammar diversity
+were observed; progressive bytecode growth was supported on 7 of the 10
+fixtures. The hash-bound [campaign summary](protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures-summary.json)
+and compressed [full report](protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures.json.gz)
+record this bounded automated evidence. Native ELF execution was unavailable
+on the macOS ARM64 host, and the run does not substitute for independent human
+adversarial review; the `published_resistance_results` criterion therefore
+remains open. The earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
+remains as historical evidence.
 
 ## Latest full CI verification on main
 

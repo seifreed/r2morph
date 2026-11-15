@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "source_commit": "f8586a1beb0068d53bcc9ebaf3009ce0e2e8e375",
+  "command": {
+    "script": "scripts/vm_resistance_adversarial.py",
+    "fixture_count": 10,
+    "fixtures": [
+      "elf_vm_shift_x86_64",
+      "elf_vm_bigimm_x86_64",
+      "elf_vm_call_x86_64",
+      "elf_vm_icall_x86_64",
+      "elf_vm_varargs_x86_64",
+      "elf_vm_memwidth_x86_64",
+      "elf_vm_tls_x86_64",
+      "elf_vm_unwind_x86_64",
+      "elf_vm_multiexit_x86_64",
+      "elf_vm_simdint_x86_64"
+    ],
+    "first_seed": 20260820,
+    "seed_count": 32
+  },
+  "report": {
+    "path": "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures.json.gz",
+    "sha256": "aad806c3f33c155a7899209178f8c23d70302e4e983c9df8b3e1ac3931250307",
+    "compressed_size_bytes": 68464,
+    "raw_sha256": "e36a656a96d2459a9cd92b04127668976a075df537208490317cd4b2cc43eed5",
+    "raw_size_bytes": 554049
+  },
+  "measurement": {
+    "fixture_count": 10,
+    "first_seed": 20260820,
+    "seed_count": 32,
+    "cross_fixture_distinct_artifacts": true,
+    "semantic_parity": true,
+    "all_tamper_probes_diverged": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 7,
+    "dispatcher_diversity_observed": true,
+    "opcode_assignment_diversity_observed": true,
+    "handler_diversity_observed": true,
+    "bytecode_grammar_diversity_observed": true,
+    "adversarial_recovery_probe_observed": true,
+    "tamper_probe_count": 160,
+    "cross_seed_exact_handler_collisions_per_fixture": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "within_seed_exact_handler_collisions_per_fixture": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "native_execution_status": "unavailable: native ELF execution requires Linux; host was macOS ARM64"
+  },
+  "human_adversarial_review": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "pending_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
+  "limitations": [
+    "Automated adversarial smoke evidence only; it is not an independent specialist review.",
+    "The report covers ten ELF x86-64 fixtures and 32 seeds per fixture.",
+    "Native ELF execution was unavailable on the macOS ARM64 host; exit observations used emulation.",
+    "Seven fixtures supported progressive bytecode growth; three did not expose nested regions."
+  ]
+}

@@ -72,10 +72,10 @@ def test_current_vm_handler_evidence_is_registered_without_closing_release_gate(
 
 
 def test_current_vm_handler_blocker_documents_remaining_validation_scope() -> None:
-    blockers = _BLOCKERS.read_text(encoding="utf-8")
+    blockers = " ".join(_BLOCKERS.read_text(encoding="utf-8").split())
 
     expect(
         "zero exact" in blockers
-        and "Current-source multi-fixture validation and" in blockers
-        and "independent human adversarial review remain open" in blockers
+        and "all 160 single-layer and nested tamper probes" in blockers
+        and "independent human adversarial review" in blockers
     )
