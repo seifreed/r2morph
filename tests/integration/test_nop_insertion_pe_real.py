@@ -284,8 +284,8 @@ def test_constant_unfolding_pe_x86_64_preserves_native_execution(tmp_path: Path)
     source.write_text(
         "#include <stdint.h>\n"
         "__attribute__((noinline)) int transform(int value) {\n"
-        "  volatile uint32_t cell = (uint32_t)value;\n"
-        "  cell = 0U;\n"
+        "  uint32_t cell;\n"
+        '  __asm__ volatile("movl $0, %0" : "=r"(cell));\n'
         "  return (int)(cell + (uint32_t)value);\n"
         "}\n"
         "int main(void) { return transform(41) != 41; }\n",

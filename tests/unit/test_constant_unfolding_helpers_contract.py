@@ -66,6 +66,10 @@ def test_constant_unfolding_preserves_even_split_immediate() -> None:
     expect(unfold_constant_add("eax", 4, 32, 10) == ["add eax, 2", "add eax, 2"])
 
 
+def test_constant_unfolding_skips_memory_destination_with_size_qualifier() -> None:
+    expect(match_unfold_pattern("mov dword [rbp - 4], 1", 64, _Binary(), _EXPECTED_ADDR_4096, 10) == (None, False))
+
+
 def test_constant_unfolding_preserves_uneven_split_immediate() -> None:
     expect(unfold_constant_sub("eax", 5, 32, 10) == ["sub eax, 2", "sub eax, 3"])
 

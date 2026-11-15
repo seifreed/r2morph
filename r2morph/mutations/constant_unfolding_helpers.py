@@ -206,6 +206,10 @@ def match_unfold_pattern(
     max_sequence: int,
 ) -> tuple[list[str] | None, bool]:
     """Match instruction to an unfold pattern. Returns (unfolded_instructions, is_constant)."""
+    operands = disasm.split(None, maxsplit=1)
+    if len(operands) < _MIN_INSTRUCTION_TOKEN_COUNT or "[" in operands[1].split(",", maxsplit=1)[0]:
+        return None, False
+
     parts = disasm.replace(",", " ").split()
     if len(parts) < _MIN_INSTRUCTION_TOKEN_COUNT:
         return None, False
