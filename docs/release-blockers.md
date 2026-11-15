@@ -94,6 +94,21 @@ all-analyzer or resistance gates. The hash-bound [report summary](protection-adv
 and its [raw report](protection-adversarial-current-main-local-2026-11-15-f7246d5d.json)
 retain the exact measurements and limitations.
 
+The differential workflow [`43678223812`](https://github.com/seifreed/r2morph/actions/runs/43678223812)
+produced two separately validated aggregate artifacts from source commit
+`0e39d3ab`. Its five platform smoke reports cover 73 cases across ELF ARM32,
+ELF ARM64, ELF x86-32, macOS ARM64, and Windows PE; every required case passed
+with zero failures, errors, or skips. The hash-bound
+[platform manifest](protection-platform-preview-run-2026-11-15-43678223812.json),
+[platform summary](protection-platform-evidence-2026-11-15-43678223812.json),
+and XML reports retain the results. The same run's VM semantic aggregate
+passed 1,005 Linux ELF x86-64 fixtures over three seeds with zero QEMU
+divergences, missing pairs, or unavailable pairs. Its hash-bound
+[summary](protection-vm-semantic-native-parity-2026-11-15-43678223812-summary.json)
+links the compressed full report. These bounded results add correctness
+evidence, but do not prove general cross-platform parity or adversarial
+resistance; both corresponding readiness criteria remain open.
+
 ## Latest full CI verification on main
 
 Commit `e843192a45026f764c9a65e4403e6a5e28bc1037` passed CI run

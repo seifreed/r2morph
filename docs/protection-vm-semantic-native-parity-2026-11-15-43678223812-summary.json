@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "measurement": "vm-semantic-native-parity-campaign",
+  "source_commit": "0e39d3ab5c24ec9100d602986f1cac9aa54ffa88",
+  "current_main_runtime_source_unchanged_since_source_commit": true,
+  "workflow_run": 43678223812,
+  "aggregate_job": {
+    "id": 132713378563,
+    "conclusion": "success"
+  },
+  "archive": {
+    "path": "protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz",
+    "sha256": "704605d07e07efaa1077ea586cdad9b68b8cbe869ac2d8a8fc18c6b889d0875a",
+    "uncompressed_sha256": "fe09ce119b718b13701ad55a0add4c6b79a7c450299da10b6b5ef50dd55ce124",
+    "uncompressed_size_bytes": 2373593
+  },
+  "target": {
+    "architecture": "x86-64",
+    "format": "ELF",
+    "os": "linux"
+  },
+  "seed_count": 3,
+  "seeds": [
+    20260916,
+    20260917,
+    20260918
+  ],
+  "fixture_count": 1005,
+  "passed_count": 1005,
+  "failed_count": 0,
+  "failures": [],
+  "corpus_fixture_counts": {
+    "generated-corpus": 552,
+    "repository-fixtures": 453
+  },
+  "qemu_summary": {
+    "completed_pairs": 1005,
+    "divergent_pairs": 0,
+    "missing_pairs": 0,
+    "oracle": "qemu-x86_64",
+    "unavailable_pairs": 0
+  },
+  "capability_summary": {
+    "abi-varargs": {
+      "categories": [
+        "abi_varargs"
+      ],
+      "failed_count": 0,
+      "fixture_count": 90,
+      "passed_count": 90,
+      "status": "campaign-measured"
+    },
+    "direct-calls": {
+      "categories": [
+        "direct_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 171,
+      "passed_count": 171,
+      "status": "campaign-measured"
+    },
+    "fp-simd": {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "failed_count": 0,
+      "fixture_count": 237,
+      "passed_count": 237,
+      "status": "campaign-measured"
+    },
+    "indirect-calls": {
+      "categories": [
+        "indirect_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 48,
+      "passed_count": 48,
+      "status": "campaign-measured"
+    },
+    "memory": {
+      "categories": [
+        "memory_addressing"
+      ],
+      "failed_count": 0,
+      "fixture_count": 366,
+      "passed_count": 366,
+      "status": "campaign-measured"
+    },
+    "ssa-liveness": {
+      "categories": [
+        "ssa_liveness"
+      ],
+      "failed_count": 0,
+      "fixture_count": 159,
+      "passed_count": 159,
+      "status": "campaign-measured"
+    },
+    "threads": {
+      "categories": [
+        "thread_safety"
+      ],
+      "failed_count": 0,
+      "fixture_count": 45,
+      "passed_count": 45,
+      "status": "campaign-measured"
+    },
+    "tls-signals": {
+      "categories": [
+        "tls_accesses",
+        "signals_and_system_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 87,
+      "passed_count": 87,
+      "status": "campaign-measured"
+    },
+    "unwinding-exceptions": {
+      "categories": [
+        "unwinding_exceptions"
+      ],
+      "failed_count": 0,
+      "fixture_count": 3,
+      "passed_count": 3,
+      "status": "campaign-measured"
+    }
+  }
+}

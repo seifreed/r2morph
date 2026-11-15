@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "measurement": "cross-platform-differential-smoke",
+  "source_commit": "0e39d3ab5c24ec9100d602986f1cac9aa54ffa88",
+  "current_main_runtime_source_unchanged_since_source_commit": true,
+  "workflow_run": 43678223812,
+  "aggregate_job": {
+    "id": 132706356173,
+    "conclusion": "success"
+  },
+  "summary_report": {
+    "report": "protection-platform-evidence-2026-11-15-43678223812.json",
+    "sha256": "15407205577995d6f32809013b05e3fbfaaa8361738e03681fc325f46a997f94"
+  },
+  "platform_reports": {
+    "elf_arm_32": {
+      "report": "protection-platform-elf-arm-32-2026-11-15-43678223812.xml",
+      "sha256": "1bbe82d77cfc00bbd01d23d700e2342b7806e9c1b8f8b0896e46b852aaa766f7",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_arm64": {
+      "report": "protection-platform-elf-arm64-2026-11-15-43678223812.xml",
+      "sha256": "713490a0d6b64980edd160c7af430f2d21444ac7097106ec67c1b8732a062fdf",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elf_x86_32": {
+      "report": "protection-platform-elf-x86-32-2026-11-15-43678223812.xml",
+      "sha256": "7304c1fce0e86206282c614dcbf5d45c24f48403d7101d86ac91e4f3444bb5af",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "macos_arm64": {
+      "report": "protection-platform-macos-arm64-2026-11-15-43678223812.xml",
+      "sha256": "c439b24c89994074f6f584178e889ba788ce17ec5d950b6107380905066a8129",
+      "tests": 35,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "windows_pe": {
+      "report": "protection-platform-windows-pe-2026-11-15-43678223812.xml",
+      "sha256": "001f20ba7a598d6274f755fb0e951a77b532aea2ccada2de0db0931d386cb52c",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "totals": {
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
