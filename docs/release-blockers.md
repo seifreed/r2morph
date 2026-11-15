@@ -140,12 +140,15 @@ The original run completed with 31 successful shards and one failed shard:
 to reject the run. A local profile attributed the dominant pass cost to
 repeated register-alias construction in liveness analysis; commit `0e39d3ab`
 caches those aliases and reduced the measured worker time from 22.405 to
-10.151 seconds while producing byte-identical output. The profile is retained
-in [the liveness report](profiling/2026-11-15-liveness-alias-cache.md). A full
-rerun on the optimized source, workflow
+10.151 seconds while producing byte-identical output. However, the failed
+workflow source `13ac8025` already contains that optimization, so this timeout
+shows the profile did not eliminate the CI failure. The profile is retained in
+[the liveness report](profiling/2026-11-15-liveness-alias-cache.md). A full
+repeat campaign with unchanged benchmark and runtime code, workflow
 [`43691585628`](https://github.com/seifreed/r2morph/actions/runs/43691585628),
-is in progress. The 23-shard package above remains explicitly partial and does
-not count the failed run as complete evidence.
+is in progress; it will test reproducibility, not validate the alias-cache
+change. The 23-shard package above remains explicitly partial and does not
+count the failed run as complete evidence.
 
 ## Latest full CI verification on main
 
