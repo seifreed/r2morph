@@ -78,7 +78,7 @@ def test_pe_x86_64_block_reordering_preserves_native_observables(
 
     with Binary(binary_path, writable=True) as binary:
         binary.analyze("aa")
-        result = BlockReorderingPass({"probability": 1.0, "max_functions": 100, "seed": 1}).apply(binary)
+        result = BlockReorderingPass({"probability": 1.0, "max_functions": 100, "seed": 2}).apply(binary)
 
     handler = PEHandler(binary_path)
     reorder_diagnostics = [record.getMessage() for record in caplog.records if "branchy" in record.getMessage()]

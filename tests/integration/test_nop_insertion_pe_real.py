@@ -61,7 +61,10 @@ def test_nop_insertion_pe_x86_64_preserves_repaired_integrity(tmp_path: Path) ->
         "    cell = cell / 2U;\n"
         "  }\n"
         '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
-        "  return (int)(cell ^ (uint32_t)value);\n"
+        "  uint64_t preserved;\n"
+        '  __asm__ volatile("movq %1, %%r10\\n\\t" "movq %%r10, %0" '
+        ': "=r"(preserved) : "r"((uint64_t)value) : "r10");\n'
+        "  return (int)(cell ^ (uint32_t)preserved);\n"
         "}\n"
         "int main(void) { return transform(41) != 84; }\n"
     )
@@ -330,7 +333,10 @@ def test_tier1_pass_composition_pe_x86_64_preserves_native_execution(tmp_path: P
         "  volatile uint32_t cell = (uint32_t)value;\n"
         "  cell = (cell * 3U) ^ 0x55U;\n"
         '  __asm__ volatile("mov %%eax, %%eax\\n" : "+a"(value));\n'
-        "  return (int)(cell + (uint32_t)value);\n"
+        "  uint64_t preserved;\n"
+        '  __asm__ volatile("movq %1, %%r10\\n\\t" "movq %%r10, %0" '
+        ': "=r"(preserved) : "r"((uint64_t)value) : "r10");\n'
+        "  return (int)(cell + (uint32_t)preserved);\n"
         "}\n"
         "int main(void) { return transform(41) == 0; }\n",
         encoding="ascii",
