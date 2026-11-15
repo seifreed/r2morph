@@ -123,12 +123,12 @@ retain these exact counts. This single-fixture shard adds Triton evidence but
 does not close all-analyzer coverage or resistance; the 32-shard workflow is
 still running.
 
-The retained package includes 13 successfully completed shards from the same
-32-shard workflow. Their reports cover 62 distinct fixtures and the same 22
-passes: 12,276 analyzer
-rows were expected, 9,306 completed, 2,970 were unavailable, and none were
-missing or errored. Binary Ninja and IDA Pro were unavailable throughout this
-runner; Unicorn completed 1,122 rows and was unavailable for 242 fixture rows.
+The retained package includes 23 successfully completed shards from the same
+32-shard workflow. Their reports cover 192 distinct fixtures and the same 22
+passes: 38,016 analyzer rows were expected, 29,150 completed, 8,866 were
+unavailable, and none were missing or errored. Binary Ninja and IDA Pro were
+unavailable throughout this runner; Unicorn completed 3,806 rows and was
+unavailable for 418 fixture rows.
 The [partial-run summary](protection-adversarial-partial-run-2026-11-15-43682458593-summary.json)
 binds each report hash and successful job to the compressed
 [report bundle](protection-adversarial-partial-run-2026-11-15-43682458593.json.gz).

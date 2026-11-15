@@ -1,16 +1,16 @@
 {
   "aggregate": {
-    "completed_tool_runs": 9306,
+    "completed_tool_runs": 29150,
     "completed_tool_runs_by_tool": {
-      "angr": 1364,
+      "angr": 4224,
       "binary-ninja": 0,
-      "custom": 1364,
-      "ghidra": 1364,
+      "custom": 4224,
+      "ghidra": 4224,
       "ida-pro": 0,
-      "objdump": 1364,
-      "radare2": 1364,
-      "triton": 1364,
-      "unicorn": 1122
+      "objdump": 4224,
+      "radare2": 4224,
+      "triton": 4224,
+      "unicorn": 3806
     },
     "error_tool_runs": 0,
     "error_tool_runs_by_tool": {
@@ -24,7 +24,7 @@
       "triton": 0,
       "unicorn": 0
     },
-    "expected_tool_runs": 12276,
+    "expected_tool_runs": 38016,
     "missing_tool_runs": 0,
     "missing_tool_runs_by_tool": {
       "angr": 0,
@@ -37,40 +37,74 @@
       "triton": 0,
       "unicorn": 0
     },
-    "sample_count": 62,
-    "unavailable_tool_runs": 2970,
+    "sample_count": 192,
+    "unavailable_tool_runs": 8866,
     "unavailable_tool_runs_by_tool": {
       "angr": 0,
-      "binary-ninja": 1364,
+      "binary-ninja": 4224,
       "custom": 0,
       "ghidra": 0,
-      "ida-pro": 1364,
+      "ida-pro": 4224,
       "objdump": 0,
       "radare2": 0,
       "triton": 0,
-      "unicorn": 242
+      "unicorn": 418
     }
   },
   "archive": {
     "path": "docs/protection-adversarial-partial-run-2026-11-15-43682458593.json.gz",
-    "report_count": 12,
+    "report_count": 22,
     "report_format": "UTF-8 JSON strings keyed by shard index in a gzip-compressed JSON bundle",
-    "sha256": "85404a339d4f7153b3ef982f35ce9c41624266019b37edd8cc235ccdcced337f",
-    "size_bytes": 277870
+    "sha256": "1d5703cafa92e4edffe90c2994dc19e01e20b28ab5b12b1066b7d645e30ef5f4",
+    "size_bytes": 781775
   },
+  "benchmark_source_unchanged_since_source_commit": true,
+  "changed_paths_since_source_commit": [
+    ".github/workflows/release.yml",
+    "docs/one-zero-readiness.json",
+    "docs/protection-adversarial-partial-run-2026-11-15-43682458593-summary.json",
+    "docs/protection-adversarial-partial-run-2026-11-15-43682458593.json.gz",
+    "docs/protection-adversarial-shard-2026-11-15-43682458593-06-summary.json",
+    "docs/protection-adversarial-shard-2026-11-15-43682458593-06.json",
+    "docs/protection-platform-elf-arm-32-2026-11-15-43678223812.xml",
+    "docs/protection-platform-elf-arm64-2026-11-15-43678223812.xml",
+    "docs/protection-platform-elf-x86-32-2026-11-15-43678223812.xml",
+    "docs/protection-platform-evidence-2026-11-15-43678223812.json",
+    "docs/protection-platform-macos-arm64-2026-11-15-43678223812.xml",
+    "docs/protection-platform-preview-run-2026-11-15-43678223812.json",
+    "docs/protection-platform-windows-pe-2026-11-15-43678223812.xml",
+    "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812-summary.json",
+    "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz",
+    "docs/release-blockers.md",
+    "scripts/release_contract_workflows.py",
+    "tests/unit/test_published_adversarial_partial_run_43682458593.py",
+    "tests/unit/test_published_adversarial_shard_43682458593.py",
+    "tests/unit/test_published_differential_43678223812.py",
+    "tests/unit/test_release_workflow_contract.py"
+  ],
   "completed_shard_indices": [
     2,
+    3,
     4,
     5,
     6,
     7,
     8,
     9,
+    10,
+    11,
+    12,
     13,
     14,
     15,
+    16,
     17,
+    19,
+    23,
+    25,
     27,
+    28,
+    29,
     31
   ],
   "expected_tools": [
@@ -85,15 +119,269 @@
     "unicorn"
   ],
   "fixture_shard_count": 32,
+  "generated_against_commit": "fb531485bf576c78cc72a438c6472d4d2f01287b",
   "limitations": [
-    "Only the listed completed shards are included; the run is not complete.",
+    "This package contains only the listed completed shards; the 32-shard workflow has not completed.",
     "Binary Ninja and IDA Pro are unavailable in this runner; Unicorn support depends on fixture instructions.",
     "This evidence does not establish full analyzer coverage, cross-platform parity, or generalized resistance."
   ],
-  "published_at_commit": "5ca2e166fd9ee96392ab9eaa9b1f513fde3e3b8d",
-  "runtime_source_unchanged_since_source_commit": true,
   "schema_version": 1,
   "shards": {
+    "10": {
+      "completed_tool_runs": 132,
+      "completed_tool_runs_by_tool": {
+        "angr": 22,
+        "binary-ninja": 0,
+        "custom": 22,
+        "ghidra": 22,
+        "ida-pro": 0,
+        "objdump": 22,
+        "radare2": 22,
+        "triton": 22,
+        "unicorn": 0
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 198,
+      "fixture_shard": {
+        "count": 32,
+        "index": 10
+      },
+      "fixtures": [
+        "generated_abi_gcc-static-o2"
+      ],
+      "index": 10,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812060,
+        "name": "benchmark (10)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/10.json",
+        "path": null,
+        "sha256": "ea579903dc8755a36bdf3f57b36c11048f3e64dd45b075b67fcec4e47344dbaf",
+        "size_bytes": 296410
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 1,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 22
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 22
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 22
+        }
+      },
+      "unavailable_tool_runs": 66,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 22,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 22,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 22
+      }
+    },
+    "11": {
+      "completed_tool_runs": 132,
+      "completed_tool_runs_by_tool": {
+        "angr": 22,
+        "binary-ninja": 0,
+        "custom": 22,
+        "ghidra": 22,
+        "ida-pro": 0,
+        "objdump": 22,
+        "radare2": 22,
+        "triton": 22,
+        "unicorn": 0
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 198,
+      "fixture_shard": {
+        "count": 32,
+        "index": 11
+      },
+      "fixtures": [
+        "generated_recursive_gcc-static-o2"
+      ],
+      "index": 11,
+      "job": {
+        "conclusion": "success",
+        "id": 132715811969,
+        "name": "benchmark (11)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/11.json",
+        "path": null,
+        "sha256": "409aabae391d96ef009a36a6a16ff0daf85449e4db856d94dba6505e128e9fea",
+        "size_bytes": 296434
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 1,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 22
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 22
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 22
+        }
+      },
+      "unavailable_tool_runs": 66,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 22,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 22,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 22
+      }
+    },
+    "12": {
+      "completed_tool_runs": 132,
+      "completed_tool_runs_by_tool": {
+        "angr": 22,
+        "binary-ninja": 0,
+        "custom": 22,
+        "ghidra": 22,
+        "ida-pro": 0,
+        "objdump": 22,
+        "radare2": 22,
+        "triton": 22,
+        "unicorn": 0
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 198,
+      "fixture_shard": {
+        "count": 32,
+        "index": 12
+      },
+      "fixtures": [
+        "generated_xlat_gcc-static-o2"
+      ],
+      "index": 12,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812040,
+        "name": "benchmark (12)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/12.json",
+        "path": null,
+        "sha256": "dfc532a2a0f7e0fa501b3b3c351764b31be76e43030aed6c36d66e45b1fc267a",
+        "size_bytes": 296224
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 1,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 22
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 22
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 22
+        }
+      },
+      "unavailable_tool_runs": 66,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 22,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 22,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 22
+      }
+    },
     "13": {
       "completed_tool_runs": 132,
       "completed_tool_runs_by_tool": {
@@ -349,6 +637,91 @@
         "unicorn": 22
       }
     },
+    "16": {
+      "completed_tool_runs": 132,
+      "completed_tool_runs_by_tool": {
+        "angr": 22,
+        "binary-ninja": 0,
+        "custom": 22,
+        "ghidra": 22,
+        "ida-pro": 0,
+        "objdump": 22,
+        "radare2": 22,
+        "triton": 22,
+        "unicorn": 0
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 198,
+      "fixture_shard": {
+        "count": 32,
+        "index": 16
+      },
+      "fixtures": [
+        "generated_memory_gcc-static-o2"
+      ],
+      "index": 16,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812026,
+        "name": "benchmark (16)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/16.json",
+        "path": null,
+        "sha256": "e269b22097248c6c7fff350c1f0dc1c6331aa234a42b15c3927e15db584d1b91",
+        "size_bytes": 296346
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 1,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 22
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 22
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 22
+        }
+      },
+      "unavailable_tool_runs": 66,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 22,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 22,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 22
+      }
+    },
     "17": {
       "completed_tool_runs": 132,
       "completed_tool_runs_by_tool": {
@@ -434,6 +807,110 @@
         "unicorn": 22
       }
     },
+    "19": {
+      "completed_tool_runs": 3542,
+      "completed_tool_runs_by_tool": {
+        "angr": 506,
+        "binary-ninja": 0,
+        "custom": 506,
+        "ghidra": 506,
+        "ida-pro": 0,
+        "objdump": 506,
+        "radare2": 506,
+        "triton": 506,
+        "unicorn": 506
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 4554,
+      "fixture_shard": {
+        "count": 32,
+        "index": 19
+      },
+      "fixtures": [
+        "elf_vm_bswap_x86_64",
+        "elf_vm_cmp8imm_x86_64",
+        "elf_vm_fppackedidxnb_x86_64",
+        "elf_vm_idxcallnb_x86_64",
+        "elf_vm_imul3_x86_64",
+        "elf_vm_incdecsynth_x86_64",
+        "elf_vm_interp_x86_64",
+        "elf_vm_memops_x86_64",
+        "elf_vm_multiexit_x86_64",
+        "elf_vm_opmemidx_x86_64",
+        "generated_abi_clang-o0",
+        "generated_branch_gcc-o3",
+        "generated_cpp_clangxx-o2",
+        "generated_cpp_gxx-o1",
+        "generated_extended_gcc-o2",
+        "generated_memory_gcc-o0",
+        "generated_pointers_gcc-stripped-o2",
+        "generated_stack_strings_gcc-pie-o2",
+        "generated_string_gcc-os",
+        "generated_threads_clang-o2",
+        "generated_threads_gcc-o2",
+        "generated_xlat_clang-o0",
+        "generated_xlat_gcc-os"
+      ],
+      "index": 19,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812063,
+        "name": "benchmark (19)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/19.json",
+        "path": null,
+        "sha256": "fcd1f0b735d519124a4d28d137dae917063cdffd09c436bfeffa848af8402b40",
+        "size_bytes": 3015354
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 23,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 506
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 506
+        }
+      },
+      "unavailable_tool_runs": 1012,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 506,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 506,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      }
+    },
     "2": {
       "completed_tool_runs": 132,
       "completed_tool_runs_by_tool": {
@@ -517,6 +994,224 @@
         "radare2": 0,
         "triton": 0,
         "unicorn": 22
+      }
+    },
+    "23": {
+      "completed_tool_runs": 4158,
+      "completed_tool_runs_by_tool": {
+        "angr": 594,
+        "binary-ninja": 0,
+        "custom": 594,
+        "ghidra": 594,
+        "ida-pro": 0,
+        "objdump": 594,
+        "radare2": 594,
+        "triton": 594,
+        "unicorn": 594
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 5346,
+      "fixture_shard": {
+        "count": 32,
+        "index": 23
+      },
+      "fixtures": [
+        "elf_vm_boolflagdead_x86_64",
+        "elf_vm_call_stack_args_x86_64",
+        "elf_vm_fparithidxnb_x86_64",
+        "elf_vm_fpcmpmem_x86_64",
+        "elf_vm_fpmove_x86_64",
+        "elf_vm_fppacked_x86_64",
+        "elf_vm_fpriprel_x86_64",
+        "elf_vm_movx_x86_64",
+        "elf_vm_phaddmem_x86_64",
+        "elf_vm_run_memfallback_x86_64",
+        "elf_vm_simdint_x86_64",
+        "elf_vm_vex128_phaddd_x86_64",
+        "elf_vm_vpmuldq_x86_64",
+        "elf_x86_64",
+        "generated_abi_gcc-o2",
+        "generated_calls_clang-o2",
+        "generated_calls_clang-pie-o2",
+        "generated_cpp_exceptions_clangxx-o0",
+        "generated_extended_gcc-o3",
+        "generated_lookup_gcc-o3",
+        "generated_memory_gcc-o2",
+        "generated_pointers_clang-o0",
+        "generated_pointers_gcc-o3",
+        "generated_recursive_clang-pie-o2",
+        "generated_simd_gcc-os",
+        "generated_stack_strings_gcc-o0",
+        "generated_xlat_gcc-stripped-o2"
+      ],
+      "index": 23,
+      "job": {
+        "conclusion": "success",
+        "id": 132715811965,
+        "name": "benchmark (23)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/23.json",
+        "path": null,
+        "sha256": "2cb0c859cfa2792dc7294d3f5700d25b96de61324c10364a8c19ea367c682ba8",
+        "size_bytes": 3511103
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 27,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 594
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 594
+        }
+      },
+      "unavailable_tool_runs": 1188,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 594,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 594,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      }
+    },
+    "25": {
+      "completed_tool_runs": 3938,
+      "completed_tool_runs_by_tool": {
+        "angr": 572,
+        "binary-ninja": 0,
+        "custom": 572,
+        "ghidra": 572,
+        "ida-pro": 0,
+        "objdump": 572,
+        "radare2": 572,
+        "triton": 572,
+        "unicorn": 506
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 5148,
+      "fixture_shard": {
+        "count": 32,
+        "index": 25
+      },
+      "fixtures": [
+        "elf_cff_flagdead_x86_64",
+        "elf_vm_addflagdead_x86_64",
+        "elf_vm_callflags_stack_x86_64",
+        "elf_vm_dynamic_x86_64",
+        "elf_vm_fppackedrip_x86_64",
+        "elf_vm_icall_x86_64",
+        "elf_vm_mcall_x86_64",
+        "elf_vm_movxreg_x86_64",
+        "elf_vm_pushmem_x86_64",
+        "elf_vm_thread_cmpxchg_x86_64",
+        "elf_vm_vex128_x86_64",
+        "elf_vm_vex256_unpack_x86_64",
+        "elf_vm_vex_word_shuffle_x86_64",
+        "generated_abi_gcc-o0",
+        "generated_abi_gcc-os",
+        "generated_abi_gcc-pie-o2",
+        "generated_branch_clang-pie-o2",
+        "generated_cpp_clangxx-stripped-o2",
+        "generated_cpp_exceptions_clangxx-o2",
+        "generated_cpp_exceptions_clangxx-stripped-o2",
+        "generated_extended_gcc-o0",
+        "generated_lookup_clang-o0",
+        "generated_memory_gcc-os",
+        "generated_pointers_gcc-o0",
+        "generated_stack_strings_gcc-o2",
+        "generated_string_clang-o3"
+      ],
+      "index": 25,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812114,
+        "name": "benchmark (25)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/25.json",
+        "path": null,
+        "sha256": "93292ccfa9bbb111b75b8b1bcd5389ecd53f71fb370ae39f4997e5b045b0d01e",
+        "size_bytes": 3373142
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 26,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 572
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 572
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 66
+        }
+      },
+      "unavailable_tool_runs": 1210,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 572,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 572,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 66
       }
     },
     "27": {
@@ -624,6 +1319,302 @@
         "radare2": 0,
         "triton": 0,
         "unicorn": 0
+      }
+    },
+    "28": {
+      "completed_tool_runs": 3696,
+      "completed_tool_runs_by_tool": {
+        "angr": 528,
+        "binary-ninja": 0,
+        "custom": 528,
+        "ghidra": 528,
+        "ida-pro": 0,
+        "objdump": 528,
+        "radare2": 528,
+        "triton": 528,
+        "unicorn": 528
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 4752,
+      "fixture_shard": {
+        "count": 32,
+        "index": 28
+      },
+      "fixtures": [
+        "elf_vm_carry_rotate_x86_64",
+        "elf_vm_engarith_x86_64",
+        "elf_vm_fpcmp_x86_64",
+        "elf_vm_fpcmpidxnb_x86_64",
+        "elf_vm_gs_tlsidxnb_x86_64",
+        "elf_vm_isa_x86_64",
+        "elf_vm_prologue_x86_64",
+        "elf_vm_run_movxidxfallback_x86_64",
+        "elf_vm_shiftmicroop_x86_64",
+        "elf_vm_tls_x86_64",
+        "elf_vm_vex128_horizontal_x86_64",
+        "generated_calls_clang-o0",
+        "generated_calls_gcc-pie-o2",
+        "generated_cpp_exceptions_gxx-o3",
+        "generated_extended_gcc-pie-o2",
+        "generated_memory_gcc-stripped-o2",
+        "generated_recursive_clang-o0",
+        "generated_recursive_gcc-o2",
+        "generated_recursive_gcc-pie-o2",
+        "generated_signals_gcc-os",
+        "generated_stack_strings_gcc-stripped-o2",
+        "generated_string_gcc-o2",
+        "generated_threads_gcc-o0",
+        "generated_xlat_gcc-o1"
+      ],
+      "index": 28,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812073,
+        "name": "benchmark (28)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/28.json",
+        "path": null,
+        "sha256": "e7bacfe68d90440119d68086ffebf570212c3b0e21d998424cb135fb11f98517",
+        "size_bytes": 3143313
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 24,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 528
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 528
+        }
+      },
+      "unavailable_tool_runs": 1056,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 528,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 528,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      }
+    },
+    "29": {
+      "completed_tool_runs": 3850,
+      "completed_tool_runs_by_tool": {
+        "angr": 550,
+        "binary-ninja": 0,
+        "custom": 550,
+        "ghidra": 550,
+        "ida-pro": 0,
+        "objdump": 550,
+        "radare2": 550,
+        "triton": 550,
+        "unicorn": 550
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 4950,
+      "fixture_shard": {
+        "count": 32,
+        "index": 29
+      },
+      "fixtures": [
+        "elf_vm_cmp8_x86_64",
+        "elf_vm_fpenginearithrip_x86_64",
+        "elf_vm_fpmov_x86_64",
+        "elf_vm_fppackedmem_x86_64",
+        "elf_vm_lea_x86_64",
+        "elf_vm_not_x86_64",
+        "elf_vm_pushpop16_x86_64",
+        "elf_vm_run_idxfallback_x86_64",
+        "elf_vm_run_movxfallback_x86_64",
+        "elf_vm_shiftreg_x86_64",
+        "elf_vm_simdintarith_x86_64",
+        "elf_vm_simdwide_x86_64",
+        "generated_abi_clang-o2",
+        "generated_calls_gcc-o2",
+        "generated_cpp_exceptions_gxx-o0",
+        "generated_cpp_exceptions_gxx-o2",
+        "generated_extended_clang-pie-o2",
+        "generated_memory_clang-o2",
+        "generated_pointers_clang-o3",
+        "generated_pointers_clang-pie-o2",
+        "generated_signals_gcc-o2",
+        "generated_string_gcc-o1",
+        "generated_threads_gcc-pie-o2",
+        "generated_threads_gcc-stripped-o2",
+        "generated_xlat_gcc-o0"
+      ],
+      "index": 29,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812024,
+        "name": "benchmark (29)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/29.json",
+        "path": null,
+        "sha256": "e2aea1f6b0c0b1f4154b049f6fa9fb7f0939a57598941e07987870de74c09342",
+        "size_bytes": 3262060
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 25,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 550
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 550
+        }
+      },
+      "unavailable_tool_runs": 1100,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 550,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 550,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      }
+    },
+    "3": {
+      "completed_tool_runs": 132,
+      "completed_tool_runs_by_tool": {
+        "angr": 22,
+        "binary-ninja": 0,
+        "custom": 22,
+        "ghidra": 22,
+        "ida-pro": 0,
+        "objdump": 22,
+        "radare2": 22,
+        "triton": 22,
+        "unicorn": 0
+      },
+      "error_tool_runs": 0,
+      "error_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "expected_tool_count": 9,
+      "expected_tool_runs": 198,
+      "fixture_shard": {
+        "count": 32,
+        "index": 3
+      },
+      "fixtures": [
+        "generated_cpp_clangxx-static-o2"
+      ],
+      "index": 3,
+      "job": {
+        "conclusion": "success",
+        "id": 132715812018,
+        "name": "benchmark (3)"
+      },
+      "missing_tool_runs": 0,
+      "missing_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 0,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 0,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 0
+      },
+      "pass_count": 22,
+      "report": {
+        "archive_member": "reports/03.json",
+        "path": null,
+        "sha256": "9bedc6ad2738a7490e75addd15a0a3ac43e231841a9536dc42b92d4c822cf856",
+        "size_bytes": 296412
+      },
+      "report_has_no_analyst_host_paths": true,
+      "sample_count": 1,
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 22
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 22
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 22
+        }
+      },
+      "unavailable_tool_runs": 66,
+      "unavailable_tool_runs_by_tool": {
+        "angr": 0,
+        "binary-ninja": 22,
+        "custom": 0,
+        "ghidra": 0,
+        "ida-pro": 22,
+        "objdump": 0,
+        "radare2": 0,
+        "triton": 0,
+        "unicorn": 22
       }
     },
     "31": {

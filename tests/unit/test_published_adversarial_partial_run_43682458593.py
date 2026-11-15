@@ -15,15 +15,16 @@ _SUMMARY_PATH = _DOCS / "protection-adversarial-partial-run-2026-11-15-436824585
 _ARCHIVE_PATH = _DOCS / "protection-adversarial-partial-run-2026-11-15-43682458593.json.gz"
 _EXPECTED_RUN = 43_682_458_593
 _EXPECTED_SOURCE = "13ac80258a5a51e0c872abe600bc04f52366ba0c"
+_EXPECTED_BASE_COMMIT = "fb531485bf576c78cc72a438c6472d4d2f01287b"
 _STANDALONE_SHARD_INDEX = 6
 _EXPECTED_PASS_COUNT = 22
-_EXPECTED_SHARDS = (2, 4, 5, 6, 7, 8, 9, 13, 14, 15, 17, 27, 31)
-_EXPECTED_SAMPLE_COUNT = 62
-_EXPECTED_TOOL_RUNS = 12_276
-_COMPLETED_TOOL_RUNS = 9_306
-_UNAVAILABLE_TOOL_RUNS = 2_970
-_UNICORN_COMPLETED_RUNS = 1_122
-_UNICORN_UNAVAILABLE_RUNS = 242
+_EXPECTED_SHARDS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 23, 25, 27, 28, 29, 31)
+_EXPECTED_SAMPLE_COUNT = 192
+_EXPECTED_TOOL_RUNS = 38_016
+_COMPLETED_TOOL_RUNS = 29_150
+_UNAVAILABLE_TOOL_RUNS = 8_866
+_UNICORN_COMPLETED_RUNS = 3_806
+_UNICORN_UNAVAILABLE_RUNS = 418
 _EXPECTED_TOOLS = {
     "angr",
     "binary-ninja",
@@ -60,7 +61,13 @@ def test_adversarial_partial_run_manifest_binds_archive_to_source_and_run() -> N
     expect(
         summary["workflow_run"] == _EXPECTED_RUN
         and summary["source_commit"] == _EXPECTED_SOURCE
-        and summary["runtime_source_unchanged_since_source_commit"] is True
+        and summary["generated_against_commit"] == _EXPECTED_BASE_COMMIT
+        and summary["benchmark_source_unchanged_since_source_commit"] is True
+        and not any(
+            path.startswith(("r2morph/", "fixtures/", "scripts/adversarial_benchmark"))
+            or path in {"pyproject.toml", ".github/workflows/adversarial-benchmark.yml"}
+            for path in summary["changed_paths_since_source_commit"]
+        )
         and summary["archive"]
         == {
             "path": _ARCHIVE_PATH.relative_to(_ROOT).as_posix(),
