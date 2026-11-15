@@ -215,6 +215,18 @@ and
 [`protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json`](protection-adversarial-local-codevirtualization-2026-11-15-cbc61cef-summary.json).
 This is one local fixture and pass, not general parity or resistance evidence.
 
+The same source then ran all 22 passes over that fixture. CodeVirtualization
+and InstructionSubstitution applied; the other 20 passes were no-ops. The
+seven available analyzers completed all 22 rows each (154/198 total), with no
+tool errors or missing rows. Unicorn observed exit code 45 for every original
+and protected pair. Binary Ninja remained unavailable because its license was
+unavailable, Triton was not installed, and angr reported an unhooked address
+while completing its analysis. The hash-bound report and summary are
+[`protection-adversarial-local-allpasses-2026-11-15-55369212.json`](protection-adversarial-local-allpasses-2026-11-15-55369212.json)
+and
+[`protection-adversarial-local-allpasses-2026-11-15-55369212-summary.json`](protection-adversarial-local-allpasses-2026-11-15-55369212-summary.json).
+This one-fixture result does not establish general parity or resistance.
+
 The repository also runs an out-of-corpus native regression at
 [`test_code_virtualization_generic_isa_real.py`](../tests/integration/test_code_virtualization_generic_isa_real.py).
 It builds twenty-two temporary ELF x86-64 images: nine C images covering GCC

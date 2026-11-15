@@ -118,6 +118,17 @@ and [raw report](protection-adversarial-local-codevirtualization-2026-11-15-cbc6
 This confirms the local IDA/Ghidra setup for one fixture and one pass, but does
 not close all-analyzer coverage or establish generalized resistance.
 
+The same current source ran all 22 named passes on that fixture. Two passes
+applied and the other 20 were explicit no-ops; every pass row had 7/9 completed
+analyzer slots, for 154/198 completed rows overall with zero missing or errored
+rows. IDA Pro and Ghidra each completed all 22 pairs, and Unicorn returned 45
+for every original/protected pair. Binary Ninja was unavailable because its
+license was unavailable, Triton was not installed, and angr logged an
+unhooked-address warning while completing its rows. The raw report and
+hash-bound [summary](protection-adversarial-local-allpasses-2026-11-15-55369212-summary.json)
+record the counts and scope. This remains one macOS fixture and does not close
+all-analyzer coverage or generalized resistance.
+
 The differential workflow [`43678223812`](https://github.com/seifreed/r2morph/actions/runs/43678223812)
 produced two separately validated aggregate artifacts from source commit
 `0e39d3ab`. Its five platform smoke reports cover 73 cases across ELF ARM32,

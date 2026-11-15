@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "source_commit": "553692129083620f1ce1827b3de32f1daec15ab2",
+  "source_report": "protection-adversarial-local-allpasses-2026-11-15-55369212.json",
+  "source_report_sha256": "79e7e68a093f2095ccf6209929c6a274e65f1c6d8b98fac41683cb3c87ffbd33",
+  "fixture": {
+    "name": "elf_vm_arith_x86_64",
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "execution_context": {
+    "platform": "macOS arm64",
+    "python": "3.12.16",
+    "ida_pro": "9.5",
+    "ghidra": "12.2"
+  },
+  "pass_summary": {
+    "expected_pass_runs": 22,
+    "applied_pass_runs": 2,
+    "no_op_pass_runs": 20,
+    "error_pass_runs": 0,
+    "omitted_pass_runs": 0,
+    "applied_passes": ["CodeVirtualization", "InstructionSubstitution"]
+  },
+  "analyzer_summary": {
+    "expected_tool_runs": 198,
+    "completed_tool_runs": 154,
+    "unavailable_tool_runs": 44,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ghidra",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "completed_tool_runs_by_tool": {
+      "angr": 22,
+      "custom": 22,
+      "ghidra": 22,
+      "ida-pro": 22,
+      "objdump": 22,
+      "radare2": 22,
+      "unicorn": 22
+    },
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 22,
+      "triton": 22
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": "analyzer license is unavailable",
+      "triton": "module 'triton' is unavailable"
+    }
+  },
+  "observations": {
+    "unicorn_exit_code_pairs": 22,
+    "unicorn_original_exit_code": 45,
+    "unicorn_protected_exit_code": 45,
+    "ida_pro_decompilation_pairs": 22,
+    "ghidra_decompilation_pairs": 22
+  },
+  "warnings": [
+    "angr reported an unhooked address at 0x7002ce; all 22 analyzer rows completed."
+  ],
+  "limitations": [
+    "This is one local ELF fixture on macOS arm64, not general cross-platform evidence.",
+    "Only CodeVirtualization and InstructionSubstitution applied; the other 20 passes were explicit no-ops on this fixture.",
+    "Binary Ninja could not analyze the fixture because its license was unavailable.",
+    "Triton could not analyze the fixture because its Python module was unavailable.",
+    "The bounded analyzer measurements do not establish generalized resistance."
+  ]
+}
