@@ -306,11 +306,18 @@ class LivenessAnalysis:
         for reg_name in live_registers:
             self._interference_graph.add_node(reg_name)
 
+        aliases_by_register: dict[Register, frozenset[Register]] = {}
+        for liveness in self._instruction_liveness.values():
+            for registers in (liveness.live_before, liveness.live_after):
+                for register in registers:
+                    if register not in aliases_by_register:
+                        aliases_by_register[register] = frozenset(register.aliases())
+
         for liveness in self._instruction_liveness.values():
             live = tuple(liveness.live_before | liveness.live_after)
             for index, first in enumerate(live):
                 for second in live[index + 1 :]:
-                    if not first.aliases().isdisjoint(second.aliases()):
+                    if not aliases_by_register[first].isdisjoint(aliases_by_register[second]):
                         self._interference_graph.add_edge(first.name, second.name)
 
     def _extract_registers_used(self, insn: dict[str, Any]) -> set[Register]:
