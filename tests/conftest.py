@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from r2morph.mutations.pattern_pool import clear_pattern_pools, get_pattern_pools, register_pattern_pool
 from tests.utils.process import run_command
 
 
@@ -54,6 +55,16 @@ def sample_binary(tmp_path):
     binary_file = tmp_path / "test_binary"
     binary_file.write_bytes(b"\x7fELF" + b"\x00" * 100)
     return binary_file
+
+
+@pytest.fixture
+def preserve_pattern_pool_registry():
+    """Restore production pattern pools after tests temporarily replace them."""
+    original_pools = get_pattern_pools()
+    yield
+    clear_pattern_pools()
+    for pool in original_pools:
+        register_pattern_pool(pool)
 
 
 @pytest.fixture

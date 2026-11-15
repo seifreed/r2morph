@@ -183,7 +183,7 @@ class TestMutationPatternPool:
 
 
 class TestPatternPoolRegistry:
-    def test_register_and_get_pools(self):
+    def test_register_and_get_pools(self, preserve_pattern_pool_registry):
         clear_pattern_pools()
 
         pool = MutationPatternPool(
@@ -199,7 +199,7 @@ class TestPatternPoolRegistry:
 
         clear_pattern_pools()
 
-    def test_multiple_pools(self):
+    def test_multiple_pools(self, preserve_pattern_pool_registry):
         clear_pattern_pools()
 
         pool1 = MutationPatternPool(name="pool1", match_rules=[], generators=[])

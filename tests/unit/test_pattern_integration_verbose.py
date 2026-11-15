@@ -25,7 +25,7 @@ def _mov_zero_generator(operands, os_type):
     return [_create_instruction("xor", [operands[0], operands[0]], "xor")]
 
 
-def test_apply_patterns_verbose_logs_at_debug(caplog):
+def test_apply_patterns_verbose_logs_at_debug(caplog, preserve_pattern_pool_registry):
     clear_pattern_pools()
     register_pattern_pool(
         MutationPatternPool(
