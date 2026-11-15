@@ -526,6 +526,19 @@ class TestLivenessAnalysis:
         graph = analyzer.get_interference_graph()
         expect(isinstance(graph, InterferenceGraph))
 
+    def test_interference_graph_connects_live_register_aliases(self):
+        """Register aliases live at one instruction must interfere."""
+        analyzer = LivenessAnalysis(create_simple_cfg())
+        analyzer._instruction_liveness[0x1000] = InstructionLiveness(
+            address=0x1000,
+            instruction="mov eax, rax",
+            live_before={Register("eax", 32), Register("rax", 64)},
+        )
+
+        analyzer._build_interference_graph()
+
+        expect(analyzer.get_interference_graph().interfere("eax", "rax"))
+
     def test_conditional_cfg(self):
         """Test analysis on conditional CFG."""
         cfg = create_conditional_cfg()
