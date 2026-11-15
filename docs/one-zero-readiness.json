@@ -252,7 +252,9 @@
         "tests/unit/test_published_adversarial_run_43615553431.py",
         "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures.json.gz",
         "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json",
-        "docs/protection-vm-handler-diversity-local-2026-11-14-100seeds.json"
+        "docs/protection-vm-handler-diversity-local-2026-11-14-100seeds.json",
+        "docs/protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json",
+        "docs/protection-vm-resistance-local-2026-11-15-32seed-10fixtures-summary.json"
       ]
     },
     "stable_api_cli": {

@@ -6,6 +6,27 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-main continuous fuzz campaign
+
+Workflow run [`43654009381`](https://github.com/seifreed/r2morph/actions/runs/43654009381)
+passed on source commit `7374619a` across Ubuntu, macOS, and Windows. Each
+platform installed and tested the built wheel, then ran 5,000 deterministic
+cases against each of 10 targets: 150,000 target runs total with zero failures.
+Reports and SHA-256 digests are retained in the
+[campaign summary](continuous-fuzz-2026-11-14-43654009381-summary.json) and its
+three platform reports. The optional native Keystone installation ran only on
+macOS; all platforms still recorded 5,000 assembly target runs. This closes
+the current parser/VM/rewriter fuzzing evidence gap for those bounded inputs,
+but does not establish arbitrary-input semantic equivalence or independent
+adversarial validation.
+
+The current handler generator was also measured across 32 seeds on source
+commit `7374619a`. It produced 32 distinct opcode assignments and zero exact
+normalized collisions within an individual seed; four exact normalized
+matches remain between different seeds, so cross-seed handler diversity is
+still incomplete. The [hash-bound measurement summary](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
+records the result and limitations.
+
 ## Latest full CI verification on main
 
 Commit `e843192a45026f764c9a65e4403e6a5e28bc1037` passed CI run
@@ -36,15 +57,17 @@ and [its raw report](protection-fuzz-wheel-local-2026-11-14-84e1202f-macos.json)
 This adds current-commit evidence for the local macOS host only; the
 three-runner fuzz campaign is still running and platform parity remains open.
 
-The VM resistance campaign was expanded on source commit `1ab0deb9` to 10 ELF
+The current-source VM resistance campaign on `7374619a` covered 10 ELF
 fixtures and 32 seeds. Emulator-observed semantic parity and all tamper probes
-passed; progressive bytecode growth was supported on 7 fixtures. Native ELF
-execution was unavailable on this macOS host. A separate 100-seed handler
-analysis found 58 exact normalized matches across 25,500 handlers (0.227%),
-with no cluster larger than two and 100 distinct opcode assignments. This
-fails the current zero-match handler-diversity check, so the result is
-diagnostic evidence and the resistance gate remains open. Both reports are
-hash-bound in
+passed; opcode, dispatcher, and bytecode grammar diversity were observed, and
+progressive bytecode growth was supported on 7 fixtures. Each fixture's
+handler scan found four exact normalized cross-seed matches and zero
+within-seed duplicates, so the zero cross-seed match criterion remains open.
+Native ELF execution was unavailable on the macOS host, and independent human
+adversarial review remains pending. The complete report and hashes are in the
+[current VM summary](protection-vm-resistance-local-2026-11-15-32seed-10fixtures-summary.json)
+and its compressed [campaign archive](protection-vm-resistance-local-2026-11-15-32seed-10fixtures.json.gz).
+The prior source run remains available in
 [`protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json`](protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json).
 
 ## Resolved blockers

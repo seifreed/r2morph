@@ -1,0 +1,69 @@
+{
+  "artifacts": {
+    "campaign": {
+      "path": "protection-vm-resistance-local-2026-11-15-32seed-10fixtures.json.gz",
+      "sha256": "4fa4534e549a99a65d53b5b7eea42e3bf2f5bf1bca80c6c5887f9679fff66861",
+      "size_bytes": 68493,
+      "uncompressed_sha256": "c2c1b57792908777b8ed8b564f20a404c8311eeff1cc388c27c446a75bc83e26",
+      "uncompressed_size_bytes": 554220
+    }
+  },
+  "campaign": {
+    "first_seed": 20260820,
+    "fixture_count": 10,
+    "fixtures": [
+      "elf_vm_shift_x86_64",
+      "elf_vm_bigimm_x86_64",
+      "elf_vm_call_x86_64",
+      "elf_vm_icall_x86_64",
+      "elf_vm_varargs_x86_64",
+      "elf_vm_memwidth_x86_64",
+      "elf_vm_tls_x86_64",
+      "elf_vm_unwind_x86_64",
+      "elf_vm_multiexit_x86_64",
+      "elf_vm_simdint_x86_64"
+    ],
+    "seed_count": 32
+  },
+  "command": "scripts/vm_resistance_adversarial.py --fixture <10 published ELF fixtures> --first-seed 20260820 --count 32",
+  "environment": {
+    "architecture": "arm64",
+    "os": "macOS",
+    "python": "3.13.18"
+  },
+  "handler_diversity": {
+    "cross_seed_exact_normalised_matches_per_fixture": 4,
+    "cross_seed_largest_normalised_cluster": 2,
+    "within_seed_exact_normalised_matches_per_fixture": 0
+  },
+  "human_adversarial_review": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "pending_scope": [
+      "human-adversarial-validation",
+      "isa-opcode-diversity",
+      "handler-diversity",
+      "dispatcher-diversity",
+      "anti-tamper",
+      "progressive-bytecode-protection"
+    ],
+    "status": "pending-human-adversarial-review"
+  },
+  "measurement": {
+    "adversarial_recovery_probe_observed": true,
+    "all_tamper_probes_diverged": true,
+    "bytecode_grammar_diversity_observed": true,
+    "cross_fixture_distinct_artifacts": true,
+    "dispatcher_diversity_observed": true,
+    "handler_diversity_observed": false,
+    "opcode_assignment_diversity_observed": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 7,
+    "semantic_parity": true
+  },
+  "native_execution": {
+    "reason": "Native ELF execution requires Linux; outcomes were checked through the test emulator.",
+    "status": "unavailable"
+  },
+  "schema_version": 1,
+  "source_commit": "7374619a98b4cd4fccfa5821027262b408049ffd"
+}

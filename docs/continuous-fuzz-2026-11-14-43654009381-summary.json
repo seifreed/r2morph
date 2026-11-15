@@ -1,0 +1,86 @@
+{
+  "failure_count": 0,
+  "limitations": [
+    "This deterministic fuzz run validates parser, assembler, VM bytecode/dispatcher/decoder, relocation, and binary-rewriter surfaces; it does not prove semantic equivalence for arbitrary transformed binaries.",
+    "The optional native Keystone library installation was skipped on Ubuntu and Windows and installed on macOS; all three report files still record 5000 assembly target runs."
+  ],
+  "max_payload_bytes": 4096,
+  "platforms": {
+    "macos-15": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "path": "continuous-fuzz-2026-11-14-43654009381-macos-15.json",
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "workflow_artifact_sha256": "6df1635b8ea379bda5dcdbbd4ff3dee3c839a95200844f58a4b242538b7a8379"
+    },
+    "ubuntu-latest": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "path": "continuous-fuzz-2026-11-14-43654009381-ubuntu-latest.json",
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "workflow_artifact_sha256": "70e4ab35e8380ce4d2cd6054d44d7e62400f685272afadf17a80def9f5ffe4a5"
+    },
+    "windows-latest": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "path": "continuous-fuzz-2026-11-14-43654009381-windows-latest.json",
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      },
+      "workflow_artifact_sha256": "af87ed9e958966ce155bb746e0c8d5116ba150343d1ea4fc2d14b2545926ee9c"
+    }
+  },
+  "python_version": "3.12",
+  "report_handling": "Windows report line endings were normalized from CRLF to LF; the GitHub Actions artifact archive digest is retained per platform.",
+  "schema_version": 1,
+  "seed": 20260827,
+  "source_commit": "7374619a98b4cd4fccfa5821027262b408049ffd",
+  "target_runs_per_platform": 50000,
+  "total_target_runs": 150000,
+  "workflow_conclusion": "success",
+  "workflow_run_id": 43654009381,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43654009381"
+}

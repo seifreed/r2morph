@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "source_commit": "7374619a98b4cd4fccfa5821027262b408049ffd",
+  "measurement": {
+    "first_seed": 20260820,
+    "seed_count": 32,
+    "handler_count_per_seed": 255,
+    "opcode_assignment_unique_count": 32,
+    "cross_seed_exact_normalised_matches": 4,
+    "cross_seed_largest_normalised_cluster": 2,
+    "within_seed_exact_normalised_matches": 0,
+    "within_seed_largest_normalised_cluster": 1
+  },
+  "report": {
+    "path": "protection-vm-handler-diversity-local-2026-11-15-32seeds.json",
+    "sha256": "2aa417bf5394d358327e0ecc0c2f6377f2b832ad900417ad5d459d9b35da1a1f"
+  },
+  "limitations": [
+    "Four exact normalized handler matches remain across distinct seeds, so cross-seed handler diversity is not complete.",
+    "Normalized handler similarity is structural evidence and does not prove semantic equivalence or resistance to a determined analyst.",
+    "Independent human adversarial validation remains pending."
+  ]
+}
