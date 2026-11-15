@@ -1,0 +1,85 @@
+{
+  "limitations": [
+    "Bounded deterministic fuzzing does not prove arbitrary-input semantic equivalence.",
+    "The 103 macho_load_commands warnings per platform are retained parser diagnostics for malformed inputs.",
+    "This fuzz campaign does not establish cross-platform behavioral parity or adversarial resistance."
+  ],
+  "platforms": {
+    "macos": {
+      "artifact_id": 14177789409,
+      "artifact_sha256": "9d01b646686d0b297d71fd232a760b2b63e5ab99343094d16790355450120c93",
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-15-43755401024-macos.json",
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "ubuntu": {
+      "artifact_id": 14178300661,
+      "artifact_sha256": "95f8ef2c55e071dc65ce9adbe1b046d154dc86058fee053d6c8178778a3bd87b",
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-15-43755401024-ubuntu.json",
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "windows": {
+      "artifact_id": 14177739617,
+      "artifact_sha256": "ab9d5d3cb9a5d6ac7c20d1a3bf5fb691979ccf18592fbff9f4c4ebce8c43576f",
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-15-43755401024-windows.json",
+      "sha256": "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    }
+  },
+  "schema_version": 1,
+  "source_commit": "9deacd7ec0997fa2e3195729962d1fa52e10d271",
+  "total_cases": 15000,
+  "total_failures": 0,
+  "total_target_runs": 150000,
+  "workflow_run": 43755401024,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43755401024"
+}
