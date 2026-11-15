@@ -109,6 +109,20 @@ links the compressed full report. These bounded results add correctness
 evidence, but do not prove general cross-platform parity or adversarial
 resistance; both corresponding readiness criteria remain open.
 
+Adversarial workflow shard 6 from run
+[`43682458593`](https://github.com/seifreed/r2morph/actions/runs/43682458593)
+completed on source `13ac8025` for `generated_signals_gcc-static-o2`, covering
+all 22 passes and all nine expected analyzer slots. angr, Ghidra, objdump,
+radare2, Triton, and the custom analyzer each completed 22 runs with no tool
+errors or missing rows. Triton reached its configured instruction budget for
+both original and protected measurements. Binary Ninja's module and IDA's
+`idat` executable were unavailable, and Unicorn could not emulate an
+instruction in this fixture. The hash-bound [shard summary](protection-adversarial-shard-2026-11-15-43682458593-06-summary.json)
+and [raw report](protection-adversarial-shard-2026-11-15-43682458593-06.json)
+retain these exact counts. This single-fixture shard adds Triton evidence but
+does not close all-analyzer coverage or resistance; the 32-shard workflow is
+still running.
+
 ## Latest full CI verification on main
 
 The latest completed GitHub CI run checked here is

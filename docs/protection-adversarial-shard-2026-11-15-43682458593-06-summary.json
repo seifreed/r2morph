@@ -1,0 +1,72 @@
+{
+  "blocker_totals": {
+    "blocker_categories": 6,
+    "incomplete_tool_coverage": 3,
+    "non_completed_tool_runs_by_tool": 3,
+    "passes_without_applied_runs": 9,
+    "tools_without_full_completion": 3,
+    "total_adversarial_evidence_blockers": 24,
+    "unavailable_reasons_by_tool": 3,
+    "unavailable_tool_runs_by_tool": 3
+  },
+  "completed_tool_runs": {
+    "angr": 22,
+    "custom": 22,
+    "ghidra": 22,
+    "objdump": 22,
+    "radare2": 22,
+    "triton": 22
+  },
+  "error_tool_runs": {},
+  "expected_tool_runs": 198,
+  "expected_tools": [
+    "radare2",
+    "objdump",
+    "angr",
+    "binary-ninja",
+    "unicorn",
+    "triton",
+    "ida-pro",
+    "ghidra",
+    "custom"
+  ],
+  "fixture": "generated_signals_gcc-static-o2",
+  "fixture_shard": {
+    "count": 32,
+    "index": 6
+  },
+  "missing_tool_runs": {},
+  "pass_count": 22,
+  "report": {
+    "path": "docs/protection-adversarial-shard-2026-11-15-43682458593-06.json",
+    "sha256": "56957860f5917ab2455f284202decd6e15e12aeef8363087e0351a78a6a286a2",
+    "size_bytes": 296362
+  },
+  "runtime_source_unchanged_since_source_commit": true,
+  "sample_count": 1,
+  "schema_version": 1,
+  "shard_job": {
+    "conclusion": "success",
+    "id": 132715811932,
+    "name": "benchmark (6)"
+  },
+  "source_commit": "13ac80258a5a51e0c872abe600bc04f52366ba0c",
+  "triton_instruction_budget_exhausted": true,
+  "unavailable_reasons": {
+    "binary-ninja": {
+      "module 'binaryninja' is unavailable": 22
+    },
+    "ida-pro": {
+      "executable 'idat' is unavailable": 22
+    },
+    "unicorn": {
+      "the installed x86 emulator does not support an instruction in this fixture": 22
+    }
+  },
+  "unavailable_tool_runs": {
+    "binary-ninja": 22,
+    "ida-pro": 22,
+    "unicorn": 22
+  },
+  "workflow_run": 43682458593
+}
