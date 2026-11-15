@@ -111,6 +111,20 @@ resistance; both corresponding readiness criteria remain open.
 
 ## Latest full CI verification on main
 
+The latest completed GitHub CI run checked here is
+[`43680070257`](https://github.com/seifreed/r2morph/actions/runs/43680070257)
+on source commit `13ac80258a5a51e0c872abe600bc04f52366ba0c`: all 15 jobs
+passed, with zero failed or skipped jobs. It covered unit and integration
+tests, installed-wheel and product smoke tests, property/fuzz validation,
+lint, type checking, and Linux, macOS, and Windows on Python 3.12 and 3.13.
+The later commit `68bb2d19` adds only published evidence, documentation, and a
+regression test; `r2morph/`, `scripts/`, and workflow files are unchanged from
+the CI-tested source. Its complete local suite passed on Python 3.14 with
+6,895 passed, 225 skipped, and 82.16% coverage. GitHub CI and the differential
+campaign for `68bb2d19` are still pending, so this does not claim those jobs
+have validated that commit. The parity, analyzer-coverage, and resistance
+criteria remain open.
+
 Commit `e843192a45026f764c9a65e4403e6a5e28bc1037` passed CI run
 [`43549915916`](https://github.com/seifreed/r2morph/actions/runs/43549915916)
 with all 15 jobs successful and none skipped. The run includes unit and
