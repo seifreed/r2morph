@@ -20,6 +20,20 @@ the current parser/VM/rewriter fuzzing evidence gap for those bounded inputs,
 but does not establish arbitrary-input semantic equivalence or independent
 adversarial validation.
 
+A later run [`43666015524`](https://github.com/seifreed/r2morph/actions/runs/43666015524)
+passed on source commit `f8586a1b` across the same three runners. It repeated
+the 5,000-case, 10-target campaign on the installed wheel: 150,000 target runs
+total and zero recorded failures. Each report records 103
+`macho_load_commands.warning` diagnostics; these remain visible and are not
+counted as campaign failures. The hash-bound
+[summary](continuous-fuzz-2026-11-15-f8586a1-summary.json) and the retained
+[Ubuntu](continuous-fuzz-2026-11-15-f8586a1-ubuntu.json),
+[macOS](continuous-fuzz-2026-11-15-f8586a1-macos.json), and
+[Windows](continuous-fuzz-2026-11-15-f8586a1-windows.json) reports establish
+bounded multi-platform fuzzing for this implementation revision. They do not
+establish arbitrary-input semantic equivalence, cross-platform behavioral
+parity, or independent adversarial validation.
+
 The handler generator was re-measured on source commit `f8586a1b` across 32
 seeds, with 255 handlers per generated interpreter. All 32 opcode assignments
 differed, both dispatcher variants occurred, and there were zero exact
