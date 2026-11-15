@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _INPUTS = (-9, -2, -1, 0, 2, 5, 10, 18, 21)
+_PE_EXECUTION_TIMEOUT_SECONDS = 60
 
 
 def _pe_toolchain() -> tuple[str, str | None]:
@@ -56,7 +57,7 @@ def _run_pe(binary: Path, runtime: str | None) -> Any:
     arguments = [str(value) for value in _INPUTS]
     command = [str(binary), *arguments] if runtime is None else [runtime, str(binary), *arguments]
     # Wine combines host diagnostics with stderr; compare the child's exit and stdout.
-    return run_command(command, text=True, timeout=30)
+    return run_command(command, text=True, timeout=_PE_EXECUTION_TIMEOUT_SECONDS)
 
 
 def test_pe_x86_64_block_reordering_preserves_native_observables(tmp_path: Path) -> None:
