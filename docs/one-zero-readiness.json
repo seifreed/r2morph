@@ -100,7 +100,13 @@
         "docs/protection-adversarial-triton-codevirtualization-f5f59e2c-summary.json",
         "tests/unit/test_published_codevirtualization_triton_f5f59e2c.py",
         "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829.json",
-        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json"
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json",
+        "docs/protection-adversarial-run-2026-11-16-43800549091.json.gz",
+        "docs/protection-adversarial-run-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-seed-diversity-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-bytecode-grammar-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml"
       ]
     },
     "complete_compatibility_contract": {
@@ -301,7 +307,13 @@
         "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e.json",
         "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json",
         "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829.json",
-        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json"
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json",
+        "docs/protection-adversarial-run-2026-11-16-43800549091.json.gz",
+        "docs/protection-adversarial-run-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-seed-diversity-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-bytecode-grammar-2026-11-16-43800549091.json",
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml"
       ]
     },
     "stable_api_cli": {
