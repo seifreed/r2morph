@@ -1,0 +1,67 @@
+{
+  "analyzer_summary": {
+    "completed_tool_runs": 8,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ghidra",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "triton",
+      "unicorn"
+    ],
+    "error_tool_runs": 0,
+    "expected_tool_runs": 9,
+    "missing_tool_runs": 0,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": "analyzer license is unavailable"
+    },
+    "unavailable_tool_runs": 1
+  },
+  "execution_context": {
+    "ghidra": "12.2",
+    "ida_pro": "9.5",
+    "platform": "Darwin arm64",
+    "python": "3.13.11",
+    "triton_source_commit": "0ff0315021c416995e169334b25eb84f818caaeb"
+  },
+  "fixture": {
+    "name": "elf_vm_arith_x86_64",
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "limitations": [
+    "One fixture and one applied pass do not establish complete analyzer coverage or generalized resistance.",
+    "Binary Ninja API loading succeeded, but the analyzer process was rejected because its license was invalid.",
+    "Triton was built from its upstream source in an isolated Python 3.13 environment; no project dependency was added.",
+    "Unicorn produced matching exit codes; the Linux ELF was not executed natively on this Darwin arm64 host.",
+    "IDA Pro and Ghidra decompiled both original and protected binaries; decompilation output is not a resistance score."
+  ],
+  "observations": {
+    "binary_ninja_license": "unavailable to the analyzer process",
+    "ghidra_original_and_protected_decompilation": "completed",
+    "ida_original_and_protected_decompilation": "completed",
+    "triton_instruction_budget_exhausted": false,
+    "triton_original_decoded": 6,
+    "triton_original_semantically_supported": 6,
+    "triton_protected_decoded": 3861,
+    "triton_protected_invalid_bytes": 29,
+    "triton_protected_semantically_supported": 3850,
+    "unicorn_original_exit_code": 45,
+    "unicorn_protected_exit_code": 45
+  },
+  "schema_version": 1,
+  "scope": {
+    "functions_virtualized": 1,
+    "partial_virtualization": 0,
+    "pass_status": "applied",
+    "passes": [
+      "CodeVirtualization"
+    ],
+    "unsupported_functions": 0
+  },
+  "source_commit": "e86a782959b50282cb41c8d851eba4c1e8de0965",
+  "source_report": "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829.json",
+  "source_report_sha256": "0a0ac3e4b32ab645e5ea1599b4d5bb7a8400de9bb7a893cb6d404991cc4dac90"
+}

@@ -98,7 +98,9 @@
         "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json",
         "docs/protection-adversarial-triton-codevirtualization-f5f59e2c.json",
         "docs/protection-adversarial-triton-codevirtualization-f5f59e2c-summary.json",
-        "tests/unit/test_published_codevirtualization_triton_f5f59e2c.py"
+        "tests/unit/test_published_codevirtualization_triton_f5f59e2c.py",
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829.json",
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -297,7 +299,9 @@
         "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d.json",
         "docs/protection-adversarial-current-main-local-2026-11-15-f7246d5d-summary.json",
         "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e.json",
-        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json"
+        "docs/protection-adversarial-current-main-local-2026-11-15-ec0cfa8e-summary.json",
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829.json",
+        "docs/protection-adversarial-current-main-local-2026-11-16-e86a7829-summary.json"
       ]
     },
     "stable_api_cli": {
