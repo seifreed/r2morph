@@ -106,7 +106,9 @@
         "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.json",
         "docs/protection-adversarial-seed-diversity-2026-11-16-43800549091.json",
         "docs/protection-adversarial-bytecode-grammar-2026-11-16-43800549091.json",
-        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml"
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209-summary.json",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz"
       ]
     },
     "complete_compatibility_contract": {

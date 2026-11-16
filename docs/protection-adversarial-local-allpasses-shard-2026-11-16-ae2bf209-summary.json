@@ -1,0 +1,116 @@
+{
+  "execution": {
+    "date": "2026-11-16",
+    "platform": "darwin-arm64"
+  },
+  "pass_status_counts": {
+    "applied": 8,
+    "errors": 0,
+    "no-op": 80
+  },
+  "provenance": "local-source-tree",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "report": {
+    "path": "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz",
+    "sha256": "46d17cbbb0adabd0b6b1f59b50f38e1b28353537eaefd607a9b768ec73582982",
+    "uncompressed_bytes": 748369,
+    "uncompressed_sha256": "0f1e8fcb4fb4a4cd8c18bd01a70d89e2ca29668402dc493f850934c65df799e3"
+  },
+  "schema_version": 1,
+  "scope": {
+    "expected_pass_runs": 88,
+    "fixtures": [
+      {
+        "bytes": 4632,
+        "name": "elf_vm_arith_x86_64",
+        "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+      },
+      {
+        "bytes": 4664,
+        "name": "elf_vm_call_x86_64",
+        "sha256": "a74b830c273088e2b58458e5227b839d0a1e07b422e34dfa6c42db5e10e08754"
+      },
+      {
+        "bytes": 4720,
+        "name": "elf_vm_multiexit_x86_64",
+        "sha256": "da69f24e60ccd15355e16cae20df3e3d0358d6f068c37ca3f06a36fb2dc4515c"
+      },
+      {
+        "bytes": 1008,
+        "name": "elf_vm_varargs_x86_64",
+        "sha256": "ac58d651a1110013d10f545fba83d7ec653da37e902d25a69904d4e067b436c0"
+      }
+    ],
+    "observed_pass_runs": 88,
+    "pass_count": 22
+  },
+  "source_commit": "ae2bf20962623ab2d905a2165d8fb217e56c1985",
+  "tool_coverage": {
+    "analyzers": {
+      "angr": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 88,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 88
+        }
+      },
+      "custom": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      },
+      "unicorn": {
+        "completed": 88,
+        "errors": 0,
+        "runs": 88,
+        "unavailable": 0
+      }
+    },
+    "completed_runs": 704,
+    "error_runs": 0,
+    "expected_runs": 792,
+    "unavailable_runs": 88
+  }
+}

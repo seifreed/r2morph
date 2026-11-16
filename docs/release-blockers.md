@@ -1090,6 +1090,8 @@ in the [VM evidence summary](protection-vm-resistance-run-2026-11-14-43615553431
 and linked archives. The result does not establish generalized resistance and
 the release criterion remains open.
 
+A fresh local all-pass shard on source commit `ae2bf209` covered four repository ELF fixtures across all 22 passes. The run recorded 88/88 pass rows and 792 expected analyzer slots: 704 completed, 88 unavailable, and zero tool or pass errors. IDA Pro, Ghidra, angr, radare2, objdump, Unicorn, Triton, and the custom analyzer completed all 88 slots each. Binary Ninja was unavailable for all 88 slots because its license was not available to the process. Eight pass rows applied and 80 were explicit no-ops. Fixture hashes, tool outcomes, and the raw report digest are bound in the [summary](protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209-summary.json) and its compressed [report](protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz). This adds current-source IDA coverage on four fixtures; it does not close all-analyzer coverage or establish generalized resistance.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
