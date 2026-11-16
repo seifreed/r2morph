@@ -79,6 +79,20 @@ Bandit passed on a clean worktree; pip-audit reported no known vulnerabilities
 for the fully resolved Linux/Python 3.13 dependency set, including optional
 extras.
 
+### Native Mach-O ARM64 differential rerun
+
+On the current source commit `7d3e5946`, macOS ARM64 with Python 3.14.10 and
+Clang 23.1.5 ran the five selected native execution cases in
+`tests/integration/test_mutation_nop_insertion_arm64.py` under `-W error`:
+NOP insertion, constant unfolding, instruction expansion, instruction
+substitution, and NOP-plus-substitution composition all passed. The
+[hash-bound report](protection-platform-macos-arm64-local-2026-11-16-7d3e5946.json)
+records the fixture and test-source hashes, command, outcomes, and limitations;
+the report contract is checked by
+`tests/unit/test_published_native_macho_arm64_7d3e5946.py`. Seven other cases in
+the module were deselected. This is one native host and five selected cases; it
+does not close full Mach-O ARM64 pass parity or cross-platform parity.
+
 ## Current-main continuous fuzz campaign
 
 Workflow run [`43654009381`](https://github.com/seifreed/r2morph/actions/runs/43654009381)

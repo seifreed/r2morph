@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "measurement": "native-macho-arm64-differential-smoke",
+  "source_commit": "7d3e5946a41fd5578e01ecef680bbf7e2ecf6043",
+  "host": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "python": "3.14.10",
+    "clang": "23.1.5"
+  },
+  "command": "python3.14 -W error -m pytest -v --no-cov --tb=short tests/integration/test_mutation_nop_insertion_arm64.py -k preserves_native_output",
+  "fixture": {
+    "path": "fixtures/dataset/macho_arm64",
+    "sha256": "18976a380749c7c00b6af9904fd8cc1565c162d3f55bdae3d11ee0d4c66b8d6f"
+  },
+  "test_file": {
+    "path": "tests/integration/test_mutation_nop_insertion_arm64.py",
+    "sha256": "b1f8aff3478f823ed4c1e76b01073c02c4dcf4d0df48431131b2ae1af5a99d2d"
+  },
+  "selected_case_count": 5,
+  "passed_case_count": 5,
+  "failed_case_count": 0,
+  "deselected_case_count": 7,
+  "cases": [
+    {
+      "name": "test_nop_insertion_arm64_preserves_native_output",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_constant_unfolding_arm64_preserves_native_output",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_instruction_expansion_arm64_preserves_native_output",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_instruction_substitution_arm64_preserves_native_output",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_nop_then_instruction_substitution_arm64_preserves_native_output",
+      "outcome": "passed"
+    }
+  ],
+  "limitations": [
+    "This rerun covers five selected native execution cases on one macOS arm64 host.",
+    "Seven other tests in the integration module were deselected by the name filter.",
+    "This does not establish full Mach-O arm64 pass parity or cross-platform parity."
+  ]
+}

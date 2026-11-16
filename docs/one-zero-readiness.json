@@ -178,7 +178,8 @@
         "docs/protection-platform-elf-arm64-2026-11-15-43678223812.xml",
         "docs/protection-platform-elf-x86-32-2026-11-15-43678223812.xml",
         "docs/protection-platform-macos-arm64-2026-11-15-43678223812.xml",
-        "docs/protection-platform-windows-pe-2026-11-15-43678223812.xml"
+        "docs/protection-platform-windows-pe-2026-11-15-43678223812.xml",
+        "docs/protection-platform-macos-arm64-local-2026-11-16-7d3e5946.json"
       ]
     },
     "documented_resistance_scope": {
