@@ -1,0 +1,101 @@
+{
+  "limitations": [
+    "Bounded deterministic fuzzing does not prove arbitrary-input semantic equivalence, cross-platform parity, or adversarial resistance.",
+    "The 103 macho_load_commands warnings per platform are retained parser diagnostics for malformed inputs."
+  ],
+  "line_ending_normalization": {
+    "windows": "CRLF to LF"
+  },
+  "platforms": {
+    "macos": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-16-43949336376-macos.json",
+      "runner": "macos-15",
+      "runtime": {
+        "os": "macos-15",
+        "package_source": "installed-wheel",
+        "python": "3.12"
+      },
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "ubuntu": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-16-43949336376-ubuntu.json",
+      "runner": "ubuntu-latest",
+      "runtime": {
+        "os": "ubuntu-latest",
+        "package_source": "installed-wheel",
+        "python": "3.12"
+      },
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    },
+    "windows": {
+      "cases": 5000,
+      "failure_count": 0,
+      "parser_diagnostic_counts": {
+        "macho_load_commands.warning": 103
+      },
+      "report": "docs/continuous-fuzz-2026-11-16-43949336376-windows.json",
+      "runner": "windows-latest",
+      "runtime": {
+        "os": "windows-latest",
+        "package_source": "installed-wheel",
+        "python": "3.12"
+      },
+      "sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+      "target_runs": {
+        "assembling": 5000,
+        "binary_parsers": 5000,
+        "binary_rewriter": 5000,
+        "elf_header_parser": 5000,
+        "macho_load_commands": 5000,
+        "pe_header_parser": 5000,
+        "relocations": 5000,
+        "vm_bytecode": 5000,
+        "vm_dispatcher": 5000,
+        "vm_instruction_decoder": 5000
+      }
+    }
+  },
+  "provenance": "github-actions-installed-wheel",
+  "schema_version": 1,
+  "seed": 20260827,
+  "source_commit": "6c60d58d186fc7725465313b79ce488dee1ee0c4",
+  "total_cases": 15000,
+  "total_failures": 0,
+  "total_target_runs": 150000,
+  "workflow_run": 43949336376,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43949336376"
+}

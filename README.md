@@ -193,6 +193,16 @@ seed, diagnostics, and limits are recorded in the
 This single-host deterministic run does not prove arbitrary-input semantic
 equivalence, cross-platform parity, or adversarial resistance.
 
+The current `main` wheel also passed the continuous fuzz workflow on Linux,
+macOS, and Windows: 5,000 deterministic cases for each of ten parser,
+assembler, VM, relocation, and rewriting targets per platform (150,000 target
+runs total), with zero failures. The three platform reports and their source/run
+hash manifest are recorded in
+[`continuous-fuzz-2026-11-16-43949336376-summary.json`](docs/continuous-fuzz-2026-11-16-43949336376-summary.json).
+Each platform retained 103 recoverable Mach-O parser diagnostics. This bounded
+campaign does not prove arbitrary-input equivalence, full platform parity, or
+adversarial resistance.
+
 The 2026-09-20 local adversarial campaign measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
 also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
