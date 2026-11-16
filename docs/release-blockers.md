@@ -137,9 +137,13 @@ with no failures, errors, or skips. The individual [JUnit reports](cross-platfor
 [ARM64 report](platform-elf-arm64-43949336892.xml),
 [x86-32 report](platform-elf-x86-32-43949336892.xml), and the
 [hash-bound summary](protection-platform-partial-run-2026-11-16-43949336892.json)
-preserve the evidence. The larger workflow was still queued at capture time.
-These bounded preview results do not establish full cross-platform pass parity
-or close the `cross_platform_parity` 1.0 criterion.
+preserve the initial evidence snapshot. The full workflow has since completed
+successfully: all 85 jobs passed, and its [platform aggregate](platform-evidence-summary-43949336892.json)
+reports five complete targets and 76/76 passing required cases with no failures,
+errors, skips, or missing required cases. The [completion manifest](protection-platform-completed-run-2026-11-16-43949336892.json)
+pins this result to the aggregate hash. These bounded preview tests do not
+establish full pass-by-platform parity or close the `cross_platform_parity`
+1.0 criterion.
 
 ### Differential corpus and extended-pass campaign
 

@@ -121,8 +121,11 @@ Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
 the [`partial platform report`](docs/protection-platform-partial-run-2026-11-16-43949336892.json).
-The workflow remained queued at capture time; these cases do not establish
-complete pass parity or promote preview targets to official support.
+The full workflow has since completed successfully (85/85 jobs); its aggregate
+confirms all five platform reports are complete, with no failures, errors, or
+skips. The [`completed run report`](docs/protection-platform-completed-run-2026-11-16-43949336892.json)
+pins the aggregate hash. These bounded preview cases do not establish complete
+pass parity or promote preview targets to official support.
 The local release validation for source commit `2c50cff3` built and installed
 the `0.4.0-alpha.3` wheel on Python 3.12/macOS ARM64, passed the complete test
 suite (7,006 passed, 226 skipped), validated the wheel and sdist with Twine,

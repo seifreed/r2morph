@@ -201,6 +201,9 @@
         "docs/platform-elf-arm64-43949336892.xml",
         "docs/platform-elf-x86-32-43949336892.xml",
         "tests/unit/test_published_platform_partial_run_43949336892.py",
+        "docs/platform-evidence-summary-43949336892.json",
+        "docs/protection-platform-completed-run-2026-11-16-43949336892.json",
+        "tests/unit/test_published_platform_completed_run_43949336892.py",
         "tests/integration/test_macho_x86_64_native.py",
         ".github/workflows/differential-corpus.yml"
       ]

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "measurement": "completed-cross-platform-differential-run",
+  "workflow_run_id": 43949336892,
+  "workflow_run_url": "https://github.com/seifreed/r2morph/actions/runs/43949336892",
+  "workflow_conclusion": "success",
+  "workflow_jobs": {
+    "total": 85,
+    "successful": 85,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "source_commit": "6c60d58d186fc7725465313b79ce488dee1ee0c4",
+  "aggregate_summary": "docs/platform-evidence-summary-43949336892.json",
+  "aggregate_summary_sha256": "f3c351824c798762d230089ff782427a2f15f624fbea667a351798cd8400ecd9",
+  "platforms": {
+    "macos-arm64": {"cases": 37, "passed": 37, "failures": 0, "errors": 0, "skipped": 0},
+    "windows-pe": {"cases": 18, "passed": 18, "failures": 0, "errors": 0, "skipped": 0},
+    "elf-arm32": {"cases": 6, "passed": 6, "failures": 0, "errors": 0, "skipped": 0},
+    "elf-arm64": {"cases": 7, "passed": 7, "failures": 0, "errors": 0, "skipped": 0},
+    "elf-x86-32": {"cases": 8, "passed": 8, "failures": 0, "errors": 0, "skipped": 0}
+  },
+  "totals": {
+    "platforms": 5,
+    "cases": 76,
+    "passed": 76,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "The aggregate is a bounded preview smoke suite, not full pass-by-platform parity.",
+    "Preview targets remain non-official in the support matrix; the cross_platform_parity 1.0 criterion stays open."
+  ]
+}
