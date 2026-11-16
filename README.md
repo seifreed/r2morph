@@ -110,6 +110,13 @@ The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
 checks applied instruction substitution, register substitution, and instruction
 expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity.
+The local release validation for source commit `2c50cff3` built and installed
+the `0.4.0-alpha.3` wheel on Python 3.12/macOS ARM64, passed the complete test
+suite (7,006 passed, 226 skipped), validated the wheel and sdist with Twine,
+and generated a vulnerability-free CycloneDX SBOM. This does not replace the
+Linux release workflow, GitHub provenance attestation, current human signoff,
+or the still-open 1.0 readiness gates; details and artifact hashes are in
+[`docs/release-validation-local-2026-11-16-2c50cff3.json`](docs/release-validation-local-2026-11-16-2c50cff3.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

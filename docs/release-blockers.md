@@ -6,6 +6,25 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Local installed-wheel release validation — 2026-11-16
+
+The wheel and source distribution for `0.4.0-alpha.3` were built from source
+commit `2c50cff3d40c9a37831f4725c3222e8c7ed6a355` on Python 3.12.16/macOS
+ARM64. Twine validated both artifacts, the isolated installed wheel imported
+the public API and reported the expected CLI version, and the complete
+release-suite command passed with **7,006 passed, 226 skipped, 0 failed**.
+`pip-audit` generated a CycloneDX SBOM and found no known vulnerabilities.
+Wheel, sdist, and SBOM SHA-256 values are pinned in the
+[local release validation manifest](release-validation-local-2026-11-16-2c50cff3.json).
+
+This is a local package-validation run, not the release workflow: it does not
+create GitHub provenance or publish to PyPI, and it ran on macOS ARM64 rather
+than the workflow's Linux runner. Stable release remains blocked by the open
+1.0 readiness criteria and the missing human approval for the exact source
+tree. The matching GitHub CI run
+[`43914393719`](https://github.com/seifreed/r2morph/actions/runs/43914393719)
+passed all 15 jobs on the same source commit.
+
 ## Latest completed CI validation
 
 CI run [`43701797813`](https://github.com/seifreed/r2morph/actions/runs/43701797813)

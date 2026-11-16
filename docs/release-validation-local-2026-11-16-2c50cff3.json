@@ -1,0 +1,80 @@
+{
+  "artifacts": {
+    "sbom": {
+      "filename": "sbom.cdx.json",
+      "sha256": "a613c9c8e8f4eff97ba09aa5f8db0d4632ef7fe916b657be8eec4bf514665e7b",
+      "size_bytes": 20040
+    },
+    "sdist": {
+      "filename": "r2morph-0.4.0a3.tar.gz",
+      "sha256": "a9e01477c54a498e1510da47ad66bcb9516c6b2cf01c1011b1e0a8f478a425f1",
+      "size_bytes": 862607
+    },
+    "wheel": {
+      "filename": "r2morph-0.4.0a3-py3-none-any.whl",
+      "sha256": "1906a72943b42b965090c693e105e0af6c76b778574ddd4749cb4c8a49fb310b",
+      "size_bytes": 1126710
+    }
+  },
+  "build": {
+    "command": "python -m build",
+    "sdist": "passed",
+    "wheel": "passed"
+  },
+  "dependency_audit": {
+    "command": "pip-audit -r requirements.txt -f cyclonedx-json",
+    "known_vulnerabilities": 0,
+    "sbom_format": "CycloneDX JSON",
+    "status": "passed"
+  },
+  "full_test_suite": {
+    "collected_items": 7232,
+    "command": "python -W error -m pytest --no-cov --tb=short",
+    "duration_seconds": 865.58,
+    "failed": 0,
+    "passed": 7006,
+    "runner": "installed wheel from isolated virtual environment",
+    "skipped": 226
+  },
+  "github_ci": {
+    "jobs": {
+      "failed": 0,
+      "successful": 15,
+      "total": 15
+    },
+    "run_id": 43914393719,
+    "source_commit": "2c50cff3d40c9a37831f4725c3222e8c7ed6a355",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43914393719"
+  },
+  "host": {
+    "machine_architecture": "arm64",
+    "operating_system": "Darwin",
+    "python_version": "3.12.16"
+  },
+  "installed_wheel_smoke": {
+    "cli_version": "passed",
+    "module_import": "passed",
+    "public_api_import": "passed",
+    "reported_version": "0.4.0-alpha.3"
+  },
+  "package_metadata": {
+    "twine_check": "passed",
+    "wheel_install": "passed"
+  },
+  "package_version": "0.4.0-alpha.3",
+  "release_scope": {
+    "limitations": [
+      "This local validation ran on macOS arm64; it does not replace the Linux release workflow.",
+      "The repository release workflow must generate provenance with GitHub OIDC.",
+      "The stable-major readiness ledger remains blocked by adversarial analyzer coverage, cross-platform parity, and published resistance evidence.",
+      "The current source tree still needs a matching independent human approval.",
+      "The test summary is retained, but the temporary wheel, sdist, and SBOM are not committed; their hashes are recorded above."
+    ],
+    "provenance_attestation": "not_generated",
+    "pypi_publication": "not_performed",
+    "stable_release": "blocked"
+  },
+  "schema_version": 1,
+  "source_commit": "2c50cff3d40c9a37831f4725c3222e8c7ed6a355",
+  "validation_date_utc": "2026-11-16"
+}
