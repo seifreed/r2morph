@@ -110,7 +110,9 @@
         "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209-summary.json",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz",
         "docs/protection-differential-run-2026-11-16-43859887107.json",
-        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json",
+        "docs/protection-ghidra-corpus-2026-11-16-981a45be.json",
+        "docs/protection-ghidra-corpus-2026-11-16-981a45be-summary.json"
       ]
     },
     "complete_compatibility_contract": {
