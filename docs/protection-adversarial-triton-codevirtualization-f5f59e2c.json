@@ -1,0 +1,361 @@
+{
+  "original": "elf_vm_fppackedidxnb_x86_64",
+  "pass_names": [
+    "CodeVirtualization"
+  ],
+  "passes": [
+    {
+      "functions_virtualized": 0,
+      "partial_virtualization": 0,
+      "pass_name": "CodeVirtualization",
+      "reason": "ssa_liveness: whole-function virtualization was not proven; partial virtualization is disabled: CFG, SSA, and liveness coverage were not proven",
+      "status": "omitted",
+      "unsupported_capabilities": {
+        "ssa_liveness": 1
+      },
+      "unsupported_functions": 1,
+      "unsupported_severities": {
+        "error": 1
+      }
+    }
+  ],
+  "protected": "protected",
+  "release_signoff_blocker_totals": {
+    "blocker_categories": 1,
+    "total_release_signoff_blockers": 1,
+    "unavailable_analyzers": 1
+  },
+  "release_signoff_blockers": {
+    "unavailable_analyzers": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 1
+      }
+    }
+  },
+  "schema_version": 3,
+  "tool_summary": {
+    "angr": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_failures_pairs": 1,
+      "metric_decompiler_function_limit_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 0,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_failures_delta": 0,
+      "total_decompiler_function_limit_delta": 0,
+      "total_decompiler_lines_delta": 0,
+      "total_duration_seconds": 0.06684374999895226,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "binary-ninja": {
+      "changed": 0,
+      "completed": 0,
+      "duration_pairs": 0,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "unavailable": 1,
+      "unavailable_reasons": {
+        "analyzer license is unavailable": 1
+      }
+    },
+    "custom": {
+      "changed": 0,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "ghidra": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 0,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_lines_delta": 0,
+      "total_duration_seconds": 8.215356832995894,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "ida-pro": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_error_count_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 0,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_error_count_delta": 0,
+      "total_decompiler_lines_delta": 0,
+      "total_duration_seconds": 6.458978125010617,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "objdump": {
+      "changed": 0,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_instruction_lines_pairs": 1,
+      "runs": 1,
+      "total_duration_seconds": 0.0,
+      "total_instruction_lines_delta": 0,
+      "unavailable": 0
+    },
+    "radare2": {
+      "changed": 0,
+      "completed": 1,
+      "duration_pairs": 0,
+      "errors": 0,
+      "metric_decompiler_bytes_pairs": 1,
+      "metric_decompiler_entrypoints_pairs": 1,
+      "metric_decompiler_lines_pairs": 1,
+      "metric_functions_pairs": 1,
+      "runs": 1,
+      "total_decompiler_bytes_delta": 0,
+      "total_decompiler_entrypoints_delta": 0,
+      "total_decompiler_lines_delta": 0,
+      "total_duration_seconds": 0.0,
+      "total_functions_delta": 0,
+      "unavailable": 0
+    },
+    "triton": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "metric_decoded_instructions_pairs": 1,
+      "metric_invalid_bytes_pairs": 1,
+      "metric_semantically_supported_instructions_pairs": 1,
+      "metric_symbolic_expressions_pairs": 1,
+      "runs": 1,
+      "total_decoded_instructions_delta": 0,
+      "total_duration_seconds": 0.0007202499837148935,
+      "total_invalid_bytes_delta": 0,
+      "total_semantically_supported_instructions_delta": 0,
+      "total_symbolic_expressions_delta": 0,
+      "unavailable": 0
+    },
+    "unicorn": {
+      "changed": 1,
+      "completed": 1,
+      "duration_pairs": 1,
+      "errors": 0,
+      "runs": 1,
+      "total_duration_seconds": 0.0014450839953497052,
+      "unavailable": 0
+    }
+  },
+  "tools": [
+    {
+      "changed": false,
+      "original": {
+        "decompiler_bytes": 462,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_status": "completed",
+        "functions": 1,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "decompiler_bytes": 462,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 12,
+        "decompiler_status": "completed",
+        "functions": 1,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "radare2"
+    },
+    {
+      "changed": false,
+      "original": {
+        "instruction_lines": 8,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "instruction_lines": 8,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "objdump"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 194,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 7,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.04195345799962524,
+        "functions": 2,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "decompiler_bytes": 194,
+        "decompiler_entrypoints": 1,
+        "decompiler_failures": 0,
+        "decompiler_function_limit": 4,
+        "decompiler_lines": 7,
+        "decompiler_status": "completed",
+        "duration_seconds": 0.02489029199932702,
+        "functions": 2,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "angr"
+    },
+    {
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "reason": "analyzer license is unavailable",
+      "status": "unavailable",
+      "tool": "binary-ninja"
+    },
+    {
+      "changed": true,
+      "original": {
+        "duration_seconds": 0.0010155839991057292,
+        "exit_code": 6,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "duration_seconds": 0.00042949999624397606,
+        "exit_code": 6,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "unicorn"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decoded_instructions": 8,
+        "duration_seconds": 0.0004742079909192398,
+        "instruction_budget_exhausted": false,
+        "invalid_bytes": 0,
+        "semantically_supported_instructions": 8,
+        "status": "completed",
+        "symbolic_expressions": 33
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "decoded_instructions": 8,
+        "duration_seconds": 0.00024604199279565364,
+        "instruction_budget_exhausted": false,
+        "invalid_bytes": 0,
+        "semantically_supported_instructions": 8,
+        "status": "completed",
+        "symbolic_expressions": 33
+      },
+      "status": "completed",
+      "tool": "triton"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 150,
+        "decompiler_entrypoints": 1,
+        "decompiler_error_count": 0,
+        "decompiler_lines": 5,
+        "decompiler_status": "completed",
+        "duration_seconds": 3.5672940830118023,
+        "functions": 1,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "decompiler_bytes": 150,
+        "decompiler_entrypoints": 1,
+        "decompiler_error_count": 0,
+        "decompiler_lines": 5,
+        "decompiler_status": "completed",
+        "duration_seconds": 2.891684041998815,
+        "functions": 1,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "ida-pro"
+    },
+    {
+      "changed": true,
+      "original": {
+        "decompiler_bytes": 487,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 17,
+        "decompiler_status": "completed",
+        "duration_seconds": 4.335336541000288,
+        "functions": 1,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "decompiler_bytes": 487,
+        "decompiler_entrypoints": 1,
+        "decompiler_lines": 17,
+        "decompiler_status": "completed",
+        "duration_seconds": 3.8800202919956064,
+        "functions": 1,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "ghidra"
+    },
+    {
+      "changed": false,
+      "original": {
+        "functions": 1,
+        "status": "completed"
+      },
+      "pass_name": "CodeVirtualization",
+      "pass_status": "omitted",
+      "protected": {
+        "functions": 1,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "custom"
+    }
+  ]
+}

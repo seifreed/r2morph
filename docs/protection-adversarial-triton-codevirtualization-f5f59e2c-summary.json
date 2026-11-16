@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "source_commit": "f5f59e2c87574692bbc4013b03994c2a079aa938",
+  "source_report": "docs/protection-adversarial-triton-codevirtualization-f5f59e2c.json",
+  "source_report_sha256": "a72aa006bdd1a194565cda95c371b2fd6969c94918c2100a3142c5c622b4fd91",
+  "fixture": {
+    "path": "fixtures/dataset/elf_vm_fppackedidxnb_x86_64",
+    "sha256": "a5b98d15463806174fdf87a6ac74ada040ac46690d2dfd0bbbbce4be6a7d63c7"
+  },
+  "toolchain": {
+    "host": "macOS ARM64",
+    "python": "3.13.11",
+    "triton_source_commit": "0ff0315021c416995e169334b25eb84f818caaeb",
+    "triton_dependencies": {
+      "capstone": "5.0.9",
+      "z3": "5.3.3.0"
+    },
+    "triton_upstream_tests": {
+      "passed": 48,
+      "failed": 0
+    },
+    "analyzers": {
+      "angr": "10.0.7",
+      "binary-ninja": "5.4.9678-dev Personal; invalid license",
+      "ghidra": "12.2",
+      "ida-pro": "9.5",
+      "unicorn": "2.1.4"
+    }
+  },
+  "observations": {
+    "pass_status": "omitted",
+    "pass_reason": "ssa_liveness: whole-function virtualization was not proven; partial virtualization is disabled: CFG, SSA, and liveness coverage were not proven",
+    "functions_virtualized": 0,
+    "unsupported_functions": 1,
+    "expected_analyzer_runs": 9,
+    "completed_analyzer_runs": 8,
+    "unavailable_analyzer_runs": 1,
+    "error_analyzer_runs": 0,
+    "unavailable_analyzers": {
+      "binary-ninja": "analyzer license is unavailable"
+    },
+    "triton": {
+      "status": "completed",
+      "original_decoded_instructions": 8,
+      "original_semantically_supported_instructions": 8,
+      "protected_decoded_instructions": 8,
+      "protected_semantically_supported_instructions": 8,
+      "invalid_bytes": 0,
+      "instruction_budget_exhausted": false,
+      "symbolic_expressions": 33
+    },
+    "native_exit_code": {
+      "original": 6,
+      "protected": 6,
+      "interpretation": "the pass was omitted, so this is not transformed-binary equivalence evidence"
+    },
+    "decompilers": {
+      "ida-pro": "completed for original and protected inputs",
+      "ghidra": "completed for original and protected inputs"
+    }
+  },
+  "limitations": [
+    "One fixture and one non-applied pass do not establish virtualization correctness or resistance.",
+    "Binary Ninja remains unavailable because this host has no valid license.",
+    "The readiness criteria all_named_adversarial_analyzers and published_resistance_results remain open."
+  ]
+}
