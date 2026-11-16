@@ -230,7 +230,8 @@
         "docs/protection-platform-windows-pe-2026-11-13-43498875302.xml",
         "docs/protection-differential-run-2026-11-14-43534838628.json",
         "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812-summary.json",
-        "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz"
+        "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz",
+        "docs/protection-differential-run-2026-11-16-43835267898.json"
       ]
     },
     "published_resistance_results": {

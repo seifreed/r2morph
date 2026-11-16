@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "measurement": "differential-corpus-and-extended-pass-evidence",
+  "source_commit": "7d3e5946a41fd5578e01ecef680bbf7e2ecf6043",
+  "workflow": {
+    "name": "Differential Corpus By Pass",
+    "run_id": 43835267898,
+    "conclusion": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/43835267898",
+    "artifact": "differential-corpus-merged-43835267898-1"
+  },
+  "scope": {
+    "platform": {
+      "architecture": "x86-64",
+      "format": "ELF",
+      "os": "linux"
+    },
+    "platform_gap_scope": {
+      "architectures": [
+        "AArch64",
+        "ARM",
+        "x86"
+      ],
+      "formats": [
+        "Mach-O",
+        "PE"
+      ]
+    },
+    "corpus_families": [
+      "generated-cpp-x86-64",
+      "generated-elf-x86-64",
+      "repository-fixtures"
+    ],
+    "generated_fixture_count": 200,
+    "input_sources": [
+      "default-argv",
+      "generated-argv"
+    ],
+    "runs_per_pass": 1086
+  },
+  "core_passes": {
+    "pass_count": 10,
+    "passes": [
+      {
+        "name": "BlockReordering",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 42,
+        "omitted_runs": 1044,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "CodeVirtualization",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 1086,
+        "omitted_runs": 0,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "ConstantUnfolding",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 646,
+        "omitted_runs": 440,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "ControlFlowFlattening",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 147,
+        "omitted_runs": 939,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "DeadCodeInjection",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 159,
+        "omitted_runs": 927,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "InstructionExpansion",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 6,
+        "omitted_runs": 1080,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "InstructionSubstitution",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 649,
+        "omitted_runs": 437,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "NopInsertion",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 63,
+        "omitted_runs": 1023,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "PatternSubstitution",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 687,
+        "omitted_runs": 399,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "RegisterSubstitution",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 80,
+        "omitted_runs": 1006,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      }
+    ]
+  },
+  "extended_passes": {
+    "pass_count": 12,
+    "passes": [
+      {
+        "name": "APIHashing",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 72,
+        "omitted_runs": 1014,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "AntiDisassembly",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 172,
+        "omitted_runs": 914,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "CodeMobility",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 562,
+        "omitted_runs": 524,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "DataFlowMutation",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 33,
+        "omitted_runs": 1053,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "FunctionOutlining",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 531,
+        "omitted_runs": 555,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "ImportObfuscation",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 531,
+        "omitted_runs": 555,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "OpaquePredicates",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 522,
+        "omitted_runs": 564,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "PolymorphicEngine",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 684,
+        "omitted_runs": 402,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "SelfModifyingCode",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 102,
+        "omitted_runs": 984,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "ShortJumpPatching",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 36,
+        "omitted_runs": 1050,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "StackStrings",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 18,
+        "omitted_runs": 1068,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      },
+      {
+        "name": "StringObfuscation",
+        "complete_evidence_runs": 1086,
+        "complete_evidence_coverage_percent": 100.0,
+        "applied_runs": 111,
+        "omitted_runs": 975,
+        "error_runs": 0,
+        "semantic_failures": 0,
+        "runtime_observable_failures": 0
+      }
+    ]
+  },
+  "campaign_outcomes": {
+    "core_semantic_failures": 0,
+    "core_runtime_observable_failures": 0,
+    "extended_semantic_failures": 0,
+    "extended_runtime_observable_failures": 0,
+    "core_missing_complete_evidence_runs": 0,
+    "extended_missing_complete_evidence_runs": 0,
+    "extended_maturity_evidence_blockers": {},
+    "continuous_platform_gap_blockers": {
+      "architectures": [
+        "AArch64",
+        "ARM",
+        "x86"
+      ],
+      "formats": [
+        "Mach-O",
+        "PE"
+      ]
+    }
+  },
+  "artifact_members": [
+    {
+      "name": "differential-corpus-merged.json",
+      "size_bytes": 187932613,
+      "sha256": "a4a9571247736ddd274ab8866ff3bde57b273e6efa4b4eaf632c3bd4d0fb4890"
+    },
+    {
+      "name": "extended-maturity-merged.json",
+      "size_bytes": 225531366,
+      "sha256": "b99b350ba41c6a88334d78fa7e47f51f5ba244a71acaf357f25f2993cf5d496a"
+    }
+  ],
+  "limitations": [
+    "Core platform scope is Linux ELF x86-64; the report retains PE, Mach-O, ARM, AArch64, and x86 as platform gaps.",
+    "The primary core campaign includes 10 passes; the separate extended campaign covers 12 additional passes.",
+    "Applied-run counts are lower than complete-evidence run counts where passes explicitly omitted ineligible samples.",
+    "This differential campaign does not establish named-analyzer completeness or generalized resistance."
+  ]
+}

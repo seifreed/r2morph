@@ -93,6 +93,22 @@ the report contract is checked by
 the module were deselected. This is one native host and five selected cases; it
 does not close full Mach-O ARM64 pass parity or cross-platform parity.
 
+### Differential corpus and extended-pass campaign
+
+Differential workflow [`43835267898`](https://github.com/seifreed/r2morph/actions/runs/43835267898)
+completed successfully on source commit `7d3e5946`. The Linux ELF x86-64 core
+campaign covered all 10 core passes and 1,086 complete-evidence rows per pass;
+the separately merged extended campaign covered all 12 additional passes with
+the same row count. Both reports recorded 100% complete-evidence coverage and
+zero errors, semantic failures, or runtime-observable failures. Applied runs
+were fewer than evidence rows where passes explicitly omitted ineligible
+samples. The compact
+[hash-bound summary](protection-differential-run-2026-11-16-43835267898.json)
+pins the source commit, per-pass outcomes, and hashes of the raw report
+members. The campaigns do not close cross-platform parity: the core report
+still scopes platform gaps to PE, Mach-O, ARM, AArch64, and x86, and they do
+not establish analyzer completeness or generalized resistance.
+
 ## Current-main continuous fuzz campaign
 
 Workflow run [`43654009381`](https://github.com/seifreed/r2morph/actions/runs/43654009381)
