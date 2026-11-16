@@ -185,6 +185,14 @@ transform duration, runtime duration, and static analyzer evidence while
 comparing exit code, stdout, stderr, created files, and declared observable
 effects across nine seed-derived inputs.
 
+A current-source local stress run exercised all ten parser, assembler, VM,
+relocation, and binary-rewriter fuzz targets 10,000 times each with generated
+payloads capped at 32 KiB and zero failures. Its source and raw-report hashes,
+seed, diagnostics, and limits are recorded in the
+[`bounded fuzz evidence manifest`](docs/continuous-fuzz-local-2026-11-16-1a5447dd.json).
+This single-host deterministic run does not prove arbitrary-input semantic
+equivalence, cross-platform parity, or adversarial resistance.
+
 The 2026-09-20 local adversarial campaign measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
 also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
