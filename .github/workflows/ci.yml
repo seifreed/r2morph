@@ -369,6 +369,8 @@ jobs:
           ]
           if platform.machine().lower() in {"amd64", "x86_64"}:
               test_targets.extend(x64_assembler_targets)
+          if platform.system() == "Darwin":
+              test_targets.append("tests/integration/test_macho_x86_64_native.py")
           subprocess.run(
               [
                   sys.executable,

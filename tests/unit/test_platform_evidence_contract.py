@@ -90,6 +90,14 @@ def test_macos_arm64_evidence_excludes_x86_string_obfuscation() -> None:
     expect("StringObfuscation" not in _PASS_CASES["macos-arm64"])
 
 
+def test_macos_arm64_evidence_requires_native_x86_64_macho_substitution() -> None:
+    case_name = "test_macho_x86_64_instruction_substitution_preserves_native_observables"
+    expect(
+        case_name in _REQUIRED_CASES["macos-arm64"]
+        and _PASS_CASES["macos-arm64"]["InstructionSubstitution (x86-64 Mach-O)"] == case_name
+    )
+
+
 def test_platform_evidence_rejects_report_missing_required_case(tmp_path: Path) -> None:
     for platform_name in _REQUIRED_CASES:
         (tmp_path / platform_name).mkdir()

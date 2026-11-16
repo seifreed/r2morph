@@ -193,7 +193,8 @@
           "format": "Mach-O",
           "architecture": "x86-64",
           "evidence": [
-            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
+            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real",
+            "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_instruction_substitution_preserves_native_observables"
           ]
         },
         {
@@ -1572,7 +1573,8 @@
     "compatibility_corpus": "https://github.com/seifreed/r2morph-corpus",
     "generated_inventory": "docs/protection-maturity-corpus.json",
     "maturity_report": "docs/protection-maturity.md",
-    "ci_workflow": ".github/workflows/ci.yml"
+    "ci_workflow": ".github/workflows/ci.yml",
+    "native_macho_x86_64_differential_test": "tests/integration/test_macho_x86_64_native.py"
   },
   "matrix": {
     "dimensions": {
@@ -2592,7 +2594,8 @@
         "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
-          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real"
+          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_nop_insertion_and_substitution_real",
+          "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_instruction_substitution_preserves_native_observables"
         ]
       },
       {

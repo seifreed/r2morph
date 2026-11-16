@@ -191,7 +191,9 @@
         "docs/platform-elf-arm64-2026-11-16-43859887107.xml",
         "docs/platform-elf-x86-32-2026-11-16-43859887107.xml",
         "docs/protection-differential-run-2026-11-16-43859887107.json",
-        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json",
+        "tests/integration/test_macho_x86_64_native.py",
+        ".github/workflows/differential-corpus.yml"
       ]
     },
     "documented_resistance_scope": {
