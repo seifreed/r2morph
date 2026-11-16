@@ -106,6 +106,10 @@ the generated matrix currently records 22/22 evidenced cells for the official
 ELF x86-64 target (100.0% evidence) and 40/242 evidenced cells for non-official
 targets (16.53% evidence). It currently classifies 5 passes as Tier 1 and
 17 passes as experimental.
+The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
+checks applied instruction substitution, register substitution, and instruction
+expansion against native output. These are bounded experimental pass results;
+they do not establish full Mach-O or cross-platform parity.
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

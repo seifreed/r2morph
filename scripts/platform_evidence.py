@@ -26,6 +26,7 @@ _REQUIRED_CASES = {
         "test_x86_instruction_expansion_and_register_substitution_real",
         "test_x86_mutation_sequence_preserves_native_exit_code",
         "test_macho_x86_64_instruction_substitution_preserves_native_observables",
+        "test_macho_x86_64_register_substitution_preserves_native_observables",
         "test_instruction_substitution_pe_x86_64_preserves_real_integrity",
         "test_code_virtualization_pe_x86_64_target_is_rejected_before_mutation",
         "test_code_virtualization_macho_arm64_target_is_rejected_before_mutation",
@@ -83,6 +84,9 @@ _PASS_CASES = {
         "Composition": "test_nop_then_instruction_substitution_arm64_preserves_native_output",
         "InstructionSubstitution (x86-64 Mach-O)": (
             "test_macho_x86_64_instruction_substitution_preserves_native_observables"
+        ),
+        "RegisterSubstitution (x86-64 Mach-O)": (
+            "test_macho_x86_64_register_substitution_preserves_native_observables"
         ),
         "RegisterSubstitution": "test_register_substitution_arm64_preserves_generated_native_execution",
         "ConstantUnfolding": "test_constant_unfolding_arm64_preserves_native_output",

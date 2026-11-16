@@ -316,7 +316,7 @@
           "format": "Mach-O",
           "architecture": "x86-64",
           "evidence": [
-            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
+            "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_register_substitution_preserves_native_observables"
           ]
         },
         {
@@ -2725,7 +2725,7 @@
         "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
-          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_instruction_expansion_and_register_substitution_real"
+          "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_register_substitution_preserves_native_observables"
         ]
       },
       {

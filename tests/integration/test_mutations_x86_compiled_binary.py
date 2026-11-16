@@ -153,6 +153,7 @@ def test_x86_mutation_sequence_preserves_native_exit_code(x86_binary_path: Path,
 
 def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_path: Path, tmp_path: Path):
     randomness.seed(1)
+    original = run_command(["arch", "-x86_64", x86_binary_path], capture_output=True, text=True, check=False)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
     with Binary(writable_path, writable=True) as bin_obj:
@@ -163,11 +164,15 @@ def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_pat
         )
         exp_result = exp_pass.apply(bin_obj)
 
-        reg_pass = RegisterSubstitutionPass(config={"probability": 1.0, "max_substitutions_per_function": 2})
-        reg_result = reg_pass.apply(bin_obj)
+        bin_obj.save()
 
-    expect(not ("mutations_applied" not in exp_result))
-    expect(not ("mutations_applied" not in reg_result))
+    expect(CodeSigner().sign(writable_path, adhoc=True), "failed to re-sign expanded Mach-O")
+    expanded = run_command(["arch", "-x86_64", writable_path], capture_output=True, text=True, check=False)
+    expect(
+        exp_result["mutations_applied"] > 0
+        and (expanded.returncode, expanded.stdout, expanded.stderr)
+        == (original.returncode, original.stdout, original.stderr)
+    )
 
 
 def test_x86_block_reordering_real(x86_binary_path: Path, tmp_path: Path):
