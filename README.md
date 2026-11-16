@@ -152,7 +152,7 @@ The reproducible GCC/Clang corpus and its build manifest live in the public
 |------|----------|-------------|
 | **Dead Code Injection** | engine-only | Injects semantically neutral code in padding regions |
 | **Control Flow Flattening** | engine-only | Inserts opaque predicates and jump obfuscation |
-| **Opaque Predicates** | engine-only | Writes opaque predicate instructions into basic blocks |
+| **Opaque Predicates** | engine-only | Writes opaque predicate instructions into basic blocks; reuses function-boundary disassembly during cave searches within a pass |
 | **Code Virtualization** | engine-only | Translates instructions to VM bytecode with dispatcher |
 | **Anti-Disassembly** | engine-only | Injects anti-disassembly snippets |
 | **Data Flow Mutation** | engine-only | Data flow analysis-driven safe substitutions |

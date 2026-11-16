@@ -75,7 +75,8 @@ class OpaquePredicatePass(MutationPass):
 
         functions = binary.get_functions()
         functions = self._sample_functions(functions)
-        injector = CodeCaveInjector(binary, protect_nop_instructions=True)
+        # Failed cave probes do not write; after a successful allocation the injector reuses its cave list.
+        injector = CodeCaveInjector(binary, protect_nop_instructions=True, cache_instruction_ranges=True)
         total_mutations = 0
         funcs_mutated = 0
 

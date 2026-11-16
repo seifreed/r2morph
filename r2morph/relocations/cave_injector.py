@@ -99,6 +99,7 @@ class CodeCaveInjector:
         min_cave_size: int = 16,
         *,
         protect_nop_instructions: bool = False,
+        cache_instruction_ranges: bool = False,
     ) -> None:
         """
         Initialize the code cave injector.
@@ -113,6 +114,7 @@ class CodeCaveInjector:
             binary,
             min_cave_size,
             protect_nop_instructions=protect_nop_instructions,
+            cache_instruction_ranges=cache_instruction_ranges,
         )
         self._allocations: list[CodeCaveAllocation] = []
         self._created_sections: dict[str, int] = {}

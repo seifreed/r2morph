@@ -32,7 +32,14 @@ class CaveFinder:
     that can be repurposed for new code.
     """
 
-    def __init__(self, binary: Binary, min_size: int = 10, *, protect_nop_instructions: bool = False):
+    def __init__(
+        self,
+        binary: Binary,
+        min_size: int = 10,
+        *,
+        protect_nop_instructions: bool = False,
+        cache_instruction_ranges: bool = False,
+    ):
         """
         Initialize cave finder.
 
@@ -43,6 +50,9 @@ class CaveFinder:
         self.binary = binary
         self.min_size = min_size
         self.protect_nop_instructions = protect_nop_instructions
+        self.cache_instruction_ranges = cache_instruction_ranges
+        self._cached_instruction_ranges: tuple[tuple[int, int], ...] | None = None
+        self._instruction_ranges_cached = False
         self.caves: list[CodeCave] = []
 
     def find_caves(self, max_caves: int = 100) -> list[CodeCave]:
@@ -58,7 +68,7 @@ class CaveFinder:
         logger.info(f"Searching for code caves (min size: {self.min_size})")
 
         self.caves = []
-        instruction_ranges = self._instruction_ranges()
+        instruction_ranges = self._get_instruction_ranges()
         if instruction_ranges is None:
             logger.warning("Unable to validate executable instruction boundaries; refusing code caves")
             return self.caves
@@ -91,6 +101,17 @@ class CaveFinder:
 
         logger.info(f"Found {len(self.caves)} code caves")
         return self.caves
+
+    def _get_instruction_ranges(self) -> tuple[tuple[int, int], ...] | None:
+        if not self.cache_instruction_ranges:
+            return self._instruction_ranges()
+        if not self._instruction_ranges_cached:
+            ranges = self._instruction_ranges()
+            if ranges is None:
+                return None
+            self._cached_instruction_ranges = ranges
+            self._instruction_ranges_cached = True
+        return self._cached_instruction_ranges
 
     def _instruction_ranges(self) -> tuple[tuple[int, int], ...] | None:
         """Return sorted executable instruction ranges for cave validation."""
