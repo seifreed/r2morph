@@ -192,6 +192,8 @@
         "docs/platform-elf-x86-32-2026-11-16-43859887107.xml",
         "docs/protection-differential-run-2026-11-16-43859887107.json",
         "docs/protection-platform-evidence-2026-11-16-43859887107.json",
+        "docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json",
+        "tests/unit/test_published_native_macho_arm64_848d0f5b.py",
         "tests/integration/test_macho_x86_64_native.py",
         ".github/workflows/differential-corpus.yml"
       ]

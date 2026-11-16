@@ -112,6 +112,19 @@ the report contract is checked by
 the module were deselected. This is one native host and five selected cases; it
 does not close full Mach-O ARM64 pass parity or cross-platform parity.
 
+### Current-main native Mach-O ARM64 integration module
+
+On source `848d0f5b45338af97514a6c1a3a6e13bc4658e49`, macOS ARM64 with Python
+3.13.11 and Clang 23.1.5 ran the complete
+`tests/integration/test_mutation_nop_insertion_arm64.py` module with warnings
+treated as errors. All 12 cases passed, including native execution comparisons,
+compiled control-flow and memory fixtures, encoding-change checks, and rejection
+of an unrepresentable immediate. The hash-bound
+[report](protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json) records
+the exact test and fixture hashes. This is bounded evidence for one host and
+one existing test module; it does not establish full Mach-O parity or close the
+cross-platform readiness criterion.
+
 ### Differential corpus and extended-pass campaign
 
 Differential workflow [`43835267898`](https://github.com/seifreed/r2morph/actions/runs/43835267898)

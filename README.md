@@ -110,6 +110,13 @@ The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
 checks applied instruction substitution, register substitution, and instruction
 expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity.
+On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
+12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
+native-output preservation, compiled control-flow/memory fixtures, and rejection
+of an unrepresentable immediate. The hash-bound
+[`local report`](docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json)
+records the source, fixture, and test hashes. This is bounded evidence from one
+host and does not establish full Mach-O pass parity or cross-platform parity.
 The local release validation for source commit `2c50cff3` built and installed
 the `0.4.0-alpha.3` wheel on Python 3.12/macOS ARM64, passed the complete test
 suite (7,006 passed, 226 skipped), validated the wheel and sdist with Twine,

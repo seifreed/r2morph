@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "measurement": "native-macho-arm64-differential-module",
+  "source_commit": "848d0f5b45338af97514a6c1a3a6e13bc4658e49",
+  "host": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "python": "3.13.11",
+    "clang": "23.1.5"
+  },
+  "command": "python -W error -m pytest --no-cov --tb=short tests/integration/test_mutation_nop_insertion_arm64.py",
+  "fixture": {
+    "path": "fixtures/dataset/macho_arm64",
+    "sha256": "18976a380749c7c00b6af9904fd8cc1565c162d3f55bdae3d11ee0d4c66b8d6f"
+  },
+  "test_file": {
+    "path": "tests/integration/test_mutation_nop_insertion_arm64.py",
+    "sha256": "b1f8aff3478f823ed4c1e76b01073c02c4dcf4d0df48431131b2ae1af5a99d2d"
+  },
+  "case_count": 12,
+  "passed_case_count": 12,
+  "failed_case_count": 0,
+  "cases": [
+    {"name": "test_nop_insertion_arm64_path", "outcome": "passed"},
+    {"name": "test_nop_insertion_arm64_preserves_native_output", "outcome": "passed"},
+    {"name": "test_constant_unfolding_arm64_preserves_native_output", "outcome": "passed"},
+    {"name": "test_instruction_expansion_arm64_preserves_native_output", "outcome": "passed"},
+    {"name": "test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites", "outcome": "passed"},
+    {"name": "test_instruction_substitution_arm64_changes_real_instruction_encoding", "outcome": "passed"},
+    {"name": "test_instruction_substitution_arm64_preserves_native_output", "outcome": "passed"},
+    {"name": "test_instruction_substitution_arm64_compiled_binary_preserves_return_code", "outcome": "passed"},
+    {"name": "test_instruction_substitution_arm64_compiled_binary_rejects_unrepresentable_immediate", "outcome": "passed"},
+    {"name": "test_instruction_substitution_arm64_preserves_compiled_control_flow_and_memory", "outcome": "passed"},
+    {"name": "test_nop_insertion_arm64_preserves_compiled_control_flow_and_memory", "outcome": "passed"},
+    {"name": "test_nop_then_instruction_substitution_arm64_preserves_native_output", "outcome": "passed"}
+  ],
+  "limitations": [
+    "This is one native macOS arm64 host and the existing twelve-case integration module.",
+    "The evidence covers selected mutation and fixture paths; it does not establish full Mach-O pass parity or cross-platform parity."
+  ]
+}
