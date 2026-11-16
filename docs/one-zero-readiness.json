@@ -194,6 +194,13 @@
         "docs/protection-platform-evidence-2026-11-16-43859887107.json",
         "docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json",
         "tests/unit/test_published_native_macho_arm64_848d0f5b.py",
+        "docs/protection-platform-partial-run-2026-11-16-43949336892.json",
+        "docs/cross-platform-differential-macos-arm64-43949336892.xml",
+        "docs/cross-platform-differential-windows-pe-43949336892.xml",
+        "docs/platform-elf-arm32-43949336892.xml",
+        "docs/platform-elf-arm64-43949336892.xml",
+        "docs/platform-elf-x86-32-43949336892.xml",
+        "tests/unit/test_published_platform_partial_run_43949336892.py",
         "tests/integration/test_macho_x86_64_native.py",
         ".github/workflows/differential-corpus.yml"
       ]

@@ -125,6 +125,22 @@ the exact test and fixture hashes. This is bounded evidence for one host and
 one existing test module; it does not establish full Mach-O parity or close the
 cross-platform readiness criterion.
 
+### Partial cross-platform jobs on current package code
+
+Differential workflow run [`43949336892`](https://github.com/seifreed/r2morph/actions/runs/43949336892)
+ran on source `6c60d58d186fc7725465313b79ce488dee1ee0c4`. Five dedicated
+preview jobs completed successfully: macOS ARM64 (37 tests), Windows PE (18),
+ELF ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). All 76 JUnit cases passed
+with no failures, errors, or skips. The individual [JUnit reports](cross-platform-differential-macos-arm64-43949336892.xml),
+[Windows report](cross-platform-differential-windows-pe-43949336892.xml),
+[ARM32 report](platform-elf-arm32-43949336892.xml),
+[ARM64 report](platform-elf-arm64-43949336892.xml),
+[x86-32 report](platform-elf-x86-32-43949336892.xml), and the
+[hash-bound summary](protection-platform-partial-run-2026-11-16-43949336892.json)
+preserve the evidence. The larger workflow was still queued at capture time.
+These bounded preview results do not establish full cross-platform pass parity
+or close the `cross_platform_parity` 1.0 criterion.
+
 ### Differential corpus and extended-pass campaign
 
 Differential workflow [`43835267898`](https://github.com/seifreed/r2morph/actions/runs/43835267898)

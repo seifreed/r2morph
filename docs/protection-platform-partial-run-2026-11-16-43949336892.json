@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "measurement": "partial-cross-platform-differential-junit",
+  "captured_on": "2026-11-16",
+  "workflow_run_id": 43949336892,
+  "workflow_run_status_at_capture": "queued",
+  "source_commit": "6c60d58d186fc7725465313b79ce488dee1ee0c4",
+  "targets": [
+    {
+      "target": "macos-arm64",
+      "report": "docs/cross-platform-differential-macos-arm64-43949336892.xml",
+      "sha256": "d0476edd8f0aeb300020f1f2f027519419d075e9e9b8708cd2a8af597e6aeb65",
+      "cases": 37,
+      "passed": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "target": "windows-pe",
+      "report": "docs/cross-platform-differential-windows-pe-43949336892.xml",
+      "sha256": "ffb77ec321551379ac4230295221611c09f6ea7ca3e038a192fae62af45dd588",
+      "cases": 18,
+      "passed": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "target": "elf-arm32",
+      "report": "docs/platform-elf-arm32-43949336892.xml",
+      "sha256": "4c154c277c59dad0d9d1ae97e93117c595752561fb3958f0f48aa04935ede624",
+      "cases": 6,
+      "passed": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "target": "elf-arm64",
+      "report": "docs/platform-elf-arm64-43949336892.xml",
+      "sha256": "92cddf2164e66498429570c52b50f20c0e8535eedaef795ba8f8ce08981f671f",
+      "cases": 7,
+      "passed": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "target": "elf-x86-32",
+      "report": "docs/platform-elf-x86-32-43949336892.xml",
+      "sha256": "3a3c0d4622f8f791c333a1f9a64baf85cfe2f1a939da94d9cbb84f0a31d05b43",
+      "cases": 8,
+      "passed": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "targets": 5,
+    "cases": 76,
+    "passed": 76,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "This snapshot covers only five completed dedicated preview jobs from a larger workflow that was still queued at capture time.",
+    "The 76 passed cases do not establish complete cross-platform pass parity or promote preview targets to official support."
+  ]
+}

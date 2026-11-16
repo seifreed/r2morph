@@ -117,6 +117,12 @@ of an unrepresentable immediate. The hash-bound
 [`local report`](docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json)
 records the source, fixture, and test hashes. This is bounded evidence from one
 host and does not establish full Mach-O pass parity or cross-platform parity.
+Differential workflow run `43949336892` on source `6c60d58d` completed five
+preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
+ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
+the [`partial platform report`](docs/protection-platform-partial-run-2026-11-16-43949336892.json).
+The workflow remained queued at capture time; these cases do not establish
+complete pass parity or promote preview targets to official support.
 The local release validation for source commit `2c50cff3` built and installed
 the `0.4.0-alpha.3` wheel on Python 3.12/macOS ARM64, passed the complete test
 suite (7,006 passed, 226 skipped), validated the wheel and sdist with Twine,
