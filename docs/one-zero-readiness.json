@@ -108,7 +108,9 @@
         "docs/protection-adversarial-bytecode-grammar-2026-11-16-43800549091.json",
         "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml",
         "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209-summary.json",
-        "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz"
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz",
+        "docs/protection-differential-run-2026-11-16-43859887107.json",
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
       ]
     },
     "complete_compatibility_contract": {
@@ -185,7 +187,9 @@
         "docs/cross-platform-differential-windows-pe-43859887107.xml",
         "docs/platform-elf-arm32-2026-11-16-43859887107.xml",
         "docs/platform-elf-arm64-2026-11-16-43859887107.xml",
-        "docs/platform-elf-x86-32-2026-11-16-43859887107.xml"
+        "docs/platform-elf-x86-32-2026-11-16-43859887107.xml",
+        "docs/protection-differential-run-2026-11-16-43859887107.json",
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
       ]
     },
     "documented_resistance_scope": {
@@ -237,7 +241,9 @@
         "docs/protection-differential-run-2026-11-14-43534838628.json",
         "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812-summary.json",
         "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz",
-        "docs/protection-differential-run-2026-11-16-43835267898.json"
+        "docs/protection-differential-run-2026-11-16-43835267898.json",
+        "docs/protection-differential-run-2026-11-16-43859887107.json",
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
       ]
     },
     "published_resistance_results": {
