@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "source_commit": "3857682ca05ebad1ad1b2aa84b4689c0090ea8c5",
+  "workflow_run": 43859887107,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/43859887107",
+  "workflow_state_at_collection": {
+    "status": "queued",
+    "completed_jobs": 20,
+    "in_progress_jobs": 12,
+    "queued_jobs": 50,
+    "failures": 0
+  },
+  "scope": "Partial platform-native and cross-platform integration evidence from completed jobs; the workflow had not completed when collected.",
+  "platform_reports": {
+    "macos_arm64": {
+      "artifact": "cross-platform-differential-macos-arm64-43859887107",
+      "original_report_sha256": "42a37c2b701513c838b0bfa1a7a8037a9f3b30c987249200ecf9ea068a17553a",
+      "report": "cross-platform-differential-macos-arm64-43859887107.xml",
+      "report_sha256": "83976238a677ce982d84ed85d7137b31bff0245f1bd991706793a228883bd9a5",
+      "counts": {
+        "tests": 35,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "windows_pe": {
+      "artifact": "cross-platform-differential-windows-pe-43859887107",
+      "original_report_sha256": "df05a3a545d158c5ef7fe9e7dd6f1447949c72e14a934a22ddb1f85e33839285",
+      "report": "cross-platform-differential-windows-pe-43859887107.xml",
+      "report_sha256": "9fba4b871fe2b6ff6080ce38d711fb912334a48cf601df16afa13e1dcda78b98",
+      "counts": {
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "elf_arm32": {
+      "artifact": "elf-arm-32-native-43859887107",
+      "original_report_sha256": "db0efb16f658d136fa1cc31959f6a845b48eedf7aea9c540c5c116d3eeebaa50",
+      "report": "platform-elf-arm32-2026-11-16-43859887107.xml",
+      "report_sha256": "b37a2821d90765988125da6a11a9ab699d32a77512f542a0b894c0dc932ffa65",
+      "counts": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "elf_arm64": {
+      "artifact": "elf-arm64-native-43859887107",
+      "original_report_sha256": "9ad1e49e013090f906287ac7c21c8ca9ab5bcc0a4b816d31c5b8432f1d47471c",
+      "report": "platform-elf-arm64-2026-11-16-43859887107.xml",
+      "report_sha256": "b0086b9515c7fc324921b80b02d411ffcb96252b00c50907fbee389909da7356",
+      "counts": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "elf_x86_32": {
+      "artifact": "elf-x86-32-native-43859887107",
+      "original_report_sha256": "ffe05a8f93b4334b89f1e1406ab4c4f3c602378e518d174f4d1579e8fe33a9fa",
+      "report": "platform-elf-x86-32-2026-11-16-43859887107.xml",
+      "report_sha256": "773e618b7028f4f0af342c565886b52e50970558058177df3931c83e2b9e0589",
+      "counts": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "totals": {
+    "tests": 74,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "The campaign workflow was still running when these completed job artifacts were collected.",
+    "The per-platform tests differ and do not establish identical behavior across every pass, format, architecture, and operating system.",
+    "The full cross-platform parity release criterion remains open."
+  ]
+}
