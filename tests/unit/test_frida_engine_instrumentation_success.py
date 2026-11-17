@@ -7,6 +7,8 @@ import pytest
 from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine, InstrumentationMode
 from tests.utils.assertions import expect
 
+_TEST_TARGET_LIFETIME_SECONDS = 30
+
 
 def test_frida_engine_spawn_success_path():
     if not FRIDA_AVAILABLE:
@@ -20,7 +22,7 @@ def test_frida_engine_spawn_success_path():
     if not target.exists():
         pytest.skip("sleep binary not available")
 
-    process_id = os.posix_spawn(str(target), [str(target), "3"], os.environ)
+    process_id = os.posix_spawn(str(target), [str(target), str(_TEST_TARGET_LIFETIME_SECONDS)], os.environ)
     try:
         time.sleep(0.1)
         result = engine.instrument_binary(target, mode=InstrumentationMode.ATTACH)
