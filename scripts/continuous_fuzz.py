@@ -209,6 +209,10 @@ def _vm_bytecode_case(seed: int, index: int) -> None:
     bytecode = encode_bytecode(ops, scheme, checksum=case_seed & 0xFF, bytecode_base=_VM_BYTECODE_BASE)
     if not bytecode or len(bytecode) > _VM_BYTECODE_MAX_SIZE:
         raise AssertionError("VM bytecode encoder returned an empty or oversized payload")
+    exit_position = len(bytecode) - 1
+    decoded_exit_opcode = bytecode[exit_position] ^ (case_seed & 0xFF) ^ bytecode_position_mask(exit_position)
+    if decoded_exit_opcode != scheme.exit_opcode:
+        raise AssertionError("VM bytecode checksum or position mask corrupted the exit opcode")
     # shortcut: sample interpreter assembly periodically to bound cost; widen coverage if codegen changes.
     if index % _VM_INTERPRETER_SAMPLE_INTERVAL == 0:
         assembly = _interpreter_asm(_VM_INTERPRETER_ADDRESS, scheme)

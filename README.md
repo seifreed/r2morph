@@ -248,7 +248,8 @@ hash manifest are recorded in
 [`continuous-fuzz-2026-11-16-43949336376-summary.json`](docs/continuous-fuzz-2026-11-16-43949336376-summary.json).
 Each platform retained 103 recoverable Mach-O parser diagnostics. This bounded
 campaign does not prove arbitrary-input equivalence, full platform parity, or
-adversarial resistance.
+adversarial resistance. Each generated VM bytecode case also verifies that the
+checksum and position mask preserve the terminal exit opcode.
 
 The 2026-09-20 local adversarial campaign measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer

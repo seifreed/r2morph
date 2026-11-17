@@ -6,7 +6,7 @@ import sys
 from logging import getLogger
 from pathlib import Path
 
-from scripts.continuous_fuzz import run_campaign
+from scripts.continuous_fuzz import _vm_bytecode_case, run_campaign
 from tests.utils.assertions import expect
 
 _CASE_COUNT = 32
@@ -44,6 +44,10 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
             "binary_rewriter": 1,
         }
     )
+
+
+def test_continuous_fuzz_vm_bytecode_case_preserves_exit_opcode() -> None:
+    _vm_bytecode_case(seed=_SEED, index=1)
 
 
 def test_continuous_fuzz_campaign_counts_expected_parser_diagnostics() -> None:
