@@ -1151,3 +1151,24 @@ These local slices add current-source IDA coverage for eight fixtures; they do
 not complete the full analyzer matrix, represent the generated corpus, establish
 cross-platform parity, or prove generalized resistance. The all-analyzer and
 resistance release criteria remain open.
+
+## Current-source local Ghidra virtualization shard — 2026-11-17
+
+On source commit `8a612589dab88d4c928ea46ab8c525c305ef9184`, the Darwin ARM64
+runner measured `CodeVirtualization` on four repository ELF x86-64 fixtures.
+All four pass rows and all 36 expected analyzer rows were present. Ghidra 11.4.2
+completed 4/4 rows; the other completed analyzers were angr, custom, objdump,
+radare2, and Unicorn. Overall, 24/36 analyzer rows completed (66.67%), eight
+were unavailable (Binary Ninja: four due to missing license; Triton: four due
+to the unavailable module), and four IDA Pro rows errored after the process
+timeout. No generated Linux fixtures were included. Ghidra recorded five
+additional functions, five additional decompiler entrypoints, 74 additional
+decompiler lines, and 1,059 additional decompiler bytes across these samples.
+These output deltas are diagnostic only; this one-pass slice does not establish
+generalized resistance or cross-platform parity.
+
+The hash-bound [summary](protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589-summary.json)
+and [compressed raw report](protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589.json.gz)
+bind the source tree, fixtures, and tool outcomes. The [regression test](../tests/unit/test_published_local_ghidra_virtualization_8a612589.py)
+checks counts, hashes, privacy, and open release gates. The all-analyzer,
+cross-platform parity, and published resistance criteria remain open.

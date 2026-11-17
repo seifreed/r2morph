@@ -1209,6 +1209,24 @@ with regression checks in
 This adds bounded current-source IDA coverage; the all-analyzer, cross-platform
 parity, and general resistance criteria remain open.
 
+## Current-source local Ghidra virtualization shard — 2026-11-17
+
+On source commit `8a612589dab88d4c928ea46ab8c525c305ef9184`, the Darwin ARM64
+runner measured `CodeVirtualization` on four repository ELF x86-64 fixtures.
+All four pass rows and all 36 expected analyzer rows were present. Ghidra 11.4.2
+completed 4/4 rows. In total, 24/36 analyzer rows completed (66.67%), eight
+were unavailable (Binary Ninja and Triton), four IDA Pro rows timed out, and no
+rows were missing. No generated Linux fixtures were included. Ghidra reported
+five additional functions, five additional decompiler entrypoints, 74
+additional decompiler lines, and 1,059 additional decompiler bytes. These
+measurements are diagnostic and do not establish generalized resistance or
+cross-platform parity. See the hash-bound
+[summary](protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589-summary.json),
+[compressed report](protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589.json.gz),
+and [regression test](../tests/unit/test_published_local_ghidra_virtualization_8a612589.py).
+All-analyzer, cross-platform parity, and published resistance criteria remain
+open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

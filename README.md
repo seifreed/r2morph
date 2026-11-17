@@ -260,6 +260,15 @@ There were no pass/tool errors or missing rows. The macOS run excludes generated
 Linux fixtures, and the all-analyzer gate remains open. Hash-bound reports and
 fixture hashes are listed in
 [`docs/compatibility-corpus.md`](docs/compatibility-corpus.md#current-source-local-ida-shards).
+The follow-up Ghidra 11.4.2 slice on source commit `8a612589` measured
+`CodeVirtualization` on four repository fixtures: Ghidra completed 4/4 rows,
+while six of nine analyzers completed overall (24/36 rows). IDA Pro timed out
+on four rows; Binary Ninja was unavailable due to license status, and Triton
+was not installed. The source and fixture hashes, decompiler deltas, and raw
+report are recorded in
+[`docs/compatibility-corpus.md`](docs/compatibility-corpus.md).
+This bounded output comparison does not demonstrate generalized resistance;
+all-analyzer, cross-platform parity, and resistance gates remain open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

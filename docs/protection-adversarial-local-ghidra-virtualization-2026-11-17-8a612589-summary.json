@@ -1,0 +1,131 @@
+{
+  "archive": {
+    "path": "docs/protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589.json.gz",
+    "sha256": "d6da0e68f37612b2e8daa28433e11053f7bb2941d3426e3a7132350acba4ca20",
+    "uncompressed_bytes": 53034,
+    "uncompressed_sha256": "a14de6ae7404d284cf57254814c5a518352fc65bb45f7345817dc6a237c436c4"
+  },
+  "date": "2026-11-17",
+  "execution": {
+    "ghidra_java_runtime": "21.0.13",
+    "ghidra_version": "11.4.2",
+    "ida_pro_version": "9.5",
+    "platform": "darwin-arm64"
+  },
+  "limitations": [
+    "Repository ELF x86-64 fixtures only; no generated Linux corpus was included on the Darwin ARM64 host.",
+    "Only CodeVirtualization was measured across four fixtures; this is not full pass-matrix coverage.",
+    "Ghidra completed four rows; IDA Pro had four ProcessTimeoutError rows.",
+    "Binary Ninja was unavailable because no valid analyzer license is available; Triton was not installed.",
+    "Decompiler output deltas are diagnostic measurements and do not establish generalized resistance."
+  ],
+  "measurement": "local-adversarial-tool-benchmark",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "completed_runs_by_tool": {
+      "angr": 4,
+      "binary-ninja": 0,
+      "custom": 4,
+      "ghidra": 4,
+      "ida-pro": 0,
+      "objdump": 4,
+      "radare2": 4,
+      "triton": 0,
+      "unicorn": 4
+    },
+    "completed_tool_runs": 24,
+    "completion_percent": 66.67,
+    "error_reasons_by_tool": {
+      "ida-pro": {
+        "ProcessTimeoutError": 4
+      }
+    },
+    "error_runs_by_tool": {
+      "ida-pro": 4
+    },
+    "error_tool_runs": 4,
+    "ghidra": {
+      "completed_runs": 4,
+      "decompiler_byte_delta": 1059,
+      "decompiler_entrypoint_delta": 5,
+      "decompiler_line_delta": 74,
+      "duration_seconds": 189.65308433497557,
+      "function_delta": 5
+    },
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "pass_run_coverage_percent": 100.0,
+    "tool_run_coverage_percent": 100.0,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 4
+      },
+      "triton": {
+        "module 'triton' is unavailable": 4
+      }
+    },
+    "unavailable_runs_by_tool": {
+      "binary-ninja": 4,
+      "triton": 4
+    },
+    "unavailable_tool_runs": 8
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus": "dataset",
+    "expected_pass_runs": 4,
+    "expected_tool_runs": 36,
+    "expected_tools": [
+      "radare2",
+      "objdump",
+      "angr",
+      "binary-ninja",
+      "unicorn",
+      "triton",
+      "ida-pro",
+      "ghidra",
+      "custom"
+    ],
+    "families": [
+      "repository-fixtures"
+    ],
+    "fixture_shard": {
+      "count": 32,
+      "index": 0
+    },
+    "fixtures": [
+      {
+        "bytes": 13296,
+        "name": "elf_switch_pie_x86_64",
+        "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f"
+      },
+      {
+        "bytes": 4632,
+        "name": "elf_vm_arith_x86_64",
+        "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+      },
+      {
+        "bytes": 4728,
+        "name": "elf_vm_fpengineidxnb_x86_64",
+        "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07"
+      },
+      {
+        "bytes": 4776,
+        "name": "elf_vm_movabs_x86_64",
+        "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3"
+      }
+    ],
+    "generated_fixture_count": 0,
+    "observed_pass_runs": 4,
+    "observed_tool_runs": 36,
+    "pass_names": [
+      "CodeVirtualization"
+    ]
+  },
+  "source_commit": "8a612589dab88d4c928ea46ab8c525c305ef9184",
+  "source_tree": "e824c2f52b5b98af214056efbe9e1ca9727cbd57"
+}
