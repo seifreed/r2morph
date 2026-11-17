@@ -148,6 +148,13 @@ vulnerabilities across 118 components. The pinned manifest and CycloneDX output
 are recorded with their hashes; this covers that one platform resolution, not
 the release workflow SBOM or other platform matrices. Provenance and Linux
 release checks remain pending. See the [hash-bound local release report](docs/release-validation-local-2026-11-17-b20a56c2.json).
+The dependency resolution audit now also covers Linux x86-64 on Python 3.12 and
+3.13 plus Windows x86-64 on Python 3.13, alongside the macOS arm64/Python 3.13
+target. All four hash-pinned manifests passed with zero known vulnerabilities
+across 442 platform-specific component entries. Linux uses the `manylinux_2_34`
+resolution because the development requirements include `triton-library`; this
+does not set the package's runtime glibc floor. Manifests, SBOMs, hashes, and
+scope limits are in the [dependency audit matrix](docs/dependency-audit-matrix-2026-11-17-51ab5ffb.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

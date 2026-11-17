@@ -412,7 +412,15 @@
         "docs/release-validation-local-2026-11-17-b20a56c2.json",
         "docs/release-validation-local-2026-11-17-b20a56c2-requirements-aarch64-apple-darwin-py313.txt",
         "docs/release-validation-local-2026-11-17-b20a56c2-requirements-sbom.cdx.json",
-        "tests/unit/test_published_local_release_validation_20261117.py"
+        "tests/unit/test_published_local_release_validation_20261117.py",
+        "docs/dependency-audit-matrix-2026-11-17-51ab5ffb.json",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py312.txt",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py312.cdx.json",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py313.txt",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py313.cdx.json",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-windows-x86_64-py313.txt",
+        "docs/dependency-audit-2026-11-17-51ab5ffb-windows-x86_64-py313.cdx.json",
+        "tests/unit/test_dependency_audit_matrix_20261117.py"
       ]
     }
   }

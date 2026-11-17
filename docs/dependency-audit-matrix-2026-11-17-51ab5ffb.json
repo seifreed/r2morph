@@ -1,0 +1,108 @@
+{
+  "auditor_version": "pip-audit 2.10.1",
+  "known_vulnerabilities": 0,
+  "overall_status": "passed",
+  "requirements_file": "requirements.txt",
+  "requirements_sha256": "2cfcde79262fcc16d86a7c69e63fab0daedb1b46e9e92416ace8a077e69d415b",
+  "resolver_version": "uv 0.13.7",
+  "schema_version": 1,
+  "scope_limits": [
+    "These are hash-pinned dependency resolutions from requirements.txt, not installed-wheel compatibility tests or release provenance attestations.",
+    "The Linux development requirements include triton-library, whose published Linux wheel uses manylinux_2_34; this audit target does not declare a runtime glibc floor for the package.",
+    "The direct pip-audit temporary-environment bootstrap failed locally; all four resolved hash-pinned manifests audited successfully with pip-audit --disable-pip."
+  ],
+  "target_count": 4,
+  "targets": {
+    "linux_x86_64_manylinux_2_34_py312": {
+      "audit_command": "pip-audit --disable-pip -r <manifest> -f cyclonedx-json -o <sbom>",
+      "known_vulnerabilities": 0,
+      "manifest": {
+        "path": "dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py312.txt",
+        "sha256": "be2aefa4586e9ab69d39e392d2b0e404fdbc608f424c8b3c8c94fd85d42f5666",
+        "size_bytes": 190861
+      },
+      "platform": "Linux x86-64 manylinux_2_34",
+      "python_version": "3.12",
+      "resolution_command": "uv pip compile requirements.txt --python-version 3.12 --python-platform x86_64-manylinux_2_34 --generate-hashes",
+      "resolved_components": 119,
+      "sbom": {
+        "component_count": 119,
+        "format": "1.4",
+        "path": "dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py312.cdx.json",
+        "sha256": "448e3f1da2ee80bcfc909f64327c975916ad7207e9d9b1822a0874d123ae9518",
+        "size_bytes": 20694
+      },
+      "status": "passed",
+      "uv_python_platform": "x86_64-manylinux_2_34"
+    },
+    "linux_x86_64_manylinux_2_34_py313": {
+      "audit_command": "pip-audit --disable-pip -r <manifest> -f cyclonedx-json -o <sbom>",
+      "known_vulnerabilities": 0,
+      "manifest": {
+        "path": "dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py313.txt",
+        "sha256": "72ebd9718c1428552f31d5bab745827386b7344ed5777d946fa040db1c973426",
+        "size_bytes": 190832
+      },
+      "platform": "Linux x86-64 manylinux_2_34",
+      "python_version": "3.13",
+      "resolution_command": "uv pip compile requirements.txt --python-version 3.13 --python-platform x86_64-manylinux_2_34 --generate-hashes",
+      "resolved_components": 119,
+      "sbom": {
+        "component_count": 119,
+        "format": "1.4",
+        "path": "dependency-audit-2026-11-17-51ab5ffb-linux-manylinux_2_34-py313.cdx.json",
+        "sha256": "40b2758d71d5753a1cc901f1277a173952d07b370a68f526fc9ad7ac3ef1b0de",
+        "size_bytes": 20710
+      },
+      "status": "passed",
+      "uv_python_platform": "x86_64-manylinux_2_34"
+    },
+    "macos_arm64_py313": {
+      "audit_command": "pip-audit --disable-pip -r <manifest> -f cyclonedx-json -o <sbom>",
+      "known_vulnerabilities": 0,
+      "manifest": {
+        "path": "release-validation-local-2026-11-17-b20a56c2-requirements-aarch64-apple-darwin-py313.txt",
+        "sha256": "7fdd9625e58ce09d38c2993c7902a9289dcf88d01828f0ea332da8d5060b0549",
+        "size_bytes": 189352
+      },
+      "platform": "macOS arm64",
+      "python_version": "3.13",
+      "resolution_command": "uv pip compile requirements.txt --python-version 3.13 --python-platform aarch64-apple-darwin --generate-hashes",
+      "resolved_components": 118,
+      "sbom": {
+        "component_count": 118,
+        "format": "1.4",
+        "path": "release-validation-local-2026-11-17-b20a56c2-requirements-sbom.cdx.json",
+        "sha256": "9cfcc7003aad5e92222ffa855378a5f0043e6ffe972fbd75f437bb2913dbedb9",
+        "size_bytes": 20490
+      },
+      "status": "passed",
+      "uv_python_platform": "aarch64-apple-darwin"
+    },
+    "windows_x86_64_py313": {
+      "audit_command": "pip-audit --disable-pip -r <manifest> -f cyclonedx-json -o <sbom>",
+      "known_vulnerabilities": 0,
+      "manifest": {
+        "path": "dependency-audit-2026-11-17-51ab5ffb-windows-x86_64-py313.txt",
+        "sha256": "0ec7015e6a01180533f86cff8c9f42ee244c6e304ecfbf87d061fee73607f64b",
+        "size_bytes": 132997
+      },
+      "platform": "Windows x86-64",
+      "python_version": "3.13",
+      "resolution_command": "uv pip compile requirements.txt --python-version 3.13 --python-platform x86_64-pc-windows-msvc --generate-hashes",
+      "resolved_components": 86,
+      "sbom": {
+        "component_count": 86,
+        "format": "1.4",
+        "path": "dependency-audit-2026-11-17-51ab5ffb-windows-x86_64-py313.cdx.json",
+        "sha256": "4b6dea8aab6c7929653c76364fd03467be3444de5628801670d85457b182b0e4",
+        "size_bytes": 15098
+      },
+      "status": "passed",
+      "uv_python_platform": "x86_64-pc-windows-msvc"
+    }
+  },
+  "total_target_components": 442,
+  "validated_source_commit": "51ab5ffbda2daaa7cb36321fd385891f99f0a82d",
+  "validation_date_utc": "2026-11-17"
+}
