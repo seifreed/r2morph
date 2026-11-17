@@ -1174,6 +1174,25 @@ the release criterion remains open.
 
 A fresh local all-pass shard on source commit `ae2bf209` covered four repository ELF fixtures across all 22 passes. The run recorded 88/88 pass rows and 792 expected analyzer slots: 704 completed, 88 unavailable, and zero tool or pass errors. IDA Pro, Ghidra, angr, radare2, objdump, Unicorn, Triton, and the custom analyzer completed all 88 slots each. Binary Ninja was unavailable for all 88 slots because its license was not available to the process. Eight pass rows applied and 80 were explicit no-ops. Fixture hashes, tool outcomes, and the raw report digest are bound in the [summary](protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209-summary.json) and its compressed [report](protection-adversarial-local-allpasses-shard-2026-11-16-ae2bf209.json.gz). This adds current-source IDA coverage on four fixtures; it does not close all-analyzer coverage or establish generalized resistance.
 
+## Adversarial analyzer campaign — 2026-11-16 (run 43952405619)
+
+The `Adversarial Analysis Benchmark` workflow completed all 33 jobs on source
+commit `6c60d58d186fc7725465313b79ce488dee1ee0c4`. It covered 362 samples and
+22 passes, observed all 7,964 expected pass rows and all 71,676 expected analyzer
+rows, and reported zero missing rows or execution errors. Of the analyzer rows,
+55,220 completed (77.04%) and 16,456 were unavailable: Binary Ninja was absent
+for 7,964 rows, IDA Pro's `idat` executable was absent for 7,964 rows, and
+Unicorn did not support the fixture instruction in 528 rows. The workflow also
+reported 17 bounded evidence blockers, including three unavailable `angr`
+decompiler baseline pairs.
+
+The hash-bound [manifest](protection-adversarial-run-2026-11-16-43952405619.json)
+and [compressed raw report](protection-adversarial-run-2026-11-16-43952405619.json.gz)
+are covered by a regression test. The attached VM smoke artifacts are byte for
+byte identical to run `43800549091`; automated smoke remains complete, but the
+human adversarial review is pending and generalized resistance is unproven.
+Neither the all-named-analyzers gate nor the resistance release criterion closes.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

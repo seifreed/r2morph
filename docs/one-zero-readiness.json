@@ -112,7 +112,10 @@
         "docs/protection-differential-run-2026-11-16-43859887107.json",
         "docs/protection-platform-evidence-2026-11-16-43859887107.json",
         "docs/protection-ghidra-corpus-2026-11-16-981a45be.json",
-        "docs/protection-ghidra-corpus-2026-11-16-981a45be-summary.json"
+        "docs/protection-ghidra-corpus-2026-11-16-981a45be-summary.json",
+        "docs/protection-adversarial-run-2026-11-16-43952405619.json",
+        "docs/protection-adversarial-run-2026-11-16-43952405619.json.gz",
+        "tests/unit/test_published_adversarial_run_43952405619.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -345,7 +348,10 @@
         "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.json",
         "docs/protection-adversarial-seed-diversity-2026-11-16-43800549091.json",
         "docs/protection-adversarial-bytecode-grammar-2026-11-16-43800549091.json",
-        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml"
+        "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml",
+        "docs/protection-adversarial-run-2026-11-16-43952405619.json",
+        "docs/protection-adversarial-run-2026-11-16-43952405619.json.gz",
+        "tests/unit/test_published_adversarial_run_43952405619.py"
       ]
     },
     "stable_api_cli": {

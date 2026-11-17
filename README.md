@@ -242,6 +242,15 @@ remain unavailable. The separate 159-sample IDA MCP campaign records
 are campaign-specific results: availability in one campaign does not fill unavailable rows in another,
 and the all-named-analyzers 1.0 criterion remains open. See
 [`docs/protection-adversarial-run-2026-11-14-43615553431.json`](docs/protection-adversarial-run-2026-11-14-43615553431.json).
+
+A subsequent workflow run on source commit `6c60d58d` completed all 33 jobs and
+recorded the same 362-sample, 22-pass corpus: 7,964/7,964 pass rows and
+71,676/71,676 analyzer rows were present, with zero missing rows or execution
+errors. Only 55,220 analyzer rows completed (77.04%); Binary Ninja and IDA Pro
+were unavailable in the workers, and Unicorn did not support 528 fixture rows.
+The hash-bound [run manifest](docs/protection-adversarial-run-2026-11-16-43952405619.json)
+and [compressed raw report](docs/protection-adversarial-run-2026-11-16-43952405619.json.gz)
+retain the evidence. The analyzer gate remains open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human
