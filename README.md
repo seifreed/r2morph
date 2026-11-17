@@ -138,6 +138,13 @@ smoke on Python 3.13.11/macOS arm64: import, CLI version, and 318 public API and
 import-safety tests passed. This bounded run did not execute the full suite or
 release audit; its artifact hashes and scope are recorded in
 [`docs/wheel-smoke-local-2026-11-17-9abd69e9.json`](docs/wheel-smoke-local-2026-11-17-9abd69e9.json).
+The `b20a56c2` release check rebuilt the current wheel and sdist, passed Twine,
+repeated the installed-wheel smoke and recorded the full local suite result.
+The local environment audit found no known vulnerabilities and emitted a
+CycloneDX inventory, but the requirements-file audit could not bootstrap its
+temporary environment (`ensurepip` exited with SIGABRT). This is not a passing
+requirements audit or a release SBOM; provenance and Linux release checks remain
+pending. See the [hash-bound local release report](docs/release-validation-local-2026-11-17-b20a56c2.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

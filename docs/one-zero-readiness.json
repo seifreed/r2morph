@@ -380,7 +380,9 @@
         "docs/stability-contract.md",
         "tests/unit/test_public_surface_contract.py",
         "docs/wheel-smoke-local-2026-11-17-9abd69e9.json",
-        "tests/unit/test_published_wheel_smoke_local_9abd69e9.py"
+        "tests/unit/test_published_wheel_smoke_local_9abd69e9.py",
+        "docs/release-validation-local-2026-11-17-b20a56c2.json",
+        "tests/unit/test_published_local_release_validation_20261117.py"
       ]
     }
   }

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "source_commit": "b20a56c2b142701dd5e5bc329bd4a783204f8fb5",
+  "validation_date_utc": "2026-11-17",
+  "package_version": "0.4.0-alpha.3",
+  "host": {
+    "operating_system": "Darwin",
+    "machine_architecture": "arm64",
+    "python_version": "3.13.11"
+  },
+  "build": {
+    "command": "python -m build",
+    "wheel": "passed",
+    "sdist": "passed"
+  },
+  "artifacts": {
+    "wheel": {
+      "filename": "r2morph-0.4.0a3-py3-none-any.whl",
+      "size_bytes": 1129267,
+      "sha256": "9017c521acd12ead97e01e40156772b5371504541764ddc376dbb2f291eede9d"
+    },
+    "sdist": {
+      "filename": "r2morph-0.4.0a3.tar.gz",
+      "size_bytes": 867948,
+      "sha256": "6ed1f23c0a2d841f37988f96da7cd94240d0580d78cdf61a72ec262e2cf276e5"
+    },
+    "local_environment_sbom": {
+      "filename": "release-validation-local-2026-11-17-b20a56c2-environment-sbom.cdx.json",
+      "size_bytes": 22926,
+      "sha256": "e597b960dd370254322e33139957f1136a4894d9b0075a29decbe06dc67a18d9",
+      "format": "CycloneDX 1.4",
+      "components": 132
+    }
+  },
+  "package_metadata": {
+    "twine_check": "passed",
+    "wheel_install": "passed"
+  },
+  "installed_wheel_smoke": {
+    "module_import": "passed",
+    "reported_version": "0.4.0-alpha.3",
+    "cli_version": "passed",
+    "public_api_import": "passed",
+    "tests": {
+      "passed": 318,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "full_test_suite": {
+    "runner": "source tree on macOS arm64",
+    "command": "python -W error -m pytest -q",
+    "passed": 7063,
+    "failed": 0,
+    "skipped": 225,
+    "coverage_percent": 82.17,
+    "coverage_threshold_percent": 80.0,
+    "duration_seconds": 1597.85
+  },
+  "dependency_audit": {
+    "requirements_file": {
+      "command": "pip-audit -r requirements.txt -f cyclonedx-json",
+      "status": "incomplete",
+      "reason": "Temporary environment bootstrap failed when ensurepip exited with SIGABRT."
+    },
+    "local_environment": {
+      "command": "pip-audit --local -f cyclonedx-json",
+      "status": "passed",
+      "known_vulnerabilities": 0,
+      "scope": "132 components installed in the local Python environment; this is not the release requirements SBOM."
+    }
+  },
+  "release_scope": {
+    "provenance_attestation": "not_generated",
+    "pypi_publication": "not_performed",
+    "linux_release_workflow": "not_run",
+    "stable_release": "blocked",
+    "limitations": [
+      "This local run validates artifacts on macOS arm64 with Python 3.13.11 only.",
+      "The requirements-file dependency audit did not complete; the local-environment audit is not equivalent.",
+      "The local-environment SBOM does not replace the release workflow SBOM.",
+      "GitHub provenance attestation and PyPI publication were not performed."
+    ]
+  }
+}
