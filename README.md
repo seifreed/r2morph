@@ -156,6 +156,15 @@ false-positive measurement,
 0 without contractual composition support, and no remaining affected-instruction catalogue gap.
 The reproducible GCC/Clang corpus and its build manifest live in the public
 [`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
+The successful 85-job differential workflow for source commit `b20a56c2`
+measured 360 compatibility samples, 10/10 corpus passes, 12/12 extended
+maturity passes, and 48 VM semantic-contract shards. It found no differential
+failures in its Linux x86-64 ELF scope; transformations omitted for ineligible
+samples are counted in the reports. Licensed decompiler checks were omitted,
+and PE, Mach-O, x86, ARM, and AArch64 remain outside this run's scope, so these
+results do not close the analyzer or cross-platform gates. The hash-checked
+compressed reports and precise counts are recorded in
+[`docs/differential-run-2026-11-17-44081385675-summary.json`](docs/differential-run-2026-11-17-44081385675-summary.json).
 
 ### Instruction Equivalence Rules
 

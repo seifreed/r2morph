@@ -1,0 +1,210 @@
+{
+  "artifacts": {
+    "differential-corpus": {
+      "compressed_sha256": "dffc9c58ac5c691a04606b5d0204eb1d4cd80530c317daae859b7036efa32e6f",
+      "compressed_size_bytes": 6714561,
+      "path": "docs/differential-corpus-2026-11-17-44081385675.json.gz",
+      "source_sha256": "4e7224251609dba30c01b9ab2415969e113a0f9791f38a699a197c2dff6cc4c4",
+      "source_size_bytes": 187936949
+    },
+    "extended-maturity": {
+      "compressed_sha256": "e7719cab3fa076776b17cae3ee196c385629f4ad89ae44b46b0ea44e390df413",
+      "compressed_size_bytes": 8083194,
+      "path": "docs/extended-maturity-2026-11-17-44081385675.json.gz",
+      "source_sha256": "c50fd8b9828424c389f6bb5951cbcf80cb2422333aaabc721d8456faacca779e",
+      "source_size_bytes": 225537157
+    },
+    "maturity-evidence": {
+      "compressed_sha256": "ce9234b9bb3bf3b5e717fddd82b0d6a0790eac5748158a078f1b6cc5ac9501d3",
+      "compressed_size_bytes": 14785,
+      "path": "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
+      "source_sha256": "c61255bdc702ed4a89356299ee2e962d220c7ef966558cf344834c3c88d417fb",
+      "source_size_bytes": 135977
+    },
+    "public-compatibility": {
+      "compressed_sha256": "14f2de716c78529c4a77f9ed3ad0791924658a5ea7c011996d04ddcd914f1759",
+      "compressed_size_bytes": 472134,
+      "path": "docs/public-compatibility-2026-11-17-44081385675.json.gz",
+      "source_sha256": "b1dc6982fc162cab7eacaa0df59f20c4ba3609a9457fc7789ecf71a36b207c19",
+      "source_size_bytes": 21911447
+    },
+    "vm-semantic-contracts": {
+      "compressed_sha256": "c675f96fe0c3c64ddb7c583fb96091ade9ac3270b8716b7e1ab1a494b0285014",
+      "compressed_size_bytes": 518,
+      "path": "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
+      "source_sha256": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75",
+      "source_size_bytes": 2088
+    }
+  },
+  "differential_corpus": {
+    "applied_runs": 3565,
+    "average_complete_evidence_coverage_percent": 100.0,
+    "average_static_metric_coverage_percent": 100.0,
+    "classified_runs": 10860,
+    "error_runs": 0,
+    "failed_seed_runs": 0,
+    "omitted_run_percent": 67.17,
+    "omitted_runs": 7295,
+    "passes_covered": 10,
+    "passes_expected": 10,
+    "semantic_success_percent": 100.0,
+    "successful_seed_runs": 10860
+  },
+  "extended_maturity": {
+    "applied_runs": 3374,
+    "average_complete_evidence_coverage_percent": 100.0,
+    "classified_runs": 13032,
+    "error_runs": 0,
+    "failed_seed_runs": 0,
+    "maturity_blocker_totals": {
+      "affected_instructions": 0,
+      "behavioral_false_positive": 0,
+      "composition": 0,
+      "decompiler": 22,
+      "performance": 0
+    },
+    "omitted_run_percent": 74.11,
+    "omitted_runs": 9658,
+    "passes_covered": 12,
+    "passes_expected": 12,
+    "semantic_success_percent": 100.0,
+    "successful_seed_runs": 13032
+  },
+  "limitations": [
+    "This run measures Linux x86-64 ELF; the report lists PE, Mach-O, x86, ARM, and AArch64 as platform gaps.",
+    "Compatibility transformations were omitted for ineligible samples; omission counts are recorded per pass.",
+    "Licensed decompiler effectiveness was omitted in public CI; this run does not close the named-analyzer gate.",
+    "This evidence supports bounded differential and maturity claims, not general resistance or cross-platform parity."
+  ],
+  "platform_gap_scope": {
+    "architectures": [
+      "AArch64",
+      "ARM",
+      "x86"
+    ],
+    "formats": [
+      "Mach-O",
+      "PE"
+    ]
+  },
+  "platform_scope": {
+    "architecture": "x86-64",
+    "format": "ELF",
+    "os": "linux"
+  },
+  "public_compatibility": {
+    "built_samples": 360,
+    "compilers": [
+      "clang",
+      "clang++",
+      "g++",
+      "gcc"
+    ],
+    "decompiler_effectiveness_status": {
+      "binary_ninja": [
+        "omitted"
+      ],
+      "ghidra": [
+        "omitted"
+      ],
+      "ida_pro": [
+        "omitted"
+      ]
+    },
+    "failed_samples": 0,
+    "pass_summary": {
+      "BlockReordering": {
+        "applied": 30,
+        "applied_units": 31,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 330,
+        "samples": 360
+      },
+      "CodeVirtualization": {
+        "applied": 234,
+        "applied_units": 436,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 126,
+        "samples": 360
+      },
+      "InstructionExpansion": {
+        "applied": 73,
+        "applied_units": 435,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 287,
+        "samples": 360
+      },
+      "InstructionSubstitution": {
+        "applied": 287,
+        "applied_units": 745,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 73,
+        "samples": 360
+      },
+      "NopInsertion": {
+        "applied": 84,
+        "applied_units": 2122,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 276,
+        "samples": 360
+      },
+      "RegisterSubstitution": {
+        "applied": 5,
+        "applied_units": 14,
+        "differential_failed": 0,
+        "differential_passed": 360,
+        "errors": 0,
+        "omitted": 355,
+        "samples": 360
+      }
+    },
+    "passed_samples": 360,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "static_recovery": {
+      "analyzer": "radare2",
+      "failed_samples": 0,
+      "measured_samples": 2160
+    }
+  },
+  "schema_version": 1,
+  "vm_semantic_contracts": {
+    "capabilities": {
+      "abi-varargs": "regression-covered",
+      "direct-calls": "regression-covered",
+      "fp-simd": "regression-covered",
+      "indirect-calls": "regression-covered",
+      "memory": "regression-covered",
+      "ssa-liveness": "regression-covered",
+      "threads": "regression-covered",
+      "tls-signals": "regression-covered",
+      "unwinding-exceptions": "regression-covered"
+    },
+    "shards": 48
+  },
+  "workflow": {
+    "conclusion": "success",
+    "jobs_completed": 85,
+    "name": "Differential Corpus By Pass",
+    "run_id": 44081385675,
+    "source_commit": "b20a56c2b142701dd5e5bc329bd4a783204f8fb5",
+    "status": "completed",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44081385675"
+  }
+}

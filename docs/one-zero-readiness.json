@@ -129,7 +129,14 @@
         "tests/unit/test_published_workflow_evidence_44043963389.py",
         "docs/protection-adversarial-2026-11-17-44050933385-summary.json",
         "docs/protection-adversarial-2026-11-17-44050933385.tar.gz",
-        "tests/unit/test_published_adversarial_campaign_44050933385.py"
+        "tests/unit/test_published_adversarial_campaign_44050933385.py",
+        "docs/differential-run-2026-11-17-44081385675-summary.json",
+        "docs/differential-corpus-2026-11-17-44081385675.json.gz",
+        "docs/extended-maturity-2026-11-17-44081385675.json.gz",
+        "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
+        "docs/public-compatibility-2026-11-17-44081385675.json.gz",
+        "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
+        "tests/unit/test_published_differential_workflow_44081385675.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -225,7 +232,14 @@
         ".github/workflows/differential-corpus.yml",
         "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json",
         "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz",
-        "tests/unit/test_published_workflow_evidence_44043963389.py"
+        "tests/unit/test_published_workflow_evidence_44043963389.py",
+        "docs/differential-run-2026-11-17-44081385675-summary.json",
+        "docs/differential-corpus-2026-11-17-44081385675.json.gz",
+        "docs/extended-maturity-2026-11-17-44081385675.json.gz",
+        "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
+        "docs/public-compatibility-2026-11-17-44081385675.json.gz",
+        "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
+        "tests/unit/test_published_differential_workflow_44081385675.py"
       ]
     },
     "documented_resistance_scope": {
@@ -279,7 +293,14 @@
         "docs/protection-vm-semantic-native-parity-2026-11-15-43678223812.json.gz",
         "docs/protection-differential-run-2026-11-16-43835267898.json",
         "docs/protection-differential-run-2026-11-16-43859887107.json",
-        "docs/protection-platform-evidence-2026-11-16-43859887107.json"
+        "docs/protection-platform-evidence-2026-11-16-43859887107.json",
+        "docs/differential-run-2026-11-17-44081385675-summary.json",
+        "docs/differential-corpus-2026-11-17-44081385675.json.gz",
+        "docs/extended-maturity-2026-11-17-44081385675.json.gz",
+        "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
+        "docs/public-compatibility-2026-11-17-44081385675.json.gz",
+        "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
+        "tests/unit/test_published_differential_workflow_44081385675.py"
       ]
     },
     "published_resistance_results": {
@@ -371,7 +392,14 @@
         "tests/unit/test_published_adversarial_run_43952405619.py",
         "docs/protection-adversarial-2026-11-17-44050933385-summary.json",
         "docs/protection-adversarial-2026-11-17-44050933385.tar.gz",
-        "tests/unit/test_published_adversarial_campaign_44050933385.py"
+        "tests/unit/test_published_adversarial_campaign_44050933385.py",
+        "docs/differential-run-2026-11-17-44081385675-summary.json",
+        "docs/differential-corpus-2026-11-17-44081385675.json.gz",
+        "docs/extended-maturity-2026-11-17-44081385675.json.gz",
+        "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
+        "docs/public-compatibility-2026-11-17-44081385675.json.gz",
+        "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
+        "tests/unit/test_published_differential_workflow_44081385675.py"
       ]
     },
     "stable_api_cli": {
