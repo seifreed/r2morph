@@ -126,7 +126,10 @@
         "tests/unit/test_published_local_ghidra_virtualization_8a612589.py",
         "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json",
         "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz",
-        "tests/unit/test_published_workflow_evidence_44043963389.py"
+        "tests/unit/test_published_workflow_evidence_44043963389.py",
+        "docs/protection-adversarial-2026-11-17-44050933385-summary.json",
+        "docs/protection-adversarial-2026-11-17-44050933385.tar.gz",
+        "tests/unit/test_published_adversarial_campaign_44050933385.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -365,7 +368,10 @@
         "docs/protection-adversarial-vm-resistance-2026-11-16-43800549091.xml",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json.gz",
-        "tests/unit/test_published_adversarial_run_43952405619.py"
+        "tests/unit/test_published_adversarial_run_43952405619.py",
+        "docs/protection-adversarial-2026-11-17-44050933385-summary.json",
+        "docs/protection-adversarial-2026-11-17-44050933385.tar.gz",
+        "tests/unit/test_published_adversarial_campaign_44050933385.py"
       ]
     },
     "stable_api_cli": {

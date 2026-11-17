@@ -277,6 +277,21 @@ runners were not configured, so these results do not close analyzer coverage,
 broader pass-by-platform compatibility, or resistance. The hash-bound workflow
 evidence is summarized in
 [`docs/compatibility-corpus.md`](docs/compatibility-corpus.md#published-differential-workflow-evidence-2026-11-17).
+Another adversarial campaign, run `44050933385` on source commit `8a612589`,
+returned success for all 32 shard jobs across 362 ELF x86-64 fixtures and 22
+passes. It recorded 7,964 pass rows and 71,676 analyzer slots: 55,220 completed,
+16,456 unavailable, and zero error or missing rows. Ghidra and Triton completed
+all rows; Binary Ninja and IDA were unavailable on the workers, and Unicorn
+could not handle 528 rows. The VM smoke reports cover 10 seeds and 15 fixtures;
+they record semantic parity and divergent tamper probes, while progressive
+bytecode growth was supported on only 6 fixtures. Similarity remained high for
+some handlers (388/2,295 comparisons exceeded 0.8; maximum 0.927). The reports
+mark human adversarial review as pending; the aggregate job later completed
+successfully (job `133987828440`). This bounded evidence does
+not establish generalized resistance. See the hash-bound
+[`campaign summary`](docs/protection-adversarial-2026-11-17-44050933385-summary.json)
+and [shard reports](docs/protection-adversarial-2026-11-17-44050933385.tar.gz);
+analyzer and resistance gates remain open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

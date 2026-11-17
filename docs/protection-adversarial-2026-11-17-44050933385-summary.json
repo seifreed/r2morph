@@ -1,0 +1,492 @@
+{
+  "archive": {
+    "bytes": 1406456,
+    "files": [
+      {
+        "bytes": 295954,
+        "path": "adversarial/shards/00.json",
+        "sha256": "2cd45ac7528f3e6c6150b188753596375a7fccb2d46616f2a03a68984e569117"
+      },
+      {
+        "bytes": 296304,
+        "path": "adversarial/shards/01.json",
+        "sha256": "9fd87e668a779a5c854b9afaf829e49f7b4753aae10f35ce4094af1f83663c9a"
+      },
+      {
+        "bytes": 296316,
+        "path": "adversarial/shards/02.json",
+        "sha256": "23c1806366171c0ce3e7c769c085c615a61e2ef2854e4cf59355e0b012850105"
+      },
+      {
+        "bytes": 296366,
+        "path": "adversarial/shards/03.json",
+        "sha256": "e86f383447d943076891f493c43564d55d31dc5fe787a7988a2f74f085f648d4"
+      },
+      {
+        "bytes": 296336,
+        "path": "adversarial/shards/04.json",
+        "sha256": "5522c0de793a42f8d38fa89d4f26b8ca3de4a20226773cd333eeda2b4a696998"
+      },
+      {
+        "bytes": 296378,
+        "path": "adversarial/shards/05.json",
+        "sha256": "e32f7a57e1b234e159d1a94b51e7107c051565315a52b79b0e5953fbfc00dabf"
+      },
+      {
+        "bytes": 296386,
+        "path": "adversarial/shards/06.json",
+        "sha256": "218ffa0e29edfe15945619361aad32646c312b93ae61d566485a249d2accfdd9"
+      },
+      {
+        "bytes": 296374,
+        "path": "adversarial/shards/07.json",
+        "sha256": "36a16809e1fdefb24c96ba41f8098e9077500edebbfad8b165d734517e6b890f"
+      },
+      {
+        "bytes": 296358,
+        "path": "adversarial/shards/08.json",
+        "sha256": "b3b3f44c69d4199706789baeccb880172c755e183b832fbea45e7b746466e20d"
+      },
+      {
+        "bytes": 296263,
+        "path": "adversarial/shards/09.json",
+        "sha256": "95b147f390f2607a530fb39fea09010ce4975bf0493f9681242e64cece69b282"
+      },
+      {
+        "bytes": 296385,
+        "path": "adversarial/shards/10.json",
+        "sha256": "795053d79a08ae03ef831e7a058e2f2d0e9ace58d715dc02be6902bbe85c7c8f"
+      },
+      {
+        "bytes": 296122,
+        "path": "adversarial/shards/11.json",
+        "sha256": "db8cbe1f92ee42381a0748b97dd80207f409faf23e1fa5efd6745a52ab12821d"
+      },
+      {
+        "bytes": 296369,
+        "path": "adversarial/shards/12.json",
+        "sha256": "d3fee647818d115c9941c362dc377b3cd693b429e54b6f45328ba204d1490920"
+      },
+      {
+        "bytes": 296470,
+        "path": "adversarial/shards/13.json",
+        "sha256": "7ab7b373bfb9189617c36472024d58756ae4df5cbcb6b31af7da1848852fad74"
+      },
+      {
+        "bytes": 296371,
+        "path": "adversarial/shards/14.json",
+        "sha256": "52f8c71eba62eef03d4bbf78e4586b7600528169ffe47b82a2f508c61a310354"
+      },
+      {
+        "bytes": 296415,
+        "path": "adversarial/shards/15.json",
+        "sha256": "91c133e62c4a7e7b57b4952255610b14ea18a4b743d1c052580fec304dbfdad2"
+      },
+      {
+        "bytes": 296345,
+        "path": "adversarial/shards/16.json",
+        "sha256": "51e18a5c77523db1a363de62fd1166f55b76b2ca280c5b8184532c3116627434"
+      },
+      {
+        "bytes": 296138,
+        "path": "adversarial/shards/17.json",
+        "sha256": "1dbe9eecd26ddf5702bda5c6f5d19fdd1b930d339e7e2d43b2a863ae489902a9"
+      },
+      {
+        "bytes": 3380837,
+        "path": "adversarial/shards/18.json",
+        "sha256": "1382c1a4090d5ab89f326f52bb8cb611d82fe384302a8430dc08ef682a9582f3"
+      },
+      {
+        "bytes": 3015810,
+        "path": "adversarial/shards/19.json",
+        "sha256": "c0ac9d266348af3d15f583b5bb0343e8285c044902b130e224b15b367fae5c4a"
+      },
+      {
+        "bytes": 3015968,
+        "path": "adversarial/shards/20.json",
+        "sha256": "0ef09b25947c98e07788ba25e284ac8cf275d04a6b48dba6922ca2051fd57976"
+      },
+      {
+        "bytes": 3016051,
+        "path": "adversarial/shards/21.json",
+        "sha256": "ff74ea9b577c10b1ff148103db0d481c981b899d19f4e612afe5d9757d6ca145"
+      },
+      {
+        "bytes": 3011491,
+        "path": "adversarial/shards/22.json",
+        "sha256": "68ef648dfb127bacfe38d0a303126d9d942855be3d1a43f6dfd03d0f957bd6ec"
+      },
+      {
+        "bytes": 3510924,
+        "path": "adversarial/shards/23.json",
+        "sha256": "948f11db0ca515881f70b86ab67b35add66ad8c23a3f52e689e2c938764e446e"
+      },
+      {
+        "bytes": 3135553,
+        "path": "adversarial/shards/24.json",
+        "sha256": "c9fdea702f88e2642aae45b520b25d23b8b11412d924df7211a018044ce733aa"
+      },
+      {
+        "bytes": 3372781,
+        "path": "adversarial/shards/25.json",
+        "sha256": "1c2a8e2915ed80fc76d20528152ca0b4fa2eb0171bbf6eb8fd0650e175916a9e"
+      },
+      {
+        "bytes": 3139723,
+        "path": "adversarial/shards/26.json",
+        "sha256": "9bd925fe5f2c6aadaaad90989cbd2fbc6cbad6946d5c0efd8ab6a65e24c71d12"
+      },
+      {
+        "bytes": 3384763,
+        "path": "adversarial/shards/27.json",
+        "sha256": "c105bff53a9320f720b9f04cbb9291658c60df9254d560a0e78a2e464b702d87"
+      },
+      {
+        "bytes": 3143311,
+        "path": "adversarial/shards/28.json",
+        "sha256": "8ab166682cc377914a5312dd8e26d45a651f12e25e89e0b88ce7effb21a1980a"
+      },
+      {
+        "bytes": 3262286,
+        "path": "adversarial/shards/29.json",
+        "sha256": "862e84d930b708b5bfc95da1d7ec7584914d32bbdd767810f11f9e5ef1c2e9ed"
+      },
+      {
+        "bytes": 3262444,
+        "path": "adversarial/shards/30.json",
+        "sha256": "18a709c83555b5a071bc5aceffe9e21969e74faaea150c878a4ba0381b173b7d"
+      },
+      {
+        "bytes": 3262154,
+        "path": "adversarial/shards/31.json",
+        "sha256": "ae76b68ceee1b7a8cb7649457f9b2af95a61e91dd5f1255343e4f05abe2e10ef"
+      },
+      {
+        "bytes": 380132,
+        "path": "vm-resistance/vm-resistance-adversarial.json",
+        "sha256": "58f18dc3a0d4a9a88ec860dd9f2e221e39a81cd1a24f3409bb3444b43ded0f2a"
+      },
+      {
+        "bytes": 3771,
+        "path": "vm-resistance/vm-resistance-bytecode-grammar.json",
+        "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef"
+      },
+      {
+        "bytes": 3095,
+        "path": "vm-resistance/vm-resistance-seed-diversity.json",
+        "sha256": "36c6a6ab32a36fc25b939d11d984965d0cbd649683f1a10bf1b38a6d92b493a0"
+      }
+    ],
+    "path": "docs/protection-adversarial-2026-11-17-44050933385.tar.gz",
+    "sha256": "08abce14d4ae6d10c10e15cf762280c4254be27ac58af9dae8c98c46cb5daa40"
+  },
+  "limitations": [
+    "Binary Ninja was unavailable on these workers; no valid license is available in this environment.",
+    "IDA Pro was unavailable because the idat executable was not configured on these workers.",
+    "Unicorn could not support an instruction in 528 fixture rows.",
+    "The resistance artifacts label human adversarial review as pending; these are bounded automated measurements, not a claim of generalized resistance."
+  ],
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "applied_pass_runs": 2343,
+    "completed_tool_runs": 55220,
+    "error_pass_runs": 0,
+    "error_tool_runs": 0,
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "omitted_pass_runs": 0,
+    "per_pass": {
+      "APIHashing": {
+        "applied": 24,
+        "errors": 0,
+        "no_op": 338,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "AntiDisassembly": {
+        "applied": 58,
+        "errors": 0,
+        "no_op": 304,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "BlockReordering": {
+        "applied": 13,
+        "errors": 0,
+        "no_op": 349,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "CodeMobility": {
+        "applied": 187,
+        "errors": 0,
+        "no_op": 175,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "CodeVirtualization": {
+        "applied": 362,
+        "errors": 0,
+        "no_op": 0,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "ConstantUnfolding": {
+        "applied": 219,
+        "errors": 0,
+        "no_op": 143,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "ControlFlowFlattening": {
+        "applied": 51,
+        "errors": 0,
+        "no_op": 311,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "DataFlowMutation": {
+        "applied": 28,
+        "errors": 0,
+        "no_op": 334,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "DeadCodeInjection": {
+        "applied": 55,
+        "errors": 0,
+        "no_op": 307,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "FunctionOutlining": {
+        "applied": 178,
+        "errors": 0,
+        "no_op": 184,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "ImportObfuscation": {
+        "applied": 177,
+        "errors": 0,
+        "no_op": 185,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "InstructionExpansion": {
+        "applied": 20,
+        "errors": 0,
+        "no_op": 342,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "InstructionSubstitution": {
+        "applied": 216,
+        "errors": 0,
+        "no_op": 146,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "NopInsertion": {
+        "applied": 23,
+        "errors": 0,
+        "no_op": 339,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "OpaquePredicates": {
+        "applied": 190,
+        "errors": 0,
+        "no_op": 172,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "PatternSubstitution": {
+        "applied": 211,
+        "errors": 0,
+        "no_op": 151,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "PolymorphicEngine": {
+        "applied": 233,
+        "errors": 0,
+        "no_op": 129,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "RegisterSubstitution": {
+        "applied": 8,
+        "errors": 0,
+        "no_op": 354,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "SelfModifyingCode": {
+        "applied": 35,
+        "errors": 0,
+        "no_op": 327,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "ShortJumpPatching": {
+        "applied": 12,
+        "errors": 0,
+        "no_op": 350,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "StackStrings": {
+        "applied": 6,
+        "errors": 0,
+        "no_op": 356,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      },
+      "StringObfuscation": {
+        "applied": 37,
+        "errors": 0,
+        "no_op": 325,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 362
+      }
+    },
+    "per_tool": {
+      "angr": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "error": 0,
+        "unavailable": 7964
+      },
+      "custom": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 0,
+        "error": 0,
+        "unavailable": 7964
+      },
+      "objdump": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 7964,
+        "error": 0,
+        "unavailable": 0
+      },
+      "unicorn": {
+        "completed": 7436,
+        "error": 0,
+        "unavailable": 528
+      }
+    },
+    "unavailable_tool_runs": 16456
+  },
+  "schema_version": 1,
+  "scope": {
+    "expected_tool_rows": 71676,
+    "observed_tool_rows": 71676,
+    "pass_rows": 7964,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "samples": 362
+  },
+  "source_commit": "8a612589dab88d4c928ea46ab8c525c305ef9184",
+  "vm_resistance_smoke": {
+    "cross_seed_exact_normalised_matches": 0,
+    "cross_seed_nearest_similarity_above_threshold": 388,
+    "cross_seed_nearest_similarity_comparisons": 2295,
+    "cross_seed_nearest_similarity_max": 0.926829268292683,
+    "cross_seed_nearest_similarity_mean": 0.6579643298455032,
+    "dispatch_variant_unique_count": 2,
+    "distinct_artifacts": true,
+    "fixture_count": 15,
+    "grammar_handler_stride_unique_count": 12,
+    "grammar_total_handlers": 2550,
+    "grammar_total_padding_bytes": 2587,
+    "handler_count_per_seed": 255,
+    "human_review_status": "pending-human-adversarial-review",
+    "opcode_assignment_unique_count": 10,
+    "progressive_growth_supported_fixtures": 6,
+    "seed_count": 10,
+    "seed_count_per_fixture": 10,
+    "semantic_parity": true,
+    "tamper_probes_diverged": true
+  },
+  "workflow": {
+    "aggregate_job_id": 133987828440,
+    "aggregate_job_status": "success",
+    "name": "Adversarial Analysis Benchmark",
+    "run_id": "44050933385",
+    "shard_jobs": 32,
+    "shard_jobs_status": "all_success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44050933385"
+  }
+}
