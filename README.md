@@ -251,6 +251,15 @@ were unavailable in the workers, and Unicorn did not support 528 fixture rows.
 The hash-bound [run manifest](docs/protection-adversarial-run-2026-11-16-43952405619.json)
 and [compressed raw report](docs/protection-adversarial-run-2026-11-16-43952405619.json.gz)
 retain the evidence. The analyzer gate remains open.
+
+A bounded local rerun on source commit `dedfef14` covered two repository-fixture
+shards (8 distinct ELF x86-64 fixtures) across all 22 passes. IDA Pro 9.5
+completed all 176 analyzer rows for those fixtures; across 1,584 analyzer slots,
+1,056 completed and 528 were unavailable (Binary Ninja, Ghidra, and Triton).
+There were no pass/tool errors or missing rows. The macOS run excludes generated
+Linux fixtures, and the all-analyzer gate remains open. Hash-bound reports and
+fixture hashes are listed in
+[`docs/compatibility-corpus.md`](docs/compatibility-corpus.md#current-source-local-ida-shards).
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

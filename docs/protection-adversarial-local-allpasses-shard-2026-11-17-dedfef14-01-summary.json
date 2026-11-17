@@ -1,0 +1,93 @@
+{
+  "archive": {
+    "path": "docs/protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-01.json.gz",
+    "sha256": "745acdb171f8fe67709b1fc117a23d1097848730635be0677e897c266938444b",
+    "uncompressed_bytes": 600753,
+    "uncompressed_sha256": "5c5c1056c23ad7f46e97996c84ccec2c2d2820d4c5891c60b4cc5d52a1e4f717"
+  },
+  "execution": {
+    "date": "2026-11-17",
+    "platform": "darwin-arm64",
+    "provenance": "local-source-tree"
+  },
+  "measurement": "local-all-pass-adversarial-shard",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "analyzer_errors": 0,
+    "applied_pass_runs": 8,
+    "completed_analyzer_percent": 66.67,
+    "completed_analyzer_runs": 528,
+    "completed_runs_by_tool": {
+      "angr": 88,
+      "custom": 88,
+      "ida-pro": 88,
+      "objdump": 88,
+      "radare2": 88,
+      "unicorn": 88
+    },
+    "missing_analyzer_runs": 0,
+    "missing_pass_runs": 0,
+    "no_op_pass_runs": 80,
+    "omitted_pass_runs": 0,
+    "pass_errors": 0,
+    "unavailable_analyzer_runs": 264,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 88
+      },
+      "ghidra": {
+        "executable 'ghidra' is unavailable": 88
+      },
+      "triton": {
+        "module 'triton' is unavailable": 88
+      }
+    },
+    "unavailable_runs_by_tool": {
+      "binary-ninja": 88,
+      "ghidra": 88,
+      "triton": 88
+    }
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus_families": [
+      "repository-fixtures"
+    ],
+    "expected_analyzer_runs": 792,
+    "expected_pass_runs": 88,
+    "fixture_count": 4,
+    "fixture_shard": {
+      "count": 32,
+      "index": 1
+    },
+    "fixtures": [
+      {
+        "bytes": 4632,
+        "name": "elf_vm_leaidx_x86_64",
+        "sha256": "d7b414685432996db3ae49b5ac10bc951d79effce167eec3c8667b70f12ebd78"
+      },
+      {
+        "bytes": 4776,
+        "name": "elf_vm_leaidxnb_x86_64",
+        "sha256": "f15c47e5bf80f4e179c1d097e364e01fab1de94786b25de765662919f9a5c9db"
+      },
+      {
+        "bytes": 13288,
+        "name": "elf_vm_pie_x86_64",
+        "sha256": "19515c65476a8197da172be230e0e1ccc670828973908f1c2b2a192c1e13862f"
+      },
+      {
+        "bytes": 4736,
+        "name": "elf_vm_shift_x86_64",
+        "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29"
+      }
+    ],
+    "observed_analyzer_runs": 792,
+    "observed_pass_runs": 88,
+    "pass_count": 22
+  },
+  "source_commit": "dedfef14f00bda1e8f90bae6759c7b55899c8b3d"
+}

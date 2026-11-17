@@ -1193,6 +1193,22 @@ byte identical to run `43800549091`; automated smoke remains complete, but the
 human adversarial review is pending and generalized resistance is unproven.
 Neither the all-named-analyzers gate nor the resistance release criterion closes.
 
+## Current-source local IDA shards — 2026-11-17
+
+On source commit `dedfef14f00bda1e8f90bae6759c7b55899c8b3d`, local adversarial
+shards 0 and 1 covered 8 distinct repository ELF x86-64 fixtures across all
+22 passes: 176/176 pass rows and 1,584/1,584 analyzer slots were present, with
+zero missing rows or errors. IDA Pro 9.5 completed 176/176 rows. Overall,
+1,056 analyzer rows completed and 528 were unavailable (Binary Ninja, Ghidra,
+and Triton, 176 each). Generated Linux fixtures were not included because the
+Darwin ARM64 host lacks their Linux x86-64 toolchain. The raw reports, fixture
+hashes, and exact per-shard counts are in the
+[compatibility corpus record](compatibility-corpus.md#current-source-local-ida-shards),
+with regression checks in
+[test_published_local_ida_adversarial_shards_dedfef14.py](../tests/unit/test_published_local_ida_adversarial_shards_dedfef14.py).
+This adds bounded current-source IDA coverage; the all-analyzer, cross-platform
+parity, and general resistance criteria remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

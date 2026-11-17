@@ -1107,3 +1107,47 @@ analyzer runs completed: Binary Ninja and IDA Pro were unavailable and Unicorn
 could not emulate 528 fixture instructions. Its VM resistance smoke remains
 pending human adversarial review; these results do not establish general
 resistance or cross-platform parity.
+
+## Current-source local IDA shards
+
+On 2026-11-17, the local Darwin ARM64 runner executed shards 0 and 1 of the
+32-shard repository-fixture corpus on source commit
+`dedfef14f00bda1e8f90bae6759c7b55899c8b3d`. The two shards cover eight
+distinct ELF x86-64 fixtures and all 22 passes (176 pass rows). All 176 IDA Pro
+9.5 analyzer rows completed. Across 1,584 analyzer slots, 1,056 completed and
+528 were explicitly unavailable: Binary Ninja, Ghidra, and Triton each account
+for 176 unavailable rows. Binary Ninja was unavailable because its license was
+not available to this process; Ghidra's executable was not available to the
+benchmark; Triton's module was unavailable. There were zero pass errors, tool
+errors, or missing rows. No generated Linux fixtures were included because
+this host does not have the Linux x86-64 corpus toolchain.
+
+Each report is SHA-256 bound to its manifest and fixture files:
+
+- Shard 0:
+  - `elf_switch_pie_x86_64` (13,296 bytes):
+    `2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f`
+  - `elf_vm_arith_x86_64` (4,632 bytes):
+    `9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00`
+  - `elf_vm_fpengineidxnb_x86_64` (4,728 bytes):
+    `9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07`
+  - `elf_vm_movabs_x86_64` (4,776 bytes):
+    `9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3`
+  - [Summary](protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-00-summary.json)
+    and [compressed report](protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-00.json.gz).
+- Shard 1:
+  - `elf_vm_leaidx_x86_64` (4,632 bytes):
+    `d7b414685432996db3ae49b5ac10bc951d79effce167eec3c8667b70f12ebd78`
+  - `elf_vm_leaidxnb_x86_64` (4,776 bytes):
+    `f15c47e5bf80f4e179c1d097e364e01fab1de94786b25de765662919f9a5c9db`
+  - `elf_vm_pie_x86_64` (13,288 bytes):
+    `19515c65476a8197da172be230e0e1ccc670828973908f1c2b2a192c1e13862f`
+  - `elf_vm_shift_x86_64` (4,736 bytes):
+    `e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29`
+  - [Summary](protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-01-summary.json)
+    and [compressed report](protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-01.json.gz).
+
+These local slices add current-source IDA coverage for eight fixtures; they do
+not complete the full analyzer matrix, represent the generated corpus, establish
+cross-platform parity, or prove generalized resistance. The all-analyzer and
+resistance release criteria remain open.

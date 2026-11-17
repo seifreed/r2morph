@@ -115,7 +115,12 @@
         "docs/protection-ghidra-corpus-2026-11-16-981a45be-summary.json",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json.gz",
-        "tests/unit/test_published_adversarial_run_43952405619.py"
+        "tests/unit/test_published_adversarial_run_43952405619.py",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-00-summary.json",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-00.json.gz",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-01-summary.json",
+        "docs/protection-adversarial-local-allpasses-shard-2026-11-17-dedfef14-01.json.gz",
+        "tests/unit/test_published_local_ida_adversarial_shards_dedfef14.py"
       ]
     },
     "complete_compatibility_contract": {
