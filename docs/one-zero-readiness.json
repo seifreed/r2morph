@@ -378,7 +378,9 @@
       "status": "complete",
       "evidence": [
         "docs/stability-contract.md",
-        "tests/unit/test_public_surface_contract.py"
+        "tests/unit/test_public_surface_contract.py",
+        "docs/wheel-smoke-local-2026-11-17-9abd69e9.json",
+        "tests/unit/test_published_wheel_smoke_local_9abd69e9.py"
       ]
     }
   }

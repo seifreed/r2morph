@@ -133,6 +133,11 @@ and generated a vulnerability-free CycloneDX SBOM. This does not replace the
 Linux release workflow, GitHub provenance attestation, current human signoff,
 or the still-open 1.0 readiness gates; details and artifact hashes are in
 [`docs/release-validation-local-2026-11-16-2c50cff3.json`](docs/release-validation-local-2026-11-16-2c50cff3.json).
+The `9abd69e` source also built both package artifacts and passed an installed-wheel
+smoke on Python 3.13.11/macOS arm64: import, CLI version, and 318 public API and
+import-safety tests passed. This bounded run did not execute the full suite or
+release audit; its artifact hashes and scope are recorded in
+[`docs/wheel-smoke-local-2026-11-17-9abd69e9.json`](docs/wheel-smoke-local-2026-11-17-9abd69e9.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

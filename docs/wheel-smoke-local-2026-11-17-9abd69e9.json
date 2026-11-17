@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "source_commit": "9abd69e99ed703e59b7e3c31461104259d3ba448",
+  "validation_date_utc": "2026-11-17",
+  "host": {
+    "operating_system": "Darwin",
+    "machine_architecture": "arm64",
+    "python_version": "3.13.11"
+  },
+  "package_version": "0.4.0-alpha.3",
+  "build": {
+    "command": "python -m build",
+    "wheel": "passed",
+    "sdist": "passed"
+  },
+  "artifacts": {
+    "wheel": {
+      "filename": "r2morph-0.4.0a3-py3-none-any.whl",
+      "size_bytes": 1129132,
+      "sha256": "09140bfd07b2b7ae9d58baf40d8e45b9af645e0127bd138ebeab3fdf1b1d9b4b"
+    },
+    "sdist": {
+      "filename": "r2morph-0.4.0a3.tar.gz",
+      "size_bytes": 867673,
+      "sha256": "633d6980f9d2d0d5b04eeb7b2ea46d813694caff6f31817dfcbffb99ea5773d8"
+    }
+  },
+  "installed_wheel_smoke": {
+    "install": "passed",
+    "module_import": "passed",
+    "imported_from_installed_wheel": true,
+    "cli_version": "0.4.0-alpha.3",
+    "tests": {
+      "command": "python -W error -m pytest tests/unit/test_circular_imports.py tests/unit/test_cli_basic_commands.py::test_cli_version_function tests/unit/test_public_surface_contract.py --no-cov --tb=short -q",
+      "passed": 318,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "limitations": [
+    "This is a local macOS arm64 Python 3.13.11 smoke, not the full test suite or cross-platform matrix.",
+    "Twine validation, pip-audit, SBOM generation, Linux release workflow, and provenance attestation were not run for this build.",
+    "The wheel and sdist are not committed; their hashes identify the temporary build artifacts."
+  ]
+}
