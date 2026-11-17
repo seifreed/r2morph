@@ -1227,6 +1227,21 @@ and [regression test](../tests/unit/test_published_local_ghidra_virtualization_8
 All-analyzer, cross-platform parity, and published resistance criteria remain
 open.
 
+## Published differential workflow corpus — 2026-11-17
+
+Workflow [44043963389](https://github.com/seifreed/r2morph/actions/runs/44043963389)
+completed on source commit `8a612589dab88d4c928ea46ab8c525c305ef9184`: 360
+public Linux ELF x86-64 builds, six passes, and 19,440/19,440 differential
+inputs passed. It applied 713 transformations and omitted 1,447 ineligible
+rows; no static-recovery measurement failed. Optional decompiler runners were
+omitted, so this does not close the analyzer gate. Five platform slices
+completed 76 selected smoke cases without errors or failures; the limited
+selection does not establish full cross-platform parity. See the hash-bound
+[summary](protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json),
+[curated raw reports](protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz),
+and [regression test](../tests/unit/test_published_workflow_evidence_44043963389.py).
+Analyzer, parity, and published resistance criteria remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

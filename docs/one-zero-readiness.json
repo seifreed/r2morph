@@ -123,7 +123,10 @@
         "tests/unit/test_published_local_ida_adversarial_shards_dedfef14.py",
         "docs/protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589-summary.json",
         "docs/protection-adversarial-local-ghidra-virtualization-2026-11-17-8a612589.json.gz",
-        "tests/unit/test_published_local_ghidra_virtualization_8a612589.py"
+        "tests/unit/test_published_local_ghidra_virtualization_8a612589.py",
+        "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json",
+        "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz",
+        "tests/unit/test_published_workflow_evidence_44043963389.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -216,7 +219,10 @@
         "docs/protection-platform-completed-run-2026-11-16-43949336892.json",
         "tests/unit/test_published_platform_completed_run_43949336892.py",
         "tests/integration/test_macho_x86_64_native.py",
-        ".github/workflows/differential-corpus.yml"
+        ".github/workflows/differential-corpus.yml",
+        "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json",
+        "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz",
+        "tests/unit/test_published_workflow_evidence_44043963389.py"
       ]
     },
     "documented_resistance_scope": {

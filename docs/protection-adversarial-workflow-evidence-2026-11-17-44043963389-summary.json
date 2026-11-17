@@ -1,0 +1,194 @@
+{
+  "archive": {
+    "bytes": 473947,
+    "files": [
+      {
+        "bytes": 335,
+        "path": "corpus/aggregate/public-compatibility-aggregate.json",
+        "sha256": "4a799724c07a634100bf97affbd68e8151031546eabf19ab413860d23160a849"
+      },
+      {
+        "bytes": 4855,
+        "path": "corpus/shards/0/manifest.json",
+        "sha256": "e9b710a8ec3078c2394161711336a37b358ec5cf5cd919c518c458209815b99e"
+      },
+      {
+        "bytes": 4859919,
+        "path": "corpus/shards/0/matrix.json",
+        "sha256": "6e42b347c2f5b03ff7a8c7a1c1b998f4dfd52094ee1801023987e7c76b9d74f4"
+      },
+      {
+        "bytes": 363690,
+        "path": "corpus/shards/0/tools.json",
+        "sha256": "95fd40e93f193b6d7a8afaa3f451add6ef43e4c1d1900c76feb39ded317f2ba7"
+      },
+      {
+        "bytes": 4855,
+        "path": "corpus/shards/1/manifest.json",
+        "sha256": "e9b710a8ec3078c2394161711336a37b358ec5cf5cd919c518c458209815b99e"
+      },
+      {
+        "bytes": 4860102,
+        "path": "corpus/shards/1/matrix.json",
+        "sha256": "fa342ed0161116080b543d21118980ba4aeafe4a6b42a7dcaeedd29aa087fdd2"
+      },
+      {
+        "bytes": 363550,
+        "path": "corpus/shards/1/tools.json",
+        "sha256": "dc06db84acba1daecbf0444a3a86a75a9c8bd1ee805d34324c0a0d5ef5229c60"
+      },
+      {
+        "bytes": 4855,
+        "path": "corpus/shards/2/manifest.json",
+        "sha256": "e9b710a8ec3078c2394161711336a37b358ec5cf5cd919c518c458209815b99e"
+      },
+      {
+        "bytes": 4860168,
+        "path": "corpus/shards/2/matrix.json",
+        "sha256": "5e9b6fa47d40b7fe375e01b160cdc160faf98ea33d8f8f71e2f60f0b23533a13"
+      },
+      {
+        "bytes": 363602,
+        "path": "corpus/shards/2/tools.json",
+        "sha256": "7b4f52fa1ea447822b3dc5c8c3c0a7aafac56ee7dceddc924494c19a3ebbfa89"
+      },
+      {
+        "bytes": 4855,
+        "path": "corpus/shards/3/manifest.json",
+        "sha256": "e9b710a8ec3078c2394161711336a37b358ec5cf5cd919c518c458209815b99e"
+      },
+      {
+        "bytes": 4860407,
+        "path": "corpus/shards/3/matrix.json",
+        "sha256": "9fe25b26491819e2ec83c289ce161757b557e77d6d72814e59fbe72fd63dd270"
+      },
+      {
+        "bytes": 363547,
+        "path": "corpus/shards/3/tools.json",
+        "sha256": "9546bc0b353682d6eadb6cab0e77d527d22d64df643f0afef2d4176c94eb2f3a"
+      },
+      {
+        "bytes": 6113,
+        "path": "platform/cross-platform-differential.xml",
+        "sha256": "3f0969d01fa90ef42b555329e4cb14806d097adfb0f48a5c1be19c23c77c7fd5"
+      },
+      {
+        "bytes": 1147,
+        "path": "platform/elf-arm-32-native.xml",
+        "sha256": "71321a2c091a6acf5df281e696647dd1514625a82e9b8c172d75ebdf69e18577"
+      },
+      {
+        "bytes": 1294,
+        "path": "platform/elf-arm64-native.xml",
+        "sha256": "82097545f6fc665576e8f38c1eea9e7c11aff3026c11346088b7270d844ff015"
+      },
+      {
+        "bytes": 1442,
+        "path": "platform/elf-x86-32-native.xml",
+        "sha256": "a4e7189eff422d9ef007f085bbc1776d89478cb4265baa149ffda3377275e806"
+      },
+      {
+        "bytes": 13692,
+        "path": "platform/summary.json",
+        "sha256": "f3c351824c798762d230089ff782427a2f15f624fbea667a351798cd8400ecd9"
+      },
+      {
+        "bytes": 2895,
+        "path": "platform/windows-format-differential.xml",
+        "sha256": "aa7e758e581c757fce24a7a6ccedd39cad59ebf25b2bf9eaa7c1dba93a639a2c"
+      }
+    ],
+    "path": "docs/protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz",
+    "sha256": "3489e275d554e64b2586335af0ec54f230784ad03e29ddd9867dbc930cccbfb9"
+  },
+  "cross_platform_smoke": {
+    "case_count": 76,
+    "complete_slices": 5,
+    "error_count": 0,
+    "failure_count": 0,
+    "status": "complete",
+    "total_slices": 5
+  },
+  "optional_decompilers": {
+    "status": "omitted from public workflow; not evidence of analyzer coverage"
+  },
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "built_samples": 360,
+    "differential_failed_samples": 0,
+    "failed_samples": 0,
+    "per_pass": {
+      "BlockReordering": {
+        "applied": 30,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 330,
+        "samples": 360
+      },
+      "CodeVirtualization": {
+        "applied": 234,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 126,
+        "samples": 360
+      },
+      "InstructionExpansion": {
+        "applied": 73,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 287,
+        "samples": 360
+      },
+      "InstructionSubstitution": {
+        "applied": 287,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 73,
+        "samples": 360
+      },
+      "NopInsertion": {
+        "applied": 84,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 276,
+        "samples": 360
+      },
+      "RegisterSubstitution": {
+        "applied": 5,
+        "differential_cases": 3240,
+        "differential_failed": 0,
+        "omitted": 355,
+        "samples": 360
+      }
+    },
+    "static_recovery_failed_samples": 0,
+    "status": "passed",
+    "tool_failed_samples": 0,
+    "tool_measurements": 2160
+  },
+  "schema_version": 1,
+  "scope": {
+    "differential_inputs_per_sample_pass": 9,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "samples": 360,
+    "shards": 4,
+    "target": "Linux ELF x86-64"
+  },
+  "source_commit": "8a612589dab88d4c928ea46ab8c525c305ef9184",
+  "workflow": {
+    "name": "Differential Corpus By Pass",
+    "run_id": "44043963389",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44043963389"
+  }
+}

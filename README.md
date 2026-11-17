@@ -269,6 +269,14 @@ report are recorded in
 [`docs/compatibility-corpus.md`](docs/compatibility-corpus.md).
 This bounded output comparison does not demonstrate generalized resistance;
 all-analyzer, cross-platform parity, and resistance gates remain open.
+The completed differential workflow on that source revision also retained a
+360-build public ELF x86-64 corpus: 19,440 differential inputs passed across six
+passes, with 713 transformations applied and 1,447 omitted. Five platform
+slices completed 76 selected smoke cases without failures. Optional decompiler
+runners were not configured, so these results do not close analyzer coverage,
+broader pass-by-platform compatibility, or resistance. The hash-bound workflow
+evidence is summarized in
+[`docs/compatibility-corpus.md`](docs/compatibility-corpus.md#published-differential-workflow-evidence-2026-11-17).
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

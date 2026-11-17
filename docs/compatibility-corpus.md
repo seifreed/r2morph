@@ -1172,3 +1172,27 @@ and [compressed raw report](protection-adversarial-local-ghidra-virtualization-2
 bind the source tree, fixtures, and tool outcomes. The [regression test](../tests/unit/test_published_local_ghidra_virtualization_8a612589.py)
 checks counts, hashes, privacy, and open release gates. The all-analyzer,
 cross-platform parity, and published resistance criteria remain open.
+
+## Published differential workflow evidence — 2026-11-17
+
+Workflow [44043963389](https://github.com/seifreed/r2morph/actions/runs/44043963389)
+ran against source commit `8a612589dab88d4c928ea46ab8c525c305ef9184`. Its four
+public-corpus shards built 360 Linux ELF x86-64 samples and evaluated six
+passes: BlockReordering, CodeVirtualization, InstructionExpansion,
+InstructionSubstitution, NopInsertion, and RegisterSubstitution. All 19,440
+differential inputs passed (3,240 per pass); 713 transformations were applied
+and 1,447 were omitted as ineligible. The radare2 static-recovery measurements
+reported no failures. Optional decompiler runners (angr, Binary Ninja, Ghidra,
+IDA Pro, and Triton) were omitted by the public workflow, so this is not
+analyzer coverage evidence.
+
+The same workflow completed five platform slices with 76 selected smoke cases
+and no failures or errors: ELF ARM32 (6), ELF AArch64 (7), ELF x86-32 (8),
+macOS ARM64 (37, including selected x86-64 Mach-O cases), and Windows PE (18).
+This is bounded smoke evidence, not full pass-by-platform parity. The
+[hash-bound summary](protection-adversarial-workflow-evidence-2026-11-17-44043963389-summary.json)
+and [curated raw reports](protection-adversarial-workflow-evidence-2026-11-17-44043963389.tar.gz)
+retain the per-shard matrices, tool reports, platform XML, and file hashes.
+The [regression test](../tests/unit/test_published_workflow_evidence_44043963389.py)
+recomputes pass counts, verifies archive hashes and privacy, and keeps the
+analyzer, parity, and resistance release gates open.
