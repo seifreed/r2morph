@@ -13,10 +13,16 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _REPORT_PATH = _ROOT / "docs/release-validation-local-2026-11-17-b20a56c2.json"
 _SBOM_PATH = _ROOT / "docs/release-validation-local-2026-11-17-b20a56c2-environment-sbom.cdx.json"
+_RESOLVED_MANIFEST_PATH = (
+    _ROOT / "docs/release-validation-local-2026-11-17-b20a56c2-requirements-aarch64-apple-darwin-py313.txt"
+)
+_RESOLVED_SBOM_PATH = _ROOT / "docs/release-validation-local-2026-11-17-b20a56c2-requirements-sbom.cdx.json"
 _SOURCE_COMMIT = "b20a56c2b142701dd5e5bc329bd4a783204f8fb5"
 _WHEEL_SHA256 = "9017c521acd12ead97e01e40156772b5371504541764ddc376dbb2f291eede9d"
 _SDIST_SHA256 = "6ed1f23c0a2d841f37988f96da7cd94240d0580d78cdf61a72ec262e2cf276e5"
 _SBOM_SHA256 = "e597b960dd370254322e33139957f1136a4894d9b0075a29decbe06dc67a18d9"
+_RESOLVED_MANIFEST_SHA256 = "7fdd9625e58ce09d38c2993c7902a9289dcf88d01828f0ea332da8d5060b0549"
+_RESOLVED_SBOM_SHA256 = "9cfcc7003aad5e92222ffa855378a5f0043e6ffe972fbd75f437bb2913dbedb9"
 _HOST_PATH = re.compile(r"(?:/Users/|/home/|/private/tmp/|[A-Za-z]:\\Users\\)")
 
 
@@ -34,15 +40,23 @@ def test_local_release_validation_pins_built_artifacts_and_environment_sbom() ->
         and artifacts["sdist"]["sha256"] == _SDIST_SHA256
         and artifacts["local_environment_sbom"]["sha256"] == _SBOM_SHA256
         and hashlib.sha256(_SBOM_PATH.read_bytes()).hexdigest() == _SBOM_SHA256
+        and hashlib.sha256(_RESOLVED_MANIFEST_PATH.read_bytes()).hexdigest() == _RESOLVED_MANIFEST_SHA256
+        and hashlib.sha256(_RESOLVED_SBOM_PATH.read_bytes()).hexdigest() == _RESOLVED_SBOM_SHA256
         and report["package_metadata"]["twine_check"] == "passed"
     )
 
 
-def test_local_release_validation_keeps_incomplete_audit_and_release_steps_open() -> None:
+def test_local_release_validation_pins_resolved_requirements_audit_and_keeps_release_steps_open() -> None:
     report = _report()
 
     expect(
-        report["dependency_audit"]["requirements_file"]["status"] == "incomplete"
+        report["dependency_audit"]["requirements_file"]["status"] == "bootstrap_failed"
+        and report["dependency_audit"]["resolved_manifest"]["status"] == "passed"
+        and report["dependency_audit"]["resolved_manifest"]["known_vulnerabilities"] == 0
+        and report["dependency_audit"]["resolved_manifest"]["manifest"]["sha256"] == _RESOLVED_MANIFEST_SHA256
+        and report["dependency_audit"]["resolved_manifest"]["manifest"]["filename"] == _RESOLVED_MANIFEST_PATH.name
+        and report["dependency_audit"]["resolved_manifest"]["sbom"]["sha256"] == _RESOLVED_SBOM_SHA256
+        and report["dependency_audit"]["resolved_manifest"]["sbom"]["filename"] == _RESOLVED_SBOM_PATH.name
         and report["dependency_audit"]["local_environment"]["known_vulnerabilities"] == 0
         and report["release_scope"]["provenance_attestation"] == "not_generated"
         and report["release_scope"]["pypi_publication"] == "not_performed"
@@ -51,6 +65,8 @@ def test_local_release_validation_keeps_incomplete_audit_and_release_steps_open(
 
 
 def test_local_release_validation_artifacts_contain_no_host_paths() -> None:
-    contents = _REPORT_PATH.read_bytes() + _SBOM_PATH.read_bytes()
+    contents = b"".join(
+        path.read_bytes() for path in (_REPORT_PATH, _SBOM_PATH, _RESOLVED_MANIFEST_PATH, _RESOLVED_SBOM_PATH)
+    )
 
     expect(_HOST_PATH.search(contents.decode("utf-8")) is None)

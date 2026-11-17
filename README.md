@@ -140,11 +140,14 @@ release audit; its artifact hashes and scope are recorded in
 [`docs/wheel-smoke-local-2026-11-17-9abd69e9.json`](docs/wheel-smoke-local-2026-11-17-9abd69e9.json).
 The `b20a56c2` release check rebuilt the current wheel and sdist, passed Twine,
 repeated the installed-wheel smoke and recorded the full local suite result.
-The local environment audit found no known vulnerabilities and emitted a
-CycloneDX inventory, but the requirements-file audit could not bootstrap its
-temporary environment (`ensurepip` exited with SIGABRT). This is not a passing
-requirements audit or a release SBOM; provenance and Linux release checks remain
-pending. See the [hash-bound local release report](docs/release-validation-local-2026-11-17-b20a56c2.json).
+The direct `pip-audit -r requirements.txt` path could not bootstrap its
+temporary environment (`ensurepip` exited with SIGABRT). Resolving the declared
+requirements with `uv` into a hash-pinned macOS arm64/Python 3.13 manifest and
+auditing that manifest with `pip-audit --disable-pip` passed with no known
+vulnerabilities across 118 components. The pinned manifest and CycloneDX output
+are recorded with their hashes; this covers that one platform resolution, not
+the release workflow SBOM or other platform matrices. Provenance and Linux
+release checks remain pending. See the [hash-bound local release report](docs/release-validation-local-2026-11-17-b20a56c2.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent

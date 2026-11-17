@@ -60,8 +60,30 @@
   "dependency_audit": {
     "requirements_file": {
       "command": "pip-audit -r requirements.txt -f cyclonedx-json",
-      "status": "incomplete",
+      "status": "bootstrap_failed",
       "reason": "Temporary environment bootstrap failed when ensurepip exited with SIGABRT."
+    },
+    "resolved_manifest": {
+      "status": "passed",
+      "source_requirements": "requirements.txt",
+      "resolver": "uv 0.13.7",
+      "resolution_command": "uv pip compile requirements.txt --python-version 3.13 --python-platform aarch64-apple-darwin --generate-hashes",
+      "target": "macOS arm64, Python 3.13",
+      "manifest": {
+        "filename": "release-validation-local-2026-11-17-b20a56c2-requirements-aarch64-apple-darwin-py313.txt",
+        "size_bytes": 189352,
+        "sha256": "7fdd9625e58ce09d38c2993c7902a9289dcf88d01828f0ea332da8d5060b0549"
+      },
+      "audit_command": "pip-audit --disable-pip -r <manifest> -f cyclonedx-json -o <sbom>",
+      "auditor_version": "pip-audit 2.10.1",
+      "known_vulnerabilities": 0,
+      "sbom": {
+        "filename": "release-validation-local-2026-11-17-b20a56c2-requirements-sbom.cdx.json",
+        "size_bytes": 20490,
+        "sha256": "9cfcc7003aad5e92222ffa855378a5f0043e6ffe972fbd75f437bb2913dbedb9",
+        "format": "CycloneDX 1.4",
+        "components": 118
+      }
     },
     "local_environment": {
       "command": "pip-audit --local -f cyclonedx-json",
@@ -77,7 +99,7 @@
     "stable_release": "blocked",
     "limitations": [
       "This local run validates artifacts on macOS arm64 with Python 3.13.11 only.",
-      "The requirements-file dependency audit did not complete; the local-environment audit is not equivalent.",
+      "The direct requirements-file audit could not bootstrap; the resolved, hash-pinned macOS arm64/Python 3.13 manifest audit passed, but other platform resolutions remain unverified.",
       "The local-environment SBOM does not replace the release workflow SBOM.",
       "GitHub provenance attestation and PyPI publication were not performed."
     ]
