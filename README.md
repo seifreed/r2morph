@@ -232,11 +232,11 @@ transform duration, runtime duration, and static analyzer evidence while
 comparing exit code, stdout, stderr, created files, and declared observable
 effects across nine seed-derived inputs.
 
-A current-source local stress run exercised all ten parser, assembler, VM,
-relocation, and binary-rewriter fuzz targets 10,000 times each with generated
-payloads capped at 32 KiB and zero failures. Its source and raw-report hashes,
-seed, diagnostics, and limits are recorded in the
-[`bounded fuzz evidence manifest`](docs/continuous-fuzz-local-2026-11-16-1a5447dd.json).
+The current-source local stress run on commit `4fbe86fb` exercised all ten
+parser, assembler, VM, relocation, and binary-rewriter fuzz targets 10,000
+times each with generated payloads capped at 32 KiB and zero failures. Its
+source and raw-report hashes, seed, diagnostics, and limits are recorded in the
+[`bounded fuzz evidence manifest`](docs/continuous-fuzz-local-2026-11-17-4fbe86fb.json).
 This single-host deterministic run does not prove arbitrary-input semantic
 equivalence, cross-platform parity, or adversarial resistance.
 

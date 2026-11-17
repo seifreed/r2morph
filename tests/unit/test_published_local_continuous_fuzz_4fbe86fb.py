@@ -1,4 +1,4 @@
-"""Pin the expanded local continuous-fuzz campaign to its source and output."""
+"""Pin the current-source local continuous-fuzz campaign to source and output."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from pathlib import Path
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
-_MANIFEST_PATH = "docs/continuous-fuzz-local-2026-11-16-1a5447dd.json"
-_REPORT_PATH = "docs/continuous-fuzz-local-2026-11-16-1a5447dd-report.json"
-_SOURCE_COMMIT = "1a5447ddcd67f255b3df2581db0d17e5bd5da61e"
-_SOURCE_SHA256 = "73ebcacf4cd64857b07d948218872543172b471e53f701425241a5f7f2b01ad0"
-_REPORT_SHA256 = "f22cbfbefdbf53e19a9de62178f45a01cd3daff0247775a6cb989b888026104b"
+_MANIFEST_PATH = "docs/continuous-fuzz-local-2026-11-17-4fbe86fb.json"
+_REPORT_PATH = "docs/continuous-fuzz-local-2026-11-17-4fbe86fb-report.json"
+_SOURCE_COMMIT = "4fbe86fb5ddfa4620d244628214b2a27d43affe0"
+_SOURCE_SHA256 = "6bf18f8c3d62906ab4cd571db492ef3cb3367481d2c752a487f2ed027c7c7bc8"
+_REPORT_SHA256 = "0ffa08acd8c981bce584998651b74b5b5cb99401de914907045cc136b7719a51"
 _CASES = 10_000
 _MAX_PAYLOAD_BYTES = 32_768
 _TARGETS = (
@@ -72,7 +72,7 @@ def test_local_fuzz_report_records_zero_failures_and_expected_diagnostics() -> N
     expect(
         manifest["failure_count"] == report["failure_count"] == 0
         and report["failures"] == []
-        and report["parser_diagnostic_counts"] == {"macho_load_commands.warning": 167}
+        and report["parser_diagnostic_counts"] == {"macho_load_commands.warning": 212}
     )
 
 
