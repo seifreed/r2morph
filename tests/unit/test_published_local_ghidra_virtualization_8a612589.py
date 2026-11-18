@@ -73,7 +73,7 @@ def test_local_ghidra_shard_archive_and_source_hashes_match() -> None:
     expect(
         summary["source_commit"] == _SOURCE_COMMIT
         and summary["source_tree"] == _SOURCE_TREE
-        and archive["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and archive["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and archive["sha256"] == _sha256(_ARCHIVE_PATH)
         and archive["uncompressed_sha256"] == uncompressed_sha256
         and archive["uncompressed_bytes"] == uncompressed_bytes
@@ -142,7 +142,7 @@ def test_local_ghidra_shard_records_bounded_decompiler_deltas() -> None:
 def test_local_ghidra_shard_keeps_incomplete_release_criteria_open() -> None:
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
     evidence = readiness["criteria"]["all_named_adversarial_analyzers"]["evidence"]
-    report_paths = [str(path.relative_to(_ROOT)) for path in (_SUMMARY_PATH, _ARCHIVE_PATH)]
+    report_paths = [path.relative_to(_ROOT).as_posix() for path in (_SUMMARY_PATH, _ARCHIVE_PATH)]
 
     expect(
         readiness["criteria"]["all_named_adversarial_analyzers"]["status"] == "open"

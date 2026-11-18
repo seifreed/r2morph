@@ -54,7 +54,7 @@ def test_published_adversarial_run_archive_matches_manifest() -> None:
     uncompressed_digest, uncompressed_bytes = _report_metadata()
 
     expect(
-        archive["path"] == str(_REPORT.relative_to(_ROOT))
+        archive["path"] == _REPORT.relative_to(_ROOT).as_posix()
         and archive["sha256"] == _digest(_REPORT)
         and archive["uncompressed_sha256"] == uncompressed_digest
         and archive["uncompressed_bytes"] == uncompressed_bytes

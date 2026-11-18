@@ -73,7 +73,7 @@ def test_workflow_evidence_archive_matches_its_hash_manifest() -> None:
 
     expect(
         summary["source_commit"] == _SOURCE_COMMIT
-        and archive["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and archive["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and archive["sha256"] == _sha256(_ARCHIVE_PATH.read_bytes())
         and set(files) == {record["path"] for record in archive["files"]}
         and archive["bytes"] == _ARCHIVE_PATH.stat().st_size
@@ -150,7 +150,7 @@ def test_workflow_cross_platform_smoke_is_bounded_and_complete() -> None:
 
 def test_workflow_evidence_keeps_release_gates_open() -> None:
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
-    paths = {str(path.relative_to(_ROOT)) for path in (_SUMMARY_PATH, _ARCHIVE_PATH)}
+    paths = {path.relative_to(_ROOT).as_posix() for path in (_SUMMARY_PATH, _ARCHIVE_PATH)}
     criteria = readiness["criteria"]
 
     expect(

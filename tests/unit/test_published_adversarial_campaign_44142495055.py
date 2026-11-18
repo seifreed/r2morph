@@ -62,7 +62,7 @@ def test_adversarial_archive_matches_source_run_and_hash() -> None:
         and workflow["status"] == "success"
         and workflow["shard_jobs"] == _SHARD_COUNT
         and workflow["aggregate_job_status"] == "success"
-        and archive["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and archive["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and archive["bytes"] == _ARCHIVE_PATH.stat().st_size
         and archive["sha256"] == hashlib.sha256(_ARCHIVE_PATH.read_bytes()).hexdigest()
     )

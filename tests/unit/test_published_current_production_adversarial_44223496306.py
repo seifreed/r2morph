@@ -50,7 +50,7 @@ def test_current_production_campaign_archive_matches_its_manifest() -> None:
         and summary["source_commit"] == _SOURCE_COMMIT
         and summary["production_source_verified_unchanged_through"] == _VERIFIED_THROUGH_COMMIT
         and summary["workflow_conclusion"] == "success"
-        and summary["archive"]["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and summary["archive"]["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and summary["archive"]["sha256"] == hashlib.sha256(archive).hexdigest()
         and summary["archive"]["members"] == _ARCHIVE_MEMBER_COUNT
     )
@@ -137,8 +137,8 @@ def test_current_production_campaign_keeps_release_gates_open() -> None:
     summary = _summary()
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
     evidence_paths = {
-        str(_SUMMARY_PATH.relative_to(_ROOT)),
-        str(_ARCHIVE_PATH.relative_to(_ROOT)),
+        _SUMMARY_PATH.relative_to(_ROOT).as_posix(),
+        _ARCHIVE_PATH.relative_to(_ROOT).as_posix(),
         "tests/unit/test_published_current_production_adversarial_44223496306.py",
     }
 

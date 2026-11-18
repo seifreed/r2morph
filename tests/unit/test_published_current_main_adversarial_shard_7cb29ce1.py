@@ -41,7 +41,7 @@ def test_current_main_shard_archive_matches_its_manifest() -> None:
 
     expect(
         summary["source_commit"] == _SOURCE_COMMIT
-        and archive["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and archive["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and archive["sha256"] == hashlib.sha256(archive_bytes).hexdigest()
         and archive["uncompressed_sha256"] == hashlib.sha256(raw).hexdigest()
         and archive["uncompressed_bytes"] == len(raw)
@@ -83,8 +83,8 @@ def test_current_main_shard_preserves_open_release_gates() -> None:
     summary = _summary()
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
     evidence_paths = {
-        str(_SUMMARY_PATH.relative_to(_ROOT)),
-        str(_ARCHIVE_PATH.relative_to(_ROOT)),
+        _SUMMARY_PATH.relative_to(_ROOT).as_posix(),
+        _ARCHIVE_PATH.relative_to(_ROOT).as_posix(),
         "tests/unit/test_published_current_main_adversarial_shard_7cb29ce1.py",
     }
 

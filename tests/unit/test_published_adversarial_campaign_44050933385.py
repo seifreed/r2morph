@@ -103,7 +103,7 @@ def test_adversarial_campaign_archive_matches_its_hash_manifest() -> None:
         and summary["workflow"]["shard_jobs"] == _SHARD_COUNT
         and summary["workflow"]["aggregate_job_status"] == "success"
         and summary["workflow"]["aggregate_job_id"] == _AGGREGATE_JOB_ID
-        and archive["path"] == str(_ARCHIVE_PATH.relative_to(_ROOT))
+        and archive["path"] == _ARCHIVE_PATH.relative_to(_ROOT).as_posix()
         and archive["sha256"] == hashlib.sha256(_ARCHIVE_PATH.read_bytes()).hexdigest()
         and set(files) == {record["path"] for record in archive["files"]}
         and archive["bytes"] == _ARCHIVE_PATH.stat().st_size
@@ -211,7 +211,7 @@ def test_adversarial_campaign_resistance_data_retains_its_limits() -> None:
 
 def test_adversarial_campaign_keeps_incomplete_release_gates_open() -> None:
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
-    evidence_paths = {str(path.relative_to(_ROOT)) for path in (_SUMMARY_PATH, _ARCHIVE_PATH)}
+    evidence_paths = {path.relative_to(_ROOT).as_posix() for path in (_SUMMARY_PATH, _ARCHIVE_PATH)}
     criteria = readiness["criteria"]
 
     expect(

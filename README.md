@@ -86,6 +86,9 @@ expands platform evidence but does not by itself establish full mutation
 parity, which remains an open release gate.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
+Git checks out text with LF endings so hashes pinned to source and JSON evidence
+remain stable across operating systems. Evidence paths use `/` separators on
+every platform.
 
 ---
 

@@ -66,7 +66,7 @@ def _uncompressed_metadata(path: Path) -> tuple[str, int]:
 def test_local_ida_shard_archives_match_hash_bound_summaries() -> None:
     expect(
         all(
-            summary["archive"]["path"] == str(archive.relative_to(_ROOT))
+            summary["archive"]["path"] == archive.relative_to(_ROOT).as_posix()
             and summary["archive"]["sha256"] == _digest(archive)
             and summary["archive"]["uncompressed_sha256"] == _uncompressed_metadata(archive)[0]
             and summary["archive"]["uncompressed_bytes"] == _uncompressed_metadata(archive)[1]
@@ -136,7 +136,7 @@ def test_local_ida_shards_record_ida_completion_and_all_tool_slots() -> None:
 def test_local_ida_shards_keep_analyzer_and_resistance_gates_open() -> None:
     readiness = json.loads((_ROOT / "docs/one-zero-readiness.json").read_text(encoding="utf-8"))
     evidence = readiness["criteria"]["all_named_adversarial_analyzers"]["evidence"]
-    paths = [str(path.relative_to(_ROOT)) for index in _SHARD_INDICES for path in _paths(index)]
+    paths = [path.relative_to(_ROOT).as_posix() for index in _SHARD_INDICES for path in _paths(index)]
 
     expect(
         readiness["criteria"]["all_named_adversarial_analyzers"]["status"] == "open"
