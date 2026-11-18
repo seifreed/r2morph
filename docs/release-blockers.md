@@ -1410,6 +1410,21 @@ Both related release gates remain open.
 
 ## Blocker index
 
+### Linux timeout integration fixture — 2026-11-18
+
+The full Ubuntu 26.04 / Python 3.12 integration run at source `812046fe`
+completed with 1,313 passed, 174 skipped, and one failure:
+`test_validator_timeout_path`. Ubuntu's `/bin/sleep` is a multicall executable
+that selects its applet using `argv[0]`; the test had copied it under the
+different names `sleep_original` and `sleep_mutated`, so both executions failed
+before reaching the timeout and emitted different applet errors. The test now
+keeps the `sleep` basename in separate directories and asserts both processes
+actually time out. The existing Linux CI run also had a separate VM varargs ABI
+failure; the same integration test passed in the full local run. Re-run CI is
+required to verify the fixture correction and determine whether the VM failure
+persists. Related analyzer, VM resistance, human signoff, and stable-release
+gates remain open.
+
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
 including installed-wheel tests, PyPI publication, provenance attestation, and
 GitHub release creation. The release contains the wheel, source archive, SBOM,

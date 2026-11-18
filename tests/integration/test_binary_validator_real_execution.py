@@ -33,8 +33,10 @@ def test_validator_timeout_path(tmp_path):
     sleep_bin = Path("/bin/sleep")
     if not sleep_bin.exists():
         raise RuntimeError("sleep binary not available")
-    original = tmp_path / "sleep_original"
-    mutated = tmp_path / "sleep_mutated"
+    original = tmp_path / "original" / "sleep"
+    mutated = tmp_path / "mutated" / "sleep"
+    original.parent.mkdir()
+    mutated.parent.mkdir()
     shutil.copyfile(sleep_bin, original)
     shutil.copyfile(sleep_bin, mutated)
     original.chmod(0o755)
@@ -43,5 +45,9 @@ def test_validator_timeout_path(tmp_path):
     validator = BinaryValidator(timeout=1)
     validator.add_test_case(args=["2"], description="timeout test")
     result = validator.validate(original, mutated)
-    expect(not (result.passed is not True))
-    expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2)
+    expect(
+        result.original_exitcode == result.mutated_exitcode == -1
+        and result.passed
+        and result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2,
+        "identical binaries that both time out should compare as equivalent",
+    )
