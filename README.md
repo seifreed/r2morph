@@ -94,6 +94,8 @@ seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
+Apple Silicon jobs install and verify Rosetta before running the native
+x86-64 Mach-O smoke tests.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence
 remain stable across operating systems. Evidence paths use `/` separators on
 every platform.

@@ -248,6 +248,14 @@ jobs:
             brew install pkg-config
           fi
 
+      - name: Install Rosetta for native x86-64 Mach-O tests
+        if: runner.os == 'macOS'
+        run: |
+          if [[ "$(uname -m)" == "arm64" ]]; then
+            sudo softwareupdate --install-rosetta --agree-to-license
+            arch -x86_64 /usr/bin/true
+          fi
+
       - name: Install Keystone shared library (macOS)
         if: runner.os == 'macOS'
         run: |

@@ -11,8 +11,15 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.adapters.process import ProcessTimeoutError, _resolve_executable, _terminate_process_tree, run_process
+from r2morph.adapters.process import (
+    ProcessContext,
+    ProcessTimeoutError,
+    _resolve_executable,
+    _terminate_process_tree,
+    run_process,
+)
 from tests.utils.assertions import expect
+from tests.utils.process import python_runtime_environment
 
 _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS = 2.5
 
@@ -34,7 +41,11 @@ def test_run_process_executes_copied_interpreter_without_a_shell(tmp_path: Path)
     executable = tmp_path / Path(sys.executable).name
     shutil.copy2(sys.executable, executable)
 
-    result = run_process([executable, "-c", "print('ok')"], check=True)
+    result = run_process(
+        [executable, "-c", "print('ok')"],
+        context=ProcessContext(env=python_runtime_environment()),
+        check=True,
+    )
 
     expect(result.stdout_text.strip() == "ok")
 

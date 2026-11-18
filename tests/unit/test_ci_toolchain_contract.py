@@ -3,6 +3,8 @@
 import tomllib
 from pathlib import Path
 
+import yaml
+
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -59,3 +61,22 @@ def test_macos_ci_exposes_native_keystone_shared_library() -> None:
     )[0]
 
     expect("brew install keystone" in macos_setup and "DYLD_LIBRARY_PATH=$(brew --prefix keystone)/lib" in macos_setup)
+
+
+def test_macos_arm64_ci_installs_rosetta_before_native_macho_smoke() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["cross-platform-tests"]["steps"]
+    rosetta_index = next(
+        index for index, step in enumerate(steps) if step["name"] == "Install Rosetta for native x86-64 Mach-O tests"
+    )
+    native_smoke_index = next(
+        index for index, step in enumerate(steps) if step["name"] == "Run cross-platform package smoke tests"
+    )
+    rosetta_step = steps[rosetta_index]
+
+    expect(
+        rosetta_index < native_smoke_index
+        and rosetta_step["if"] == "runner.os == 'macOS'"
+        and "sudo softwareupdate --install-rosetta --agree-to-license" in rosetta_step["run"]
+        and "arch -x86_64 /usr/bin/true" in rosetta_step["run"]
+    )

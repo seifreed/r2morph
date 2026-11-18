@@ -6,6 +6,7 @@ from r2morph.validation.validator_execution import run_binary
 from r2morph.validation.validator_execution_text import hash_text, normalize_output
 from r2morph.validation.validator_runtime import ValidationTestCase
 from tests.utils.assertions import expect
+from tests.utils.process import python_runtime_environment
 
 
 def test_normalize_output_and_hash_text() -> None:
@@ -28,7 +29,7 @@ def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> No
     case = ValidationTestCase(
         args=["-c", script, "--flag"],
         stdin="input",
-        env={"R2MORPH_TEST": "1"},
+        env={**python_runtime_environment(), "R2MORPH_TEST": "1"},
         expected_exitcode=0,
         description="sample",
         working_dir=str(run_dir),

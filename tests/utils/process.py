@@ -4,11 +4,25 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
+import sysconfig
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from r2morph.adapters.process import ProcessContext, run_process
+
+
+def python_runtime_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    if sys.platform == "darwin":
+        library_directory = sysconfig.get_config_var("LIBDIR")
+        if isinstance(library_directory, str) and library_directory:
+            existing_library_path = environment.get("DYLD_LIBRARY_PATH")
+            environment["DYLD_LIBRARY_PATH"] = os.pathsep.join(
+                value for value in (library_directory, existing_library_path) if value
+            )
+    return environment
 
 
 def run_command(

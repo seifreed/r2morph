@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfig
 from tests.utils.assertions import expect
+from tests.utils.process import python_runtime_environment
 
 _EXPECTED_LEN_VALIDATOR_TEST_CASES_2 = 2
 
@@ -78,6 +79,7 @@ def test_binary_validator_detects_monitored_file_difference(tmp_path: Path):
                 "args": ["-c", script],
                 "stdin": "",
                 "expected_exitcode": 0,
+                "env": python_runtime_environment(),
                 "monitored_files": ["side_effect.txt"],
             }
         ]
