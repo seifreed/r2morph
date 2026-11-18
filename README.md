@@ -92,6 +92,8 @@ every platform.
 Windows CI verifies the documented optional-analysis fallback when angr is not
 installed, and exercises validation using native Python executables rather than
 POSIX shebang scripts.
+CLI success notices use ASCII text so legacy Windows console encodings can
+render them without a Unicode encoding failure.
 
 ---
 

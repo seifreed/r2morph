@@ -66,7 +66,7 @@ def print_mutation_summary(result: dict[str, Any], output_path: Path | None = No
 
     console.print(table)
     if output_path is not None:
-        console.print(f"\n[bold green]✓[/bold green] Binary saved to: {output_path}")
+        console.print(f"\n[bold green]OK[/bold green] Binary saved to: {output_path}")
 
 
 def evaluate_and_write_gates(

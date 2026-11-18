@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -24,7 +25,11 @@ typer_testing = pytest.importorskip("typer.testing")
 CliRunner = typer_testing.CliRunner
 
 
-def test_cli_simple_mode(tmp_path: Path) -> None:
+@pytest.mark.parametrize("output_encoding", [None, "cp1252"])
+def test_cli_simple_mode_supports_legacy_console_encoding(
+    tmp_path: Path,
+    output_encoding: str | None,
+) -> None:
     source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
@@ -33,11 +38,16 @@ def test_cli_simple_mode(tmp_path: Path) -> None:
     output_path = tmp_path / "output.bin"
     input_path.write_bytes(source.read_bytes())
 
+    env = None
+    if output_encoding is not None:
+        env = {**os.environ, "PYTHONIOENCODING": output_encoding}
+
     result = run_command(
         [sys.executable, "-m", "r2morph.cli", str(input_path), str(output_path)],
         capture_output=True,
         text=True,
         timeout=60,
+        env=env,
     )
     expect(result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
     expect(output_path.exists())
