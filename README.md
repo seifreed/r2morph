@@ -273,6 +273,15 @@ manifest and raw report are pinned in
 This bounded macOS ARM64 run adds current-source fuzz evidence; it does not
 establish cross-platform parity or adversarial resistance.
 
+The next main commit's differential workflow (`44308008537`) failed its
+aggregate check because independently built corpus shards repeated fixture and
+seed rows. The previous size-weighted shard assignment could change when
+generated binary sizes differed between workers. Shards now use stable,
+count-balanced ordering by unique fixture name in
+[`scripts/maturity_fixture_sharding.py`](scripts/maturity_fixture_sharding.py).
+This removes the cross-worker assignment drift; the workflow still needs to
+verify the fix, and count-balanced shards can have runtime skew.
+
 On the same source commit, the differential workflow completed 85 jobs:
 10,860 core and 13,032 extended classifications had complete evidence and
 zero failures. The cross-platform fuzz workflow completed 150,000 target runs

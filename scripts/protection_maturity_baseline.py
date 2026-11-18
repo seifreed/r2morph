@@ -50,6 +50,7 @@ from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
 from r2morph.mutations.short_jump_patching import ShortJumpPatchingPass
 from r2morph.mutations.stack_strings import StackStringsPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+from scripts.maturity_fixture_sharding import select_fixture_shard as _select_fixture_shard
 from scripts.protection_maturity_worker import FixtureWorkerTimeoutError, run_fixture_worker
 from tests.integration.elf_emulator import emulate_exit_code
 
@@ -2401,33 +2402,6 @@ def _select_fixtures(
         if any(name.startswith("generated_cpp_") for name in generated_fixture_names):
             corpus_families.append(_GENERATED_CPP_CORPUS_FAMILY)
     return selected, corpus_families, generated_fixture_count, generated_fixture_names
-
-
-def _select_fixture_shard(fixtures: list[Path], index: int, count: int) -> list[Path]:
-    """Select a deterministic, size-balanced corpus partition."""
-    if count < 1:
-        raise ValueError("fixture shard count must be positive")
-    if index < 0 or index >= count:
-        raise ValueError("fixture shard index must be within the shard count")
-
-    def fixture_weight(fixture: Path) -> int:
-        try:
-            return max(fixture.stat().st_size, 1)
-        except OSError:
-            return 1
-
-    # ponytail: file size is a coarse cost proxy; use measured fixture timings if skew remains.
-    buckets: list[list[tuple[int, Path]]] = [[] for _ in range(count)]
-    loads = [0] * count
-    weighted_fixtures = sorted(
-        enumerate(fixtures),
-        key=lambda item: (-fixture_weight(item[1]), item[0]),
-    )
-    for position, fixture in weighted_fixtures:
-        bucket = min(range(count), key=lambda bucket_index: (loads[bucket_index], bucket_index))
-        buckets[bucket].append((position, fixture))
-        loads[bucket] += fixture_weight(fixture)
-    return [fixture for _position, fixture in sorted(buckets[index])]
 
 
 def _campaign_fixture_selection(args: argparse.Namespace) -> tuple[list[Path], dict[str, int] | None]:

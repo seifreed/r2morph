@@ -1366,6 +1366,19 @@ remain unverified. The separate automated independent-review workflow passed
 28 checks, but recorded `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`. All three 1.0 blockers remain open.
 
+The next main commit, `e8f60760fc9c132269d7a0dd11b5568d1bfc5db8`, passed 11 CI
+jobs, including unit/integration tests, lint, typecheck, installed-wheel, and
+Windows/Linux checks. Four macOS jobs were cancelled during cross-platform
+package smoke and remain unverified. Differential workflow
+[`44308008537`](https://github.com/seifreed/r2morph/actions/runs/44308008537)
+ran all shards but failed its aggregate because fixtures appeared in multiple
+shards for the same seed; the duplicate rows had matching input and output
+hashes. The root cause was size-weighted shard assignment over generated
+binaries built independently by each worker. Sharding now uses sorted unique
+fixture names and balances fixture counts, independent of compiled sizes. A
+new workflow run is required to verify the correction. Runtime skew between
+shards remains unmeasured, so all release criteria stay open.
+
 ## Current-source local all-pass analyzer shard — 2026-11-18
 
 On source commit `9112e77fd749b9ee24b7879012a76dda15233ee8`, a Darwin ARM64
