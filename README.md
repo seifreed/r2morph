@@ -324,6 +324,24 @@ not establish generalized resistance. See the hash-bound
 [`campaign summary`](docs/protection-adversarial-2026-11-17-44050933385-summary.json)
 and [shard reports](docs/protection-adversarial-2026-11-17-44050933385.tar.gz);
 analyzer and resistance gates remain open.
+The current-source campaign,
+[`44142495055`](https://github.com/seifreed/r2morph/actions/runs/44142495055),
+completed all 32 shards on `b656b0dc`, covering 362 ELF x86-64 samples and 22
+passes. It observed all 7,964 pass rows and 71,676 analyzer rows; 55,220
+(77.04%) completed, with zero errors or missing rows. Six analyzer slots had
+full coverage; Unicorn completed 7,436 rows and could not execute 528; Binary
+Ninja and IDA Pro were unavailable for all rows. The automated VM smoke covered
+15 fixtures over ten seeds; semantic parity, diversity, and tamper-probe checks
+passed, while progressive bytecode growth was supported on six fixtures and
+388/2,295 cross-seed comparisons exceeded 0.8 similarity. This bounded evidence
+does not establish generalized resistance. The independent automated review
+passed 28 checks, but Marc Rivero Lopez's human approval remains bound to
+`a111f923` and does not cover later production changes. See the
+[hash-bound summary](docs/protection-adversarial-2026-11-18-44142495055-summary.json),
+[complete reports](docs/protection-adversarial-2026-11-18-44142495055.tar.gz),
+[review record](docs/protection-independent-review-run-2026-11-18-44166019050.json),
+and [regression test](tests/unit/test_published_adversarial_campaign_44142495055.py).
+The all-analyzer and published-resistance gates remain open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

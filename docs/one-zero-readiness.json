@@ -136,7 +136,12 @@
         "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
         "docs/public-compatibility-2026-11-17-44081385675.json.gz",
         "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
-        "tests/unit/test_published_differential_workflow_44081385675.py"
+        "tests/unit/test_published_differential_workflow_44081385675.py",
+        "docs/protection-adversarial-2026-11-18-44142495055-summary.json",
+        "docs/protection-adversarial-2026-11-18-44142495055.tar.gz",
+        "docs/protection-independent-review-run-2026-11-18-44166019050.json",
+        "docs/independent-review.json",
+        "tests/unit/test_published_adversarial_campaign_44142495055.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -399,7 +404,12 @@
         "docs/maturity-evidence-2026-11-17-44081385675.json.gz",
         "docs/public-compatibility-2026-11-17-44081385675.json.gz",
         "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
-        "tests/unit/test_published_differential_workflow_44081385675.py"
+        "tests/unit/test_published_differential_workflow_44081385675.py",
+        "docs/protection-adversarial-2026-11-18-44142495055-summary.json",
+        "docs/protection-adversarial-2026-11-18-44142495055.tar.gz",
+        "docs/protection-independent-review-run-2026-11-18-44166019050.json",
+        "docs/independent-review.json",
+        "tests/unit/test_published_adversarial_campaign_44142495055.py"
       ]
     },
     "stable_api_cli": {

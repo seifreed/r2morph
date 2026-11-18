@@ -1,0 +1,156 @@
+{
+  "checks": [
+    {
+      "detail": "151 fixtures, no unclassified entries",
+      "name": "virtualization_fixture_coverage",
+      "status": "passed"
+    },
+    {
+      "detail": "264 explicit cells",
+      "name": "support_matrix_consistency",
+      "status": "passed"
+    },
+    {
+      "detail": "only Linux ELF x86-64 is supported; PE/Mach-O/ARM/AArch64 remain preview or experimental",
+      "name": "official_target_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "release blocker ledger tracks per-pass, differential, VM, parity, benchmark, resistance, and review signoff",
+      "name": "release_blocker_ledger_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "PE/Mach-O and ARM/AArch64/x86 remain gaps",
+      "name": "differential_platform_gap_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "generated corpus families and inputs are scheduled",
+      "name": "differential_corpus_gap_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "scheduled differential campaign gates continuous and extended maturity evidence blockers",
+      "name": "differential_continuous_evidence_gate",
+      "status": "passed"
+    },
+    {
+      "detail": "decompiler evidence complete; native evidence is complete",
+      "name": "pass_maturity_gap_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "memory/calls/ABI/unwind/TLS/thread/FP/SSA-liveness campaign evidence is complete",
+      "name": "vm_semantic_gap_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "unsupported virtualization keeps fail-closed diagnostics and strict-mode regression coverage",
+      "name": "vm_fail_closed_diagnostics_contract",
+      "status": "passed"
+    },
+    {
+      "detail": "automated resistance evidence keeps human adversarial validation explicitly pending",
+      "name": "vm_resistance_adversarial_scope",
+      "status": "passed"
+    },
+    {
+      "detail": "5 completed, 4 unavailable",
+      "name": "adversarial_benchmark_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "unavailable analyzers block adversarial signoff",
+      "name": "adversarial_signoff_blockers",
+      "status": "passed"
+    },
+    {
+      "detail": "scheduled adversarial benchmark gates comparable analyzer coverage blockers",
+      "name": "adversarial_continuous_evidence_gate",
+      "status": "passed"
+    },
+    {
+      "detail": "binary-ninja is an expected analyzer slot",
+      "name": "binary_ninja_benchmark_contract",
+      "status": "passed"
+    },
+    {
+      "detail": "angr is measured; Binary Ninja remains an unavailable analyzer slot",
+      "name": "angr_binary_ninja_availability",
+      "status": "passed"
+    },
+    {
+      "detail": "362 samples, 55220 completed tool runs, 0 errors",
+      "name": "adversarial_corpus_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "11 fixtures, 77/99 analyzer runs, 0 errors",
+      "name": "host_adversarial_shard_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "360 unique samples, 2160/2160 differential checks, 0 failures",
+      "name": "public_corpus_differential_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "7964 completed Ghidra tool runs",
+      "name": "ghidra_corpus_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "7964 completed Triton tool runs",
+      "name": "triton_corpus_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "159 samples, 318 completed analyses",
+      "name": "ida_corpus_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "159 samples, 0 IDA errors",
+      "name": "ida_current_summary_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "1 function virtualized, 0 unsupported or partial",
+      "name": "fppackedidxnb_regression_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "151/151 valid ELF64 headers",
+      "name": "virtualization_fixture_headers",
+      "status": "passed"
+    },
+    {
+      "detail": "50000 target runs, 0 failures",
+      "name": "parser_rewriter_fuzz_campaign",
+      "status": "passed"
+    },
+    {
+      "detail": "64 cases, 0 failures expected",
+      "name": "independent_fuzz_recheck",
+      "status": "passed"
+    },
+    {
+      "detail": "362 samples, 22 passes, complete radare2/angr/ghidra evidence",
+      "name": "live_adversarial_campaign",
+      "status": "passed"
+    }
+  ],
+  "human_review": null,
+  "human_signoff": "not-attested",
+  "limitations": [
+    "The production tree changed after the recorded human review."
+  ],
+  "passed": true,
+  "release_decision": {
+    "reason": "current production tree lacks a matching independent human review",
+    "status": "block-vm-milestone"
+  },
+  "review_type": "automated-independent-second-pass",
+  "schema_version": 1
+}

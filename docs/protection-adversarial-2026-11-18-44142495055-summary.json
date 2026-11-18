@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "measurement": "protection-adversarial-corpus",
+  "source_commit": "b656b0dcd34af43e13db7e9b117ea401c2fbe6fd",
+  "workflow": {
+    "name": "Adversarial Analysis Benchmark",
+    "run_id": 44142495055,
+    "aggregate_job_id": 134331252747,
+    "status": "success",
+    "shard_jobs": 32,
+    "aggregate_job_status": "success",
+    "independent_review_run_id": 44166019050,
+    "independent_review_type": "automated-independent-second-pass",
+    "independent_review_status": "success"
+  },
+  "archive": {
+    "path": "docs/protection-adversarial-2026-11-18-44142495055.tar.gz",
+    "bytes": 2971854,
+    "sha256": "f3fc2ec03723127cd446de3c1a4dadf1f12335ca5476c2df4242858c821916f9",
+    "uncompressed_bytes": 95548440,
+    "files": [
+      {
+        "path": "adversarial/aggregate/adversarial-benchmark-merged.json",
+        "bytes": 44759793,
+        "sha256": "ff4f725bc92f00dc15b5d66170702a87936b79cd6471ba8d7cb32e1a418a8980"
+      },
+      {
+        "path": "adversarial/aggregate/maturity-evidence-with-adversarial.json",
+        "bytes": 152720,
+        "sha256": "f21daf9e43126667dec89c0f0680b49589e17e91eb558aec2ec0cac8f11f8def"
+      },
+      {
+        "path": "adversarial/shards/00.json",
+        "bytes": 296069,
+        "sha256": "535c49c2fa073d49855b8c2851566f62625107e88fab7776716817e53261d5e4"
+      },
+      {
+        "path": "adversarial/shards/01.json",
+        "bytes": 296375,
+        "sha256": "270c01c3df1ad1db394b5f621854c26cb634599ec101517a6a7d739799f5a085"
+      },
+      {
+        "path": "adversarial/shards/02.json",
+        "bytes": 296383,
+        "sha256": "b6e98a0fe4cf65088b21944bde8dc29600b73cc02c68c2139ce0a070edc2d881"
+      },
+      {
+        "path": "adversarial/shards/03.json",
+        "bytes": 296267,
+        "sha256": "e41bc9b564dfecce6062bb1a267d5e2fb92350ce720f02e73c8f4b49e9ee6dac"
+      },
+      {
+        "path": "adversarial/shards/04.json",
+        "bytes": 296321,
+        "sha256": "67f3bdd5a48b94a55a971f868f07de5351bd0f54409b3590db60611f47e2894e"
+      },
+      {
+        "path": "adversarial/shards/05.json",
+        "bytes": 296396,
+        "sha256": "f84fc0beb00db3682eef2e92d677bb16f7597c8d369326f959869d9c40dc988d"
+      },
+      {
+        "path": "adversarial/shards/06.json",
+        "bytes": 296296,
+        "sha256": "a2fb03bb88ff99045e16fbbb3015a1b399d1f6bb546919431f8666d8144394f2"
+      },
+      {
+        "path": "adversarial/shards/07.json",
+        "bytes": 296403,
+        "sha256": "b28ad50e254a90832cb993abba163e4460c82b8b4ef1192836b17f01c0583e41"
+      },
+      {
+        "path": "adversarial/shards/08.json",
+        "bytes": 296350,
+        "sha256": "64a3b2987c05c78adf3881723978b10a104127a731a04194b7fa65e99fee7b57"
+      },
+      {
+        "path": "adversarial/shards/09.json",
+        "bytes": 296383,
+        "sha256": "bee9b72b3fae5a003655a45418ecca74017d02032a912dd951edd4ca0ce71d0d"
+      },
+      {
+        "path": "adversarial/shards/10.json",
+        "bytes": 296295,
+        "sha256": "6dca533ef543a1ea69ba96ab025ca2d2e9369e0b8fb43e151a6d129949890e6f"
+      },
+      {
+        "path": "adversarial/shards/11.json",
+        "bytes": 296338,
+        "sha256": "82b7081dd85522724b4d0fc186cd607a8cf8e695d9cf8279c17740c8a11ca1a9"
+      },
+      {
+        "path": "adversarial/shards/12.json",
+        "bytes": 296223,
+        "sha256": "8fee007dbdac73c0f1233394367718e46f99ce95454667cf181c66d43919050c"
+      },
+      {
+        "path": "adversarial/shards/13.json",
+        "bytes": 296435,
+        "sha256": "26f0828e125b18d0b6e7cd6b0c68236c3c6b8207764a1fbbac7b24654b62fd40"
+      },
+      {
+        "path": "adversarial/shards/14.json",
+        "bytes": 296233,
+        "sha256": "94e7d2d7e86d8ebe2428e5326a2c7197d8dc8894e30e60c1d4d10b09d983fb42"
+      },
+      {
+        "path": "adversarial/shards/15.json",
+        "bytes": 296250,
+        "sha256": "f23f31dae77b69a8fab9c02e7798fd4aab7c63e55c7024adba36cd5eee1b6926"
+      },
+      {
+        "path": "adversarial/shards/16.json",
+        "bytes": 296366,
+        "sha256": "c57a95bdc1531759a1955e7f9a78b95bf491949bccf89bcca773ea1cc8dfe65e"
+      },
+      {
+        "path": "adversarial/shards/17.json",
+        "bytes": 296399,
+        "sha256": "29507fdaa6a060572abfac599333c3935286e9deacd70a9c0ec92f1b929389ae"
+      },
+      {
+        "path": "adversarial/shards/18.json",
+        "bytes": 3381322,
+        "sha256": "d77f3208bd5bc419722ff83dbce70a055bfffaca71b6d59c9d50d4258ef8531c"
+      },
+      {
+        "path": "adversarial/shards/19.json",
+        "bytes": 3015198,
+        "sha256": "10bbe09042fddf822874e8b3374060aaf2904085aed7fee426eddd1ffa09a2e6"
+      },
+      {
+        "path": "adversarial/shards/20.json",
+        "bytes": 3015685,
+        "sha256": "ae7f1b6a58faa338872a132cb2462986c322883fec8f12459ef7d393b898154f"
+      },
+      {
+        "path": "adversarial/shards/21.json",
+        "bytes": 3015967,
+        "sha256": "680c8ca4b3b813d481a8d4fa0251f33aae87bfa59ec8b829da40f81b03d2bd43"
+      },
+      {
+        "path": "adversarial/shards/22.json",
+        "bytes": 3011844,
+        "sha256": "06b6374c05c82db08fbc0fe6a958a8c23d879a08561e8f6cc163f202a795c2d7"
+      },
+      {
+        "path": "adversarial/shards/23.json",
+        "bytes": 3510345,
+        "sha256": "b4e4978aa00d169c9fffe4258ed2cf2a97efa0a2683a5e51f5d758874c19f7a3"
+      },
+      {
+        "path": "adversarial/shards/24.json",
+        "bytes": 3135037,
+        "sha256": "79b498d16c698ba14b76125f9a9651eca26fb64b1f17a4c888a634825ab011d1"
+      },
+      {
+        "path": "adversarial/shards/25.json",
+        "bytes": 3372728,
+        "sha256": "7ef53c0d680ba5298f08b809a93a274bed4cf0b331cb1dcb55902e6ba2f15dea"
+      },
+      {
+        "path": "adversarial/shards/26.json",
+        "bytes": 3139119,
+        "sha256": "80fc96dada742acbc62e3a31314bcc8c965d08785473c1162cba7483e8fcfbb0"
+      },
+      {
+        "path": "adversarial/shards/27.json",
+        "bytes": 3384994,
+        "sha256": "fe7258c18e905957b26a4a33f3fb54f3b1637ada479b9edd653aba68bca28a8a"
+      },
+      {
+        "path": "adversarial/shards/28.json",
+        "bytes": 3143404,
+        "sha256": "87a9eaf548d749e1ec3f6b047ed85749779dec5e7f2b8ce73f028283978ebc1a"
+      },
+      {
+        "path": "adversarial/shards/29.json",
+        "bytes": 3262383,
+        "sha256": "dc3c7cb352c089424d63fc42d6b0b0c946d115a959262367b26dda3342c47bbc"
+      },
+      {
+        "path": "adversarial/shards/30.json",
+        "bytes": 3262728,
+        "sha256": "97ffa86e00a8b408b77826b246f12416c529eb30cfac7b2ae0a363acbdd4d7cf"
+      },
+      {
+        "path": "adversarial/shards/31.json",
+        "bytes": 3262580,
+        "sha256": "b4448cbbf9354ae849749c952d95135b9da9c228509acfaa1b7aed893094b2c0"
+      },
+      {
+        "path": "vm/vm-resistance-adversarial.json",
+        "bytes": 380132,
+        "sha256": "58f18dc3a0d4a9a88ec860dd9f2e221e39a81cd1a24f3409bb3444b43ded0f2a"
+      },
+      {
+        "path": "vm/vm-resistance-adversarial.xml",
+        "bytes": 1813,
+        "sha256": "2582491c7b33c3ad2ddef4da4ad73e1790c6ea785763d4bd9aa5eb061b23bfa1"
+      },
+      {
+        "path": "vm/vm-resistance-bytecode-grammar.json",
+        "bytes": 3771,
+        "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef"
+      },
+      {
+        "path": "vm/vm-resistance-seed-diversity.json",
+        "bytes": 3095,
+        "sha256": "36c6a6ab32a36fc25b939d11d984965d0cbd649683f1a10bf1b38a6d92b493a0"
+      }
+    ]
+  },
+  "scope": {
+    "samples": 362,
+    "passes": 22,
+    "pass_rows": 7964,
+    "pass_row_coverage_percent": 100.0,
+    "families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "generated_fixtures": 200,
+    "expected_tool_rows": 71676,
+    "completed_tool_rows": 55220,
+    "completed_tool_row_coverage_percent": 77.04,
+    "unavailable_tool_rows": 16456,
+    "error_tool_rows": 0,
+    "missing_tool_rows": 0
+  },
+  "analyzers": {
+    "fully_completed": [
+      "angr",
+      "custom",
+      "ghidra",
+      "objdump",
+      "radare2",
+      "triton"
+    ],
+    "partial": {
+      "unicorn": {
+        "completed_runs": 7436,
+        "unavailable_runs": 528,
+        "reason": "the installed x86 emulator does not support an instruction in this fixture"
+      }
+    },
+    "unavailable": {
+      "binary-ninja": {
+        "unavailable_runs": 7964,
+        "reason": "module 'binaryninja' is unavailable"
+      },
+      "ida-pro": {
+        "unavailable_runs": 7964,
+        "reason": "executable 'idat' is unavailable"
+      }
+    }
+  },
+  "vm_resistance_smoke": {
+    "evidence_quality": "automated-adversarial-smoke",
+    "human_review_status": "pending-human-adversarial-review",
+    "fixture_count": 15,
+    "seed_count_per_fixture": 10,
+    "semantic_parity": true,
+    "distinct_artifacts": true,
+    "opcode_dispatcher_handler_and_grammar_diversity": true,
+    "tamper_probes_diverged": true,
+    "progressive_growth_supported_fixtures": 6,
+    "cross_seed_exact_normalised_matches": 0,
+    "cross_seed_similarity_above_0_8_count": 388,
+    "cross_seed_similarity_comparisons": 2295,
+    "cross_seed_nearest_similarity_max": 0.926829268292683,
+    "dispatch_variant_unique_count": 2,
+    "opcode_assignment_unique_count": 10,
+    "handler_stride_unique_count": 12,
+    "total_handlers": 2550,
+    "total_padding_bytes": 2587
+  },
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open",
+    "matching_independent_human_review": "open"
+  },
+  "limitations": [
+    "The 362-sample, 22-pass campaign is bounded to generated/repository ELF x86-64 fixtures; it does not establish generalized resistance.",
+    "Binary Ninja is unavailable because the environment has no licensed module; IDA Pro is unavailable because idat is absent.",
+    "Unicorn is partial: 528 fixture rows could not execute because of unsupported instructions.",
+    "VM resistance evidence is automated smoke evidence only; the report still marks human adversarial review pending.",
+    "Marc Rivero Lopez’s independent human approval remains bound to reviewed commit a111f923df43a66826b71ab70db8a484532fbf3b; later production changes are not covered.",
+    "The successful independent validation workflow is an automated second pass and does not attest human signoff."
+  ]
+}

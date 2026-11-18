@@ -1,0 +1,28 @@
+{
+  "adversarial_benchmark_run": 44142495055,
+  "checks": {
+    "canonical_passed": 27,
+    "failed": 0,
+    "passed": 28,
+    "total": 28
+  },
+  "conclusion": "success",
+  "current_human_signoff": "not-attested",
+  "human_review": {
+    "limitation": "approval applies only to the reviewed commit",
+    "result": "APPROVE",
+    "reviewed_commit": "a111f923df43a66826b71ab70db8a484532fbf3b",
+    "reviewer": "Marc Rivero Lopez"
+  },
+  "live_adversarial_report_attached": true,
+  "measurement": "independent-validation-review",
+  "readiness_blockers_remain_open": true,
+  "report": "docs/independent-review.json",
+  "report_sha256": "419a9dd162922c4bda3b8b3c557e26d59b1daa9b884b927ed7833d4f99319b27",
+  "review_type": "automated-independent-second-pass",
+  "schema_version": 1,
+  "source_commit": "b656b0dcd34af43e13db7e9b117ea401c2fbe6fd",
+  "workflow_report": "docs/independent-review-workflow-44166019050.json",
+  "workflow_report_sha256": "d23b9b3d18fdad5181d8a8b180b998640df62dc1b10c74c5f9f4396ea94c16da",
+  "workflow_run": 44166019050
+}

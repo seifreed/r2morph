@@ -25,6 +25,45 @@ tree. The matching GitHub CI run
 [`43914393719`](https://github.com/seifreed/r2morph/actions/runs/43914393719)
 passed all 15 jobs on the same source commit.
 
+## Current-source adversarial campaign — 2026-11-18
+
+Workflow
+[`44142495055`](https://github.com/seifreed/r2morph/actions/runs/44142495055)
+completed all 32 shard jobs and its aggregate on source commit
+`b656b0dcd34af43e13db7e9b117ea401c2fbe6fd`. The campaign covered 362 ELF
+x86-64 samples, 22 passes, and 7,964 pass rows. It observed all 71,676 expected
+analyzer rows: 55,220 completed (77.04%), 16,456 unavailable, zero errors, and
+zero missing rows. Angr, the custom analyzer, Ghidra, objdump, radare2, and
+Triton completed every row. Unicorn completed 7,436 rows and reported 528
+unavailable because the installed emulator did not support instructions in
+those fixtures. Binary Ninja was unavailable for all 7,964 rows because its
+module/license was absent; IDA Pro was unavailable for all rows because `idat`
+was absent. The all-named-analyzers gate remains open.
+
+The automated VM smoke covered 15 fixtures and ten seeds. Semantic parity,
+distinct output, opcode/dispatcher/handler/grammar diversity, and tamper-probe
+divergence were observed; progressive growth was supported on six fixtures.
+There were no exact normalized cross-seed matches, while 388/2,295 comparisons
+exceeded 0.8 similarity (maximum 0.927). These finite generated-output
+observations are not attack-cost measurements or proof of generalized
+resistance. The campaign report keeps human adversarial review pending. Marc
+Rivero Lopez's independent approval applies to commit
+`a111f923df43a66826b71ab70db8a484532fbf3b`; later production changes are outside
+that review, so matching human signoff and published general resistance remain
+open.
+
+The independent automated second pass
+[`44166019050`](https://github.com/seifreed/r2morph/actions/runs/44166019050)
+passed all 28 evidence checks on the same source. It records
+`human_signoff: not-attested` and blocks the VM milestone pending a matching
+human review. The updated report, review-run manifest, benchmark summary,
+archive, and regression contract are
+[`independent-review.json`](independent-review.json),
+[`protection-independent-review-run-2026-11-18-44166019050.json`](protection-independent-review-run-2026-11-18-44166019050.json),
+[`protection-adversarial-2026-11-18-44142495055-summary.json`](protection-adversarial-2026-11-18-44142495055-summary.json),
+[`complete shard archive`](protection-adversarial-2026-11-18-44142495055.tar.gz),
+and [`test_published_adversarial_campaign_44142495055.py`](../tests/unit/test_published_adversarial_campaign_44142495055.py).
+
 ## Latest completed CI validation
 
 CI run [`43701797813`](https://github.com/seifreed/r2morph/actions/runs/43701797813)
