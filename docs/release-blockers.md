@@ -1326,6 +1326,18 @@ resistance. See the hash-bound [summary](protection-adversarial-current-main-202
 and [regression tests](../tests/unit/test_published_current_main_adversarial_shard_9112e77f.py).
 The analyzer and published-resistance gates remain open.
 
+On source commit `7cb29ce109d1334577b2cf20cdb2375421a55224`, a second Darwin
+ARM64 shard measured four more repository ELF x86-64 fixtures and all 22 passes.
+All 88 pass rows and 792 analyzer slots were present; 528 completed across
+angr, IDA Pro, objdump, radare2, Unicorn, and the custom analyzer, with zero
+pass/analyzer errors or missing rows. Eight passes applied. Binary Ninja,
+Ghidra, and Triton were unavailable for all 88 rows each. This partial shard
+does not complete the 32-shard corpus or demonstrate generalized resistance.
+See its hash-bound [summary](protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1-summary.json),
+[compressed report](protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1.json.gz),
+and [regression test](../tests/unit/test_published_current_main_adversarial_shard_7cb29ce1.py).
+Both related release gates remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,

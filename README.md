@@ -374,6 +374,13 @@ coverage. The generated Linux corpus was not run on this macOS host. This is
 bounded analyzer evidence, not generalized resistance; see the [hash-bound
 summary](docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0-summary.json)
 and [compressed report](docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz).
+On source `7cb29ce1`, the next local shard covered four more fixtures and all 22
+passes (88 pass rows, 528/792 analyzer rows completed, zero errors or missing
+rows; eight passes applied). The same three tools remained unavailable locally.
+See the [hash-bound summary](docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1-summary.json)
+and [compressed report](docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1.json.gz).
+This is partial analyzer evidence; both analyzer completeness and resistance
+remain open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

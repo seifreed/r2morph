@@ -149,7 +149,10 @@
         "tests/unit/test_published_differential_workflow_44213229027.py",
         "docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0-summary.json",
         "docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz",
-        "tests/unit/test_published_current_main_adversarial_shard_9112e77f.py"
+        "tests/unit/test_published_current_main_adversarial_shard_9112e77f.py",
+        "docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1-summary.json",
+        "docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1.json.gz",
+        "tests/unit/test_published_current_main_adversarial_shard_7cb29ce1.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -424,7 +427,10 @@
         "tests/unit/test_published_differential_workflow_44213229027.py",
         "docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0-summary.json",
         "docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz",
-        "tests/unit/test_published_current_main_adversarial_shard_9112e77f.py"
+        "tests/unit/test_published_current_main_adversarial_shard_9112e77f.py",
+        "docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1-summary.json",
+        "docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1.json.gz",
+        "tests/unit/test_published_current_main_adversarial_shard_7cb29ce1.py"
       ]
     },
     "stable_api_cli": {
