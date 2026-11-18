@@ -43,11 +43,8 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
-    arch = shutil.which("arch")
-    if arch is None:
-        raise FileNotFoundError("arch is required for x86-64 Mach-O execution")
     result = run_command(
-        [arch, "-x86_64", binary],
+        [binary],
         capture_output=True,
         check=False,
         text=True,
