@@ -39,8 +39,8 @@ def test_differ_comparison_helpers_build_report_from_real_inputs() -> None:
 
     report = build_diff_report(original, mutated, context_bytes=4)
 
-    expect(report.original_binary == "/bin/original")
-    expect(report.mutated_binary == "/bin/mutated")
+    expect(report.original_binary == str(original.path))
+    expect(report.mutated_binary == str(mutated.path))
     expect(any(diff.diff_type == DiffType.SECTION_MODIFIED for diff in report.diffs))
     expect(any(diff.diff_type == DiffType.FUNCTION_MODIFIED for diff in report.diffs))
     expect(report.summary["total_changes"] == len(report.diffs))

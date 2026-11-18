@@ -39,7 +39,7 @@ def test_cli_simple_mode(tmp_path: Path) -> None:
         text=True,
         timeout=60,
     )
-    expect(result.returncode == 0)
+    expect(result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
     expect(output_path.exists())
 
 

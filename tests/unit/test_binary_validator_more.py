@@ -1,4 +1,5 @@
-import json
+import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -56,21 +57,30 @@ def test_binary_validator_loads_runtime_corpus():
 
 
 def test_binary_validator_detects_monitored_file_difference(tmp_path: Path):
-    original = tmp_path / "original.sh"
-    mutated = tmp_path / "mutated.sh"
-    original.write_text("#!/bin/sh\nprintf 'A' > side_effect.txt\n", encoding="utf-8")
-    mutated.write_text("#!/bin/sh\nprintf 'B' > side_effect.txt\n", encoding="utf-8")
-    original.chmod(0o755)
-    mutated.chmod(0o755)
+    original = tmp_path / "original.exe"
+    mutated = tmp_path / "mutated.exe"
+    shutil.copy2(sys.executable, original)
+    shutil.copy2(sys.executable, mutated)
+    script = (
+        "import pathlib, sys; "
+        "value = b'A' if pathlib.Path(sys.executable).stem == 'original' else b'B'; "
+        "pathlib.Path('side_effect.txt').write_bytes(value)"
+    )
 
     validator = BinaryValidator(
         timeout=3,
         comparison=RuntimeComparisonConfig(compare_files=True),
     )
     validator.load_test_cases(
-        json.loads(
-            '[{"description":"side-effect","args":[],"stdin":"","expected_exitcode":0,"monitored_files":["side_effect.txt"]}]'
-        )
+        [
+            {
+                "description": "side-effect",
+                "args": ["-c", script],
+                "stdin": "",
+                "expected_exitcode": 0,
+                "monitored_files": ["side_effect.txt"],
+            }
+        ]
     )
 
     result = validator.validate(original, mutated)

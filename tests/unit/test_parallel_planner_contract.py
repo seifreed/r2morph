@@ -31,7 +31,7 @@ def test_pass_result_to_dict_serializes_checkpoint_path() -> None:
 
     expect(payload[MUTATION_NAME_KEY] == "demo")
     expect(payload["status"] == "completed")
-    expect(payload["checkpoint_path"] == "test-data/checkpoint.bin")
+    expect(payload["checkpoint_path"] == str(Path("test-data/checkpoint.bin")))
 
 
 def test_dependency_resolver_orders_required_passes_before_dependents() -> None:

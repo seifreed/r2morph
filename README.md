@@ -89,6 +89,9 @@ before collecting tests that depend on the assembler binding.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence
 remain stable across operating systems. Evidence paths use `/` separators on
 every platform.
+Windows CI verifies the documented optional-analysis fallback when angr is not
+installed, and exercises validation using native Python executables rather than
+POSIX shebang scripts.
 
 ---
 

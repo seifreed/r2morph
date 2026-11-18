@@ -55,7 +55,10 @@ def test_build_binary_comparison_result_handles_empty_regions() -> None:
             "symbolic_binary_reason": "no eligible regions for real-binary symbolic comparison",
             "symbolic_binary_regions": [],
             "symbolic_binary_mismatches": [],
-            "symbolic_binary_paths": {"original": "/prev.bin", "mutated": "/curr.bin"},
+            "symbolic_binary_paths": {
+                "original": str(Path("/prev.bin")),
+                "mutated": str(Path("/curr.bin")),
+            },
         }
     )
 
@@ -72,6 +75,9 @@ def test_build_binary_comparison_result_handles_matching_regions() -> None:
             "symbolic_binary_reason": "bounded real-binary symbolic effects matched",
             "symbolic_binary_regions": regions,
             "symbolic_binary_mismatches": [],
-            "symbolic_binary_paths": {"original": "/prev.bin", "mutated": "/curr.bin"},
+            "symbolic_binary_paths": {
+                "original": str(Path("/prev.bin")),
+                "mutated": str(Path("/curr.bin")),
+            },
         }
     )

@@ -112,10 +112,15 @@ def test_symbolic_names_are_part_of_the_lazy_public_api() -> None:
 
 def test_optional_angr_import_boundary_handles_known_external_warning() -> None:
     probe = (
+        "import importlib.util\n"
         "from r2morph.adapters.angr_import import import_angr_modules\n"
         "stack = import_angr_modules(claripy=True, project=True, cfg_fast=True, exploration_technique=True)\n"
-        "assert stack.available, 'angr stack should import when installed'\n"
-        "assert stack.claripy is __import__('claripy'), 'symbolic expressions must use the matching claripy module'\n"
+        "angr_installed = importlib.util.find_spec('angr') is not None\n"
+        "assert stack.available is angr_installed, 'optional angr availability must match its installation'\n"
+        "if stack.available:\n"
+        "    assert stack.claripy is __import__('claripy'), 'symbolic expressions must use matching claripy'\n"
+        "else:\n"
+        "    assert stack.angr is None and stack.claripy is None, 'unavailable imports must return empty handles'\n"
     )
     result = run_command(
         [sys.executable, "-W", "error", "-c", probe],

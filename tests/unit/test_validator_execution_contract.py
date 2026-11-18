@@ -1,4 +1,6 @@
+import os
 import sys
+from pathlib import Path
 
 from r2morph.validation.validator_execution import run_binary
 from r2morph.validation.validator_execution_text import hash_text, normalize_output
@@ -13,9 +15,7 @@ def test_normalize_output_and_hash_text() -> None:
 
 
 def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> None:
-    binary_path = tmp_path / "sample.bin"
-    binary_path.write_text(
-        f"#!{sys.executable}\n"
+    script = (
         "import os, pathlib, sys\n"
         "valid = sys.argv[1:] == ['--flag'] and sys.stdin.read() == 'input'\n"
         "valid = valid and os.environ.get('R2MORPH_TEST') == '1'\n"
@@ -26,7 +26,7 @@ def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> No
     run_dir = tmp_path / "run"
 
     case = ValidationTestCase(
-        args=["--flag"],
+        args=["-c", script, "--flag"],
         stdin="input",
         env={"R2MORPH_TEST": "1"},
         expected_exitcode=0,
@@ -35,6 +35,14 @@ def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> No
         monitored_files=["artifact.txt"],
     )
 
-    result = run_binary(binary_path, case, timeout=3)
+    result = run_binary(Path(sys.executable), case, timeout=3)
 
-    expect(result == {"stdout": "ok\n", "stderr": "", "exitcode": 7, "files": {"artifact.txt": b"payload".hex()}})
+    expect(
+        result
+        == {
+            "stdout": f"ok{os.linesep}",
+            "stderr": "",
+            "exitcode": 7,
+            "files": {"artifact.txt": b"payload".hex()},
+        }
+    )

@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import shutil
 import signal
 import sys
 import time
@@ -29,14 +30,13 @@ def test_resolve_executable_preserves_symlink_driver_name(tmp_path: Path) -> Non
     expect(_resolve_executable(executable_alias) == str(executable_alias))
 
 
-def test_run_process_executes_shebang_script_without_shell(tmp_path: Path) -> None:
-    script = tmp_path / "script.sh"
-    script.write_text("#!/bin/sh\nprintf 'ok'\n", encoding="utf-8")
-    script.chmod(0o755)
+def test_run_process_executes_copied_interpreter_without_a_shell(tmp_path: Path) -> None:
+    executable = tmp_path / Path(sys.executable).name
+    shutil.copy2(sys.executable, executable)
 
-    result = run_process([script], check=True)
+    result = run_process([executable, "-c", "print('ok')"], check=True)
 
-    expect(result.stdout_text == "ok")
+    expect(result.stdout_text.strip() == "ok")
 
 
 def test_run_process_timeout_terminates_descendant_processes(tmp_path: Path) -> None:

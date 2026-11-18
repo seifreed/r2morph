@@ -611,8 +611,8 @@ class TestCompareBinaries:
         report = compare_binaries(original, mutated)
 
         expect(isinstance(report, DiffReport))
-        expect(report.original_binary == "/bin/original")
-        expect(report.mutated_binary == "/bin/mutated")
+        expect(report.original_binary == str(original.path))
+        expect(report.mutated_binary == str(mutated.path))
 
 
 class TestDiffTypes:

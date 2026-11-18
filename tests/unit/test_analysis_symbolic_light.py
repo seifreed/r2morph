@@ -10,9 +10,8 @@ def test_symbolic_modules_handle_missing_dependencies() -> None:
     if not constraint_solver.ANGR_AVAILABLE:
         solver = constraint_solver.ConstraintSolver()
         result = solver.solve_path_constraints([])
-        if constraint_solver.Z3_AVAILABLE:
-            expect(not (result.satisfiable is not True))
-        expect(not (result.satisfiable is not False))
+        expect(result.satisfiable is constraint_solver.Z3_AVAILABLE)
+        expect(result.solver_used == ("z3" if constraint_solver.Z3_AVAILABLE else "none"))
     if not path_explorer.ANGR_AVAILABLE:
         with pytest.raises(ImportError):
             path_explorer.PathExplorer(None)

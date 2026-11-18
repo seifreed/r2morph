@@ -33,6 +33,11 @@ def test_shellcode_observables_match_for_known_zeroing_pair() -> None:
         bridge_module,
     )
 
+    if bridge_module.angr is None:
+        expect(result["symbolic_observable_check_performed"] is False)
+        expect(result["symbolic_observable_reason"] == "angr module not available")
+        return
+
     expect(not (result["symbolic_observable_check_performed"] is not True))
     expect(not (result["symbolic_observable_equivalent"] is not True))
     expect(result["symbolic_observable_mismatches"] == [])
