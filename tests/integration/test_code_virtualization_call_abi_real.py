@@ -217,7 +217,9 @@ int main(void) {
     expect(
         stats["functions_virtualized"] >= 1
         and original_result.returncode == mutated_result.returncode == _EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE,
-        f"floating-point varargs ABI changed the result: {stats=}",
+        "floating-point varargs ABI changed the result: "
+        f"original=({original_result.returncode}, {original_result.stdout!r}, {original_result.stderr!r}), "
+        f"mutated=({mutated_result.returncode}, {mutated_result.stdout!r}, {mutated_result.stderr!r}), {stats=}",
     )
 
 

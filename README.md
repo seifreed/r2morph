@@ -87,6 +87,8 @@ parity, which remains an open release gate.
 The Linux timeout integration case preserves the system sleep applet name in
 separate temporary directories, so it exercises a real timeout on both
 standalone and multicall coreutils implementations.
+Native ABI regression failures report each program's return code and captured
+output alongside the virtualization diagnostics.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence

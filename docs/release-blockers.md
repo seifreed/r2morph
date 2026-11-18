@@ -1425,6 +1425,15 @@ required to verify the fixture correction and determine whether the VM failure
 persists. Related analyzer, VM resistance, human signoff, and stable-release
 gates remain open.
 
+CI run [`44387590551`](https://github.com/seifreed/r2morph/actions/runs/44387590551)
+confirmed the timeout fix, but again failed the floating-point varargs ABI test
+on the native Linux runner. The same 98-case smoke passed twice locally against
+both the checkout and an installed wheel in an x86-64 emulated Linux
+environment; ten additional fixture runs produced the same mutated-binary hash
+and exit code 73. The regression assertion now includes both program return
+codes and captured outputs so the next native run exposes the mismatch. The
+cause remains open; do not treat the local emulation as native-host evidence.
+
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
 including installed-wheel tests, PyPI publication, provenance attestation, and
 GitHub release creation. The release contains the wheel, source archive, SBOM,
