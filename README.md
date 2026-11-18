@@ -342,6 +342,14 @@ passed 28 checks, but Marc Rivero Lopez's human approval remains bound to
 [review record](docs/protection-independent-review-run-2026-11-18-44166019050.json),
 and [regression test](tests/unit/test_published_adversarial_campaign_44142495055.py).
 The all-analyzer and published-resistance gates remain open.
+On source `6d8d450a`, a local one-fixture `CodeVirtualization` measurement
+completed IDA Pro decompilation for both the original and protected ELF, and
+Unicorn returned the same exit code (45). Six of nine analyzer slots completed;
+Binary Ninja was unavailable for lack of a license, while Ghidra and Triton were
+unavailable in this local environment. This is one sample, not analyzer-matrix
+coverage. See the [hash-bound report](docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a.json),
+[summary](docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a-summary.json),
+and [regression tests](tests/unit/test_published_local_adversarial_current_main_6d8d450a.py).
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

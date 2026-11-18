@@ -1,0 +1,57 @@
+{
+  "fixture": {
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "ida": {
+    "original_decompiler_status": "completed",
+    "protected_decompiler_status": "completed"
+  },
+  "limitations": [
+    "one ELF x86-64 fixture and one applied pass only",
+    "does not close all-named-analyzer or generalized-resistance gates"
+  ],
+  "measurement": "current-source-local-adversarial-analyzer-sample",
+  "schema_version": 1,
+  "scope": {
+    "completed_tool_runs": 6,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "error_tool_runs": 0,
+    "expected_tool_runs": 9,
+    "functions_virtualized": 1,
+    "missing_tool_runs": 0,
+    "partial_virtualization": 0,
+    "pass_status": "applied",
+    "passes": [
+      "CodeVirtualization"
+    ],
+    "samples": 1,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "analyzer license is unavailable": 1
+      },
+      "ghidra": {
+        "executable 'ghidra' is unavailable": 1
+      },
+      "triton": {
+        "module 'triton' is unavailable": 1
+      }
+    },
+    "unavailable_tool_runs": 3,
+    "unsupported_functions": 0
+  },
+  "source_commit": "6d8d450a2cabe27fdfa723b7d911ce9a5a15f35c",
+  "source_report": "docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a.json",
+  "source_report_sha256": "84da2761a37fbab64dc473e89fc530fd89fcbd2a29787c5494d271ea9f35dd4f",
+  "unicorn": {
+    "original_exit_code": 45,
+    "protected_exit_code": 45
+  }
+}

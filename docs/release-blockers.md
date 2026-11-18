@@ -64,6 +64,19 @@ archive, and regression contract are
 [`complete shard archive`](protection-adversarial-2026-11-18-44142495055.tar.gz),
 and [`test_published_adversarial_campaign_44142495055.py`](../tests/unit/test_published_adversarial_campaign_44142495055.py).
 
+### Current-source local IDA sample — 2026-11-18
+
+On source `6d8d450a2cabe27fdfa723b7d911ce9a5a15f35c`, a local benchmark applied
+`CodeVirtualization` to `elf_vm_arith_x86_64`. IDA Pro completed decompilation
+for both original and protected binaries; Unicorn returned exit code 45 for
+both. Six of nine analyzer slots completed with zero errors; Binary Ninja was
+unavailable because no valid license was installed, and Ghidra and Triton were
+unavailable in this local environment. This single fixture does not close the
+all-named-analyzers gate. The [hash-bound summary](protection-adversarial-current-main-local-2026-11-18-6d8d450a-summary.json),
+[raw report](protection-adversarial-current-main-local-2026-11-18-6d8d450a.json),
+and [regression test](../tests/unit/test_published_local_adversarial_current_main_6d8d450a.py)
+preserve the measurement and limits.
+
 ## Latest completed CI validation
 
 CI run [`43701797813`](https://github.com/seifreed/r2morph/actions/runs/43701797813)

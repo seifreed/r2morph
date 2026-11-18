@@ -141,7 +141,10 @@
         "docs/protection-adversarial-2026-11-18-44142495055.tar.gz",
         "docs/protection-independent-review-run-2026-11-18-44166019050.json",
         "docs/independent-review.json",
-        "tests/unit/test_published_adversarial_campaign_44142495055.py"
+        "tests/unit/test_published_adversarial_campaign_44142495055.py",
+        "docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a-summary.json",
+        "docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a.json",
+        "tests/unit/test_published_local_adversarial_current_main_6d8d450a.py"
       ]
     },
     "complete_compatibility_contract": {
