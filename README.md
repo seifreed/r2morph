@@ -137,8 +137,8 @@ The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
 checks applied instruction substitution, register substitution, and instruction
 expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity.
-The test launches each x86-64 Mach-O executable directly, allowing macOS to
-select Rosetta while keeping the process timeout attached to the binary itself.
+The test explicitly selects the x86-64 Mach-O slice through macOS `arch`; the
+process runner bounds the full launched process group while Rosetta executes it.
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
 12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
 native-output preservation, compiled control-flow/memory fixtures, and rejection
