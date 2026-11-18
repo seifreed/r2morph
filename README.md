@@ -84,6 +84,8 @@ Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 also covers integration, property, and real-binary tests. Passing these jobs
 expands platform evidence but does not by itself establish full mutation
 parity, which remains an open release gate.
+macOS jobs install Keystone's native shared library and expose it to Python
+before collecting tests that depend on the assembler binding.
 
 ---
 

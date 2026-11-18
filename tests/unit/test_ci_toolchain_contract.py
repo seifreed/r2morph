@@ -50,3 +50,12 @@ def test_ci_runs_unit_suite_on_non_linux_and_python_313_targets() -> None:
         "if: runner.os != 'Linux' || matrix.python-version == '3.13'" in cross_platform_step
         and 'run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short' in cross_platform_step
     )
+
+
+def test_macos_ci_exposes_native_keystone_shared_library() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    macos_setup = workflow.split("Install Keystone shared library (macOS)", 1)[1].split(
+        "Install radare2 (Linux/macOS)", 1
+    )[0]
+
+    expect("brew install keystone" in macos_setup and "DYLD_LIBRARY_PATH=$(brew --prefix keystone)/lib" in macos_setup)

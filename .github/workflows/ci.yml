@@ -248,6 +248,12 @@ jobs:
             brew install pkg-config
           fi
 
+      - name: Install Keystone shared library (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install keystone
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix keystone)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+
       - name: Install radare2 (Linux/macOS)
         if: runner.os != 'Windows'
         run: bash .github/scripts/install_radare2.sh
