@@ -381,6 +381,14 @@ See the [hash-bound summary](docs/protection-adversarial-current-main-2026-11-18
 and [compressed report](docs/protection-adversarial-current-main-2026-11-18-7cb29ce1-shard-1.json.gz).
 This is partial analyzer evidence; both analyzer completeness and resistance
 remain open.
+The complete analyzer workflow on source `1cf52005` covered 362 fixtures (200
+generated), 22 passes, 7,964 pass rows, and 71,676 analyzer slots: 55,220 rows
+completed with no errors or missing rows. Ghidra and Triton completed every
+row; Binary Ninja and IDA Pro were unavailable, and Unicorn reported 528
+unsupported rows. Its separate 15-fixture, ten-seed VM smoke still requires
+human adversarial review. See the [hash-bound summary](docs/protection-current-production-adversarial-2026-11-18-44223496306-summary.json)
+and [shard/VM archive](docs/protection-current-production-adversarial-2026-11-18-44223496306.tar.gz).
+Analyzer completeness and general resistance remain open.
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

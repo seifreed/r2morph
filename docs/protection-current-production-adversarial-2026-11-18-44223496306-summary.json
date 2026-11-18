@@ -1,0 +1,78 @@
+{
+  "archive": {
+    "members": 37,
+    "path": "docs/protection-current-production-adversarial-2026-11-18-44223496306.tar.gz",
+    "sha256": "fded491f8d86ac77396314f09f2eb3fe7d841747448e1bbb6ae37e67fd9a2b4e",
+    "uncompressed_bytes": 50821120
+  },
+  "corpus": {
+    "expected_analyzer_runs": 71676,
+    "expected_pass_runs": 7964,
+    "fixture_count": 362,
+    "generated_fixture_count": 200,
+    "observed_analyzer_runs": 71676,
+    "observed_pass_runs": 7964,
+    "pass_count": 22
+  },
+  "limitations": [
+    "The workflow completed all 32 shards and analyzed 362 fixtures, including 200 generated ELF/C++ fixtures; it is bounded to this corpus and these 22 configured passes.",
+    "Binary Ninja and IDA Pro were unavailable for every analyzer row; Unicorn could not run 528 instruction-limited rows.",
+    "The VM report is automated smoke evidence on 15 fixtures and 10 seeds; human adversarial review remains pending and this does not establish generalized resistance.",
+    "The run measured analyzer outputs and bounded generated VM signals, not attack cost or a proof of resistance."
+  ],
+  "measurement": "current-production-adversarial-benchmark",
+  "production_source_verified_unchanged_through": "42a07930b4140d3598a8dd509e67cc229dadb86a",
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "analyzer_errors": 0,
+    "applied_pass_runs": 2343,
+    "completed_analyzer_runs": 55220,
+    "completed_runs_by_tool": {
+      "angr": 7964,
+      "binary-ninja": 0,
+      "custom": 7964,
+      "ghidra": 7964,
+      "ida-pro": 0,
+      "objdump": 7964,
+      "radare2": 7964,
+      "triton": 7964,
+      "unicorn": 7436
+    },
+    "missing_analyzer_runs": 0,
+    "missing_pass_runs": 0,
+    "omitted_pass_runs": 0,
+    "pass_errors": 0,
+    "unavailable_analyzer_runs": 16456,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "unavailable_runs_by_tool": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    }
+  },
+  "schema_version": 1,
+  "source_commit": "1cf52005310a527b86c68b4ff713ce248f1432d7",
+  "vm_resistance_smoke": {
+    "automated_validation_status": "completed",
+    "evidence_quality": "automated-adversarial-smoke",
+    "fixture_count": 15,
+    "human_adversarial_review_status": "pending-human-adversarial-review",
+    "seed_count": 10
+  },
+  "workflow_conclusion": "success",
+  "workflow_run": 44223496306,
+  "workflow_url": "https://github.com/seifreed/r2morph/actions/runs/44223496306"
+}

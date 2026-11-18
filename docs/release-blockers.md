@@ -64,6 +64,23 @@ archive, and regression contract are
 [`complete shard archive`](protection-adversarial-2026-11-18-44142495055.tar.gz),
 and [`test_published_adversarial_campaign_44142495055.py`](../tests/unit/test_published_adversarial_campaign_44142495055.py).
 
+Workflow
+[`44223496306`](https://github.com/seifreed/r2morph/actions/runs/44223496306)
+completed all 32 analyzer shards on source `1cf52005310a527b86c68b4ff713ce248f1432d7`.
+Production files under `r2morph/` and `scripts/` are unchanged through
+`42a07930b4140d3598a8dd509e67cc229dadb86a`. The corpus contained 362 fixtures,
+including 200 generated ELF/C++ fixtures, and covered all 22 passes: 7,964/7,964
+pass rows and 71,676/71,676 analyzer slots, with 2,343 applied passes, zero
+errors, and zero missing rows. 55,220 analyzer rows completed; Binary Ninja and
+IDA Pro were unavailable for all rows, and Unicorn could not run 528 unsupported
+instruction rows. Ghidra and Triton completed all 7,964 rows. The accompanying
+VM smoke ran 15 fixtures and ten seeds, but its human adversarial review remains
+pending. This is bounded analyzer and generated-output evidence, not generalized
+resistance. The [hash-bound summary](protection-current-production-adversarial-2026-11-18-44223496306-summary.json),
+[raw shard and VM archive](protection-current-production-adversarial-2026-11-18-44223496306.tar.gz),
+and [regression test](../tests/unit/test_published_current_production_adversarial_44223496306.py)
+preserve scope and limitations; both release gates remain open.
+
 ### Current-source local IDA sample — 2026-11-18
 
 On source `6d8d450a2cabe27fdfa723b7d911ce9a5a15f35c`, a local benchmark applied
