@@ -389,11 +389,14 @@ jobs:
                   "-m",
                   "pytest",
                   "-v",
+                  "-o",
+                  "faulthandler_timeout=60",
                   *test_targets,
                   "--no-cov",
                   "--tb=short",
               ],
               cwd=wheel_root,
+              timeout=300,
               check=True,
           )
           PY

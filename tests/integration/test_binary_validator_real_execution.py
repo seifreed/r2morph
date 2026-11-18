@@ -1,6 +1,5 @@
 import platform
 import shutil
-from pathlib import Path
 
 from r2morph.validation.validator import BinaryValidator
 from tests.utils.assertions import expect
@@ -30,20 +29,18 @@ def test_validator_round_trip_same_binary(tmp_path):
 def test_validator_timeout_path(tmp_path):
     if platform.system() == "Windows":
         return
-    sleep_bin = Path("/bin/sleep")
-    if not sleep_bin.exists():
-        raise RuntimeError("sleep binary not available")
     original = tmp_path / "original" / "sleep"
     mutated = tmp_path / "mutated" / "sleep"
     original.parent.mkdir()
     mutated.parent.mkdir()
-    shutil.copyfile(sleep_bin, original)
-    shutil.copyfile(sleep_bin, mutated)
+    timeout_script = "#!/bin/sh\nsleep 2\n"
+    original.write_text(timeout_script, encoding="utf-8")
+    mutated.write_text(timeout_script, encoding="utf-8")
     original.chmod(0o755)
     mutated.chmod(0o755)
 
     validator = BinaryValidator(timeout=1)
-    validator.add_test_case(args=["2"], description="timeout test")
+    validator.add_test_case(description="timeout test")
     result = validator.validate(original, mutated)
     expect(
         result.original_exitcode == result.mutated_exitcode == -1

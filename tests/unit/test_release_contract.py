@@ -1988,6 +1988,8 @@ def test_ci_cross_platform_smoke_runs_against_installed_wheel() -> None:
         and 'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")' in cross_platform_job
         and 'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")' in cross_platform_job
         and 'subprocess.run([sys.executable, "-c", "import r2morph; print(r2morph.__file__)"]' in cross_platform_job
+        and '"faulthandler_timeout=60"' in cross_platform_job
+        and "timeout=300" in cross_platform_job
         and "test_targets = [" in cross_platform_job
         and 'if platform.system() != "Windows":' in cross_platform_job
         and '"tests/integration/test_binary_rewriter_formats_real.py"' in cross_platform_job

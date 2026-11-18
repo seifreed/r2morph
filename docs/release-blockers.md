@@ -1425,6 +1425,12 @@ required to verify the fixture correction and determine whether the VM failure
 persists. Related analyzer, VM resistance, human signoff, and stable-release
 gates remain open.
 
+The timeout fixture now uses identical generated shell scripts instead of
+copies of `/bin/sleep`. Local macOS execution showed that copying the signed
+system utility is terminated immediately with signal 9, which made the Linux
+multicall fix fail outside Linux. The generated fixture uses the process
+adapter's shebang path and exercises the actual timeout on both systems.
+
 CI run [`44387590551`](https://github.com/seifreed/r2morph/actions/runs/44387590551)
 confirmed the timeout fix, but again failed the floating-point varargs ABI test
 on the native Linux runner. The same 98-case smoke passed twice locally against
@@ -1433,6 +1439,15 @@ environment; ten additional fixture runs produced the same mutated-binary hash
 and exit code 73. The regression assertion now includes both program return
 codes and captured outputs so the next native run exposes the mismatch. The
 cause remains open; do not treat the local emulation as native-host evidence.
+
+The cross-platform installed-wheel smoke was reproduced on macOS ARM64 from
+source `d57368bd`: all 679 selected tests passed under Python 3.12.16 in 14.18
+seconds and Python 3.13.18 in 13.65 seconds. In GitHub run
+[`44387590551`](https://github.com/seifreed/r2morph/actions/runs/44387590551),
+the four corresponding macOS jobs have remained in that step for over 30
+minutes. The smoke now requests Python thread dumps after 60 seconds and bounds
+its pytest subprocess to five minutes while retaining the complete test target
+list. The runner-specific hang and full GitHub matrix result remain unverified.
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
 including installed-wheel tests, PyPI publication, provenance attestation, and
