@@ -79,10 +79,11 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-The CI matrix runs the unit suite on macOS and Windows and on Python 3.13; its
-broader Linux/Python 3.12 job also covers unit, integration, property, and real
-binary tests. Passing these jobs expands platform evidence but does not by
-itself establish full mutation parity, which remains an open release gate.
+Cross-platform CI runs the complete unit suite on macOS and Windows for Python
+3.12 and 3.13, and on Ubuntu/Python 3.13. The broader Ubuntu/Python 3.12 job
+also covers integration, property, and real-binary tests. Passing these jobs
+expands platform evidence but does not by itself establish full mutation
+parity, which remains an open release gate.
 
 ---
 

@@ -48,6 +48,5 @@ def test_ci_runs_unit_suite_on_non_linux_and_python_313_targets() -> None:
 
     expect(
         "if: runner.os != 'Linux' || matrix.python-version == '3.13'" in cross_platform_step
-        and "python -W error -m pytest -v tests/unit" in cross_platform_step
-        and '-m "not slow" --no-cov --tb=short' in cross_platform_step
+        and 'run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short' in cross_platform_step
     )
