@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "workflow": {
+    "name": "Differential Corpus By Pass",
+    "run_id": 44213229027,
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44213229027",
+    "source_commit": "1cf52005310a527b86c68b4ff713ce248f1432d7",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs_completed": 85
+  },
+  "differential_corpus": {
+    "report_count": 24,
+    "classified_runs": 5540,
+    "successful_runs": 5540,
+    "failed_runs": 0,
+    "error_runs": 0,
+    "applied_runs": 1797,
+    "omitted_ineligible_runs": 3743,
+    "complete_evidence_missing_runs": 0
+  },
+  "extended_maturity": {
+    "report_count": 27,
+    "classified_runs": 7572,
+    "successful_runs": 7572,
+    "failed_runs": 0,
+    "error_runs": 0,
+    "applied_runs": 2021,
+    "omitted_ineligible_runs": 5551,
+    "complete_evidence_missing_runs": 0
+  },
+  "supplemental_campaigns": {
+    "vm_semantic": {
+      "report_count": 25,
+      "tests": 2450,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cross_format": {
+      "report_count": 29,
+      "tests": 2146,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 290
+    },
+    "composition": {
+      "report_count": 28,
+      "tests": 1288,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "differential_fuzz": {
+      "report_count": 27,
+      "cases": 1728,
+      "failures": 0
+    }
+  },
+  "limitations": [
+    "These CI campaigns provide bounded differential, composition, fuzz, VM-semantic, and cross-format smoke evidence; they do not prove complete cross-platform parity or generalized resistance.",
+    "The cross-format XML artifacts include 290 skipped cases; the reports record them separately from passing tests.",
+    "This workflow does not complete the named-analyzer matrix. Binary Ninja remains unavailable because no valid license is available, and the related release gate stays open.",
+    "Campaign artifacts are retained by the linked workflow run; this summary records independently checked aggregate counters, not the full per-sample reports."
+  ],
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  }
+}

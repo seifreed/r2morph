@@ -172,6 +172,15 @@ and PE, Mach-O, x86, ARM, and AArch64 remain outside this run's scope, so these
 results do not close the analyzer or cross-platform gates. The hash-checked
 compressed reports and precise counts are recorded in
 [`docs/differential-run-2026-11-17-44081385675-summary.json`](docs/differential-run-2026-11-17-44081385675-summary.json).
+The same differential workflow passed again on current source commit `1cf52005`
+in run [44213229027](https://github.com/seifreed/r2morph/actions/runs/44213229027).
+Its 85 jobs completed successfully; artifacts report zero failures or errors
+across 5,540 core differential classifications, 7,572 extended-maturity
+classifications, 2,450 VM-semantic tests, 1,288 composition tests, and 1,728
+differential-fuzz cases. Supplemental cross-format smoke reported 2,146 cases,
+including 290 skipped cases. These bounded results do not close cross-platform,
+named-analyzer, or resistance gates; Binary Ninja remains unavailable without a
+valid license. See the [current-run evidence summary](docs/differential-run-2026-11-18-44213229027-summary.json).
 
 ### Instruction Equivalence Rules
 

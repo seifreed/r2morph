@@ -1294,6 +1294,21 @@ selection does not establish full cross-platform parity. See the hash-bound
 and [regression test](../tests/unit/test_published_workflow_evidence_44043963389.py).
 Analyzer, parity, and published resistance criteria remain open.
 
+## Published differential workflow corpus — 2026-11-18
+
+Workflow [44213229027](https://github.com/seifreed/r2morph/actions/runs/44213229027)
+completed all 85 jobs successfully on source commit
+`1cf52005310a527b86c68b4ff713ce248f1432d7`. Its artifacts report 5,540 core
+differential classifications and 7,572 extended-maturity classifications with
+zero failed seeds or errors; 2,450 VM-semantic tests and 1,288 composition
+tests also completed without failures. Differential fuzzing covered 1,728
+cases with no failures. Cross-format smoke recorded 2,146 tests, of which 290
+were skipped and are not counted as passes. These CI artifacts are bounded
+evidence, not a complete compatibility or resistance proof. Binary Ninja is
+unavailable because no valid license is available, so the named-analyzer gate
+remains open. The current-run aggregate and limits are recorded in
+[the evidence summary](differential-run-2026-11-18-44213229027-summary.json).
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
