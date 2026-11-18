@@ -77,6 +77,8 @@ python -m pip install --editable ".[dev]"
 The CI dependency manifest remains available for reproducing the extended
 analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
+CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
+responses; the audit still fails on vulnerabilities or service errors.
 
 ---
 

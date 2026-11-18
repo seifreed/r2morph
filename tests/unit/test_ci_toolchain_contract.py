@@ -32,3 +32,9 @@ def test_unicorn_is_unconditionally_installed_by_test_extras() -> None:
     ]
 
     expect(unicorn_requirements == expected and unicorn_extras == expected * 3)
+
+
+def test_ubuntu_ci_dependency_audit_allows_network_latency_without_skipping_audit() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+
+    expect("run: pip-audit --timeout 60" in workflow)

@@ -51,7 +51,7 @@ jobs:
         run: bandit -r r2morph -c pyproject.toml
 
       - name: Run pip-audit
-        run: pip-audit
+        run: pip-audit --timeout 60
 
   typecheck:
     runs-on: ubuntu-latest
