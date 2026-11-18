@@ -359,6 +359,15 @@ unavailable in this local environment. This is one sample, not analyzer-matrix
 coverage. See the [hash-bound report](docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a.json),
 [summary](docs/protection-adversarial-current-main-local-2026-11-18-6d8d450a-summary.json),
 and [regression tests](tests/unit/test_published_local_adversarial_current_main_6d8d450a.py).
+An expanded local shard on source `9112e77f` measured all 22 configured passes
+across four ELF x86-64 repository fixtures. It recorded 88/88 pass rows and
+528/792 completed analyzer rows with no pass/analyzer errors or missing rows;
+Binary Ninja, Ghidra, and Triton were unavailable. angr emitted unsupported VEX
+and CCall diagnostics, so its completed rows do not establish full decompiler
+coverage. The generated Linux corpus was not run on this macOS host. This is
+bounded analyzer evidence, not generalized resistance; see the [hash-bound
+summary](docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0-summary.json)
+and [compressed report](docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz).
 The current automated report records `human_signoff: not-attested` and
 `release_decision: block-vm-milestone`, because the production tree changed
 after the reviewed commit `a111f923df43a66826b71ab70db8a484532fbf3b`. Human

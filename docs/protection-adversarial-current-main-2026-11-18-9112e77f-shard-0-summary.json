@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "measurement": "local-all-pass-adversarial-shard",
+  "source_commit": "9112e77fd749b9ee24b7879012a76dda15233ee8",
+  "execution": {
+    "date": "2026-11-18",
+    "platform": "darwin-arm64",
+    "python": "3.14.10",
+    "provenance": "local-source-tree"
+  },
+  "archive": {
+    "path": "docs/protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz",
+    "sha256": "a548324601b248c870d568ab7d7c74e321c21e0dd9f49d25c70de14235875795",
+    "uncompressed_bytes": 604459,
+    "uncompressed_sha256": "a9ab879c2ab7632e67025fca94ce0b050bd2adc9591661868c1d75af441f816f"
+  },
+  "scope": {
+    "corpus": "repository-fixtures",
+    "fixture_count": 4,
+    "fixtures": [
+      {
+        "name": "elf_switch_pie_x86_64",
+        "bytes": 13296,
+        "sha256": "2b2bebfbfe1bf50813f641eb0b26e44ca7cc430ff0c5064ecb3abdf5aab1357f"
+      },
+      {
+        "name": "elf_vm_arith_x86_64",
+        "bytes": 4632,
+        "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+      },
+      {
+        "name": "elf_vm_fpengineidxnb_x86_64",
+        "bytes": 4728,
+        "sha256": "9f6971e93e6b3fd24f2f990b7dd273722b33044e65d2d89c113c184649675b07"
+      },
+      {
+        "name": "elf_vm_movabs_x86_64",
+        "bytes": 4776,
+        "sha256": "9d67243e403eb5fc4f736bd7186f617691275fffacb0739b464ed6da068e19a3"
+      }
+    ],
+    "fixture_shard": {
+      "index": 0,
+      "count": 32
+    },
+    "pass_count": 22,
+    "expected_pass_runs": 88,
+    "expected_analyzer_count": 9,
+    "expected_analyzer_runs": 792
+  },
+  "results": {
+    "observed_pass_runs": 88,
+    "applied_pass_runs": 10,
+    "no_op_pass_runs": 78,
+    "omitted_pass_runs": 0,
+    "pass_errors": 0,
+    "missing_pass_runs": 0,
+    "completed_analyzer_runs": 528,
+    "completed_analyzer_percent": 66.67,
+    "analyzer_errors": 0,
+    "missing_analyzer_runs": 0,
+    "unavailable_analyzer_runs": 264,
+    "completed_runs_by_tool": {
+      "angr": 88,
+      "custom": 88,
+      "ida-pro": 88,
+      "objdump": 88,
+      "radare2": 88,
+      "unicorn": 88
+    },
+    "unavailable_runs_by_tool": {
+      "binary-ninja": 88,
+      "ghidra": 88,
+      "triton": 88
+    },
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": "analyzer license is unavailable",
+      "ghidra": "executable 'ghidra' is unavailable",
+      "triton": "module 'triton' is unavailable"
+    }
+  },
+  "limitations": [
+    "The report covers four repository ELF x86-64 fixtures in shard 0 of 32 and all 22 configured passes; it is not the full dataset campaign.",
+    "Generated ELF fixtures were not measured because this macOS host lacks the Linux x86-64 toolchain required by the generator.",
+    "angr emitted unsupported VEX operation and CCall diagnostics during analysis; its adapter rows completed, but those diagnostics constrain interpretation of its decompiler metrics.",
+    "The run measures analyzer outputs and pass application, not generalized resistance or decompiler effectiveness.",
+    "Binary Ninja remains unavailable because no valid license is installed; its measurements and the related release gate remain open."
+  ],
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "published_resistance_results": "open"
+  }
+}

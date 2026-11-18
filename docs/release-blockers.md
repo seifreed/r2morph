@@ -1309,6 +1309,23 @@ unavailable because no valid license is available, so the named-analyzer gate
 remains open. The current-run aggregate and limits are recorded in
 [the evidence summary](differential-run-2026-11-18-44213229027-summary.json).
 
+## Current-source local all-pass analyzer shard — 2026-11-18
+
+On source commit `9112e77fd749b9ee24b7879012a76dda15233ee8`, a Darwin ARM64
+runner measured all 22 configured mutation passes across four repository ELF
+x86-64 fixtures (shard 0 of 32). All 88 pass rows and 792 expected analyzer
+slots were present; 528 slots completed across angr, IDA Pro, objdump, radare2,
+Unicorn, and the custom analyzer, with zero pass/analyzer errors or missing
+rows. Binary Ninja, Ghidra, and Triton were unavailable for all 88 rows each.
+angr emitted unsupported VEX-operation and CCall diagnostics; those rows are
+accounted as completed, but their decompiler metrics have this limitation. The
+Linux generated-fixture corpus was not included on the macOS host. This report
+is bounded analyzer-output evidence and does not establish generalized
+resistance. See the hash-bound [summary](protection-adversarial-current-main-2026-11-18-9112e77f-shard-0-summary.json),
+[compressed report](protection-adversarial-current-main-2026-11-18-9112e77f-shard-0.json.gz),
+and [regression tests](../tests/unit/test_published_current_main_adversarial_shard_9112e77f.py).
+The analyzer and published-resistance gates remain open.
+
 ## Blocker index
 
 The published `v0.4.0-alpha.3` release pipeline completed all five jobs,
