@@ -81,6 +81,19 @@ resistance. The [hash-bound summary](protection-current-production-adversarial-2
 and [regression test](../tests/unit/test_published_current_production_adversarial_44223496306.py)
 preserve scope and limitations; both release gates remain open.
 
+## Current-source local fuzz run — 2026-11-18
+
+On source commit `0491ba06a09240eee7b36241cc4d8e4b040a7a83`, the local
+Python 3.14.10/macOS ARM64 campaign ran 5,000 deterministic cases against each
+of ten parser, assembler, VM, relocation, and binary-rewriter targets: 50,000
+target runs, zero failures, and 106 retained recoverable Mach-O parser
+diagnostics. The [hash-bound manifest](continuous-fuzz-local-2026-11-18-0491ba06.json),
+[raw report](continuous-fuzz-local-2026-11-18-0491ba06-report.json), and
+[regression contract](../tests/unit/test_published_local_continuous_fuzz_0491ba06.py)
+pin the source and report. This single-host bounded run does not establish
+arbitrary-input semantic equivalence, cross-platform parity, or adversarial
+resistance; the related readiness gates remain open.
+
 ### Current-source local IDA sample — 2026-11-18
 
 On source `6d8d450a2cabe27fdfa723b7d911ce9a5a15f35c`, a local benchmark applied
@@ -1325,6 +1338,33 @@ evidence, not a complete compatibility or resistance proof. Binary Ninja is
 unavailable because no valid license is available, so the named-analyzer gate
 remains open. The current-run aggregate and limits are recorded in
 [the evidence summary](differential-run-2026-11-18-44213229027-summary.json).
+
+## Current-main validation — 2026-11-18
+
+On source commit `0491ba06a09240eee7b36241cc4d8e4b040a7a83`, the differential
+workflow completed all 85 jobs. Its 10-pass core campaign recorded 10,860
+classified runs with complete evidence and zero failures or errors; the
+12-pass extended campaign recorded 13,032 with the same result. The continuous
+fuzz workflow completed 150,000 target runs across Ubuntu, Windows, and macOS
+with zero failures. The local current-source fuzz campaign separately ran
+50,000 target cases on macOS ARM64 with zero failures and 106 retained Mach-O
+parser warnings.
+
+The 33-job adversarial workflow completed 362 fixtures (200 generated), 22
+passes, and all 71,676 analyzer slots. It completed 55,220 (77.04%), with
+16,456 explicitly unavailable, no errors, and no missing rows. Binary Ninja
+and IDA Pro were unavailable for every row; Unicorn lacked support for 528
+rows. Fourteen virtualization functions were reported unsupported. These are
+bounded results and do not establish generalized resistance or all-analyzer
+coverage. The exact counters, workflow links, artifact hashes, and limitations
+are pinned in [the current-main validation manifest](current-main-validation-2026-11-18-0491ba06.json)
+and its [local fuzz manifest](continuous-fuzz-local-2026-11-18-0491ba06.json).
+
+The main CI run for this source passed 11 jobs but ended cancelled while the
+four macOS jobs were in `Run cross-platform package smoke tests`; their results
+remain unverified. The separate automated independent-review workflow passed
+28 checks, but recorded `human_signoff: not-attested` and
+`release_decision: block-vm-milestone`. All three 1.0 blockers remain open.
 
 ## Current-source local all-pass analyzer shard — 2026-11-18
 

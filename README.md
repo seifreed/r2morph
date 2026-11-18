@@ -266,6 +266,26 @@ source and raw-report hashes, seed, diagnostics, and limits are recorded in the
 This single-host deterministic run does not prove arbitrary-input semantic
 equivalence, cross-platform parity, or adversarial resistance.
 
+A second local run on commit `0491ba06` exercised the same ten targets 5,000
+times each with payloads capped at 4 KiB and zero failures. The current-source
+manifest and raw report are pinned in
+[`docs/continuous-fuzz-local-2026-11-18-0491ba06.json`](docs/continuous-fuzz-local-2026-11-18-0491ba06.json).
+This bounded macOS ARM64 run adds current-source fuzz evidence; it does not
+establish cross-platform parity or adversarial resistance.
+
+On the same source commit, the differential workflow completed 85 jobs:
+10,860 core and 13,032 extended classifications had complete evidence and
+zero failures. The cross-platform fuzz workflow completed 150,000 target runs
+across Ubuntu, Windows, and macOS with zero failures. The 362-fixture
+adversarial benchmark completed 55,220 of 71,676 analyzer rows; Binary Ninja
+and IDA Pro were unavailable, and 528 Unicorn rows lacked instruction support.
+These results are bounded to the documented corpora and do not close platform
+parity or resistance. The aggregate and raw-artifact hashes are recorded in
+[`current-main-validation-2026-11-18-0491ba06.json`](docs/current-main-validation-2026-11-18-0491ba06.json).
+The main CI run passed 11 jobs but was cancelled during four macOS package
+smoke jobs, so those jobs remain unverified. Its automated review passed 28
+checks but still records human signoff as `not-attested`.
+
 The current `main` wheel also passed the continuous fuzz workflow on Linux,
 macOS, and Windows: 5,000 deterministic cases for each of ten parser,
 assembler, VM, relocation, and rewriting targets per platform (150,000 target
