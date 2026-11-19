@@ -12,7 +12,9 @@ _ROOT = Path(__file__).resolve().parents[2]
 def test_ci_matrix_uses_supported_macos_runner_images() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    expect("os: [ubuntu-latest, macos-latest, macos-15, windows-latest]" in workflow and "macos-14" not in workflow)
+    expect(
+        "os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]" in workflow and "macos-14" not in workflow
+    )
 
 
 def test_arm64_differential_uses_current_macos_runner() -> None:

@@ -4,11 +4,13 @@ import tomllib
 from pathlib import Path
 
 import yaml
+from packaging.requirements import Requirement
 
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _INTEGRATION_REPRO_RETENTION_DAYS = 5
+_EXPECTED_ANGR_OPTIONAL_EXTRA_COUNT = 3
 
 
 def test_ubuntu_ci_installs_clang_for_compiler_generated_corpus() -> None:
@@ -64,22 +66,52 @@ def test_macos_ci_exposes_native_keystone_shared_library() -> None:
     expect("brew install keystone" in macos_setup and "DYLD_LIBRARY_PATH=$(brew --prefix keystone)/lib" in macos_setup)
 
 
-def test_macos_arm64_ci_installs_rosetta_before_native_macho_smoke() -> None:
+def test_macos_native_macho_smoke_uses_intel_runner_without_rosetta() -> None:
     workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
-    steps = workflow["jobs"]["cross-platform-tests"]["steps"]
-    rosetta_index = next(
-        index for index, step in enumerate(steps) if step["name"] == "Install Rosetta for native x86-64 Mach-O tests"
-    )
-    native_smoke_index = next(
-        index for index, step in enumerate(steps) if step["name"] == "Run cross-platform package smoke tests"
-    )
-    rosetta_step = steps[rosetta_index]
+    job = workflow["jobs"]["cross-platform-tests"]
+    steps = job["steps"]
 
     expect(
-        rosetta_index < native_smoke_index
-        and rosetta_step["if"] == "runner.os == 'macOS'"
-        and "sudo softwareupdate --install-rosetta --agree-to-license" in rosetta_step["run"]
-        and "arch -x86_64 /usr/bin/true" in rosetta_step["run"]
+        "macos-latest" in job["strategy"]["matrix"]["os"]
+        and "macos-15-intel" in job["strategy"]["matrix"]["os"]
+        and not any("Rosetta" in step["name"] for step in steps)
+    )
+
+
+def test_angr_optional_dependencies_skip_intel_macos_until_native_build_is_supported() -> None:
+    requirements = (_ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    project = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    requirement_lines = [line for line in requirements if line.startswith("angr>=")]
+    extras = project["project"]["optional-dependencies"]
+    extra_requirements = [
+        dependency
+        for name in ("enhanced", "syntia", "all")
+        for dependency in extras[name]
+        if dependency.startswith("angr>=")
+    ]
+    marker_values = {
+        "platform_system": "Darwin",
+        "platform_machine": "x86_64",
+        "python_version": "3.12",
+    }
+
+    expect(
+        len(requirement_lines) == 1
+        and len(extra_requirements) == _EXPECTED_ANGR_OPTIONAL_EXTRA_COUNT
+        and all(not Requirement(line).marker.evaluate(marker_values) for line in requirement_lines)
+        and all(not Requirement(line).marker.evaluate(marker_values) for line in extra_requirements)
+        and all(
+            Requirement(line).marker.evaluate({**marker_values, "platform_machine": "arm64"})
+            for line in requirement_lines + extra_requirements
+        )
+        and all(
+            Requirement(line).marker.evaluate({**marker_values, "platform_system": "Linux"})
+            for line in requirement_lines + extra_requirements
+        )
+        and all(
+            not Requirement(line).marker.evaluate({**marker_values, "platform_system": "Windows"})
+            for line in requirement_lines + extra_requirements
+        )
     )
 
 

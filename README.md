@@ -128,6 +128,9 @@ before collecting tests that depend on the assembler binding. The x86-64
 Mach-O native smoke runs on GitHub's Intel `macos-15-intel` runner; Apple
 Silicon runs the cross-platform package checks without executing x86-64 Mach-O.
 Rosetta execution on Apple Silicon is not currently validated by CI.
+The optional `angr` backend is not installed on Intel macOS because PyPI does
+not currently publish an Intel macOS wheel; its CI coverage runs on Linux and
+Apple Silicon instead.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence
 remain stable across operating systems. Evidence paths use `/` separators on
 every platform.
