@@ -13,17 +13,35 @@ _DEPENDENCY_WORKFLOWS = (
 def test_ubuntu_package_index_updates_are_time_bounded() -> None:
     for workflow_path in _DEPENDENCY_WORKFLOWS:
         commands = workflow_path.read_text(encoding="utf-8").splitlines()
-        updates = [line.strip() for line in commands if "sudo apt-get update" in line]
+        updates = [line.strip() for line in commands if "sudo apt-get" in line and line.rstrip().endswith(" update")]
 
-        expect(updates and all(line.startswith("timeout 10m sudo apt-get update") for line in updates))
+        expect(
+            updates
+            and all(
+                line.startswith(
+                    "timeout 10m sudo apt-get -o Acquire::Retries=3 "
+                    "-o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 update"
+                )
+                for line in updates
+            )
+        )
 
 
 def test_ubuntu_dependency_installations_are_time_bounded() -> None:
     for workflow_path in _DEPENDENCY_WORKFLOWS:
         commands = workflow_path.read_text(encoding="utf-8").splitlines()
-        installs = [line.strip() for line in commands if "sudo apt-get install -y" in line]
+        installs = [line.strip() for line in commands if "sudo apt-get" in line and "install -y" in line]
 
-        expect(installs and all(line.startswith("timeout 15m sudo apt-get install -y") for line in installs))
+        expect(
+            installs
+            and all(
+                line.startswith(
+                    "timeout 15m sudo apt-get -o Acquire::Retries=3 "
+                    "-o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 install -y"
+                )
+                for line in installs
+            )
+        )
 
 
 def test_adversarial_workflow_preserves_active_campaigns() -> None:

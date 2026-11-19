@@ -90,9 +90,10 @@ Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 also covers integration, property, and real-binary tests. Passing these jobs
 expands platform evidence but does not by itself establish full mutation
 parity, which remains an open release gate.
-Ubuntu workflow dependency setup bounds package-index updates to 10 minutes and
-package installation to 15 minutes. A stalled system package source fails the
-job explicitly instead of occupying a runner without a deadline.
+Ubuntu workflow dependency setup retries package requests three times with
+60-second connection timeouts; package-index updates and installations also
+have 10- and 15-minute limits. Persistent repository failures still fail the
+job instead of omitting system dependencies.
 The timeout integration case uses identical temporary shell scripts so it
 exercises real process timeouts without depending on copied system binaries or
 their platform-specific execution rules.
