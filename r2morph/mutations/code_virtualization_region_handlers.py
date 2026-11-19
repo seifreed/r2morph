@@ -21,6 +21,7 @@ from r2morph.mutations.code_virtualization_layout import (
     imul3_offsets,
     op_offsets,
     shift_offsets,
+    triple_offsets,
 )
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
@@ -795,3 +796,27 @@ def _imul3_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: i
         body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
         "  mov qword ptr [rsp+r8*8], rax\n  add rsi, 7\n  jmp vm_dispatch\n"
     )
+
+
+def _shlx_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Execute one flag-neutral BMI2 shift using three virtual GP register slots."""
+    width = int(handler_key.rsplit("_", 1)[1])
+    off = triple_offsets("dst", "src", "count", field_perm)
+    body = ""
+    for register, field in (("r8", "dst"), ("r9", "src"), ("r10", "count")):
+        body += f"  movzx {register}d, byte ptr [rsi+{off[field]}]\n  xor {register}b, {key}\n  xor {register}b, r13b\n"
+    if width == _QWORD_WIDTH_BITS:
+        body += (
+            "  mov rax, qword ptr [rsp+r9*8]\n"
+            "  mov rcx, qword ptr [rsp+r10*8]\n"
+            "  shlx rax, rax, rcx\n"
+            "  mov qword ptr [rsp+r8*8], rax\n"
+        )
+    else:
+        body += (
+            "  mov eax, dword ptr [rsp+r9*8]\n"
+            "  mov ecx, dword ptr [rsp+r10*8]\n"
+            "  shlx eax, eax, ecx\n"
+            "  mov dword ptr [rsp+r8*8], eax\n"
+        )
+    return body + "  add rsi, 4\n  jmp vm_dispatch\n"

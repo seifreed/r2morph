@@ -250,6 +250,22 @@ def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
     return (mnemonic, slot, count, width)
 
 
+def _decode_shlx(disasm: str) -> tuple[int, int, int, int] | None:
+    """Decode BMI2 ``shlx dst, src, count`` without changing flags."""
+    parts = disasm.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "shlx":
+        return None
+    operands = [token.strip().lower() for token in parts[1].split(",")]
+    if len(operands) != _TERNARY_OPERAND_COUNT:
+        return None
+    destination, source, count = (_register_operand(operand) for operand in operands)
+    if destination is None or source is None or count is None:
+        return None
+    if destination[1] not in (32, 64) or destination[1] != source[1] or destination[1] != count[1]:
+        return None
+    return destination[0], source[0], count[0], destination[1]
+
+
 def _decode_double_shift(disasm: str) -> tuple[str, int, int, int, int] | None:
     """Decode immediate ``shld``/``shrd`` register forms."""
     parts = disasm.split(None, 1)

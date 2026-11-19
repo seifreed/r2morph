@@ -28,6 +28,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_setcc,
     _decode_shift,
     _decode_shift_reg,
+    _decode_shlx,
     _decode_two_operand,
     _parse_mem_operand,
 )
@@ -401,6 +402,9 @@ def _classify_test(text: str, address: int, size: int) -> list[Any] | None:
 
 
 def _classify_shift(text: str, address: int, size: int) -> list[Any] | None:
+    shlx = _decode_shlx(text)
+    if shlx is not None:
+        return ["shlx", *shlx]
     double_shift = _decode_double_shift(text)
     if double_shift is not None:
         return list(double_shift)

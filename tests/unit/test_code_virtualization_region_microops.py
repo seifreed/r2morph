@@ -17,7 +17,9 @@ from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_handlers import _VSP_OFFSET
+from r2morph.mutations.code_virtualization_region_dataflow import writes_register
+from r2morph.mutations.code_virtualization_region_handlers import _VSP_OFFSET, _shlx_handler_asm
+from r2morph.mutations.code_virtualization_region_models import _required_key
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from tests.utils.assertions import expect
 
@@ -35,6 +37,7 @@ _EXPECTED_ITEM_SIZE_VPUSHI_5_32_5 = 5
 _EXPECTED_ITEM_SIZE_VPUSHI_5_64_9 = 9
 _EXPECTED_ITEM_SIZE_VPUSH_3_2 = 2
 _EXPECTED_ITEM_SIZE_VSHIFT_SHL_3_64_2 = 2
+_EXPECTED_ITEM_SIZE_SHLX = 4
 _EXPECTED_ITEM_SIZE_VSTORERIP_0_64_6 = 6
 _EXPECTED_ITEM_SIZE_VSTORE_5_8_64_7 = 7
 _EXPECTED_KINDS_COUNT_VBINOP_2 = 2
@@ -136,6 +139,17 @@ def test_low_word_logic_classifies_as_region_operation() -> None:
         and (operation.mnemonic, operation.dst_index, operation.value, operation.is_immediate, operation.width)
         == ("and", 1, 0x10, True, 16)
     )
+
+
+def test_bmi2_shlx_is_lowered_as_flag_neutral_three_register_operation() -> None:
+    item = _classify(_insn(0x1000, 5, "shl", "shlx eax, ebx, ecx"))
+    expect(item == ["shlx", 0, 3, 1, 32])
+    expect(item is not None and _required_key(tuple(item)) == "shlx_32")
+    expect(item is not None and _item_size(tuple(item)) == _EXPECTED_ITEM_SIZE_SHLX)
+    expect(item is not None and writes_register(tuple(item)) == frozenset({0}))
+
+    handler = _shlx_handler_asm("shlx_32", "0x5a", field_perm=7)
+    expect("shlx eax, eax, ecx" in handler and "add rsi, 4" in handler and "pushfq" not in handler)
 
 
 def test_flag_dead_arith_can_lower_to_fused_superinstruction() -> None:
