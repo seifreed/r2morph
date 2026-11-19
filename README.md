@@ -339,12 +339,12 @@ This bounded campaign does not test transformed-program equivalence and does
 not establish exhaustive fuzz coverage, full platform parity, or adversarial
 resistance.
 
-The continuous-fuzz workflow on current source `2faea83e` also passed on Ubuntu,
-macOS 15, and Windows after building and installing the wheel: 5,000 cases for
-each of the same ten targets per platform (150,000 target runs total), with
-zero failures and 4 KiB payload limits. The three raw reports and their
+The continuous-fuzz workflow on source `749131c6` passed on Ubuntu, macOS 15,
+and Windows after building and installing the wheel: 5,000 cases for each of
+the same ten targets per platform (150,000 target runs total), with zero
+failures and 4 KiB payload limits. The three raw reports and their
 source-bound hashes are recorded in
-[`docs/continuous-fuzz-2026-11-19-44545166200-summary.json`](docs/continuous-fuzz-2026-11-19-44545166200-summary.json).
+[`docs/continuous-fuzz-2026-11-19-44562397087-summary.json`](docs/continuous-fuzz-2026-11-19-44562397087-summary.json).
 This deterministic bounded campaign does not establish exhaustive fuzz
 coverage, transformed-program equivalence, complete platform parity, or
 adversarial resistance.
