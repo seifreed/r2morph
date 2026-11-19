@@ -1178,7 +1178,10 @@ class CodeVirtualizationPass(MutationPass):
         return None
 
     @staticmethod
-    def _unsupported_instruction_diagnostic(instruction: dict[str, Any] | None) -> tuple[str, str]:
+    def _unsupported_instruction_diagnostic(
+        instruction: dict[str, Any] | None,
+        virtualize_dispatch: bool = False,
+    ) -> tuple[str, str]:
         """Map a rejected instruction to a stable capability label and reason."""
         if instruction is None:
             return "ssa_liveness", "CFG, SSA, and liveness coverage were not proven"
@@ -1205,7 +1208,12 @@ class CodeVirtualizationPass(MutationPass):
                 and ("[" in opcode or not control_mnemonic_parts[1].startswith(("0x", "$")))
             )
         ):
-            capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
+            capability = "computed_control_flow"
+            reason = (
+                "computed control flow could not be proven for this function"
+                if virtualize_dispatch
+                else "computed control flow is not enabled for this pass"
+            )
         elif (
             "fs:" in opcode
             or "gs:" in opcode
@@ -1620,7 +1628,7 @@ class CodeVirtualizationPass(MutationPass):
         """Record a warning when only a straight-line region was transformed."""
         if not enabled:
             return 0
-        capability, reason = self._unsupported_instruction_diagnostic(instruction)
+        capability, reason = self._unsupported_instruction_diagnostic(instruction, self.virtualize_dispatch)
         self._record_diagnostic(
             records,
             func,

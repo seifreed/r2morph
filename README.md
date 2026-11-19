@@ -233,7 +233,9 @@ compressed reports and precise counts are recorded in
 [`docs/differential-run-2026-11-17-44081385675-summary.json`](docs/differential-run-2026-11-17-44081385675-summary.json).
 VM semantic campaign rows that cannot virtualize any function retain the
 rejected function and instruction diagnostics, including capability and
-reason, so unsupported fixtures can be traced to a concrete blocker.
+reason, so unsupported fixtures can be traced to a concrete blocker. Computed
+jump diagnostics distinguish a disabled feature from an enabled dispatch that
+the current analysis could not prove.
 The same differential workflow passed again on current source commit `1cf52005`
 in run [44213229027](https://github.com/seifreed/r2morph/actions/runs/44213229027).
 Its 85 jobs completed successfully; artifacts report zero failures or errors
