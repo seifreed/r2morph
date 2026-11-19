@@ -93,6 +93,5 @@ def test_ubuntu_ci_preserves_floating_point_varargs_repro_on_failure() -> None:
     expect(
         '--basetemp="${RUNNER_TEMP}/pytest-$(basename "$test_dir")"' in broad_suite["run"]
         and artifact_upload["if"] == "failure() && runner.os == 'Linux' && matrix.python-version == '3.12'"
-        and "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi*"
-        in artifact_upload["with"]["path"]
+        and "pytest-integration/**/floating_point_varargs_*" in artifact_upload["with"]["path"]
     )
