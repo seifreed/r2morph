@@ -1817,9 +1817,7 @@ class CodeVirtualizationPass(MutationPass):
             mutation_kind="code_virtualization",
             metadata={
                 "instructions_count": instruction_count,
-                "affected_instruction_mnemonics": sorted(
-                    {str(item[0]) for item in region.instructions if item and isinstance(item[0], str)}
-                ),
+                "affected_instruction_mnemonics": list(region.source_mnemonics),
                 "bytecode_size": len(blob),
                 "nested_vm": nested,
                 "landing_pad_entries": sorted(region.entry_map),

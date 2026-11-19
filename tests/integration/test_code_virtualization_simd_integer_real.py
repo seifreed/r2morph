@@ -169,5 +169,7 @@ int main(void) {
         for record in virtualization_pass.get_records()
         for mnemonic in record.metadata.get("affected_instruction_mnemonics", [])
     }
-    expect(stats["functions_virtualized"] >= 1 and {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq"} <= affected)
+    expect(stats["functions_virtualized"] >= 1, f"no function virtualized: {stats!r}")
+    expected_mnemonics = {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq"}
+    expect(expected_mnemonics <= affected, f"missing native mnemonics: {sorted(expected_mnemonics - affected)!r}")
     expect(run_command([mutated], timeout=30).returncode == _INSERT_EXIT_CODE)

@@ -1221,6 +1221,15 @@ def extract_region(
         entry_map,
         entry_stack_depths,
         standalone_entry,
+        tuple(
+            sorted(
+                {
+                    opcode.split(None, 1)[0].lower()
+                    for instruction in build.body
+                    if isinstance((opcode := instruction.get("opcode")), str) and opcode
+                }
+            )
+        ),
     )
 
 

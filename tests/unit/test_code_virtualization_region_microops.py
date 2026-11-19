@@ -92,6 +92,24 @@ def test_region_seeds_exception_entry_stack_from_its_call_site() -> None:
     expect(region is not None)
 
 
+def test_region_preserves_native_mnemonics_after_lowering() -> None:
+    instructions = [
+        _insn(0x1000, 5, "vec", "vmovd xmm0, dword ptr [rax]"),
+        _insn(0x1005, 6, "vec", "vpinsrd xmm0, xmm0, edx, 1"),
+        _insn(0x100B, 5, "vec", "vpbroadcastd xmm1, xmm0"),
+        _insn(0x1010, 5, "vec", "vpbroadcastq xmm2, xmm0"),
+        _insn(0x1015, 4, "vec", "vpextrd eax, xmm2, 3"),
+        _insn(0x1019, 1, "ret", "ret"),
+    ]
+
+    region = extract_region(instructions)
+
+    expect(
+        region is not None
+        and {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq", "vpextrd"} <= set(region.source_mnemonics)
+    )
+
+
 def test_flag_dead_reg_reg_arith_lowers_to_shared_microop_sequence() -> None:
     items = _flag_dead_arith_region(_insn(0x1003, 3, "xor", "xor eax, ecx"))
     kinds = [item[0] for item in items]

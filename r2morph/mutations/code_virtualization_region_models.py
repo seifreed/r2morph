@@ -80,6 +80,7 @@ class Region:
     entry_map: dict[int, int] = field(default_factory=dict)
     entry_stack_depths: dict[int, int] = field(default_factory=dict)
     standalone_entry: bool = False
+    source_mnemonics: tuple[str, ...] = ()
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

@@ -165,6 +165,8 @@ render them without a Unicode encoding failure.
 
 PE, Mach-O, ARM, and AArch64 evidence does not imply parity with Linux ELF
 x86-64 or equivalent CodeVirtualization support.
+Function virtualization mutation records preserve original native instruction
+mnemonics even when lowering replaces them with internal VM opcodes.
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
