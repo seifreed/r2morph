@@ -1,8 +1,9 @@
-"""Assembly handler for VEX.128 lane extraction."""
+"""Assembly handlers for VEX.128 lane transfers."""
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import pair_offsets
+from r2morph.mutations.code_virtualization_layout import pair_offsets, triple_offsets
+from r2morph.mutations.code_virtualization_region_fp_handlers import _clear_ymm_upper_slot_asm
 from r2morph.mutations.code_virtualization_region_handlers import _XMM_SAVE_OFFSET
 
 _LANE_WIDTH_BYTES = 16
@@ -68,4 +69,30 @@ def _fp_vex_gp_extract_handler_asm(handler_key: str, key: str, field_perm: int =
         f"  {instruction} {'rax' if width == _QWORD_WIDTH_BITS else 'eax'}, xmm0, {immediate}\n"
         "  mov qword ptr [rsp + r9*8], rax\n"
         "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_gp_insert_handler_asm(
+    handler_key: str,
+    key: str,
+    field_perm: int = 0,
+    preserve_ymm: bool = False,
+) -> str:
+    """Insert a GP dword into an XMM lane and clear the VEX upper half."""
+    immediate = int(handler_key.rsplit("_", 1)[1])
+    offsets = triple_offsets("dst", "src", "gp", field_perm)
+    decode = "".join(
+        f"  movzx {reg}d, byte ptr [rsi+{offsets[field]}]\n  xor {reg}b, {key}\n  xor {reg}b, r13b\n"
+        for reg, field in (("r8", "dst"), ("r9", "src"), ("r10", "gp"))
+    )
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
+    return (
+        decode
+        + "  shl r8, 4\n  shl r9, 4\n"
+        + f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        + "  mov eax, dword ptr [rsp + r10*8]\n"
+        + f"  vpinsrd xmm0, xmm0, eax, {immediate}\n"
+        + f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        + clear_upper
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
     )

@@ -303,11 +303,12 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 | **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
 | **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 
-The experimental region VM now lowers register-form BMI2 `shlx` and immediate
-form `rorx` while preserving guest flags. A Linux x86-64 integration fixture
-checks both results and condition flags; execution requires a BMI2-capable CPU.
-These instruction-level results do not close the broader VM compatibility or
-resistance gates.
+The experimental region VM lowers register-form BMI2 `shlx` and immediate
+form `rorx` while preserving guest flags. It also supports VEX.128 memory-form
+`vmovd` loads and register-form `vpinsrd`. Linux x86-64 integration fixtures
+check native results; the BMI2 fixture also checks condition flags and requires
+a BMI2-capable CPU. These instruction-level results do not establish general
+SIMD coverage or close the broader VM compatibility and resistance gates.
 
 The ELF x86-64 direct-call target decoder uses scratch registers that preserve
 the System V `AL` vector-argument count. The native Linux floating-point varargs

@@ -85,6 +85,7 @@ from r2morph.mutations.code_virtualization_region_fp_extra_decoders import (
     _decode_fp_vex_convert,
     _decode_fp_vex_extra,
     _decode_fp_vex_gp_extract,
+    _decode_fp_vex_gp_insert,
     _decode_fp_vex_lane_extract,
 )
 from r2morph.mutations.code_virtualization_region_fp_fma import (
@@ -227,6 +228,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
         (
             lambda: _decode_fp_vex_lane_extract(text),
             lambda: _decode_fp_vex_gp_extract(text),
+            lambda: _decode_fp_vex_gp_insert(text),
             lambda: _decode_fp_vex_convert(text),
             lambda: _decode_fp_vex_extra(text),
             lambda: _decode_fp_vex_scalar_move(text, address, size),

@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_fp_lane_handlers import (
     _fp_vex_gp_extract_handler_asm,
+    _fp_vex_gp_insert_handler_asm,
     _fp_vex_lane_extract_handler_asm,
 )
 
@@ -182,11 +183,17 @@ class FPHandlerRouterMixin:
     def _fp_vex_scalar_move(self, key: str, variants: tuple[int, ...]) -> str | None:
         if key.startswith(("fpmovmskb_", "fpmovmskbvex_", "fpmovmskbvex256_")):
             return _fp_movmskb_handler_asm(key, self.context.key, self.context.field_perm)
-        if key.startswith(("fpmovvexextract_", "fpmovvexgp_", "fpmovvexgpd_")):
+        if key.startswith(("fpmovvexextract_", "fpmovvexgp_", "fpmovvexgpd_", "fpmovvexinsert_")):
             return (
                 _fp_vex_gp_extract_handler_asm(key, self.context.key, self.context.field_perm)
                 if key.startswith("fpmovvexextract_")
-                else _fp_vex_gp_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+                else (
+                    _fp_vex_gp_insert_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
+                    if key.startswith("fpmovvexinsert_")
+                    else _fp_vex_gp_move_handler_asm(
+                        key, self.context.key, self.context.field_perm, self.context.has_ymm
+                    )
+                )
             )
         if key.startswith(
             (

@@ -305,6 +305,8 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         if kind == "fpmovvexextract":
             self._pair(position, item[3], self.slot_of[item[2]])
             self.plain.append(item[4] ^ position)
+        elif kind == "fpmovvexinsert":
+            self._triple(position, item[2], item[3], self.slot_of[item[4]])
         else:
             self._pair(position, item[2], self.slot_of[item[3]])
         return True
@@ -313,7 +315,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         kind = item[0]
         if kind in ("fpmovvexscalar", "fpmovvexscalar3"):
             return self._emit_vex_scalar_register_move(item)
-        if kind in ("fpmovvexgp", "fpmovvexgpd", "fpmovvexextract"):
+        if kind in ("fpmovvexgp", "fpmovvexgpd", "fpmovvexextract", "fpmovvexinsert"):
             return self._emit_vex_gp_transfer(item)
         if kind in ("fpmovmskb", "fpmovmskbvex", "fpmovmskbvex256"):
             self._pair(self._opcode(item), item[2], self.slot_of[item[1]])

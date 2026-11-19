@@ -758,7 +758,7 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vminsd": ("min", 64),
     "vmaxsd": ("max", 64),
 }
-_FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovq": 64, "vmovss": 32, "vmovsd": 64}
+_FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovd": 32, "vmovq": 64, "vmovss": 32, "vmovsd": 64}
 _FP_VEX_PACKED_COMPARE: frozenset[str] = frozenset({"vcmpps", "vcmppd"})
 
 

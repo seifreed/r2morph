@@ -12,6 +12,8 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 
 _PART_COUNT = 2
 _OPERAND_COUNT = 3
+_GP_INSERT_OPERAND_COUNT = 4
+_VPINSRD_DWORD_LANES = 4
 _BROADCAST_OPERAND_COUNT = 2
 _BYTE_WIDTH_BITS = 8
 _WORD_WIDTH_BITS = 16
@@ -93,6 +95,28 @@ def _decode_fp_vex_gp_extract(text: str) -> tuple[Any, ...] | None:
         _QWORD_WIDTH_BITS: 2,
     }[width]
     return ("fpmovvexextract", width, destination[0], source, immediate) if 0 <= immediate < limit else None
+
+
+def _decode_fp_vex_gp_insert(text: str) -> tuple[Any, ...] | None:
+    """Decode the XMM, GP-register form of ``vpinsrd``."""
+    parts = text.split(None, 1)
+    if len(parts) != _PART_COUNT or parts[0].lower() != "vpinsrd":
+        return None
+    operands = [token.strip().lower() for token in parts[1].split(",")]
+    if len(operands) != _GP_INSERT_OPERAND_COUNT:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    source = _parse_xmm_operand(operands[1])
+    value = _register_operand(operands[2])
+    if destination is None or source is None or value is None or value[1] != _DWORD_WIDTH_BITS:
+        return None
+    try:
+        immediate = int(operands[3], 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate < _VPINSRD_DWORD_LANES:
+        return None
+    return ("fpmovvexinsert", "vpinsrd", destination, source, value[0], immediate)
 
 
 def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:

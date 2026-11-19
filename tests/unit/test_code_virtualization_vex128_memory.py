@@ -40,10 +40,15 @@ _VEX128_IMMEDIATE_MEMORY_ITEM_SIZE = 8
 _VEX128_IMMEDIATE_MEMORY_RIP_ITEM_SIZE = 7
 _VEX128_REGISTER_ITEM_SIZE = 3
 _VEX128_GP_EXTRACT_ITEM_SIZE = 4
+_VEX128_GP_INSERT_ITEM_SIZE = 4
 
 
 def test_vex_gp_extract_item_size_includes_immediate() -> None:
     expect(_item_size(("fpmovvexextract", 64, 0, 0, 1)) == _VEX128_GP_EXTRACT_ITEM_SIZE)
+
+
+def test_vex_gp_insert_item_size_uses_compact_register_fields() -> None:
+    expect(_item_size(("fpmovvexinsert", 1, 2, 0, 1)) == _VEX128_GP_INSERT_ITEM_SIZE)
 
 
 def test_decode_vex128_packed_memory_arithmetic_preserves_base_shape() -> None:
@@ -171,6 +176,55 @@ def test_decode_vex128_vmovd_preserves_dword_transfer_slots() -> None:
     xmm_to_gp = _decode_fp_vex_gp_move("vmovd edx, xmm3")
 
     expect(gp_to_xmm == ("fpmovvexgpd", "gp_to_xmm", 0, 0) and xmm_to_gp == ("fpmovvexgpd", "xmm_to_gp", 3, 2))
+
+
+def test_decode_vex128_vmovd_memory_uses_zeroing_scalar_load() -> None:
+    item = _decode_fp_vex_scalar_move("vmovd xmm0, dword ptr [rbp - 0x44]", 0x1000, 5)
+
+    expect(item == ("fploadvex", 0, 5, -0x44, 32))
+
+
+def test_classify_vex128_vmovd_memory_routes_to_scalar_load() -> None:
+    item = _classify(
+        {
+            "type": "vec",
+            "family": "vec",
+            "opcode": "vmovd xmm0, dword ptr [rbp - 0x44]",
+            "addr": 0x1000,
+            "size": 5,
+        }
+    )
+
+    expect(item == ["fploadvex", 0, 5, -0x44, 32])
+
+
+def test_classify_vpinsrd_preserves_all_registers_and_lane_immediate() -> None:
+    item = _classify(
+        {
+            "type": "vec",
+            "family": "vec",
+            "opcode": "vpinsrd xmm1, xmm2, eax, 1",
+            "addr": 0x1000,
+            "size": 6,
+        }
+    )
+
+    expect(item == ["fpmovvexinsert", "vpinsrd", 1, 2, 0, 1])
+
+
+def test_vpinsrd_is_encoded_and_clears_upper_ymm_state() -> None:
+    item = ("fpmovvexinsert", "vpinsrd", 1, 2, 0, 1)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 6)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
+
+    expect("vpinsrd xmm0, xmm0," in assembly and ", 1" in assembly and "pxor xmm2, xmm2" in assembly)
 
 
 def test_decode_movmskb_variants_preserve_vector_width_and_gp_slot() -> None:
