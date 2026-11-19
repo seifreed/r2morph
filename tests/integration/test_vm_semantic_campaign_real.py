@@ -54,7 +54,8 @@ def _clang_switch_table_source() -> str:
         for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
     )
     cases = "\n".join(
-        f"case {index}: return switch_case_{index}(value);" for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
+        f"case {index}: return switch_case_{index}(value) ^ {index + 1}u;"
+        for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
     )
     return f"""
 {handlers}
