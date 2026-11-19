@@ -12,8 +12,12 @@ no mocks.
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any
+
 from r2morph.core import randomness
-from r2morph.mutations.code_virtualization_dispatch_lifting import complete_direct_branch_ops
+from r2morph.mutations import code_virtualization_dispatch_lifting as dispatch_lifting
+from r2morph.mutations.code_virtualization_dispatch_lifting import complete_direct_branch_ops, gather_dispatch_ops
 from r2morph.mutations.code_virtualization_region import extract_region
 from tests.utils.assertions import expect
 
@@ -36,7 +40,11 @@ class _FakeR2:
         self.responses = responses
         self.queries: list[int] = []
 
-    def cmdj(self, command: str) -> list[dict[str, object]]:
+    def cmdj(self, command: str) -> Any:
+        if command == "iHj":
+            return {"header": ""}
+        if command == "iej":
+            return []
         target = int(command.rsplit("@ ", 1)[1])
         self.queries.append(target)
         return self.responses.get(target, [])
@@ -45,6 +53,9 @@ class _FakeR2:
 class _FakeBinary:
     def __init__(self, responses: dict[int, list[dict[str, object]]]) -> None:
         self.r2 = _FakeR2(responses)
+
+    def get_sections(self) -> list[dict[str, object]]:
+        return [{"perm": "r-x", "vaddr": 0x1000, "vsize": 0x100}]
 
 
 def test_complete_direct_branch_ops_reads_missing_in_range_targets() -> None:
@@ -93,6 +104,59 @@ def test_complete_direct_branch_ops_stops_probe_after_unconditional_jump() -> No
     completed = complete_direct_branch_ops(binary, ops, (0x1000, 0x1020))
 
     expect([op["addr"] for op in completed] == [0x1000, 0x1002, 0x1010, 0x1012])
+
+
+def test_gather_dispatch_ops_includes_resolved_in_function_switch_targets(monkeypatch) -> None:
+    class _SwitchTableAnalyzer:
+        def __init__(self, _binary: object) -> None:
+            pass
+
+        def detect_switch_pattern(self, _function_start: int) -> tuple[list[object], list[object]]:
+            table = SimpleNamespace(
+                entries=[SimpleNamespace(target_address=0x1010), SimpleNamespace(target_address=0x1020)]
+            )
+            return [table], []
+
+    monkeypatch.setattr(dispatch_lifting, "SwitchTableAnalyzer", _SwitchTableAnalyzer)
+    binary = _FakeBinary(
+        {
+            0x1000: [
+                _insn(0x1000, 7, "ujmp", "jmp qword [rcx*8 + 0x2000]"),
+                _insn(0x1007, 1, "ret", "ret"),
+            ],
+            0x1010: [_insn(0x1010, 2, "mov", "mov eax, 1"), _insn(0x1012, 1, "ret", "ret")],
+            0x1020: [_insn(0x1020, 2, "mov", "mov eax, 2"), _insn(0x1022, 1, "ret", "ret")],
+        }
+    )
+
+    ops = gather_dispatch_ops(binary, {"addr": 0x1000, "size": 0x40})
+
+    expect(ops is not None and [op["addr"] for op in ops] == [0x1000, 0x1007, 0x1010, 0x1012, 0x1020, 0x1022])
+
+
+def test_gather_dispatch_ops_excludes_switch_targets_outside_function(monkeypatch) -> None:
+    class _SwitchTableAnalyzer:
+        def __init__(self, _binary: object) -> None:
+            pass
+
+        def detect_switch_pattern(self, _function_start: int) -> tuple[list[object], list[object]]:
+            table = SimpleNamespace(entries=[SimpleNamespace(target_address=0x2000)])
+            return [table], []
+
+    monkeypatch.setattr(dispatch_lifting, "SwitchTableAnalyzer", _SwitchTableAnalyzer)
+    binary = _FakeBinary(
+        {
+            0x1000: [
+                _insn(0x1000, 7, "ujmp", "jmp qword [rcx*8 + 0x2000]"),
+                _insn(0x1007, 1, "ret", "ret"),
+            ],
+            0x2000: [_insn(0x2000, 1, "ret", "ret")],
+        }
+    )
+
+    ops = gather_dispatch_ops(binary, {"addr": 0x1000, "size": 0x40})
+
+    expect(ops is not None and [op["addr"] for op in ops] == [0x1000, 0x1007])
 
 
 def test_dispatch_region_lowers_computed_jump_to_ijmp() -> None:

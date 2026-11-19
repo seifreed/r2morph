@@ -181,6 +181,40 @@ def _append_function_pointer_targets(binary: Any, ops: list[dict[str, Any]]) -> 
     return extended
 
 
+def _append_switch_table_targets(binary: Any, func: dict[str, Any], ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Include bounded case blocks resolved from a memory-indirect switch table."""
+    function_start = func.get("addr")
+    function_size = func.get("size")
+    if not isinstance(function_start, int) or not isinstance(function_size, int) or function_size <= 0:
+        return ops
+    function_range = (function_start, function_start + function_size)
+    try:
+        tables, _other_jumps = SwitchTableAnalyzer(binary).detect_switch_pattern(function_start)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return ops
+    if not tables:
+        return ops
+
+    known_addresses = {operation.get("addr") for operation in ops}
+    executable_ranges = _executable_ranges(binary)
+    extended = list(ops)
+    for table in tables:
+        for entry in table.entries:
+            target = entry.target_address
+            if not isinstance(target, int) or not function_range[0] <= target < function_range[1]:
+                continue
+            for instruction in _target_ops(binary, target, executable_ranges):
+                address = instruction.get("addr")
+                if (
+                    isinstance(address, int)
+                    and function_range[0] <= address < function_range[1]
+                    and address not in known_addresses
+                ):
+                    extended.append(instruction)
+                    known_addresses.add(address)
+    return complete_direct_branch_ops(binary, extended, function_range)
+
+
 def complete_direct_branch_ops(
     binary: Any, ops: list[dict[str, Any]], function_range: tuple[int, int] | None
 ) -> list[dict[str, Any]]:
@@ -232,7 +266,13 @@ def gather_dispatch_ops(binary: Any, func: dict[str, Any]) -> list[dict[str, Any
             break
         gathered.append(insn)
         if insn.get("type") in ("ret", "swi", "syscall"):
-            return _append_function_pointer_targets(binary, gathered)
+            gathered = _append_function_pointer_targets(binary, gathered)
+            if any(
+                insn.get("type") in ("jmp", "ujmp") and "[" in str(insn.get("opcode", insn.get("disasm", "")))
+                for insn in gathered
+            ):
+                gathered = _append_switch_table_targets(binary, func, gathered)
+            return gathered
     return None
 
 

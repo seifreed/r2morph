@@ -10,6 +10,12 @@ from pathlib import Path
 
 import pytest
 
+from r2morph.adapters.process import run_process
+from scripts.protection_maturity_baseline import (
+    _GENERATED_CORPUS_PROFILES,
+    _GENERATED_CORPUS_SOURCES,
+    _GENERATED_UNREACHABLE_PADDING,
+)
 from scripts.vm_semantic_campaign import (
     _DEFAULT_SEEDS,
     _DEFAULT_TRANSFORMATION_TIMEOUT_SECONDS,
@@ -311,6 +317,48 @@ def test_vm_semantic_campaign_fixture_virtualizes_with_native_parity() -> None:
         and report["capability_summary"]["unwinding-exceptions"]["status"] == "not-covered-by-fixture-campaign"
         and report["capability_summary"]["ssa-liveness"]["status"] == "not-covered-by-fixture-campaign",
         f"vm semantic campaign report: {report}",
+    )
+
+
+@pytest.mark.skipif(platform.system() != "Linux", reason="native VM parity campaign requires Linux ELF execution")
+def test_vm_semantic_campaign_virtualizes_clang_switch_table_targets(tmp_path: Path) -> None:
+    compiler_profile = next(profile for profile in _GENERATED_CORPUS_PROFILES if profile[0] == "clang-o2")
+    _, compiler, optimization, *linker_flags = compiler_profile
+    source = tmp_path / "generated_branch.c"
+    binary = tmp_path / "generated_branch_clang-o2"
+    source.write_text(
+        f"{_GENERATED_UNREACHABLE_PADDING}\n{_GENERATED_CORPUS_SOURCES['generated_branch']}", encoding="utf-8"
+    )
+    compile_result = run_process(
+        [
+            compiler,
+            optimization,
+            *linker_flags,
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source.as_posix(),
+            "-o",
+            binary.as_posix(),
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, compile_result.stderr_text)
+
+    report = run_campaign(
+        Path("fixtures/dataset"),
+        _load_coverage(Path("docs/virtualization-coverage.json")),
+        seed=20260916,
+        fixture_selection=(binary,),
+    )
+    fixture = report["fixture_results"][0]
+    expect(
+        report["status"] == "passed"
+        and report["passed_count"] == 1
+        and fixture["functions_virtualized"] >= 1
+        and fixture["unsupported_functions"] == 0
+        and fixture["observables_equal"] is True,
+        f"Clang switch-table fixture report: {report}",
     )
 
 
