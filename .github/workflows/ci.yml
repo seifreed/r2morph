@@ -87,8 +87,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y \
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
@@ -126,8 +126,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y \
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
@@ -159,8 +159,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y \
             git build-essential clang lld gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake gdb
 
       - name: Install radare2
@@ -192,8 +192,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y \
             git build-essential pkg-config wget cmake
 
       - name: Install radare2
@@ -237,8 +237,8 @@ jobs:
       - name: Install system dependencies (Ubuntu)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y \
             git build-essential clang gcc-arm-linux-gnueabihf qemu-user pkg-config wget cmake
 
       - name: Install system dependencies (macOS)

@@ -71,8 +71,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git build-essential clang pkg-config wget cmake binutils
+          timeout 10m sudo apt-get update
+          timeout 15m sudo apt-get install -y git build-essential clang pkg-config wget cmake binutils
 
       - name: Install radare2
         run: bash .github/scripts/install_radare2.sh
