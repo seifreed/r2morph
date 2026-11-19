@@ -30,27 +30,17 @@ def test_run_process_captures_stdout() -> None:
     expect(result.stdout_text.strip() == "ok")
 
 
-def test_run_process_respects_context_process_session_choice() -> None:
+def test_run_process_starts_in_an_isolated_process_session() -> None:
     result = run_process(
         [Path(sys.executable), "-c", "import os; print(os.getsid(0) if hasattr(os, 'getsid') else 'ok')"],
-        context=ProcessContext(start_new_session=False),
         check=True,
     )
 
-    expected = str(os.getsid(0)) if hasattr(os, "getsid") else "ok"
-    expect(result.stdout_text.strip() == expected)
-
-
-def test_run_process_timeout_kills_child_without_a_new_session() -> None:
-    started = time.monotonic()
-    with pytest.raises(ProcessTimeoutError):
-        run_process(
-            [Path(sys.executable), "-c", "import time; time.sleep(30)"],
-            timeout=0.1,
-            context=ProcessContext(start_new_session=False),
-        )
-
-    expect(time.monotonic() - started < _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS)
+    actual_session_id = result.stdout_text.strip()
+    if hasattr(os, "getsid"):
+        expect(actual_session_id != str(os.getsid(0)))
+    else:
+        expect(actual_session_id == "ok")
 
 
 def test_resolve_executable_preserves_symlink_driver_name(tmp_path: Path) -> None:

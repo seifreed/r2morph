@@ -49,7 +49,6 @@ def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
         check=False,
         text=True,
         timeout=30,
-        start_new_session=False,
     )
     return result.returncode, result.stdout, result.stderr
 
@@ -67,10 +66,9 @@ def test_macho_x86_64_instruction_substitution_preserves_native_observables(tmp_
         result = InstructionSubstitutionPass({"probability": 1.0, "force_different": True}).apply(binary)
         binary.save()
 
-    expect(
-        result["mutations_applied"] > 0
-        and _execute_x86_64_macho(original) == _execute_x86_64_macho(protected) == (0, "hello\n", "")
-    )
+    original_result = _execute_x86_64_macho(original)
+    substituted_result = _execute_x86_64_macho(protected)
+    expect(result["mutations_applied"] > 0 and original_result == substituted_result == (0, "hello\n", ""))
 
 
 @pytest.mark.integration
@@ -88,8 +86,6 @@ def test_macho_x86_64_register_substitution_preserves_native_observables(tmp_pat
         binary.save()
 
     signed = CodeSigner().sign(protected, adhoc=True)
-    expect(
-        signed
-        and result["mutations_applied"] > 0
-        and _execute_x86_64_macho(original) == _execute_x86_64_macho(protected) == (0, "hello\n", "")
-    )
+    original_result = _execute_x86_64_macho(original)
+    substituted_result = _execute_x86_64_macho(protected)
+    expect(signed and result["mutations_applied"] > 0 and original_result == substituted_result == (0, "hello\n", ""))

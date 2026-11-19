@@ -138,9 +138,11 @@ checks applied instruction substitution, register substitution, and instruction
 expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity.
 The fixture is a thin x86-64 Mach-O executable and the smoke test launches it
-through macOS `arch -x86_64`. This fixture does not spawn descendants, so its
-test invocation avoids creating a new process session; hosted ARM64 logs showed
-Python blocked in subprocess creation while requesting a new session.
+through macOS `arch -x86_64` in an isolated process session, allowing timeout
+cleanup to terminate its process group if Rosetta leaves child processes
+running. Hosted ARM64 logs show the unmodified fixture invocation does not
+return before the package smoke timeout; original and transformed executions
+are reported separately to identify which one stalls.
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
 12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
 native-output preservation, compiled control-flow/memory fixtures, and rejection
