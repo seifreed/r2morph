@@ -80,3 +80,19 @@ def test_macos_arm64_ci_installs_rosetta_before_native_macho_smoke() -> None:
         and "sudo softwareupdate --install-rosetta --agree-to-license" in rosetta_step["run"]
         and "arch -x86_64 /usr/bin/true" in rosetta_step["run"]
     )
+
+
+def test_ubuntu_ci_preserves_floating_point_varargs_repro_on_failure() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["cross-platform-tests"]["steps"]
+    broad_suite = next(step for step in steps if step["name"] == "Run broad Linux tests with coverage")
+    artifact_upload = next(
+        step for step in steps if step["name"] == "Upload floating-point varargs ELF after Linux test failure"
+    )
+
+    expect(
+        '--basetemp="${RUNNER_TEMP}/pytest-$(basename "$test_dir")"' in broad_suite["run"]
+        and artifact_upload["if"] == "failure() && runner.os == 'Linux' && matrix.python-version == '3.12'"
+        and "test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi*"
+        in artifact_upload["with"]["path"]
+    )

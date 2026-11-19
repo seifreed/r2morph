@@ -298,6 +298,7 @@ jobs:
             coverage_file="${RUNNER_TEMP}/.coverage.$(basename "$test_dir")"
             COVERAGE_FILE="$coverage_file" coverage run --branch -m pytest -v "$test_dir" \
               -m "not product_smoke and not slow" \
+              --basetemp="${RUNNER_TEMP}/pytest-$(basename "$test_dir")" \
               --no-cov --tb=short
           done
           coverage combine \
@@ -307,6 +308,14 @@ jobs:
             "${RUNNER_TEMP}/.coverage.real_binaries"
           coverage xml
           coverage report
+
+      - name: Upload floating-point varargs ELF after Linux test failure
+        if: failure() && runner.os == 'Linux' && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: floating-point-varargs-linux-repro
+          path: ${{ runner.temp }}/pytest-integration/test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi*
+          if-no-files-found: ignore
 
       - name: Run cross-platform unit tests
         if: runner.os != 'Linux' || matrix.python-version == '3.13'
