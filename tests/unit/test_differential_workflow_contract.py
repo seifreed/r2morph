@@ -34,3 +34,10 @@ def test_differential_linux_runner_installs_gdb_for_crash_diagnostics() -> None:
     system_dependencies = _workflow_step(workflow, "Install system dependencies")
 
     expect("binutils gdb qemu-user" in system_dependencies)
+
+
+def test_full_differential_corpus_runs_on_schedule_or_manual_dispatch() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    triggers = workflow.split("jobs:", 1)[0]
+
+    expect('"on":\n  schedule:' in triggers and "workflow_dispatch:" in triggers and "\n  push:" not in triggers)

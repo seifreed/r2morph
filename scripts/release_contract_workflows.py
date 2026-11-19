@@ -239,9 +239,6 @@ def _check_corpus_workflows() -> None:
         if fragment not in adversarial:
             raise ValueError(f"adversarial benchmark workflow is missing: {fragment}")
     for fragment in (
-        "push:",
-        "branches: [main]",
-        '"r2morph/**"',
         "schedule:",
         "workflow_dispatch:",
         "cron:",
@@ -359,6 +356,9 @@ def _check_corpus_workflows() -> None:
     ):
         if fragment not in differential:
             raise ValueError(f"differential corpus workflow is missing: {fragment}")
+    triggers = differential.split("jobs:", 1)[0]
+    if "\n  push:" in triggers:
+        raise ValueError("full differential corpus must not run on every push")
     for fragment in (
         "workflow_run:",
         'workflows: ["Adversarial Analysis Benchmark"]',

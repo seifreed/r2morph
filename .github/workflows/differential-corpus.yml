@@ -5,24 +5,6 @@ concurrency:
   cancel-in-progress: false
 
 "on":
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/differential-corpus.yml"
-      - ".github/workflows/ci.yml"
-      - ".github/workflows/adversarial-benchmark.yml"
-      - ".github/scripts/download_verified_artifact.ps1"
-      - ".github/scripts/install_radare2.sh"
-      - "docs/compatibility-corpus.md"
-      - "docs/pass-maturity.md"
-      - "docs/independent-review-packet.md"
-      - "docs/support-matrix.json"
-      - "fixtures/dataset/**"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - "r2morph/**"
-      - "scripts/**"
-      - "tests/**"
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:

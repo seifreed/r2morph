@@ -82,6 +82,8 @@ responses; the audit still fails on vulnerabilities or service errors.
 On `main`, a new push supersedes the older general CI run so checks follow the
 latest source; dedicated fuzzing, differential, and adversarial evidence runs
 keep their own concurrency policies.
+The full differential corpus runs weekly or by manual dispatch; each push still
+runs the general CI checks without queuing the long corpus campaign.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 3.12 and 3.13, and on Ubuntu/Python 3.13. The broader Ubuntu/Python 3.12 job
 also covers integration, property, and real-binary tests. Passing these jobs

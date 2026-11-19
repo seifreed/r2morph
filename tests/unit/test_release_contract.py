@@ -176,20 +176,11 @@ def test_compatibility_corpus_documents_current_generated_variant_count() -> Non
     )
 
 
-def test_differential_workflow_runs_on_benchmark_inputs_not_release_ledger() -> None:
+def test_differential_workflow_runs_on_schedule_and_manual_dispatch_not_pushes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    triggers = workflow.split("jobs:", 1)[0]
 
-    expect(
-        "  push:\n    branches: [main]" in workflow
-        and '      - ".github/workflows/ci.yml"' in workflow
-        and '      - "docs/compatibility-corpus.md"' in workflow
-        and '      - "docs/pass-maturity.md"' in workflow
-        and '      - "docs/release-blockers.md"' not in workflow
-        and '      - "docs/independent-review-packet.md"' in workflow
-        and '      - "r2morph/**"' in workflow
-        and '      - "scripts/**"' in workflow
-        and '      - "tests/**"' in workflow
-    )
+    expect('"on":\n  schedule:' in triggers and "workflow_dispatch:" in triggers and "\n  push:" not in triggers)
 
 
 def test_differential_workflow_installs_lld_for_real_composition() -> None:
@@ -1591,6 +1582,7 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "schedule:" in differential
         and "workflow_dispatch:" in differential
         and "cron:" in differential
+        and "\n  push:" not in differential.split("jobs:", 1)[0]
         and 'workflows: ["Differential Corpus By Pass"]' in adversarial
         and "github.event.workflow_run.head_sha || github.sha" in adversarial
         and "github.event.workflow_run.conclusion == 'success'" in adversarial
@@ -2041,7 +2033,6 @@ def test_windows_radare2_workflows_use_bounded_verified_retries() -> None:
     expect(
         ci_workflow.count(command) == 1
         and differential_workflow.count(command) == 1
-        and '      - ".github/scripts/download_verified_artifact.ps1"' in differential_workflow
         and "$maximumAttempts = 3" in downloader
         and "Invoke-WebRequest -Uri $Url -OutFile $partialOutput -TimeoutSec 120" in downloader
         and "$statusCode -in @(408, 429)" in downloader
