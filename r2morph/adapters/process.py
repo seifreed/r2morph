@@ -50,7 +50,7 @@ class ProcessResult:
 
 @dataclass(frozen=True)
 class ProcessContext:
-    """Optional input and execution context for a process."""
+    """Optional process context; disabling sessions limits timeout kills to the child."""
 
     input_bytes: bytes | None = None
     env: Mapping[str, str] | None = None
@@ -109,7 +109,7 @@ async def _run_process(
         stdout, stderr = await asyncio.wait_for(asyncio.shield(communication), timeout)
     except TimeoutError:
         try:
-            await _terminate_process_tree(process)
+            await _terminate_process_tree(process, new_session=context.start_new_session)
         finally:
             communication.cancel()
             await asyncio.gather(communication, return_exceptions=True)
@@ -117,10 +117,16 @@ async def _run_process(
     return ProcessResult(stdout=stdout, stderr=stderr, returncode=process.returncode or 0)
 
 
-async def _terminate_process_tree(process: asyncio.subprocess.Process) -> None:
-    if os.name == "posix":
+async def _terminate_process_tree(
+    process: asyncio.subprocess.Process,
+    *,
+    new_session: bool = True,
+) -> None:
+    if os.name == "posix" and new_session:
         with suppress(ProcessLookupError):
             os.killpg(process.pid, signal.SIGKILL)
+    elif os.name == "posix":
+        _kill_if_running(process)
     else:
         try:
             killer = await asyncio.create_subprocess_exec(

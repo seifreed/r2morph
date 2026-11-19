@@ -41,6 +41,18 @@ def test_run_process_respects_context_process_session_choice() -> None:
     expect(result.stdout_text.strip() == expected)
 
 
+def test_run_process_timeout_kills_child_without_a_new_session() -> None:
+    started = time.monotonic()
+    with pytest.raises(ProcessTimeoutError):
+        run_process(
+            [Path(sys.executable), "-c", "import time; time.sleep(30)"],
+            timeout=0.1,
+            context=ProcessContext(start_new_session=False),
+        )
+
+    expect(time.monotonic() - started < _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS)
+
+
 def test_resolve_executable_preserves_symlink_driver_name(tmp_path: Path) -> None:
     executable_alias = tmp_path / "python-alias"
     executable_alias.symlink_to(sys.executable)
