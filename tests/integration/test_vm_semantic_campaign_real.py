@@ -48,23 +48,17 @@ _CLANG_SWITCH_TABLE_CASE_COUNT = 16
 
 
 def _clang_switch_table_source() -> str:
-    handlers = "\n".join(
-        f"__attribute__((noinline)) static uint32_t switch_case_{index}(uint32_t value) "
-        f"{{ return (value ^ 0x{0x13579 + index * 0x1111:x}u) * {index * 2 + 3}u; }}"
-        for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
-    )
     cases = "\n".join(
-        f"case {index}: return switch_case_{index}(value) ^ {index + 1}u;"
+        f'case {index}: __asm__ volatile("addl ${index + 1}, %0" : "+r"(value)); break;'
         for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
     )
     return f"""
-{handlers}
-
 __attribute__((noinline)) uint32_t generated_switch_table(uint32_t value) {{
     switch (value & 15u) {{
     {cases}
     default: return value;
     }}
+    return value;
 }}
 """
 

@@ -247,9 +247,9 @@ bounded by the next known function start; unresolved and out-of-range targets
 remain rejected. A masked switch index bounds table reading only when the mask
 and indirect jump share a basic block and no intervening instruction changes
 that index. Linux integration coverage compiles a dense 16-case Clang `-O2`
-switch with in-function destinations, asserts that the analyzer resolves
-exactly 16 table entries, and requires full VM virtualization with native
-output parity.
+switch with in-function arithmetic destinations, asserts that the analyzer
+resolves exactly 16 table entries, and requires full VM virtualization with
+native output parity.
 The same differential workflow passed again on current source commit `1cf52005`
 in run [44213229027](https://github.com/seifreed/r2morph/actions/runs/44213229027).
 Its 85 jobs completed successfully; artifacts report zero failures or errors
