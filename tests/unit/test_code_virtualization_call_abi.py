@@ -34,6 +34,12 @@ def test_call_bridge_loads_all_xmm_arguments_before_native_call() -> None:
     expect(all(f"movups xmm{index}, xmmword ptr [rsp+{0x100 + index * 16}]" in assembly for index in range(16)))
 
 
+def test_direct_call_target_decode_preserves_sysv_varargs_vector_count() -> None:
+    assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)))
+
+    expect("mov r10d, dword ptr [rsi+1]" in assembly and "mov eax, dword ptr [rsi+1]" not in assembly)
+
+
 def test_call_bridge_loads_and_spills_all_ymm_upper_halves() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)), CallBridgeConfig(preserve_ymm=True))
 

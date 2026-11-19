@@ -253,6 +253,11 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 | **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
 | **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 
+The ELF x86-64 native-call bridge preserves the System V `AL` vector-argument
+count while decoding direct call targets. The floating-point varargs integration
+fixture covers this path; it remains bounded evidence and does not establish
+general varargs or ABI parity.
+
 ---
 
 ## Validation

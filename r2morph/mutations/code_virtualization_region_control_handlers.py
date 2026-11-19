@@ -335,9 +335,9 @@ def _call_handler_asm(
     """Direct ``call``: the target is a signed 32-bit offset from the bytecode
     base (r15, callee-saved so it survives the call), recomputed base-independently."""
     target = (
-        f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
-        f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-        "  movsxd r10, eax\n  add r10, r15\n"
+        f"  mov r10d, dword ptr [rsi+1]\n  xor r10d, {key_dword}\n"
+        f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor r10d, r11d\n"
+        "  movsxd r10, r10d\n  add r10, r15\n"
     )
     return _call_bridge_asm(index, slot, target, 5, bridge)
 

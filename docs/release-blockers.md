@@ -1440,6 +1440,15 @@ and exit code 73. The regression assertion now includes both program return
 codes and captured outputs so the next native run exposes the mismatch. The
 cause remains open; do not treat the local emulation as native-host evidence.
 
+### Direct-call varargs register preservation — 2026-11-19
+
+The floating-point varargs failure was traced to the direct-call target decoder
+using `eax`, which overwrote System V `al` before a native variadic call. The
+decoder now uses `r10d`; a code-generation regression test covers the register
+contract and the existing native ELF fixture covers behavior. Local unit tests
+pass, but native Linux CI must pass before this blocker is considered resolved.
+This change does not close the broader VM ABI or release gates.
+
 The cross-platform installed-wheel smoke was reproduced on macOS ARM64 from
 source `d57368bd`: all 679 selected tests passed under Python 3.12.16 in 14.18
 seconds and Python 3.13.18 in 13.65 seconds. In GitHub run
