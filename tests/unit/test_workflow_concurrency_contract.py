@@ -11,10 +11,13 @@ def test_adversarial_workflow_preserves_active_campaigns() -> None:
     expect("group: adversarial-benchmark-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
 
 
-def test_ci_preserves_active_validation_after_evidence_pushes() -> None:
+def test_ci_replaces_superseded_main_push_validation() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    expect("group: ${{ github.workflow }}-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
+    expect(
+        "group: ${{ github.workflow }}-${{ github.ref }}" in workflow
+        and "cancel-in-progress: ${{ github.event_name == 'push' }}" in workflow
+    )
 
 
 def test_fuzz_workflow_preserves_active_campaigns() -> None:
