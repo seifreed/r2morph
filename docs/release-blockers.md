@@ -1408,6 +1408,22 @@ See its hash-bound [summary](protection-adversarial-current-main-2026-11-18-7cb2
 and [regression test](../tests/unit/test_published_current_main_adversarial_shard_7cb29ce1.py).
 Both related release gates remain open.
 
+## Current-main handler-template diversity measurement — 2026-11-19
+
+On production source commit `5b7b566a0a39e4012decf2010f7b9914ada84139`, a
+local run of `scripts/protection_handler_clustering.py` measured 100 seeds and
+255 generated interpreter handlers per seed. All opcode assignments were
+unique and no single seed had duplicate normalized handlers. Across seeds,
+the report found 38 exact normalized handler matches in 19 two-handler
+clusters. This generator-template measurement does not execute protected
+binaries, measure analyst attack cost, or establish resistance. The raw report,
+hash-bound summary, and pinned regression test are
+[`protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json`](protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json),
+[`summary`](protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds-summary.json),
+and
+[`test_published_vm_handler_diversity_100seeds_5b7b566a.py`](../tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py).
+The zero-collision and published-resistance criteria remain open.
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18

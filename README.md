@@ -577,6 +577,14 @@ establish general resistance to professional reverse engineering. The report
 does not replace the required three-analyzer release campaign. Published
 resistance results remain an open 1.0 criterion.
 
+On source `5b7b566a`, a 100-seed follow-up measured generated handler templates:
+all 100 opcode assignments were unique, with zero within-seed duplicate
+handlers, but 38 exact normalized handler matches appeared across seeds (19
+pairs). The [hash-bound summary](docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds-summary.json)
+and [raw report](docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json)
+record this template-only measurement; they do not measure execution or
+analyst attack cost, so the resistance gate remains open.
+
 ---
 
 ## Quick Start

@@ -1,0 +1,26 @@
+{
+  "limitations": [
+    "This measures generated interpreter templates only; it does not execute protected binaries or measure analyst attack cost.",
+    "The 100-seed sample found 38 exact normalized cross-seed matches, so the zero-collision criterion remains open.",
+    "Independent human adversarial review of the final production tree remains pending."
+  ],
+  "measurement": {
+    "cross_seed_exact_normalised_match_rate": 0.0014901960784313726,
+    "cross_seed_exact_normalised_matches": 38,
+    "cross_seed_largest_normalised_cluster": 2,
+    "cross_seed_normalised_cluster_count": 19,
+    "dispatch_variant_unique_count": 2,
+    "first_seed": 20261119,
+    "handler_count_per_seed": 255,
+    "opcode_assignment_unique_count": 100,
+    "seed_count": 100,
+    "within_seed_exact_normalised_matches": 0
+  },
+  "provenance": "local-current-main-tree",
+  "report": {
+    "path": "protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json",
+    "sha256": "b157673c9407e8d779aaaf2b0e7147b04ded9b8007a22c4ca0aa0d735c76d7ea"
+  },
+  "schema_version": 1,
+  "source_commit": "5b7b566a0a39e4012decf2010f7b9914ada84139"
+}

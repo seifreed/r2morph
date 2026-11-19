@@ -441,7 +441,10 @@
         "docs/protection-current-production-adversarial-2026-11-18-44223496306-summary.json",
         "docs/protection-current-production-adversarial-2026-11-18-44223496306.tar.gz",
         "tests/unit/test_published_current_production_adversarial_44223496306.py",
-        "docs/current-main-validation-2026-11-18-0491ba06.json"
+        "docs/current-main-validation-2026-11-18-0491ba06.json",
+        "docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json",
+        "docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds-summary.json",
+        "tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py"
       ]
     },
     "stable_api_cli": {
