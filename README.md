@@ -100,6 +100,8 @@ output alongside the virtualization diagnostics.
 If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`
 fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF as
 the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
+Push-triggered CI runs are allowed to finish when later commits reach `main`, preserving
+the complete cross-platform validation result for each run.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.

@@ -10,7 +10,7 @@ name: CI
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: false
 
 env:
   PYTHONUNBUFFERED: "1"
@@ -314,7 +314,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: floating-point-varargs-linux-repro
-          path: ${{ runner.temp }}/pytest-integration/**/test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi*/floating_point_varargs*
+          path: ${{ runner.temp }}/pytest-integration/**/test_virtualized_elf_preserves*/floating_point_varargs*
           if-no-files-found: ignore
 
       - name: Run cross-platform unit tests
