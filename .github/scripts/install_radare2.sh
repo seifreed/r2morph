@@ -20,6 +20,18 @@ configure_git_ca_bundle() {
 
 configure_git_ca_bundle
 
+if [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]]; then
+    package="/tmp/radare2-${version}-amd64.deb"
+    curl --fail --location --retry 3 --retry-all-errors --max-time 120 \
+        "https://github.com/radareorg/radare2/releases/download/${version}/radare2_${version}_amd64.deb" \
+        --output "$package"
+    printf '%s  %s\n' "09234e4139bf8dfcbb7fc1fdb2519859ad516e63c19d3c27d92aaecdf463b1ad" "$package" \
+        | sha256sum --check --status
+    sudo apt-get install -y "$package"
+    r2 -v
+    exit 0
+fi
+
 rm -rf "$destination"
 
 cloned=false

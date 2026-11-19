@@ -84,10 +84,11 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-On `main`, an in-flight general CI run is allowed to finish. GitHub keeps at
-most one pending run for the same concurrency group, and a newer push can
-replace that pending run so checks follow the latest source. Dedicated fuzzing,
-differential, and adversarial evidence runs keep their own concurrency policies.
+On `main`, a newer push cancels an obsolete general CI run so checks focus on
+the latest source. Dedicated fuzzing, differential, and adversarial evidence
+runs keep their own concurrency policies. Linux x86-64 CI installs the pinned
+radare2 6.2.2 Debian package after verifying its SHA-256; other hosts retain the
+source-build path.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python
