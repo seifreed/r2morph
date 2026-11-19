@@ -1440,14 +1440,27 @@ and exit code 73. The regression assertion now includes both program return
 codes and captured outputs so the next native run exposes the mismatch. The
 cause remains open; do not treat the local emulation as native-host evidence.
 
-### Direct-call varargs register preservation — 2026-11-19
+### Floating-point varargs virtualized-entry failure — 2026-11-19
 
-The floating-point varargs failure was traced to the direct-call target decoder
-using `eax`, which overwrote System V `al` before a native variadic call. The
-decoder now uses `r10d`; a code-generation regression test covers the register
-contract and the existing native ELF fixture covers behavior. Local unit tests
-pass, but native Linux CI must pass before this blocker is considered resolved.
-This change does not close the broader VM ABI or release gates.
+Commit `5519152b` changed the direct-call target decoder from `eax` to `r10d`
+to preserve System V `al`. That register-level invariant is still covered by a
+unit test, but it did not resolve the native Linux integration failure: run
+`44425946694` on Ubuntu 26.04 / Python 3.12 returned `-11` for the mutated
+floating-point varargs fixture while the original returned `73`. The fixture's
+stats show that the variadic callee was virtualized and the caller was skipped,
+so this failure is on the virtualized variadic-entry path, not evidence about a
+virtualized outgoing native call. A GCC 15 build of equivalent C source passes
+in a local x86-64 emulated Debian container across 12 `PYTHONHASHSEED` values;
+this does not reproduce the native runner failure and is not sufficient to
+close it.
+
+The integration assertion now attempts to run GDB after a signal termination
+and captures a bounded backtrace, `RIP`/`RSP`/`RAX`, and nearby instructions,
+with the generated binary path redacted. GDB in the local Docker environment is
+blocked from reading registers by the container's ptrace restrictions, so that
+environment cannot validate the register dump. The next native Linux CI result
+will show whether the runner can expose the faulting instruction. Keep the
+varargs/ABI and release gates open.
 
 The cross-platform installed-wheel smoke was reproduced on macOS ARM64 from
 source `d57368bd`: all 679 selected tests passed under Python 3.12.16 in 14.18

@@ -17,6 +17,33 @@ from tests.utils.process import run_command
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_varargs_x86_64"
 _EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE = 73
 
+
+def _debugger_diagnostic(binary: Path) -> str:
+    debugger = shutil.which("gdb")
+    if debugger is None:
+        return "gdb unavailable"
+    result = run_command(
+        [
+            debugger,
+            "--batch",
+            "-ex",
+            "run",
+            "-ex",
+            "bt 8",
+            "-ex",
+            "info registers rip rsp rax",
+            "-ex",
+            "x/8i $rip",
+            "--args",
+            binary,
+        ],
+        text=True,
+        timeout=30,
+    )
+    output = f"{result.stdout}\n{result.stderr}"
+    return output.replace(str(binary), "<mutated>")
+
+
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
@@ -214,12 +241,14 @@ int main(void) {
     finally:
         binary.close()
     mutated_result = run_command([mutated], timeout=30)
+    crash_diagnostic = _debugger_diagnostic(mutated) if mutated_result.returncode < 0 else ""
     expect(
         stats["functions_virtualized"] >= 1
         and original_result.returncode == mutated_result.returncode == _EXPECTED_FLOATING_POINT_VARARGS_EXIT_CODE,
         "floating-point varargs ABI changed the result: "
         f"original=({original_result.returncode}, {original_result.stdout!r}, {original_result.stderr!r}), "
-        f"mutated=({mutated_result.returncode}, {mutated_result.stdout!r}, {mutated_result.stderr!r}), {stats=}",
+        f"mutated=({mutated_result.returncode}, {mutated_result.stdout!r}, {mutated_result.stderr!r}), "
+        f"{crash_diagnostic=}, {stats=}",
     )
 
 
