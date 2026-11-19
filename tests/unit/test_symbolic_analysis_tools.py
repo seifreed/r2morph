@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-import claripy
 import pytest
 
 from tests.utils.assertions import expect
@@ -12,7 +11,7 @@ if importlib.util.find_spec("angr") is None:
 import pytest
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
-from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+from r2morph.analysis.symbolic.angr_bridge import AngrBridge, claripy
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
 from r2morph.analysis.symbolic.path_explorer import ExplorationStrategy, PathExplorer
 from r2morph.analysis.symbolic.state_manager import StateManager, StateSchedulingStrategy

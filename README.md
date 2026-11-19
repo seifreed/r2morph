@@ -66,6 +66,11 @@ pip install "r2morph[enhanced]"      # + angr, lief, z3
 pip install "r2morph[all]"           # + frida, hypothesis
 ```
 
+Symbolic analysis uses the Claripy implementation paired with the installed
+angr release, keeping symbolic expressions compatible with angr states. The
+`syntia` extra installs angr on supported platforms instead of an independently
+versioned Claripy package.
+
 ### Development Install
 
 ```bash

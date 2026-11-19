@@ -118,7 +118,10 @@ def test_optional_angr_import_boundary_handles_known_external_warning() -> None:
         "angr_installed = importlib.util.find_spec('angr') is not None\n"
         "assert stack.available is angr_installed, 'optional angr availability must match its installation'\n"
         "if stack.available:\n"
-        "    assert stack.claripy is __import__('claripy'), 'symbolic expressions must use matching claripy'\n"
+        "    matching_claripy = getattr(stack.angr, 'claripy', None)\n"
+        "    if matching_claripy is None:\n"
+        "        matching_claripy = __import__('claripy')\n"
+        "    assert stack.claripy is matching_claripy, 'symbolic expressions must use angr-compatible claripy'\n"
         "else:\n"
         "    assert stack.angr is None and stack.claripy is None, 'unavailable imports must return empty handles'\n"
     )

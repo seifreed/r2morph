@@ -95,7 +95,7 @@ enhanced = [
 syntia = [
     "cvc5>=1.0.0",
     "pysmt>=0.9.0",
-    "claripy>=9.3.2",
+    "angr>=9.3.2; platform_system != \"Windows\"",
 ]
 devirtualization = [
     "miasm>=0.1.0",
@@ -120,7 +120,6 @@ all = [
     "psutil>=5.9.0",
     "cvc5>=1.0.0",
     "pysmt>=0.9.0",
-    "claripy>=9.3.2",
     "miasm>=0.1.0",
     "unicorn>=2.0.0",
     "scikit-learn>=1.3.0",
