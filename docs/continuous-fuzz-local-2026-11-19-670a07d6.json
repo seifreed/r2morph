@@ -1,0 +1,48 @@
+{
+  "campaign": "continuous-fuzz-local-current-main",
+  "cases": 5000,
+  "command": [
+    "python3.14",
+    "scripts/continuous_fuzz.py",
+    "--cases",
+    "5000",
+    "--seed",
+    "20260827",
+    "--output",
+    "/tmp/r2morph-continuous-fuzz-670a07d6.json"
+  ],
+  "failure_count": 0,
+  "limitations": [
+    "This deterministic harness run exercised bounded generated cases and does not prove semantic equivalence for arbitrary transformed binaries.",
+    "The run used one macOS ARM64 host; it does not establish cross-platform parity or adversarial resistance."
+  ],
+  "max_payload_bytes": 4096,
+  "parser_diagnostic_counts": {
+    "macho_load_commands.warning": 103
+  },
+  "report": "docs/continuous-fuzz-local-2026-11-19-670a07d6-report.json",
+  "report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+  "runtime": {
+    "architecture": "arm64",
+    "operating_system": "Darwin",
+    "python": "3.14.10"
+  },
+  "schema_version": 1,
+  "seed": 20260827,
+  "source_commit": "670a07d6b6b88cdfeb470684ba4b17932f214af0",
+  "source_script": "scripts/continuous_fuzz.py",
+  "source_script_sha256": "6bf18f8c3d62906ab4cd571db492ef3cb3367481d2c752a487f2ed027c7c7bc8",
+  "target_runs": {
+    "assembling": 5000,
+    "binary_parsers": 5000,
+    "binary_rewriter": 5000,
+    "elf_header_parser": 5000,
+    "macho_load_commands": 5000,
+    "pe_header_parser": 5000,
+    "relocations": 5000,
+    "vm_bytecode": 5000,
+    "vm_dispatcher": 5000,
+    "vm_instruction_decoder": 5000
+  },
+  "total_target_runs": 50000
+}

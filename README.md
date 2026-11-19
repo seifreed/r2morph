@@ -345,6 +345,14 @@ campaign does not prove arbitrary-input equivalence, full platform parity, or
 adversarial resistance. Each generated VM bytecode case also verifies that the
 checksum and position mask preserve the terminal exit opcode.
 
+A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
+recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
+failures, and 103 recoverable Mach-O parser diagnostics. Its report and
+source-bound manifest are
+[`continuous-fuzz-local-2026-11-19-670a07d6.json`](docs/continuous-fuzz-local-2026-11-19-670a07d6.json).
+This single-host bounded run supplements the platform workflow; it does not
+establish cross-platform parity or adversarial resistance.
+
 The 2026-09-20 local adversarial campaign measures all 162 repository fixtures:
 `angr` completed 162/162 runs, while radare2, objdump, and the custom analyzer
 also completed all runs. Unicorn completed 155/162 runs; its seven unavailable
