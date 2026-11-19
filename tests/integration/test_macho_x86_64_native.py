@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import platform
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -43,7 +44,8 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
-    result = run_command(
+    # These binaries are compiled from the fixed source above; avoid asyncio's Rosetta spawn hang.
+    result = subprocess.run(  # noqa: S603
         [binary],
         capture_output=True,
         check=False,

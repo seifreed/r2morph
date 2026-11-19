@@ -110,8 +110,7 @@ def test_integration_ci_preserves_clang_switch_table_repro_on_failure() -> None:
     expect(
         '--basetemp="${RUNNER_TEMP}/pytest-integration"' in integration_run["run"]
         and artifact_upload["if"] == "failure()"
-        and artifact_upload["with"]["path"]
-        == "${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign_virtualizes_clang_switch_table_targets*"
+        and artifact_upload["with"]["path"] == "${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign*"
         and artifact_upload["with"]["retention-days"] == _INTEGRATION_REPRO_RETENTION_DAYS
     )
 

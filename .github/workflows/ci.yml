@@ -183,7 +183,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: clang-switch-table-integration-repro
-          path: ${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign_virtualizes_clang_switch_table_targets*
+          path: ${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign*
           if-no-files-found: ignore
           retention-days: 5
 

@@ -121,7 +121,8 @@ seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
 If the generated Clang switch-table integration case fails, CI uploads that
 case's temporary C source and ELF binary for five days to make the compiler and
-resolver behavior reproducible.
+resolver behavior reproducible. The glob accounts for pytest shortening the
+temporary directory name derived from the test function.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
 Apple Silicon jobs install and verify Rosetta before running the native
@@ -169,11 +170,11 @@ expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity. The installed-wheel
 smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
 from unrelated integration tests that can initialize native helper threads.
-On ARM64 macOS the test executes each x86-64-only binary directly, allowing
-macOS to dispatch it through Rosetta while keeping it in the process group
-managed by the per-command timeout. The isolated test process also has a
-two-minute limit. The workflow
-selection is covered by
+On ARM64 macOS the test launches each x86-64-only binary directly, allowing
+macOS to dispatch it through Rosetta. A bounded synchronous subprocess avoids
+the asyncio session-creation hang observed for these binaries on GitHub's
+Apple Silicon runners. The isolated test process also has a two-minute limit.
+The workflow selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
 12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
