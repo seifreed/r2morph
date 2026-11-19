@@ -290,6 +290,17 @@ manifest and raw report are pinned in
 This bounded macOS ARM64 run adds current-source fuzz evidence; it does not
 establish cross-platform parity or adversarial resistance.
 
+The main-push continuous-fuzz workflow on source `5519152b` passed on Ubuntu,
+macOS 15, and Windows after building and installing the wheel. Each platform
+ran 5,000 cases for each of ten parser, assembler, VM, relocation, and rewriting
+targets (150,000 target runs total), using a fixed seed and payloads capped at
+4 KiB. All three reports record zero failures and 103
+`macho_load_commands.warning` diagnostics. The hash-bound summary and raw reports
+are in [`docs/continuous-fuzz-2026-11-19-44425946598-summary.json`](docs/continuous-fuzz-2026-11-19-44425946598-summary.json).
+This bounded campaign does not test transformed-program equivalence and does
+not establish exhaustive fuzz coverage, full platform parity, or adversarial
+resistance.
+
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and
 seed rows. The previous size-weighted shard assignment could change when
