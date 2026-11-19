@@ -38,6 +38,37 @@ from r2morph.core.binary import Binary
 logger = logging.getLogger(__name__)
 
 _BOUNDS_CHECK_MAX_DISTANCE_BYTES = 32
+_MAX_MASKED_SWITCH_ENTRIES = 256
+_X86_64_REGISTER_ALIASES = {
+    "eax": "rax",
+    "ax": "rax",
+    "al": "rax",
+    "ah": "rax",
+    "ebx": "rbx",
+    "bx": "rbx",
+    "bl": "rbx",
+    "bh": "rbx",
+    "ecx": "rcx",
+    "cx": "rcx",
+    "cl": "rcx",
+    "ch": "rcx",
+    "edx": "rdx",
+    "dx": "rdx",
+    "dl": "rdx",
+    "dh": "rdx",
+    "esi": "rsi",
+    "si": "rsi",
+    "sil": "rsi",
+    "edi": "rdi",
+    "di": "rdi",
+    "dil": "rdi",
+    "ebp": "rbp",
+    "bp": "rbp",
+    "bpl": "rbp",
+    "esp": "rsp",
+    "sp": "rsp",
+    "spl": "rsp",
+}
 
 __all__ = [
     "IndirectJump",
@@ -65,6 +96,71 @@ def _find_bounds_checks(instructions: list[dict[str, Any]]) -> dict[int, dict[st
         address = instruction.get("offset", 0)
         candidates[address] = {"register": register, "bound": bound, "address": address}
     return candidates
+
+
+def _canonical_x86_register(register: str) -> str:
+    lowered = register.lower()
+    if extended_register := re.fullmatch(r"(r(?:[89]|1[0-5]))[dwb]", lowered):
+        return extended_register[1]
+    return _X86_64_REGISTER_ALIASES.get(lowered, lowered)
+
+
+def _instruction_changes_register(instruction: dict[str, Any], register: str) -> bool | None:
+    if instruction.get("type", "").lower() == "nop":
+        return False
+    disasm = instruction.get("opcode", instruction.get("disasm", "")).lower()
+    if not disasm.startswith("mov "):
+        return None
+    destination = disasm[4:].split(",", 1)[0].strip()
+    return _canonical_x86_register(destination) == register
+
+
+def _masked_index_limit(
+    instructions: list[dict[str, Any]], blocks: list[dict[str, Any]], jump: IndirectJump
+) -> tuple[int, int, str] | None:
+    """Return a proven table length for an index masked in the jump's basic block."""
+    if jump.index_register is None:
+        return None
+    register = _canonical_x86_register(jump.index_register)
+    block = next(
+        (
+            item
+            for item in blocks
+            if isinstance(item.get("addr"), int)
+            and isinstance(item.get("size"), int)
+            and item["addr"] <= jump.address < item["addr"] + item["size"]
+        ),
+        None,
+    )
+    if block is None:
+        return None
+
+    ordered = sorted(instructions, key=lambda instruction: instruction.get("offset", -1))
+    candidate: tuple[int, int, str] | None = None
+    for instruction in reversed(ordered):
+        address = instruction.get("offset", -1)
+        if not block["addr"] <= address < jump.address:
+            continue
+        disasm = instruction.get("opcode", instruction.get("disasm", "")).lower()
+        match = re.fullmatch(r"and\s+([a-z0-9]+),\s*(0x[0-9a-f]+|[0-9]+)", disasm)
+        if match is None or _canonical_x86_register(match[1]) != register:
+            continue
+        mask = int(match[2], 0)
+        if 0 <= mask < _MAX_MASKED_SWITCH_ENTRIES:
+            candidate = (mask + 1, address, match[1])
+            break
+        break
+
+    if candidate is None:
+        return None
+    entry_count, mask_address, destination = candidate
+    if any(
+        _instruction_changes_register(instruction, register) is not False
+        for instruction in ordered
+        if mask_address < instruction.get("offset", -1) < jump.address
+    ):
+        return None
+    return entry_count, mask_address, destination
 
 
 class SwitchTableAnalyzer:
@@ -177,7 +273,7 @@ class SwitchTableAnalyzer:
         """
         try:
             instructions = self.binary.get_function_disasm(function_address)
-            self.binary.get_basic_blocks(function_address)
+            blocks = self.binary.get_basic_blocks(function_address)
         except Exception as e:
             logger.error(f"Failed to analyze function at 0x{function_address:x}: {e}")
             return [], []
@@ -197,9 +293,13 @@ class SwitchTableAnalyzer:
                     break
 
             if jump.jump_type in ("jumptable", "indirect"):
-                table = self.resolve_jump_table(jump)
+                masked_limit = _masked_index_limit(instructions, blocks, jump)
+                table = self.resolve_jump_table(jump, max_entries=masked_limit[0] if masked_limit else 256)
                 if table:
-                    if bounds_info is not None:
+                    if masked_limit is not None:
+                        table.bounds_check_address = masked_limit[1]
+                        table.bounds_check_register = masked_limit[2]
+                    elif bounds_info is not None:
                         table.bounds_check_address = check_addr
                         table.bounds_check_register = bounds_info.get("register")
                     jump_tables.append(table)

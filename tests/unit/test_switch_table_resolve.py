@@ -13,6 +13,8 @@ from tests._doubles.in_memory_jump_table_binary import InMemoryJumpTableBinary
 from tests.utils.assertions import expect
 
 _TABLE_ADDRESS = 0x405000
+_MASK_ADDRESS = 0x400100
+_JUMP_ADDRESS = 0x400109
 _TARGETS = [0x401000, 0x401100, 0x401200]
 
 
@@ -62,6 +64,31 @@ def test_resolve_jump_table_stops_on_duplicate_target() -> None:
     # The loop breaks at the repeated target, so only the first entry survives.
     expect(table is not None)
     expect([entry.target_address for entry in table.entries] == [4198400])
+
+
+def test_detect_switch_pattern_bounds_masked_index_table() -> None:
+    table_targets = [0x401000 + index * 0x10 for index in range(16)]
+    binary = InMemoryJumpTableBinary(
+        bits=64,
+        table_address=_TABLE_ADDRESS,
+        blob=_blob([*table_targets, 0x500000]),
+        instructions=[
+            {"offset": _MASK_ADDRESS, "type": "and", "opcode": "and eax, 0xf"},
+            {"offset": _MASK_ADDRESS + 3, "type": "mov", "opcode": "mov ebx, dword [rip + 0x100]"},
+            {
+                "offset": _JUMP_ADDRESS,
+                "type": "ujmp",
+                "opcode": "jmp qword [rax*8 + 0x405000]",
+            },
+        ],
+        blocks=[{"addr": _MASK_ADDRESS, "size": 16}],
+    )
+
+    tables, other_jumps = SwitchTableAnalyzer(binary).detect_switch_pattern(0x400100)
+
+    expect(not other_jumps and len(tables) == 1)
+    expect([entry.target_address for entry in tables[0].entries] == table_targets)
+    expect(tables[0].bounds_check_address == _MASK_ADDRESS and tables[0].bounds_check_register == "eax")
 
 
 def test_resolve_jump_table_classifies_type() -> None:

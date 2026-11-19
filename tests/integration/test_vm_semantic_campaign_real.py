@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 
 from r2morph.adapters.process import run_process
+from r2morph.analysis.switch_table import SwitchTableAnalyzer
+from r2morph.core.binary import Binary
 from scripts.protection_maturity_baseline import (
     _GENERATED_CORPUS_PROFILES,
     _GENERATED_CORPUS_SOURCES,
@@ -42,6 +44,28 @@ _MERGED_FIXTURE_COUNT = 2
 _PARALLEL_FIXTURE_COUNT = 2
 _UNWIND_SSA_FIXTURE_COUNT = 2
 _MAX_ERROR_MESSAGE_LENGTH = 240
+_CLANG_SWITCH_TABLE_CASE_COUNT = 16
+
+
+def _clang_switch_table_source() -> str:
+    handlers = "\n".join(
+        f"__attribute__((noinline)) static uint32_t switch_case_{index}(uint32_t value) "
+        f"{{ return (value ^ 0x{0x13579 + index * 0x1111:x}u) * {index * 2 + 3}u; }}"
+        for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
+    )
+    cases = "\n".join(
+        f"case {index}: return switch_case_{index}(value);" for index in range(_CLANG_SWITCH_TABLE_CASE_COUNT)
+    )
+    return f"""
+{handlers}
+
+__attribute__((noinline)) uint32_t generated_switch_table(uint32_t value) {{
+    switch (value & 15u) {{
+    {cases}
+    default: return value;
+    }}
+}}
+"""
 
 
 def test_vm_semantic_campaign_defaults_to_three_deterministic_seeds() -> None:
@@ -327,7 +351,10 @@ def test_vm_semantic_campaign_virtualizes_clang_switch_table_targets(tmp_path: P
     source = tmp_path / "generated_branch.c"
     binary = tmp_path / "generated_branch_clang-o2"
     source.write_text(
-        f"{_GENERATED_UNREACHABLE_PADDING}\n{_GENERATED_CORPUS_SOURCES['generated_branch']}", encoding="utf-8"
+        f"{_GENERATED_UNREACHABLE_PADDING}\n"
+        f"{_GENERATED_CORPUS_SOURCES['generated_branch']}\n"
+        f"{_clang_switch_table_source()}",
+        encoding="utf-8",
     )
     compile_result = run_process(
         [
@@ -344,6 +371,17 @@ def test_vm_semantic_campaign_virtualizes_clang_switch_table_targets(tmp_path: P
         timeout=30,
     )
     expect(compile_result.returncode == 0, compile_result.stderr_text)
+
+    with Binary(binary) as compiled:
+        compiled.analyze("aaa")
+        function = next(
+            item for item in compiled.get_functions() if item.get("name", "").endswith("generated_switch_table")
+        )
+        tables, _ = SwitchTableAnalyzer(compiled).detect_switch_pattern(int(function["addr"]))
+        expect(
+            any(len(table.entries) == _CLANG_SWITCH_TABLE_CASE_COUNT for table in tables),
+            f"Clang did not produce the expected {_CLANG_SWITCH_TABLE_CASE_COUNT}-entry switch table: {tables}",
+        )
 
     report = run_campaign(
         Path("fixtures/dataset"),
