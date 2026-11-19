@@ -338,6 +338,16 @@ This bounded campaign does not test transformed-program equivalence and does
 not establish exhaustive fuzz coverage, full platform parity, or adversarial
 resistance.
 
+The continuous-fuzz workflow on current source `2faea83e` also passed on Ubuntu,
+macOS 15, and Windows after building and installing the wheel: 5,000 cases for
+each of the same ten targets per platform (150,000 target runs total), with
+zero failures and 4 KiB payload limits. The three raw reports and their
+source-bound hashes are recorded in
+[`docs/continuous-fuzz-2026-11-19-44545166200-summary.json`](docs/continuous-fuzz-2026-11-19-44545166200-summary.json).
+This deterministic bounded campaign does not establish exhaustive fuzz
+coverage, transformed-program equivalence, complete platform parity, or
+adversarial resistance.
+
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and
 seed rows. The previous size-weighted shard assignment could change when
