@@ -256,9 +256,10 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 The ELF x86-64 direct-call target decoder uses scratch registers that preserve
 the System V `AL` vector-argument count. The native Linux floating-point varargs
 integration fixture still fails with `SIGSEGV` in CI while the equivalent
-x86-64 emulated run passes; the test attempts to capture debugger context on a
-signal failure. This ABI release gate remains open, and the fixture does not
-establish general varargs or ABI parity.
+x86-64 emulated run passes. Linux CI installs GDB so the fixture can capture
+registers and the faulting instruction on a signal failure. This ABI release
+gate remains open, and the fixture does not establish general varargs or ABI
+parity.
 
 ---
 

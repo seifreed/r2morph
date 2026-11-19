@@ -27,3 +27,10 @@ def test_differential_smokes_require_successful_wheel_installation() -> None:
     required_condition = "steps.build_wheel.outcome == 'success'"
 
     expect("id: build_wheel" in wheel_build and all(required_condition in step for step in smoke_steps))
+
+
+def test_differential_linux_runner_installs_gdb_for_crash_diagnostics() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    system_dependencies = _workflow_step(workflow, "Install system dependencies")
+
+    expect("binutils gdb qemu-user" in system_dependencies)
