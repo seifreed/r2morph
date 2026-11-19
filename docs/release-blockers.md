@@ -1424,6 +1424,22 @@ and
 [`test_published_vm_handler_diversity_100seeds_5b7b566a.py`](../tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py).
 The zero-collision and published-resistance criteria remain open.
 
+## Current-main three-platform continuous fuzz run — 2026-11-19
+
+Continuous Fuzzing workflow
+[`44613330309`](https://github.com/seifreed/r2morph/actions/runs/44613330309)
+passed on source commit `b561237880a5b42bd45494424fbd291ae832dfc7`. Ubuntu,
+macOS 15, and Windows each ran 5,000 deterministic inputs against the same
+ten parser, assembler, VM, relocation, and binary-rewriter targets: 150,000
+target runs total and zero failures. All three reports recorded 101
+recoverable `macho_load_commands.warning` diagnostics. The
+[hash-bound summary](continuous-fuzz-2026-11-19-44613330309-summary.json),
+the three compressed reports, and the
+[regression contract](../tests/unit/test_published_continuous_fuzz_44613330309.py)
+pin the run and its scope. This bounded harness run does not establish
+arbitrary-input semantic equivalence, full platform parity, or adversarial
+resistance.
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18

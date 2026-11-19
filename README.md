@@ -372,6 +372,16 @@ This deterministic bounded campaign does not establish exhaustive fuzz
 coverage, transformed-program equivalence, complete platform parity, or
 adversarial resistance.
 
+A further main-branch run on source `b5612378` used seed `20261119` and passed
+the same ten targets on Ubuntu, macOS 15, and Windows: 5,000 cases per target
+and platform (150,000 target runs total), with zero failures. Each platform
+retained 101 recoverable `macho_load_commands.warning` diagnostics. Its raw
+reports, artifact hashes, and limits are pinned in
+[`docs/continuous-fuzz-2026-11-19-44613330309-summary.json`](docs/continuous-fuzz-2026-11-19-44613330309-summary.json).
+This deterministic bounded campaign does not establish exhaustive fuzz
+coverage, transformed-program equivalence, full platform parity, or adversarial
+resistance.
+
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and
 seed rows. The previous size-weighted shard assignment could change when

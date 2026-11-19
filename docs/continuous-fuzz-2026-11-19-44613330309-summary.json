@@ -1,0 +1,76 @@
+{
+  "campaign": "continuous-fuzz-workflow-current-source",
+  "configuration": {
+    "cases_per_target_per_platform": 5000,
+    "max_payload_bytes": 4096,
+    "python": "3.12",
+    "seed": 20261119,
+    "source_script": "scripts/continuous_fuzz.py",
+    "source_script_sha256": "6bf18f8c3d62906ab4cd571db492ef3cb3367481d2c752a487f2ed027c7c7bc8",
+    "targets": [
+      "assembling",
+      "binary_parsers",
+      "binary_rewriter",
+      "elf_header_parser",
+      "macho_load_commands",
+      "pe_header_parser",
+      "relocations",
+      "vm_bytecode",
+      "vm_dispatcher",
+      "vm_instruction_decoder"
+    ]
+  },
+  "execution": {
+    "platforms": {
+      "macos-15": {
+        "artifact_id": 14573183454,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 101
+        },
+        "report": "docs/continuous-fuzz-2026-11-19-44613330309-macos-15.json.gz",
+        "report_sha256": "65abadaed03c10e1d4bdc6782b42ffbead867bdc621a5fc7146c2e2f9982d3b6",
+        "target_runs": 50000,
+        "workflow_artifact_sha256": "65abadaed03c10e1d4bdc6782b42ffbead867bdc621a5fc7146c2e2f9982d3b6"
+      },
+      "ubuntu-latest": {
+        "artifact_id": 14573463142,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 101
+        },
+        "report": "docs/continuous-fuzz-2026-11-19-44613330309-ubuntu-latest.json.gz",
+        "report_sha256": "65abadaed03c10e1d4bdc6782b42ffbead867bdc621a5fc7146c2e2f9982d3b6",
+        "target_runs": 50000,
+        "workflow_artifact_sha256": "65abadaed03c10e1d4bdc6782b42ffbead867bdc621a5fc7146c2e2f9982d3b6"
+      },
+      "windows-latest": {
+        "artifact_id": 14574466112,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 101
+        },
+        "report": "docs/continuous-fuzz-2026-11-19-44613330309-windows-latest.json.gz",
+        "report_sha256": "75d660c80303f68844881863421c26b60ed346beae04a7fe72c0d8d1971fccd5",
+        "target_runs": 50000,
+        "workflow_artifact_sha256": "75d660c80303f68844881863421c26b60ed346beae04a7fe72c0d8d1971fccd5"
+      }
+    },
+    "total_failures": 0,
+    "total_target_runs": 150000
+  },
+  "limits": [
+    "This deterministic harness run covers bounded generated parser, assembler, VM, relocation, and rewrite inputs; it does not prove semantic equivalence for arbitrary transformed binaries.",
+    "It exercises the listed targets on Ubuntu, macOS, and Windows, but does not establish full cross-platform product parity or adversarial resistance.",
+    "Each platform recorded recoverable macho_load_commands.warning diagnostics; these are reported, not counted as fuzz failures."
+  ],
+  "schema_version": 1,
+  "workflow": {
+    "name": "Continuous Fuzzing",
+    "run_attempt": 1,
+    "run_id": 44613330309,
+    "source_commit": "b561237880a5b42bd45494424fbd291ae832dfc7",
+    "status": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44613330309"
+  }
+}
