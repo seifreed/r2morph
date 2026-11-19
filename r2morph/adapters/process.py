@@ -55,6 +55,7 @@ class ProcessContext:
     input_bytes: bytes | None = None
     env: Mapping[str, str] | None = None
     cwd: str | Path | None = None
+    start_new_session: bool = True
 
 
 def _resolve_executable(value: str | Path) -> str:
@@ -101,7 +102,7 @@ async def _run_process(
         stderr=asyncio.subprocess.PIPE,
         env=context.env,
         cwd=context.cwd,
-        start_new_session=os.name == "posix",
+        start_new_session=os.name == "posix" and context.start_new_session,
     )
     communication = asyncio.create_task(process.communicate(context.input_bytes))
     try:

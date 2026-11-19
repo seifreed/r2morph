@@ -30,6 +30,17 @@ def test_run_process_captures_stdout() -> None:
     expect(result.stdout_text.strip() == "ok")
 
 
+def test_run_process_respects_context_process_session_choice() -> None:
+    result = run_process(
+        [Path(sys.executable), "-c", "import os; print(os.getsid(0) if hasattr(os, 'getsid') else 'ok')"],
+        context=ProcessContext(start_new_session=False),
+        check=True,
+    )
+
+    expected = str(os.getsid(0)) if hasattr(os, "getsid") else "ok"
+    expect(result.stdout_text.strip() == expected)
+
+
 def test_resolve_executable_preserves_symlink_driver_name(tmp_path: Path) -> None:
     executable_alias = tmp_path / "python-alias"
     executable_alias.symlink_to(sys.executable)

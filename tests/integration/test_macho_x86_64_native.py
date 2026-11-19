@@ -44,11 +44,12 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
     result = run_command(
-        [binary],
+        ["/usr/bin/arch", "-x86_64", binary],
         capture_output=True,
         check=False,
         text=True,
         timeout=30,
+        start_new_session=False,
     )
     return result.returncode, result.stdout, result.stderr
 

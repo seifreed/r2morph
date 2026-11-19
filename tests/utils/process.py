@@ -36,6 +36,7 @@ def run_command(
     check = bool(options.pop("check", False))
     env = options.pop("env", None)
     cwd = options.pop("cwd", None)
+    start_new_session = bool(options.pop("start_new_session", True))
     input = options.pop("input", None)
     if options:
         unexpected = ", ".join(sorted(options))
@@ -44,7 +45,12 @@ def run_command(
     result = run_process(
         command,
         timeout=timeout,
-        context=ProcessContext(input_bytes=input_bytes, env=env, cwd=cwd),
+        context=ProcessContext(
+            input_bytes=input_bytes,
+            env=env,
+            cwd=cwd,
+            start_new_session=start_new_session,
+        ),
     )
     stdout: str | bytes = result.stdout_text if text else result.stdout
     stderr: str | bytes = result.stderr_text if text else result.stderr
