@@ -295,8 +295,9 @@ macOS 15, and Windows after building and installing the wheel. Each platform
 ran 5,000 cases for each of ten parser, assembler, VM, relocation, and rewriting
 targets (150,000 target runs total), using a fixed seed and payloads capped at
 4 KiB. All three reports record zero failures and 103
-`macho_load_commands.warning` diagnostics. The hash-bound summary and raw reports
-are in [`docs/continuous-fuzz-2026-11-19-44425946598-summary.json`](docs/continuous-fuzz-2026-11-19-44425946598-summary.json).
+`macho_load_commands.warning` diagnostics. The summary includes hashes for the
+canonical JSON reports and the original workflow artifacts at
+[`docs/continuous-fuzz-2026-11-19-44425946598-summary.json`](docs/continuous-fuzz-2026-11-19-44425946598-summary.json).
 This bounded campaign does not test transformed-program equivalence and does
 not establish exhaustive fuzz coverage, full platform parity, or adversarial
 resistance.
