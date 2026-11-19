@@ -96,6 +96,9 @@ Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 also covers integration, property, and real-binary tests. Passing these jobs
 expands platform evidence but does not by itself establish full mutation
 parity, which remains an open release gate.
+The macOS ARM64 differential lane omits native x86-64 Mach-O execution cases;
+the dedicated Intel macOS CI lane runs them. The ARM64 lane's validator rejects
+skips in its selected platform smoke suite.
 Ubuntu workflow dependency setup retries package requests three times with
 60-second connection timeouts; package-index updates and installations also
 have 10- and 15-minute limits. Persistent repository failures still fail the
@@ -305,10 +308,11 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 
 The experimental region VM lowers register-form BMI2 `shlx` and immediate
 form `rorx` while preserving guest flags. It also supports VEX.128 memory-form
-`vmovd` loads and register-form `vpinsrd`. Linux x86-64 integration fixtures
-check native results; the BMI2 fixture also checks condition flags and requires
-a BMI2-capable CPU. These instruction-level results do not establish general
-SIMD coverage or close the broader VM compatibility and resistance gates.
+`vmovd` loads, register-form `vpinsrd`, and XMM `vpbroadcastd`/`vpbroadcastq`.
+Linux x86-64 integration fixtures check native results; the BMI2 fixture also
+checks condition flags and requires a BMI2-capable CPU. These instruction-level
+results do not establish general SIMD coverage or close the broader VM
+compatibility and resistance gates.
 
 The ELF x86-64 direct-call target decoder uses scratch registers that preserve
 the System V `AL` vector-argument count. The native Linux floating-point varargs

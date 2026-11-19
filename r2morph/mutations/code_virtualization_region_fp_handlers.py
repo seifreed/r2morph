@@ -434,13 +434,20 @@ def _fp_vex_packed_shift_immediate_handler_asm(
     _, instruction, immediate_text = handler_key.split("_")
     immediate = int(immediate_text)
     off = pair_offsets("dst", "src", field_perm)
+    is_xmm_broadcast = instruction in {"broadcastd128", "broadcastq128"}
     clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm and instruction != "pshufd" else ""
+    if is_xmm_broadcast:
+        mnemonic = "vpbroadcastd" if instruction == "broadcastd128" else "vpbroadcastq"
+        operation = f"{mnemonic} xmm0, xmm0"
+    else:
+        mnemonic = "pshufd" if instruction == "pshufd" else "v" + instruction
+        operation = f"{mnemonic} xmm0, xmm0, {immediate}"
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
-        f"  {'pshufd' if instruction == 'pshufd' else 'v' + instruction} xmm0, xmm0, {immediate}\n"
+        f"  {operation}\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 

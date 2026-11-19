@@ -212,6 +212,34 @@ def test_classify_vpinsrd_preserves_all_registers_and_lane_immediate() -> None:
     expect(item == ["fpmovvexinsert", "vpinsrd", 1, 2, 0, 1])
 
 
+def test_classify_vpbroadcastd_xmm_reuses_packed_immediate_handler() -> None:
+    item = _classify(
+        {
+            "type": "vec",
+            "family": "vec",
+            "opcode": "vpbroadcastd xmm0, xmm1",
+            "addr": 0x1000,
+            "size": 5,
+        }
+    )
+
+    expect(item == ["fppackedveximm", "broadcastd128", 0, 1, 0])
+
+
+def test_classify_vpbroadcastq_xmm_reuses_packed_immediate_handler() -> None:
+    item = _classify(
+        {
+            "type": "vec",
+            "family": "vec",
+            "opcode": "vpbroadcastq xmm0, xmm1",
+            "addr": 0x1000,
+            "size": 5,
+        }
+    )
+
+    expect(item == ["fppackedveximm", "broadcastq128", 0, 1, 0])
+
+
 def test_vpinsrd_is_encoded_and_clears_upper_ymm_state() -> None:
     item = ("fpmovvexinsert", "vpinsrd", 1, 2, 0, 1)
     region = Region(
@@ -225,6 +253,21 @@ def test_vpinsrd_is_encoded_and_clears_upper_ymm_state() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(5)))
 
     expect("vpinsrd xmm0, xmm0," in assembly and ", 1" in assembly and "pxor xmm2, xmm2" in assembly)
+
+
+def test_vpbroadcastd_xmm_handler_clears_upper_ymm_state() -> None:
+    item = ("fppackedveximm", "broadcastd128", 0, 1, 0)
+    region = Region(
+        [item, ("exit", 0x2000)],
+        0x2000,
+        0x1000,
+        {_op_key(item), "exit_8192"},
+        [(0x1000, 5)],
+    )
+
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(8)))
+
+    expect("vpbroadcastd xmm0, xmm0" in assembly and "pxor xmm2, xmm2" in assembly)
 
 
 def test_decode_movmskb_variants_preserve_vector_width_and_gp_slot() -> None:

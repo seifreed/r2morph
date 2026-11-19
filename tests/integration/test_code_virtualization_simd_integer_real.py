@@ -113,7 +113,7 @@ def test_vpinsrd_with_vmovd_memory_virtualizes_and_preserves_result(tmp_path: Pa
     if compiler is None:
         pytest.skip("the VEX.128 SIMD fixture requires gcc")
 
-    source = tmp_path / "vex-insert.c"
+    source = tmp_path / "vex-insert-broadcast.c"
     original = tmp_path / "vex-insert-original"
     mutated = tmp_path / "vex-insert-mutated"
     source.write_text(
@@ -126,10 +126,12 @@ int main(void) {
     __asm__ volatile(
         "vmovd %[memory], %%xmm0\n\t"
         "vpinsrd $1, %[value], %%xmm0, %%xmm0\n\t"
-        "vpextrd $1, %%xmm0, %[lane]"
+        "vpbroadcastd %%xmm0, %%xmm1\n\t"
+        "vpbroadcastq %%xmm0, %%xmm2\n\t"
+        "vpextrd $3, %%xmm2, %[lane]"
         : [lane] "=r" (lane)
         : [memory] "m" (value), [value] "r" (value)
-        : "xmm0");
+        : "xmm0", "xmm1", "xmm2");
     return lane == 42 ? 42 : 1;
 }
 """,
@@ -139,7 +141,7 @@ int main(void) {
         [
             compiler,
             "-O1",
-            "-mavx",
+            "-mavx2",
             "-msse4.1",
             "-fno-pie",
             "-no-pie",
@@ -152,7 +154,7 @@ int main(void) {
         ],
         timeout=30,
     )
-    expect(compile_result.returncode == 0, "failed to compile the VEX.128 insert fixture")
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 insert and broadcast fixture")
     expect(run_command([original], timeout=30).returncode == _INSERT_EXIT_CODE)
     shutil.copy2(original, mutated)
 
@@ -167,5 +169,5 @@ int main(void) {
         for record in virtualization_pass.get_records()
         for mnemonic in record.metadata.get("affected_instruction_mnemonics", [])
     }
-    expect(stats["functions_virtualized"] >= 1 and {"vmovd", "vpinsrd"} <= affected)
+    expect(stats["functions_virtualized"] >= 1 and {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq"} <= affected)
     expect(run_command([mutated], timeout=30).returncode == _INSERT_EXIT_CODE)

@@ -142,8 +142,8 @@ def _decode_fp_vex_extra(text: str) -> tuple[Any, ...] | None:
     )
 
 
-def _decode_fp_vex_broadcast(text: str) -> tuple[str, str, int, int] | None:
-    """Decode the two-register YMM qword broadcast form."""
+def _decode_fp_vex_broadcast(text: str) -> tuple[Any, ...] | None:
+    """Decode the two-register VEX broadcast forms."""
     parts = text.split(None, 1)
     operation = _VEX_BROADCAST.get(parts[0].lower())
     if len(parts) != _PART_COUNT or operation is None:
@@ -151,8 +151,13 @@ def _decode_fp_vex_broadcast(text: str) -> tuple[str, str, int, int] | None:
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _BROADCAST_OPERAND_COUNT:
         return None
-    destination = _parse_ymm_operand(operands[0])
     source = _parse_xmm_operand(operands[1])
-    if destination is None or source is None:
+    if source is None:
         return None
-    return ("fpmovvex256", operation, destination, source)
+    destination_xmm = _parse_xmm_operand(operands[0])
+    if destination_xmm is not None:
+        return ("fppackedveximm", f"{operation}128", destination_xmm, source, 0)
+    destination_ymm = _parse_ymm_operand(operands[0])
+    if destination_ymm is None:
+        return None
+    return ("fpmovvex256", operation, destination_ymm, source)

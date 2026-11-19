@@ -26,6 +26,15 @@ def test_arm64_differential_uses_current_macos_runner() -> None:
     expect("runs-on: macos-latest" in differential_job)
 
 
+def test_arm64_differential_does_not_select_intel_only_native_tests() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    differential_job = workflow.split("  cross-platform-differential:\n", 1)[1].split(
+        "  cross-platform-format-windows:\n", 1
+    )[0]
+
+    expect("test_macho_x86_64_native.py" not in differential_job)
+
+
 def test_compatibility_docs_name_current_macos_runner() -> None:
     documentation = (_ROOT / "docs" / "compatibility-corpus.md").read_text(encoding="utf-8")
 
