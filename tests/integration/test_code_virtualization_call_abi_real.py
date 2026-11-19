@@ -244,7 +244,7 @@ int main(void) {
     )
     expect(compile_result.returncode == 0, "failed to compile the floating-point varargs fixture")
     original_result = run_command([original], timeout=30)
-    original.rename(mutated)
+    shutil.copyfile(original, mutated)
     binary = Binary(mutated, writable=True)
     binary.open()
     try:
