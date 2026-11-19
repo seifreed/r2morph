@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import platform
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -46,14 +45,12 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
     command: list[str | Path] = [binary]
     if platform.machine().lower() == "arm64":
-        # Explicit dispatch avoids the ARM64 host Python hanging while spawning the x86-64 fixture.
         command = ["arch", "-x86_64", binary]
-    result = subprocess.run(  # noqa: S603
+    result = run_command(
         command,
         capture_output=True,
         check=False,
         text=True,
-        start_new_session=platform.machine().lower() == "arm64",
         timeout=30,
     )
     return result.returncode, result.stdout, result.stderr

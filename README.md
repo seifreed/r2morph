@@ -126,7 +126,9 @@ temporary directory name derived from the test function.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
 Apple Silicon jobs install and verify Rosetta before running the native
-x86-64 Mach-O smoke tests.
+x86-64 Mach-O smoke tests. Those tests use the shared process adapter, which
+captures output through temporary files and kills the full process tree on
+timeout so Rosetta descendants cannot hold output pipes open indefinitely.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence
 remain stable across operating systems. Evidence paths use `/` separators on
 every platform.
@@ -171,8 +173,9 @@ they do not establish full Mach-O or cross-platform parity. The installed-wheel
 smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
 from unrelated integration tests that can initialize native helper threads.
 On ARM64 macOS the test launches each x86-64-only binary with `arch -x86_64` in
-a new process session to make Rosetta dispatch explicit and avoid the runner's
-ARM64 Python spawn hang. The isolated test process also has a two-minute limit.
+a new process session through the shared process adapter. Its file-backed
+output capture and process-tree cleanup keep Rosetta timeouts bounded. The
+isolated test process also has a two-minute limit.
 The workflow selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
