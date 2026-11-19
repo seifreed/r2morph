@@ -144,7 +144,9 @@ smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
 from unrelated integration tests that can initialize native helper threads.
 Each executable run has its own timeout, and the isolated test process has a
 two-minute limit so a Rosetta or process-launch hang fails with bounded
-diagnostics instead of stalling the rest of the package smoke.
+diagnostics instead of stalling the rest of the package smoke. The workflow
+selection is covered by
+[`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
 12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
 native-output preservation, compiled control-flow/memory fixtures, and rejection
