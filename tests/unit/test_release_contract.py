@@ -1588,7 +1588,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "github.event.workflow_run.conclusion == 'success'" in adversarial
         and "always() && !cancelled() && (github.event_name != 'workflow_run'" in adversarial
         and "Build and install package wheel" in adversarial
-        and "sudo apt-get install -y git build-essential clang" in adversarial
+        and "timeout 15m sudo apt-get" in adversarial
+        and "install -y git build-essential clang" in adversarial
         and "Build and install package wheel" in differential
         and "python -m build" in adversarial
         and "python -m build" in differential
