@@ -44,9 +44,12 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
-    # These binaries are compiled from the fixed source above; avoid asyncio's Rosetta spawn hang.
+    command: list[str | Path] = [binary]
+    if platform.machine().lower() == "arm64":
+        # Explicit dispatch avoids the ARM64 host Python hanging while spawning the x86-64 fixture.
+        command = ["arch", "-x86_64", binary]
     result = subprocess.run(  # noqa: S603
-        [binary],
+        command,
         capture_output=True,
         check=False,
         text=True,

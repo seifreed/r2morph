@@ -170,10 +170,10 @@ expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity. The installed-wheel
 smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
 from unrelated integration tests that can initialize native helper threads.
-On ARM64 macOS the test launches each x86-64-only binary directly, allowing
-macOS to dispatch it through Rosetta. A bounded synchronous subprocess avoids
-the asyncio session-creation hang observed for these binaries on GitHub's
-Apple Silicon runners. The isolated test process also has a two-minute limit.
+On ARM64 macOS the test launches each x86-64-only binary with `arch -x86_64` to
+make Rosetta dispatch explicit. A bounded synchronous subprocess avoids the
+asyncio session-creation hang observed on GitHub's Apple Silicon runners. The
+isolated test process also has a two-minute limit.
 The workflow selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
@@ -323,10 +323,10 @@ varargs or ABI parity.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
-On Apple Silicon, native x86-64 Mach-O integration checks launch the binary
-directly so macOS dispatches it through Rosetta within the process group managed
-by the per-command timeout. This validates x86-64 execution and does not claim
-native ARM64 execution.
+On Apple Silicon, native x86-64 Mach-O integration checks use `arch -x86_64` to
+launch each fixture through Rosetta within the process group managed by the
+per-command timeout. This validates x86-64 execution and does not claim native
+ARM64 execution.
 
 The scheduled and main-push differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,
