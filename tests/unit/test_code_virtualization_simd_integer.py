@@ -40,6 +40,7 @@ _EXPECTED_BYTE_SHUFFLE_DESTINATION = 2
 _EXPECTED_INDEX_SHIFT = 3
 _EXPECTED_IMMEDIATE_SHIFT_COUNT = 5
 _EXPECTED_RIP_TARGET = 0x401108
+_EXPECTED_VEX_SCALAR_ARITHMETIC_SIZE = 4
 
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
@@ -306,7 +307,10 @@ def test_vex_scalar_arithmetic_size_matches_emitted_encoding() -> None:
 
     encoded = encode_region(region, scheme, 0x2000)
 
-    expect(_item_size(item) == 4 and len(encoded) == _item_size(item) + _item_size(("syscall",)))
+    expect(
+        _item_size(item) == _EXPECTED_VEX_SCALAR_ARITHMETIC_SIZE
+        and len(encoded) == _EXPECTED_VEX_SCALAR_ARITHMETIC_SIZE + _item_size(("syscall",))
+    )
 
 
 def test_decode_packed_test_returns_flag_compare_item() -> None:
