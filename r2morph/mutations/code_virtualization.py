@@ -1649,7 +1649,7 @@ class CodeVirtualizationPass(MutationPass):
         reason_prefix: str = "",
     ) -> None:
         """Record one bounded rejection with the best available capability."""
-        capability, reason = self._unsupported_instruction_diagnostic(instruction)
+        capability, reason = self._unsupported_instruction_diagnostic(instruction, self.virtualize_dispatch)
         self._record_diagnostic(
             records,
             func,

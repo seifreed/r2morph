@@ -236,8 +236,9 @@ rejected function and instruction diagnostics, including capability and
 reason, so unsupported fixtures can be traced to a concrete blocker. Computed
 jump diagnostics distinguish a disabled feature from an enabled dispatch that
 the current analysis could not prove. If radare2 omits switch edges, dispatch
-lifting also gathers resolved case blocks inside the function's executable
-range; unresolved and out-of-function targets remain rejected. Linux
+lifting also gathers resolved case blocks in the same executable section,
+bounded by the next known function start; unresolved and out-of-range targets
+remain rejected. Linux
 integration coverage compiles the generated Clang `-O2` switch fixture and
 requires full VM virtualization with native output parity.
 The same differential workflow passed again on current source commit `1cf52005`

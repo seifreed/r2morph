@@ -197,22 +197,42 @@ def _append_switch_table_targets(binary: Any, func: dict[str, Any], ops: list[di
 
     known_addresses = {operation.get("addr") for operation in ops}
     executable_ranges = _executable_ranges(binary)
+    table_targets = {
+        entry.target_address
+        for table in tables
+        for entry in table.entries
+        if isinstance(entry.target_address, int)
+    }
+    dispatch_range = function_range
+    for start, end in executable_ranges:
+        if start <= function_start < end:
+            try:
+                functions = binary.get_functions()
+            except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+                functions = []
+            next_functions = [
+                address
+                for function in functions
+                if isinstance((address := function.get("offset", function.get("addr"))), int)
+                and function_start < address < end
+                and address not in table_targets
+            ]
+            dispatch_range = (function_start, min(end, min(next_functions, default=end)))
+            break
     extended = list(ops)
-    for table in tables:
-        for entry in table.entries:
-            target = entry.target_address
-            if not isinstance(target, int) or not function_range[0] <= target < function_range[1]:
-                continue
-            for instruction in _target_ops(binary, target, executable_ranges):
-                address = instruction.get("addr")
-                if (
-                    isinstance(address, int)
-                    and function_range[0] <= address < function_range[1]
-                    and address not in known_addresses
-                ):
-                    extended.append(instruction)
-                    known_addresses.add(address)
-    return complete_direct_branch_ops(binary, extended, function_range)
+    for target in table_targets:
+        if not dispatch_range[0] <= target < dispatch_range[1]:
+            continue
+        for instruction in _target_ops(binary, target, executable_ranges):
+            address = instruction.get("addr")
+            if (
+                isinstance(address, int)
+                and dispatch_range[0] <= address < dispatch_range[1]
+                and address not in known_addresses
+            ):
+                extended.append(instruction)
+                known_addresses.add(address)
+    return complete_direct_branch_ops(binary, extended, dispatch_range)
 
 
 def complete_direct_branch_ops(

@@ -51,11 +51,17 @@ class _FakeR2:
 
 
 class _FakeBinary:
-    def __init__(self, responses: dict[int, list[dict[str, object]]]) -> None:
+    def __init__(
+        self, responses: dict[int, list[dict[str, object]]], functions: list[dict[str, object]] | None = None
+    ) -> None:
         self.r2 = _FakeR2(responses)
+        self.functions = functions or []
 
     def get_sections(self) -> list[dict[str, object]]:
         return [{"perm": "r-x", "vaddr": 0x1000, "vsize": 0x100}]
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return self.functions
 
 
 def test_complete_direct_branch_ops_reads_missing_in_range_targets() -> None:
@@ -126,12 +132,40 @@ def test_gather_dispatch_ops_includes_resolved_in_function_switch_targets(monkey
             ],
             0x1010: [_insn(0x1010, 2, "mov", "mov eax, 1"), _insn(0x1012, 1, "ret", "ret")],
             0x1020: [_insn(0x1020, 2, "mov", "mov eax, 2"), _insn(0x1022, 1, "ret", "ret")],
-        }
+        },
+        functions=[{"offset": 0x1000}, {"offset": 0x1010}, {"offset": 0x1020}, {"offset": 0x1080}],
     )
 
-    ops = gather_dispatch_ops(binary, {"addr": 0x1000, "size": 0x40})
+    ops = gather_dispatch_ops(binary, {"addr": 0x1000, "size": 0x10})
 
     expect(ops is not None and [op["addr"] for op in ops] == [0x1000, 0x1007, 0x1010, 0x1012, 0x1020, 0x1022])
+
+
+def test_gather_dispatch_ops_stops_at_next_function_start(monkeypatch) -> None:
+    class _SwitchTableAnalyzer:
+        def __init__(self, _binary: object) -> None:
+            pass
+
+        def detect_switch_pattern(self, _function_start: int) -> tuple[list[object], list[object]]:
+            return [SimpleNamespace(entries=[SimpleNamespace(target_address=0x1010)])], []
+
+    monkeypatch.setattr(dispatch_lifting, "SwitchTableAnalyzer", _SwitchTableAnalyzer)
+    binary = _FakeBinary(
+        {
+            0x1000: [_insn(0x1000, 7, "ujmp", "jmp qword [rcx*8 + 0x2000]"), _insn(0x1007, 1, "ret", "ret")],
+            0x1010: [
+                _insn(0x1010, 2, "mov", "mov eax, 1"),
+                _insn(0x1012, 2, "jmp", "jmp 0x1080", jump=0x1080),
+                _insn(0x1014, 1, "ret", "ret"),
+            ],
+            0x1080: [_insn(0x1080, 1, "ret", "ret")],
+        },
+        functions=[{"offset": 0x1000}, {"offset": 0x1080}],
+    )
+
+    ops = gather_dispatch_ops(binary, {"addr": 0x1000, "size": 0x10})
+
+    expect(ops is not None and [op["addr"] for op in ops] == [0x1000, 0x1007, 0x1010, 0x1012])
 
 
 def test_gather_dispatch_ops_excludes_switch_targets_outside_function(monkeypatch) -> None:

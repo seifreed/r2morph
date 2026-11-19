@@ -457,6 +457,17 @@ def test_unproven_function_shape_reports_ssa_liveness_capability() -> None:
     expect(capability == "ssa_liveness" and "liveness" in reason)
 
 
+def test_unsupported_dispatch_diagnostic_respects_enabled_configuration() -> None:
+    pass_instance = CodeVirtualizationPass(config={"virtualize_dispatch": True})
+    records: list[dict[str, Any]] = []
+
+    pass_instance._record_unsupported_function(
+        records, {"addr": 0x1000}, {"type": "ujmp", "opcode": "jmp qword [rax]"}
+    )
+
+    expect(len(records) == 1 and "could not be proven" in records[0]["reason"])
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
