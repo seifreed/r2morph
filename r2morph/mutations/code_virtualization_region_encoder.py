@@ -68,7 +68,7 @@ class RegionEncoder(RegionEncoderMemoryMixin):
             self._emit_misc,
             self._emit_calls,
             self._emit_branches,
-            self._emit_shlx,
+            self._emit_bmi2,
         )
         for self.item_index, item in enumerate(items):
             for emit in emitters:
@@ -84,15 +84,15 @@ class RegionEncoder(RegionEncoderMemoryMixin):
         self._opcode(item)
         return True
 
-    def _emit_shlx(self, item: RegionItem) -> bool:
-        if item[0] != "shlx":
+    def _emit_bmi2(self, item: RegionItem) -> bool:
+        if item[0] not in ("shlx", "rorx"):
             return False
         _, dst, src, count, _width = item
         position = self._opcode(item)
         fields = {
             "dst": bytes([self.slot_of[dst]]),
             "src": bytes([self.slot_of[src]]),
-            "count": bytes([self.slot_of[count]]),
+            "count": bytes([self.slot_of[count] if item[0] == "shlx" else count]),
         }
         self._fields(position, triple_permuted_fields("dst", "src", "count", self.scheme.field_perm), fields)
         return True

@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _pop_handler_asm,
     _push_handler_asm,
     _pushi_handler_asm,
+    _rorx_handler_asm,
     _rspadj_handler_asm,
     _rspalign_handler_asm,
     _sahf_handler_asm,
@@ -451,6 +452,8 @@ class HandlerBodyRouter(FPHandlerRouterMixin):
             body = _imul3_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm)
         elif key.startswith("shlx_"):
             body = _shlx_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("rorx_"):
+            body = _rorx_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("imul_"):
             body = _imul_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("incdec_"):

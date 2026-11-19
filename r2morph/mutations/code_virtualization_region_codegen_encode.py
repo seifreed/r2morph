@@ -89,6 +89,7 @@ _FIXED_SIZE_GROUPS = {
         "fparithvex",
         "fpmovvexextract",
         "shlx",
+        "rorx",
         "div",
         "fppackedvex",
         "fppackedvex256",

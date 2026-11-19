@@ -820,3 +820,19 @@ def _shlx_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
             "  mov dword ptr [rsp+r8*8], eax\n"
         )
     return body + "  add rsi, 4\n  jmp vm_dispatch\n"
+
+
+def _rorx_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Rotate a virtual register by an encrypted immediate without changing guest flags."""
+    width = int(handler_key.rsplit("_", 1)[1])
+    off = triple_offsets("dst", "src", "count", field_perm)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['count']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+    )
+    if width == _QWORD_WIDTH_BITS:
+        body += "  mov rax, qword ptr [rsp+r9*8]\n  mov cl, r10b\n  ror rax, cl\n  mov qword ptr [rsp+r8*8], rax\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r9*8]\n  mov cl, r10b\n  ror eax, cl\n  mov dword ptr [rsp+r8*8], eax\n"
+    return body + "  add rsi, 4\n  jmp vm_dispatch\n"

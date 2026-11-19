@@ -25,6 +25,7 @@ _DIRECT_WRITE_KINDS = frozenset(
         "imul",
         "imul3",
         "shlx",
+        "rorx",
         "pop",
         "movfromrsp",
         "leave",

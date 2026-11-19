@@ -250,7 +250,7 @@ def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
     return (mnemonic, slot, count, width)
 
 
-def _decode_shlx(disasm: str) -> tuple[int, int, int, int] | None:
+def _decode_shlx(disasm: str) -> tuple[Any, ...] | None:
     """Decode BMI2 ``shlx dst, src, count`` without changing flags."""
     parts = disasm.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "shlx":
@@ -263,7 +263,28 @@ def _decode_shlx(disasm: str) -> tuple[int, int, int, int] | None:
         return None
     if destination[1] not in (32, 64) or destination[1] != source[1] or destination[1] != count[1]:
         return None
-    return destination[0], source[0], count[0], destination[1]
+    return "shlx", destination[0], source[0], count[0], destination[1]
+
+
+def _decode_rorx(disasm: str) -> tuple[Any, ...] | None:
+    """Decode BMI2 ``rorx dst, src, imm8`` without changing flags."""
+    parts = disasm.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "rorx":
+        return None
+    operands = [token.strip().lower() for token in parts[1].split(",")]
+    if len(operands) != _TERNARY_OPERAND_COUNT:
+        return None
+    destination = _register_operand(operands[0])
+    source = _register_operand(operands[1])
+    if destination is None or source is None or destination[1] not in (32, 64) or destination[1] != source[1]:
+        return None
+    try:
+        count = int(operands[2], 0)
+    except ValueError:
+        return None
+    if not 0 <= count <= _MAX_SHIFT_COUNT:
+        return None
+    return "rorx", destination[0], source[0], count, destination[1]
 
 
 def _decode_double_shift(disasm: str) -> tuple[str, int, int, int, int] | None:

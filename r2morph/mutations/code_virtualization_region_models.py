@@ -384,8 +384,8 @@ def _simple_op_key(item: tuple[Any, ...]) -> str | None:
         key = f"{kind}_{operand_kind}_{item[4]}"
     elif kind == "shift":
         key = f"{item[1]}_{item[4]}"
-    elif kind == "shlx":
-        key = f"shlx_{item[4]}"
+    elif kind in ("shlx", "rorx"):
+        key = f"{kind}_{item[4]}"
     elif kind == "vdouble_shift":
         key = f"vdouble_shift_{item[1]}_{item[3]}"
     elif kind in (
