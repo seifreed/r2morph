@@ -119,6 +119,9 @@ run. A newer push can replace a run that is still pending.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
+If the generated Clang switch-table integration case fails, CI uploads that
+case's temporary C source and ELF binary for five days to make the compiler and
+resolver behavior reproducible.
 macOS jobs install Keystone's native shared library and expose it to Python
 before collecting tests that depend on the assembler binding.
 Apple Silicon jobs install and verify Rosetta before running the native

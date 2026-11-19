@@ -8,6 +8,7 @@ import yaml
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
+_INTEGRATION_REPRO_RETENTION_DAYS = 5
 
 
 def test_ubuntu_ci_installs_clang_for_compiler_generated_corpus() -> None:
@@ -95,6 +96,23 @@ def test_ubuntu_ci_preserves_floating_point_varargs_repro_on_failure() -> None:
         and artifact_upload["if"] == "failure() && runner.os == 'Linux' && matrix.python-version == '3.12'"
         and "pytest-integration/**/test_virtualized_elf_preserves*/floating_point_varargs*"
         in artifact_upload["with"]["path"]
+    )
+
+
+def test_integration_ci_preserves_clang_switch_table_repro_on_failure() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["integration-tests"]["steps"]
+    integration_run = next(step for step in steps if step["name"] == "Run integration tests")
+    artifact_upload = next(
+        step for step in steps if step["name"] == "Upload Clang switch-table repro files after integration failure"
+    )
+
+    expect(
+        '--basetemp="${RUNNER_TEMP}/pytest-integration"' in integration_run["run"]
+        and artifact_upload["if"] == "failure()"
+        and artifact_upload["with"]["path"]
+        == "${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign_virtualizes_clang_switch_table_targets*"
+        and artifact_upload["with"]["retention-days"] == _INTEGRATION_REPRO_RETENTION_DAYS
     )
 
 

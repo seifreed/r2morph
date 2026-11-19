@@ -175,7 +175,17 @@ jobs:
       - name: Run integration tests
         run: |
           python -W error -m pytest -v tests/integration \
-            -m "not slow" --no-cov --tb=short
+            -m "not slow" --no-cov --tb=short \
+            --basetemp="${RUNNER_TEMP}/pytest-integration"
+
+      - name: Upload Clang switch-table repro files after integration failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: clang-switch-table-integration-repro
+          path: ${{ runner.temp }}/pytest-integration/test_vm_semantic_campaign_virtualizes_clang_switch_table_targets*
+          if-no-files-found: ignore
+          retention-days: 5
 
   product-smoke-tests:
     name: Product Smoke Tests (Stable Mutations)
