@@ -309,12 +309,12 @@ jobs:
           coverage xml
           coverage report
 
-      - name: Upload floating-point varargs ELF after Linux test failure
+      - name: Upload floating-point varargs repro files after Linux test failure
         if: failure() && runner.os == 'Linux' && matrix.python-version == '3.12'
         uses: actions/upload-artifact@v7
         with:
           name: floating-point-varargs-linux-repro
-          path: ${{ runner.temp }}/pytest-integration/**/floating_point_varargs_*
+          path: ${{ runner.temp }}/pytest-integration/**/test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi*/floating_point_varargs*
           if-no-files-found: ignore
 
       - name: Run cross-platform unit tests

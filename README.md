@@ -97,9 +97,9 @@ temporary files, avoiding pipe-closure hangs when a child leaves descendants
 running while preserving complete byte output.
 Native ABI regression failures report each program's return code and captured
 output alongside the virtualization diagnostics.
-If the floating-point varargs regression fails on Ubuntu/Python 3.12, CI retains
-its generated C source and mutated ELF as the `floating-point-varargs-linux-repro`
-artifact so the exact crash can be inspected.
+If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`
+fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF as
+the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
