@@ -139,13 +139,12 @@ targets (16.53% evidence). It currently classifies 5 passes as Tier 1 and
 The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
 checks applied instruction substitution, register substitution, and instruction
 expansion against native output. These are bounded experimental pass results;
-they do not establish full Mach-O or cross-platform parity.
-The fixture is a thin x86-64 Mach-O executable and the smoke test launches it
-through macOS `arch -x86_64` in an isolated process session, allowing timeout
-cleanup to terminate its process group if Rosetta leaves child processes
-running. Hosted ARM64 logs show the unmodified fixture invocation does not
-return before the package smoke timeout; original and transformed executions
-are reported separately to identify which one stalls.
+they do not establish full Mach-O or cross-platform parity. The installed-wheel
+smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
+from unrelated integration tests that can initialize native helper threads.
+Each executable run has its own timeout, and the isolated test process has a
+two-minute limit so a Rosetta or process-launch hang fails with bounded
+diagnostics instead of stalling the rest of the package smoke.
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
 12/12 cases on macOS ARM64 with Python 3.13.11 and Clang 23.1.5, including
 native-output preservation, compiled control-flow/memory fixtures, and rejection

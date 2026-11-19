@@ -385,28 +385,34 @@ jobs:
               "tests/unit/test_code_virtualization_call_abi.py",
               "tests/unit/test_code_virtualization_avx256.py",
           ]
+          native_macho_target = []
           if platform.machine().lower() in {"amd64", "x86_64"}:
               test_targets.extend(x64_assembler_targets)
           if platform.system() == "Darwin":
-              test_targets.append("tests/integration/test_macho_x86_64_native.py")
+              native_macho_target = ["tests/integration/test_macho_x86_64_native.py"]
+          pytest_command = [
+              sys.executable,
+              "-W",
+              "error",
+              "-m",
+              "pytest",
+              "-v",
+              "-o",
+              "faulthandler_timeout=60",
+          ]
           subprocess.run(
-              [
-                  sys.executable,
-                  "-W",
-                  "error",
-                  "-m",
-                  "pytest",
-                  "-v",
-                  "-o",
-                  "faulthandler_timeout=60",
-                  *test_targets,
-                  "--no-cov",
-                  "--tb=short",
-              ],
+              [*pytest_command, *test_targets, "--no-cov", "--tb=short"],
               cwd=wheel_root,
               timeout=300,
               check=True,
           )
+          if native_macho_target:
+              subprocess.run(
+                  [*pytest_command, *native_macho_target, "--no-cov", "--tb=short"],
+                  cwd=wheel_root,
+                  timeout=120,
+                  check=True,
+              )
           PY
 
       - name: Upload cross-platform coverage artifact
