@@ -43,11 +43,8 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
-    command: list[str | Path] = [binary]
-    if platform.machine().lower() == "arm64":
-        command = ["arch", "-x86_64", binary]
     result = run_command(
-        command,
+        [binary],
         capture_output=True,
         check=False,
         text=True,

@@ -319,8 +319,10 @@ varargs or ABI parity.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
-On Apple Silicon, native x86-64 Mach-O integration checks explicitly launch through Rosetta
-with `arch -x86_64`; this validates x86-64 execution and does not claim native ARM64 execution.
+On Apple Silicon, native x86-64 Mach-O integration checks launch the binary
+directly so macOS dispatches it through Rosetta within the process group managed
+by the per-command timeout. This validates x86-64 execution and does not claim
+native ARM64 execution.
 
 The scheduled and main-push differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,
