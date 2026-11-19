@@ -79,9 +79,10 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-On `main`, a new push supersedes the older general CI run so checks follow the
-latest source; dedicated fuzzing, differential, and adversarial evidence runs
-keep their own concurrency policies.
+On `main`, an in-flight general CI run is allowed to finish. GitHub keeps at
+most one pending run for the same concurrency group, and a newer push can
+replace that pending run so checks follow the latest source. Dedicated fuzzing,
+differential, and adversarial evidence runs keep their own concurrency policies.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python
@@ -100,8 +101,9 @@ output alongside the virtualization diagnostics.
 If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`
 fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF as
 the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
-Push-triggered CI runs are allowed to finish when later commits reach `main`, preserving
-the complete cross-platform validation result for each run.
+An in-flight push-triggered CI run is allowed to finish when later commits reach
+`main`, preserving the complete cross-platform validation result for that active
+run. A newer push can replace a run that is still pending.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
