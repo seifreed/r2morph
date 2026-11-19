@@ -147,10 +147,10 @@ expansion against native output. These are bounded experimental pass results;
 they do not establish full Mach-O or cross-platform parity. The installed-wheel
 smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
 from unrelated integration tests that can initialize native helper threads.
-On ARM64 macOS the test launches each x86-64 binary explicitly through
-`/usr/bin/arch -x86_64`, then applies an individual timeout; the isolated test
-process also has a two-minute limit. This makes Rosetta selection explicit and
-keeps a launch hang bounded. The workflow
+On ARM64 macOS the test executes each x86-64-only binary directly, allowing
+macOS to dispatch it through Rosetta while keeping it in the process group
+managed by the per-command timeout. The isolated test process also has a
+two-minute limit. The workflow
 selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
