@@ -87,11 +87,18 @@ def test_ubuntu_ci_preserves_floating_point_varargs_repro_on_failure() -> None:
     steps = workflow["jobs"]["cross-platform-tests"]["steps"]
     broad_suite = next(step for step in steps if step["name"] == "Run broad Linux tests with coverage")
     artifact_upload = next(
-        step for step in steps if step["name"] == "Upload floating-point varargs ELF after Linux test failure"
+        step for step in steps if step["name"] == "Upload floating-point varargs repro files after Linux test failure"
     )
 
     expect(
         '--basetemp="${RUNNER_TEMP}/pytest-$(basename "$test_dir")"' in broad_suite["run"]
         and artifact_upload["if"] == "failure() && runner.os == 'Linux' && matrix.python-version == '3.12'"
-        and "pytest-integration/**/floating_point_varargs_*" in artifact_upload["with"]["path"]
+        and "pytest-integration/**/test_virtualized_elf_preserves*/floating_point_varargs*"
+        in artifact_upload["with"]["path"]
     )
+
+
+def test_ci_preserves_inflight_main_runs_when_new_commits_arrive() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+
+    expect(workflow["concurrency"]["cancel-in-progress"] is False)
