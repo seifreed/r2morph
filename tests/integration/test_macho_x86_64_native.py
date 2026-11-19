@@ -43,11 +43,8 @@ def _build_x86_64_macho(tmp_path: Path) -> Path:
 
 
 def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
-    command: list[str | Path] = [binary]
-    if platform.machine().lower() == "arm64":
-        command = ["arch", "-x86_64", binary]
     result = run_command(
-        command,
+        [binary],
         capture_output=True,
         check=False,
         text=True,
@@ -60,6 +57,8 @@ def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
 def test_macho_x86_64_instruction_substitution_preserves_native_observables(tmp_path: Path) -> None:
     if platform.system() != "Darwin":
         pytest.skip("x86-64 Mach-O execution requires macOS")
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86-64 Mach-O execution requires an Intel macOS host")
 
     original = _build_x86_64_macho(tmp_path)
     protected = tmp_path / "macho_x86_64_substituted"
@@ -78,6 +77,8 @@ def test_macho_x86_64_instruction_substitution_preserves_native_observables(tmp_
 def test_macho_x86_64_register_substitution_preserves_native_observables(tmp_path: Path) -> None:
     if platform.system() != "Darwin":
         pytest.skip("x86-64 Mach-O execution requires macOS")
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native x86-64 Mach-O execution requires an Intel macOS host")
 
     original = _build_x86_64_macho(tmp_path)
     protected = tmp_path / "macho_x86_64_register_substituted"

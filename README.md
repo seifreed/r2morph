@@ -124,11 +124,10 @@ case's temporary C source and ELF binary for five days to make the compiler and
 resolver behavior reproducible. The glob accounts for pytest shortening the
 temporary directory name derived from the test function.
 macOS jobs install Keystone's native shared library and expose it to Python
-before collecting tests that depend on the assembler binding.
-Apple Silicon jobs install and verify Rosetta before running the native
-x86-64 Mach-O smoke tests. Those tests use the shared process adapter, which
-captures output through temporary files and kills the full process tree on
-timeout so Rosetta descendants cannot hold output pipes open indefinitely.
+before collecting tests that depend on the assembler binding. The x86-64
+Mach-O native smoke runs on GitHub's Intel `macos-15-intel` runner; Apple
+Silicon runs the cross-platform package checks without executing x86-64 Mach-O.
+Rosetta execution on Apple Silicon is not currently validated by CI.
 Git checks out text with LF endings so hashes pinned to source and JSON evidence
 remain stable across operating systems. Evidence paths use `/` separators on
 every platform.
@@ -166,16 +165,12 @@ the generated matrix currently records 22/22 evidenced cells for the official
 ELF x86-64 target (100.0% evidence) and 40/242 evidenced cells for non-official
 targets (16.53% evidence). It currently classifies 5 passes as Tier 1 and
 17 passes as experimental.
-The macOS differential workflow also executes x86-64 Mach-O under Rosetta and
-checks applied instruction substitution, register substitution, and instruction
-expansion against native output. These are bounded experimental pass results;
-they do not establish full Mach-O or cross-platform parity. The installed-wheel
-smoke runs the native x86-64 Mach-O tests in a fresh pytest process, separately
-from unrelated integration tests that can initialize native helper threads.
-On ARM64 macOS the test launches each x86-64-only binary with `arch -x86_64` in
-a new process session through the shared process adapter. Its file-backed
-output capture and process-tree cleanup keep Rosetta timeouts bounded. The
-isolated test process also has a two-minute limit.
+The installed-wheel smoke executes x86-64 Mach-O natively on Intel
+`macos-15-intel` and checks instruction and register substitution against
+native output. These are bounded experimental pass results; they do not
+establish full Mach-O or cross-platform parity. It runs in a fresh pytest
+process. Apple Silicon CI checks the installed package without claiming
+Rosetta x86-64 execution coverage.
 The workflow selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed
@@ -331,9 +326,8 @@ varargs or ABI parity.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
-On Apple Silicon, native x86-64 Mach-O integration checks use `arch -x86_64` in
-a new process session to launch each fixture through Rosetta. This validates
-x86-64 execution and does not claim native ARM64 execution.
+Native x86-64 Mach-O integration checks run on Intel macOS. Apple Silicon
+execution through Rosetta remains experimental and is not covered by CI.
 
 The scheduled and main-push differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,

@@ -229,7 +229,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-15, windows-latest]
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
         python-version: ["3.12", "3.13"]
 
     steps:
@@ -256,14 +256,6 @@ jobs:
         run: |
           if ! command -v pkg-config >/dev/null; then
             brew install pkg-config
-          fi
-
-      - name: Install Rosetta for native x86-64 Mach-O tests
-        if: runner.os == 'macOS'
-        run: |
-          if [[ "$(uname -m)" == "arm64" ]]; then
-            sudo softwareupdate --install-rosetta --agree-to-license
-            arch -x86_64 /usr/bin/true
           fi
 
       - name: Install Keystone shared library (macOS)
@@ -407,7 +399,10 @@ jobs:
           native_macho_target = []
           if platform.machine().lower() in {"amd64", "x86_64"}:
               test_targets.extend(x64_assembler_targets)
-          if platform.system() == "Darwin":
+          if (
+              platform.system() == "Darwin"
+              and platform.machine().lower() in {"x86_64", "amd64"}
+          ):
               native_macho_target = ["tests/integration/test_macho_x86_64_native.py"]
           pytest_command = [
               sys.executable,
