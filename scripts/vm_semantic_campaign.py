@@ -261,6 +261,7 @@ def _not_virtualized_result(result: Mapping[str, Any], functions_virtualized: ob
         "functions_virtualized": functions_virtualized,
         "functions_skipped": result.get("functions_skipped", 0),
         "unsupported_functions": result.get("unsupported_functions_total", 0),
+        "unsupported_function_details": result.get("unsupported_functions", []),
         "capabilities": result.get("unsupported_function_capabilities", {}),
     }
 

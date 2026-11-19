@@ -20,6 +20,7 @@ from scripts.vm_semantic_campaign import (
     _execution_observation,
     _fixture_categories,
     _load_coverage,
+    _not_virtualized_result,
     _qemu_observables_equal,
     _qemu_summary,
     _run_selected_fixture_bounded,
@@ -197,6 +198,25 @@ def test_vm_semantic_campaign_rejects_unsupported_functions_with_equal_observabl
         result["status"] == "passed_with_unsupported"
         and result["observables_equal"] is True
         and result["unsupported_function_details"] == [{"capability": "calls", "severity": "error"}]
+    )
+
+
+def test_vm_semantic_campaign_preserves_diagnostics_when_no_function_is_virtualized() -> None:
+    details = [{"capability": "exceptions_and_unwinding", "instruction_mnemonic": "shlx", "severity": "error"}]
+    result = _not_virtualized_result(
+        {
+            "functions_skipped": 1,
+            "unsupported_functions_total": 1,
+            "unsupported_functions": details,
+            "unsupported_function_capabilities": {"exceptions_and_unwinding": 1},
+        },
+        0,
+    )
+
+    expect(
+        result["status"] == "not_virtualized"
+        and result["unsupported_function_details"] == details
+        and result["capabilities"] == {"exceptions_and_unwinding": 1}
     )
 
 
