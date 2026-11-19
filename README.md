@@ -105,7 +105,9 @@ exercises real process timeouts without depending on copied system binaries or
 their platform-specific execution rules.
 The shared subprocess adapter captures standard input and output through
 temporary files, avoiding pipe-closure hangs when a child leaves descendants
-running while preserving complete byte output.
+running while preserving complete byte output. Process-tree cleanup bounds its
+final wait, so an unresponsive platform process cannot prevent the configured
+process timeout from returning.
 Native ABI regression failures report each program's return code and captured
 output alongside the virtualization diagnostics.
 If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`

@@ -164,3 +164,26 @@ def test_terminate_process_tree_accepts_process_that_already_exited() -> None:
         await _terminate_process_tree(process)
 
     asyncio.run(start_exit_and_cleanup())
+
+
+@pytest.mark.skipif(os.name != "posix", reason="process-group cleanup is POSIX-specific")
+def test_terminate_process_tree_bounds_wait_for_unresponsive_process(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def start_and_cleanup() -> None:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-c",
+            "import time; time.sleep(30)",
+            start_new_session=True,
+        )
+        original_wait = process.wait
+        monkeypatch.setattr(process, "wait", lambda: asyncio.sleep(30))
+        monkeypatch.setattr("r2morph.adapters.process._PROCESS_CLEANUP_TIMEOUT_SECONDS", 0.01)
+        started = time.monotonic()
+        try:
+            await _terminate_process_tree(process)
+            expect(time.monotonic() - started < 1)
+        finally:
+            monkeypatch.setattr(process, "wait", original_wait)
+            await asyncio.wait_for(original_wait(), timeout=1)
+
+    asyncio.run(start_and_cleanup())

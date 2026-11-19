@@ -18,6 +18,7 @@ from typing import Any, cast
 from r2morph.utils.logging import observed_operation
 
 logger = logging.getLogger(__name__)
+_PROCESS_CLEANUP_TIMEOUT_SECONDS = 2.5
 
 
 class ProcessError(RuntimeError):
@@ -133,6 +134,7 @@ async def _terminate_process_tree(
         with suppress(ProcessLookupError):
             os.killpg(process.pid, signal.SIGKILL)
     else:
+        killer: asyncio.subprocess.Process | None = None
         try:
             killer = await asyncio.create_subprocess_exec(
                 "taskkill",
@@ -143,18 +145,24 @@ async def _terminate_process_tree(
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )
-            await killer.wait()
+            await asyncio.wait_for(killer.wait(), timeout=_PROCESS_CLEANUP_TIMEOUT_SECONDS)
             if killer.returncode != 0:
                 _kill_if_running(process)
-        except OSError:
+        except (OSError, TimeoutError):
+            if killer is not None and killer.returncode is None:
+                killer.kill()
             _kill_if_running(process)
+            if killer is not None:
+                with suppress(TimeoutError):
+                    await asyncio.wait_for(killer.wait(), timeout=_PROCESS_CLEANUP_TIMEOUT_SECONDS)
     transport = cast(Any, process)._transport
     for file_descriptor in (1, 2):
         pipe_transport = transport.get_pipe_transport(file_descriptor)
         if pipe_transport is not None:
             # asyncio.Process has no public way to close pipes held by descendants.
             pipe_transport.close()
-    await process.wait()
+    with suppress(TimeoutError):
+        await asyncio.wait_for(process.wait(), timeout=_PROCESS_CLEANUP_TIMEOUT_SECONDS)
 
 
 def _kill_if_running(process: asyncio.subprocess.Process) -> None:
