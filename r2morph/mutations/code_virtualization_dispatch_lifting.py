@@ -198,10 +198,7 @@ def _append_switch_table_targets(binary: Any, func: dict[str, Any], ops: list[di
     known_addresses = {operation.get("addr") for operation in ops}
     executable_ranges = _executable_ranges(binary)
     table_targets = {
-        entry.target_address
-        for table in tables
-        for entry in table.entries
-        if isinstance(entry.target_address, int)
+        entry.target_address for table in tables for entry in table.entries if isinstance(entry.target_address, int)
     }
     dispatch_range = function_range
     for start, end in executable_ranges:
