@@ -92,6 +92,9 @@ parity, which remains an open release gate.
 The timeout integration case uses identical temporary shell scripts so it
 exercises real process timeouts without depending on copied system binaries or
 their platform-specific execution rules.
+The shared subprocess adapter captures standard input and output through
+temporary files, avoiding pipe-closure hangs when a child leaves descendants
+running while preserving complete byte output.
 Native ABI regression failures report each program's return code and captured
 output alongside the virtualization diagnostics.
 The installed-wheel cross-platform smoke emits Python thread traces after 60

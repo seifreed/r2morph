@@ -22,12 +22,40 @@ from tests.utils.assertions import expect
 from tests.utils.process import python_runtime_environment
 
 _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS = 2.5
+_LARGE_PROCESS_OUTPUT_BYTES = 128 * 1024
 
 
 def test_run_process_captures_stdout() -> None:
     result = run_process([Path(sys.executable), "-c", "print('ok')"], check=True)
 
     expect(result.stdout_text.strip() == "ok")
+
+
+def test_run_process_captures_input_and_both_output_streams() -> None:
+    code = (
+        "import sys; "
+        "value = sys.stdin.buffer.read(); "
+        "sys.stdout.buffer.write(value.upper()); "
+        "sys.stderr.buffer.write(b'diagnostic')"
+    )
+    result = run_process(
+        [Path(sys.executable), "-c", code],
+        context=ProcessContext(input_bytes=b"sample"),
+        check=True,
+    )
+
+    expect((result.stdout, result.stderr) == (b"SAMPLE", b"diagnostic"))
+
+
+def test_run_process_captures_output_larger_than_pipe_buffer() -> None:
+    code = (
+        "import sys; "
+        f"sys.stdout.buffer.write(b'o' * {_LARGE_PROCESS_OUTPUT_BYTES}); "
+        f"sys.stderr.buffer.write(b'e' * {_LARGE_PROCESS_OUTPUT_BYTES})"
+    )
+    result = run_process([Path(sys.executable), "-c", code], check=True)
+
+    expect((len(result.stdout), len(result.stderr)) == (_LARGE_PROCESS_OUTPUT_BYTES,) * 2)
 
 
 def test_run_process_starts_in_an_isolated_process_session() -> None:

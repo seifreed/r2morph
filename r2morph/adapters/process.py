@@ -8,8 +8,9 @@ import os
 import shlex
 import shutil
 import signal
+import tempfile
 from collections.abc import Mapping, Sequence
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -94,26 +95,35 @@ async def _run_process(
     if not command:
         raise ValueError("Process command cannot be empty")
     arguments = _build_arguments(command)
-    process = await asyncio.create_subprocess_exec(
-        *arguments,
-        stdin=asyncio.subprocess.PIPE if context.input_bytes is not None else None,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        env=context.env,
-        cwd=context.cwd,
-        start_new_session=os.name == "posix",
-    )
-    communication = asyncio.create_task(process.communicate(context.input_bytes))
-    try:
-        stdout, stderr = await asyncio.wait_for(asyncio.shield(communication), timeout)
-    except TimeoutError:
+    with ExitStack() as temporary_files:
+        stdout_file = temporary_files.enter_context(tempfile.TemporaryFile())
+        stderr_file = temporary_files.enter_context(tempfile.TemporaryFile())
+        stdin_file = None
+        if context.input_bytes is not None:
+            stdin_file = temporary_files.enter_context(tempfile.TemporaryFile())
+            stdin_file.write(context.input_bytes)
+            stdin_file.seek(0)
+        process = await asyncio.create_subprocess_exec(
+            *arguments,
+            stdin=stdin_file,
+            stdout=stdout_file,
+            stderr=stderr_file,
+            env=context.env,
+            cwd=context.cwd,
+            start_new_session=os.name == "posix",
+        )
         try:
+            await asyncio.wait_for(process.wait(), timeout)
+        except TimeoutError:
             await _terminate_process_tree(process)
-        finally:
-            communication.cancel()
-            await asyncio.gather(communication, return_exceptions=True)
-        raise ProcessTimeoutError(f"Process exceeded {timeout} seconds") from None
-    return ProcessResult(stdout=stdout, stderr=stderr, returncode=process.returncode or 0)
+            raise ProcessTimeoutError(f"Process exceeded {timeout} seconds") from None
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        return ProcessResult(
+            stdout=stdout_file.read(),
+            stderr=stderr_file.read(),
+            returncode=process.returncode or 0,
+        )
 
 
 async def _terminate_process_tree(
