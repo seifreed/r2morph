@@ -53,6 +53,7 @@ def _execute_x86_64_macho(binary: Path) -> tuple[int, str, str]:
         capture_output=True,
         check=False,
         text=True,
+        start_new_session=platform.machine().lower() == "arm64",
         timeout=30,
     )
     return result.returncode, result.stdout, result.stderr
