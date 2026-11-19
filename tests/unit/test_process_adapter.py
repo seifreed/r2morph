@@ -58,6 +58,28 @@ def test_run_process_captures_output_larger_than_pipe_buffer() -> None:
     expect((len(result.stdout), len(result.stderr)) == (_LARGE_PROCESS_OUTPUT_BYTES,) * 2)
 
 
+def test_run_process_returns_when_descendant_keeps_output_open(tmp_path: Path) -> None:
+    descendant_pid_file = tmp_path / "descendant-pid"
+    descendant_code = "import time; time.sleep(5)"
+    parent_code = (
+        "import pathlib, subprocess, sys; "
+        f"descendant = subprocess.Popen([sys.executable, '-c', {descendant_code!r}]); "
+        f"pathlib.Path({str(descendant_pid_file)!r}).write_text(str(descendant.pid)); "
+        "print('parent')"
+    )
+    started = time.monotonic()
+    try:
+        result = run_process([Path(sys.executable), "-c", parent_code], check=True)
+        elapsed = time.monotonic() - started
+    finally:
+        if descendant_pid_file.exists():
+            descendant_pid = int(descendant_pid_file.read_text(encoding="utf-8"))
+            with suppress(ProcessLookupError):
+                os.kill(descendant_pid, signal.SIGTERM)
+
+    expect(result.stdout_text.strip() == "parent" and elapsed < _DETACHED_PIPE_CLEANUP_LIMIT_SECONDS)
+
+
 def test_run_process_starts_in_an_isolated_process_session() -> None:
     result = run_process(
         [Path(sys.executable), "-c", "import os; print(os.getsid(0) if hasattr(os, 'getsid') else 'ok')"],
