@@ -10,7 +10,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
 )
-from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size, encode_region
 from r2morph.mutations.code_virtualization_region_encoder import RegionEncoder
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_arith_idx,
@@ -32,7 +32,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_vex_packed_shift_immediate_handler_asm
 from r2morph.mutations.code_virtualization_region_fp_packed_extra import _decode_fp_packed_arith_extra
-from r2morph.mutations.code_virtualization_region_models import RegionScheme
+from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme
 from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
@@ -285,6 +285,28 @@ def test_packed_no_base_indexed_items_use_eight_byte_encoding() -> None:
         )
         == (8, 8, 8, 8, 8)
     )
+
+
+def test_vex_scalar_arithmetic_size_matches_emitted_encoding() -> None:
+    item = ("fparithvex", "add", 0, 1, 2, 32)
+    region = Region(
+        [item, ("syscall",)],
+        0x2000,
+        0x1000,
+        {"fparithvex_add_32", "syscall"},
+        [(0x1000, 8)],
+    )
+    scheme = RegionScheme(
+        {"fparithvex_add_32": (0,), "syscall": (1,)},
+        0,
+        0,
+        tuple(range(16)),
+        0,
+    )
+
+    encoded = encode_region(region, scheme, 0x2000)
+
+    expect(_item_size(item) == 4 and len(encoded) == _item_size(item) + _item_size(("syscall",)))
 
 
 def test_decode_packed_test_returns_flag_compare_item() -> None:

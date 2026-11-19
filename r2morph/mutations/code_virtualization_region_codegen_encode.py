@@ -64,7 +64,6 @@ _FIXED_SIZE_GROUPS = {
         "cqo",
         "bt",
         "fparith",
-        "fparithvex",
         "cvti2f",
         "cvtf2i",
         "fpmovd",
@@ -87,6 +86,7 @@ _FIXED_SIZE_GROUPS = {
         "fppackedimm",
     ),
     4: (
+        "fparithvex",
         "fpmovvexextract",
         "div",
         "fppackedvex",

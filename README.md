@@ -285,11 +285,12 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 
 The ELF x86-64 direct-call target decoder uses scratch registers that preserve
 the System V `AL` vector-argument count. The native Linux floating-point varargs
-integration fixture still fails with `SIGSEGV` in CI while the equivalent
-x86-64 emulated run passes. Linux CI installs GDB so the fixture can capture
-registers and the faulting instruction on a signal failure. This ABI release
-gate remains open, and the fixture does not establish general varargs or ABI
-parity.
+integration fixture exposed an offset undercount for VEX scalar arithmetic
+bytecode; the shared size table and an encoder-size regression test now cover
+that case. Linux CI installs GDB so the fixture can capture registers and the
+faulting instruction on a signal failure. The ABI release gate remains open
+until the native integration job passes; this fixture does not establish general
+varargs or ABI parity.
 
 ---
 
