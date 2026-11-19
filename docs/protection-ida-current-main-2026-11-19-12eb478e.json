@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "measurement": "focused-ida-pair-observation",
+  "source_commit": "12eb478ec640aad9a842c713a3576c6ef0401db1",
+  "fixture": {
+    "path": "fixtures/dataset/elf_vm_shift_x86_64",
+    "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29"
+  },
+  "transformation": {
+    "pass": "CodeVirtualization",
+    "probability": 1.0,
+    "seed": 20260915,
+    "functions_virtualized": 1,
+    "functions_skipped": 0,
+    "partial_virtualization": 0,
+    "unsupported_functions": 0,
+    "total_instructions": 40,
+    "total_bytecode_bytes": 37851
+  },
+  "artifacts": {
+    "original": {
+      "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29",
+      "size_bytes": 4736
+    },
+    "protected": {
+      "sha256": "c1176bb2adb27b7f1f6b444d9ab4f8a67b8f1f3a03c37a58c0a2fee146181fba",
+      "size_bytes": 42587
+    }
+  },
+  "ida_mcp": {
+    "status": "completed",
+    "original": {
+      "function_count": 2,
+      "start_decompilation": "Calls helper with constants, then sys_exit."
+    },
+    "protected": {
+      "function_count": 4,
+      "start_decompilation": "Byte checksum loop over the entry region, then return."
+    }
+  },
+  "automated_pair_report": {
+    "path": "docs/protection-adversarial-current-main-2026-11-19-12eb478e.json",
+    "sha256": "043b868f41681aa0fa61bb34799cf8d149810be7ff6d016eeb12240c306f3ce5",
+    "completed_tools": ["angr", "custom", "objdump", "radare2", "unicorn"],
+    "unavailable_tools": {
+      "binary-ninja": "analyzer license is unavailable",
+      "ghidra": "executable 'ghidra' is unavailable",
+      "ida-pro": "executable 'idat' is unavailable",
+      "triton": "module 'triton' is unavailable"
+    },
+    "unicorn_exit_codes": {
+      "original": 42,
+      "protected": 42
+    }
+  },
+  "scope_limit": "One ELF x86-64 fixture. The IDA structure/decompilation delta is not a semantic-equivalence or generalized-resistance proof. The automated benchmark's unavailable analyzer rows remain release blockers."
+}

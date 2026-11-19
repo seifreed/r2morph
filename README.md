@@ -415,6 +415,20 @@ There were no pass/tool errors or missing rows. The macOS run excludes generated
 Linux fixtures, and the all-analyzer gate remains open. Hash-bound reports and
 fixture hashes are listed in
 [`docs/compatibility-corpus.md`](docs/compatibility-corpus.md#current-source-local-ida-shards).
+
+A focused rerun on source commit `12eb478e` measured `CodeVirtualization` on
+`elf_vm_shift_x86_64`: one function was virtualized with no partial or unsupported
+functions. The automated pair report completed `angr`, `custom`, `objdump`,
+radare2, and Unicorn without tool errors; Unicorn returned 42 for both original
+and protected files. Binary Ninja, Ghidra headless, IDA headless, and Triton were
+unavailable in that runner, so those slots remain open. A separate IDA MCP
+analysis of the same fixture and recorded seed completed on both files: IDA
+counted two functions in the original and four in the protected file, whose entry
+decompilation showed a checksum loop. This single-sample observation is not a
+semantic-equivalence or generalized-resistance result. The [automated report](docs/protection-adversarial-current-main-2026-11-19-12eb478e.json)
+and [IDA pair record](docs/protection-ida-current-main-2026-11-19-12eb478e.json)
+retain the measurements and unavailable slots.
+
 The follow-up Ghidra 11.4.2 slice on source commit `8a612589` measured
 `CodeVirtualization` on four repository fixtures: Ghidra completed 4/4 rows,
 while six of nine analyzers completed overall (24/36 rows). IDA Pro timed out
