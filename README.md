@@ -508,6 +508,17 @@ This bounded campaign uses synthetic rewriter section data and does not prove
 complete executable equivalence, exhaustive fuzz coverage, or complete
 platform parity.
 
+The latest main-push run
+[`44683267033`](https://github.com/seifreed/r2morph/actions/runs/44683267033)
+passed on source `24d68c8c` across macOS 15, Ubuntu, and Windows after building
+and installing the wheel. It completed 5,000 cases for each of ten parser,
+assembler, VM, relocation, and rewriting targets per platform (150,000 target
+runs total) with zero failures. Each report retained 103 recoverable Mach-O
+parser diagnostics. The source-bound manifest and reports are in
+[`continuous-fuzz-2026-11-20-44683267033-summary.json`](docs/continuous-fuzz-2026-11-20-44683267033-summary.json).
+This bounded campaign does not establish arbitrary-input equivalence,
+exhaustive fuzz coverage, complete platform parity, or adversarial resistance.
+
 The previous differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
 captured a partial snapshot on `f319f1e4`: four platform targets passed 39/39

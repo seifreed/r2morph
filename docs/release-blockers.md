@@ -266,6 +266,19 @@ not establish analyzer completeness or generalized resistance.
 
 ## Current-main continuous fuzz campaign
 
+The latest main-push workflow
+[`44683267033`](https://github.com/seifreed/r2morph/actions/runs/44683267033)
+passed on source commit `24d68c8c2bffd6695df205fc60f64dfe619f0ab1` across
+macOS 15, Ubuntu, and Windows. Each runner built and installed the package
+wheel, then ran 5,000 deterministic cases against each of ten targets, for
+150,000 target runs total and zero failures. Each report retained 103
+`macho_load_commands.warning` diagnostics. The raw reports, workflow artifact
+IDs and SHA-256 digests, source-script hash, and limits are pinned in the
+[summary](continuous-fuzz-2026-11-20-44683267033-summary.json) and its three
+platform reports. This bounded campaign does not establish arbitrary-input
+semantic equivalence, exhaustive fuzz coverage, complete platform parity, or
+independent adversarial validation; those gates remain open.
+
 Workflow run [`43654009381`](https://github.com/seifreed/r2morph/actions/runs/43654009381)
 passed on source commit `7374619a` across Ubuntu, macOS, and Windows. Each
 platform installed and tested the built wheel, then ran 5,000 deterministic
