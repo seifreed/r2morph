@@ -113,6 +113,8 @@
         "docs/protection-platform-evidence-2026-11-16-43859887107.json",
         "docs/protection-ghidra-corpus-2026-11-16-981a45be.json",
         "docs/protection-ghidra-corpus-2026-11-16-981a45be-summary.json",
+        "docs/protection-ghidra-corpus-2026-11-20-716dcfac.json",
+        "docs/protection-ghidra-corpus-2026-11-20-716dcfac-summary.json",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json",
         "docs/protection-adversarial-run-2026-11-16-43952405619.json.gz",
         "tests/unit/test_published_adversarial_run_43952405619.py",

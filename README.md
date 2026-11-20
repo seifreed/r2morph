@@ -582,6 +582,19 @@ report are recorded in
 [`docs/compatibility-corpus.md`](docs/compatibility-corpus.md).
 This bounded output comparison does not demonstrate generalized resistance;
 all-analyzer, cross-platform parity, and resistance gates remain open.
+
+A current-source local rerun on 2026-11-20 used Ghidra 12.2 on the 162
+repository fixtures at source commit `716dcfac`. All 324 original/protected
+analyses completed without errors or timeouts; the function count changed in
+151 pairs and stayed the same in 11. CodeVirtualization applied to all 162
+fixtures and virtualized 170 functions, with no unsupported or partial
+virtualization. Function-count changes are only a coarse analyzer observation,
+not proof of semantic preservation or resistance. The hash-bound
+[raw report](docs/protection-ghidra-corpus-2026-11-20-716dcfac.json) and
+[summary](docs/protection-ghidra-corpus-2026-11-20-716dcfac-summary.json)
+preserve scope and provenance; analyzer, parity, and resistance gates remain
+open.
+
 The completed differential workflow on that source revision also retained a
 360-build public ELF x86-64 corpus: 19,440 differential inputs passed across six
 passes, with 713 transformations applied and 1,447 omitted. Five platform
