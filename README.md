@@ -699,13 +699,14 @@ requires a review of the final production tree, with a separate signoff-only
 commit.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 0 exact normalized within-seed
-handler matches, 12 handler stride values, and
-target handler stride diversity recorded in
-[`docs/protection-handler-clustering.json`](docs/protection-handler-clustering.json)
-and [`docs/protection-bytecode-grammar.json`](docs/protection-bytecode-grammar.json).
+handler matches, normalized nearest similarity mean 0.652 (328/2,295
+comparisons at or above 0.8; maximum 0.933), and 12 handler stride values.
 These finite seed-diversity measurements describe generated output variation;
 they do not measure generalized attack cost or establish resistance to
-professional reverse engineering. The independent analysis report explicitly
+professional reverse engineering. The reports are
+[`docs/protection-handler-clustering.json`](docs/protection-handler-clustering.json)
+and [`docs/protection-bytecode-grammar.json`](docs/protection-bytecode-grammar.json).
+The independent analysis report explicitly
 limits its evidence to one fixture and one pass and states that it does not
 establish general resistance to professional reverse engineering. The report
 does not replace the required three-analyzer release campaign. Published

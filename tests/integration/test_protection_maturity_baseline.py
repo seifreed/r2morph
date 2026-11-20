@@ -1533,8 +1533,8 @@ def test_measure_campaign_groups_passes_per_fixture(tmp_path: Path) -> None:
     )
 
     expect(
-        all(
-            measurements[pass_name][0]["runs"][0]["transformation"]["status"] == "applied"
-            for pass_name in ("NopInsertion", "InstructionSubstitution")
-        )
+        measurements["NopInsertion"][0]["runs"][0]["transformation"]["status"] == "applied"
+        and measurements["InstructionSubstitution"][0]["runs"][0]["transformation"]["status"] == "omitted"
+        and measurements["InstructionSubstitution"][0]["runs"][0]["transformation"]["reason"]
+        == "no eligible function was transformed"
     )
