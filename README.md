@@ -495,6 +495,16 @@ artifact IDs, and hashes are pinned in
 It uses bounded synthetic section data and does not fuzz complete executable
 semantics or output-file integration.
 
+The 2026-11-20 dispatched run on source `2f54c47e` passed on Ubuntu, macOS 15,
+and Windows: 5,000 cases for each of the same ten targets per platform
+(150,000 target runs total), with zero failures and 96 recoverable
+`macho_load_commands.warning` diagnostics per platform. The raw reports,
+workflow artifact IDs and hashes, source hash, and limits are pinned in
+[`continuous-fuzz-2026-11-20-44676210319-summary.json`](docs/continuous-fuzz-2026-11-20-44676210319-summary.json).
+This bounded campaign uses synthetic rewriter section data and does not prove
+complete executable equivalence, exhaustive fuzz coverage, or complete
+platform parity.
+
 The previous differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
 captured a partial snapshot on `f319f1e4`: four platform targets passed 39/39
@@ -505,10 +515,13 @@ VM semantic shards passed 461/461 fixture-seed cases. The overall workflow
 later failed in its macOS ARM64 differential smoke and aggregate gate, so the
 snapshot is partial evidence only. The hash-bound
 [snapshot and reports](docs/protection-differential-partial-2026-11-20-44661095783/summary.json)
-preserve the captured artifact IDs, hashes, and limits. A rerun against current
-`main` (`a3359d66`) is underway as
-[`44669121610`](https://github.com/seifreed/r2morph/actions/runs/44669121610);
-its results are not yet available.
+preserve the captured artifact IDs, hashes, and limits. The later run
+[`44669121610`](https://github.com/seifreed/r2morph/actions/runs/44669121610)
+failed because NOP insertion had no safe candidate in any corpus fixture and
+the aggregate platform contract omitted the separate Intel macOS run. The
+fixture and aggregate contract have since been corrected; current-main rerun
+[`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
+is still in progress, so differential evidence remains open.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

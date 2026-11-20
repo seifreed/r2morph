@@ -1,0 +1,77 @@
+{
+  "campaign": "continuous-fuzz-workflow-dispatch",
+  "configuration": {
+    "cases_per_target_per_platform": 5000,
+    "max_payload_bytes": 4096,
+    "python": "3.12",
+    "seed": 20261120,
+    "source_script": "scripts/continuous_fuzz.py",
+    "source_script_sha256": "471b130d72db7c6d643c3c856931181ad61c240ef9c621e9e82b1c98a99198fa",
+    "targets": [
+      "assembling",
+      "binary_parsers",
+      "binary_rewriter",
+      "elf_header_parser",
+      "macho_load_commands",
+      "pe_header_parser",
+      "relocations",
+      "vm_bytecode",
+      "vm_dispatcher",
+      "vm_instruction_decoder"
+    ]
+  },
+  "execution": {
+    "platforms": {
+      "macos-15": {
+        "artifact_archive_sha256": "sha256:9b3a4e5fadd7a95cab93c71a31b22fc8eec046ff3ac1df9399c5c9af4088a377",
+        "artifact_id": 14601583697,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 96
+        },
+        "report": "docs/continuous-fuzz-2026-11-20-44676210319-macos-15.json",
+        "report_sha256": "0cf589a148aed51c2a01639ccdec48fdbd846b9d954dbea5ddd59cab084c0ef7",
+        "target_runs": 50000
+      },
+      "ubuntu-latest": {
+        "artifact_archive_sha256": "sha256:850749601d5db53722865ae533bd7bdfadc7c6bf5c09a12b7459ccbdfebc5702",
+        "artifact_id": 14601683489,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 96
+        },
+        "report": "docs/continuous-fuzz-2026-11-20-44676210319-ubuntu-latest.json",
+        "report_sha256": "0cf589a148aed51c2a01639ccdec48fdbd846b9d954dbea5ddd59cab084c0ef7",
+        "target_runs": 50000
+      },
+      "windows-latest": {
+        "artifact_archive_sha256": "sha256:b6783972ef551240913c66938539f5400e79dd6c94921b01badb85075d9cdc05d",
+        "artifact_id": 14602720084,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 96
+        },
+        "report": "docs/continuous-fuzz-2026-11-20-44676210319-windows-latest.json",
+        "report_sha256": "afd916539196b2028661669293a52651026d337c89ae8802ba492ee26c6adcc7",
+        "target_runs": 50000
+      }
+    },
+    "total_failures": 0,
+    "total_target_runs": 150000
+  },
+  "limits": [
+    "The binary_rewriter target exercises bounded virtual-address-to-file-offset mapping and rejects stale bytes, out-of-file addresses, and non-executable sections; it does not fuzz complete executable semantics or output-file integration.",
+    "The deterministic campaign does not establish exhaustive fuzz coverage or complete platform parity.",
+    "Recoverable macho_load_commands.warning diagnostics are retained and are not counted as fuzz failures.",
+    "The evidence is pinned to source commit 2f54c47ee08dee65a2aeda406ee4bd8a3a78bbfc; it does not close the open differential, compatibility, or adversarial-resistance gates."
+  ],
+  "schema_version": 1,
+  "workflow": {
+    "name": "Continuous Fuzzing",
+    "run_attempt": 1,
+    "run_id": 44676210319,
+    "source_commit": "2f54c47ee08dee65a2aeda406ee4bd8a3a78bbfc",
+    "status": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44676210319"
+  }
+}
