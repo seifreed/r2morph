@@ -162,7 +162,7 @@ class NopInsertionPass(MutationPass):
                 return "jmp+dead-code"
 
         equivalents = (
-            list(safe_x86_nop_equivalents(instruction.get("disasm", "")))
+            list(safe_x86_nop_equivalents(instruction.get("disasm", ""), bits))
             if arch_family == "x86"
             else self.NOP_EQUIVALENTS.get(arch_family, [])
         )

@@ -49,10 +49,26 @@ def test_nop_insertion_helpers_cover_the_core_paths() -> None:
     expect(select_candidates(binary, functions, "x86", 32, 5)[0][0]["name"] == "main")
 
 
-def test_x86_64_nop_candidates_accept_32_bit_self_moves() -> None:
+def test_x86_64_nop_candidates_reject_32_bit_self_moves() -> None:
+    for disasm in ("mov eax, eax", "xchg eax, eax", "lea eax, [eax]"):
+        instruction = {"disasm": disasm, "type": disasm.split()[0]}
+
+        expect(not nop_helpers._is_redundant_instruction(instruction, "x86", 64))
+        expect(safe_x86_nop_equivalents(disasm, 64) == ())
+
+
+def test_x86_32_bit_self_moves_remain_eligible_for_nop_replacement() -> None:
     instruction = {"disasm": "mov eax, eax", "type": "mov"}
 
+    expect(nop_helpers._is_redundant_instruction(instruction, "x86", 32))
+    expect(safe_x86_nop_equivalents("mov eax, eax", 32))
+
+
+def test_x86_64_native_width_self_moves_remain_eligible_for_nop_replacement() -> None:
+    instruction = {"disasm": "mov rax, rax", "type": "mov"}
+
     expect(nop_helpers._is_redundant_instruction(instruction, "x86", 64))
+    expect(safe_x86_nop_equivalents("mov rax, rax", 64))
 
 
 def test_dead_code_jump_targets_end_of_replaced_instruction() -> None:
@@ -64,7 +80,7 @@ def test_dead_code_jump_targets_end_of_replaced_instruction() -> None:
 
 
 def test_x86_creative_nops_preserve_candidate_register() -> None:
-    replacements = safe_x86_nop_equivalents("mov edx, edx")
+    replacements = safe_x86_nop_equivalents("mov edx, edx", 32)
 
     expect(replacements)
     expect(all("edx" in replacement for replacement in replacements))

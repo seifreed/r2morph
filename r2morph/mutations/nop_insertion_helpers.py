@@ -109,20 +109,22 @@ def _is_x86_redundant(disasm: str, bits: int) -> bool:
     if operands is None or not any(mnemonic in disasm for mnemonic in ("mov", "lea", "xchg")):
         return False
     destination, source = operands
+    if bits == _X86_64_BITS and destination.startswith("e"):
+        return False
     if "lea" in disasm:
         source = source.strip("[]")
-    operand_bits = _X86_32_BITS if destination.startswith("e") else bits
-    return source == destination and is_safe_self_redundancy(destination, operand_bits)
+    return source == destination and is_safe_self_redundancy(destination, bits)
 
 
-def safe_x86_nop_equivalents(disasm: str) -> tuple[str, ...]:
+def safe_x86_nop_equivalents(disasm: str, bits: int) -> tuple[str, ...]:
     """Return self-equivalents that preserve the candidate's register state."""
     operands = _binary_operands(disasm.lower())
     if operands is None:
         return ()
     destination, source = operands
-    operand_bits = _X86_32_BITS if destination.startswith("e") else _X86_64_BITS
-    if source.strip("[]") != destination or not is_safe_self_redundancy(destination, operand_bits):
+    if bits == _X86_64_BITS and destination.startswith("e"):
+        return ()
+    if source.strip("[]") != destination or not is_safe_self_redundancy(destination, bits):
         return ()
     return (
         f"xchg {destination}, {destination}",

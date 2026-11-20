@@ -284,7 +284,7 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 
 | Pass | CLI Flag | Description |
 |------|----------|-------------|
-| **NOP Insertion** | `-m nop` | Inserts benign NOP equivalents at safe locations |
+| **NOP Insertion** | `-m nop` | Replaces redundant instructions with benign equivalents; in x86-64 it excludes 32-bit self-moves because those zero-extend the destination register |
 | **Instruction Substitution** | `-m substitute` | Replaces instructions with semantically equivalent alternatives |
 | **Register Substitution** | `-m register` | Substitutes registers via liveness analysis |
 | **Instruction Expansion** | `-m expand` | Expands supported instructions into validated equivalent sequences |
