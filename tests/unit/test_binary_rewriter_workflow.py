@@ -18,12 +18,11 @@ def test_binary_rewriter_basic_workflow(tmp_path):
 
         rewriter = BinaryRewriter(bin_obj)
 
-        expect(not (rewriter._analyze_binary() is not True))
+        expect(rewriter._prepare_rewrite("unused-output", None) is None)
         expect(not (rewriter.binary_format not in {BinaryFormat.ELF, BinaryFormat.UNKNOWN}))
-        expect(not (rewriter._initialize_codegen() is not True))
 
-        section = next(iter(rewriter.sections.values()))
-        addr = section.get("vaddr", 0) + 1
+        section = next(section for section in rewriter.sections.values() if section.get("name") == ".text")
+        addr = section["vaddr"]
 
         expect(not (rewriter.add_patch(addr, ["nop"], RewriteOperation.INSTRUCTION_REPLACE) is not True))
 
@@ -32,7 +31,8 @@ def test_binary_rewriter_basic_workflow(tmp_path):
 
         strategy = rewriter._plan_rewrite_strategy()
         stats = rewriter._apply_patches(strategy)
-        expect(not (stats["patches_applied"] < 1))
+        expect(stats["patches_applied"] == 1)
+        expect(not stats["errors"])
 
         reloc_stats = rewriter._update_relocations()
         expect(not ("updated" not in reloc_stats))

@@ -40,6 +40,7 @@ def test_binary_rewriter_rewrite_no_patches(tmp_path: Path):
 
     expect(not (result.success is not True))
     expect(output_path.exists())
+    expect(output_path.read_bytes() == binary_path.read_bytes())
     expect(not (result.integrity_checks.get("file_exists") is not True))
     expect(not (result.integrity_checks.get("valid_pe_header") is not True))
 
@@ -63,6 +64,7 @@ def test_binary_rewriter_noop_preserves_real_format(
         result = BinaryRewriter(bin_obj).rewrite_binary(str(output_path), patches=[], preserve_original=False)
 
     expect(result.success)
+    expect(output_path.read_bytes() == binary_path.read_bytes())
     with Binary(output_path) as rewritten:
         rewritten.analyze("aa")
         rewriter = BinaryRewriter(rewritten)

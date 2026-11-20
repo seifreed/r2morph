@@ -36,12 +36,24 @@ def test_binary_rewriter_real_rewrite(tmp_path: Path):
         rewriter = BinaryRewriter(bin_obj)
         added = rewriter.add_patch(patch_addr, ["nop"], RewriteOperation.INSTRUCTION_REPLACE)
         expect(not (added is not True))
+        original = temp_binary.read_bytes()
+        patch = rewriter.patches[0]
+        expect(len(patch.original_bytes) == len(patch.new_bytes))
+        expect(patch.size_change == 0)
+        patch_offset = rewriter._file_offset_for_patch(patch)
+        expect(patch_offset is not None)
 
         output_path = tmp_path / "rewritten.bin"
         result = rewriter.rewrite_binary(str(output_path), preserve_original=False)
 
     expect(not (result.success is not True))
     expect(output_path.exists())
+    expect(temp_binary.read_bytes() == original)
+    expect(output_path.read_bytes() != original)
+    expect(output_path.read_bytes()[patch_offset : patch_offset + len(patch.new_bytes)] == patch.new_bytes)
+    with Binary(output_path) as rewritten:
+        rewritten.analyze("aa")
+        expect(rewritten.r2.cmdj("ij").get("bin", {}).get("class") == "ELF64")
 
 
 def test_binary_rewriter_no_binary_error():

@@ -356,6 +356,17 @@ varargs or ABI parity.
 Native x86-64 Mach-O integration checks run on Intel macOS. Apple Silicon
 execution through Rosetta remains experimental and is not covered by CI.
 
+The experimental `BinaryRewriter` applies size-preserving instruction
+replacements only when the virtual address maps to file-backed bytes in an
+executable section and the original bytes still match. Short replacements are
+padded with assembled NOP instructions to complete instruction boundaries.
+Insertions, deletions, relocations, and section growth are rejected; these
+operations need format-aware relocation and metadata handling before they can
+be reported as supported. A no-patch rewrite copies the input bytes exactly.
+The continuous-fuzz `binary_rewriter` target also applies bounded byte-level
+replacements and checks stale-byte rejection and that surrounding bytes remain
+unchanged; it does not fuzz complete executable semantics.
+
 The scheduled and main-push differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,
 transform duration, runtime duration, and static analyzer evidence while

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import tempfile
 from pathlib import Path
 
 from r2morph.devirtualization.binary_rewriter_models import BinaryFormat
@@ -22,15 +23,36 @@ def create_backup(source_path: str | Path | None) -> None:
         logger.warning("Failed to create backup: %s", e)
 
 
-def write_output_binary(source_path: str | Path | None, output_path: str) -> bool:
+def write_output_binary(source_path: str | Path | None, output_path: str, data: bytes | None = None) -> bool:
     try:
         if source_path is None:
             logger.error("Original binary path not available")
             return False
 
-        shutil.copy2(source_path, output_path)
-        with open(output_path, "ab") as f:
-            f.write(b"\x00\x00R2MORPH_REWRITTEN\x00\x00")
+        source = Path(source_path).resolve()
+        destination = Path(output_path)
+        if source == destination.resolve():
+            logger.error("Refusing to overwrite the original binary")
+            return False
+
+        contents = source.read_bytes() if data is None else data
+        if len(contents) != source.stat().st_size:
+            logger.error("Refusing to write output with a different file size")
+            return False
+        temporary_path: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=destination.parent,
+                prefix=f".{destination.name}.",
+                delete=False,
+            ) as out:
+                temporary_path = out.name
+                out.write(contents)
+            shutil.copystat(source, temporary_path)
+            os.replace(temporary_path, destination)
+        finally:
+            if temporary_path is not None and os.path.exists(temporary_path):
+                os.unlink(temporary_path)
 
         logger.info("Written rewritten binary to %s", output_path)
         return True

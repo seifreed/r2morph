@@ -17,6 +17,7 @@ Key Features:
 import logging
 import time
 from importlib import import_module
+from pathlib import Path
 from typing import Any
 
 import capstone
@@ -35,6 +36,7 @@ from r2morph.devirtualization.binary_rewriter_models import (
     RewriteResult,
 )
 from r2morph.devirtualization.binary_rewriter_planning import (
+    apply_patch_to_buffer,
     calculate_address_shifts,
     is_valid_address,
     plan_rewrite_strategy,
@@ -83,6 +85,8 @@ class BinaryRewriter:
         self.sections: dict[str, Any] = {}
         self.imports: dict[str, Any] = {}
         self.exports: dict[str, Any] = {}
+        self._source_path: Path | None = None
+        self._rewritten_bytes: bytearray | None = None
 
         # Rewrite options
         self.preserve_signatures = True
@@ -128,11 +132,18 @@ class BinaryRewriter:
             strategy = self._plan_rewrite_strategy()
 
             # Step 5: Create backup if needed
-            if preserve_original:
-                self._create_backup()
-
             # Step 6: Apply patches
             rewrite_stats = self._apply_patches(strategy)
+            if rewrite_stats["errors"]:
+                return RewriteResult(
+                    success=False,
+                    output_path=output_path,
+                    errors=rewrite_stats["errors"],
+                    warnings=validation_result.get("warnings", []),
+                )
+
+            if preserve_original and self._source_path is not None:
+                create_backup(self._source_path)
 
             # Step 7: Update relocations
             relocation_stats = self._update_relocations()
@@ -173,7 +184,7 @@ class BinaryRewriter:
     def _prepare_rewrite(self, output_path: str, patches: list[CodePatch] | None) -> RewriteResult | None:
         if not self.binary:
             return RewriteResult(success=False, output_path=output_path, errors=["No binary provided for rewriting"])
-        if patches:
+        if patches is not None:
             self.patches = patches
         if not self._analyze_binary():
             return RewriteResult(success=False, output_path=output_path, errors=["Failed to analyze binary format"])
@@ -182,6 +193,27 @@ class BinaryRewriter:
                 success=False,
                 output_path=output_path,
                 errors=["Failed to initialize code generation tools"],
+            )
+        return self._load_source_bytes(output_path)
+
+    def _load_source_bytes(self, output_path: str) -> RewriteResult | None:
+        source_path = getattr(self.binary, "filepath", None) or getattr(self.binary, "path", None)
+        if source_path is None:
+            return RewriteResult(success=False, output_path=output_path, errors=["Original binary path not available"])
+        try:
+            self._source_path = Path(source_path).resolve()
+            if self._source_path == Path(output_path).resolve():
+                return RewriteResult(
+                    success=False,
+                    output_path=output_path,
+                    errors=["Output must not overwrite the original binary"],
+                )
+            self._rewritten_bytes = bytearray(self._source_path.read_bytes())
+        except OSError as exc:
+            return RewriteResult(
+                success=False,
+                output_path=output_path,
+                errors=[f"Failed to read original binary: {exc}"],
             )
         return None
 
@@ -203,30 +235,13 @@ class BinaryRewriter:
             True if patch was added successfully
         """
         try:
-            # Get original bytes at address
-            original_bytes = self._get_bytes_at_address(address, 16)  # Get up to 16 bytes
-            if not original_bytes:
-                # Without the real original bytes we cannot compute a
-                # correct size delta or roll the patch back safely.
-                logger.error(f"Cannot read original bytes at 0x{address:x}; refusing to add patch")
+            if not self.sections and not self._analyze_binary():
                 return False
-
-            # Assemble new instructions
-            new_bytes = self._assemble_instructions(new_instructions)
-            if not new_bytes:
-                logger.error(f"Failed to assemble instructions at 0x{address:x}")
+            if self.ks is None and not self._initialize_codegen():
                 return False
-
-            # Create patch
-            patch = CodePatch(
-                address=address,
-                operation=operation,
-                original_bytes=original_bytes,
-                new_bytes=new_bytes,
-                new_instructions=new_instructions,
-                size_change=len(new_bytes) - len(original_bytes),
-            )
-
+            patch = self._create_patch(address, new_instructions, operation)
+            if patch is None:
+                return False
             self.patches.append(patch)
             logger.debug(f"Added patch at 0x{address:x}: {new_instructions}")
             return True
@@ -234,6 +249,46 @@ class BinaryRewriter:
         except Exception as e:
             logger.error(f"Failed to add patch: {e}")
             return False
+
+    def _create_patch(self, address: int, new_instructions: list[str], operation: RewriteOperation) -> CodePatch | None:
+        if operation != RewriteOperation.INSTRUCTION_REPLACE or not self.ks:
+            logger.error("Only instruction replacement with an available assembler is supported")
+            return None
+
+        new_bytes = self._assemble_instructions(new_instructions, address)
+        if not new_bytes:
+            logger.error("Failed to assemble instructions at 0x%x", address)
+            return None
+
+        instructions = self.binary.r2.cmdj(f"aoj 32 @ {address}")
+        original = bytearray()
+        expected_address = address
+        for instruction in instructions or []:
+            instruction_bytes = bytes.fromhex(instruction.get("bytes", ""))
+            if instruction.get("addr") != expected_address or not instruction_bytes:
+                break
+            original.extend(instruction_bytes)
+            expected_address += len(instruction_bytes)
+            if len(original) >= len(new_bytes):
+                break
+        if not original or len(original) < len(new_bytes):
+            logger.error("Cannot find complete instruction bytes at 0x%x; refusing to add patch", address)
+            return None
+
+        nop_bytes = self._assemble_instructions(["nop"], address + len(new_bytes))
+        remaining = len(original) - len(new_bytes)
+        if not nop_bytes or remaining % len(nop_bytes):
+            logger.error("Replacement at 0x%x cannot be padded to instruction boundaries", address)
+            return None
+
+        return CodePatch(
+            address=address,
+            operation=operation,
+            original_bytes=bytes(original),
+            new_bytes=new_bytes + nop_bytes * (remaining // len(nop_bytes)),
+            new_instructions=new_instructions,
+            size_change=0,
+        )
 
     def _analyze_binary(self) -> bool:
         """Analyze the binary format and structure."""
@@ -263,7 +318,7 @@ class BinaryRewriter:
                 logger.warning(f"Unknown binary format: {format_str}")
 
             # Get architecture info
-            self.arch = bin_info.get("machine", "x86")
+            self.arch = bin_info.get("arch") or bin_info.get("machine", "x86")
             self.bits = bin_info.get("bits", 64)
             self.endian = bin_info.get("endian", "little")
 
@@ -376,19 +431,12 @@ class BinaryRewriter:
     def _apply_single_patch(self, patch: CodePatch) -> bool:
         """Apply a single patch."""
         try:
-            # Simplified patch application implementation
-            # Advanced binary manipulation for complex patches
-
-            logger.debug(f"Applying patch at 0x{patch.address:x}")
-
-            # For now, just log the operation
-            if patch.operation == RewriteOperation.INSTRUCTION_REPLACE:
-                logger.debug(f"Replacing {len(patch.original_bytes)} bytes with {len(patch.new_bytes)} bytes")
-            elif patch.operation == RewriteOperation.INSTRUCTION_INSERT:
-                logger.debug(f"Inserting {len(patch.new_bytes)} bytes")
-            elif patch.operation == RewriteOperation.INSTRUCTION_DELETE:
-                logger.debug(f"Deleting {len(patch.original_bytes)} bytes")
-
+            if self._rewritten_bytes is None:
+                return False
+            file_offset = self._file_offset_for_patch(patch)
+            if file_offset is None or not apply_patch_to_buffer(self._rewritten_bytes, file_offset, patch):
+                return False
+            logger.debug("Applied patch at 0x%x", patch.address)
             return True
 
         except Exception as e:
@@ -437,8 +485,24 @@ class BinaryRewriter:
 
     def _write_output_binary(self, output_path: str) -> bool:
         """Write the modified binary to output file."""
-        source_path = getattr(self.binary, "filepath", None)
-        return write_output_binary(source_path, output_path)
+        if self._source_path is None or self._rewritten_bytes is None:
+            return False
+        return write_output_binary(self._source_path, output_path, bytes(self._rewritten_bytes))
+
+    def _file_offset_for_patch(self, patch: CodePatch) -> int | None:
+        for section in self.sections.values():
+            try:
+                if "x" not in section.get("perm", ""):
+                    continue
+                address = int(section["vaddr"])
+                offset = int(section["paddr"])
+                size = int(section["size"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            relative = patch.address - address
+            if relative >= 0 and relative + len(patch.original_bytes) <= size:
+                return offset + relative
+        return None
 
     def _perform_integrity_checks(self, output_path: str) -> dict[str, bool]:
         """Perform integrity checks on the rewritten binary.
@@ -477,7 +541,7 @@ class BinaryRewriter:
             logger.warning("Failed to read %d bytes at 0x%x: %s", size, address, exc)
             return b""
 
-    def _assemble_instructions(self, instructions: list[str]) -> bytes:
+    def _assemble_instructions(self, instructions: list[str], address: int = 0) -> bytes:
         """Assemble instructions to bytes.
 
         Returns b"" if assembly fails while an assembler is available, so
@@ -496,7 +560,7 @@ class BinaryRewriter:
 
         asm_code = "; ".join(instructions)
         try:
-            encoding, _ = self.ks.asm(asm_code)
+            encoding, _ = self.ks.asm(asm_code, address)
         except (keystone.KsError, TypeError, ValueError) as e:
             logger.error(
                 "Assembly failed; refusing to fabricate bytes",
@@ -546,7 +610,7 @@ class BinaryRewriter:
 
     def _create_backup(self) -> None:
         """Create backup of original binary."""
-        create_backup(getattr(self.binary, "filepath", None))
+        create_backup(getattr(self.binary, "filepath", None) or getattr(self.binary, "path", None))
 
     def _update_pe_metadata(self) -> None:
         """Update PE-specific metadata."""

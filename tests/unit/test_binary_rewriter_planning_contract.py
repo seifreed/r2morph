@@ -1,5 +1,6 @@
 from r2morph.devirtualization.binary_rewriter_models import CodePatch, RewriteOperation
 from r2morph.devirtualization.binary_rewriter_planning import (
+    apply_patch_to_buffer,
     calculate_address_shifts,
     is_valid_address,
     plan_rewrite_strategy,
@@ -71,5 +72,21 @@ def test_binary_rewriter_planning_helpers_expose_expected_contract() -> None:
     )
     expect(not (result["valid"] is not False))
     expect(any("Overlapping" in err for err in result["errors"]))
-    expect(any("Invalid address" in warning for warning in result["warnings"]))
+    expect(any("Invalid address" in err for err in result["errors"]))
     expect(any("Large size change" in warning for warning in result["warnings"]))
+
+
+def test_binary_rewriter_applies_only_fresh_in_bounds_same_size_bytes() -> None:
+    buffer = bytearray(b"abc")
+    patch = CodePatch(
+        address=0x1001,
+        operation=RewriteOperation.INSTRUCTION_REPLACE,
+        original_bytes=b"b",
+        new_bytes=b"Z",
+        size_change=0,
+    )
+
+    expect(apply_patch_to_buffer(buffer, 1, patch))
+    expect(buffer == b"aZc")
+    expect(not apply_patch_to_buffer(buffer, 1, patch))
+    expect(not apply_patch_to_buffer(buffer, 3, patch))

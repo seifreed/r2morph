@@ -18,6 +18,7 @@ from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter_models import CodePatch, RewriteOperation
 from r2morph.devirtualization.binary_rewriter_planning import (
+    apply_patch_to_buffer,
     calculate_address_shifts,
     plan_rewrite_strategy,
     validate_patches,
@@ -121,14 +122,13 @@ def _payload(seed: int, index: int, maximum: int) -> bytes:
 
 
 def _rewrite_patches(seed: int, index: int) -> list[CodePatch]:
-    operations = tuple(RewriteOperation)
     return [
         CodePatch(
             address=_bounded_value(seed, index, patch_index, 0xFF000) + _MIN_PATCH_ADDRESS,
-            operation=operations[_bounded_value(seed, index, patch_index + 16, len(operations) - 1)],
+            operation=RewriteOperation.INSTRUCTION_REPLACE,
             original_bytes=b"\x90",
-            new_bytes=_payload(seed, index + patch_index, 32),
-            size_change=_bounded_value(seed, index, patch_index + 8, 64) - 32,
+            new_bytes=b"\xcc",
+            size_change=0,
         )
         for patch_index in range(index % 8)
     ]
@@ -149,6 +149,24 @@ def _rewrite_case(seed: int, index: int) -> None:
         raise AssertionError("rewrite planner did not order patches")
     if len(addresses) == len(set(addresses)) and (not validation["valid"] or len(shifts) != len(patches)):
         raise AssertionError("rewrite validation rejected non-overlapping patches")
+
+    buffer = bytearray(_payload(seed, index, 64) or b"\x00")
+    offset = _bounded_value(seed, index, 31, len(buffer) - 1)
+    before = bytes(buffer)
+    patch = CodePatch(
+        address=_MIN_PATCH_ADDRESS + offset,
+        operation=RewriteOperation.INSTRUCTION_REPLACE,
+        original_bytes=before[offset : offset + 1],
+        new_bytes=bytes([before[offset] ^ 0xFF]),
+        size_change=0,
+    )
+    if not apply_patch_to_buffer(buffer, offset, patch):
+        raise AssertionError("rewrite byte application rejected a valid replacement")
+    if buffer[:offset] != before[:offset] or buffer[offset + 1 :] != before[offset + 1 :]:
+        raise AssertionError("rewrite byte application changed bytes outside the patch")
+
+    if apply_patch_to_buffer(buffer, offset, patch):
+        raise AssertionError("rewrite byte application accepted stale original bytes")
 
 
 def _assembly_case(seed: int, index: int) -> None:

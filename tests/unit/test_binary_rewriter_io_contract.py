@@ -19,7 +19,10 @@ def test_binary_rewriter_io_helpers_expose_expected_contract(tmp_path: Path) -> 
 
     expect(not (write_output_binary(source, str(output)) is not True))
     expect(output.exists())
-    expect(output.read_bytes().endswith(b"R2MORPH_REWRITTEN\x00\x00"))
+    expect(output.read_bytes() == source.read_bytes())
+    expect(not write_output_binary(source, str(source)))
+    expect(source.read_bytes() == b"\x7fELF" + b"\x00" * 60)
+    expect(not write_output_binary(source, str(tmp_path / "wrong-size.bin"), b"short"))
 
     checks = perform_integrity_checks(BinaryFormat.ELF, str(output))
     expect(not (checks["file_exists"] is not True))
@@ -30,4 +33,6 @@ def test_binary_rewriter_io_helpers_expose_expected_contract(tmp_path: Path) -> 
 
     rewriter = BinaryRewriter()
     rewriter.binary = type("BinaryStub", (), {"filepath": source})()
+    rewriter._source_path = source.resolve()
+    rewriter._rewritten_bytes = bytearray(source.read_bytes())
     expect(not (rewriter._write_output_binary(str(tmp_path / "writer.bin")) is not True))

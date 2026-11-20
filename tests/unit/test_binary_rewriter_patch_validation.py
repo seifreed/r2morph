@@ -27,5 +27,5 @@ def test_binary_rewriter_validate_patches_overlap_and_warnings():
     result = rewriter._validate_patches()
     expect(not (result["valid"] is not False))
     expect(any("Overlapping" in err for err in result["errors"]))
-    expect(any("Invalid address" in warning for warning in result["warnings"]))
+    expect(any("Invalid address" in err for err in result["errors"]))
     expect(any("Large size change" in warning for warning in result["warnings"]))
