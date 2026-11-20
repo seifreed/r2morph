@@ -475,6 +475,15 @@ campaign does not prove arbitrary-input equivalence, full platform parity, or
 adversarial resistance. Each generated VM bytecode case also verifies that the
 checksum and position mask preserve the terminal exit opcode.
 
+The next main-push run on source `09db9ea2` also passed all three platforms and
+ten targets: 5,000 cases per target and platform (150,000 target runs total),
+with zero failures. Its `binary_rewriter` target exercises byte replacement,
+stale-byte rejection, and preservation outside the patch range. The reports,
+artifact IDs, and hashes are pinned in
+[`continuous-fuzz-2026-11-20-44667500653-summary.json`](docs/continuous-fuzz-2026-11-20-44667500653-summary.json).
+This bounded campaign does not validate complete executable semantics or close
+the compatibility, differential, or adversarial-resistance gates.
+
 The current-source differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
 has an in-progress evidence snapshot on `f319f1e4`: four platform targets
