@@ -76,6 +76,7 @@ def test_current_vm_handler_blocker_documents_remaining_validation_scope() -> No
 
     expect(
         "zero exact" in blockers
-        and "all 160 single-layer and nested tamper probes" in blockers
+        and "tamper divergence was not established" in blockers
+        and "vm-resistance-metric-correction-2026-11-20.json" in blockers
         and "independent human adversarial review" in blockers
     )

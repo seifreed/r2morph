@@ -17,6 +17,7 @@ _FIXTURE_COUNT = 10
 _SEED_COUNT = 32
 _GROWTH_FIXTURE_COUNT = 7
 _ZERO = 0
+_CORRECTION = "docs/vm-resistance-metric-correction-2026-11-20.json"
 
 
 def _json(path: Path) -> dict[str, object]:
@@ -47,12 +48,12 @@ def test_current_vm_resistance_results_preserve_open_limitations() -> None:
         summary["campaign"]["fixture_count"] == _FIXTURE_COUNT
         and summary["campaign"]["seed_count"] == _SEED_COUNT
         and measurement["semantic_parity"] is True
-        and measurement["all_tamper_probes_diverged"] is True
         and measurement["progressive_growth_supported_fixture_count"] == _GROWTH_FIXTURE_COUNT
         and measurement["handler_diversity_observed"] is False
         and summary["native_execution"]["status"] == "unavailable"
         and summary["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
         and readiness["criteria"]["published_resistance_results"]["status"] == "open"
+        and _CORRECTION in readiness["criteria"]["published_resistance_results"]["evidence"]
         and "docs/protection-vm-resistance-local-2026-11-15-32seed-10fixtures-summary.json"
         in readiness["criteria"]["published_resistance_results"]["evidence"]
         and summary["measurement"]["cross_fixture_distinct_artifacts"] is True

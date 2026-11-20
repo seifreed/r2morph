@@ -51,6 +51,9 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
     nested = cast(dict[str, object], tamper["nested"])
     single_adversary = cast(dict[str, object], single_layer["adversarial_recovery"])
     nested_adversary = cast(dict[str, object], nested["adversarial_recovery"])
+    native_available = sys.platform.startswith("linux")
+    expected_tamper_status = "completed" if native_available else "unavailable"
+    expected_tamper_diverged = True if native_available else None
 
     expect(
         validation["status"] == "completed"
@@ -61,13 +64,15 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
         and opcode_assignment["all_assignments_unique"] is True
         and handler_report["cross_seed_has_exact_normalised_matches"] is False
         and grammar_report["target_stride_diverse"] is True
-        and single_layer["tamper_diverged"] is True
-        and nested["tamper_diverged"] is True
-        and single_layer["all_tamper_probes_diverged"] is True
-        and nested["all_tamper_probes_diverged"] is True
+        and single_layer["tamper_diverged"] is expected_tamper_diverged
+        and nested["tamper_diverged"] is expected_tamper_diverged
+        and single_layer["tamper_evidence_status"] == expected_tamper_status
+        and nested["tamper_evidence_status"] == expected_tamper_status
+        and single_layer["all_tamper_probes_diverged"] is native_available
+        and nested["all_tamper_probes_diverged"] is native_available
         and single_adversary["status"] == "completed"
         and nested_adversary["status"] == "completed"
-        and (single_layer["native_execution_available"] is (sys.platform.startswith("linux")))
+        and (single_layer["native_execution_available"] is native_available)
         and single_layer["tamper_probe_count"] == nested["tamper_probe_count"] == _EXPECTED_TAMPER_PROBE_COUNT
         and progressive["growth_observed"] is True
         and progressive["depth_1_exit_code"] == progressive["baseline_exit_code"]
@@ -82,13 +87,16 @@ def test_vm_resistance_measurement_records_automated_adversarial_contract() -> N
 
 def test_vm_resistance_corpus_requires_diversity_across_real_fixtures() -> None:
     report = measure_corpus((_FIXTURE, *_CORPUS_FIXTURES), first_seed=20260915, count=3)
+    native_available = sys.platform.startswith("linux")
+    expected_tamper_status = "completed" if native_available else "unavailable"
 
     expect(
         report["fixture_count"] == _EXPECTED_CORPUS_FIXTURE_COUNT
         and report["automated_validation"]["status"] == "completed"
         and report["semantic_parity"] is True
         and report["cross_fixture_distinct_artifacts"] is True
-        and report["all_tamper_probes_diverged"] is True
+        and report["tamper_evidence_status"] == expected_tamper_status
+        and report["all_tamper_probes_diverged"] is native_available
         and report["progressive_growth_observed"] is True
         and report["dispatcher_diversity_observed"] is True
         and report["opcode_assignment_diversity_observed"] is True

@@ -13,6 +13,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY = _ROOT / "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures-summary.json"
 _ARCHIVE = _ROOT / "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures.json.gz"
 _HANDLERS = _ROOT / "docs/protection-vm-handler-diversity-local-2026-11-14-100seeds.json"
+_CORRECTION = "docs/vm-resistance-metric-correction-2026-11-20.json"
 _FIXTURE_COUNT = 10
 _SEED_COUNT = 32
 _HANDLER_SEED_COUNT = 100
@@ -51,12 +52,12 @@ def test_local_vm_resistance_report_records_parity_and_open_limitations() -> Non
         summary["campaign"]["fixture_count"] == _FIXTURE_COUNT
         and summary["campaign"]["seed_count"] == _SEED_COUNT
         and measurement["semantic_parity"] is True
-        and measurement["all_tamper_probes_diverged"] is True
         and measurement["handler_diversity_observed"] is False
         and measurement["progressive_growth_supported_fixture_count"] == _PROGRESSIVE_GROWTH_FIXTURE_COUNT
         and summary["native_execution"]["status"] == "unavailable"
         and summary["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
         and readiness["criteria"]["published_resistance_results"]["status"] == "open"
+        and _CORRECTION in readiness["criteria"]["published_resistance_results"]["evidence"]
     )
 
 

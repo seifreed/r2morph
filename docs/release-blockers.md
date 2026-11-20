@@ -318,8 +318,9 @@ zero exact matches do not imply low structural similarity. This campaign
 measures one interpreter per seed. A separate current-source run on the same
 implementation commit `f8586a1b` then covered 10 ELF x86-64 fixtures across 32
 seeds each: all 320 artifacts were distinct, emulator-observed exit codes
-matched their baselines, all 160 single-layer and nested tamper probes
-diverged, and every fixture had zero exact normalized handler collisions
+matched their baselines, while tamper divergence was not established: native
+execution was unavailable and all tampered native exit codes were missing.
+Every fixture had zero exact normalized handler collisions
 across and within seeds. Opcode, dispatcher, and bytecode grammar diversity
 were observed; progressive bytecode growth was supported on 7 of the 10
 fixtures. The hash-bound [campaign summary](protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures-summary.json)
@@ -327,7 +328,9 @@ and compressed [full report](protection-vm-resistance-local-2026-11-15-f8586a1-3
 record this bounded automated evidence. Native ELF execution was unavailable
 on the macOS ARM64 host, and the run does not substitute for independent human
 adversarial review; the `published_resistance_results` criterion therefore
-remains open. The earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
+remains open. The earlier tamper result is explicitly retracted in the
+[metric correction ledger](vm-resistance-metric-correction-2026-11-20.json).
+The earlier [pre-change measurement](protection-vm-handler-diversity-local-2026-11-15-32seeds-summary.json)
 remains as historical evidence.
 
 A current-main local analyzer measurement on `f7246d5d` also completed the
@@ -488,10 +491,11 @@ This adds current-commit evidence for the local macOS host only; the
 three-runner fuzz campaign is still running and platform parity remains open.
 
 The current-source VM resistance campaign on `7374619a` covered 10 ELF
-fixtures and 32 seeds. Emulator-observed semantic parity and all tamper probes
-passed; opcode, dispatcher, and bytecode grammar diversity were observed, and
-progressive bytecode growth was supported on 7 fixtures. Each fixture's
-handler scan found four exact normalized cross-seed matches and zero
+fixtures and 32 seeds. Emulator-observed semantic parity was observed; tamper
+divergence was not established because native execution was unavailable and
+tampered exit codes were missing. Opcode, dispatcher, and bytecode grammar
+diversity were observed, and progressive bytecode growth was supported on 7
+fixtures. Each fixture's handler scan found four exact normalized cross-seed matches and zero
 within-seed duplicates, so the zero cross-seed match criterion remains open.
 Native ELF execution was unavailable on the macOS host, and independent human
 adversarial review remains pending. The complete report and hashes are in the
@@ -958,7 +962,10 @@ The prior source run remains available in
   [protection-vm-resistance-local-2026-11-14-84e1202f-macos.json](protection-vm-resistance-local-2026-11-14-84e1202f-macos.json)
   and
   [protection-vm-resistance-local-2026-11-14-84e1202f.json](protection-vm-resistance-local-2026-11-14-84e1202f.json).
-  Human review remains pending and general resistance remains unproven.
+  The tamper-probe claims in this report are retracted because native execution
+  was unavailable and all 160 tampered exit codes were missing; see the
+  [correction ledger](vm-resistance-metric-correction-2026-11-20.json). Human
+  review remains pending and general resistance remains unproven.
 
 ## Resolved review gates
 

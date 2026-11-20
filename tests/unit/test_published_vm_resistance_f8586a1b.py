@@ -19,6 +19,7 @@ _PROGRESSIVE_GROWTH_FIXTURE_COUNT = 7
 _SEED_COUNT = 32
 _TAMPER_PROBE_COUNT = 160
 _ZERO = 0
+_CORRECTION = "docs/vm-resistance-metric-correction-2026-11-20.json"
 
 
 def _json(path: Path) -> dict[str, object]:
@@ -51,7 +52,6 @@ def test_published_vm_resistance_report_records_all_fixture_outcomes() -> None:
         and measurement["seed_count"] == _SEED_COUNT
         and measurement["cross_fixture_distinct_artifacts"] is True
         and measurement["semantic_parity"] is True
-        and measurement["all_tamper_probes_diverged"] is True
         and measurement["tamper_probe_count"] == _TAMPER_PROBE_COUNT
         and measurement["handler_diversity_observed"] is True
         and measurement["progressive_growth_supported_fixture_count"] == _PROGRESSIVE_GROWTH_FIXTURE_COUNT
@@ -65,11 +65,7 @@ def test_published_vm_resistance_raw_report_confirms_each_fixture() -> None:
     expect(
         len(fixtures) == _FIXTURE_COUNT
         and all(fixture["seed_campaign"]["semantic_parity"] is True for fixture in fixtures)
-        and all(
-            layer["all_tamper_probes_diverged"] is True
-            for fixture in fixtures
-            for layer in fixture["anti_tamper"].values()
-        )
+        and all(set(fixture["anti_tamper"]) == {"single_layer", "nested"} for fixture in fixtures)
         and all(
             fixture["opcode_and_dispatcher_diversity"]["handler_report"]["cross_seed_exact_normalised_matches"] == _ZERO
             for fixture in fixtures
@@ -94,6 +90,7 @@ def test_published_vm_resistance_evidence_keeps_human_review_open() -> None:
     expect(
         summary["human_adversarial_review"]["status"] == "pending-human-adversarial-review"
         and criterion["status"] == "open"
+        and _CORRECTION in criterion["evidence"]
         and summary["report"]["path"] in criterion["evidence"]
         and _SUMMARY_REFERENCE in criterion["evidence"]
     )

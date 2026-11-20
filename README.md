@@ -617,6 +617,14 @@ and [raw report](docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-
 record this template-only measurement; they do not measure execution or
 analyst attack cost, so the resistance gate remains open.
 
+An audit found that five older local VM resistance reports counted 720 missing
+native tamper observations as divergent. Those historical tamper claims are
+retracted; their hash-bound files remain unchanged, and the resistance gate
+stays open. New measurements distinguish `completed`, `partial`, and
+`unavailable` tamper evidence and represent unknown divergence as `null`. See
+the [correction ledger](docs/vm-resistance-metric-correction-2026-11-20.json)
+and its [regression test](tests/unit/test_vm_resistance_metric_correction.py).
+
 ---
 
 ## Quick Start

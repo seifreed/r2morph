@@ -757,11 +757,13 @@ commit is still pending and no platform-parity claim follows from it.
 
 The same installed wheel was also exercised locally against ten repository ELF
 VM fixtures and ten seeds (100 fixture-seed builds). Semantic parity, artifact,
-opcode, handler and dispatcher diversity, tamper divergence, and bounded
-recovery probes all passed. Progressive bytecode growth was observed on seven
-fixtures. macOS could not execute these ELF baselines natively, and the five
-generated Linux fixtures were unavailable on this host. The report keeps human
-review pending and explicitly does not establish general resistance; see the
+opcode, handler and dispatcher diversity, and bounded recovery probes were
+observed. Tamper divergence was not established: macOS could not execute these
+ELF baselines natively and all 160 tampered exit codes were missing. Progressive
+bytecode growth was observed on seven fixtures. The historical tamper claim is
+retracted in the [correction ledger](vm-resistance-metric-correction-2026-11-20.json).
+The five generated Linux fixtures were unavailable on this host. The report
+keeps human review pending and explicitly does not establish general resistance; see the
 [hash-bound summary](protection-vm-resistance-local-2026-11-14-84e1202f.json)
 and [raw report](protection-vm-resistance-local-2026-11-14-84e1202f-macos.json).
 

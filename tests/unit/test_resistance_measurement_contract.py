@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement
-from scripts.vm_resistance_adversarial import _native_baseline_status, _probe_diverged
+from scripts.vm_resistance_adversarial import _native_baseline_status, _probe_diverged, _tamper_evidence_status
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -55,6 +55,22 @@ def test_vm_probe_uses_complete_emulation_before_native_fallback() -> None:
 
 def test_vm_probe_uses_native_fallback_when_emulation_is_incomplete() -> None:
     expect(_probe_diverged(None, None, True) is True)
+
+
+def test_vm_probe_does_not_count_missing_observations_as_divergence() -> None:
+    expect(
+        _probe_diverged(42, None, None) is None
+        and _probe_diverged(42, None, False) is False
+        and _probe_diverged(42, None, True) is True
+    )
+
+
+def test_vm_tamper_status_distinguishes_partial_from_unavailable_evidence() -> None:
+    expect(
+        _tamper_evidence_status(({"diverged": True}, {"diverged": False})) == "completed"
+        and _tamper_evidence_status(({"diverged": True}, {"diverged": None})) == "partial"
+        and _tamper_evidence_status(({"diverged": None}, {"diverged": None})) == "unavailable"
+    )
 
 
 def test_vm_probe_accepts_matching_native_baseline() -> None:

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-20",
+  "status": "historical_tamper_divergence_claims_retracted",
+  "finding": "The affected local reports marked tamper probes divergent when native execution was unavailable and tampered exit codes were missing. An unavailable observation is inconclusive, not evidence of divergence. Preserve the hash-bound reports as historical records; do not use their tamper booleans as resistance evidence.",
+  "corrected_behavior": "Current measurements report tamper_evidence_status as completed, partial, or unavailable; divergence is true only for an observed divergence, false for observed equivalence, and null when evidence is unavailable.",
+  "affected_artifacts": [
+    {
+      "path": "docs/protection-vm-resistance-local-2026-11-14-32seed-10fixtures.json.gz",
+      "sha256": "ef68664b5aae4c293199bf541fa212a67417f84cb82acc318c7e4d63e565d764",
+      "affected_records": 20,
+      "published_diverged_true": 20,
+      "native_execution_unavailable_records": 20,
+      "tamper_probes": 160,
+      "missing_tampered_exit_codes": 160
+    },
+    {
+      "path": "docs/protection-vm-resistance-local-2026-11-15-32seed-10fixtures.json.gz",
+      "sha256": "4fa4534e549a99a65d53b5b7eea42e3bf2f5bf1bca80c6c5887f9679fff66861",
+      "affected_records": 20,
+      "published_diverged_true": 20,
+      "native_execution_unavailable_records": 20,
+      "tamper_probes": 160,
+      "missing_tampered_exit_codes": 160
+    },
+    {
+      "path": "docs/protection-vm-resistance-local-2026-11-15-f8586a1-32seed-10fixtures.json.gz",
+      "sha256": "aad806c3f33c155a7899209178f8c23d70302e4e983c9df8b3e1ac3931250307",
+      "affected_records": 20,
+      "published_diverged_true": 20,
+      "native_execution_unavailable_records": 20,
+      "tamper_probes": 160,
+      "missing_tampered_exit_codes": 160
+    },
+    {
+      "path": "docs/protection-vm-resistance-local-2026-11-14-84e1202f-macos.json",
+      "sha256": "cc012a437fff07453963728ad00a5b7c111bb80c19d8c893eed88058853f126c",
+      "affected_records": 20,
+      "published_diverged_true": 20,
+      "native_execution_unavailable_records": 20,
+      "tamper_probes": 160,
+      "missing_tampered_exit_codes": 160
+    },
+    {
+      "path": "docs/protection-vm-resistance-2026-09-20.json",
+      "sha256": "c188af072edd04230fe2ae863ba4357b92f5332f138ca8f1b8387229a8e9affc",
+      "affected_records": 10,
+      "published_diverged_true": 10,
+      "native_execution_unavailable_records": 10,
+      "tamper_probes": 80,
+      "missing_tampered_exit_codes": 80
+    }
+  ],
+  "total_affected_records": 90,
+  "total_missing_tampered_exit_codes": 720,
+  "release_gate": "published_resistance_results remains open"
+}

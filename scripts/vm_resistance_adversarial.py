@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import importlib
 import json
+import platform
 import shutil
 import sys
 import tempfile
@@ -94,7 +95,7 @@ def _resolve_segment_offset(binary: Binary, address: int) -> int | None:
             continue
         if "x" not in str(segment.get("perm", "")) or not vaddr <= address < vaddr + size:
             continue
-        return paddr + address - vaddr
+        return int(paddr) + address - int(vaddr)
     return None
 
 
@@ -137,7 +138,7 @@ def _virtualize_fixture(source: Path, destination: Path, seed: int, depth: int |
 
 def _native_execution(path: Path) -> dict[str, object]:
     """Run an ELF probe when the host can execute the fixture natively."""
-    if not sys.platform.startswith("linux"):
+    if platform.system() != "Linux":
         return {"status": "unavailable", "reason": "native ELF execution requires Linux"}
     try:
         result = run_process([path], timeout=_NATIVE_EXECUTION_TIMEOUT_SECONDS)
@@ -155,14 +156,24 @@ def _observed_exit_code(path: Path) -> int | None:
     if emulated is not None:
         return emulated
     native = _native_execution(path)
-    return native.get("return_code") if native.get("status") == "completed" else None
+    return_code = native.get("return_code")
+    return return_code if native.get("status") == "completed" and isinstance(return_code, int) else None
 
 
-def _probe_diverged(original_exit: int | None, tampered_exit: int | None, native_diverged: bool) -> bool:
+def _probe_diverged(original_exit: int | None, tampered_exit: int | None, native_diverged: bool | None) -> bool | None:
     """Prefer a complete emulator observation and otherwise use native execution."""
-    if original_exit is not None:
+    if original_exit is not None and tampered_exit is not None:
         return tampered_exit != original_exit
     return native_diverged
+
+
+def _tamper_evidence_status(probes: Sequence[Mapping[str, object]]) -> str:
+    outcomes = [probe.get("diverged") for probe in probes]
+    if all(isinstance(outcome, bool) for outcome in outcomes):
+        return "completed"
+    if all(outcome is None for outcome in outcomes):
+        return "unavailable"
+    return "partial"
 
 
 def _native_baseline_status(native_original: Mapping[str, object], observed_exit: int | None) -> str:
@@ -300,9 +311,13 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         tampered.chmod(0o700)
         tampered_exit = _observed_exit_code(tampered)
         native_tampered = _native_execution(tampered)
-        native_diverged = native_baseline_status == "completed" and (
-            native_tampered.get("status") != "completed"
-            or native_tampered.get("return_code") != native_original.get("return_code")
+        native_diverged = (
+            None
+            if native_baseline_status != "completed"
+            else (
+                native_tampered.get("status") != "completed"
+                or native_tampered.get("return_code") != native_original.get("return_code")
+            )
         )
         probes.append(
             {
@@ -324,14 +339,14 @@ def _tamper_probe(source: Path, workdir: Path, seed: int, depth: int | None = No
         "tamper_diverged": first_probe["diverged"],
         "tamper_probe_count": len(probes),
         "tamper_probes": probes,
-        "all_tamper_probes_diverged": all(probe["diverged"] for probe in probes),
+        "tamper_evidence_status": _tamper_evidence_status(probes),
+        "all_tamper_probes_diverged": all(probe["diverged"] is True for probe in probes),
         "native_baseline_status": native_baseline_status,
         "native_original": native_original,
         "native_execution_available": native_original.get("status") == "completed",
         "adversarial_recovery": adversarial_recovery,
-        "all_native_tamper_probes_diverged": (
-            native_baseline_status == "completed" and all(probe["native_diverged"] for probe in probes)
-        ),
+        "all_native_tamper_probes_diverged": native_baseline_status == "completed"
+        and all(probe["native_diverged"] is True for probe in probes),
     }
 
 
@@ -493,6 +508,15 @@ def measure_corpus(
         seed_builds.extend(build for build in builds if isinstance(build, dict))
     artifact_hashes = [digest for build in seed_builds if isinstance(digest := build.get("sha256"), str)]
     validation_flags = [_corpus_validation_flags(report) for report in reports]
+    tamper_statuses: set[str] = set()
+    for report in reports:
+        anti_tamper = report.get("anti_tamper")
+        if not isinstance(anti_tamper, dict):
+            continue
+        for layer in anti_tamper.values():
+            status = layer.get("tamper_evidence_status") if isinstance(layer, dict) else None
+            if isinstance(status, str):
+                tamper_statuses.add(status)
     return {
         "schema_version": 1,
         "fixture_count": len(reports),
@@ -502,6 +526,7 @@ def measure_corpus(
         "cross_fixture_distinct_artifacts": len(set(artifact_hashes)) == len(artifact_hashes),
         "semantic_parity": all(flags[0] for flags in validation_flags),
         "all_tamper_probes_diverged": all(flags[1] for flags in validation_flags),
+        "tamper_evidence_status": tamper_statuses.pop() if len(tamper_statuses) == 1 else "partial",
         "progressive_growth_observed": all(flags[2] for flags in validation_flags),
         "progressive_growth_supported_fixture_count": sum(
             1
