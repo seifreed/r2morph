@@ -84,9 +84,9 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-On `main`, general CI runs are not cancelled by newer pushes, so each pushed
-commit retains its validation result. Dedicated fuzzing, differential, and
-adversarial evidence runs keep their own concurrency policies. Linux x86-64 CI
+CI, fuzzing, differential, and adversarial evidence runs use a unique
+concurrency key per run, so a newer push cannot replace a queued validation.
+Release workflows remain serialized per ref. Linux x86-64 CI
 installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
 The full differential corpus runs weekly or by manual dispatch; each push still

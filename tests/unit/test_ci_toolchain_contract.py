@@ -147,7 +147,9 @@ def test_integration_ci_preserves_clang_switch_table_repro_on_failure() -> None:
     )
 
 
-def test_ci_preserves_inflight_main_runs_when_new_commits_arrive() -> None:
-    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
-
-    expect(workflow["concurrency"]["cancel-in-progress"] is False)
+def test_validation_workflows_preserve_each_queued_run() -> None:
+    workflows = ("ci.yml", "fuzz.yml", "differential-corpus.yml", "adversarial-benchmark.yml")
+    for name in workflows:
+        workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8"))
+        concurrency = workflow["concurrency"]
+        expect(concurrency["cancel-in-progress"] is False and "${{ github.run_id }}" in concurrency["group"])

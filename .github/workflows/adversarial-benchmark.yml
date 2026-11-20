@@ -1,7 +1,7 @@
 name: Adversarial Analysis Benchmark
 
 concurrency:
-  group: adversarial-benchmark-${{ github.ref }}
+  group: adversarial-benchmark-${{ github.ref }}-${{ github.run_id }}
   cancel-in-progress: false
 
 "on":
