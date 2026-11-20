@@ -23,6 +23,10 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
         tmp_path / "macos-arm64" / "report.xml",
         _REQUIRED_CASES["macos-arm64"],
     )
+    _write_report(
+        tmp_path / "macos-x86-64" / "report.xml",
+        _REQUIRED_CASES["macos-x86-64"],
+    )
     _write_report(tmp_path / "windows-pe" / "report.xml", "test_pe_handler_checksum", skipped=True)
     _write_report(
         tmp_path / "elf-arm64" / "report.xml",
@@ -43,6 +47,7 @@ def test_platform_evidence_reports_complete_and_incomplete_targets(tmp_path: Pat
         report["summary"]["status"] == "incomplete"
         and report["platforms"]["macos-arm64"]["status"] == "complete"
         and report["platforms"]["windows-pe"]["status"] == "incomplete"
+        and report["platforms"]["macos-x86-64"]["status"] == "complete"
         and report["summary"]["incomplete_platforms"] == ["windows-pe"]
     )
 
@@ -90,19 +95,19 @@ def test_macos_arm64_evidence_excludes_x86_string_obfuscation() -> None:
     expect("StringObfuscation" not in _PASS_CASES["macos-arm64"])
 
 
-def test_macos_arm64_evidence_requires_native_x86_64_macho_substitution() -> None:
+def test_macos_x86_64_evidence_requires_native_macho_substitution() -> None:
     case_name = "test_macho_x86_64_instruction_substitution_preserves_native_observables"
     expect(
-        case_name in _REQUIRED_CASES["macos-arm64"]
-        and _PASS_CASES["macos-arm64"]["InstructionSubstitution (x86-64 Mach-O)"] == case_name
+        case_name in _REQUIRED_CASES["macos-x86-64"]
+        and _PASS_CASES["macos-x86-64"]["InstructionSubstitution"] == case_name
     )
 
 
-def test_macos_arm64_evidence_requires_native_x86_64_macho_register_substitution() -> None:
+def test_macos_x86_64_evidence_requires_native_macho_register_substitution() -> None:
     case_name = "test_macho_x86_64_register_substitution_preserves_native_observables"
     expect(
-        case_name in _REQUIRED_CASES["macos-arm64"]
-        and _PASS_CASES["macos-arm64"]["RegisterSubstitution (x86-64 Mach-O)"] == case_name
+        case_name in _REQUIRED_CASES["macos-x86-64"]
+        and _PASS_CASES["macos-x86-64"]["RegisterSubstitution"] == case_name
     )
 
 
@@ -132,7 +137,11 @@ def test_platform_aggregate_checks_out_repository_before_summary() -> None:
     dependency_index = aggregate.index('python -m pip install "defusedxml>=0.7.1"')
     script_index = aggregate.index("python scripts/platform_evidence.py")
 
-    expect(checkout_index < script_index)
+    expect(
+        checkout_index < script_index
+        and "cross-platform-differential-macos-x86-64" in aggregate
+        and "path: platform-evidence/macos-x86-64" in aggregate
+    )
     expect(setup_index < dependency_index < script_index)
 
 

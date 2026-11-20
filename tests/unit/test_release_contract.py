@@ -1785,6 +1785,8 @@ def test_corpus_workflows_run_the_full_pass_selection() -> None:
         and "aggregate-platform-differential:" in differential
         and "Aggregate platform differential evidence" in differential
         and "cross-platform-differential-macos-arm64" in differential
+        and "cross-platform-differential-macos-x86-64" in differential
+        and "macos-x86-64" in differential
         and "cross-platform-differential-windows-pe" in differential
         and "elf-arm64-native" in differential
         and "elf-x86-32-native" in differential

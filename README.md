@@ -102,8 +102,9 @@ On macOS, subprocess tests pin `PYTHONHOME` to the base interpreter and
 `DYLD_LIBRARY_PATH` to its runtime library directory so copied-interpreter tests
 can still find the standard library.
 The macOS ARM64 differential lane omits native x86-64 Mach-O execution cases;
-the dedicated Intel macOS CI lane runs them. The ARM64 lane's validator rejects
-skips in its selected platform smoke suite.
+the `macos-15-intel` CI lane runs both native x86-64 Mach-O mutation checks and
+the platform evidence aggregate requires their JUnit report. The ARM64 lane's
+validator rejects skips in its selected platform smoke suite.
 Ubuntu workflow dependency setup retries package requests three times with
 60-second connection timeouts; package-index updates and installations also
 have 10- and 15-minute limits. Persistent repository failures still fail the
