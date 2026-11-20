@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.core import randomness
+from r2morph.mutations.code_virtualization_engine_codegen import _handler_body_variant
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
 from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT
 from r2morph.mutations.code_virtualization_engine_handlers import EngineHandlerGenerator
@@ -68,6 +69,22 @@ def test_fp_convert_body_variant_precomputes_gp_slot_address() -> None:
         and "mov rax, qword ptr [r11]" in body
         and "mov rax, qword ptr [rsp + r9*8]" not in body
     )
+
+
+def test_seeded_structural_body_variant_uses_equivalent_gp_and_fp_forms() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+    gp_body = generator.handler_body("mov", False, 64, 0, body_variant=0)
+    gp_variant = generator.handler_body("mov", False, 64, 0, body_variant=2)
+    fp_body = generator.handler_body("fpmul", False, 32, 0, body_variant=0)
+    fp_variant = generator.handler_body("fpmul", False, 32, 0, body_variant=4)
+    seeded_variants = {_handler_body_variant(20260820, index, None) for index in range(64)}
+
+    expected_gp_variant = gp_body.replace("movzx r8d, byte ptr", "mov r8d, 0\n  mov r8b, byte ptr")
+    expected_gp_variant = expected_gp_variant.replace("movzx r9d, byte ptr", "mov r9d, 0\n  mov r9b, byte ptr")
+    expect(expected_gp_variant.replace("add rsi, 3", "lea rsi, [rsi + 3]") == gp_variant)
+    expect(fp_body.replace("movups", "movdqu") == fp_variant)
+    expect(any(variant & 2 for variant in seeded_variants) and any(variant & 4 for variant in seeded_variants))
 
 
 def test_packed_byte_shuffle_handler_emits_ssse3_operation() -> None:

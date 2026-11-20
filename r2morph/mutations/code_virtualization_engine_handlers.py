@@ -50,6 +50,17 @@ def _byte_field_load(register: str, offset: int, variant: int) -> str:
     return f"  movzx {register}d, byte ptr [rsi+{offset}]\n"
 
 
+def _apply_structural_body_variant(body: str, variant: int) -> str:
+    if variant & 2:
+        body = body.replace("movzx r8d, byte ptr", "mov r8d, 0\n  mov r8b, byte ptr")
+        body = body.replace("movzx r9d, byte ptr", "mov r9d, 0\n  mov r9b, byte ptr")
+    if variant & 4:
+        body = body.replace("movups", "__r2morph_move__")
+        body = body.replace("movdqu", "movups")
+        body = body.replace("__r2morph_move__", "movdqu")
+    return body
+
+
 class EngineHandlerGenerator:
     """Generate handlers against one scheme, frame layout, and ISA personality."""
 
@@ -74,7 +85,7 @@ class EngineHandlerGenerator:
     ) -> str:
         self.advance_variant = body_variant & 2
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
-            return microop_handler_body(
+            body = microop_handler_body(
                 mnemonic,
                 width,
                 MicroopHandlerConfig(
@@ -88,12 +99,15 @@ class EngineHandlerGenerator:
                     self.advance_variant,
                 ),
             )
-        fp_body = self._fp_handler_body(mnemonic, width, body_variant)
-        if fp_body is not None:
-            return fp_body
-        if mnemonic in _MEM_OP_KINDS:
-            return self._mem_handler_body(mnemonic, width, arith_variant)
-        return self._gp_handler_body(mnemonic, is_immediate, width, body_variant)
+        else:
+            fp_body = self._fp_handler_body(mnemonic, width, body_variant)
+            if fp_body is not None:
+                body = fp_body
+            elif mnemonic in _MEM_OP_KINDS:
+                body = self._mem_handler_body(mnemonic, width, arith_variant)
+            else:
+                body = self._gp_handler_body(mnemonic, is_immediate, width, body_variant)
+        return _apply_structural_body_variant(body, body_variant)
 
     def set_record_padding(self, record_padding: int) -> None:
         self.record_padding = record_padding

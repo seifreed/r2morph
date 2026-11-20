@@ -314,6 +314,12 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 | **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
 | **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 
+Seeded engine handlers can use equivalent structural forms for byte-field loads
+(`movzx` or zero-then-byte-load) and XMM memory moves (`movups` or `movdqu`).
+Both forms preserve guest-visible flags. This expands generated handler shapes;
+it is not a resistance guarantee, and cross-seed similarity measurements remain
+bounded evidence.
+
 The experimental region VM lowers register-form BMI2 `shlx` and immediate
 form `rorx` while preserving guest flags. It also supports VEX.128 memory-form
 `vmovd` loads, register-form `vpinsrd`, XMM `vpbroadcastd`/`vpbroadcastq`, and
