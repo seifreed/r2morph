@@ -440,12 +440,13 @@ The main CI run passed 11 jobs but was cancelled during four macOS package
 smoke jobs, so those jobs remain unverified. Its automated review passed 28
 checks but still records human signoff as `not-attested`.
 
-The current `main` wheel also passed the continuous fuzz workflow on Linux,
-macOS, and Windows: 5,000 deterministic cases for each of ten parser,
-assembler, VM, relocation, and rewriting targets per platform (150,000 target
-runs total), with zero failures. The three platform reports and their source/run
-hash manifest are recorded in
-[`continuous-fuzz-2026-11-16-43949336376-summary.json`](docs/continuous-fuzz-2026-11-16-43949336376-summary.json).
+The 2026-11-20 main-push fuzz run
+[`44656133058`](https://github.com/seifreed/r2morph/actions/runs/44656133058)
+passed on source `6dec0392` on Linux, macOS, and Windows: 5,000 deterministic
+cases for each of ten parser, assembler, VM, relocation, and rewriting targets
+per platform (150,000 target runs total), with zero failures. The three platform
+reports and source/run hash manifest are recorded in
+[`continuous-fuzz-2026-11-20-44656133058-summary.json`](docs/continuous-fuzz-2026-11-20-44656133058-summary.json).
 Each platform retained 103 recoverable Mach-O parser diagnostics. This bounded
 campaign does not prove arbitrary-input equivalence, full platform parity, or
 adversarial resistance. Each generated VM bytecode case also verifies that the
