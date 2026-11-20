@@ -641,6 +641,14 @@ and [raw report](docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-
 record this template-only measurement; they do not measure execution or
 analyst attack cost, so the resistance gate remains open.
 
+After adding seeded byte-load and SIMD move forms, the same 100-seed range on
+source `c6a124a2` measured 32 normalized cross-seed handler matches in 16
+pairs, down from 38; within-seed matches remained zero. The
+[hash-bound summary](docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds-summary.json)
+and [raw report](docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds.json)
+record the result. This is a measured reduction, not zero-collision evidence or
+a claim of generalized resistance; the gate remains open.
+
 An audit found that five older local VM resistance reports counted 720 missing
 native tamper observations as divergent. Those historical tamper claims are
 retracted; their hash-bound files remain unchanged, and the resistance gate

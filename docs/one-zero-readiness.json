@@ -445,7 +445,10 @@
         "docs/current-main-validation-2026-11-18-0491ba06.json",
         "docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds.json",
         "docs/protection-vm-handler-diversity-local-2026-11-19-5b7b566a-100seeds-summary.json",
-        "tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py"
+        "tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py",
+        "docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds.json",
+        "docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds-summary.json",
+        "tests/unit/test_published_vm_handler_diversity_100seeds_c6a124a2.py"
       ]
     },
     "stable_api_cli": {

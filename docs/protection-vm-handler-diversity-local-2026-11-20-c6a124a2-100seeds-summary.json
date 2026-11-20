@@ -1,0 +1,26 @@
+{
+  "limitations": [
+    "This measures generated templates only; it does not execute protected binaries or measure analyst attack cost.",
+    "The same 100-seed range now has 32 exact normalized cross-seed matches in 16 clusters, down from 38 in the prior 2026-11-19 report; zero-collision is not achieved.",
+    "This evidence does not establish generalized resistance to professional reverse engineering; the release gate remains open."
+  ],
+  "measurement": {
+    "cross_seed_exact_normalised_matches": 32,
+    "cross_seed_largest_normalised_cluster": 2,
+    "cross_seed_nearest_similarity_max": 0.989010989010989,
+    "cross_seed_nearest_similarity_mean": 0.7089991658262611,
+    "cross_seed_normalised_cluster_count": 16,
+    "first_seed": 20261119,
+    "handler_count_per_seed": 255,
+    "opcode_assignment_unique_count": 100,
+    "seed_count": 100,
+    "within_seed_exact_normalised_matches": 0
+  },
+  "provenance": "local-current-main-tree",
+  "report": {
+    "path": "protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds.json",
+    "sha256": "5d00b70256d89024f7c75023a813ca6fc652469cb2b66b0ce0897ba5a708ea1b"
+  },
+  "schema_version": 1,
+  "source_commit": "c6a124a23d7a8a4fd459bc7238b91eaaf20b7097"
+}
