@@ -1,0 +1,83 @@
+{
+  "artifacts": {
+    "sbom": {
+      "filename": "release-validation-local-2026-11-20-5f414ed-sbom.cdx.json",
+      "sha256": "f5d7c9939f55722fae22a94b681c13a25e9db5a22b2aca7db02ddb4d4e88a202",
+      "size_bytes": 19869
+    },
+    "sdist": {
+      "filename": "r2morph-0.4.0a3.tar.gz",
+      "sha256": "076877f34ff6b5817164290a163b5c203ceb8c5eb36ab812891bf86b43c87c49",
+      "size_bytes": 907351
+    },
+    "wheel": {
+      "filename": "r2morph-0.4.0a3-py3-none-any.whl",
+      "sha256": "6b9a3a460d554a1cffb7560e0dc76f04c8f0fe12b5cba045c31c2b75d1c58688",
+      "size_bytes": 1142418
+    }
+  },
+  "build": {
+    "command": "python -m build",
+    "sdist": "passed",
+    "wheel": "passed"
+  },
+  "dependency_audit": {
+    "command": "pip-audit -r requirements.txt -f cyclonedx-json",
+    "known_vulnerabilities": 0,
+    "sbom_component_count": 114,
+    "sbom_format": "CycloneDX JSON",
+    "status": "passed"
+  },
+  "full_test_suite": {
+    "collected_items": 5854,
+    "command": "python -W error -m pytest -q tests/unit -m 'not slow' --no-cov --tb=short",
+    "duration_seconds": 612.3,
+    "failed": 0,
+    "passed": 5845,
+    "runner": "Python 3.13.17 checkout tree on macOS arm64",
+    "skipped": 12
+  },
+  "github_ci": {
+    "conclusion": "pending",
+    "run_id": 44684776144,
+    "source_commit": "5f414ed0584f991588642554d9bd1ad498ad91bd",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44684776144"
+  },
+  "host": {
+    "machine_architecture": "arm64",
+    "operating_system": "Darwin",
+    "python_version": "3.13.17"
+  },
+  "installed_wheel_smoke": {
+    "cli_version": "passed",
+    "module_import": "passed from isolated site-packages",
+    "public_api_import": "passed",
+    "selected_tests": {
+      "collected": 318,
+      "failed": 0,
+      "passed": 318
+    },
+    "reported_version": "0.4.0-alpha.3"
+  },
+  "package_metadata": {
+    "twine_check": "passed",
+    "wheel_install": "passed"
+  },
+  "package_version": "0.4.0-alpha.3",
+  "release_scope": {
+    "limitations": [
+      "The validation ran locally on macOS arm64; it does not replace the Linux release workflow or prove platform parity.",
+      "The full unit suite ran against the checkout tree; the installed wheel was verified by the 318-test package smoke subset, not the entire suite.",
+      "The unit-suite command disabled coverage, so it does not verify a release coverage threshold.",
+      "The GitHub CI run for the pinned source was pending when this manifest was recorded.",
+      "The GitHub release workflow has not generated provenance for this source tree, and the package was not published to PyPI.",
+      "Stable release remains blocked by the open analyzer, platform-parity, resistance, and exact-tree approval criteria."
+    ],
+    "provenance_attestation": "not_generated",
+    "pypi_publication": "not_performed",
+    "stable_release": "blocked"
+  },
+  "schema_version": 1,
+  "source_commit": "5f414ed0584f991588642554d9bd1ad498ad91bd",
+  "validation_date_utc": "2026-11-20"
+}

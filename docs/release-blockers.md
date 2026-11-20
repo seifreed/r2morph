@@ -61,6 +61,19 @@ tree. The matching GitHub CI run
 [`43914393719`](https://github.com/seifreed/r2morph/actions/runs/43914393719)
 passed all 15 jobs on the same source commit.
 
+## Local package validation — 2026-11-20
+
+Source commit `5f414ed0584f991588642554d9bd1ad498ad91bd` built the
+`0.4.0-alpha.3` wheel and sdist on Python 3.13.17/macOS arm64. Twine accepted
+both artifacts; the installed wheel imported from an isolated environment,
+reported its CLI version, and passed the 318-test package smoke. The complete
+checkout unit suite passed 5,845 tests with 12 skips. The audit of
+`requirements.txt` found zero known vulnerabilities and generated a 114-component
+CycloneDX SBOM. The [manifest](release-validation-local-2026-11-20-5f414ed.json)
+pins wheel, sdist, and SBOM hashes. This local run does not verify coverage
+thresholds, replace the pending GitHub CI result, generate GitHub provenance,
+publish to PyPI, or close the exact-tree review and 1.0 readiness criteria.
+
 ## Current-source adversarial campaign — 2026-11-18
 
 Workflow

@@ -229,6 +229,14 @@ vulnerabilities across 118 components. The pinned manifest and CycloneDX output
 are recorded with their hashes; this covers that one platform resolution, not
 the release workflow SBOM or other platform matrices. Provenance and Linux
 release checks remain pending. See the [hash-bound local release report](docs/release-validation-local-2026-11-17-b20a56c2.json).
+The latest local release check on source `5f414ed0` rebuilt the `0.4.0-alpha.3`
+wheel and sdist, passed Twine, and generated a 114-component CycloneDX SBOM;
+`pip-audit -r requirements.txt` found no known vulnerabilities. The full
+checkout unit suite passed 5,845 tests (12 skipped), and the installed wheel
+passed the 318-test package smoke. The pinned
+[`local release report`](docs/release-validation-local-2026-11-20-5f414ed.json)
+records artifact hashes and open limits. GitHub CI was still pending for that
+source when measured; no provenance was generated and nothing was published.
 The dependency resolution audit now also covers Linux x86-64 on Python 3.12 and
 3.13 plus Windows x86-64 on Python 3.13, alongside the macOS arm64/Python 3.13
 target. All four hash-pinned manifests passed with zero known vulnerabilities
