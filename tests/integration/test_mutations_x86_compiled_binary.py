@@ -30,7 +30,7 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
         "__attribute__((noinline)) int asm_ops(int x) {\n"
         "  int y = x;\n"
         "  __asm__ volatile(\n"
-        '    "mov %%eax, %%eax\\n"\n'
+        '    "mov %%rax, %%rax\\n"\n'
         '    "add $0, %%eax\\n"\n'
         '    "sub $0, %%eax\\n"\n'
         '    "or $0, %%eax\\n"\n'

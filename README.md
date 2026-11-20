@@ -292,6 +292,10 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 | **Instruction Expansion** | `-m expand` | Expands supported instructions into validated equivalent sequences |
 | **Block Reordering** | `-m block` | Reorders eligible basic blocks with validated jump repair |
 
+The native macOS x86-64 Mach-O smoke fixture uses `mov rax, rax` for a
+redundant self-move candidate; `mov eax, eax` is intentionally ineligible
+because it zero-extends into RAX.
+
 ### Experimental (working, limited testing)
 
 | Pass | Surface | Description |

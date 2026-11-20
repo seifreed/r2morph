@@ -1222,3 +1222,9 @@ partial counts. The [regression test](../tests/unit/test_published_differential_
 rechecks those values and keeps the 1.0 parity, analyzer, and resistance gates
 open. The running workflow and remaining 65 jobs are not represented as
 completed evidence.
+
+The macOS ARM64 job later exposed that the x86-64 Mach-O NOP smoke fixture used
+`mov eax, eax`, which zero-extends into RAX and is correctly rejected as a
+redundant instruction. The fixture now uses the native-width `mov rax, rax`;
+the pass eligibility rule is unchanged. The corrected native smoke must pass
+before this platform slice is counted as successful.
