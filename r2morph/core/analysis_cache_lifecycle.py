@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import weakref
 from typing import Any
 
 _CLEANUP_THREAD_JOIN_TIMEOUT_SECONDS = 5.0
@@ -16,14 +17,21 @@ def _should_log_failure(failure_count: int) -> bool:
 
 def start_cleanup_thread(cache: Any, logger: logging.Logger) -> None:
     """Start the background cleanup thread for an analysis cache instance."""
+    # Avoid keeping the cache alive through the thread target's closure.
+    cache_ref = weakref.ref(cache)
+    stop_event = cache._cleanup_stop_event
+    cleanup_interval_seconds = cache.cleanup_interval_seconds
 
     def _cleanup_loop() -> None:
         failure_count = 0
-        while not cache._cleanup_stop_event.is_set():
+        while not stop_event.is_set():
+            cleanup_cache = cache_ref()
+            if cleanup_cache is None:
+                return
             try:
-                cache.cleanup_expired()
-                cache.cleanup_low_access()
-                cache._enforce_size_limit()
+                cleanup_cache.cleanup_expired()
+                cleanup_cache.cleanup_low_access()
+                cleanup_cache._enforce_size_limit()
             except Exception as exc:
                 failure_count += 1
                 if _should_log_failure(failure_count):
@@ -49,8 +57,10 @@ def start_cleanup_thread(cache: Any, logger: logging.Logger) -> None:
                         },
                     )
                 failure_count = 0
+            finally:
+                del cleanup_cache
 
-            cache._cleanup_stop_event.wait(cache.cleanup_interval_seconds)
+            stop_event.wait(cleanup_interval_seconds)
 
     cache._cleanup_thread = threading.Thread(
         target=_cleanup_loop,
@@ -66,10 +76,13 @@ def start_cleanup_thread(cache: Any, logger: logging.Logger) -> None:
 
 def stop_cleanup_thread(cache: Any, logger: logging.Logger) -> None:
     """Stop the background cleanup thread for an analysis cache instance."""
-    if cache._cleanup_thread and cache._cleanup_thread.is_alive():
+    cleanup_thread = cache._cleanup_thread
+    if cleanup_thread and cleanup_thread.is_alive():
         cache._cleanup_stop_event.set()
-        cache._cleanup_thread.join(timeout=_CLEANUP_THREAD_JOIN_TIMEOUT_SECONDS)
-        if cache._cleanup_thread.is_alive():
+        if cleanup_thread is threading.current_thread():
+            return
+        cleanup_thread.join(timeout=_CLEANUP_THREAD_JOIN_TIMEOUT_SECONDS)
+        if cleanup_thread.is_alive():
             logger.warning(
                 "Background cache cleanup did not stop before timeout",
                 extra={

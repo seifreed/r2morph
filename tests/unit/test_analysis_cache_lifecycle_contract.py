@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import gc
 import logging
+import weakref
 from pathlib import Path
 
 from r2morph.core.analysis_cache import AnalysisCache
@@ -18,6 +20,18 @@ def test_analysis_cache_lifecycle_helpers_start_and_stop_thread(tmp_path: Path) 
 
     stop_cleanup_thread(cache, lifecycle_logger)
     expect(not (cache._cleanup_thread.is_alive()))
+
+
+def test_analysis_cache_deletion_stops_background_thread(tmp_path: Path) -> None:
+    cache = AnalysisCache(cache_dir=tmp_path, cleanup_interval_seconds=3600)
+    cleanup_thread = cache._cleanup_thread
+    cache_ref = weakref.ref(cache)
+
+    del cache
+    gc.collect()
+    cleanup_thread.join(timeout=6)
+
+    expect(cache_ref() is None and not cleanup_thread.is_alive())
 
 
 def test_analysis_cache_cleanup_failure_sampling_is_logarithmic() -> None:

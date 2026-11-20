@@ -35,6 +35,7 @@
 | **Tier 1 Passes** | NOP, instruction substitution, register substitution, instruction expansion, and block reordering on the official target |
 | **Declared Support** | Linux ELF x86-64; preview and experimental targets are tracked separately |
 | **4 Validation Modes** | Structural, runtime, symbolic (angr), CFG integrity |
+| **Analysis Cache** | Bounded filesystem cache with a background cleaner and explicit shutdown |
 | **Session Management** | Checkpoint/rollback system preserving binary state across mutation passes |
 | **SARIF 2.1.0 Reports** | OASIS SARIF with MITRE ATT&CK taxonomy, fingerprints, code flows |
 | **JSON Reports** | Documented schema, metadata, timing, gate evaluation |
@@ -70,6 +71,8 @@ Symbolic analysis uses the Claripy implementation paired with the installed
 angr release, keeping symbolic expressions compatible with angr states. The
 `syntia` extra installs angr on supported platforms instead of an independently
 versioned Claripy package.
+The analysis cache cleaner exits when its cache is discarded; applications can
+call `cache.stop_cleanup_thread()` for deterministic shutdown.
 
 ### Development Install
 
@@ -700,7 +703,8 @@ commit.
 Current VM resistance artifacts cover 10 seeds with 255 handlers per seed,
 0 exact normalized cross-seed handler matches, 0 exact normalized within-seed
 handler matches, normalized nearest similarity mean 0.652 (328/2,295
-comparisons at or above 0.8; maximum 0.933), and 12 handler stride values.
+comparisons at or above 0.8; maximum 0.933), and 12 handler stride values,
+documenting target handler stride diversity.
 These finite seed-diversity measurements describe generated output variation;
 they do not measure generalized attack cost or establish resistance to
 professional reverse engineering. The reports are

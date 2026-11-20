@@ -342,6 +342,9 @@ cached = cache.get(binary_data=binary_bytes, analysis_type="cfg")
 # Get statistics
 stats = cache.get_stats()
 print(f"Hit rate: {stats.hit_rate:.2%}")
+
+# Stop background cleanup when finished with the cache
+cache.stop_cleanup_thread()
 ```
 
 ## Examples
