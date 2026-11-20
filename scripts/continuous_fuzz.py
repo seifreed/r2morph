@@ -16,9 +16,9 @@ from pathlib import Path
 
 from r2morph.core import randomness
 from r2morph.core.binary import Binary
+from r2morph.devirtualization.binary_rewriter import BinaryRewriter
 from r2morph.devirtualization.binary_rewriter_models import CodePatch, RewriteOperation
 from r2morph.devirtualization.binary_rewriter_planning import (
-    apply_patch_to_buffer,
     calculate_address_shifts,
     plan_rewrite_strategy,
     validate_patches,
@@ -160,13 +160,46 @@ def _rewrite_case(seed: int, index: int) -> None:
         new_bytes=bytes([before[offset] ^ 0xFF]),
         size_change=0,
     )
-    if not apply_patch_to_buffer(buffer, offset, patch):
-        raise AssertionError("rewrite byte application rejected a valid replacement")
+    rewriter = BinaryRewriter()
+    rewriter.sections = {
+        ".text": {
+            "perm": "r-x",
+            "vaddr": _MIN_PATCH_ADDRESS,
+            "paddr": 0,
+            "size": len(buffer),
+            "vsize": len(buffer),
+        }
+    }
+    rewriter._rewritten_bytes = buffer
+    if not rewriter._apply_single_patch(patch):
+        raise AssertionError("binary rewriter rejected a valid mapped replacement")
     if buffer[:offset] != before[:offset] or buffer[offset + 1 :] != before[offset + 1 :]:
-        raise AssertionError("rewrite byte application changed bytes outside the patch")
+        raise AssertionError("binary rewriter changed bytes outside the patch range")
 
-    if apply_patch_to_buffer(buffer, offset, patch):
-        raise AssertionError("rewrite byte application accepted stale original bytes")
+    if rewriter._apply_single_patch(patch):
+        raise AssertionError("binary rewriter accepted stale original bytes")
+
+    invalid_address_patch = CodePatch(
+        address=_MIN_PATCH_ADDRESS + len(buffer),
+        operation=RewriteOperation.INSTRUCTION_REPLACE,
+        original_bytes=b"\x00",
+        new_bytes=b"\xff",
+        size_change=0,
+    )
+    if rewriter._apply_single_patch(invalid_address_patch):
+        raise AssertionError("binary rewriter accepted an address outside file-backed code")
+
+    safe_offset = (offset + 1) % len(buffer)
+    non_executable_patch = CodePatch(
+        address=_MIN_PATCH_ADDRESS + safe_offset,
+        operation=RewriteOperation.INSTRUCTION_REPLACE,
+        original_bytes=bytes([buffer[safe_offset]]),
+        new_bytes=bytes([buffer[safe_offset] ^ 0xFF]),
+        size_change=0,
+    )
+    rewriter.sections[".text"]["perm"] = "r--"
+    if rewriter._apply_single_patch(non_executable_patch):
+        raise AssertionError("binary rewriter accepted a non-executable section")
 
 
 def _assembly_case(seed: int, index: int) -> None:

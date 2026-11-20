@@ -484,6 +484,11 @@ artifact IDs, and hashes are pinned in
 This bounded campaign does not validate complete executable semantics or close
 the compatibility, differential, or adversarial-resistance gates.
 
+The current `binary_rewriter` fuzz target also runs through the rewriter's
+virtual-address-to-file-offset mapping and checks rejection of addresses
+outside file-backed code and non-executable sections. Its new cross-platform
+campaign has not completed yet.
+
 The current-source differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
 has an in-progress evidence snapshot on `f319f1e4`: four platform targets
