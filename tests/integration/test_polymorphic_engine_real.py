@@ -304,10 +304,15 @@ __asm__(".section .text.stack_cave,\\\"ax\\\",@progbits\\n.p2align 4\\n.fill 409
 )
 def test_composed_real_passes_preserve_exit_code(
     case: tuple[str, str, str, str, str, int],
+    composition_fixture: Path,
     tmp_path: Path,
 ) -> None:
     fixture_name, first_kind, first_name, second_kind, second_name, seed = case
-    fixture = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / fixture_name
+    fixture = (
+        composition_fixture
+        if fixture_name == "elf_nop_x86_64"
+        else Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / fixture_name
+    )
     mutated = tmp_path / f"{fixture_name}.composed"
     baseline_exit_code = emulate_exit_code(fixture)
 
