@@ -63,18 +63,29 @@ def test_binary_rewriter_fuzz_evidence_is_pinned_to_passing_cross_platform_run()
     platforms = summary["execution"]["platforms"].values()
     targets = set(summary["configuration"]["targets"])
 
+    workflow = summary["workflow"]
+    configuration = summary["configuration"]
+    expect(workflow["status"] == "success", f"unexpected workflow status: {workflow}")
+    expect(workflow["source_commit"].startswith("a3359d6"), f"unexpected source commit: {workflow}")
+    source_script_hash = sha256((_REPOSITORY_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
     expect(
-        summary["workflow"]["status"] == "success"
-        and summary["workflow"]["source_commit"].startswith("a3359d6")
-        and sha256((_REPOSITORY_ROOT / summary["configuration"]["source_script"]).read_bytes()).hexdigest()
-        == summary["configuration"]["source_script_sha256"]
-        and summary["execution"]["total_target_runs"] == _EXPECTED_REWRITER_TARGET_RUNS
-        and all(
-            sha256((_REPOSITORY_ROOT / platform["report"]).read_bytes()).hexdigest() == platform["report_sha256"]
-            and set(json.loads((_REPOSITORY_ROOT / platform["report"]).read_text())["target_runs"]) == targets
-            and json.loads((_REPOSITORY_ROOT / platform["report"]).read_text())["target_runs"]["binary_rewriter"]
-            == summary["configuration"]["cases_per_target_per_platform"]
-            and json.loads((_REPOSITORY_ROOT / platform["report"]).read_text())["failure_count"] == 0
-            for platform in platforms
-        )
+        source_script_hash == configuration["source_script_sha256"],
+        f"source script hash mismatch: {source_script_hash} != {configuration['source_script_sha256']}",
     )
+    expect(
+        summary["execution"]["total_target_runs"] == _EXPECTED_REWRITER_TARGET_RUNS,
+        f"unexpected total target runs: {summary['execution']['total_target_runs']}",
+    )
+    for platform in platforms:
+        raw_report = (_REPOSITORY_ROOT / platform["report"]).read_bytes()
+        report = json.loads(raw_report)
+        expect(
+            sha256(raw_report).hexdigest() == platform["report_sha256"],
+            f"{platform['report']} hash mismatch: {sha256(raw_report).hexdigest()} != {platform['report_sha256']}",
+        )
+        expect(set(report["target_runs"]) == targets, f"{platform['report']} targets mismatch: {report['target_runs']}")
+        expect(
+            report["target_runs"]["binary_rewriter"] == configuration["cases_per_target_per_platform"],
+            f"{platform['report']} binary_rewriter cases mismatch: {report['target_runs']['binary_rewriter']}",
+        )
+        expect(report["failure_count"] == 0, f"{platform['report']} has failures: {report['failure_count']}")

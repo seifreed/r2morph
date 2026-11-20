@@ -75,33 +75,48 @@ def test_reports_cover_all_targets_on_all_platforms_without_failures() -> None:
     execution = summary["execution"]
     platforms = execution["platforms"]
 
-    expect(
-        configuration["cases_per_target_per_platform"] == _CASES_PER_TARGET
-        and configuration["seed"] == _SEED
-        and configuration["max_payload_bytes"] == _MAX_PAYLOAD_BYTES
-        and set(configuration["targets"]) == _TARGETS
-        and set(platforms) == set(_PLATFORMS)
-        and execution["total_target_runs"] == _TOTAL_TARGET_RUNS
-        and execution["total_failures"] == 0
-    )
+    expect(configuration["cases_per_target_per_platform"] == _CASES_PER_TARGET, "cases per target mismatch")
+    expect(configuration["seed"] == _SEED, f"seed mismatch: {configuration['seed']}")
+    expect(configuration["max_payload_bytes"] == _MAX_PAYLOAD_BYTES, "maximum payload size mismatch")
+    expect(set(configuration["targets"]) == _TARGETS, f"target mismatch: {configuration['targets']}")
+    expect(set(platforms) == set(_PLATFORMS), f"platform mismatch: {set(platforms)}")
+    expect(execution["total_target_runs"] == _TOTAL_TARGET_RUNS, f"target run total mismatch: {execution}")
+    expect(execution["total_failures"] == 0, f"fuzz failures present: {execution['total_failures']}")
     for platform, (artifact_id, artifact_digest, report_digest) in _PLATFORMS.items():
         entry = platforms[platform]
         raw = (_ROOT / entry["report"]).read_bytes()
         report = json.loads(raw)
+        actual_digest = hashlib.sha256(raw).hexdigest()
+        expect(entry["artifact_id"] == artifact_id, f"{platform} artifact id mismatch: {entry['artifact_id']}")
         expect(
-            entry["artifact_id"] == artifact_id
-            and entry["artifact_archive_sha256"] == artifact_digest
-            and hashlib.sha256(raw).hexdigest() == report_digest == entry["report_sha256"]
-            and entry["target_runs"] == _RUNS_PER_PLATFORM
-            and entry["failure_count"] == 0
-            and entry["parser_diagnostic_counts"] == _DIAGNOSTICS
-            and report["seed"] == _SEED
-            and report["cases"] == _CASES_PER_TARGET
-            and report["max_payload"] == _MAX_PAYLOAD_BYTES
-            and report["failure_count"] == 0
-            and report["failures"] == []
-            and set(report["target_runs"]) == _TARGETS
-            and set(report["target_runs"].values()) == {_CASES_PER_TARGET}
+            entry["artifact_archive_sha256"] == artifact_digest,
+            f"{platform} archive digest mismatch: {entry['artifact_archive_sha256']}",
+        )
+        expect(
+            actual_digest == report_digest == entry["report_sha256"],
+            f"{platform} report digest mismatch: {actual_digest}",
+        )
+        expect(
+            entry["target_runs"] == _RUNS_PER_PLATFORM,
+            f"{platform} target run count mismatch: {entry['target_runs']}",
+        )
+        expect(entry["failure_count"] == 0, f"{platform} failure count mismatch: {entry['failure_count']}")
+        expect(
+            entry["parser_diagnostic_counts"] == _DIAGNOSTICS,
+            f"{platform} diagnostics mismatch: {entry['parser_diagnostic_counts']}",
+        )
+        expect(report["seed"] == _SEED, f"{platform} seed mismatch: {report['seed']}")
+        expect(report["cases"] == _CASES_PER_TARGET, f"{platform} case count mismatch: {report['cases']}")
+        expect(
+            report["max_payload"] == _MAX_PAYLOAD_BYTES,
+            f"{platform} payload limit mismatch: {report['max_payload']}",
+        )
+        expect(report["failure_count"] == 0, f"{platform} report failures: {report['failure_count']}")
+        expect(report["failures"] == [], f"{platform} failures present: {report['failures']}")
+        expect(set(report["target_runs"]) == _TARGETS, f"{platform} report targets mismatch: {report['target_runs']}")
+        expect(
+            set(report["target_runs"].values()) == {_CASES_PER_TARGET},
+            f"{platform} per-target case counts mismatch: {report['target_runs']}",
         )
 
 
