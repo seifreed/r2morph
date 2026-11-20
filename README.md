@@ -406,6 +406,16 @@ pinned in
 This bounded campaign does not prove arbitrary-input semantic equivalence,
 exhaustive fuzz coverage, complete platform parity, or adversarial resistance.
 
+The next main-push fuzz run on source `5f5078f7` also passed on Ubuntu,
+macOS 15, and Windows: 5,000 cases for each of the same ten targets per
+platform (150,000 target runs total), with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics per platform. Its three compressed
+reports, workflow artifact IDs and hashes, source hash, and limits are pinned
+in [`docs/continuous-fuzz-2026-11-20-44646998764-summary.json`](docs/continuous-fuzz-2026-11-20-44646998764-summary.json).
+This bounded deterministic campaign does not establish exhaustive fuzz
+coverage, transformed-program equivalence, complete platform parity, or
+adversarial resistance.
+
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and
 seed rows. The previous size-weighted shard assignment could change when
