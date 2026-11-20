@@ -121,7 +121,7 @@ fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF a
 the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
 An in-flight push-triggered CI run is allowed to finish when later commits reach
 `main`, preserving the complete cross-platform validation result for that active
-run. A newer push can replace a run that is still pending.
+run. Each push retains its own queued validation run.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
