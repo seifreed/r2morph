@@ -1,7 +1,7 @@
 name: Continuous Fuzzing
 
 concurrency:
-  group: continuous-fuzz-${{ github.ref }}-${{ github.run_id }}
+  group: continuous-fuzz-${{ github.ref }}-${{ github.event_name == 'push' && 'push' || github.run_id }}
   cancel-in-progress: false
 
 "on":

@@ -50,13 +50,21 @@ def test_adversarial_workflow_preserves_active_campaigns() -> None:
     expect("group: adversarial-benchmark-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
 
 
-def test_ci_preserves_active_main_push_validation() -> None:
+def test_ci_keeps_active_validation_and_coalesces_pending_pushes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
-    expect("group: ${{ github.workflow }}-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
+    expect(
+        "group: ${{ github.workflow }}-${{ github.ref }}-" in workflow
+        and "github.event_name == 'push' && 'push' || github.run_id" in workflow
+        and "cancel-in-progress: false" in workflow
+    )
 
 
-def test_fuzz_workflow_preserves_active_campaigns() -> None:
+def test_fuzz_keeps_active_campaigns_and_coalesces_pending_pushes() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
 
-    expect("group: continuous-fuzz-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
+    expect(
+        "group: continuous-fuzz-${{ github.ref }}-" in workflow
+        and "github.event_name == 'push' && 'push' || github.run_id" in workflow
+        and "cancel-in-progress: false" in workflow
+    )

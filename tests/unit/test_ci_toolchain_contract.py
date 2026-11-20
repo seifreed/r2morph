@@ -147,8 +147,8 @@ def test_integration_ci_preserves_clang_switch_table_repro_on_failure() -> None:
     )
 
 
-def test_validation_workflows_preserve_each_queued_run() -> None:
-    workflows = ("ci.yml", "fuzz.yml", "differential-corpus.yml", "adversarial-benchmark.yml")
+def test_long_campaign_workflows_preserve_each_queued_run() -> None:
+    workflows = ("differential-corpus.yml", "adversarial-benchmark.yml")
     for name in workflows:
         workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8"))
         concurrency = workflow["concurrency"]

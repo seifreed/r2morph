@@ -84,8 +84,10 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-CI, fuzzing, differential, and adversarial evidence runs use a unique
-concurrency key per run, so a newer push cannot replace a queued validation.
+CI and continuous fuzzing keep the active run and coalesce pending pushes by
+workflow and ref, so the newest source revision is validated without queuing
+every intermediate commit. Pull-request, manual, scheduled, differential, and
+adversarial runs retain distinct keys where their inputs or evidence differ.
 Release workflows remain serialized per ref. Linux x86-64 CI
 installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
@@ -120,8 +122,8 @@ If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi
 fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF as
 the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
 An in-flight push-triggered CI run is allowed to finish when later commits reach
-`main`, preserving the complete cross-platform validation result for that active
-run. Each push retains its own queued validation run.
+`main`; among pending push runs, only the latest commit remains queued. This
+keeps validation moving toward current `main` without replacing an active run.
 The installed-wheel cross-platform smoke emits Python thread traces after 60
 seconds and stops the test process after five minutes, so runner-specific hangs
 produce bounded diagnostics without dropping test targets.
