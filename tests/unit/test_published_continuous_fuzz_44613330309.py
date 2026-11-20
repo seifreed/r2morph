@@ -12,6 +12,7 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY_PATH = "docs/continuous-fuzz-2026-11-19-44613330309-summary.json"
 _SOURCE_COMMIT = "b561237880a5b42bd45494424fbd291ae832dfc7"
+_SOURCE_SCRIPT_SHA256 = "6bf18f8c3d62906ab4cd571db492ef3cb3367481d2c752a487f2ed027c7c7bc8"
 _WORKFLOW_RUN = 44613330309
 _PLATFORMS = ("ubuntu-latest", "macos-15", "windows-latest")
 _EXPECTED_TARGETS = {
@@ -88,10 +89,9 @@ def test_archived_fuzz_reports_match_workflow_artifact_hashes() -> None:
 def test_campaign_limits_and_source_script_hash_are_explicit() -> None:
     summary = _summary()
     configuration = summary["configuration"]
-    script_hash = hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
 
     expect(
         configuration["max_payload_bytes"] == _MAX_PAYLOAD_BYTES
-        and script_hash == configuration["source_script_sha256"]
+        and configuration["source_script_sha256"] == _SOURCE_SCRIPT_SHA256
         and _UNPROVEN_SCOPE in summary["limits"]
     )

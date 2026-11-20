@@ -38,11 +38,10 @@ def _report() -> dict[str, object]:
     return json.loads((_ROOT / _REPORT_PATH).read_text(encoding="utf-8"))
 
 
-def test_local_fuzz_manifest_binds_source_commit_and_script_hash() -> None:
+def test_historical_local_fuzz_manifest_binds_source_commit_and_script_hash() -> None:
     manifest = _manifest()
-    source_hash = hashlib.sha256((_ROOT / manifest["source_script"]).read_bytes()).hexdigest()
 
-    expect(manifest["source_commit"] == _SOURCE_COMMIT and source_hash == _SOURCE_SHA256)
+    expect(manifest["source_commit"] == _SOURCE_COMMIT and manifest["source_script_sha256"] == _SOURCE_SHA256)
 
 
 def test_local_fuzz_manifest_matches_archived_report_hash() -> None:

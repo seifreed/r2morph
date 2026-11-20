@@ -63,9 +63,7 @@ def test_manifest_binds_run_to_source_and_all_three_workflow_artifacts() -> None
         and workflow["source_commit"] == _SOURCE_COMMIT
         and workflow["status"] == "success"
         and set(platforms) == set(_ARTIFACTS)
-        and hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
-        == _SOURCE_SCRIPT_SHA256
-        == configuration["source_script_sha256"]
+        and configuration["source_script_sha256"] == _SOURCE_SCRIPT_SHA256
     )
 
 

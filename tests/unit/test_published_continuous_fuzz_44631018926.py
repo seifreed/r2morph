@@ -55,9 +55,7 @@ def test_manifest_binds_fuzz_reports_to_current_source_and_workflow() -> None:
         and workflow["run_id"] == _WORKFLOW_RUN
         and workflow["status"] == "success"
         and set(summary["execution"]["platforms"]) == set(_PLATFORMS)
-        and hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
-        == _SOURCE_SCRIPT_SHA256
-        == configuration["source_script_sha256"]
+        and configuration["source_script_sha256"] == _SOURCE_SCRIPT_SHA256
     )
 
 

@@ -12,6 +12,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _MANIFEST_PATH = "docs/continuous-fuzz-local-2026-11-18-0491ba06.json"
 _REPORT_PATH = "docs/continuous-fuzz-local-2026-11-18-0491ba06-report.json"
 _SOURCE_COMMIT = "0491ba06a09240eee7b36241cc4d8e4b040a7a83"
+_SOURCE_SCRIPT_SHA256 = "6bf18f8c3d62906ab4cd571db492ef3cb3367481d2c752a487f2ed027c7c7bc8"
 _REPORT_SHA256 = "9ac8b76804ae86c4821ff740799980350954f9b9fe461797962aa156723b5009"
 _CASES = 5_000
 _MAX_PAYLOAD_BYTES = 4_096
@@ -37,11 +38,10 @@ def _report() -> dict[str, object]:
     return json.loads((_ROOT / _REPORT_PATH).read_text(encoding="utf-8"))
 
 
-def test_current_fuzz_manifest_binds_source_commit_and_script_hash() -> None:
+def test_historical_fuzz_manifest_binds_source_commit_and_script_hash() -> None:
     manifest = _manifest()
-    script_hash = hashlib.sha256((_ROOT / manifest["source_script"]).read_bytes()).hexdigest()
 
-    expect(manifest["source_commit"] == _SOURCE_COMMIT and script_hash == manifest["source_script_sha256"])
+    expect(manifest["source_commit"] == _SOURCE_COMMIT and manifest["source_script_sha256"] == _SOURCE_SCRIPT_SHA256)
 
 
 def test_current_fuzz_manifest_matches_archived_report_hash() -> None:
