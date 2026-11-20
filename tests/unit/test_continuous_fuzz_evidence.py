@@ -8,7 +8,7 @@ from tests.utils.assertions import expect
 
 _REPOSITORY_ROOT = Path(__file__).parents[2]
 _SUMMARY_PATH = _REPOSITORY_ROOT / "docs" / "continuous-fuzz-2026-11-19-44425946598-summary.json"
-_REWRITER_SUMMARY_PATH = _REPOSITORY_ROOT / "docs" / "continuous-fuzz-2026-11-20-44667500653-summary.json"
+_REWRITER_SUMMARY_PATH = _REPOSITORY_ROOT / "docs" / "continuous-fuzz-2026-11-20-44668686404-summary.json"
 _EXPECTED_REWRITER_TARGET_RUNS = 150_000
 
 
@@ -65,7 +65,7 @@ def test_binary_rewriter_fuzz_evidence_is_pinned_to_passing_cross_platform_run()
 
     expect(
         summary["workflow"]["status"] == "success"
-        and summary["workflow"]["source_commit"].startswith("09db9ea")
+        and summary["workflow"]["source_commit"].startswith("a3359d6")
         and sha256((_REPOSITORY_ROOT / summary["configuration"]["source_script"]).read_bytes()).hexdigest()
         == summary["configuration"]["source_script_sha256"]
         and summary["execution"]["total_target_runs"] == _EXPECTED_REWRITER_TARGET_RUNS

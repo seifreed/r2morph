@@ -484,23 +484,30 @@ artifact IDs, and hashes are pinned in
 This bounded campaign does not validate complete executable semantics or close
 the compatibility, differential, or adversarial-resistance gates.
 
-The current `binary_rewriter` fuzz target also runs through the rewriter's
-virtual-address-to-file-offset mapping and checks rejection of addresses
-outside file-backed code and non-executable sections. Its new cross-platform
-campaign has not completed yet.
+The following main-push run on source `a3359d66` also passed on all three
+platforms and ten targets: 5,000 cases per target and platform (150,000 target
+runs total), with zero failures. The `binary_rewriter` target now traverses the
+rewriter's virtual-address-to-file-offset mapping and checks rejection of
+stale bytes, out-of-file addresses, and non-executable sections. Reports,
+artifact IDs, and hashes are pinned in
+[`continuous-fuzz-2026-11-20-44668686404-summary.json`](docs/continuous-fuzz-2026-11-20-44668686404-summary.json).
+It uses bounded synthetic section data and does not fuzz complete executable
+semantics or output-file integration.
 
-The current-source differential workflow
+The previous differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
-has an in-progress evidence snapshot on `f319f1e4`: four platform targets
-passed 39/39 selected cases; one of 16 core shards recorded 230 classified
-runs with 76 applied transformations and 100% complete evidence; its extended
-shard recorded 276/276 complete-evidence runs across all 12 extended passes.
-Eleven completed VM semantic shards passed 461/461 fixture-seed cases. This is
-partial evidence from a running campaign. The hash-bound
+captured a partial snapshot on `f319f1e4`: four platform targets passed 39/39
+selected cases; one of 16 core shards recorded 230 classified runs with 76
+applied transformations and 100% complete evidence; its extended shard
+recorded 276/276 complete-evidence runs across all 12 extended passes. Eleven
+VM semantic shards passed 461/461 fixture-seed cases. The overall workflow
+later failed in its macOS ARM64 differential smoke and aggregate gate, so the
+snapshot is partial evidence only. The hash-bound
 [snapshot and reports](docs/protection-differential-partial-2026-11-20-44661095783/summary.json)
-preserve the artifact IDs, hashes, and current limits; macOS ARM64 and the
-remaining shards were still pending when captured, so platform parity and the
-adversarial and resistance release gates remain open.
+preserve the captured artifact IDs, hashes, and limits. A rerun against current
+`main` (`a3359d66`) is underway as
+[`44669121610`](https://github.com/seifreed/r2morph/actions/runs/44669121610);
+its results are not yet available.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
