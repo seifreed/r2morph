@@ -27,6 +27,21 @@ and [regression test](../tests/unit/test_published_differential_partial_44661095
 preserve and verify the exact evidence. The parity, all-analyzer, and published
 resistance criteria remain open.
 
+## Completed differential campaign on pinned source — 2026-11-20
+
+The manually dispatched workflow
+[`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
+completed all 86 jobs successfully on source `2f54c47ee08dee65a2aeda406ee4bd8a3a78bbfc`.
+Its merged artifact reports 10,860 core and 13,032 extended classifications,
+all with complete evidence, zero failures, and zero errors. A generated public
+compatibility corpus passed all 360 samples across six passes; 44 directional
+composition pairs completed 2,208 cases with no failures or errors. The
+[summary](differential-run-2026-11-20-44676092171-summary.json) pins the merged
+artifact digest, report hashes, and aggregate counts. The evidence belongs to
+that source revision, does not claim results for later code changes, and does
+not establish parity for PE, Mach-O, ARM, AArch64, or x86. The named-analyzer
+and published-resistance gates remain open.
+
 ## Local installed-wheel release validation — 2026-11-16
 
 The wheel and source distribution for `0.4.0-alpha.3` were built from source

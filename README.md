@@ -533,9 +533,16 @@ preserve the captured artifact IDs, hashes, and limits. The later run
 [`44669121610`](https://github.com/seifreed/r2morph/actions/runs/44669121610)
 failed because NOP insertion had no safe candidate in any corpus fixture and
 the aggregate platform contract omitted the separate Intel macOS run. The
-fixture and aggregate contract have since been corrected; current-main rerun
-[`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
-is still in progress, so differential evidence remains open.
+fixture and aggregate contract have since been corrected. The completed
+workflow [`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
+passed all 86 jobs on its pinned source commit `2f54c47e`: 10,860 core and
+13,032 extended classifications had complete evidence with zero failures or
+errors. Its generated public compatibility corpus passed 360 samples across
+six passes, and 2,208 composition cases had zero failures or errors. This is
+bounded evidence for that source revision; platform parity, named-analyzer
+coverage, and published resistance criteria remain open. Counters, artifact
+hash, and scope limits are pinned in the
+[`run summary`](docs/differential-run-2026-11-20-44676092171-summary.json).
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

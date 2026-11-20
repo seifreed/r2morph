@@ -179,6 +179,18 @@ non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static
 linking when the host toolchain provides it. C and C++ fixtures exercise switch
 dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
+The completed differential workflow
+[`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
+also built 360 generated ELF x86-64 samples with GCC/Clang C and C++ profiles,
+five optimization levels, and dynamic or static linking. Six passes each
+preserved all 360 compared samples with zero errors; 3,480 core and 3,406
+extended transformations applied, while ineligible samples were explicitly
+omitted. The run is pinned to source `2f54c47e`; it strengthens this bounded
+corpus evidence but does not establish parity for other formats or
+architectures. The
+[hash-bound summary](differential-run-2026-11-20-44676092171-summary.json)
+records exact counters, artifact digest, and open gates.
+
 The repository-local generated differential campaign adds 200 deterministic
 ELF x86-64 fixtures across those compiler profiles. The C subset includes a
 dedicated SSE2 SIMD family so vector register and packed-integer paths remain

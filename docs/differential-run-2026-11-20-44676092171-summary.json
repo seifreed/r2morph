@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "workflow": {
+    "name": "Differential Corpus By Pass",
+    "run_id": 44676092171,
+    "url": "https://github.com/seifreed/r2morph/actions/runs/44676092171",
+    "source_commit": "2f54c47ee08dee65a2aeda406ee4bd8a3a78bbfc",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs_completed": 86
+  },
+  "merged_artifact": {
+    "id": 14605656207,
+    "name": "differential-corpus-merged-44676092171-1",
+    "size_bytes": 17830938,
+    "sha256": "sha256:8b0d434341558e6d884e9ccca7a3d3174ad524aefcfd188a03e85d559e32e0cc",
+    "reports": {
+      "differential-corpus-merged.json": "dd35e04bd8be2e4f07cfd8640c050e841237683eb7544c1a1fc71bb9111449c4",
+      "extended-maturity-merged.json": "37948f3bf13b3973e38d6c8d421b97f83c4d287f6a14bc337e4af66bd5148649",
+      "maturity-evidence-merged.json": "1a312044b7ca081a2d3c31cf532d1e3d7c93f312c95ec8cfc103fd43006792bc",
+      "public-compatibility-merged.json": "389846b0c557cf5ca120937383216397355f96b8945260422e5d32278e0271f1",
+      "vm-semantic-contracts-merged.json": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75"
+    }
+  },
+  "differential_corpus": {
+    "passes": 10,
+    "classified_runs": 10860,
+    "successful_runs": 10860,
+    "failed_runs": 0,
+    "error_runs": 0,
+    "applied_runs": 3480,
+    "omitted_ineligible_runs": 7380,
+    "complete_evidence_missing_runs": 0
+  },
+  "extended_maturity": {
+    "passes": 12,
+    "classified_runs": 13032,
+    "successful_runs": 13032,
+    "failed_runs": 0,
+    "error_runs": 0,
+    "applied_runs": 3406,
+    "omitted_ineligible_runs": 9626,
+    "complete_evidence_missing_runs": 0
+  },
+  "supplemental_campaigns": {
+    "composition": {
+      "directional_pairs": 44,
+      "cases": 2208,
+      "failures": 0,
+      "errors": 0
+    },
+    "vm_semantic": {
+      "shards": 48,
+      "regression_covered_capabilities": 9
+    },
+    "public_compatibility": {
+      "samples": 360,
+      "passed_samples": 360,
+      "failed_samples": 0,
+      "passes": [
+        "BlockReordering",
+        "CodeVirtualization",
+        "InstructionExpansion",
+        "InstructionSubstitution",
+        "NopInsertion",
+        "RegisterSubstitution"
+      ],
+      "compilers": ["clang", "clang++", "gcc", "g++"],
+      "languages": ["C", "C++"],
+      "optimization_profiles": ["O0", "O1", "O2", "O3", "Os"],
+      "link_modes": ["dynamic", "static"]
+    }
+  },
+  "limitations": [
+    "This bounded run is pinned to source commit 2f54c47ee08dee65a2aeda406ee4bd8a3a78bbfc and does not claim to measure later source revisions.",
+    "The core corpus reports platform gaps for PE, Mach-O, ARM, AArch64, and x86; passing ELF x86-64 rows do not establish cross-platform parity.",
+    "The public compatibility matrix covers 360 generated ELF x86-64 samples and six passes; it does not establish parity for other formats or architectures.",
+    "The maturity evidence retains 22 decompiler-effectiveness blockers; this campaign does not complete the named-adversarial-analyzer matrix or establish generalized resistance."
+  ],
+  "release_criteria": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  }
+}
