@@ -2,7 +2,7 @@
 .global _start
 .text
 _start:
-    mov eax, eax
+    mov rax, rax
     mov edi, 42
     mov eax, 60
     syscall
