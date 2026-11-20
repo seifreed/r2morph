@@ -16,6 +16,7 @@ from r2morph.adapters.process import ProcessContext, run_process
 def python_runtime_environment() -> dict[str, str]:
     environment = os.environ.copy()
     if sys.platform == "darwin":
+        environment["PYTHONHOME"] = sys.base_prefix
         library_directory = sysconfig.get_config_var("LIBDIR")
         if isinstance(library_directory, str) and library_directory:
             existing_library_path = environment.get("DYLD_LIBRARY_PATH")

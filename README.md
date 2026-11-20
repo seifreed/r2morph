@@ -96,6 +96,9 @@ Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 also covers integration, property, and real-binary tests. Passing these jobs
 expands platform evidence but does not by itself establish full mutation
 parity, which remains an open release gate.
+On macOS, subprocess tests pin `PYTHONHOME` to the base interpreter and
+`DYLD_LIBRARY_PATH` to its runtime library directory so copied-interpreter tests
+can still find the standard library.
 The macOS ARM64 differential lane omits native x86-64 Mach-O execution cases;
 the dedicated Intel macOS CI lane runs them. The ARM64 lane's validator rejects
 skips in its selected platform smoke suite.
