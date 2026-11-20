@@ -262,7 +262,13 @@
         "tests/unit/test_published_differential_workflow_44081385675.py",
         "docs/differential-run-2026-11-18-44213229027-summary.json",
         "tests/unit/test_published_differential_workflow_44213229027.py",
-        "docs/current-main-validation-2026-11-18-0491ba06.json"
+        "docs/current-main-validation-2026-11-18-0491ba06.json",
+        "docs/protection-differential-partial-2026-11-20-44661095783/summary.json",
+        "docs/protection-differential-partial-2026-11-20-44661095783/platform/windows-pe.xml",
+        "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm32.xml",
+        "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm64.xml",
+        "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-x86-32.xml",
+        "tests/unit/test_published_differential_partial_44661095783.py"
       ]
     },
     "documented_resistance_scope": {

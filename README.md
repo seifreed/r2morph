@@ -458,6 +458,19 @@ campaign does not prove arbitrary-input equivalence, full platform parity, or
 adversarial resistance. Each generated VM bytecode case also verifies that the
 checksum and position mask preserve the terminal exit opcode.
 
+The current-source differential workflow
+[`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
+has an in-progress evidence snapshot on `f319f1e4`: four platform targets
+passed 39/39 selected cases; one of 16 core shards recorded 230 classified
+runs with 76 applied transformations and 100% complete evidence; its extended
+shard recorded 276/276 complete-evidence runs across all 12 extended passes.
+Eleven completed VM semantic shards passed 461/461 fixture-seed cases. This is
+partial evidence from a running campaign. The hash-bound
+[snapshot and reports](docs/protection-differential-partial-2026-11-20-44661095783/summary.json)
+preserve the artifact IDs, hashes, and current limits; macOS ARM64 and the
+remaining shards were still pending when captured, so platform parity and the
+adversarial and resistance release gates remain open.
+
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
 failures, and 103 recoverable Mach-O parser diagnostics. Its report and

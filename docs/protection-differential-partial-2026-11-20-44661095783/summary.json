@@ -1,0 +1,276 @@
+{
+  "differential_shard": {
+    "core_report": {
+      "applied_runs": 76,
+      "artifact_digest": "sha256:d0aae41dd310359e94e6fb59264761e1a3cc7cfa81190cf6932ef13718b34b95",
+      "artifact_id": 14596027885,
+      "artifact_name": "differential-corpus-by-pass-7-20260902-44661095783-1",
+      "classified_runs": 230,
+      "complete_evidence_coverage_percent": 100.0,
+      "complete_evidence_runs": 230,
+      "core_passes": 10,
+      "errors": 0,
+      "expected_core_passes": 10,
+      "path": "docs/protection-differential-partial-2026-11-20-44661095783/differential-core-shard-7-seed-20260902.json.gz",
+      "semantic_failures": 0,
+      "sha256": "5564c500d29620fbfaa514632da5c872b780450a84e1ac772dda6fd200c51135"
+    },
+    "count": 16,
+    "extended_report": {
+      "applied_runs": 71,
+      "artifact_digest": "sha256:66a5401248a01f4ce4487efd2276297bd47941f8eb991824f20dacbdd57c31b6",
+      "artifact_id": 14595793418,
+      "artifact_name": "extended-maturity-passes-7-20260902-44661095783-1",
+      "classified_runs": 276,
+      "complete_evidence_coverage_percent": 100.0,
+      "complete_evidence_runs": 276,
+      "errors": 0,
+      "expected_extended_passes": 12,
+      "extended_passes": 12,
+      "path": "docs/protection-differential-partial-2026-11-20-44661095783/differential-extended-shard-7-seed-20260902.json.gz",
+      "sha256": "bbfcc9934121d5ef19d0fe49ce671238ed6d0e2982d4c81982c14e0b25f7d84d"
+    },
+    "index": 7,
+    "seed": 20260902
+  },
+  "platform_preview": {
+    "scope": "partial current-source smoke; macOS ARM64 job has not completed",
+    "targets": [
+      {
+        "artifact_digest": "sha256:5eb1ef50bedd4b0c073fc977c317f1c4a94479067f851d80b6b098d3e28cd020",
+        "artifact_id": 14595702320,
+        "artifact_name": "cross-platform-differential-windows-pe-44661095783-1",
+        "cases": 18,
+        "errors": 0,
+        "failures": 0,
+        "passed": 18,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/platform/windows-pe.xml",
+        "sha256": "329faaf927f5eeee2b31c6b5a85af7df8d293a7779a6f2fc27ffffba3e59bb52",
+        "skipped": 0,
+        "target": "windows-pe"
+      },
+      {
+        "artifact_digest": "sha256:216332ea58c4ee813782f70faf3f7793e1c577e32d65db6207abf5b0f6a071a5",
+        "artifact_id": 14595088360,
+        "artifact_name": "elf-arm-32-native-44661095783-1",
+        "cases": 6,
+        "errors": 0,
+        "failures": 0,
+        "passed": 6,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm32.xml",
+        "sha256": "e45156ea41324118eb9d5b51e5a6c0ac5dac1722069e785b6727cd1aed75637f",
+        "skipped": 0,
+        "target": "elf-arm32"
+      },
+      {
+        "artifact_digest": "sha256:6881c6858bbc80073763bdf6d702f925c4e53dc57acbfab9bbc86b53ddc0c6dc",
+        "artifact_id": 14596360145,
+        "artifact_name": "elf-arm64-native-44661095783-1",
+        "cases": 7,
+        "errors": 0,
+        "failures": 0,
+        "passed": 7,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm64.xml",
+        "sha256": "e796c24cb636d9867e9c0bf17c310cbe231900f0a0724a386d12418951fa7f7c",
+        "skipped": 0,
+        "target": "elf-arm64"
+      },
+      {
+        "artifact_digest": "sha256:09631a3d569de528baec6b8c3eef075338cd12a9cceee7226e882eab00f2a58e",
+        "artifact_id": 14595661920,
+        "artifact_name": "elf-x86-32-native-44661095783-1",
+        "cases": 8,
+        "errors": 0,
+        "failures": 0,
+        "passed": 8,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-x86-32.xml",
+        "sha256": "b85dfff67b1b40c226c73f2eba47ca883404deb0930c370ee049cc73032a0822",
+        "skipped": 0,
+        "target": "elf-x86-32"
+      }
+    ],
+    "totals": {
+      "cases": 39,
+      "errors": 0,
+      "failures": 0,
+      "passed": 39,
+      "skipped": 0,
+      "targets": 4
+    }
+  },
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open",
+    "reason": "This is an in-progress partial snapshot, not the campaign aggregate or full matrix."
+  },
+  "schema_version": 1,
+  "vm_semantic_preview": {
+    "scope": "completed Linux ELF x86-64 fixture-seed shards only",
+    "shards": [
+      {
+        "artifact_digest": "sha256:376a4d1303c99d510471494cd7ae35e8854b81f0a3c059574cad7bc877472c9e",
+        "artifact_id": 14595269705,
+        "artifact_name": "vm-semantic-campaign-20260916-1-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260916-1.json",
+        "seed": 20260916,
+        "sha256": "eddf0b1c826b3c9a12aa5be69405a1bad9d89c0ae2525d6bc34b4680bce3e45f",
+        "shard": 1,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:a62b446c1f647df57303ba3c25efc6d5f2d3ce8d4bc39e21b89566706924d613",
+        "artifact_id": 14595918516,
+        "artifact_name": "vm-semantic-campaign-20260916-2-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260916-2.json",
+        "seed": 20260916,
+        "sha256": "e57dc32f71acca42bd86a923e88b2ca24b17ea6c1eb7f3969e1b5ed0b3a41786",
+        "shard": 2,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:0b076f969c9d4a5763ae982f8965e9ce2920bb0ba0041b675d4a65f2ffee580d",
+        "artifact_id": 14596226290,
+        "artifact_name": "vm-semantic-campaign-20260916-3-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260916-3.json",
+        "seed": 20260916,
+        "sha256": "1b42abe333990b791e3540a044674d84340c3c49ac75c18a5bd6ce011bf876e8",
+        "shard": 3,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:ea65e381c379d1e85561006cb08d5fc0522105a16cd9eec6e906c6def0a62f11",
+        "artifact_id": 14595902763,
+        "artifact_name": "vm-semantic-campaign-20260917-1-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260917-1.json",
+        "seed": 20260917,
+        "sha256": "9963838df93d6c17e7df9faa182ab3b68f537b8764f2cb6cb99a4b5fdeac2ebe",
+        "shard": 1,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:aa2d15ee734028d5d99ac009cba87c81132f234127778adcf7623af84f3e9e67",
+        "artifact_id": 14596376003,
+        "artifact_name": "vm-semantic-campaign-20260917-3-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260917-3.json",
+        "seed": 20260917,
+        "sha256": "87c9f919e811d113c23a3c8c702b850a4a37b51d03b4a1b3782dec164af0ea29",
+        "shard": 3,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:5803bd3bd1a79ff05eca9b635206ea99c70b5ad7cb23dd1e884690137070e38f",
+        "artifact_id": 14595049831,
+        "artifact_name": "vm-semantic-campaign-20260917-5-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260917-5.json",
+        "seed": 20260917,
+        "sha256": "3c4ffb3de8b7442579f3ef8835d26329100146845b54d3975694d6482b944438",
+        "shard": 5,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:8466c0bf6b43a8d82d304dd30e14f6b53a3b6965d9104665e936bdbc8ebd057c",
+        "artifact_id": 14595158658,
+        "artifact_name": "vm-semantic-campaign-20260917-7-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 41,
+        "passed_count": 41,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260917-7.json",
+        "seed": 20260917,
+        "sha256": "bf334f64d1f3195158f21b807647ee26bd6c5727c9cd9dc23d973a2b72a4eabf",
+        "shard": 7,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:096f4cf6e3791a697bd5709de3b0517950616aa9ab746453517e84f951f041d6",
+        "artifact_id": 14596256082,
+        "artifact_name": "vm-semantic-campaign-20260918-0-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260918-0.json",
+        "seed": 20260918,
+        "sha256": "8f146c5a1208da4a5f9721fefe80e5ab85cd66aab156c1805743566350b36d96",
+        "shard": 0,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:c8425c35be9f9f2e51da1507d3b7a36adfc09d30bb79e756e25d61e356274440",
+        "artifact_id": 14596257624,
+        "artifact_name": "vm-semantic-campaign-20260918-2-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260918-2.json",
+        "seed": 20260918,
+        "sha256": "c4b1252acab9635345f56357ee48901cc8bca0b84773101f397d3bf1ffa963bc",
+        "shard": 2,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:78fda53d12ece36eda7a0b540bc2941386fc36f89b4501e351963ae92f1f2dfb",
+        "artifact_id": 14595753654,
+        "artifact_name": "vm-semantic-campaign-20260918-3-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260918-3.json",
+        "seed": 20260918,
+        "sha256": "59f46d15962d8bc966e8d3e16b72613008bfefc5a8c46210acedb9a871cf56c7",
+        "shard": 3,
+        "status": "passed"
+      },
+      {
+        "artifact_digest": "sha256:3d2b51440f990b8642befe9c083f8c60300a27d5a000e2ca05bca4e329ce3233",
+        "artifact_id": 14595746970,
+        "artifact_name": "vm-semantic-campaign-20260918-4-44661095783-1",
+        "failed_count": 0,
+        "fixture_count": 42,
+        "passed_count": 42,
+        "report": "docs/protection-differential-partial-2026-11-20-44661095783/vm-semantic/vm-semantic-campaign-20260918-4.json",
+        "seed": 20260918,
+        "sha256": "a1f13bce36deb1a7ed7cfc29117aa9d699605aa5e9c5a59f00227274fc3a1923",
+        "shard": 4,
+        "status": "passed"
+      }
+    ],
+    "totals": {
+      "failed": 0,
+      "fixtures": 461,
+      "passed": 461,
+      "shards": 11
+    }
+  },
+  "workflow": {
+    "attempt": 1,
+    "captured_job_counts": {
+      "completed_failure": 0,
+      "completed_success": 16,
+      "in_progress": 13,
+      "queued": 52,
+      "total": 81
+    },
+    "captured_run_status": "queued",
+    "event": "workflow_dispatch",
+    "run_id": 44661095783,
+    "source_commit": "f319f1e4c47f80b678b8a397dcdbcb0fa1d17f87"
+  }
+}

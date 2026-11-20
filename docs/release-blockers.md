@@ -6,6 +6,27 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source partial differential snapshot — 2026-11-20
+
+Workflow
+[`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
+ran on source `f319f1e4c47f80b678b8a397dcdbcb0fa1d17f87`. At the pinned
+snapshot, 16 of 81 jobs had succeeded, 13 were active, 52 were queued, and zero
+had failed. Windows PE and ELF ARM32, ARM64, and x86-32 passed 39 selected
+cases with no failures, errors, or skips. The macOS ARM64 job and the full
+matrix had not completed.
+
+One core shard classified 230 rows across 10 passes (76 applied; 154 omitted
+as ineligible); one extended shard classified 276 rows across 12 passes (71
+applied; 205 omitted as ineligible). Both recorded complete evidence for every
+row and zero errors or semantic failures. Eleven VM semantic shards passed
+461/461 fixture-seed cases on Linux ELF x86-64. These are partial slices, not
+full corpus, platform, or resistance conclusions. The
+[hash-bound summary and reports](protection-differential-partial-2026-11-20-44661095783/summary.json)
+and [regression test](../tests/unit/test_published_differential_partial_44661095783.py)
+preserve and verify the exact evidence. The parity, all-analyzer, and published
+resistance criteria remain open.
+
 ## Local installed-wheel release validation — 2026-11-16
 
 The wheel and source distribution for `0.4.0-alpha.3` were built from source

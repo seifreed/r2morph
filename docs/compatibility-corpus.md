@@ -1198,3 +1198,27 @@ retain the per-shard matrices, tool reports, platform XML, and file hashes.
 The [regression test](../tests/unit/test_published_workflow_evidence_44043963389.py)
 recomputes pass counts, verifies archive hashes and privacy, and keeps the
 analyzer, parity, and resistance release gates open.
+
+## Current-source partial differential evidence — 2026-11-20
+
+Workflow
+[`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
+ran on source `f319f1e4c47f80b678b8a397dcdbcb0fa1d17f87`. At the captured
+snapshot, 16 of 81 jobs had succeeded, 13 were running, 52 were queued, and no
+job had failed. Four completed cross-platform targets passed 39/39 selected
+cases: Windows PE (18), ELF ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8).
+macOS ARM64 had not completed, so these results are not a platform aggregate.
+
+Core differential shard 7/16 on seed `20260902` classified 230 rows across all
+10 core passes: 76 were applied, 154 were ineligible omissions, and there were
+zero errors or semantic failures with complete evidence on all rows. Its
+extended shard classified 276 rows across all 12 extended passes; 71 applied,
+205 were ineligible omissions, and all rows had complete evidence with zero
+errors. Eleven completed VM semantic shards recorded 461/461 fixture-seed
+passes across Linux ELF x86-64. The [hash-bound snapshot, per-target reports,
+and compressed pass reports](protection-differential-partial-2026-11-20-44661095783/summary.json)
+pin workflow artifact IDs, archive digests, extracted report hashes, and these
+partial counts. The [regression test](../tests/unit/test_published_differential_partial_44661095783.py)
+rechecks those values and keeps the 1.0 parity, analyzer, and resistance gates
+open. The running workflow and remaining 65 jobs are not represented as
+completed evidence.

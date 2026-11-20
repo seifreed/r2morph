@@ -1,0 +1,3236 @@
+{
+  "capability_summary": {
+    "abi-varargs": {
+      "categories": [
+        "abi_varargs"
+      ],
+      "failed_count": 0,
+      "fixture_count": 4,
+      "passed_count": 4,
+      "status": "campaign-measured"
+    },
+    "direct-calls": {
+      "categories": [
+        "direct_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 8,
+      "passed_count": 8,
+      "status": "campaign-measured"
+    },
+    "fp-simd": {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "failed_count": 0,
+      "fixture_count": 9,
+      "passed_count": 9,
+      "status": "campaign-measured"
+    },
+    "indirect-calls": {
+      "categories": [
+        "indirect_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 2,
+      "passed_count": 2,
+      "status": "campaign-measured"
+    },
+    "memory": {
+      "categories": [
+        "memory_addressing"
+      ],
+      "failed_count": 0,
+      "fixture_count": 16,
+      "passed_count": 16,
+      "status": "campaign-measured"
+    },
+    "ssa-liveness": {
+      "categories": [
+        "ssa_liveness"
+      ],
+      "failed_count": 0,
+      "fixture_count": 6,
+      "passed_count": 6,
+      "status": "campaign-measured"
+    },
+    "threads": {
+      "categories": [
+        "thread_safety"
+      ],
+      "failed_count": 0,
+      "fixture_count": 3,
+      "passed_count": 3,
+      "status": "campaign-measured"
+    },
+    "tls-signals": {
+      "categories": [
+        "tls_accesses",
+        "signals_and_system_calls"
+      ],
+      "failed_count": 0,
+      "fixture_count": 4,
+      "passed_count": 4,
+      "status": "campaign-measured"
+    },
+    "unwinding-exceptions": {
+      "categories": [
+        "unwinding_exceptions"
+      ],
+      "failed_count": 0,
+      "fixture_count": 0,
+      "passed_count": 0,
+      "status": "not-covered-by-fixture-campaign"
+    }
+  },
+  "category_summary": {
+    "abi_varargs": {
+      "failed_count": 0,
+      "fixture_count": 4,
+      "passed_count": 4
+    },
+    "calls_and_returns": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "control_flow_and_dispatch": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "direct_calls": {
+      "failed_count": 0,
+      "fixture_count": 8,
+      "passed_count": 8
+    },
+    "fallback_paths": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "flags_and_conditions": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "floating_point_and_simd": {
+      "failed_count": 0,
+      "fixture_count": 9,
+      "passed_count": 9
+    },
+    "gp_arithmetic": {
+      "failed_count": 0,
+      "fixture_count": 4,
+      "passed_count": 4
+    },
+    "indirect_calls": {
+      "failed_count": 0,
+      "fixture_count": 2,
+      "passed_count": 2
+    },
+    "memory_addressing": {
+      "failed_count": 0,
+      "fixture_count": 16,
+      "passed_count": 16
+    },
+    "signals_and_system_calls": {
+      "failed_count": 0,
+      "fixture_count": 2,
+      "passed_count": 2
+    },
+    "ssa_liveness": {
+      "failed_count": 0,
+      "fixture_count": 6,
+      "passed_count": 6
+    },
+    "thread_runtime_boundaries": {
+      "failed_count": 0,
+      "fixture_count": 1,
+      "passed_count": 1
+    },
+    "thread_safety": {
+      "failed_count": 0,
+      "fixture_count": 3,
+      "passed_count": 3
+    },
+    "tls_accesses": {
+      "failed_count": 0,
+      "fixture_count": 2,
+      "passed_count": 2
+    }
+  },
+  "corpus_fixture_counts": {
+    "generated-corpus": 23,
+    "repository-fixtures": 19
+  },
+  "failed_count": 0,
+  "failures": [],
+  "fixture_count": 42,
+  "fixture_names": [
+    "elf_vm_arith32_x86_64",
+    "elf_vm_call_stack_args_x86_64",
+    "elf_vm_cmpsynth_x86_64",
+    "elf_vm_fparithidxnb_x86_64",
+    "elf_vm_fpenginearith_x86_64",
+    "elf_vm_fpenginemove_x86_64",
+    "elf_vm_fppacked_x86_64",
+    "elf_vm_global_x86_64",
+    "elf_vm_incdec8_x86_64",
+    "elf_vm_lea_x86_64",
+    "elf_vm_memwidth_x86_64",
+    "elf_vm_movxidx_x86_64",
+    "elf_vm_pie_x86_64",
+    "elf_vm_riprelmicroop_x86_64",
+    "elf_vm_run_movxidxfallback_x86_64",
+    "elf_vm_simdint_x86_64",
+    "elf_vm_thread_xchg_x86_64",
+    "elf_vm_vex128_phaddd_x86_64",
+    "elf_vm_vex256_unpack_x86_64",
+    "generated_abi_clang-pie-o2",
+    "generated_abi_gcc-stripped-o2",
+    "generated_branch_gcc-o3",
+    "generated_calls_clang-pie-o2",
+    "generated_calls_gcc-stripped-o2",
+    "generated_cpp_clangxx-stripped-o2",
+    "generated_cpp_gxx-stripped-o2",
+    "generated_extended_gcc-o3",
+    "generated_lookup_clang-pie-o2",
+    "generated_lookup_gcc-stripped-o2",
+    "generated_memory_gcc-o3",
+    "generated_pointers_clang-pie-o2",
+    "generated_pointers_gcc-stripped-o2",
+    "generated_recursive_gcc-o3",
+    "generated_signals_clang-pie-o2",
+    "generated_signals_gcc-stripped-o2",
+    "generated_simd_gcc-o3",
+    "generated_stack_strings_clang-pie-o2",
+    "generated_stack_strings_gcc-stripped-o2",
+    "generated_string_gcc-o3",
+    "generated_threads_clang-pie-o2",
+    "generated_threads_gcc-stripped-o2",
+    "generated_xlat_gcc-o3"
+  ],
+  "fixture_results": [
+    {
+      "categories": [
+        "gp_arithmetic"
+      ],
+      "fixture": "elf_vm_arith32_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 45,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 45,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0034378629999878285,
+          "exit_code": 45,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002770124000051055,
+          "exit_code": 45,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 18629,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 19,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "calls_and_returns",
+        "direct_calls"
+      ],
+      "fixture": "elf_vm_call_stack_args_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0043454460000020845,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0030084480000027725,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "call",
+            "leave",
+            "mov",
+            "push"
+          ],
+          "bytecode_size": 18211,
+          "end_address": 4198417,
+          "function_address": 4198413,
+          "instructions_count": 22,
+          "start_address": 4198413
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "mov",
+            "rdtsc"
+          ],
+          "bytecode_size": 14299,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 12,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "flags_and_conditions"
+      ],
+      "fixture": "elf_vm_cmpsynth_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0034975579999922957,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0027470699999980752,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "jge",
+            "jmp",
+            "jne",
+            "js",
+            "mov",
+            "test"
+          ],
+          "bytecode_size": 17870,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 34,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd",
+        "gp_arithmetic"
+      ],
+      "fixture": "elf_vm_fparithidxnb_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0033433899999977257,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0027447000000506705,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "addsd",
+            "cvttsd2si",
+            "mov",
+            "movabs",
+            "movsd"
+          ],
+          "bytecode_size": 11052,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 13,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd",
+        "gp_arithmetic"
+      ],
+      "fixture": "elf_vm_fpenginearith_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 69,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 69,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.004173813000022619,
+          "exit_code": 69,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0027473429999531618,
+          "exit_code": 69,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "addsd",
+            "and",
+            "call",
+            "mov",
+            "movabs",
+            "movsd",
+            "shr"
+          ],
+          "bytecode_size": 33533,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 33,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "elf_vm_fpenginemove_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.004037913999979992,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0029378090000022894,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "call",
+            "mov",
+            "movsd"
+          ],
+          "bytecode_size": 27494,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 18,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "elf_vm_fppacked_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0037549589999912314,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0029802210000298146,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "addpd",
+            "cvttsd2si",
+            "lea",
+            "mov",
+            "movabs",
+            "movups"
+          ],
+          "bytecode_size": 14012,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 32,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_global_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.00335938000000624,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002974599000026501,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "mov"
+          ],
+          "bytecode_size": 9405,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 8,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "gp_arithmetic"
+      ],
+      "fixture": "elf_vm_incdec8_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.003953429999967284,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0029940160000023752,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "inc",
+            "jmp",
+            "jne",
+            "mov"
+          ],
+          "bytecode_size": 20569,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 18,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_lea_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.003367834000016501,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0029088309999565354,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "lea",
+            "mov"
+          ],
+          "bytecode_size": 11840,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 12,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_memwidth_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 80,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 80,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.005127470999980233,
+          "exit_code": 80,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002986761999977716,
+          "exit_code": 80,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "cmp",
+            "jmp",
+            "jne",
+            "mov",
+            "movabs",
+            "movzx",
+            "sub"
+          ],
+          "bytecode_size": 40542,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 65,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_movxidx_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.003862219999973604,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002975210000045081,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "jge",
+            "jl",
+            "jmp",
+            "lea",
+            "mov",
+            "movsx",
+            "movzx",
+            "xor"
+          ],
+          "bytecode_size": 24842,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 37,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "control_flow_and_dispatch",
+        "ssa_liveness"
+      ],
+      "fixture": "elf_vm_pie_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 73,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 73,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.00490442500000654,
+          "exit_code": 73,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002751655999986724,
+          "exit_code": 73,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "mov",
+            "pop",
+            "push"
+          ],
+          "bytecode_size": 19023,
+          "end_address": 4124,
+          "function_address": 4120,
+          "instructions_count": 19,
+          "start_address": 4120
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "imul",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 23133,
+          "end_address": 4100,
+          "function_address": 4096,
+          "instructions_count": 22,
+          "start_address": 4096
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_riprelmicroop_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.003738687000009122,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.002932817999976578,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "jb",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 22428,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 32,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "fallback_paths",
+        "memory_addressing"
+      ],
+      "fixture": "elf_vm_run_movxidxfallback_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0037483320000433196,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0029090360000054716,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "lea",
+            "mov",
+            "movzx"
+          ],
+          "bytecode_size": 17303,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 12,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "elf_vm_simdint_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": -11,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": 11
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": -11,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": 11
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.05935643899999832,
+          "exit_code": -11,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.05155867900003841,
+          "exit_code": -11,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "jmp",
+            "jne",
+            "mov",
+            "pand",
+            "pandn",
+            "por",
+            "ptest",
+            "pxor"
+          ],
+          "bytecode_size": 15886,
+          "end_address": 2101624,
+          "function_address": 2101620,
+          "instructions_count": 23,
+          "start_address": 2101620
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "thread_runtime_boundaries",
+        "thread_safety"
+      ],
+      "fixture": "elf_vm_thread_xchg_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.004589681999959794,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.00266902100003108,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "jne",
+            "lea",
+            "mov",
+            "xchg"
+          ],
+          "bytecode_size": 40161,
+          "end_address": 2101596,
+          "function_address": 2101592,
+          "instructions_count": 45,
+          "start_address": 2101592
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "elf_vm_vex128_phaddd_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.004339517000005344,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.0028940990000023703,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "jne",
+            "mov",
+            "movabs",
+            "movdqa",
+            "movdqu",
+            "vphaddd"
+          ],
+          "bytecode_size": 28542,
+          "end_address": 2101252,
+          "function_address": 2101248,
+          "instructions_count": 42,
+          "start_address": 2101248
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "elf_vm_vex256_unpack_x86_64",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.004555219999986093,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.003051940000034392,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "jne",
+            "mov",
+            "movd",
+            "vextracti128",
+            "vmovdqa",
+            "vpunpckhbw",
+            "vpunpckhdq",
+            "vpunpckhqdq",
+            "vpunpckhwd",
+            "vpunpckldq",
+            "vpunpcklqdq"
+          ],
+          "bytecode_size": 25178,
+          "end_address": 4198404,
+          "function_address": 4198400,
+          "instructions_count": 126,
+          "start_address": 4198400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "abi_varargs",
+        "direct_calls",
+        "tls_accesses"
+      ],
+      "fixture": "generated_abi_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 57,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 57,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.020028491000005033,
+          "exit_code": 57,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.016553363000014087,
+          "exit_code": 57,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "cmp",
+            "jae",
+            "je",
+            "jmp",
+            "lea",
+            "mov",
+            "movabs",
+            "movaps",
+            "or",
+            "sub",
+            "test"
+          ],
+          "bytecode_size": 48329,
+          "end_address": 4452,
+          "function_address": 4448,
+          "instructions_count": 220,
+          "start_address": 4448
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "mov",
+            "pop",
+            "push",
+            "xor"
+          ],
+          "bytecode_size": 30310,
+          "end_address": 4404,
+          "function_address": 4400,
+          "instructions_count": 36,
+          "start_address": 4400
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "abi_varargs",
+        "direct_calls",
+        "tls_accesses"
+      ],
+      "fixture": "generated_abi_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 57,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 57,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.018124701999965964,
+          "exit_code": 57,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015818051999985983,
+          "exit_code": 57,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "lea",
+            "mov"
+          ],
+          "bytecode_size": 17723,
+          "end_address": 4198756,
+          "function_address": 4198752,
+          "instructions_count": 51,
+          "start_address": 4198752
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "lea",
+            "mov",
+            "movsxd",
+            "xor"
+          ],
+          "bytecode_size": 26551,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 25,
+          "start_address": 4198436
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "ssa_liveness"
+      ],
+      "fixture": "generated_branch_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 3,
+      "mutated": {
+        "created_files": {},
+        "returncode": 24,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 24,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.01931661499997972,
+          "exit_code": 24,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015739413999995122,
+          "exit_code": 24,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "cmove",
+            "cmp",
+            "je",
+            "jle",
+            "jne",
+            "lea",
+            "mov",
+            "nop",
+            "pop",
+            "push",
+            "shr",
+            "sub",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 44518,
+          "end_address": 4198756,
+          "function_address": 4198752,
+          "instructions_count": 168,
+          "start_address": 4198752
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "jrcxz",
+            "mov",
+            "nop",
+            "xor"
+          ],
+          "bytecode_size": 12839,
+          "end_address": 4198692,
+          "function_address": 4198688,
+          "instructions_count": 30,
+          "start_address": 4198688
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "imul",
+            "mov",
+            "nop"
+          ],
+          "bytecode_size": 17568,
+          "end_address": 4198716,
+          "function_address": 4198712,
+          "instructions_count": 23,
+          "start_address": 4198712
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "direct_calls",
+        "indirect_calls"
+      ],
+      "fixture": "generated_calls_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 37,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 37,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.01727123500000971,
+          "exit_code": 37,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01576639300003535,
+          "exit_code": 37,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "mov",
+            "pop",
+            "push"
+          ],
+          "bytecode_size": 34282,
+          "end_address": 4420,
+          "function_address": 4416,
+          "instructions_count": 31,
+          "start_address": 4416
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "direct_calls",
+        "indirect_calls"
+      ],
+      "fixture": "generated_calls_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 37,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 37,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0169684979999829,
+          "exit_code": 37,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01625897100001339,
+          "exit_code": 37,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "jmp",
+            "mov",
+            "pop",
+            "push"
+          ],
+          "bytecode_size": 36552,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 21,
+          "start_address": 4198436
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "direct_calls",
+        "abi_varargs"
+      ],
+      "fixture": "generated_cpp_clangxx-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 107,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 107,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.025963341999954537,
+          "exit_code": 107,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.024850930000013705,
+          "exit_code": 107,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "inc",
+            "lea",
+            "mov",
+            "shr",
+            "xor"
+          ],
+          "bytecode_size": 24482,
+          "end_address": 4198676,
+          "function_address": 4198672,
+          "instructions_count": 48,
+          "start_address": 4198672
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "direct_calls",
+        "abi_varargs"
+      ],
+      "fixture": "generated_cpp_gxx-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 107,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 107,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.027410770000017237,
+          "exit_code": 107,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.024482016000035856,
+          "exit_code": 107,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "lea",
+            "mov",
+            "shr",
+            "xor"
+          ],
+          "bytecode_size": 19634,
+          "end_address": 4199320,
+          "function_address": 4199312,
+          "instructions_count": 26,
+          "start_address": 4199316
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "lea",
+            "mov",
+            "pop",
+            "push",
+            "sub",
+            "xor"
+          ],
+          "bytecode_size": 27080,
+          "end_address": 4198488,
+          "function_address": 4198480,
+          "instructions_count": 53,
+          "start_address": 4198484
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing",
+        "floating_point_and_simd",
+        "ssa_liveness"
+      ],
+      "fixture": "generated_extended_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 5,
+      "mutated": {
+        "created_files": {},
+        "returncode": 98,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 98,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.024602001000005203,
+          "exit_code": 98,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.016684678999979496,
+          "exit_code": 98,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "mov"
+          ],
+          "bytecode_size": 11432,
+          "end_address": 4199044,
+          "function_address": 4199040,
+          "instructions_count": 13,
+          "start_address": 4199040
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "je",
+            "jmp",
+            "mov",
+            "sub",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 21743,
+          "end_address": 4199076,
+          "function_address": 4199072,
+          "instructions_count": 71,
+          "start_address": 4199072
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "lea",
+            "mov",
+            "rorx",
+            "shr",
+            "xor"
+          ],
+          "bytecode_size": 24342,
+          "end_address": 4199156,
+          "function_address": 4199152,
+          "instructions_count": 23,
+          "start_address": 4199152
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "cmp",
+            "jle",
+            "jne",
+            "mov",
+            "movsxd",
+            "movzx",
+            "nop",
+            "shl",
+            "shlx",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 33272,
+          "end_address": 4199204,
+          "function_address": 4199200,
+          "instructions_count": 59,
+          "start_address": 4199200
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "cmp",
+            "je",
+            "jle",
+            "jmp",
+            "lea",
+            "mov",
+            "pop",
+            "push",
+            "sub",
+            "test",
+            "vzeroupper"
+          ],
+          "bytecode_size": 50707,
+          "end_address": 4198600,
+          "function_address": 4198592,
+          "instructions_count": 83,
+          "start_address": 4198596
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_lookup_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 113,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 113,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.018288132000009227,
+          "exit_code": 113,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015961870000012368,
+          "exit_code": 113,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "cmp",
+            "inc",
+            "jne",
+            "lea",
+            "mov",
+            "movzx",
+            "nop",
+            "rol",
+            "shl",
+            "xor"
+          ],
+          "bytecode_size": 43413,
+          "end_address": 4420,
+          "function_address": 4416,
+          "instructions_count": 126,
+          "start_address": 4416
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_lookup_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 113,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 113,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.016576116000010188,
+          "exit_code": 113,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01588230800001611,
+          "exit_code": 113,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "cmp",
+            "jmp",
+            "jne",
+            "lea",
+            "mov",
+            "movzx",
+            "nop",
+            "rorx",
+            "shl",
+            "shlx",
+            "xor"
+          ],
+          "bytecode_size": 22494,
+          "end_address": 4198472,
+          "function_address": 4198464,
+          "instructions_count": 44,
+          "start_address": 4198468
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_memory_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 80,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 80,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.017793624000034924,
+          "exit_code": 80,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015924315999995997,
+          "exit_code": 80,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "cmp",
+            "jle",
+            "jmp",
+            "jne",
+            "mov",
+            "movsxd",
+            "movzx",
+            "nop",
+            "rorx",
+            "shl",
+            "shlx",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 26435,
+          "end_address": 4198820,
+          "function_address": 4198816,
+          "instructions_count": 62,
+          "start_address": 4198816
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "call",
+            "cmp",
+            "jle",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 33640,
+          "end_address": 4198504,
+          "function_address": 4198496,
+          "instructions_count": 26,
+          "start_address": 4198500
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing",
+        "ssa_liveness"
+      ],
+      "fixture": "generated_pointers_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 3,
+      "mutated": {
+        "created_files": {},
+        "returncode": 122,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 122,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.01956593900001735,
+          "exit_code": 122,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015743880000002264,
+          "exit_code": 122,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "call",
+            "lea",
+            "mov",
+            "pop",
+            "push",
+            "xor"
+          ],
+          "bytecode_size": 31245,
+          "end_address": 4452,
+          "function_address": 4448,
+          "instructions_count": 33,
+          "start_address": 4448
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "lea",
+            "mov",
+            "pop",
+            "push",
+            "sub"
+          ],
+          "bytecode_size": 34313,
+          "end_address": 4404,
+          "function_address": 4400,
+          "instructions_count": 35,
+          "start_address": 4400
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "mov",
+            "rol",
+            "shl",
+            "xor"
+          ],
+          "bytecode_size": 14092,
+          "end_address": 4500,
+          "function_address": 4496,
+          "instructions_count": 31,
+          "start_address": 4496
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing",
+        "ssa_liveness"
+      ],
+      "fixture": "generated_pointers_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 3,
+      "mutated": {
+        "created_files": {},
+        "returncode": 122,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 122,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.018762084000002233,
+          "exit_code": 122,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015670978000002833,
+          "exit_code": 122,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "call",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 17768,
+          "end_address": 4198772,
+          "function_address": 4198768,
+          "instructions_count": 23,
+          "start_address": 4198768
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "lea",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 22702,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 27,
+          "start_address": 4198436
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "mov",
+            "rorx",
+            "shl",
+            "xor"
+          ],
+          "bytecode_size": 21652,
+          "end_address": 4198740,
+          "function_address": 4198736,
+          "instructions_count": 18,
+          "start_address": 4198736
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "direct_calls",
+        "ssa_liveness"
+      ],
+      "fixture": "generated_recursive_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 5,
+      "mutated": {
+        "created_files": {},
+        "returncode": 63,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 63,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.020332515999996303,
+          "exit_code": 63,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015641607000020485,
+          "exit_code": 63,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "div",
+            "jmp",
+            "jne",
+            "mov",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 11019,
+          "end_address": 4198724,
+          "function_address": 4198720,
+          "instructions_count": 24,
+          "start_address": 4198720
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "lea",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 14818,
+          "end_address": 4198884,
+          "function_address": 4198880,
+          "instructions_count": 15,
+          "start_address": 4198880
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "call",
+            "lea",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 26170,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 26,
+          "start_address": 4198436
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "lea",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 19306,
+          "end_address": 4198788,
+          "function_address": 4198784,
+          "instructions_count": 18,
+          "start_address": 4198784
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "lea",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 25791,
+          "end_address": 4198820,
+          "function_address": 4198816,
+          "instructions_count": 16,
+          "start_address": 4198816
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "signals_and_system_calls"
+      ],
+      "fixture": "generated_signals_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.019063354999957483,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.017153242999995655,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "call",
+            "cmp",
+            "je",
+            "lea",
+            "mov",
+            "pop",
+            "push",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 49621,
+          "end_address": 4452,
+          "function_address": 4448,
+          "instructions_count": 62,
+          "start_address": 4448
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "mov",
+            "sete",
+            "xor"
+          ],
+          "bytecode_size": 11055,
+          "end_address": 4532,
+          "function_address": 4528,
+          "instructions_count": 9,
+          "start_address": 4528
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "signals_and_system_calls"
+      ],
+      "fixture": "generated_signals_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.017751443999998173,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01635084000002962,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "call",
+            "cmp",
+            "je",
+            "jmp",
+            "jne",
+            "mov",
+            "pop",
+            "push",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 36339,
+          "end_address": 4198520,
+          "function_address": 4198512,
+          "instructions_count": 42,
+          "start_address": 4198516
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "floating_point_and_simd"
+      ],
+      "fixture": "generated_simd_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.01697243799998205,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01570231599998806,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "and",
+            "lea",
+            "mov",
+            "vmovd",
+            "vpaddd",
+            "vpbroadcastd",
+            "vpinsrd",
+            "vpsrld",
+            "vpsrldq",
+            "vpunpcklqdq",
+            "vpxor"
+          ],
+          "bytecode_size": 22943,
+          "end_address": 4198692,
+          "function_address": 4198688,
+          "instructions_count": 39,
+          "start_address": 4198688
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_stack_strings_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.0171659380000051,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015874202000020432,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "lea"
+          ],
+          "bytecode_size": 6647,
+          "end_address": 4420,
+          "function_address": 4416,
+          "instructions_count": 4,
+          "start_address": 4416
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "mov",
+            "pop",
+            "push"
+          ],
+          "bytecode_size": 24894,
+          "end_address": 4436,
+          "function_address": 4432,
+          "instructions_count": 22,
+          "start_address": 4432
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_stack_strings_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.016949482000029548,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015685082000004513,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "call",
+            "mov",
+            "sub"
+          ],
+          "bytecode_size": 16368,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 12,
+          "start_address": 4198436
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "cmp",
+            "setne",
+            "xor"
+          ],
+          "bytecode_size": 14781,
+          "end_address": 4198712,
+          "function_address": 4198704,
+          "instructions_count": 9,
+          "start_address": 4198708
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_string_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.017114595999998983,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.015660173000014765,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "cld",
+            "lea",
+            "mov",
+            "movabs",
+            "movzx",
+            "rep"
+          ],
+          "bytecode_size": 16405,
+          "end_address": 4198708,
+          "function_address": 4198704,
+          "instructions_count": 42,
+          "start_address": 4198704
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "cmove",
+            "cmp",
+            "mov"
+          ],
+          "bytecode_size": 16737,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 12,
+          "start_address": 4198436
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "thread_safety"
+      ],
+      "fixture": "generated_threads_clang-pie-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.022860057000002598,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.020415522000007513,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "je",
+            "jne",
+            "lea",
+            "mov",
+            "sub",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 37781,
+          "end_address": 4452,
+          "function_address": 4448,
+          "instructions_count": 82,
+          "start_address": 4448
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "lock",
+            "mov",
+            "xor"
+          ],
+          "bytecode_size": 13544,
+          "end_address": 4548,
+          "function_address": 4544,
+          "instructions_count": 15,
+          "start_address": 4544
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "thread_safety"
+      ],
+      "fixture": "generated_threads_gcc-stripped-o2",
+      "functions_skipped": 0,
+      "functions_virtualized": 1,
+      "mutated": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 0,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.02255608999996639,
+          "exit_code": 0,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.020245846000022993,
+          "exit_code": 0,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "add",
+            "and",
+            "call",
+            "jmp",
+            "jne",
+            "lea",
+            "mov",
+            "sub",
+            "test",
+            "xor"
+          ],
+          "bytecode_size": 44452,
+          "end_address": 4198520,
+          "function_address": 4198512,
+          "instructions_count": 55,
+          "start_address": 4198516
+        }
+      ],
+      "unsupported_functions": 0
+    },
+    {
+      "categories": [
+        "memory_addressing"
+      ],
+      "fixture": "generated_xlat_gcc-o3",
+      "functions_skipped": 0,
+      "functions_virtualized": 2,
+      "mutated": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "observables_equal": true,
+      "original": {
+        "created_files": {},
+        "returncode": 42,
+        "status": "completed",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_size": 0,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stdout_size": 0,
+        "termination_signal": null
+      },
+      "qemu": {
+        "mutated": {
+          "duration_seconds": 0.016743425000015577,
+          "exit_code": 42,
+          "status": "completed"
+        },
+        "observables_equal": true,
+        "original": {
+          "duration_seconds": 0.01578679300001795,
+          "exit_code": 42,
+          "status": "completed"
+        }
+      },
+      "status": "passed",
+      "transformation_records": [
+        {
+          "affected_instruction_mnemonics": [
+            "mov",
+            "movzx",
+            "pop",
+            "push",
+            "xlatb"
+          ],
+          "bytecode_size": 13108,
+          "end_address": 4198708,
+          "function_address": 4198704,
+          "instructions_count": 10,
+          "start_address": 4198704
+        },
+        {
+          "affected_instruction_mnemonics": [
+            "call",
+            "cmove",
+            "cmp",
+            "mov"
+          ],
+          "bytecode_size": 16737,
+          "end_address": 4198440,
+          "function_address": 4198432,
+          "instructions_count": 12,
+          "start_address": 4198436
+        }
+      ],
+      "unsupported_functions": 0
+    }
+  ],
+  "measurement": "vm-semantic-native-parity-campaign",
+  "passed_count": 42,
+  "qemu_summary": {
+    "completed_pairs": 42,
+    "divergent_pairs": 0,
+    "missing_pairs": 0,
+    "oracle": "qemu-x86_64",
+    "unavailable_pairs": 0
+  },
+  "schema_version": 1,
+  "seed": 20260918,
+  "status": "passed",
+  "target": {
+    "architecture": "x86-64",
+    "format": "ELF",
+    "os": "linux"
+  }
+}
