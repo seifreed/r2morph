@@ -310,7 +310,8 @@ valid license. See the [current-run evidence summary](docs/differential-run-2026
 
 The experimental region VM lowers register-form BMI2 `shlx` and immediate
 form `rorx` while preserving guest flags. It also supports VEX.128 memory-form
-`vmovd` loads, register-form `vpinsrd`, and XMM `vpbroadcastd`/`vpbroadcastq`.
+`vmovd` loads, register-form `vpinsrd`, XMM `vpbroadcastd`/`vpbroadcastq`, and
+VEX.128 immediate byte shifts (`vpsrldq`).
 Linux x86-64 integration fixtures check native results; the BMI2 fixture also
 checks condition flags and requires a BMI2-capable CPU. These instruction-level
 results do not establish general SIMD coverage or close the broader VM

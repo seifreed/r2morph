@@ -66,6 +66,11 @@ def test_legacy_packed_shuffle_handler_preserves_sse_mnemonic() -> None:
     expect("pshufd xmm0, xmm0, 80" in assembly and "vpshufd" not in assembly)
 
 
+def test_vex_byte_shift_handler_preserves_immediate_and_vex_semantics() -> None:
+    assembly = _fp_vex_packed_shift_immediate_handler_asm("fppackedveximm_psrldq_8", "7", preserve_ymm=True)
+    expect("vpsrldq xmm0, xmm0, 8" in assembly and "pxor xmm2, xmm2" in assembly)
+
+
 def test_decode_legacy_unpack_dword_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("punpckldq xmm0, xmm1") == ("fppacked", "punpckldq", 0, 1))
 
@@ -549,8 +554,23 @@ def test_decode_vex_immediate_shift_selects_128_bit_item() -> None:
     expect(_decode_fp_vex_packed_immediate("vpsrad xmm2, xmm0, 7") == ("fppackedveximm", "psrad", 2, 0, 7))
 
 
+def test_decode_vex_immediate_byte_shift_selects_128_bit_item() -> None:
+    expect(_decode_fp_vex_packed_immediate("vpsrldq xmm2, xmm0, 8") == ("fppackedveximm", "psrldq", 2, 0, 8))
+
+
+def test_classify_vex_immediate_byte_shift_uses_immediate_region_item() -> None:
+    item = classification._classify(
+        {"type": "vec", "family": "vec", "opcode": "vpsrldq xmm2, xmm0, 8", "addr": 0x401000, "size": 5}
+    )
+    expect(item == ["fppackedveximm", "psrldq", 2, 0, 8])
+
+
 def test_decode_vex_immediate_shift_selects_256_bit_item() -> None:
     expect(_decode_fp_vex_packed_immediate("vpsrad ymm2, ymm0, 7") == ("fppackedvex256imm", "psrad", 2, 0, 7))
+
+
+def test_decode_vex_immediate_byte_shift_selects_256_bit_item() -> None:
+    expect(_decode_fp_vex_packed_immediate("vpsrldq ymm2, ymm0, 8") == ("fppackedvex256imm", "psrldq", 2, 0, 8))
 
 
 def test_decode_vex_immediate_shuffle_selects_256_bit_item() -> None:

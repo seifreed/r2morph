@@ -128,10 +128,11 @@ int main(void) {
         "vpinsrd $1, %[value], %%xmm0, %%xmm0\n\t"
         "vpbroadcastd %%xmm0, %%xmm1\n\t"
         "vpbroadcastq %%xmm0, %%xmm2\n\t"
-        "vpextrd $3, %%xmm2, %[lane]"
+        "vpsrldq $8, %%xmm2, %%xmm3\n\t"
+        "vpextrd $0, %%xmm3, %[lane]"
         : [lane] "=r" (lane)
         : [memory] "m" (value), [value] "r" (value)
-        : "xmm0", "xmm1", "xmm2");
+        : "xmm0", "xmm1", "xmm2", "xmm3");
     return lane == 42 ? 42 : 1;
 }
 """,
@@ -170,6 +171,6 @@ int main(void) {
         for mnemonic in record.metadata.get("affected_instruction_mnemonics", [])
     }
     expect(stats["functions_virtualized"] >= 1, f"no function virtualized: {stats!r}")
-    expected_mnemonics = {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq"}
+    expected_mnemonics = {"vmovd", "vpinsrd", "vpbroadcastd", "vpbroadcastq", "vpsrldq"}
     expect(expected_mnemonics <= affected, f"missing native mnemonics: {sorted(expected_mnemonics - affected)!r}")
     expect(run_command([mutated], timeout=30).returncode == _INSERT_EXIT_CODE)

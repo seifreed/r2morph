@@ -614,7 +614,7 @@ _FP_PACKED_IMMEDIATE: frozenset[str] = frozenset(
     {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "pshufd"}
 )
 _FP_VEX_PACKED_IMMEDIATE: frozenset[str] = _FP_PACKED_IMMEDIATE | frozenset(
-    {"pshuflw", "pshufhw", "shufps", "shufpd", "blendps", "blendpd"}
+    {"pshuflw", "pshufhw", "psrldq", "shufps", "shufpd", "blendps", "blendpd"}
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
@@ -673,6 +673,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpsllq": "psllq",
     "vpsrlw": "psrlw",
     "vpsrlq": "psrlq",
+    "vpsrldq": "psrldq",
     "vpsraw": "psraw",
     "vpsllvd": "psllvd",
     "vpsrlvd": "psrlvd",
