@@ -65,7 +65,7 @@ int main(void) { return table_lookup(42) == 73 ? 42 : 1; }
     transformed = run_command([mutated], timeout=30)
     expect(
         any(
-            "xlat" in record.metadata.get("affected_instruction_mnemonics", [])
+            "xlatb" in record.metadata.get("affected_instruction_mnemonics", [])
             for record in virtualization_pass.get_records()
         ),
         f"xlat instruction was not virtualized: {stats=}",
