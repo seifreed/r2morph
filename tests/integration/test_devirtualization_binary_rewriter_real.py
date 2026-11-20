@@ -1,4 +1,6 @@
+import platform
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -6,6 +8,9 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter, RewriteOperation
 from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
+_MINIMUM_PATCHABLE_INSTRUCTIONS = 2
 
 
 def test_binary_rewriter_real_rewrite(tmp_path: Path):
@@ -26,15 +31,15 @@ def test_binary_rewriter_real_rewrite(tmp_path: Path):
 
         addr = funcs[0].get("offset", funcs[0].get("addr", 0))
         instructions = bin_obj.get_function_disasm(addr)
-        if not instructions:
-            pytest.skip("No instructions found for patching")
+        if len(instructions) < _MINIMUM_PATCHABLE_INSTRUCTIONS:
+            pytest.skip("Fewer than two instructions found for patching")
 
-        patch_addr = instructions[0].get("addr", 0)
+        patch_addr = instructions[1].get("addr", 0)
         if patch_addr == 0:
             pytest.skip("Invalid patch address")
 
         rewriter = BinaryRewriter(bin_obj)
-        added = rewriter.add_patch(patch_addr, ["nop"], RewriteOperation.INSTRUCTION_REPLACE)
+        added = rewriter.add_patch(patch_addr, ["xor edi, edi"], RewriteOperation.INSTRUCTION_REPLACE)
         expect(not (added is not True))
         original = temp_binary.read_bytes()
         patch = rewriter.patches[0]
@@ -50,10 +55,18 @@ def test_binary_rewriter_real_rewrite(tmp_path: Path):
     expect(output_path.exists())
     expect(temp_binary.read_bytes() == original)
     expect(output_path.read_bytes() != original)
+    expect(patch.new_bytes == b"\x31\xff\x90")
     expect(output_path.read_bytes()[patch_offset : patch_offset + len(patch.new_bytes)] == patch.new_bytes)
     with Binary(output_path) as rewritten:
         rewritten.analyze("aa")
         expect(rewritten.r2.cmdj("ij").get("bin", {}).get("class") == "ELF64")
+    if sys.platform == "linux" and platform.machine().lower() in {"x86_64", "amd64"}:
+        original_result = run_command([str(temp_binary)], capture_output=True, timeout=30)
+        rewritten_result = run_command([str(output_path)], capture_output=True, timeout=30)
+        expect(
+            (original_result.returncode, original_result.stdout, original_result.stderr)
+            == (rewritten_result.returncode, rewritten_result.stdout, rewritten_result.stderr)
+        )
 
 
 def test_binary_rewriter_no_binary_error():

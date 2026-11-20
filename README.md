@@ -360,6 +360,8 @@ The experimental `BinaryRewriter` applies size-preserving instruction
 replacements only when the virtual address maps to file-backed bytes in an
 executable section and the original bytes still match. Short replacements are
 padded with assembled NOP instructions to complete instruction boundaries.
+The x86-64 ELF integration fixture checks a size-neutral equivalent instruction
+replacement and compares native process results on Linux x86-64.
 Insertions, deletions, relocations, and section growth are rejected; these
 operations need format-aware relocation and metadata handling before they can
 be reported as supported. A no-patch rewrite copies the input bytes exactly.
