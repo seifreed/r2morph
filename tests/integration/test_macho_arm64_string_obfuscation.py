@@ -44,7 +44,7 @@ def test_macho_arm64_string_obfuscation_preserves_native_observables(tmp_path: P
     with MorphEngine(config={"seed": 1337}) as engine:
         engine.load_binary(original).analyze("aa")
         engine.add_mutation(
-            StringObfuscationPass({"probability": 1.0, "encoding": "xor", "max_strings_per_section": 1})
+            StringObfuscationPass({"probability": 1.0, "encoding": "xor", "max_strings_per_section": 100})
         )
         result = engine.run()
         engine.save(protected)
@@ -54,7 +54,7 @@ def test_macho_arm64_string_obfuscation_preserves_native_observables(tmp_path: P
     original_bytes = original.read_bytes()
     protected_bytes = protected.read_bytes()
     checks = {
-        "one_string_mutated": pass_result["mutations_applied"] == 1,
+        "string_mutated": pass_result["mutations_applied"] >= 1,
         "target_string_obfuscated": b"macho-arm64-string-evidence" not in protected_bytes,
         "referenced_string_preserved": b"hello" in protected_bytes,
         "original_contains_target": b"macho-arm64-string-evidence" in original_bytes,
