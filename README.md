@@ -70,7 +70,8 @@ pip install "r2morph[all]"           # + frida, hypothesis
 Symbolic analysis uses the Claripy implementation paired with the installed
 angr release, keeping symbolic expressions compatible with angr states. The
 `syntia` extra installs angr on supported platforms instead of an independently
-versioned Claripy package.
+versioned Claripy package. The supported angr extras require angr 10.0.7 or
+newer and pycparser 3.11, matching angr's current parser API and Z3 dependency.
 The analysis cache cleaner exits when its cache is discarded; applications can
 call `cache.stop_cleanup_thread()` for deterministic shutdown.
 

@@ -8,9 +8,13 @@ from pathlib import Path
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
+_ANGR_CONTRACT = (
+    'angr>=10.0.7; platform_system != "Windows" ' 'and (platform_system != "Darwin" or platform_machine != "x86_64")'
+)
 _ANGR_BITSTRING_CONTRACT = 'bitstring>=4.4.0,<5; platform_system != "Windows"'
-_ANGR_PYCPARSER_CONTRACT = 'pycparser>=3.1,<3.2; platform_system != "Windows"'
+_ANGR_PYCPARSER_CONTRACT = 'pycparser>=3.11,<3.12; platform_system != "Windows"'
 _EXPECTED_ANGR_COMPATIBILITY_MANIFEST_COUNT = 2
+_EXPECTED_ANGR_VERSION_MANIFEST_COUNT = 3
 
 
 def test_supported_dependency_manifests_include_required_analyzer_packages() -> None:
@@ -20,9 +24,9 @@ def test_supported_dependency_manifests_include_required_analyzer_packages() -> 
     optional_text = "\n".join(dependency for group in optional_dependencies.values() for dependency in group)
 
     expect(
-        "angr>=9.3.2" in requirements
+        requirements.count(_ANGR_CONTRACT) == 1
         and 'triton-library>=1.0.0rc4; platform_system == "Linux" and platform_machine == "x86_64"' in requirements
-        and "angr>=9.3.2" in optional_text
+        and optional_text.count(_ANGR_CONTRACT) == _EXPECTED_ANGR_VERSION_MANIFEST_COUNT
         and 'triton-library>=1.0.0rc4; platform_system == "Linux" and platform_machine == "x86_64"' in optional_text
     )
 
