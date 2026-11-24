@@ -581,8 +581,14 @@ on source `acafac289598b2ca22ec66498873ccfba4775bd3`: 370 samples across six
 selected passes, zero differential failures, and 2,220 complete static
 recovery measurements with zero failures. The hash-bound result is recorded in
 [`public-compatibility-corpus-2026-11-24-45428767299.json`](docs/public-compatibility-corpus-2026-11-24-45428767299.json).
-This closes the corrected public-corpus build and selected-pass evidence gap;
-the broader differential workflow remains open. Its VM shard initially hit
+The same four-shard corpus passed again on source `51f7562a` in run
+[`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649):
+370 samples across the same six passes, zero differential failures, and 2,220
+complete static-recovery measurements with zero failures. Its hash-bound result
+is recorded in
+[`public-compatibility-corpus-2026-11-24-45442779649.json`](docs/public-compatibility-corpus-2026-11-24-45442779649.json).
+This confirms the corrected public-corpus build and selected-pass evidence on
+the current source; the broader differential workflow remains open. Its VM shard initially hit
 two 120-second transformation timeouts; a targeted retry passed all 42 fixtures
 with zero failures, including both timed-out cases. The retry aggregate exposed
 that the workflow only downloaded artifacts from the current attempt; the

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45442779649,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45442779649",
+  "source_commit": "51f7562ac9649211b1feee8d4d9fe1e4f8463384",
+  "public_corpus": {
+    "status": "passed",
+    "shards": 4,
+    "sample_count": 370,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "differential_failed_samples": 0,
+    "static_recovery": {
+      "measurements": 2220,
+      "failed_samples": 0
+    }
+  },
+  "aggregate_artifact": {
+    "id": 14948181821,
+    "name": "public-compatibility-corpus-aggregate-45442779649-1",
+    "sha256": "90f7828b21357cba4f83f9d3b692534dd2d7de53c077371fed3268d2aa6adf16",
+    "report_sha256": "005cb955ff08fb81a11a3f259dfda829db63bc7b7be64705ffca2382314315df",
+    "report": {
+      "schema_version": 1,
+      "status": "passed",
+      "shards": 4,
+      "sample_count": 370,
+      "passes": [
+        "BlockReordering",
+        "CodeVirtualization",
+        "InstructionExpansion",
+        "InstructionSubstitution",
+        "NopInsertion",
+        "RegisterSubstitution"
+      ],
+      "differential_failed_samples": 0,
+      "static_recovery_failed_samples": 0
+    }
+  },
+  "limits": [
+    "Evidence covers only the pinned public corpus and six selected passes.",
+    "It does not establish full platform parity, all-pass correctness, or adversarial resistance.",
+    "The broader differential campaign and VM semantic aggregate are still running."
+  ]
+}
