@@ -1535,6 +1535,7 @@ jobs:
             tests/integration/test_platform_deeper.py \
             tests/integration/test_mutation_nop_insertion_arm64.py \
             tests/integration/test_mutation_register_substitution_arm64.py \
+            tests/integration/test_macho_arm64_string_obfuscation.py \
             tests/integration/test_mutations_x86_compiled_binary.py \
             tests/integration/test_mutation_passes_end_to_end_more2.py \
             tests/integration/test_code_virtualization_target_support_real.py
@@ -1560,6 +1561,7 @@ jobs:
               "test_nop_then_instruction_substitution_arm64_preserves_native_output",
               "test_register_substitution_arm64_preserves_generated_native_execution",
               "test_constant_unfolding_arm64_preserves_native_output",
+              "test_macho_arm64_string_obfuscation_preserves_native_observables",
               "test_x86_string_obfuscation_preserves_native_exit_code",
               "test_x86_nop_insertion_and_substitution_real",
               "test_x86_instruction_expansion_and_register_substitution_real",

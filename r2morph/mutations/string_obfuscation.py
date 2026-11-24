@@ -1,8 +1,8 @@
 """
 String obfuscation mutation pass.
 
-Obfuscates string literals in the binary by encoding/encrypting them
-and adding decode stubs that run at runtime.
+Encodes unreferenced string data in binary data sections without adding
+runtime decode stubs.
 """
 
 from __future__ import annotations
@@ -19,14 +19,15 @@ _ASCII_UPPER_A = 0x41
 _ASCII_UPPER_Z = 0x5A
 _ASCII_LOWER_A = 0x61
 _ASCII_LOWER_Z = 0x7A
+_ARM64_BITS = 64
 
 
 class StringObfuscationPass(MutationPass):
     """
     Mutation pass that obfuscates string literals.
 
-    This pass encodes printable strings in data sections only when no xrefs
-    target their first byte. It does not generate runtime decode stubs, so
+    This pass encodes printable strings in data sections only when no
+    references are discovered. It does not generate runtime decode stubs, so
     referenced strings are left unchanged.
 
     Supported encodings:
@@ -53,12 +54,12 @@ class StringObfuscationPass(MutationPass):
         self.preserve_null = self.config.get("preserve_null", True)
         self.set_support(
             formats=("ELF", "Mach-O", "PE"),
-            architectures=("x86_64", "x86"),
+            architectures=("x86_64", "x86", "arm64"),
             validators=("structural",),
             stability="experimental",
             notes=(
                 "obfuscates string data in sections",
-                "only encodes strings with no xrefs to their first byte",
+                "only encodes strings with no discovered references",
                 "does not generate runtime decode stubs",
             ),
         )
@@ -165,15 +166,61 @@ class StringObfuscationPass(MutationPass):
             return data, 0
 
     @staticmethod
-    def _is_unreferenced(binary: Any, address: int) -> bool:
+    def _instruction_reference_values(binary: Any) -> frozenset[int] | None:
+        """Collect conservative instruction operands that may reference data."""
+        try:
+            functions = binary.get_functions()
+            if not functions:
+                return None
+
+            references: set[int] = set()
+            analyzed_functions = 0
+            for function in functions:
+                address = function.get("addr", function.get("offset"))
+                if not isinstance(address, int):
+                    return None
+                instructions = binary.get_function_disasm(address)
+                if not instructions:
+                    return None
+                analyzed_functions += 1
+                for instruction in instructions:
+                    for field in ("ptr", "val"):
+                        value = instruction.get(field)
+                        if isinstance(value, int):
+                            references.add(value)
+            if analyzed_functions != len(functions):
+                return None
+            return frozenset(references)
+        except Exception as error:
+            logger.warning("Cannot scan instruction references conservatively: %s", error)
+            return None
+
+    @staticmethod
+    def _is_unreferenced(
+        binary: Any,
+        address: int,
+        size: int,
+        *,
+        instruction_references: frozenset[int] | None = None,
+        instruction_scan_required: bool = False,
+    ) -> bool:
         try:
             references = binary.get_xrefs_to(address)
             if references:
                 logger.info("Skipping referenced string at 0x%x", address)
-            return not references
+                return False
         except (AttributeError, OSError, RuntimeError, ValueError) as error:
             logger.warning("Cannot prove string at 0x%x is unreferenced: %s", address, error)
             return False
+
+        if instruction_scan_required:
+            if instruction_references is None:
+                logger.warning("Cannot prove string at 0x%x is unreferenced: instruction scan unavailable", address)
+                return False
+            if any(address <= reference < address + size for reference in instruction_references):
+                logger.info("Skipping string with an instruction reference at 0x%x", address)
+                return False
+        return True
 
     @staticmethod
     def _select_data_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -251,10 +298,25 @@ class StringObfuscationPass(MutationPass):
                     logger.debug("Failed to obfuscate string at 0x%x: %s", address, error)
         return bytes_encoded
 
-    def _process_section(self, binary: Any, section: dict[str, Any]) -> tuple[bool, int, int]:
+    def _process_section(
+        self,
+        binary: Any,
+        section: dict[str, Any],
+        *,
+        instruction_references: frozenset[int] | None = None,
+        instruction_scan_required: bool = False,
+    ) -> tuple[bool, int, int]:
         """Process one data section and return candidate, mutation, and byte counts."""
         strings = [
-            string for string in self._find_strings(binary, section) if self._is_unreferenced(binary, string["addr"])
+            string
+            for string in self._find_strings(binary, section)
+            if self._is_unreferenced(
+                binary,
+                string["addr"],
+                string["size"],
+                instruction_references=instruction_references,
+                instruction_scan_required=instruction_scan_required,
+            )
         ]
         if not strings:
             return False, 0, 0
@@ -278,6 +340,15 @@ class StringObfuscationPass(MutationPass):
 
         self._ensure_analyzed(binary)
 
+        instruction_scan_required = False
+        instruction_references: frozenset[int] | None = None
+        get_arch_info = getattr(binary, "get_arch_info", None)
+        if callable(get_arch_info):
+            architecture = get_arch_info()
+            instruction_scan_required = architecture.get("arch") == "arm" and architecture.get("bits") == _ARM64_BITS
+            if instruction_scan_required:
+                instruction_references = self._instruction_reference_values(binary)
+
         sections = binary.get_sections()
         if not sections:
             logger.warning("No sections found in binary")
@@ -292,7 +363,12 @@ class StringObfuscationPass(MutationPass):
         logger.info(f"String obfuscation: processing {len(data_sections)} data sections")
 
         for section in data_sections:
-            has_candidates, mutation_count, encoded_size = self._process_section(binary, section)
+            has_candidates, mutation_count, encoded_size = self._process_section(
+                binary,
+                section,
+                instruction_references=instruction_references,
+                instruction_scan_required=instruction_scan_required,
+            )
             if not has_candidates:
                 continue
             sections_processed += 1

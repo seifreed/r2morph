@@ -181,8 +181,8 @@ mnemonics even when lowering replaces them with internal VM opcodes (for example
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
-ELF x86-64 target (100.0% evidence) and 40/242 evidenced cells for non-official
-targets (16.53% evidence). It currently classifies 5 passes as Tier 1 and
+ELF x86-64 target (100.0% evidence) and 41/242 evidenced cells for non-official
+targets (16.94% evidence). It currently classifies 5 passes as Tier 1 and
 17 passes as experimental.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
@@ -199,10 +199,14 @@ of an unrepresentable immediate. The hash-bound
 [`local report`](docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json)
 records the source, fixture, and test hashes. This is bounded evidence from one
 host and does not establish full Mach-O pass parity or cross-platform parity.
-The new native Mach-O x86-64 string-obfuscation test is pending execution on its
-Intel macOS CI runner. String obfuscation only encodes data with no discovered
-xrefs and does not generate runtime decode stubs; Mach-O ARM64 is not declared
-supported because radare2 missed a real ARM64 reference in local reproduction.
+The native ARM64 Mach-O string-obfuscation smoke now passes on Apple Silicon:
+it mutates an unreferenced string, preserves the referenced output string, and
+verifies ad-hoc signing and runtime output. Since radare2 misses some ARM64
+data xrefs, this path also scans analyzed instruction operands and fails closed
+if the scan is incomplete. The matching Intel x86-64 runtime case is pending
+execution on its macOS CI runner. These are experimental checks for one pass,
+not full Mach-O or cross-platform parity; the pass does not generate runtime
+decode stubs.
 Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in

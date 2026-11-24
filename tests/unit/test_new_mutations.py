@@ -92,6 +92,25 @@ class _ReferencedStringBinary:
         return [{"from": 0x1000}]
 
 
+class _Arm64InteriorReferenceBinary(_ReferencedStringBinary):
+    def get_arch_info(self) -> dict[str, object]:
+        return {"arch": "arm", "bits": 64}
+
+    def get_xrefs_to(self, _address: int) -> list[dict[str, object]]:
+        return []
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return [{"addr": 0x1000}]
+
+    def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+        return [{"val": _EXPECTED_SECTION_ADDRESS + 2}]
+
+
+class _IncompleteArm64ReferenceBinary(_Arm64InteriorReferenceBinary):
+    def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+        return []
+
+
 class _InstructionBinary:
     def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
         return [
@@ -233,6 +252,16 @@ class TestStringObfuscationPass:
 
     def test_apply_skips_referenced_strings_to_preserve_runtime_semantics(self):
         result = StringObfuscationPass({"probability": 1.0}).apply(_ReferencedStringBinary())
+
+        expect(result["strings_obfuscated"] == 0)
+
+    def test_apply_skips_arm64_strings_with_interior_instruction_references(self):
+        result = StringObfuscationPass({"probability": 1.0}).apply(_Arm64InteriorReferenceBinary())
+
+        expect(result["strings_obfuscated"] == 0)
+
+    def test_apply_fails_closed_when_arm64_reference_scan_is_incomplete(self):
+        result = StringObfuscationPass({"probability": 1.0}).apply(_IncompleteArm64ReferenceBinary())
 
         expect(result["strings_obfuscated"] == 0)
 

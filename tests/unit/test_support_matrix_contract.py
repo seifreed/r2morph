@@ -10,14 +10,15 @@ from tests.utils.assertions import expect
 _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
-_EXPECTED_EVIDENCED_CELLS = 62
-_EXPECTED_NOT_SUPPORTED_CELLS = 202
-_EXPECTED_DECLARED_SUPPORT_CELLS = 62
-_EXPECTED_UNCLAIMED_CELLS = 202
-_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 45, "preview": 12, "supported": 5}
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 40
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 202
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 202
+_STRING_OBFUSCATION_ID = "string-obfuscation"
+_EXPECTED_EVIDENCED_CELLS = 63
+_EXPECTED_NOT_SUPPORTED_CELLS = 201
+_EXPECTED_DECLARED_SUPPORT_CELLS = 63
+_EXPECTED_UNCLAIMED_CELLS = 201
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 46, "preview": 12, "supported": 5}
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 41
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 201
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 201
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -407,7 +408,7 @@ def test_support_matrix_records_native_macho_string_obfuscation_evidence() -> No
     cells = {
         (cell["format"], cell["architecture"]): cell
         for cell in build_matrix(document)["cells"]
-        if cell["pass"] == "string-obfuscation"
+        if cell["pass"] == _STRING_OBFUSCATION_ID
     }
 
     expect(
@@ -416,7 +417,12 @@ def test_support_matrix_records_native_macho_string_obfuscation_evidence() -> No
             "tests/integration/test_macho_x86_64_native.py::"
             "test_macho_x86_64_string_obfuscation_preserves_native_observables"
         ]
-        and not any(target.get("architecture") == "AArch64" for target in entry["target_cells"])
+        and cells[("Mach-O", "AArch64")]["evidence"]
+        == [
+            "tests/integration/test_macho_arm64_string_obfuscation.py::"
+            "test_macho_arm64_string_obfuscation_preserves_native_observables"
+        ]
+        and any(target.get("architecture") == "AArch64" for target in entry["target_cells"])
     )
 
 

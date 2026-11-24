@@ -1046,7 +1046,8 @@
       ],
       "architectures": [
         "x86-64",
-        "x86"
+        "x86",
+        "AArch64"
       ],
       "evidence_cells": [
         {
@@ -1073,13 +1074,21 @@
           "evidence": [
             "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution"
           ]
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "evidence": [
+            "tests/integration/test_macho_arm64_string_obfuscation.py::test_macho_arm64_string_obfuscation_preserves_native_observables"
+          ]
         }
       ],
       "evidence": [
         "README.md",
         "tests/integration/test_elf_x86_32_native.py",
         "tests/integration/test_mutations_x86_compiled_binary.py",
-        "tests/integration/test_nop_insertion_pe_real.py"
+        "tests/integration/test_nop_insertion_pe_real.py",
+        "tests/integration/test_macho_arm64_string_obfuscation.py"
       ],
       "target_cells": [
         {
@@ -1101,6 +1110,11 @@
           "format": "PE",
           "architecture": "x86-64",
           "support_status": "preview"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "AArch64",
+          "support_status": "experimental"
         }
       ]
     },
@@ -1616,21 +1630,21 @@
     },
     "cell_count": 264,
     "summary": {
-      "declared_support_cells": 62,
-      "unclaimed_cells": 202,
+      "declared_support_cells": 63,
+      "unclaimed_cells": 201,
       "target_support_status_counts": {
-        "experimental": 45,
+        "experimental": 46,
         "preview": 12,
         "supported": 5
       },
-      "evidenced_cells": 62,
-      "not_supported_cells": 202,
+      "evidenced_cells": 63,
+      "not_supported_cells": 201,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 40,
-      "non_official_not_supported_cells": 202,
-      "non_official_evidence_percent": 16.53,
+      "non_official_evidenced_cells": 41,
+      "non_official_not_supported_cells": 201,
+      "non_official_evidence_percent": 16.94,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1656,9 +1670,9 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64",
-          "evidenced_cells": 5,
-          "not_supported_cells": 17,
-          "evidence_percent": 22.73
+          "evidenced_cells": 6,
+          "not_supported_cells": 16,
+          "evidence_percent": 27.27
         },
         {
           "format": "Mach-O",
@@ -1747,9 +1761,9 @@
           {
             "format": "Mach-O",
             "architecture": "AArch64",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "Mach-O",
@@ -1830,9 +1844,9 @@
           {
             "format": "Mach-O",
             "architecture": "AArch64",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "Mach-O",
@@ -1897,7 +1911,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 202,
+        "non_official_missing_evidence_cells": 201,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -4589,7 +4603,8 @@
           "README.md",
           "tests/integration/test_elf_x86_32_native.py",
           "tests/integration/test_mutations_x86_compiled_binary.py",
-          "tests/integration/test_nop_insertion_pe_real.py"
+          "tests/integration/test_nop_insertion_pe_real.py",
+          "tests/integration/test_macho_arm64_string_obfuscation.py"
         ]
       },
       {
@@ -4683,10 +4698,12 @@
         "pass": "string-obfuscation",
         "format": "Mach-O",
         "architecture": "AArch64",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "experimental",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_macho_arm64_string_obfuscation.py::test_macho_arm64_string_obfuscation_preserves_native_observables"
+        ]
       },
       {
         "pass": "string-obfuscation",
