@@ -321,6 +321,7 @@ jobs:
 
       - name: Run cross-platform unit tests
         if: runner.os != 'Linux' || matrix.python-version == '3.13'
+        timeout-minutes: 30
         run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60
 
       - name: Install build backend for cross-platform wheel smoke

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +60,17 @@ def test_ci_keeps_active_validation_and_coalesces_pending_pushes() -> None:
         and "github.event_name == 'push' && 'push' || github.run_id" in workflow
         and "cancel-in-progress: false" in workflow
     )
+
+
+def test_ci_bounds_cross_platform_unit_test_step() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    step = next(
+        step
+        for step in workflow["jobs"]["cross-platform-tests"]["steps"]
+        if step.get("name") == "Run cross-platform unit tests"
+    )
+
+    expect(step["timeout-minutes"] == 30 and "faulthandler_timeout=60" in step["run"])
 
 
 def test_fuzz_keeps_active_campaigns_and_coalesces_pending_pushes() -> None:
