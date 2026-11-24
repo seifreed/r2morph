@@ -12,6 +12,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _REPORT = _ROOT / "docs/release-contract-check-local-2026-11-24-49279456.json"
 _READINESS = _ROOT / "docs/one-zero-readiness.json"
 _SOURCE_COMMIT = "492794568cc00afd8aec11630b3979014086d514"
+_EXPECTED_READINESS_CONTRACT_TESTS = 158
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -25,7 +26,7 @@ def test_local_release_contract_check_is_pinned_to_current_alpha_source() -> Non
         report["source_commit"] == _SOURCE_COMMIT
         and report["release_contract"]["status"] == "passed"
         and report["release_contract"]["package_version"] == "0.4.0-alpha.3"
-        and report["readiness_contract_tests"]["passed"] == 158
+        and report["readiness_contract_tests"]["passed"] == _EXPECTED_READINESS_CONTRACT_TESTS
         and report["readiness_contract_tests"]["failed"] == 0
         and report["readiness_contract_tests"]["skipped"] == 0
     )

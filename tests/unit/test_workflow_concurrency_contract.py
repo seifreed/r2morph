@@ -10,6 +10,7 @@ _DEPENDENCY_WORKFLOWS = (
     _ROOT / ".github" / "workflows" / "release.yml",
     _ROOT / ".github" / "workflows" / "adversarial-benchmark.yml",
 )
+_EXPECTED_CROSS_PLATFORM_TIMEOUT_MINUTES = 30
 
 
 def test_ubuntu_package_index_updates_are_time_bounded() -> None:
@@ -70,7 +71,9 @@ def test_ci_bounds_cross_platform_unit_test_step() -> None:
         if step.get("name") == "Run cross-platform unit tests"
     )
 
-    expect(step["timeout-minutes"] == 30 and "faulthandler_timeout=60" in step["run"])
+    expect(
+        step["timeout-minutes"] == _EXPECTED_CROSS_PLATFORM_TIMEOUT_MINUTES and "faulthandler_timeout=60" in step["run"]
+    )
 
 
 def test_fuzz_supersedes_obsolete_push_campaigns() -> None:

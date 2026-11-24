@@ -6,6 +6,8 @@ from r2morph.mutations.base import MutationRecord
 from scripts.vm_semantic_campaign import _transformation_evidence, select_latest_campaign_shard_reports
 from tests.utils.assertions import expect
 
+_EXPECTED_SHARD_COUNT = 24
+
 
 def test_transformation_evidence_records_applied_instruction_metadata() -> None:
     record = MutationRecord(
@@ -41,10 +43,7 @@ def test_transformation_evidence_records_applied_instruction_metadata() -> None:
 
 def test_campaign_shard_selection_uses_latest_attempt_per_seed_and_shard() -> None:
     reports = [
-        Path(
-            f"vm-semantic-campaign-{seed}-{shard}-45428767299-1/"
-            f"vm-semantic-campaign-{seed}-{shard}.json"
-        )
+        Path(f"vm-semantic-campaign-{seed}-{shard}-45428767299-1/" f"vm-semantic-campaign-{seed}-{shard}.json")
         for seed in (20260916, 20260917, 20260918)
         for shard in range(8)
     ]
@@ -57,12 +56,6 @@ def test_campaign_shard_selection_uses_latest_attempt_per_seed_and_shard() -> No
 
     selected = select_latest_campaign_shard_reports(reports)
 
-    expect(len(selected) == 24)
-    expect(
-        Path("vm-semantic-campaign-20260917-1-45428767299-2/vm-semantic-campaign-20260917-1.json")
-        in selected
-    )
-    expect(
-        Path("vm-semantic-campaign-20260917-1-45428767299-1/vm-semantic-campaign-20260917-1.json")
-        not in selected
-    )
+    expect(len(selected) == _EXPECTED_SHARD_COUNT)
+    expect(Path("vm-semantic-campaign-20260917-1-45428767299-2/vm-semantic-campaign-20260917-1.json") in selected)
+    expect(Path("vm-semantic-campaign-20260917-1-45428767299-1/vm-semantic-campaign-20260917-1.json") not in selected)
