@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45428767299,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45428767299",
+  "run_attempt": 2,
+  "job_id": 138608379027,
+  "source_commit": "acafac289598b2ca22ec66498873ccfba4775bd3",
+  "seed": 20260917,
+  "fixture_shard": 1,
+  "fixture_shard_count": 8,
+  "status": "passed",
+  "fixture_count": 42,
+  "passed_count": 42,
+  "failed_count": 0,
+  "qemu": {
+    "completed_pairs": 42,
+    "unavailable_pairs": 0,
+    "divergent_pairs": 0,
+    "missing_pairs": 0
+  },
+  "previously_timed_out_fixtures": [
+    {
+      "name": "generated_cpp_clangxx-static-o2",
+      "status": "passed",
+      "functions_virtualized": 1,
+      "observables_equal": true,
+      "qemu_observables_equal": true
+    },
+    {
+      "name": "generated_threads_gcc-static-o2",
+      "status": "passed",
+      "functions_virtualized": 1,
+      "observables_equal": true,
+      "qemu_observables_equal": true
+    }
+  ],
+  "artifact": {
+    "id": 14943152939,
+    "name": "vm-semantic-campaign-20260917-1-45428767299-2",
+    "sha256": "15d4e95f17105308aa96d238483304622a258ed09da49e64ffbf3d4e172a6d37",
+    "report_sha256": "ba1bfaf90ede0a0e25ec7faf4cf1ddc70f9d48016ce61f5f8eb020bc9df39873"
+  },
+  "limits": [
+    "This report covers one seed and one of eight fixture shards.",
+    "The full VM aggregate did not pass in this run because the rerun attempt contained only one shard artifact.",
+    "The aggregate workflow now downloads reports from all attempts and selects the latest artifact per shard; a successful full aggregate run is still required."
+  ]
+}

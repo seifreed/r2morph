@@ -582,9 +582,16 @@ selected passes, zero differential failures, and 2,220 complete static
 recovery measurements with zero failures. The hash-bound result is recorded in
 [`public-compatibility-corpus-2026-11-24-45428767299.json`](docs/public-compatibility-corpus-2026-11-24-45428767299.json).
 This closes the corrected public-corpus build and selected-pass evidence gap;
-the broader differential workflow remains open because its VM aggregate found
-two transformation timeouts. The result does not establish full platform
-parity, all-pass correctness, or adversarial resistance.
+the broader differential workflow remains open. Its VM shard initially hit
+two 120-second transformation timeouts; a targeted retry passed all 42 fixtures
+with zero failures, including both timed-out cases. The retry aggregate exposed
+that the workflow only downloaded artifacts from the current attempt; the
+aggregator now selects the latest report for each shard across attempts. The
+shard evidence and limits are pinned in
+[`vm-semantic-campaign-2026-11-24-45428767299-shard-1-rerun.json`](docs/vm-semantic-campaign-2026-11-24-45428767299-shard-1-rerun.json).
+The full VM aggregate still needs a successful rerun. These bounded results do
+not establish full platform parity, all-pass correctness, or adversarial
+resistance.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

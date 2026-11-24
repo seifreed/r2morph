@@ -8,6 +8,7 @@ import hashlib
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import stat
 import sys
@@ -586,6 +587,29 @@ def _report_fixture_names(report: Mapping[str, Any]) -> list[str]:
     if not isinstance(fixture_count, int) or len(names) != fixture_count:
         raise ValueError("VM semantic campaign fixture name count does not match fixture count")
     return names
+
+
+def select_latest_campaign_shard_reports(paths: Iterable[Path]) -> tuple[Path, ...]:
+    """Select the newest uploaded report for each seed/shard across run attempts."""
+    pattern = re.compile(r"vm-semantic-campaign-(\d+)-(\d+)-(\d+)-(\d+)")
+    latest: dict[tuple[int, int], tuple[int, Path]] = {}
+    seen: set[tuple[int, int, int]] = set()
+    for path in paths:
+        match = pattern.fullmatch(path.parent.name)
+        if match is None:
+            continue
+        seed, shard, _run_id, attempt = (int(value) for value in match.groups())
+        if path.name != f"vm-semantic-campaign-{seed}-{shard}.json":
+            raise ValueError(f"VM semantic artifact filename does not match its shard: {path}")
+        key = (seed, shard)
+        attempt_key = (*key, attempt)
+        if attempt_key in seen:
+            raise ValueError(f"duplicate VM semantic artifact for seed/shard/attempt: {attempt_key}")
+        seen.add(attempt_key)
+        current = latest.get(key)
+        if current is None or attempt > current[0]:
+            latest[key] = (attempt, path)
+    return tuple(latest[key][1] for key in sorted(latest))
 
 
 def merge_campaign_reports(

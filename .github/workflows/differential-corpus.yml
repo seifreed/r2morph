@@ -814,7 +814,7 @@ jobs:
       - name: Download seed reports
         uses: actions/download-artifact@v8
         with:
-          pattern: vm-semantic-campaign-*-${{ github.run_id }}-${{ github.run_attempt }}
+          pattern: vm-semantic-campaign-*-${{ github.run_id }}-*
           path: vm-semantic-reports
           merge-multiple: false
 
@@ -824,9 +824,11 @@ jobs:
           import json
           from pathlib import Path
 
-          from scripts.vm_semantic_campaign import merge_campaign_reports
+          from scripts.vm_semantic_campaign import merge_campaign_reports, select_latest_campaign_shard_reports
 
-          paths = sorted(Path("vm-semantic-reports").glob("*/vm-semantic-campaign-*.json"))
+          paths = select_latest_campaign_shard_reports(
+              Path("vm-semantic-reports").rglob("vm-semantic-campaign-*.json")
+          )
           if len(paths) != 24:
               raise SystemExit(f"expected twenty-four VM semantic shard reports, found {paths}")
           reports = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
