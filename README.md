@@ -595,17 +595,24 @@ that the workflow only downloaded artifacts from the current attempt; the
 aggregator now selects the latest report for each shard across attempts. The
 shard evidence and limits are pinned in
 [`vm-semantic-campaign-2026-11-24-45428767299-shard-1-rerun.json`](docs/vm-semantic-campaign-2026-11-24-45428767299-shard-1-rerun.json).
-The full VM aggregate still needs a successful rerun. These bounded results do
-not establish full platform parity, all-pass correctness, or adversarial
-resistance.
+The corrected 24-shard VM aggregate passed on source `51f7562a` in run
+[`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649):
+1,005/1,005 fixture-seed cases passed over three seeds, with all 1,005 QEMU
+pairs complete and no divergent, unavailable, or missing pairs. All 17 fixture
+categories and nine named capabilities were measured. The hash-bound aggregate
+is recorded in
+[`vm-semantic-campaign-2026-11-24-45442779649.json`](docs/vm-semantic-campaign-2026-11-24-45442779649.json).
+This finite parity result does not establish generalized resistance,
+all-pass correctness, or cross-platform parity.
 
 Run [`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
 also completed a six-platform smoke aggregate on source `51f7562a`: 76 cases
 across ELF ARM32, ARM64, x86-32, macOS ARM64, macOS x86-64, and Windows PE,
 with zero failures, errors, or skips. Its hash-bound summary is
 [`platform-preview-2026-11-24-45442779649.json`](docs/platform-preview-2026-11-24-45442779649.json).
-This bounded preview does not establish full platform-by-pass parity; the
-broader differential and VM aggregate remain open.
+This bounded preview does not establish full platform-by-pass parity. The VM
+semantic aggregate passed its bounded campaign, while the broader differential
+corpus aggregate remains open.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

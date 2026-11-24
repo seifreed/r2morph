@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45442779649,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45442779649",
+  "source_commit": "51f7562ac9649211b1feee8d4d9fe1e4f8463384",
+  "measurement": "vm-semantic-native-parity-campaign",
+  "status": "passed",
+  "seeds": [20260916, 20260917, 20260918],
+  "shards": 24,
+  "fixture_count": 1005,
+  "passed_count": 1005,
+  "failed_count": 0,
+  "corpus_fixture_counts": {
+    "generated-corpus": 552,
+    "repository-fixtures": 453
+  },
+  "qemu_summary": {
+    "oracle": "qemu-x86_64",
+    "completed_pairs": 1005,
+    "unavailable_pairs": 0,
+    "divergent_pairs": 0,
+    "missing_pairs": 0
+  },
+  "category_count": 17,
+  "measured_capabilities": [
+    "abi-varargs",
+    "direct-calls",
+    "fp-simd",
+    "indirect-calls",
+    "memory",
+    "ssa-liveness",
+    "threads",
+    "tls-signals",
+    "unwinding-exceptions"
+  ],
+  "aggregate_artifact": {
+    "id": 14947852234,
+    "name": "vm-semantic-campaign-merged-45442779649-1",
+    "sha256": "6d8bba4a96a523e80a792815cd49ba8cdc2ebea2fa8054a8dadca47cfbac2442",
+    "report_sha256": "63978c3af5ee5e288e151317f2dcf538fc34305f099a5d692692211c79937ca0"
+  },
+  "limits": [
+    "This is a finite semantic parity campaign over 1,005 fixtures and three seeds.",
+    "It does not establish generalized protection resistance, all-pass correctness, or cross-platform parity.",
+    "The broader differential corpus aggregate is still running."
+  ]
+}

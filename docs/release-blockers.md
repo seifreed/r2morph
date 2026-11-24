@@ -17,6 +17,20 @@ skips. The [hash-bound manifest](platform-preview-2026-11-24-45442779649.json)
 records per-platform counts and artifact digests. This is preview evidence, not
 a full platform-by-pass matrix; the cross-platform parity gate remains open.
 
+## Current-source VM semantic parity campaign — 2026-11-24
+
+The same workflow's
+[`Aggregate VM semantic native parity campaign`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
+job passed on source `51f7562ac9649211b1feee8d4d9fe1e4f8463384`. All 24 shards
+merged into 1,005/1,005 passing fixture-seed cases across three seeds. QEMU
+completed all 1,005 independent oracle pairs with zero unavailable, divergent,
+or missing pairs; all 17 categories and nine named capabilities were present.
+The [hash-bound report manifest](vm-semantic-campaign-2026-11-24-45442779649.json)
+pins the aggregate artifact and report digests. This closes the bounded VM
+semantic parity campaign gap and validates aggregation across shards; it does
+not establish generalized adversarial resistance or full differential-corpus
+correctness. The broader differential aggregate remains in progress.
+
 ## Current-source partial differential snapshot — 2026-11-20
 
 Workflow
