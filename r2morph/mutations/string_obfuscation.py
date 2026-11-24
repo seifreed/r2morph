@@ -190,10 +190,35 @@ class StringObfuscationPass(MutationPass):
                             references.add(value)
             if analyzed_functions != len(functions):
                 return None
-            return frozenset(references)
+
+            return StringObfuscationPass._map_file_offset_references(references, binary.get_sections())
         except Exception as error:
             logger.warning("Cannot scan instruction references conservatively: %s", error)
             return None
+
+    @staticmethod
+    def _map_file_offset_references(references: set[int], sections: list[dict[str, Any]]) -> frozenset[int] | None:
+        """Map file-offset operands to section virtual addresses, failing closed on incomplete metadata."""
+        if not sections:
+            return None
+
+        mapped_references = set(references)
+        for section in sections:
+            file_offset = section.get("paddr")
+            virtual_address = section.get("vaddr", section.get("addr"))
+            size = section.get("size", section.get("vsize"))
+            if not isinstance(size, int):
+                return None
+            if size <= 0:
+                continue
+            if not isinstance(file_offset, int) or not isinstance(virtual_address, int):
+                return None
+            mapped_references.update(
+                virtual_address + value - file_offset
+                for value in references
+                if file_offset <= value < file_offset + size
+            )
+        return frozenset(mapped_references)
 
     @staticmethod
     def _is_unreferenced(

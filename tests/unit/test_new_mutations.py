@@ -96,6 +96,16 @@ class _Arm64InteriorReferenceBinary(_ReferencedStringBinary):
     def get_arch_info(self) -> dict[str, object]:
         return {"arch": "arm", "bits": 64}
 
+    def get_sections(self) -> list[dict[str, object]]:
+        return [
+            {
+                "name": ".rodata",
+                "paddr": _EXPECTED_SECTION_ADDRESS,
+                "vaddr": _EXPECTED_SECTION_ADDRESS,
+                "size": _EXPECTED_SECTION_SIZE,
+            }
+        ]
+
     def get_xrefs_to(self, _address: int) -> list[dict[str, object]]:
         return []
 
@@ -109,6 +119,41 @@ class _Arm64InteriorReferenceBinary(_ReferencedStringBinary):
 class _IncompleteArm64ReferenceBinary(_Arm64InteriorReferenceBinary):
     def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
         return []
+
+
+class _Arm64FileOffsetReferenceBinary(_Arm64InteriorReferenceBinary):
+    def __init__(self) -> None:
+        self.writes: list[tuple[int, bytes]] = []
+
+    def get_sections(self) -> list[dict[str, object]]:
+        return [
+            {
+                "name": ".rodata",
+                "paddr": _EXPECTED_SECTION_ADDRESS,
+                "vaddr": 0x100000000 + _EXPECTED_SECTION_ADDRESS,
+                "size": _EXPECTED_SECTION_SIZE,
+            }
+        ]
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == 0x100000000 + _EXPECTED_SECTION_ADDRESS and size in {
+            _EXPECTED_SECTION_SIZE - 1,
+            _EXPECTED_SECTION_SIZE,
+        }:
+            return b"hello\x00"[:size]
+        return b""
+
+    def write_bytes(self, address: int, data: bytes) -> bool:
+        self.writes.append((address, data))
+        return True
+
+    def get_function_disasm(self, _address: int) -> list[dict[str, object]]:
+        return [{"val": _EXPECTED_SECTION_ADDRESS + 2}]
+
+
+class _Arm64IncompleteSectionMetadataBinary(_Arm64FileOffsetReferenceBinary):
+    def get_sections(self) -> list[dict[str, object]]:
+        return [{"name": ".rodata", "vaddr": 0x100000000 + _EXPECTED_SECTION_ADDRESS, "size": _EXPECTED_SECTION_SIZE}]
 
 
 class _InstructionBinary:
@@ -259,6 +304,18 @@ class TestStringObfuscationPass:
         result = StringObfuscationPass({"probability": 1.0}).apply(_Arm64InteriorReferenceBinary())
 
         expect(result["strings_obfuscated"] == 0)
+
+    def test_apply_maps_arm64_file_offset_references_to_virtual_addresses(self):
+        binary = _Arm64FileOffsetReferenceBinary()
+        result = StringObfuscationPass({"probability": 1.0}).apply(binary)
+
+        expect(result["strings_obfuscated"] == 0 and binary.writes == [])
+
+    def test_apply_fails_closed_when_arm64_section_offsets_are_missing(self):
+        binary = _Arm64IncompleteSectionMetadataBinary()
+        result = StringObfuscationPass({"probability": 1.0}).apply(binary)
+
+        expect(result["strings_obfuscated"] == 0 and binary.writes == [])
 
     def test_apply_fails_closed_when_arm64_reference_scan_is_incomplete(self):
         result = StringObfuscationPass({"probability": 1.0}).apply(_IncompleteArm64ReferenceBinary())

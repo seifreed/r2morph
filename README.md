@@ -203,10 +203,12 @@ The native ARM64 Mach-O string-obfuscation smoke now passes on Apple Silicon:
 it mutates an unreferenced string, preserves the referenced output string, and
 verifies ad-hoc signing and runtime output. Since radare2 misses some ARM64
 data xrefs, this path also scans analyzed instruction operands and fails closed
-if the scan is incomplete. The matching Intel x86-64 runtime case is pending
-execution on its macOS CI runner. These are experimental checks for one pass,
-not full Mach-O or cross-platform parity; the pass does not generate runtime
-decode stubs.
+if the scan or section metadata is incomplete; file-offset operands are mapped
+through section `paddr`/`vaddr` so Mach-O references are still recognized when
+the image virtual address differs from its file offset. The matching Intel
+x86-64 runtime case is pending execution on its macOS CI runner. These are
+experimental checks for one pass, not full Mach-O or cross-platform parity; the
+pass does not generate runtime decode stubs.
 Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
