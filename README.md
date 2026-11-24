@@ -128,9 +128,10 @@ the `floating-point-varargs-linux-repro` artifact so the exact crash can be insp
 An in-flight push-triggered CI run is allowed to finish when later commits reach
 `main`; among pending push runs, only the latest commit remains queued. This
 keeps validation moving toward current `main` without replacing an active run.
-The installed-wheel cross-platform smoke emits Python thread traces after 60
-seconds and stops the test process after five minutes, so runner-specific hangs
-produce bounded diagnostics without dropping test targets.
+Cross-platform unit suites emit Python stack traces every 60 seconds while a
+test is running. The installed-wheel smoke also emits thread traces after 60
+seconds and stops its test process after five minutes, so runner-specific hangs
+produce diagnostics without dropping test targets.
 If the generated Clang switch-table integration case fails, CI uploads that
 case's temporary C source and ELF binary for five days to make the compiler and
 resolver behavior reproducible. The glob accounts for pytest shortening the
