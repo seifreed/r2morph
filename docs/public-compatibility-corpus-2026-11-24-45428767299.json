@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45428767299,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45428767299",
+  "source_commit": "acafac289598b2ca22ec66498873ccfba4775bd3",
+  "public_corpus": {
+    "status": "passed",
+    "shards": 4,
+    "sample_count": 370,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "differential_failed_samples": 0,
+    "static_recovery": {
+      "measurements": 2220,
+      "failed_samples": 0
+    }
+  },
+  "aggregate_artifact": {
+    "id": 14940863964,
+    "name": "public-compatibility-corpus-aggregate-45428767299-1",
+    "sha256": "8f776cd6577667fdc8ab6e306e57228764cc199a5b6a9d6750c898fc8c44fd62",
+    "report_sha256": "005cb955ff08fb81a11a3f259dfda829db63bc7b7be64705ffca2382314315df",
+    "report": {
+      "schema_version": 1,
+      "status": "passed",
+      "shards": 4,
+      "sample_count": 370,
+      "passes": [
+        "BlockReordering",
+        "CodeVirtualization",
+        "InstructionExpansion",
+        "InstructionSubstitution",
+        "NopInsertion",
+        "RegisterSubstitution"
+      ],
+      "differential_failed_samples": 0,
+      "static_recovery_failed_samples": 0
+    }
+  },
+  "limits": [
+    "Evidence covers only the pinned public corpus and six selected passes.",
+    "It does not establish full platform parity, all-pass correctness, or adversarial resistance.",
+    "The same workflow's VM semantic aggregate failed two fixtures at the 120-second transformation timeout; its parity gate remains open."
+  ]
+}

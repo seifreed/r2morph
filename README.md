@@ -575,9 +575,16 @@ pinned public corpus's `avx_packed_compare.c`: its memory helper accepted a
 correction in
 [`r2morph-corpus-avx-packed-memory.patch`](.github/patches/r2morph-corpus-avx-packed-memory.patch)
 and fails if any expected compiler/build variant or source family is omitted.
-The run predates this correction; its partial corpus artifacts omitted those
-80 builds and do not validate the corrected 37-source matrix. A fresh
-differential run is required to publish that evidence.
+The corrected public corpus passed its four-shard aggregate in run
+[`45428767299`](https://github.com/seifreed/r2morph/actions/runs/45428767299)
+on source `acafac289598b2ca22ec66498873ccfba4775bd3`: 370 samples across six
+selected passes, zero differential failures, and 2,220 complete static
+recovery measurements with zero failures. The hash-bound result is recorded in
+[`public-compatibility-corpus-2026-11-24-45428767299.json`](docs/public-compatibility-corpus-2026-11-24-45428767299.json).
+This closes the corrected public-corpus build and selected-pass evidence gap;
+the broader differential workflow remains open because its VM aggregate found
+two transformation timeouts. The result does not establish full platform
+parity, all-pass correctness, or adversarial resistance.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
