@@ -1628,6 +1628,7 @@ jobs:
           required = {
               "test_macho_x86_64_instruction_substitution_preserves_native_observables",
               "test_macho_x86_64_register_substitution_preserves_native_observables",
+              "test_macho_x86_64_string_obfuscation_preserves_native_observables",
           }
           if suite.findall(".//failure") or suite.findall(".//error") or suite.findall(".//skipped"):
               raise SystemExit("native x86-64 Mach-O smoke contains incomplete evidence")

@@ -199,6 +199,10 @@ of an unrepresentable immediate. The hash-bound
 [`local report`](docs/protection-platform-macos-arm64-local-2026-11-16-848d0f5b.json)
 records the source, fixture, and test hashes. This is bounded evidence from one
 host and does not establish full Mach-O pass parity or cross-platform parity.
+The new native Mach-O x86-64 string-obfuscation test is pending execution on its
+Intel macOS CI runner. String obfuscation only encodes data with no discovered
+xrefs and does not generate runtime decode stubs; Mach-O ARM64 is not declared
+supported because radare2 missed a real ARM64 reference in local reproduction.
 Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
@@ -327,7 +331,7 @@ ineligible because it zero-extends into RAX.
 | **Import Obfuscation** | engine-only | Jump stub indirection for import calls |
 | **Self-Modifying Code** | engine-only | XOR-encrypts function bodies with runtime decryptor |
 | **Stack Strings** | engine-only | Rebuilds string literals on the stack at runtime |
-| **String Obfuscation** | engine-only | Encodes string data behind runtime reconstruction |
+| **String Obfuscation** | engine-only | Encodes unreferenced string data; referenced strings are unchanged |
 | **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
 | **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 

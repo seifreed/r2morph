@@ -401,6 +401,25 @@ def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
     )
 
 
+def test_support_matrix_records_native_macho_string_obfuscation_evidence() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    entry = next(item for item in document["passes"] if item["name"] == "string-obfuscation")
+    cells = {
+        (cell["format"], cell["architecture"]): cell
+        for cell in build_matrix(document)["cells"]
+        if cell["pass"] == "string-obfuscation"
+    }
+
+    expect(
+        cells[("Mach-O", "x86-64")]["evidence"]
+        == [
+            "tests/integration/test_macho_x86_64_native.py::"
+            "test_macho_x86_64_string_obfuscation_preserves_native_observables"
+        ]
+        and not any(target.get("architecture") == "AArch64" for target in entry["target_cells"])
+    )
+
+
 def test_support_matrix_records_macho_block_reordering_as_one_preview_case() -> None:
     document = json.loads(_MATRIX.read_text(encoding="utf-8"))
     entry = next(item for item in document["passes"] if item["name"] == "block-reordering")

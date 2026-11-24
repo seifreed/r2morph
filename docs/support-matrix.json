@@ -1064,7 +1064,7 @@
           "format": "Mach-O",
           "architecture": "x86-64",
           "evidence": [
-            "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_string_obfuscation_preserves_native_exit_code"
+            "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_string_obfuscation_preserves_native_observables"
           ]
         },
         {
@@ -4667,7 +4667,7 @@
         "support_status": "experimental",
         "status": "evidenced",
         "evidence": [
-          "tests/integration/test_mutations_x86_compiled_binary.py::test_x86_string_obfuscation_preserves_native_exit_code"
+          "tests/integration/test_macho_x86_64_native.py::test_macho_x86_64_string_obfuscation_preserves_native_observables"
         ]
       },
       {

@@ -25,9 +25,9 @@ class StringObfuscationPass(MutationPass):
     """
     Mutation pass that obfuscates string literals.
 
-    This pass finds string literals in the binary data sections and applies
-    encoding/encryption to hide them. Decode stubs are generated to restore
-    the strings at runtime.
+    This pass encodes printable strings in data sections only when no xrefs
+    target their first byte. It does not generate runtime decode stubs, so
+    referenced strings are left unchanged.
 
     Supported encodings:
     - XOR with single-byte key
@@ -58,8 +58,8 @@ class StringObfuscationPass(MutationPass):
             stability="experimental",
             notes=(
                 "obfuscates string data in sections",
-                "requires decode stub generation",
-                "may affect program semantics if strings are constants",
+                "only encodes strings with no xrefs to their first byte",
+                "does not generate runtime decode stubs",
             ),
         )
 
