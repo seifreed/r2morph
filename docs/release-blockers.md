@@ -6,6 +6,17 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source six-platform smoke — 2026-11-24
+
+Workflow
+[`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
+completed its aggregate platform smoke on source `51f7562ac9649211b1feee8d4d9fe1e4f8463384`.
+It covered 76 cases across six bounded slices (ELF ARM32, ARM64, x86-32,
+macOS ARM64, macOS x86-64, and Windows PE), with zero failures, errors, or
+skips. The [hash-bound manifest](platform-preview-2026-11-24-45442779649.json)
+records per-platform counts and artifact digests. This is preview evidence, not
+a full platform-by-pass matrix; the cross-platform parity gate remains open.
+
 ## Current-source partial differential snapshot — 2026-11-20
 
 Workflow

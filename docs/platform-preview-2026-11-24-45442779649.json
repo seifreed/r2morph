@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45442779649,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45442779649",
+  "source_commit": "51f7562ac9649211b1feee8d4d9fe1e4f8463384",
+  "measurement": "cross-platform-differential-smoke",
+  "summary": {
+    "status": "complete",
+    "platform_count": 6,
+    "case_count": 76,
+    "failure_count": 0,
+    "error_count": 0,
+    "skipped_count": 0,
+    "platforms": {
+      "elf-arm-32": 6,
+      "elf-arm64": 7,
+      "elf-x86-32": 8,
+      "macos-arm64": 35,
+      "macos-x86-64": 2,
+      "windows-pe": 18
+    }
+  },
+  "aggregate_artifact": {
+    "id": 14946603181,
+    "name": "differential-platform-aggregate-45442779649-1",
+    "sha256": "85753d824fbdb78f8f8d605e2fd575ac9922307db11a9e498b25e14dab1732a7",
+    "report_sha256": "a01f11688a37b82307f4641278fdb08ba51fdbacbf9542ff711b5a338438c177"
+  },
+  "limits": [
+    "This is a bounded six-platform smoke set, not a full platform-by-pass compatibility matrix.",
+    "It does not establish support for every format, architecture, pass, or composition.",
+    "The full differential campaign and VM semantic aggregate are still running."
+  ]
+}

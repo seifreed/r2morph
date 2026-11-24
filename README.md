@@ -599,6 +599,14 @@ The full VM aggregate still needs a successful rerun. These bounded results do
 not establish full platform parity, all-pass correctness, or adversarial
 resistance.
 
+Run [`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
+also completed a six-platform smoke aggregate on source `51f7562a`: 76 cases
+across ELF ARM32, ARM64, x86-32, macOS ARM64, macOS x86-64, and Windows PE,
+with zero failures, errors, or skips. Its hash-bound summary is
+[`platform-preview-2026-11-24-45442779649.json`](docs/platform-preview-2026-11-24-45442779649.json).
+This bounded preview does not establish full platform-by-pass parity; the
+broader differential and VM aggregate remain open.
+
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
 failures, and 103 recoverable Mach-O parser diagnostics. Its report and
