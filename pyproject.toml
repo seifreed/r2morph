@@ -7,7 +7,7 @@ name = "r2morph"
 version = "0.4.0-alpha.3"
 description = "Metamorphic binary mutation engine with structural validation"
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12,<3.15"
 license = "MIT"
 authors = [
     {name = "Marc Rivero", email = "mriverolopez@gmail.com"}
@@ -32,6 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Security",
     "Topic :: Software Development :: Disassemblers",
     "Topic :: System :: Software Distribution",

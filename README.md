@@ -48,7 +48,7 @@
 
 ### Prerequisites
 
-- Python 3.12 or 3.13
+- Python 3.12, 3.13, or 3.14
 - radare2 installed
 
 #### Install radare2
@@ -100,10 +100,10 @@ and serializes campaigns by ref, leaving runner capacity for commit validation.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python
-3.12 and 3.13, and on Ubuntu/Python 3.13. The broader Ubuntu/Python 3.12 job
-also covers integration, property, and real-binary tests. Passing these jobs
-expands platform evidence but does not by itself establish full mutation
-parity, which remains an open release gate.
+3.12, 3.13, and 3.14, and on Ubuntu/Python 3.13 and 3.14. The broader
+Ubuntu/Python 3.12 job also covers integration, property, and real-binary tests.
+Passing these jobs expands platform evidence but does not by itself establish
+full mutation parity, which remains an open release gate.
 On macOS, subprocess tests pin `PYTHONHOME` to the base interpreter and
 `DYLD_LIBRARY_PATH` to its runtime library directory so copied-interpreter tests
 can still find the standard library.

@@ -45,16 +45,28 @@ def test_ubuntu_ci_dependency_audit_allows_network_latency_without_skipping_audi
     expect("run: pip-audit --timeout 60" in workflow)
 
 
-def test_ci_runs_unit_suite_on_non_linux_and_python_313_targets() -> None:
+def test_ci_runs_unit_suite_on_non_linux_and_non_312_targets() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     cross_platform_step = workflow.split("- name: Run cross-platform unit tests", 1)[1].split(
         "- name: Install build backend for cross-platform wheel smoke", 1
     )[0]
 
     expect(
-        "if: runner.os != 'Linux' || matrix.python-version == '3.13'" in cross_platform_step
+        "if: runner.os != 'Linux' || matrix.python-version != '3.12'" in cross_platform_step
         and 'run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60'
         in cross_platform_step
+    )
+
+
+def test_python_314_is_declared_and_runs_cross_platform_ci() -> None:
+    project = tomllib.loads((_ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    matrix = workflow["jobs"]["cross-platform-tests"]["strategy"]["matrix"]
+
+    expect(
+        project["requires-python"] == ">=3.12,<3.15"
+        and "Programming Language :: Python :: 3.14" in project["classifiers"]
+        and "3.14" in matrix["python-version"]
     )
 
 

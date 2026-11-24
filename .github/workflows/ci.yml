@@ -230,7 +230,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
       - name: Checkout
@@ -320,7 +320,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Run cross-platform unit tests
-        if: runner.os != 'Linux' || matrix.python-version == '3.13'
+        if: runner.os != 'Linux' || matrix.python-version != '3.12'
         timeout-minutes: 30
         run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60
 
@@ -341,11 +341,11 @@ jobs:
           if-no-files-found: ignore
 
       - name: Install build backend for cross-platform wheel smoke
-        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
+        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version != '3.12'
         run: python -m pip install "build>=1.2.0"
 
       - name: Run cross-platform package smoke tests
-        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
+        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version != '3.12'
         shell: bash
         run: |
           python -m build
