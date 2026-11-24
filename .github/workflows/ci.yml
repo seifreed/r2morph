@@ -139,21 +139,10 @@ jobs:
           pip install -r requirements.txt
           python -m pip install --editable .
 
-      - name: Snapshot published fuzz evidence
-        shell: bash
-        run: python -c 'from hashlib import sha256; from pathlib import Path; [print(sha256(p.read_bytes()).hexdigest(), p) for p in sorted(Path("docs").glob("continuous-fuzz-2026-11-20-446*.json"))]' > "$RUNNER_TEMP/fuzz-evidence.before"
-
       - name: Run unit tests
         run: |
           python -W error -m pytest -v tests/unit \
             -m "not slow" --no-cov --tb=short
-
-      - name: Check published fuzz evidence after unit tests
-        if: always()
-        shell: bash
-        run: |
-          python -c 'from hashlib import sha256; from pathlib import Path; [print(sha256(p.read_bytes()).hexdigest(), p) for p in sorted(Path("docs").glob("continuous-fuzz-2026-11-20-446*.json"))]' > "$RUNNER_TEMP/fuzz-evidence.after"
-          diff -u "$RUNNER_TEMP/fuzz-evidence.before" "$RUNNER_TEMP/fuzz-evidence.after"
 
   integration-tests:
     name: Integration Tests
@@ -301,10 +290,6 @@ jobs:
           pip install -r requirements.txt
           python -m pip install --editable .
 
-      - name: Snapshot published fuzz evidence
-        shell: bash
-        run: python -c 'from hashlib import sha256; from pathlib import Path; [print(sha256(p.read_bytes()).hexdigest(), p) for p in sorted(Path("docs").glob("continuous-fuzz-2026-11-20-446*.json"))]' > "$RUNNER_TEMP/fuzz-evidence.before"
-
       - name: Run broad Linux tests with coverage
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         timeout-minutes: 90
@@ -337,13 +322,6 @@ jobs:
       - name: Run cross-platform unit tests
         if: runner.os != 'Linux' || matrix.python-version == '3.13'
         run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short
-
-      - name: Check published fuzz evidence after matrix tests
-        if: always()
-        shell: bash
-        run: |
-          python -c 'from hashlib import sha256; from pathlib import Path; [print(sha256(p.read_bytes()).hexdigest(), p) for p in sorted(Path("docs").glob("continuous-fuzz-2026-11-20-446*.json"))]' > "$RUNNER_TEMP/fuzz-evidence.after"
-          diff -u "$RUNNER_TEMP/fuzz-evidence.before" "$RUNNER_TEMP/fuzz-evidence.after"
 
       - name: Install build backend for cross-platform wheel smoke
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'

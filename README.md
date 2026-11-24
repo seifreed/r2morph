@@ -526,6 +526,8 @@ parser diagnostics. The source-bound manifest and reports are in
 [`continuous-fuzz-2026-11-20-44683267033-summary.json`](docs/continuous-fuzz-2026-11-20-44683267033-summary.json).
 This bounded campaign does not establish arbitrary-input equivalence,
 exhaustive fuzz coverage, complete platform parity, or adversarial resistance.
+Windows report files retain their original line endings so the manifest hashes
+continue to match the downloaded artifact bytes.
 
 The previous differential workflow
 [`44661095783`](https://github.com/seifreed/r2morph/actions/runs/44661095783)
