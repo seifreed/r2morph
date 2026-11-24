@@ -1,0 +1,20 @@
+diff --git a/sources/avx_packed_compare.c b/sources/avx_packed_compare.c
+--- a/sources/avx_packed_compare.c
++++ b/sources/avx_packed_compare.c
+@@ -48,13 +48,14 @@
+     const __m128d double128_left = {1.0, 4.0};
+     const __m128d double128_right = {0.0, 3.0};
+     const __m256 float256_left = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+-    const __m256 float256_right = {1.0f, 3.0f, 3.0f, 5.0f, 5.0f, 7.0f, 7.0f, 9.0f};
++    const float float256_right_values[8] = {1.0f, 3.0f, 3.0f, 5.0f, 5.0f, 7.0f, 7.0f, 9.0f};
++    const __m256 float256_right = _mm256_loadu_ps(float256_right_values);
+     const __m256d double256_left = {1.0, 4.0, 3.0, 8.0};
+     const __m256d double256_right = {0.0, 5.0, 3.0, 9.0};
+     const int float128_mask = _mm_movemask_ps(compare_float128(float128_left, float128_right));
+     const int double128_mask = _mm_movemask_pd(compare_double128(double128_left, double128_right));
+     const int float256_mask = _mm256_movemask_ps(compare_float256(float256_left, float256_right));
+     const int double256_mask = _mm256_movemask_pd(compare_double256(double256_left, double256_right));
+-    const int memory_mask = _mm256_movemask_ps(compare_float_memory(float256_left, float256_right));
++    const int memory_mask = _mm256_movemask_ps(compare_float_memory(float256_left, float256_right_values));
+     const int scalar_rip_result = compare_scalar_rip_relative(4.0);
+     const __m128 float128_values = {1.0f, 2.0f, 3.0f, 4.0f};

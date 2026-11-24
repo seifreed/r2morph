@@ -566,6 +566,16 @@ coverage, and published resistance criteria remain open. Counters, artifact
 hash, and scope limits are pinned in the
 [`run summary`](docs/differential-run-2026-11-20-44676092171-summary.json).
 
+The 2026-11-24 differential run `45418027212` exposed a compile defect in the
+pinned public corpus's `avx_packed_compare.c`: its memory helper accepted a
+`const float *` but received a `__m256`. The workflow now applies the tracked
+correction in
+[`r2morph-corpus-avx-packed-memory.patch`](.github/patches/r2morph-corpus-avx-packed-memory.patch)
+and fails if any expected compiler/build variant or source family is omitted.
+The run predates this correction; its partial corpus artifacts omitted those
+80 builds and do not validate the corrected 37-source matrix. A fresh
+differential run is required to publish that evidence.
+
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
 failures, and 103 recoverable Mach-O parser diagnostics. Its report and

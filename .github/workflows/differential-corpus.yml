@@ -1801,6 +1801,11 @@ jobs:
           ref: 5f16a6fdcccbe2c3c97100f339a68ab916ca2e19
           path: public-corpus
 
+      - name: Patch AVX memory fixture type mismatch
+        run: |
+          git -C public-corpus apply --check "$GITHUB_WORKSPACE/.github/patches/r2morph-corpus-avx-packed-memory.patch"
+          git -C public-corpus apply "$GITHUB_WORKSPACE/.github/patches/r2morph-corpus-avx-packed-memory.patch"
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -1833,11 +1838,26 @@ jobs:
           from pathlib import Path
 
           manifest = json.loads(Path("public-corpus/build/manifest.json").read_text(encoding="utf-8"))
+          source_manifest = json.loads(Path("public-corpus/manifest.json").read_text(encoding="utf-8"))
           if manifest["target"] != {"os": "linux", "format": "ELF", "architecture": "x86-64"}:
               raise SystemExit(f"unexpected public corpus target: {manifest['target']}")
           built = [row for row in manifest["records"] if row["status"] == "built"]
-          if not built:
-              raise SystemExit("public compatibility corpus produced no built samples")
+          expected_sources = {Path(row["name"]).stem for row in source_manifest["sources"]}
+          expected_records = (
+              len(expected_sources)
+              * len(source_manifest["compilers"])
+              * len(source_manifest["optimizations"])
+              * len(source_manifest["pie_modes"])
+              * len(source_manifest["symbol_modes"])
+              * len(source_manifest["link_modes"])
+          )
+          omitted = [row for row in manifest["records"] if row["status"] != "built"]
+          built_sources = {row["id"].split("-", 5)[1] for row in built}
+          if len(manifest["records"]) != expected_records or omitted:
+              reasons = sorted({row.get("reason", "unknown") for row in omitted})
+              raise SystemExit(f"public corpus has omitted compiler outputs: {len(omitted)} ({reasons})")
+          if built_sources != expected_sources:
+              raise SystemExit(f"public corpus source coverage mismatch: {sorted(built_sources ^ expected_sources)}")
           print(f"public corpus built samples: {len(built)}")
           PY
 
@@ -1858,6 +1878,7 @@ jobs:
           shard_index = int(os.environ["PUBLIC_SHARD_INDEX"])
           shard_count = int(os.environ["PUBLIC_SHARD_COUNT"])
           manifest = json.loads((build_root / "manifest.json").read_text(encoding="utf-8"))
+          source_manifest = json.loads(Path("public-corpus/manifest.json").read_text(encoding="utf-8"))
           variants = (
               ("O0", "non-pie", "symbols", "dynamic"),
               ("O1", "non-pie", "symbols", "dynamic"),
@@ -1930,7 +1951,8 @@ jobs:
               json.dumps(selected_manifest, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
           )
-          if selected_manifest["selection"]["source_count"] < 36:
+          expected_source_count = len(source_manifest["sources"])
+          if selected_manifest["selection"]["source_count"] != expected_source_count:
               raise SystemExit("bounded public corpus selection lost a source family")
           if selected_manifest["selection"]["compiler_count"] < 2:
               raise SystemExit("bounded public corpus selection lost a compiler")
