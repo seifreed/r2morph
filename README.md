@@ -481,6 +481,15 @@ and its [raw report](docs/continuous-fuzz-local-2026-11-24-92ff809c-report.json)
 This one-host bounded campaign does not prove transformed-program equivalence,
 full platform parity, exhaustive fuzz coverage, or adversarial resistance.
 
+The Continuous Fuzzing workflow then passed on source commit `92ff809c` across
+Ubuntu, Windows, and macOS 15: 5,000 cases for each of ten targets per platform
+(150,000 target runs total), with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics per platform. The three reports,
+workflow artifact IDs and digests, source hash, and scope limits are pinned in
+[`docs/continuous-fuzz-2026-11-24-45460386121-summary.json`](docs/continuous-fuzz-2026-11-24-45460386121-summary.json).
+The campaign does not establish transformed-program equivalence, exhaustive
+fuzz coverage, full product parity, or adversarial resistance.
+
 The next main-push fuzz run on source `5f5078f7` also passed on Ubuntu,
 macOS 15, and Windows: 5,000 cases for each of the same ten targets per
 platform (150,000 target runs total), with zero failures and 103 recoverable

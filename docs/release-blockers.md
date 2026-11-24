@@ -1576,6 +1576,23 @@ environment, source hash, report hash, and limits are pinned in the
 [raw report](continuous-fuzz-local-2026-11-24-92ff809c-report.json), and the
 [regression test](../tests/unit/test_published_continuous_fuzz_local_92ff809c.py).
 
+## Current-source three-platform continuous fuzz — 2026-11-24
+
+Continuous Fuzzing workflow
+[`45460386121`](https://github.com/seifreed/r2morph/actions/runs/45460386121)
+passed on source commit `92ff809ca8eecf9705189bb9728539365770d32b`. Ubuntu,
+Windows, and macOS 15 each completed 5,000 deterministic inputs for all ten
+parser, assembler, VM, relocation, and binary-rewriter targets (50,000 target
+runs per platform; 150,000 total), with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics per platform. The source script hash,
+raw report hashes, artifact IDs and ZIP digests, and limits are pinned in the
+[campaign summary](continuous-fuzz-2026-11-24-45460386121-summary.json), the
+three platform reports, and the
+[regression test](../tests/unit/test_published_continuous_fuzz_45460386121.py).
+This bounded harness does not establish semantic equivalence for arbitrary
+transformed binaries, exhaustive fuzz coverage, full platform parity, or
+adversarial resistance.
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18
