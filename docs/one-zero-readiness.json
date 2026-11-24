@@ -270,7 +270,10 @@
         "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm32.xml",
         "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-arm64.xml",
         "docs/protection-differential-partial-2026-11-20-44661095783/platform/elf-x86-32.xml",
-        "tests/unit/test_published_differential_partial_44661095783.py"
+        "tests/unit/test_published_differential_partial_44661095783.py",
+        "docs/protection-macho-arm64-string-2026-11-24-a4f4dcba.json",
+        "docs/protection-macho-arm64-string-2026-11-24-a4f4dcba.xml",
+        "tests/unit/test_published_native_macho_arm64_string_20261124.py"
       ]
     },
     "documented_resistance_scope": {

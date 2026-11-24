@@ -298,6 +298,21 @@ the exact test and fixture hashes. This is bounded evidence for one host and
 one existing test module; it does not establish full Mach-O parity or close the
 cross-platform readiness criterion.
 
+### Current-main native Mach-O ARM64 string-obfuscation smoke
+
+CI run [`45477619052`](https://github.com/seifreed/r2morph/actions/runs/45477619052)
+tested source `a4f4dcba12020cda4fa7717c4361c027d4b09081` on macOS ARM64 with
+Python 3.12. The dedicated generated-fixture case passed, confirming that the
+unreferenced evidence string was mutated, the `puts("hello")` string stayed
+intact, ad-hoc signing verified, and native output matched. The
+[hash-bound report](protection-macho-arm64-string-2026-11-24-a4f4dcba.json)
+pins the test-source and JUnit hashes; the
+[JUnit report](protection-macho-arm64-string-2026-11-24-a4f4dcba.xml) contains
+one passing case. Its contract is checked by
+`tests/unit/test_published_native_macho_arm64_string_20261124.py`. This is a
+single bounded check for one pass and does not establish full Mach-O ARM64 pass
+parity or close the cross-platform readiness criterion.
+
 ### Partial cross-platform jobs on current package code
 
 Differential workflow run [`43949336892`](https://github.com/seifreed/r2morph/actions/runs/43949336892)

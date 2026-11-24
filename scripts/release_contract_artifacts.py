@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import platform
 import sys
 from collections.abc import Callable
 
@@ -302,8 +303,10 @@ def _validate_angr_runtime_available(
     platform_name: str,
     find_module: Callable[[str], object | None],
     load_module: Callable[[str], object] = importlib.import_module,
+    *,
+    machine_name: str | None = None,
 ) -> None:
-    if platform_name == "win32":
+    if platform_name == "win32" or (platform_name == "darwin" and machine_name == "x86_64"):
         return
     if find_module("angr") is None:
         raise ValueError("angr must be importable for adversarial benchmark evidence")
@@ -317,4 +320,4 @@ def _validate_angr_runtime_available(
 def _check_angr_runtime_available() -> None:
     if sys.version_info[:2] >= (3, 14):
         return
-    _validate_angr_runtime_available(sys.platform, importlib.util.find_spec)
+    _validate_angr_runtime_available(sys.platform, importlib.util.find_spec, machine_name=platform.machine())

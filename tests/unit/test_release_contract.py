@@ -270,6 +270,20 @@ def test_release_contract_allows_missing_angr_runtime_on_windows() -> None:
     _validate_angr_runtime_available("win32", lambda _name: None)
 
 
+def test_release_contract_allows_missing_angr_runtime_on_intel_macos() -> None:
+    _validate_angr_runtime_available("darwin", lambda _name: None, machine_name="x86_64")
+
+
+def test_release_contract_requires_angr_runtime_on_apple_silicon() -> None:
+    rejected = False
+    try:
+        _validate_angr_runtime_available("darwin", lambda _name: None, machine_name="arm64")
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_rejects_missing_binary_ninja_slot() -> None:
     report = json.loads(
         (_ROOT / "docs" / "protection-adversarial-angr-local-2026-09-18-59898697.json").read_text(encoding="utf-8")

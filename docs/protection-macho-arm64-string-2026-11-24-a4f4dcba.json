@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "measurement": "native-macho-arm64-string-obfuscation-smoke",
+  "source_commit": "a4f4dcba12020cda4fa7717c4361c027d4b09081",
+  "workflow": {
+    "run_id": 45477619052,
+    "run_attempt": 1,
+    "job_id": 138742079793,
+    "job_name": "Tests (macos-latest, Python 3.12)",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45477619052"
+  },
+  "host": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "python": "3.12"
+  },
+  "command": "python -W error -m pytest -q --no-cov --tb=short --junitxml=\"${RUNNER_TEMP}/macho-arm64-string.xml\" tests/integration/test_macho_arm64_string_obfuscation.py",
+  "test_file": {
+    "path": "tests/integration/test_macho_arm64_string_obfuscation.py",
+    "sha256": "76c1ae9860e15a1878e2967f5e6ac6dcb138d1be3e0a4d4e05dfe5bbfe80f586"
+  },
+  "junit_report": {
+    "path": "protection-macho-arm64-string-2026-11-24-a4f4dcba.xml",
+    "sha256": "df2c0b07c6e18e65c11620e14f30a3fa47c636180c7e9d248ac22185aeb4c728",
+    "case_count": 1,
+    "passed_case_count": 1,
+    "failed_case_count": 0,
+    "skipped_case_count": 0,
+    "case": "test_macho_arm64_string_obfuscation_preserves_native_observables"
+  },
+  "limitations": [
+    "This is one native macOS ARM64 string-obfuscation smoke case.",
+    "It verifies referenced-string preservation, mutation of an unreferenced string, ad-hoc signing, and matching runtime output for its generated fixture.",
+    "It does not establish full Mach-O pass parity or cross-platform parity."
+  ]
+}
