@@ -324,6 +324,22 @@ jobs:
         timeout-minutes: 30
         run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60
 
+      - name: Run native ARM64 Mach-O string smoke
+        if: runner.os == 'macOS' && runner.arch == 'ARM64' && matrix.python-version == '3.12'
+        timeout-minutes: 5
+        run: >-
+          python -W error -m pytest -q --no-cov --tb=short
+          --junitxml="${RUNNER_TEMP}/macho-arm64-string.xml"
+          tests/integration/test_macho_arm64_string_obfuscation.py
+
+      - name: Upload native ARM64 Mach-O string evidence
+        if: always() && runner.os == 'macOS' && runner.arch == 'ARM64' && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-macho-arm64-string-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/macho-arm64-string.xml
+          if-no-files-found: ignore
+
       - name: Install build backend for cross-platform wheel smoke
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
         run: python -m pip install "build>=1.2.0"

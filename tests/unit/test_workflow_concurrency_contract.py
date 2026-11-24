@@ -11,6 +11,7 @@ _DEPENDENCY_WORKFLOWS = (
     _ROOT / ".github" / "workflows" / "adversarial-benchmark.yml",
 )
 _EXPECTED_CROSS_PLATFORM_TIMEOUT_MINUTES = 30
+_EXPECTED_NATIVE_MACHO_SMOKE_TIMEOUT_MINUTES = 5
 
 
 def test_ubuntu_package_index_updates_are_time_bounded() -> None:
@@ -73,6 +74,21 @@ def test_ci_bounds_cross_platform_unit_test_step() -> None:
 
     expect(
         step["timeout-minutes"] == _EXPECTED_CROSS_PLATFORM_TIMEOUT_MINUTES and "faulthandler_timeout=60" in step["run"]
+    )
+
+
+def test_arm64_macho_smoke_is_bounded_and_uploads_junit_evidence() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["cross-platform-tests"]["steps"]
+    smoke = next(step for step in steps if step.get("name") == "Run native ARM64 Mach-O string smoke")
+    upload = next(step for step in steps if step.get("name") == "Upload native ARM64 Mach-O string evidence")
+
+    expect(
+        smoke["if"] == "runner.os == 'macOS' && runner.arch == 'ARM64' && matrix.python-version == '3.12'"
+        and smoke["timeout-minutes"] == _EXPECTED_NATIVE_MACHO_SMOKE_TIMEOUT_MINUTES
+        and "macho-arm64-string.xml" in smoke["run"]
+        and "always()" in upload["if"]
+        and upload["with"]["path"] == "${{ runner.temp }}/macho-arm64-string.xml"
     )
 
 
