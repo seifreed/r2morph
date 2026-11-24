@@ -29,7 +29,24 @@ The [hash-bound report manifest](vm-semantic-campaign-2026-11-24-45442779649.jso
 pins the aggregate artifact and report digests. This closes the bounded VM
 semantic parity campaign gap and validates aggregation across shards; it does
 not establish generalized adversarial resistance or full differential-corpus
-correctness. The broader differential aggregate remains in progress.
+correctness. The completed corpus aggregate is recorded in the following section.
+
+## Current-source differential corpus aggregate — 2026-11-24
+
+Workflow [`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
+completed all 86 jobs successfully on source
+`51f7562ac9649211b1feee8d4d9fe1e4f8463384`. Its Linux ELF x86-64 core matrix
+classified 10,860 seed runs across ten passes: 3,480 applied, 7,380 omitted by
+preconditions, zero failed or errored runs, and 100% complete evidence. The
+twelve extended passes classified 13,032 runs: 3,406 applied and 9,626 omitted,
+also with zero failures or errors. The
+[hash-bound aggregate manifest](differential-run-2026-11-24-45442779649.json)
+pins the merged artifact and each report. The run also passed the bounded VM,
+public corpus, and six-platform smoke aggregates recorded above. This closes
+the execution of this pinned matrix, but does not establish universal binary
+correctness, all platform/pass combinations, or general resistance. The
+all-named-analyzers, full cross-platform parity, and published-resistance gates
+remain open.
 
 ## Current-source partial differential snapshot — 2026-11-20
 

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45442779649,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45442779649",
+  "source_commit": "51f7562ac9649211b1feee8d4d9fe1e4f8463384",
+  "conclusion": "success",
+  "jobs": {
+    "total": 86,
+    "passed": 86,
+    "failed": 0
+  },
+  "core_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 10,
+    "classified_seed_runs": 10860,
+    "applied_runs": 3480,
+    "omitted_runs": 7380,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 10860,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0
+  },
+  "extended_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 12,
+    "classified_seed_runs": 13032,
+    "applied_runs": 3406,
+    "omitted_runs": 9626,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0
+  },
+  "related_aggregates": {
+    "public_compatibility": "docs/public-compatibility-corpus-2026-11-24-45442779649.json",
+    "platform_preview": "docs/platform-preview-2026-11-24-45442779649.json",
+    "vm_semantic": "docs/vm-semantic-campaign-2026-11-24-45442779649.json"
+  },
+  "aggregate_artifact": {
+    "id": 14946964395,
+    "name": "differential-corpus-merged-45442779649-1",
+    "sha256": "c407c63bcbff36dacf4dad95cffd005c7380478df1564c1b0dfa05fbe3dd3929",
+    "reports": {
+      "differential-corpus-merged.json": "688006718560baef04bb953e6b391d92cd552b78788518201c1872540fe53cda",
+      "extended-maturity-merged.json": "e2cb3f9e77790db76c06e87202988ee96845b46b1711a38405bcfb0864722dc6",
+      "maturity-evidence-merged.json": "51cdc72bcd2f187526ca3c97ac1fc341aa4b59965f94f2484dbd34ca8af803c2",
+      "public-compatibility-merged.json": "230900e6fc754f38e8a7754be2fd0b103cb65aa03eb6f456f6251d36865bd206",
+      "vm-semantic-contracts-merged.json": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75"
+    }
+  },
+  "limits": [
+    "Applied transformations passed only on cases satisfying each pass's preconditions; omitted rows are not successful transformations.",
+    "The core and extended differential matrices cover Linux ELF x86-64, not every format, architecture, pass composition, or real-world binary.",
+    "The bounded platform preview does not establish full cross-platform parity or general adversarial resistance."
+  ]
+}

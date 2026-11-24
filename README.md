@@ -588,7 +588,7 @@ complete static-recovery measurements with zero failures. Its hash-bound result
 is recorded in
 [`public-compatibility-corpus-2026-11-24-45442779649.json`](docs/public-compatibility-corpus-2026-11-24-45442779649.json).
 This confirms the corrected public-corpus build and selected-pass evidence on
-the current source; the broader differential workflow remains open. Its VM shard initially hit
+the current source. The VM shard initially hit
 two 120-second transformation timeouts; a targeted retry passed all 42 fixtures
 with zero failures, including both timed-out cases. The retry aggregate exposed
 that the workflow only downloaded artifacts from the current attempt; the
@@ -605,14 +605,25 @@ is recorded in
 This finite parity result does not establish generalized resistance,
 all-pass correctness, or cross-platform parity.
 
+The complete workflow then passed all 86 jobs on source `51f7562a`, including
+the merged differential evidence. Its Linux ELF x86-64 core matrix classified
+10,860 seed runs across ten passes (3,480 applied, 7,380 omitted by
+preconditions), with zero failures or errors and complete evidence for every
+row. The twelve extended passes classified 13,032 seed runs (3,406 applied,
+9,626 omitted), also with zero failures or errors. The hash-bound aggregate
+and related evidence manifests are recorded in
+[`differential-run-2026-11-24-45442779649.json`](docs/differential-run-2026-11-24-45442779649.json).
+These results cover their pinned corpora and target; they do not imply that
+omitted rows were transformed or establish universal binary correctness.
+
 Run [`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
 also completed a six-platform smoke aggregate on source `51f7562a`: 76 cases
 across ELF ARM32, ARM64, x86-32, macOS ARM64, macOS x86-64, and Windows PE,
 with zero failures, errors, or skips. Its hash-bound summary is
 [`platform-preview-2026-11-24-45442779649.json`](docs/platform-preview-2026-11-24-45442779649.json).
 This bounded preview does not establish full platform-by-pass parity. The VM
-semantic aggregate passed its bounded campaign, while the broader differential
-corpus aggregate remains open.
+semantic and broader differential aggregates passed their bounded campaigns;
+full cross-platform support and adversarial resistance remain open.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
