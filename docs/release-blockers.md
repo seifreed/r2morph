@@ -327,6 +327,24 @@ failures, errors, or skips. This is bounded execution evidence for three passes
 on one macOS Intel runner. It does not establish full Mach-O pass parity or
 close the cross-platform readiness criterion.
 
+### Current-source six-slice platform preview
+
+Differential workflow
+[`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
+ran on source `a4f4dcba12020cda4fa7717c4361c027d4b09081`. Six completed jobs
+passed 78/78 cases with no failures, errors, or skips: macOS ARM64 (36), macOS
+x86-64 (3), Windows PE (18), ELF ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8).
+The [preview manifest](protection-platform-preview-2026-11-24-45480009561.json)
+binds each JUnit report to its job and artifact; the individual reports are
+[`macOS ARM64`](platform-smoke-45480009561-macos-arm64.xml),
+[`macOS x86-64`](protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml),
+[`Windows PE`](platform-smoke-45480009561-windows-pe.xml),
+[`ELF ARM32`](platform-smoke-45480009561-elf-arm32.xml),
+[`ELF ARM64`](platform-smoke-45480009561-elf-arm64.xml), and
+[`ELF x86-32`](platform-smoke-45480009561-elf-x86-32.xml). This is bounded
+preview coverage, not a complete pass-by-platform matrix, and does not close
+the cross-platform readiness criterion.
+
 ### Partial cross-platform jobs on current package code
 
 Differential workflow run [`43949336892`](https://github.com/seifreed/r2morph/actions/runs/43949336892)

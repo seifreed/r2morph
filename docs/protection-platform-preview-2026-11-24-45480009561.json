@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "measurement": "bounded-six-slice-platform-preview",
+  "source_commit": "a4f4dcba12020cda4fa7717c4361c027d4b09081",
+  "workflow": {
+    "run_id": 45480009561,
+    "run_attempt": 1,
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45480009561"
+  },
+  "summary": {
+    "platform_slices": 6,
+    "case_count": 78,
+    "passed_case_count": 78,
+    "failed_case_count": 0,
+    "error_case_count": 0,
+    "skipped_case_count": 0
+  },
+  "reports": [
+    {
+      "target": "macos-arm64",
+      "job_id": 138750290831,
+      "artifact_id": 14960324112,
+      "artifact_name": "cross-platform-differential-macos-arm64-45480009561-1",
+      "junit_path": "docs/platform-smoke-45480009561-macos-arm64.xml",
+      "junit_sha256": "fb7ee9d1afa10e3dadf282bd88b3b5b4db8fdd36ee2f1c58f193906505bf67de",
+      "case_count": 36
+    },
+    {
+      "target": "macos-x86-64",
+      "job_id": 138750290310,
+      "artifact_id": 14961598946,
+      "artifact_name": "cross-platform-differential-macos-x86-64-45480009561-1",
+      "junit_path": "docs/protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml",
+      "junit_sha256": "e87941f1cb29a915bf41612944cee7dcf3e2045caaf3e35a82eb9518caaa25f1",
+      "case_count": 3
+    },
+    {
+      "target": "windows-pe",
+      "job_id": 138750290829,
+      "artifact_id": 14961627731,
+      "artifact_name": "cross-platform-differential-windows-pe-45480009561-1",
+      "junit_path": "docs/platform-smoke-45480009561-windows-pe.xml",
+      "junit_sha256": "739caa0f744e469e948451041912f88a53bde7914444f22ca76a9521f7eb9b6c",
+      "case_count": 18
+    },
+    {
+      "target": "elf-arm32",
+      "job_id": 138750291252,
+      "artifact_id": 14959919135,
+      "artifact_name": "elf-arm-32-native-45480009561-1",
+      "junit_path": "docs/platform-smoke-45480009561-elf-arm32.xml",
+      "junit_sha256": "904a23575ec6fdf99e8a1e14216236033ccc38ed6e34940049d44a27625dce0c",
+      "case_count": 6
+    },
+    {
+      "target": "elf-arm64",
+      "job_id": 138750290837,
+      "artifact_id": 14962155975,
+      "artifact_name": "elf-arm64-native-45480009561-1",
+      "junit_path": "docs/platform-smoke-45480009561-elf-arm64.xml",
+      "junit_sha256": "00cfd96cac5fbe8336444bc83728c6c806daa1f4b1ed9e7e5ff65298780d966d",
+      "case_count": 7
+    },
+    {
+      "target": "elf-x86-32",
+      "job_id": 138750291354,
+      "artifact_id": 14961862866,
+      "artifact_name": "elf-x86-32-native-45480009561-1",
+      "junit_path": "docs/platform-smoke-45480009561-elf-x86-32.xml",
+      "junit_sha256": "b05c9cab60ab0e92014fe92775c4b35fbd68e513d2e8eef9bca3c27a30b03e5d",
+      "case_count": 8
+    }
+  ],
+  "limitations": [
+    "These six completed platform jobs cover bounded smoke slices, not every pass on every platform.",
+    "The aggregate campaign is still running; these partial results do not close cross-platform parity."
+  ]
+}

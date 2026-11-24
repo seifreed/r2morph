@@ -215,6 +215,11 @@ current-main CI result is retained in the [hash-bound smoke report](docs/protect
 and its [JUnit case](docs/protection-macho-arm64-string-2026-11-24-a4f4dcba.xml);
 the Intel result is in its [hash-bound report](docs/protection-macho-x86-64-native-2026-11-24-a4f4dcba.json)
 and [JUnit report](docs/protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml).
+The same workflow's six bounded platform slices passed 78/78 cases across
+Mach-O ARM64/x86-64, Windows PE, and ELF ARM32/ARM64/x86-32. The
+[hash-bound preview manifest](docs/protection-platform-preview-2026-11-24-45480009561.json)
+links each JUnit report; this is preview evidence, not full pass-by-platform
+parity.
 Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
