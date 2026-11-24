@@ -472,6 +472,15 @@ This bounded campaign does not prove arbitrary transformed-program
 equivalence, exhaustive fuzz coverage, complete platform parity, or
 adversarial resistance.
 
+On source commit `92ff809c`, a local macOS ARM64 run passed 5,000 cases for
+each of the same ten fuzz targets (50,000 target runs total), with zero
+failures and 107 recoverable `macho_load_commands.warning` diagnostics. The
+Python 3.13.17 environment, source and report hashes, and limits are pinned in
+[`docs/continuous-fuzz-local-2026-11-24-92ff809c.json`](docs/continuous-fuzz-local-2026-11-24-92ff809c.json)
+and its [raw report](docs/continuous-fuzz-local-2026-11-24-92ff809c-report.json).
+This one-host bounded campaign does not prove transformed-program equivalence,
+full platform parity, exhaustive fuzz coverage, or adversarial resistance.
+
 The next main-push fuzz run on source `5f5078f7` also passed on Ubuntu,
 macOS 15, and Windows: 5,000 cases for each of the same ten targets per
 platform (150,000 target runs total), with zero failures and 103 recoverable

@@ -1562,6 +1562,20 @@ and published-resistance criteria. It does not validate a release build, wheel,
 provenance, or publication. The result and scope limits are pinned in
 [`release-contract-check-local-2026-11-24-49279456.json`](release-contract-check-local-2026-11-24-49279456.json).
 
+## Current-source local continuous fuzz — 2026-11-24
+
+On source commit `92ff809ca8eecf9705189bb9728539365770d32b`, a macOS ARM64
+host running Python 3.13.17 completed 5,000 deterministic cases for each of
+the ten continuous-fuzz targets (50,000 target runs total) with zero failures.
+The parser recorded 107 recoverable `macho_load_commands.warning` diagnostics.
+The run covers bounded parser, assembler, VM, relocation, and binary-rewriter
+inputs; it does not establish transformed-program equivalence, exhaustive fuzz
+coverage, full platform parity, or adversarial resistance. Its command,
+environment, source hash, report hash, and limits are pinned in the
+[summary](continuous-fuzz-local-2026-11-24-92ff809c.json), the
+[raw report](continuous-fuzz-local-2026-11-24-92ff809c-report.json), and the
+[regression test](../tests/unit/test_published_continuous_fuzz_local_92ff809c.py).
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18
