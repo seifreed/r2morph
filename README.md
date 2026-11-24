@@ -94,6 +94,8 @@ distinct keys where their inputs or evidence differ.
 Release workflows remain serialized per ref. Linux x86-64 CI
 installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
+The 32-shard adversarial analyzer campaign runs at most eight shards at once
+and serializes campaigns by ref, leaving runner capacity for commit validation.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python

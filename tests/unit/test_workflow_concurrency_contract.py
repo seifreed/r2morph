@@ -12,6 +12,7 @@ _DEPENDENCY_WORKFLOWS = (
 )
 _EXPECTED_CROSS_PLATFORM_TIMEOUT_MINUTES = 30
 _EXPECTED_NATIVE_MACHO_SMOKE_TIMEOUT_MINUTES = 5
+_EXPECTED_ADVERSARIAL_MAX_PARALLEL = 8
 
 
 def test_ubuntu_package_index_updates_are_time_bounded() -> None:
@@ -52,6 +53,17 @@ def test_adversarial_workflow_preserves_active_campaigns() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
 
     expect("group: adversarial-benchmark-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
+
+
+def test_adversarial_campaign_yields_runner_capacity_to_ci() -> None:
+    workflow = yaml.safe_load(
+        (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    )
+
+    expect(
+        workflow["concurrency"]["group"] == "adversarial-benchmark-${{ github.ref }}"
+        and workflow["jobs"]["benchmark"]["strategy"]["max-parallel"] == _EXPECTED_ADVERSARIAL_MAX_PARALLEL
+    )
 
 
 def test_ci_supersedes_obsolete_push_validation() -> None:
