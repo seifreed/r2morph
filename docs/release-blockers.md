@@ -48,6 +48,41 @@ were omitted. This campaign does not establish universal correctness or full
 pass-by-platform parity. The all-named-analyzers, cross-platform-parity, and
 published-resistance gates remain open.
 
+## Completed adversarial analyzer and VM campaign — 2026-11-24
+
+Adversarial workflow
+[`45488041450`](https://github.com/seifreed/r2morph/actions/runs/45488041450)
+completed all **32 analyzer shards and the aggregate job** successfully
+(33/33 jobs) on source `4d456ac818845e6fdd92ccce9411dc60612d7105`. The merged
+report covers 362 Linux ELF x86-64 fixtures, including 200 generated C/C++
+fixtures, across 22 passes and 7,964 pass runs. All 71,676 analyzer slots were
+present, with 55,220 completed, 16,456 unavailable, and zero missing rows or
+tool errors. Binary Ninja and IDA Pro were unavailable for all 7,964 rows;
+Unicorn could not emulate 528 unsupported-instruction rows. Code virtualization
+applied to all 362 samples and reported 14 functions with unsupported
+exception/unwinding or SSA-liveness capabilities; this is not a claim of full
+function coverage.
+
+The automated VM smoke covered 15 fixtures and 10 seeds. It recorded semantic
+parity, diverging tamper probes, and opcode, dispatcher, handler, and grammar
+diversity; progressive bytecode growth was supported for 6 fixtures. There
+were no exact normalized cross-seed matches, but 328/2,295 comparisons exceeded
+the 0.8 similarity threshold (maximum 0.933). The campaign explicitly marks
+human adversarial review as pending, so these bounded measurements do not
+establish generalized resistance.
+
+This run predates the current dependency bounds: it used source requirements
+`angr>=9.3.2` and `pycparser>=3.1,<3.2`; `main` now requires `angr>=10.0.7`
+and `pycparser>=3.11,<3.12`. The campaign therefore does not validate analyzer
+behavior under the current dependency stack. It also covers Linux ELF x86-64
+only. The hash-bound [summary](protection-adversarial-run-2026-11-24-45488041450-summary.json),
+[merged analyzer report](protection-adversarial-run-2026-11-24-45488041450.json.gz),
+[VM resistance report](protection-vm-resistance-run-2026-11-24-45488041450.json.gz),
+[seed-diversity report](protection-vm-seed-diversity-2026-11-24-45488041450.json),
+[bytecode-grammar report](protection-vm-bytecode-grammar-2026-11-24-45488041450.json),
+and [regression test](../tests/unit/test_published_adversarial_run_45488041450.py)
+preserve the evidence and its limits. All three 1.0 readiness gates remain open.
+
 ## Current-source partial differential snapshot — 2026-11-20
 
 Workflow

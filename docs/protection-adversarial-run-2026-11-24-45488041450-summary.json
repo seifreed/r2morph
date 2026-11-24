@@ -1,0 +1,232 @@
+{
+  "archives": {
+    "protection-adversarial-run-2026-11-24-45488041450.json.gz": {
+      "sha256": "8c14038579719f69467dd9333bde2e71099c52ccec02a79c21a47290b5501f8c",
+      "size_bytes": 1218515,
+      "uncompressed_sha256": "2ca6c3b47a54c432a7c7f8f31d8bd9085cbd8c0baeb4f4be855f601e57692649",
+      "uncompressed_size_bytes": 44751713
+    },
+    "protection-vm-bytecode-grammar-2026-11-24-45488041450.json": {
+      "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef",
+      "size_bytes": 3771
+    },
+    "protection-vm-resistance-run-2026-11-24-45488041450.json.gz": {
+      "sha256": "fdc02d46fbac82e41aee3e4d25d9a6833c4d97a93a9abdc192a8cc14345d1ac0",
+      "size_bytes": 15528,
+      "uncompressed_sha256": "4187d1266793ad9de1c459ad623af16f73c80b47a68eaba684026f30c56abff4",
+      "uncompressed_size_bytes": 381626
+    },
+    "protection-vm-seed-diversity-2026-11-24-45488041450.json": {
+      "sha256": "9a2a6b8aea48d9a4fc1c47a44c07ccf0c5ce2fda423048560b88334ad97ef731",
+      "size_bytes": 3096
+    }
+  },
+  "artifacts": {
+    "adversarial-benchmark-merged.json": {
+      "sha256": "2763de4a7eaf6efbd38f1ff453c902e9d2c371633fd879b1cf20dacaad2f30c9",
+      "size_bytes": 1370147
+    },
+    "vm-resistance-adversarial.json": {
+      "sha256": "9b1b89f1fd265453a0342d57644e21f5e7cc965a4dffc5719a51186bb9d8db87",
+      "size_bytes": 17028
+    },
+    "vm-resistance-bytecode-grammar.json": {
+      "sha256": "946b3fed4e5148d95662cc218736f4db98e51442851ae2f33679f7f7b7cb2344",
+      "size_bytes": 887
+    },
+    "vm-resistance-seed-diversity.json": {
+      "sha256": "38d458c87207fcc0662eae15b336f1f604526098596f88da5c383d4862ea14e8",
+      "size_bytes": 716
+    }
+  },
+  "limits": [
+    "Run is pinned to source 4d456ac; the current dependency commit requires angr>=10.0.7 and pycparser>=3.11, while this source requires angr>=9.3.2 and pycparser>=3.1. This run does not validate the current dependency stack.",
+    "Corpus is ELF x86-64 only; it does not establish cross-platform or cross-format parity.",
+    "Binary Ninja was unavailable for all 7,964 slots; IDA Pro was unavailable for all 7,964 slots; Unicorn could not emulate 528 unsupported-instruction rows.",
+    "VM resistance data is an automated smoke over 15 fixtures and 10 seeds, with human adversarial review pending; 328 of 2,295 cross-seed comparisons exceeded the 0.8 similarity threshold."
+  ],
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "results": {
+    "adversarial_evidence_blockers": {
+      "incomplete_tool_coverage": [
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "binary-ninja",
+          "unavailable_runs": 7964
+        },
+        {
+          "completed_run_coverage_percent": 93.37,
+          "completed_runs": 7436,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "unicorn",
+          "unavailable_runs": 528
+        },
+        {
+          "completed_run_coverage_percent": 0.0,
+          "completed_runs": 0,
+          "error_runs": 0,
+          "missing_runs": 0,
+          "tool": "ida-pro",
+          "unavailable_runs": 7964
+        }
+      ],
+      "non_completed_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      },
+      "tools_without_full_completion": [
+        "binary-ninja",
+        "ida-pro",
+        "unicorn"
+      ],
+      "unavailable_reasons_by_tool": {
+        "binary-ninja": {
+          "module 'binaryninja' is unavailable": 7964
+        },
+        "ida-pro": {
+          "executable 'idat' is unavailable": 7964
+        },
+        "unicorn": {
+          "the installed x86 emulator does not support an instruction in this fixture": 528
+        }
+      },
+      "unavailable_tool_runs_by_tool": {
+        "binary-ninja": 7964,
+        "ida-pro": 7964,
+        "unicorn": 528
+      }
+    },
+    "applied_pass_runs": 2360,
+    "blocker_totals": {
+      "blocker_categories": 5,
+      "incomplete_tool_coverage": 3,
+      "non_completed_tool_runs_by_tool": 3,
+      "tools_without_full_completion": 3,
+      "total_adversarial_evidence_blockers": 15,
+      "unavailable_reasons_by_tool": 3,
+      "unavailable_tool_runs_by_tool": 3
+    },
+    "code_virtualization_pass_summary": {
+      "applied": 362,
+      "errors": 0,
+      "functions_virtualized": 639,
+      "no_op": 0,
+      "omitted": 0,
+      "partial_virtualization": 0,
+      "samples": 362,
+      "unsupported_capabilities": {
+        "exceptions_and_unwinding": 14,
+        "ssa_liveness": 14
+      },
+      "unsupported_functions": 14,
+      "unsupported_severities": {
+        "error": 28
+      }
+    },
+    "completed_tool_count": 7,
+    "completed_tool_runs": 55220,
+    "completed_tool_runs_by_tool": {
+      "angr": 7964,
+      "custom": 7964,
+      "ghidra": 7964,
+      "objdump": 7964,
+      "radare2": 7964,
+      "triton": 7964,
+      "unicorn": 7436
+    },
+    "error_pass_runs": 0,
+    "error_tool_runs": 0,
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "unavailable_reasons_by_tool": {
+      "binary-ninja": {
+        "module 'binaryninja' is unavailable": 7964
+      },
+      "ida-pro": {
+        "executable 'idat' is unavailable": 7964
+      },
+      "unicorn": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    },
+    "unavailable_tool_runs": 16456,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 7964,
+      "ida-pro": 7964,
+      "unicorn": 528
+    }
+  },
+  "schema_version": 1,
+  "scope": {
+    "corpus": "dataset",
+    "expected_pass_runs": 7964,
+    "expected_tool_count": 9,
+    "expected_tool_runs": 71676,
+    "families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "generated_fixture_count": 200,
+    "pass_count": 22,
+    "sample_count": 362
+  },
+  "source_commit": "4d456ac818845e6fdd92ccce9411dc60612d7105",
+  "vm_resistance": {
+    "all_tamper_probes_diverged": true,
+    "bytecode_grammar_diversity_observed": true,
+    "cross_fixture_distinct_artifacts": true,
+    "cross_seed_exact_normalised_matches": 0,
+    "cross_seed_nearest_similarity_above_threshold": 328,
+    "cross_seed_nearest_similarity_above_threshold_percent": 14.291938997821351,
+    "cross_seed_nearest_similarity_comparisons": 2295,
+    "cross_seed_nearest_similarity_max": 0.9333333333333333,
+    "dispatcher_diversity_observed": true,
+    "fixture_count": 15,
+    "grammar_stride_unique_count": 12,
+    "grammar_total_handlers": 2550,
+    "grammar_total_padding_bytes": 2587,
+    "handler_diversity_observed": true,
+    "human_adversarial_review": {
+      "evidence_quality": "automated-adversarial-smoke",
+      "pending_scope": [
+        "human-adversarial-validation",
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection"
+      ],
+      "status": "pending-human-adversarial-review"
+    },
+    "opcode_assignment_diversity_observed": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 6,
+    "seed_count": 10,
+    "semantic_parity": true,
+    "tamper_evidence_status": "completed"
+  },
+  "workflow": {
+    "conclusion": "success",
+    "event": "workflow_run",
+    "jobs": {
+      "failed": 0,
+      "skipped": 0,
+      "successful": 33,
+      "total": 33
+    },
+    "name": "Adversarial Analysis Benchmark",
+    "run_id": 45488041450,
+    "status": "completed",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45488041450"
+  }
+}

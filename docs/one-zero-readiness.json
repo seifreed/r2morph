@@ -158,7 +158,10 @@
         "docs/protection-current-production-adversarial-2026-11-18-44223496306-summary.json",
         "docs/protection-current-production-adversarial-2026-11-18-44223496306.tar.gz",
         "tests/unit/test_published_current_production_adversarial_44223496306.py",
-        "docs/current-main-validation-2026-11-18-0491ba06.json"
+        "docs/current-main-validation-2026-11-18-0491ba06.json",
+        "docs/protection-adversarial-run-2026-11-24-45488041450-summary.json",
+        "docs/protection-adversarial-run-2026-11-24-45488041450.json.gz",
+        "tests/unit/test_published_adversarial_run_45488041450.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -474,7 +477,12 @@
         "tests/unit/test_published_vm_handler_diversity_100seeds_5b7b566a.py",
         "docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds.json",
         "docs/protection-vm-handler-diversity-local-2026-11-20-c6a124a2-100seeds-summary.json",
-        "tests/unit/test_published_vm_handler_diversity_100seeds_c6a124a2.py"
+        "tests/unit/test_published_vm_handler_diversity_100seeds_c6a124a2.py",
+        "docs/protection-adversarial-run-2026-11-24-45488041450-summary.json",
+        "docs/protection-vm-resistance-run-2026-11-24-45488041450.json.gz",
+        "docs/protection-vm-seed-diversity-2026-11-24-45488041450.json",
+        "docs/protection-vm-bytecode-grammar-2026-11-24-45488041450.json",
+        "tests/unit/test_published_adversarial_run_45488041450.py"
       ]
     },
     "stable_api_cli": {
