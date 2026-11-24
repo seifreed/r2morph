@@ -6,6 +6,30 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source CI validation — 2026-11-24
+
+GitHub CI run
+[`45505954601`](https://github.com/seifreed/r2morph/actions/runs/45505954601)
+completed all 19 jobs successfully on source
+`0a9a9c35aaa54f80b65f222213713b78f6757e80`, with no failed or skipped jobs.
+The run covered unit, integration, stable-product, installed-wheel, property
+and fuzz tests; lint, type checking, release-contract and support-matrix
+validation, Bandit, and `pip-audit`; and Ubuntu, macOS ARM64, macOS Intel, and
+Windows runners on Python 3.12, 3.13, and 3.14. The broad Ubuntu/Python 3.12
+coverage job also passed. The matching continuous-fuzz workflow
+[`45505954616`](https://github.com/seifreed/r2morph/actions/runs/45505954616)
+passed all three platform jobs on the same source commit.
+
+These checks validate the current dependency and package configuration and
+regression suites; they do not establish all-pass analyzer availability,
+binary-format/architecture parity, or generalized resistance. The separate
+adversarial benchmark
+[`45488041450`](https://github.com/seifreed/r2morph/actions/runs/45488041450)
+is still running on source `4d456ac818845e6fdd92ccce9411dc60612d7105` (29 of
+30 jobs completed when this entry was recorded); its results will remain
+source-bound and require artifact validation before use. The three 1.0
+readiness gates remain open.
+
 ## Current-source differential campaign — 2026-11-24
 
 Workflow [`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
@@ -555,9 +579,9 @@ links the raw [analyzer report](protection-adversarial-local-opaque-2026-11-15-d
 This adds one applied-pass analyzer slice and leaves the all-analyzer criterion
 open.
 
-## Latest full CI verification on main
+## Earlier full CI verification snapshots
 
-The latest completed GitHub CI run checked here is
+At the time of this earlier snapshot, the latest completed GitHub CI run was
 [`43680070257`](https://github.com/seifreed/r2morph/actions/runs/43680070257)
 on source commit `13ac80258a5a51e0c872abe600bc04f52366ba0c`: all 15 jobs
 passed, with zero failed or skipped jobs. It covered unit and integration
