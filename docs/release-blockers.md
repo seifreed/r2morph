@@ -1551,6 +1551,17 @@ pin the run and its scope. This bounded harness run does not establish
 arbitrary-input semantic equivalence, full platform parity, or adversarial
 resistance.
 
+## Current-source release-contract check — 2026-11-24
+
+On source commit `492794568cc00afd8aec11630b3979014086d514`,
+`scripts/check_release_contract.py` passed for `0.4.0-alpha.3`, and all 158
+release-contract/readiness tests passed on Python 3.13.17/macOS arm64 with
+angr 10.0.7 and Keystone 0.9.2 available. This confirms the alpha metadata and
+that the one-zero gate still blocks the open analyzer, cross-platform parity,
+and published-resistance criteria. It does not validate a release build, wheel,
+provenance, or publication. The result and scope limits are pinned in
+[`release-contract-check-local-2026-11-24-49279456.json`](release-contract-check-local-2026-11-24-49279456.json).
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18

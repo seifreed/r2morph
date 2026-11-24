@@ -249,6 +249,12 @@ across 442 platform-specific component entries. Linux uses the `manylinux_2_34`
 resolution because the development requirements include `triton-library`; this
 does not set the package's runtime glibc floor. Manifests, SBOMs, hashes, and
 scope limits are in the [dependency audit matrix](docs/dependency-audit-matrix-2026-11-17-51ab5ffb.json).
+On source `49279456`, the standalone release-contract check passed and all 158
+release-contract/readiness tests passed under Python 3.13.17/macOS arm64 with
+the local Keystone and angr dependencies available. This verifies the current
+alpha contract and confirms the three stable-major blockers remain enforced; it
+does not build a release or complete the stable-release gates. See the
+[hash-bound check record](docs/release-contract-check-local-2026-11-24-49279456.json).
 The scheduled extended maturity smoke now records output-size,
 transform-duration, runtime-duration, and static metric summaries for every
 selected pass. The same summary now records 0 with no independent
