@@ -140,7 +140,7 @@ class TestRealBinaryMutation:
         if not cat_path.exists():
             pytest.skip("/bin/cat not available")
 
-        output_path = temp_dir / "cat_mutated"
+        output_path = temp_dir / cat_path.name
         config = EngineConfig.create_default()
 
         with MorphEngine(config=config.to_dict()) as engine:
@@ -179,7 +179,7 @@ class TestRealBinaryMutation:
         if not whoami_path.exists():
             pytest.skip("/usr/bin/whoami not available")
 
-        output_path = temp_dir / "whoami_mutated"
+        output_path = temp_dir / whoami_path.name
         config = EngineConfig.create_default()
 
         with MorphEngine(config=config.to_dict()) as engine:
@@ -349,7 +349,7 @@ class TestBehavioralEquivalence:
         if not echo_path.exists():
             pytest.skip("/bin/echo not available")
 
-        output_path = temp_dir / "echo_mutated"
+        output_path = temp_dir / echo_path.name
         config = EngineConfig.create_default()
 
         with MorphEngine(config=config.to_dict()) as engine:

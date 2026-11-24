@@ -366,6 +366,9 @@ varargs or ABI parity.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
+Real-binary CI smoke tests retain each utility's original basename when saving its
+mutated copy, so multicall system binaries continue dispatching the tested applet.
+
 Native x86-64 Mach-O integration checks run on Intel macOS. Apple Silicon
 execution through Rosetta remains experimental and is not covered by CI.
 
