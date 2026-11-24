@@ -1,13 +1,8 @@
-import pytest
-
-from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
+from r2morph.instrumentation.frida_engine import FridaEngine
 from tests.utils.assertions import expect
 
 
 def test_frida_script_generation_and_export(tmp_path):
-    if not FRIDA_AVAILABLE:
-        pytest.skip("Frida not available")
-
     engine = FridaEngine(timeout=1)
 
     api_script = engine._create_api_monitor_script()
@@ -32,16 +27,11 @@ def test_frida_script_generation_and_export(tmp_path):
     expect(output_path.exists())
 
 
-def test_frida_initialize_and_lookup():
-    if not FRIDA_AVAILABLE:
-        pytest.skip("Frida not available")
-
+def test_frida_initialize_and_lookup(frida_device):
     engine = FridaEngine(timeout=1)
-    expect(not (engine.initialize() not in {True, False}))
+    expect(engine.initialize())
 
-    expect(
-        not (engine.device is not None and engine._find_and_attach_process("process_that_should_not_exist") is not None)
-    )
+    expect(engine.device is not None and engine._find_and_attach_process("process_that_should_not_exist") is None)
 
     expect(not (engine.dump_memory_region(0x0, 4) is not None))
     engine.cleanup()
