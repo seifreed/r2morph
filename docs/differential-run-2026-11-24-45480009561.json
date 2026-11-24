@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45480009561,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45480009561",
+  "source_commit": "a4f4dcba12020cda4fa7717c4361c027d4b09081",
+  "conclusion": "success",
+  "completed_at_utc": "2026-11-24T21:08:28Z",
+  "jobs": {
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "core_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 10,
+    "classified_seed_runs": 10860,
+    "applied_runs": 3480,
+    "omitted_runs": 7380,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 10860,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0
+  },
+  "extended_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 12,
+    "classified_seed_runs": 13032,
+    "applied_runs": 3406,
+    "omitted_runs": 9626,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 13032,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0
+  },
+  "composition": {
+    "directional_pair_count": 44,
+    "case_count": 2208,
+    "failed_cases": 0,
+    "error_cases": 0
+  },
+  "public_compatibility": {
+    "status": "passed",
+    "shards": 4,
+    "sample_count": 370,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "differential_failed_samples": 0,
+    "static_recovery_measurements": 2220,
+    "static_recovery_failed_samples": 0,
+    "artifact": {
+      "id": 14964068459,
+      "name": "public-compatibility-corpus-aggregate-45480009561-1",
+      "report": "docs/public-compatibility-aggregate-45480009561.json",
+      "report_sha256": "005cb955ff08fb81a11a3f259dfda829db63bc7b7be64705ffca2382314315df"
+    }
+  },
+  "vm_semantic": {
+    "status": "passed",
+    "scope": "Linux ELF x86-64",
+    "fixture_seed_cases": 1005,
+    "seeds": [20260916, 20260917, 20260918],
+    "passed_cases": 1005,
+    "failed_cases": 0,
+    "qemu_oracle_pairs": 1005,
+    "qemu_divergent_pairs": 0,
+    "qemu_missing_pairs": 0,
+    "qemu_unavailable_pairs": 0,
+    "artifact": {
+      "id": 14963042626,
+      "name": "vm-semantic-campaign-merged-45480009561-1",
+      "report_sha256": "0f8974fe188cb0c87ca523cfdce80395fbd5983d70addbe2b31e3cc2fa9773f9"
+    }
+  },
+  "platform_preview": {
+    "scope": "six bounded platform slices",
+    "case_count": 78,
+    "passed_cases": 78,
+    "failed_cases": 0,
+    "error_cases": 0,
+    "skipped_cases": 0,
+    "report": "docs/protection-platform-preview-2026-11-24-45480009561.json",
+    "report_sha256": "2c96a8b5b8a2c33cf6cef64f20fc8ef569904d5b9eaeb2f8fcb4da6e3f76853c"
+  },
+  "maturity_evidence": {
+    "composition_blockers": 0,
+    "decompiler_blockers": 22,
+    "report_sha256": "0144dd4663d7d5dfcb1901346482ad5dae8b5b557f789d790ffd3b2c4121d84c"
+  },
+  "aggregate_artifact": {
+    "id": 14963154263,
+    "name": "differential-corpus-merged-45480009561-1",
+    "reports": {
+      "differential-corpus-merged.json": "406372e26008e2d7d769e5a28080942b0d08992f7b073b8e29acdd402b6b2144",
+      "extended-maturity-merged.json": "f4cc77f750fe271964c554f2870b0f78b7c54d844dfe063aec522776dc1bebd8",
+      "maturity-evidence-merged.json": "0144dd4663d7d5dfcb1901346482ad5dae8b5b557f789d790ffd3b2c4121d84c",
+      "public-compatibility-merged.json": "3136b01bdd5b3c1e5276203afe70bbc9e042c524ea247ae83bc0a307c3e2f869",
+      "vm-semantic-contracts-merged.json": "424cf14622e09f0ebdd73ac21569fdfa299c06b6cadb3470388623fe64a94d75"
+    }
+  },
+  "limits": [
+    "Omitted rows did not transform a sample and are not successful transformations.",
+    "Core and extended differential results cover the pinned Linux ELF x86-64 corpora; they do not cover every real-world input or platform/pass combination.",
+    "Public compatibility measured six passes and radare2 static recovery; optional decompiler runners were omitted by the public workflow.",
+    "Maturity evidence retains 22 decompiler blockers. Full cross-platform parity, all-named-analyzer coverage, and general adversarial resistance remain open."
+  ]
+}

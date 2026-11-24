@@ -6,47 +6,23 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
-## Current-source six-platform smoke — 2026-11-24
+## Current-source differential campaign — 2026-11-24
 
-Workflow
-[`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
-completed its aggregate platform smoke on source `51f7562ac9649211b1feee8d4d9fe1e4f8463384`.
-It covered 76 cases across six bounded slices (ELF ARM32, ARM64, x86-32,
-macOS ARM64, macOS x86-64, and Windows PE), with zero failures, errors, or
-skips. The [hash-bound manifest](platform-preview-2026-11-24-45442779649.json)
-records per-platform counts and artifact digests. This is preview evidence, not
-a full platform-by-pass matrix; the cross-platform parity gate remains open.
-
-## Current-source VM semantic parity campaign — 2026-11-24
-
-The same workflow's
-[`Aggregate VM semantic native parity campaign`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
-job passed on source `51f7562ac9649211b1feee8d4d9fe1e4f8463384`. All 24 shards
-merged into 1,005/1,005 passing fixture-seed cases across three seeds. QEMU
-completed all 1,005 independent oracle pairs with zero unavailable, divergent,
-or missing pairs; all 17 categories and nine named capabilities were present.
-The [hash-bound report manifest](vm-semantic-campaign-2026-11-24-45442779649.json)
-pins the aggregate artifact and report digests. This closes the bounded VM
-semantic parity campaign gap and validates aggregation across shards; it does
-not establish generalized adversarial resistance or full differential-corpus
-correctness. The completed corpus aggregate is recorded in the following section.
-
-## Current-source differential corpus aggregate — 2026-11-24
-
-Workflow [`45442779649`](https://github.com/seifreed/r2morph/actions/runs/45442779649)
+Workflow [`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
 completed all 86 jobs successfully on source
-`51f7562ac9649211b1feee8d4d9fe1e4f8463384`. Its Linux ELF x86-64 core matrix
-classified 10,860 seed runs across ten passes: 3,480 applied, 7,380 omitted by
-preconditions, zero failed or errored runs, and 100% complete evidence. The
-twelve extended passes classified 13,032 runs: 3,406 applied and 9,626 omitted,
-also with zero failures or errors. The
-[hash-bound aggregate manifest](differential-run-2026-11-24-45442779649.json)
-pins the merged artifact and each report. The run also passed the bounded VM,
-public corpus, and six-platform smoke aggregates recorded above. This closes
-the execution of this pinned matrix, but does not establish universal binary
-correctness, all platform/pass combinations, or general resistance. The
-all-named-analyzers, full cross-platform parity, and published-resistance gates
-remain open.
+`a4f4dcba12020cda4fa7717c4361c027d4b09081`. The Linux ELF x86-64 core matrix
+classified 10,860 runs across ten passes (3,480 applied, 7,380 omitted); its
+twelve extended passes classified 13,032 runs (3,406 applied, 9,626 omitted).
+Every row had complete evidence, with zero errors or semantic failures. The run
+also passed 2,208 composition cases, 370 public compatibility samples with
+2,220 radare2 recovery measurements, 1,005/1,005 VM fixture-seed cases with
+all QEMU oracle pairs matching, and 78/78 cases in six platform preview slices.
+The [hash-bound manifest](differential-run-2026-11-24-45480009561.json) records
+the source, artifact IDs, report hashes, and bounded scope. The maturity report
+still has 22 decompiler blockers; public-corpus optional decompiler runners
+were omitted. This campaign does not establish universal correctness or full
+pass-by-platform parity. The all-named-analyzers, cross-platform-parity, and
+published-resistance gates remain open.
 
 ## Current-source partial differential snapshot — 2026-11-20
 
@@ -326,24 +302,6 @@ records the job, artifact, source test hash, and JUnit hash; the
 failures, errors, or skips. This is bounded execution evidence for three passes
 on one macOS Intel runner. It does not establish full Mach-O pass parity or
 close the cross-platform readiness criterion.
-
-### Current-source six-slice platform preview
-
-Differential workflow
-[`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
-ran on source `a4f4dcba12020cda4fa7717c4361c027d4b09081`. Six completed jobs
-passed 78/78 cases with no failures, errors, or skips: macOS ARM64 (36), macOS
-x86-64 (3), Windows PE (18), ELF ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8).
-The [preview manifest](protection-platform-preview-2026-11-24-45480009561.json)
-binds each JUnit report to its job and artifact; the individual reports are
-[`macOS ARM64`](platform-smoke-45480009561-macos-arm64.xml),
-[`macOS x86-64`](protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml),
-[`Windows PE`](platform-smoke-45480009561-windows-pe.xml),
-[`ELF ARM32`](platform-smoke-45480009561-elf-arm32.xml),
-[`ELF ARM64`](platform-smoke-45480009561-elf-arm64.xml), and
-[`ELF x86-32`](platform-smoke-45480009561-elf-x86-32.xml). This is bounded
-preview coverage, not a complete pass-by-platform matrix, and does not close
-the cross-platform readiness criterion.
 
 ### Partial cross-platform jobs on current package code
 

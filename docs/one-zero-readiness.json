@@ -283,7 +283,9 @@
         "docs/platform-smoke-45480009561-elf-arm32.xml",
         "docs/platform-smoke-45480009561-elf-arm64.xml",
         "docs/platform-smoke-45480009561-elf-x86-32.xml",
-        "tests/unit/test_published_platform_preview_45480009561.py"
+        "tests/unit/test_published_platform_preview_45480009561.py",
+        "docs/differential-run-2026-11-24-45480009561.json",
+        "tests/unit/test_published_differential_run_45480009561.py"
       ]
     },
     "documented_resistance_scope": {
@@ -346,7 +348,10 @@
         "docs/public-compatibility-2026-11-17-44081385675.json.gz",
         "docs/vm-semantic-contracts-2026-11-17-44081385675.json.gz",
         "tests/unit/test_published_differential_workflow_44081385675.py",
-        "docs/current-main-validation-2026-11-18-0491ba06.json"
+        "docs/current-main-validation-2026-11-18-0491ba06.json",
+        "docs/differential-run-2026-11-24-45480009561.json",
+        "docs/public-compatibility-aggregate-45480009561.json",
+        "tests/unit/test_published_differential_run_45480009561.py"
       ]
     },
     "published_resistance_results": {
