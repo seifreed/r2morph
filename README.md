@@ -412,11 +412,16 @@ The continuous-fuzz `binary_rewriter` target also applies bounded byte-level
 replacements and checks stale-byte rejection and that surrounding bytes remain
 unchanged; it does not fuzz complete executable semantics.
 
-The scheduled and main-push differential corpus runs `--passes all`, `--require-applied`, and
+The scheduled and manually dispatched differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,
 transform duration, runtime duration, and static analyzer evidence while
 comparing exit code, stdout, stderr, created files, and declared observable
 effects across nine seed-derived inputs.
+The 48 shard/seed jobs retain those distinct corpus measurements and the
+extended-pass maturity runs. The fixed cross-format, composition, VM semantic,
+and fuzz regression smokes run once per campaign because they use the same
+inputs in every shard; their aggregate requires and validates each resulting
+artifact before publishing the campaign.
 
 The current-source local stress run on commit `4fbe86fb` exercised all ten
 parser, assembler, VM, relocation, and binary-rewriter fuzz targets 10,000
@@ -608,7 +613,8 @@ workflow [`44676092171`](https://github.com/seifreed/r2morph/actions/runs/446760
 passed all 86 jobs on its pinned source commit `2f54c47e`: 10,860 core and
 13,032 extended classifications had complete evidence with zero failures or
 errors. Its generated public compatibility corpus passed 360 samples across
-six passes, and 2,208 composition cases had zero failures or errors. This is
+six passes, and the 46-case composition smoke ran in all 48 jobs (2,208
+executions) with zero failures or errors. This is
 bounded evidence for that source revision; platform parity, named-analyzer
 coverage, and published resistance criteria remain open. Counters, artifact
 hash, and scope limits are pinned in the
@@ -631,7 +637,8 @@ on source `a4f4dcba`, passed all 86 jobs. Its Linux ELF x86-64 core matrix
 classified 10,860 runs across ten passes (3,480 applied and 7,380 omitted);
 the extended matrix classified 13,032 runs across twelve passes (3,406 applied
 and 9,626 omitted). Both have complete evidence for every row and zero errors
-or semantic failures. The same run passed 2,208 composition cases, a 370-sample
+or semantic failures. The same run passed the 46-case composition smoke in all
+48 jobs (2,208 executions), a 370-sample
 public corpus with 2,220 successful radare2 recovery measurements, 1,005/1,005
 VM fixture-seed cases with all QEMU pairs matching, and 78/78 bounded platform
 preview cases. Its [hash-bound manifest](docs/differential-run-2026-11-24-45480009561.json)

@@ -168,7 +168,7 @@ jobs:
           retention-days: 7
 
       - name: Run cross-format differential smoke
-        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success' && matrix.fixture_shard == 0 && matrix.seed == 20260901
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -291,7 +291,7 @@ jobs:
           PY
 
       - name: Run composition regression smoke
-        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success' && matrix.fixture_shard == 0 && matrix.seed == 20260901
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -384,7 +384,7 @@ jobs:
           PY
 
       - name: Run VM semantic regression smoke
-        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success' && matrix.fixture_shard == 0 && matrix.seed == 20260901
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -459,7 +459,7 @@ jobs:
           PY
 
       - name: Run parser and rewriter fuzz smoke
-        if: always() && !cancelled() && steps.build_wheel.outcome == 'success'
+        if: always() && !cancelled() && steps.build_wheel.outcome == 'success' && matrix.fixture_shard == 0 && matrix.seed == 20260901
         run: |
           wheel_root=/tmp/r2morph-differential-wheel-check
           cd "$wheel_root"
@@ -1169,10 +1169,11 @@ jobs:
               minimum_cases: int,
               allow_skipped: bool = False,
               allowed_skip_text: str | None = None,
+              expected_count: int = expected_shards,
           ) -> list[Path]:
               import xml.etree.ElementTree as ET
 
-              paths = require_files(pattern, expected_shards)
+              paths = require_files(pattern, expected_count)
               for path in paths:
                   suite = ET.parse(path).getroot()
                   if len(suite.findall(".//testcase")) < minimum_cases:
@@ -1197,9 +1198,10 @@ jobs:
               10,
               allow_skipped=True,
               allowed_skip_text="Mach-O arm64 execution requires macOS",
+              expected_count=1,
           )
-          vm_semantic_reports = validate_junit_reports("vm-semantic-reports", 56)
-          validate_junit_reports("composition-reports", 46)
+          vm_semantic_reports = validate_junit_reports("vm-semantic-reports", 56, expected_count=1)
+          validate_junit_reports("composition-reports", 46, expected_count=1)
 
           required_vm_contracts = {
               "memory": (
@@ -1275,7 +1277,7 @@ jobs:
               "relocations": 64,
               "binary_rewriter": 64,
           }
-          for path in require_files("fuzz-reports", expected_shards):
+          for path in require_files("fuzz-reports", 1):
               fuzz_report = json.loads(path.read_text(encoding="utf-8"))
               if fuzz_report["failure_count"] != 0 or fuzz_report["target_runs"] != expected_fuzz_targets:
                   raise SystemExit(f"fuzz evidence failed: {path}")

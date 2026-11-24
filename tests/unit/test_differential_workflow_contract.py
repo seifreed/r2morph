@@ -29,6 +29,24 @@ def test_differential_smokes_require_successful_wheel_installation() -> None:
     expect("id: build_wheel" in wheel_build and all(required_condition in step for step in smoke_steps))
 
 
+def test_fixed_smokes_run_once_per_differential_campaign() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    once_condition = "matrix.fixture_shard == 0 && matrix.seed == 20260901"
+    fixed_smokes = tuple(_workflow_step(workflow, name) for name in _REQUIRED_WHEEL_GATED_SMOKES[:-1])
+    extended_smoke = _workflow_step(workflow, "Run extended maturity pass smoke")
+    aggregator = workflow.split("- name: Merge and validate campaign evidence", maxsplit=1)[1]
+
+    expect(
+        all(once_condition in step for step in fixed_smokes)
+        and once_condition not in extended_smoke
+        and '"cross-format-reports",\n              10,' in aggregator
+        and '"vm-semantic-reports", 56, expected_count=1' in aggregator
+        and '"composition-reports", 46, expected_count=1' in aggregator
+        and 'require_files("fuzz-reports", 1)' in aggregator
+        and 'require_files("extended-maturity-reports", expected_shards)' in aggregator
+    )
+
+
 def test_differential_linux_runner_installs_gdb_for_crash_diagnostics() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
     system_dependencies = _workflow_step(workflow, "Install system dependencies")
