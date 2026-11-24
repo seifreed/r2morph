@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "measurement": "native-macho-x86-64-differential-smoke",
+  "source_commit": "a4f4dcba12020cda4fa7717c4361c027d4b09081",
+  "workflow": {
+    "run_id": 45480009561,
+    "run_attempt": 1,
+    "job_id": 138750290310,
+    "job_name": "Cross-platform differential (macOS x86-64)",
+    "artifact_id": 14961598946,
+    "artifact_name": "cross-platform-differential-macos-x86-64-45480009561-1",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45480009561"
+  },
+  "host": {
+    "os": "macOS",
+    "architecture": "x86_64",
+    "python": "3.12"
+  },
+  "test_file": {
+    "path": "tests/integration/test_macho_x86_64_native.py",
+    "sha256": "cc89cac9a4b040609b34fc914aa18c49fd928639529eb580fabef574d64e973f"
+  },
+  "junit_report": {
+    "path": "protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml",
+    "sha256": "e87941f1cb29a915bf41612944cee7dcf3e2045caaf3e35a82eb9518caaa25f1",
+    "case_count": 3,
+    "passed_case_count": 3,
+    "failed_case_count": 0,
+    "error_case_count": 0,
+    "skipped_case_count": 0,
+    "cases": [
+      "test_macho_x86_64_instruction_substitution_preserves_native_observables",
+      "test_macho_x86_64_register_substitution_preserves_native_observables",
+      "test_macho_x86_64_string_obfuscation_preserves_native_observables"
+    ]
+  },
+  "limitations": [
+    "This is three native macOS Intel x86-64 smoke cases covering three passes.",
+    "It does not establish full Mach-O pass parity or cross-platform parity."
+  ]
+}

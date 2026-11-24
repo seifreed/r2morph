@@ -273,7 +273,10 @@
         "tests/unit/test_published_differential_partial_44661095783.py",
         "docs/protection-macho-arm64-string-2026-11-24-a4f4dcba.json",
         "docs/protection-macho-arm64-string-2026-11-24-a4f4dcba.xml",
-        "tests/unit/test_published_native_macho_arm64_string_20261124.py"
+        "tests/unit/test_published_native_macho_arm64_string_20261124.py",
+        "docs/protection-macho-x86-64-native-2026-11-24-a4f4dcba.json",
+        "docs/protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml",
+        "tests/unit/test_published_native_macho_x86_64_20261124.py"
       ]
     },
     "documented_resistance_scope": {

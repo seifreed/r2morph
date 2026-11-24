@@ -313,6 +313,20 @@ one passing case. Its contract is checked by
 single bounded check for one pass and does not establish full Mach-O ARM64 pass
 parity or close the cross-platform readiness criterion.
 
+### Current-source native Mach-O x86-64 smoke
+
+The macOS Intel job in differential workflow
+[`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561),
+on source `a4f4dcba12020cda4fa7717c4361c027d4b09081`, passed all three native
+Mach-O x86-64 cases: instruction substitution, register substitution, and
+string obfuscation. The
+[hash-bound report](protection-macho-x86-64-native-2026-11-24-a4f4dcba.json)
+records the job, artifact, source test hash, and JUnit hash; the
+[JUnit report](protection-macho-x86-64-native-2026-11-24-a4f4dcba.xml) has zero
+failures, errors, or skips. This is bounded execution evidence for three passes
+on one macOS Intel runner. It does not establish full Mach-O pass parity or
+close the cross-platform readiness criterion.
+
 ### Partial cross-platform jobs on current package code
 
 Differential workflow run [`43949336892`](https://github.com/seifreed/r2morph/actions/runs/43949336892)
