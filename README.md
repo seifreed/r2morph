@@ -443,6 +443,17 @@ pinned in
 This bounded campaign does not prove arbitrary-input semantic equivalence,
 exhaustive fuzz coverage, complete platform parity, or adversarial resistance.
 
+The current-source fuzz run on `a61f599e` completed on Ubuntu, macOS 15, and
+Windows using the installed wheel: 5,000 deterministic cases for each of ten
+parser, assembler, VM, relocation, and rewrite targets per platform (150,000
+target runs total), with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics per platform. The source commit,
+artifact digests, raw reports, and limits are pinned in
+[`docs/continuous-fuzz-2026-11-24-45416536037-summary.json`](docs/continuous-fuzz-2026-11-24-45416536037-summary.json).
+This bounded campaign does not prove arbitrary transformed-program
+equivalence, exhaustive fuzz coverage, complete platform parity, or
+adversarial resistance.
+
 The next main-push fuzz run on source `5f5078f7` also passed on Ubuntu,
 macOS 15, and Windows: 5,000 cases for each of the same ten targets per
 platform (150,000 target runs total), with zero failures and 103 recoverable
