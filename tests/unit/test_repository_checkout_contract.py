@@ -9,5 +9,11 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_hash_bound_text_files_use_lf_checkout_attributes() -> None:
-    expect((_ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines() == ["* text=auto eol=lf"])
+def test_hash_bound_text_files_preserve_platform_artifact_bytes() -> None:
+    expect(
+        (_ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines()
+        == [
+            "* text=auto eol=lf",
+            "docs/*-windows-latest.json -text -eol whitespace=cr-at-eol",
+        ]
+    )
