@@ -52,13 +52,13 @@ def test_adversarial_workflow_preserves_active_campaigns() -> None:
     expect("group: adversarial-benchmark-${{ github.ref }}" in workflow and "cancel-in-progress: false" in workflow)
 
 
-def test_ci_keeps_active_validation_and_coalesces_pending_pushes() -> None:
+def test_ci_supersedes_obsolete_push_validation() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     expect(
         "group: ${{ github.workflow }}-${{ github.ref }}-" in workflow
         and "github.event_name == 'push' && 'push' || github.run_id" in workflow
-        and "cancel-in-progress: false" in workflow
+        and "cancel-in-progress: true" in workflow
     )
 
 
@@ -73,11 +73,11 @@ def test_ci_bounds_cross_platform_unit_test_step() -> None:
     expect(step["timeout-minutes"] == 30 and "faulthandler_timeout=60" in step["run"])
 
 
-def test_fuzz_keeps_active_campaigns_and_coalesces_pending_pushes() -> None:
+def test_fuzz_supersedes_obsolete_push_campaigns() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "fuzz.yml").read_text(encoding="utf-8")
 
     expect(
         "group: continuous-fuzz-${{ github.ref }}-" in workflow
         and "github.event_name == 'push' && 'push' || github.run_id" in workflow
-        and "cancel-in-progress: false" in workflow
+        and "cancel-in-progress: true" in workflow
     )

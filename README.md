@@ -87,10 +87,10 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 `python -m pip install --editable .`.
 CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
-CI and continuous fuzzing keep the active run and coalesce pending pushes by
-workflow and ref, so the newest source revision is validated without queuing
-every intermediate commit. Pull-request, manual, scheduled, differential, and
-adversarial runs retain distinct keys where their inputs or evidence differ.
+CI and continuous fuzzing cancel superseded main-push runs, so runners validate
+the newest source revision instead of spending time on obsolete commits.
+Pull-request, manual, scheduled, differential, and adversarial runs retain
+distinct keys where their inputs or evidence differ.
 Release workflows remain serialized per ref. Linux x86-64 CI
 installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
@@ -125,9 +125,9 @@ output alongside the virtualization diagnostics.
 If `test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`
 fails on Ubuntu/Python 3.12, CI retains its generated C source and mutated ELF as
 the `floating-point-varargs-linux-repro` artifact so the exact crash can be inspected.
-An in-flight push-triggered CI run is allowed to finish when later commits reach
-`main`; among pending push runs, only the latest commit remains queued. This
-keeps validation moving toward current `main` without replacing an active run.
+When a newer commit reaches `main`, its push-triggered CI run replaces an older
+in-flight push run. Manual, scheduled, and pull-request validation use separate
+concurrency keys and are not replaced by main pushes.
 Cross-platform unit suites emit Python stack traces after 60 seconds and the
 step fails after 30 minutes, bounding a runner-specific hang. The installed-wheel
 smoke also emits thread traces after 60 seconds and stops its test process after
