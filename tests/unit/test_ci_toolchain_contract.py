@@ -148,9 +148,17 @@ def test_integration_ci_preserves_clang_switch_table_repro_on_failure() -> None:
     )
 
 
-def test_long_campaign_workflows_preserve_each_queued_run() -> None:
-    workflows = ("differential-corpus.yml", "adversarial-benchmark.yml")
-    for name in workflows:
-        workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8"))
-        concurrency = workflow["concurrency"]
-        expect(concurrency["cancel-in-progress"] is False and "${{ github.run_id }}" in concurrency["group"])
+def test_long_campaign_workflows_use_distinct_intended_concurrency() -> None:
+    differential = yaml.safe_load(
+        (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
+    )["concurrency"]
+    adversarial = yaml.safe_load(
+        (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    )["concurrency"]
+
+    expect(
+        differential["cancel-in-progress"] is False
+        and "${{ github.run_id }}" in differential["group"]
+        and adversarial["cancel-in-progress"] is False
+        and adversarial["group"] == "adversarial-benchmark-${{ github.ref }}"
+    )

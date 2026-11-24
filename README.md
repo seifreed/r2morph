@@ -89,8 +89,9 @@ CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
 CI and continuous fuzzing cancel superseded main-push runs, so runners validate
 the newest source revision instead of spending time on obsolete commits.
-Pull-request, manual, scheduled, differential, and adversarial runs retain
-distinct keys where their inputs or evidence differ.
+Pull requests and differential campaigns keep distinct concurrency keys where
+their evidence should be retained. Adversarial campaigns serialize by ref,
+allowing one active campaign and one replaceable pending run.
 Release workflows remain serialized per ref. Linux x86-64 CI
 installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
