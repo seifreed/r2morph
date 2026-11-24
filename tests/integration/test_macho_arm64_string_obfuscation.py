@@ -51,13 +51,20 @@ def test_macho_arm64_string_obfuscation_preserves_native_observables(tmp_path: P
 
     obfuscated_result = run_command([protected], capture_output=True, text=True, timeout=30)
     pass_result = result["pass_results"]["StringObfuscation"]
-    expect(
-        pass_result["mutations_applied"] == 1
-        and b"macho-arm64-string-evidence" not in protected.read_bytes()
-        and b"hello" in protected.read_bytes()
-        and b"macho-arm64-string-evidence" in original.read_bytes()
-        and CodeSigner().verify(protected)
-        and (original_result.returncode, original_result.stdout, original_result.stderr)
+    original_bytes = original.read_bytes()
+    protected_bytes = protected.read_bytes()
+    checks = {
+        "one_string_mutated": pass_result["mutations_applied"] == 1,
+        "target_string_obfuscated": b"macho-arm64-string-evidence" not in protected_bytes,
+        "referenced_string_preserved": b"hello" in protected_bytes,
+        "original_contains_target": b"macho-arm64-string-evidence" in original_bytes,
+        "output_signature_valid": CodeSigner().verify(protected),
+        "native_observables_match": (
+            original_result.returncode,
+            original_result.stdout,
+            original_result.stderr,
+        )
         == (obfuscated_result.returncode, obfuscated_result.stdout, obfuscated_result.stderr)
-        == (0, "hello\n", "")
-    )
+        == (0, "hello\n", ""),
+    }
+    expect(all(checks.values()), checks)
