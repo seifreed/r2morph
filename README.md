@@ -394,7 +394,7 @@ ineligible because it zero-extends into RAX.
 
 | Pass | Surface | Description |
 |------|----------|-------------|
-| **Dead Code Injection** | engine-only | Injects semantically neutral code in padding regions |
+| **Dead Code Injection** | engine-only | Replaces executable NOP padding with register self-moves that preserve state; trap instructions and arbitrary unreachable-block insertion are not supported |
 | **Control Flow Flattening** | engine-only | Inserts opaque predicates and jump obfuscation |
 | **Opaque Predicates** | engine-only | Writes opaque predicate instructions into basic blocks; reuses function-boundary disassembly during cave searches within a pass |
 | **Code Virtualization** | engine-only | Translates instructions to VM bytecode with dispatcher |

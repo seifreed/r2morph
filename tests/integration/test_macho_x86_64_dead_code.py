@@ -70,12 +70,15 @@ def test_macho_x86_64_dead_code_injection_preserves_native_observables(tmp_path:
 
     bytes_changed = protected.read_bytes() != original.read_bytes()
     signed = CodeSigner().sign(protected, adhoc=True)
+    verified = CodeSigner().verify(protected)
     original_result = _execute_macho(original)
     injected_result = _execute_macho(protected)
     expect(
         result["mutations_applied"] > 0
         and bytes_changed
         and signed
-        and CodeSigner().verify(protected)
-        and original_result == injected_result == (0, "hello\n", "")
+        and verified
+        and original_result == injected_result == (0, "hello\n", ""),
+        f"mutation={result}, bytes_changed={bytes_changed}, signed={signed}, "
+        f"verified={verified}, original={original_result}, injected={injected_result}",
     )

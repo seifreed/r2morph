@@ -1,28 +1,7 @@
-"""
-Dead code injection mutation pass.
+"""Replace executable NOP padding with state-preserving register self-moves.
 
-Injects code that never executes but adds complexity to binary analysis.
-
-This module provides dead code injection capabilities for metamorphic transformation
-research. Dead code injection is a classic anti-analysis technique that increases
-the complexity of reverse engineering without affecting program semantics.
-
-Research Applications:
-    - Studying signature-based detection evasion
-    - Analyzing the impact of code bloat on static analysis
-    - Testing disassembler and decompiler resilience
-    - Benchmarking analysis tool performance
-
-Implementation Status:
-    - Code generation: IMPLEMENTED
-    - Injection point identification: IMPLEMENTED
-    - Binary modification: IMPLEMENTED (overwrites padding/unreachable code)
-
-Note:
-    Dead code injection works by finding existing padding bytes (NOPs, INT3, etc.)
-    or unreachable code regions after unconditional jumps/returns and replacing
-    them with more complex dead code sequences. This changes the binary signature
-    without affecting program semantics.
+Only NOP runs are eligible; trap instructions and arbitrary unreachable-block
+insertion are not supported.
 """
 
 from __future__ import annotations
@@ -48,39 +27,9 @@ logger = logging.getLogger(__name__)
 
 class DeadCodeInjectionPass(MutationPass):
     """
-    Injects dead code (code that never executes) for metamorphic research.
+    Replaces executable NOP padding with state-preserving register self-moves.
 
-    Dead code adds complexity without affecting program semantics, making
-    static and dynamic analysis more difficult. This is a fundamental
-    technique in metamorphic malware research and binary obfuscation studies.
-
-    Injection Strategies:
-        - Post-unconditional-jump: Code placed after jmp/ret/b/br instructions
-          that can never be reached through normal control flow
-        - Padding replacement: Replace existing NOP sleds or INT3 padding with
-          more complex dead code sequences
-        - Function epilogue padding: Inject into alignment padding at function ends
-
-    Complexity Levels:
-        - simple: NOP sleds only (1-10 NOPs)
-        - medium: Register-preserving arithmetic sequences
-        - complex: Loops, branches, and multi-register operations
-
-    Research Value:
-        - Increases code entropy and signature diversity
-        - Challenges linear disassembly algorithms
-        - Tests control flow graph reconstruction accuracy
-        - Evaluates semantic analysis tool capabilities
-
-    Implementation Notes:
-        Dead code is injected by overwriting existing padding bytes (NOPs, INT3s)
-        or unreachable code after unconditional control flow transfers. This
-        preserves binary structure and section sizes.
-
-    Examples of generated dead code:
-        - Code after unconditional jumps
-        - Replaced NOP padding with complex sequences
-        - Register-preserving arithmetic operations
+    NOP replacements do not change register values, flags, memory, or stack.
     """
 
     # Instructions that are safe to overwrite (padding/dead code indicators)
@@ -193,17 +142,18 @@ class DeadCodeInjectionPass(MutationPass):
             inject_addr = point["addr"]
             available_size = point["size"]
 
-            # The dead-code sequences clobber status flags (e.g. xor reg,reg
-            # sets ZF). Overwriting padding that sits in a live-flag window
-            # before a downstream conditional would flip the branch, so only
-            # inject where the clobbered flags are provably dead.
+            # Keep the existing conservative exclusion for flag-live regions.
             if flags_live_at(instructions, inject_addr, arch_family):
                 continue
 
             dead_code = self._generate_dead_code_for_size(binary, available_size, func_addr)
 
             if not dead_code:
-                logger.debug(f"Could not generate dead code for {available_size} bytes at 0x{inject_addr:x}")
+                logger.debug(
+                    "Could not assemble a state-preserving replacement for %d bytes at 0x%x",
+                    available_size,
+                    inject_addr,
+                )
                 continue
 
             original_bytes = binary.read_bytes(inject_addr, available_size)
@@ -215,7 +165,7 @@ class DeadCodeInjectionPass(MutationPass):
                 # record and writing dead code over an unverified
                 # region. Fail safe: skip this injection point.
                 logger.debug(
-                    "Skipping dead-code injection at 0x%x: original bytes unreadable",
+                    "Skipping NOP replacement at 0x%x: original bytes unreadable",
                     inject_addr,
                 )
                 continue
@@ -235,7 +185,7 @@ class DeadCodeInjectionPass(MutationPass):
                     original_bytes=original_bytes[: len(dead_code)],
                     mutated_bytes=dead_code,
                     original_disasm=f"padding ({len(dead_code)} bytes)",
-                    mutated_disasm=f"dead_code ({len(dead_code)} bytes)",
+                    mutated_disasm=f"state-preserving padding replacement ({len(dead_code)} bytes)",
                     mutation_kind="dead_code_injection",
                     metadata={
                         "injection_point_type": point["type"],
@@ -248,7 +198,7 @@ class DeadCodeInjectionPass(MutationPass):
                     continue
 
                 logger.info(
-                    f"Injected {len(dead_code)} bytes of dead code at 0x{inject_addr:x} "
+                    f"Replaced {len(dead_code)} bytes of NOP padding at 0x{inject_addr:x} "
                     f"(available: {available_size} bytes, type: {point['type']})"
                 )
                 mutations += 1

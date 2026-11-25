@@ -1,13 +1,15 @@
-"""Leaf helpers for dead-code injection analysis and generation."""
+"""Leaf helpers for safe executable NOP-padding replacement."""
 
 from __future__ import annotations
 
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import UNCONDITIONAL_TRANSFERS
 from r2morph.utils.dead_code import generate_dead_code_for_arch, generate_nop_sequence
 
-PADDING_INSTRUCTIONS = {"nop", "int3", "ud2"}
+PADDING_INSTRUCTIONS = {"nop"}
+_BITS_64 = 64
 
 
 def instruction_mnemonic(insn: dict[str, Any]) -> str:
@@ -25,7 +27,7 @@ def find_injection_points(
     min_padding_size: int,
     padding_instructions: set[str] | frozenset[str] = PADDING_INSTRUCTIONS,
 ) -> list[dict[str, Any]]:
-    """Find padding-based dead-code injection points in an instruction stream."""
+    """Find executable NOP runs that can be replaced without changing state."""
     injection_points = []
     i = 0
 
@@ -88,34 +90,36 @@ def generate_dead_code_for_size(
     func_addr: int,
     code_complexity: str,
 ) -> bytes | None:
-    """Assemble dead-code bytes that fit within `max_size`."""
+    """Assemble a state-preserving replacement for executable NOP padding."""
     arch_family, bits = binary.get_arch_family()
+    if code_complexity == "simple":
+        return generate_nop_sequence(arch_family, bits, max_size)
 
-    for _attempt in range(5):
-        dead_code_insns = generate_dead_code(binary, code_complexity)
+    if "x86" in arch_family.lower():
+        registers = ["rbx", "rcx", "rdx", "rsi", "rdi"] if bits == _BITS_64 else ["ebx", "ecx", "edx", "esi", "edi"]
+    elif "arm" in arch_family.lower():
+        registers = ["x9", "x10", "x11"] if bits == _BITS_64 else ["r4", "r5", "r6"]
+    else:
+        return generate_nop_sequence(arch_family, bits, max_size)
 
-        assemblable_insns = [insn for insn in dead_code_insns if not insn.startswith(".") and not insn.endswith(":")]
-        if not assemblable_insns:
+    register = random.choice(registers)
+    instructions = [f"mov {register}, {register}"]
+    if code_complexity == "complex":
+        second_register = random.choice([candidate for candidate in registers if candidate != register])
+        instructions.append(f"mov {second_register}, {second_register}")
+
+    replacement = b""
+    for instruction in instructions:
+        encoded = binary.assemble(instruction, func_addr)
+        if encoded is None:
             return generate_nop_sequence(arch_family, bits, max_size)
+        if len(replacement) + len(encoded) > max_size:
+            break
+        replacement += encoded
 
-        assembled_bytes: bytes | None = b""
-        for insn in assemblable_insns:
-            insn_bytes = binary.assemble(insn, func_addr)
-            if insn_bytes is None:
-                assembled_bytes = None
-                break
-            assembled_bytes += insn_bytes
-            if len(assembled_bytes) > max_size:
-                assembled_bytes = None
-                break
-
-        if assembled_bytes and len(assembled_bytes) <= max_size:
-            if len(assembled_bytes) < max_size:
-                padding_size = max_size - len(assembled_bytes)
-                assembled_bytes += generate_nop_sequence(arch_family, bits, padding_size)
-            return assembled_bytes
-
-    return generate_nop_sequence(arch_family, bits, max_size)
+    if not replacement:
+        return generate_nop_sequence(arch_family, bits, max_size)
+    return replacement + generate_nop_sequence(arch_family, bits, max_size - len(replacement))
 
 
 __all__ = [
