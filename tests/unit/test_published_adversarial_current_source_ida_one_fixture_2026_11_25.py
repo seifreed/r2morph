@@ -76,8 +76,7 @@ def test_local_ida_sample_completed_virtualization_and_preserves_analyzer_slots(
         and report["passes"][0]["functions_virtualized"] == 1
         and set(tools) == _EXPECTED_TOOLS
         and summary["scope"]["analyzer_slots"] == len(_EXPECTED_TOOLS)
-        and set(summary["scope"]["completed_tools"])
-        == {"angr", "custom", "ida-pro", "objdump", "radare2", "unicorn"}
+        and set(summary["scope"]["completed_tools"]) == {"angr", "custom", "ida-pro", "objdump", "radare2", "unicorn"}
         and tools["binary-ninja"]["status"] == "unavailable"
         and tools["triton"]["status"] == "unavailable"
         and tools["ghidra"]["status"] == "unavailable"
@@ -98,8 +97,7 @@ def test_local_ida_sample_records_decompilation_without_errors() -> None:
         and protected["decompiler_lines"] == _EXPECTED_IDA_METRICS["protected_decompiler_lines"]
         and original["decompiler_bytes"] == _EXPECTED_IDA_METRICS["original_decompiler_bytes"]
         and protected["decompiler_bytes"] == _EXPECTED_IDA_METRICS["protected_decompiler_bytes"]
-        and original["decompiler_error_count"]
-        + protected["decompiler_error_count"]
+        and original["decompiler_error_count"] + protected["decompiler_error_count"]
         == _EXPECTED_IDA_METRICS["decompiler_errors"]
     )
 
