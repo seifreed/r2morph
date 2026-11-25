@@ -1787,6 +1787,22 @@ close the all-analyzer or published-resistance gates. The [manifest](protection-
 and [regression test](../tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py)
 bind its scope, hashes, and unavailable analyzers.
 
+### Current-source IDA MCP spot check — 2026-11-25
+
+On source `9c9177952decf745674715563fbfa8e73a92a090`,
+`CodeVirtualization` applied to one function in the same ELF fixture. Unicorn
+returned exit code 45 for both original and protected binaries. IDA/Hex-Rays
+through the local MCP completed analysis and decompilation for both; IDA found
+one function in the original and two in the protected sample. The local CLI
+benchmark still reports IDA unavailable because `idat` is not installed, so
+the MCP measurements are supplemental and do not fill the complete analyzer
+matrix. Binary Ninja had no valid license; Triton, angr, and the Ghidra CLI were
+unavailable. The hash-bound [summary](protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json),
+[raw CLI report](protection-adversarial-local-current-9c917.json.gz), and
+[regression test](../tests/unit/test_published_current_source_ida_one_fixture_9c917.py)
+pin the source, binary hashes, outcomes, and limits. One fixture/pass does not
+establish analyzer coverage or generalized resistance.
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18

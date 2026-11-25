@@ -366,6 +366,14 @@ were unavailable. This single-fixture result does not establish generalized
 resistance or close any 1.0 gate. See the [hash-bound summary](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-summary.json)
 and [report](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25.json).
 
+A follow-up on source `9c917795` virtualized one function in the same fixture.
+Unicorn returned exit code 45 for both binaries, and IDA/Hex-Rays through the
+local MCP completed analysis and decompilation for both. The hash-bound
+[supplement](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json)
+records that the CLI benchmark still lacked an IDA executable and that angr,
+Ghidra CLI, Triton, and Binary Ninja were unavailable. This one-fixture check
+does not close analyzer-coverage or resistance gates.
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence

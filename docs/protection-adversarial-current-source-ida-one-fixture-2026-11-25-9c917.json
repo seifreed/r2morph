@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "measurement": "current-source-local-ida-pro-one-fixture",
+  "source_commit": "9c9177952decf745674715563fbfa8e73a92a090",
+  "measured_on": "2026-11-25",
+  "fixture": "fixtures/dataset/elf_vm_arith_x86_64",
+  "original_sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+  "protected_sha256": "8b1f59b4361b491ebff8a4971df9b331c5560378f6c243669dfd3a173376c667",
+  "transformation": {
+    "pass": "CodeVirtualization",
+    "status": "applied",
+    "functions_virtualized": 1,
+    "unsupported_functions": 0,
+    "partial_virtualization": 0
+  },
+  "behavioral_oracle": {
+    "tool": "Unicorn",
+    "original_exit_code": 45,
+    "protected_exit_code": 45,
+    "status": "completed"
+  },
+  "ida_pro_mcp": {
+    "analysis_status": "ok",
+    "auto_analysis_ready": true,
+    "hexrays_ready": true,
+    "original": {
+      "function_count": 1,
+      "entrypoint": "_start",
+      "decompile_status": "completed",
+      "decompile_output_characters": 43
+    },
+    "protected": {
+      "function_count": 2,
+      "entrypoint": "_start",
+      "decompile_status": "completed",
+      "decompile_output_characters": 935
+    }
+  },
+  "other_analyzer_rows": {
+    "completed": [
+      "custom",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "unavailable": {
+      "angr": "compatibility adapter unavailable",
+      "binary-ninja": "valid license unavailable",
+      "ghidra": "CLI executable unavailable to the local benchmark runner",
+      "ida-pro": "CLI executable unavailable to the local benchmark runner; IDA MCP/Hex-Rays was measured separately above",
+      "triton": "module unavailable"
+    }
+  },
+  "raw_report": {
+    "path": "docs/protection-adversarial-local-current-9c917.json.gz",
+    "sha256": "fdd7215b36c7c31ce5b951b93ecf982453dcb7e8f43687219b50e2db1bb8545e"
+  },
+  "limits": [
+    "One fixture and one pass only; this does not establish general analyzer coverage or generalized VM resistance.",
+    "The CLI benchmark did not have an IDA executable; the two successful IDA/Hex-Rays analyses were made through the local IDA MCP worker.",
+    "Binary Ninja, Triton, angr, and Ghidra CLI were unavailable in the local benchmark environment."
+  ]
+}

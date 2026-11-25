@@ -170,7 +170,10 @@
         "docs/protection-adversarial-run-2026-11-25-45548803519.json.gz",
         "docs/differential-run-2026-11-25-45602419475.json",
         "docs/maturity-evidence-merged-45602419475.json.gz",
-        "tests/unit/test_published_differential_run_45602419475.py"
+        "tests/unit/test_published_differential_run_45602419475.py",
+        "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json",
+        "docs/protection-adversarial-local-current-9c917.json.gz",
+        "tests/unit/test_published_current_source_ida_one_fixture_9c917.py"
       ]
     },
     "complete_compatibility_contract": {
