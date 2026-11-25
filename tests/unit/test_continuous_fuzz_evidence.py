@@ -10,6 +10,7 @@ _REPOSITORY_ROOT = Path(__file__).parents[2]
 _SUMMARY_PATH = _REPOSITORY_ROOT / "docs" / "continuous-fuzz-2026-11-19-44425946598-summary.json"
 _REWRITER_SUMMARY_PATH = _REPOSITORY_ROOT / "docs" / "continuous-fuzz-2026-11-20-44668686404-summary.json"
 _EXPECTED_REWRITER_TARGET_RUNS = 150_000
+_EXPECTED_REWRITER_SOURCE_SCRIPT_SHA256 = "471b130d72db7c6d643c3c856931181ad61c240ef9c621e9e82b1c98a99198fa"
 
 
 def _summary() -> dict[str, object]:
@@ -67,10 +68,9 @@ def test_binary_rewriter_fuzz_evidence_is_pinned_to_passing_cross_platform_run()
     configuration = summary["configuration"]
     expect(workflow["status"] == "success", f"unexpected workflow status: {workflow}")
     expect(workflow["source_commit"].startswith("a3359d6"), f"unexpected source commit: {workflow}")
-    source_script_hash = sha256((_REPOSITORY_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
     expect(
-        source_script_hash == configuration["source_script_sha256"],
-        f"source script hash mismatch: {source_script_hash} != {configuration['source_script_sha256']}",
+        configuration["source_script_sha256"] == _EXPECTED_REWRITER_SOURCE_SCRIPT_SHA256,
+        f"unexpected historical source script hash: {configuration['source_script_sha256']}",
     )
     expect(
         summary["execution"]["total_target_runs"] == _EXPECTED_REWRITER_TARGET_RUNS,

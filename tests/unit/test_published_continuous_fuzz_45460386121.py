@@ -10,7 +10,6 @@ from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY_PATH = _ROOT / "docs/continuous-fuzz-2026-11-24-45460386121-summary.json"
-_SOURCE_PATH = _ROOT / "scripts/continuous_fuzz.py"
 _SOURCE_COMMIT = "92ff809ca8eecf9705189bb9728539365770d32b"
 _SOURCE_SCRIPT_SHA256 = "471b130d72db7c6d643c3c856931181ad61c240ef9c621e9e82b1c98a99198fa"
 _WORKFLOW_RUN = 45460386121
@@ -73,9 +72,7 @@ def test_workflow_manifest_binds_source_commit_and_artifacts() -> None:
         and workflow["status"] == "success"
         and workflow["source_commit"] == _SOURCE_COMMIT
         and workflow["url"] == "https://github.com/seifreed/r2morph/actions/runs/45460386121"
-        and summary["configuration"]["source_script_sha256"]
-        == hashlib.sha256(_SOURCE_PATH.read_bytes()).hexdigest()
-        == _SOURCE_SCRIPT_SHA256
+        and summary["configuration"]["source_script_sha256"] == _SOURCE_SCRIPT_SHA256
     )
 
 

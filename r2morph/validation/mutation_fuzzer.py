@@ -136,6 +136,7 @@ class MutationPassFuzzer:
                 validator.add_test_case(
                     stdin=test_case.input_data.decode(errors="replace"),
                     args=test_case.args,
+                    expected_exitcode=None,
                     description=test_case.description,
                 )
 

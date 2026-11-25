@@ -417,6 +417,12 @@ varargs or ABI parity.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
+Runtime validation fails if either process times out. A test case's
+`expected_exitcode` defaults to `0`; set it to `null` when no absolute exit code
+is known, and the validator will still require the original and mutated
+processes to return the same code. `MutationPassFuzzer` uses this mode because
+valid programs may intentionally return a nonzero status.
+
 Real-binary CI smoke tests retain each utility's original basename when saving its
 mutated copy, so multicall system binaries continue dispatching the tested applet.
 
@@ -545,6 +551,17 @@ in [`docs/continuous-fuzz-2026-11-20-44646998764-summary.json`](docs/continuous-
 This bounded deterministic campaign does not establish exhaustive fuzz
 coverage, transformed-program equivalence, complete platform parity, or
 adversarial resistance.
+
+On current source `2ab350c7`, the main-push Continuous Fuzzing workflow passed
+on Ubuntu, macOS 15, and Windows: 5,000 cases for each of ten parser,
+assembler, VM, relocation, and rewrite targets per platform (150,000 target
+runs total). Each platform reported zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics. The source hash, artifact IDs and
+digests, reports, and limits are pinned in
+[`docs/continuous-fuzz-2026-11-25-45538554794-summary.json`](docs/continuous-fuzz-2026-11-25-45538554794-summary.json).
+This bounded campaign does not establish arbitrary transformed-program
+equivalence, exhaustive fuzz coverage, full platform parity, or adversarial
+resistance.
 
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and

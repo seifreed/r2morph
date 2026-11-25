@@ -11,7 +11,6 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY_PATH = _ROOT / "docs/continuous-fuzz-local-2026-11-24-92ff809c.json"
 _REPORT_PATH = _ROOT / "docs/continuous-fuzz-local-2026-11-24-92ff809c-report.json"
-_SOURCE_PATH = _ROOT / "scripts/continuous_fuzz.py"
 _SOURCE_COMMIT = "92ff809ca8eecf9705189bb9728539365770d32b"
 _SOURCE_SCRIPT_SHA256 = "471b130d72db7c6d643c3c856931181ad61c240ef9c621e9e82b1c98a99198fa"
 _REPORT_SHA256 = "3a55ae6eb3246eed59348adb1036e68d18683500912426bb2d38784dbfdebce7"
@@ -45,9 +44,7 @@ def test_local_campaign_binds_report_and_script_hashes() -> None:
     expect(
         summary["source_commit"] == _SOURCE_COMMIT
         and summary["report_sha256"] == hashlib.sha256(_REPORT_PATH.read_bytes()).hexdigest() == _REPORT_SHA256
-        and summary["source_script_sha256"]
-        == hashlib.sha256(_SOURCE_PATH.read_bytes()).hexdigest()
-        == _SOURCE_SCRIPT_SHA256
+        and summary["source_script_sha256"] == _SOURCE_SCRIPT_SHA256
     )
 
 

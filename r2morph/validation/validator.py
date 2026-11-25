@@ -44,7 +44,7 @@ class BinaryValidator:
         args: list[str] | None = None,
         stdin: str = "",
         env: dict[str, str] | None = None,
-        expected_exitcode: int = 0,
+        expected_exitcode: int | None = 0,
         description: str = "",
     ) -> None:
         """
@@ -131,6 +131,7 @@ class BinaryValidator:
                 all_outputs_match = False
             if (
                 self.comparison.compare_exitcode
+                and test_case.expected_exitcode is not None
                 and orig_result["exitcode"] != -1
                 and orig_result["exitcode"] != test_case.expected_exitcode
             ):

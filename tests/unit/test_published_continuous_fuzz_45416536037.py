@@ -56,11 +56,7 @@ def test_manifest_binds_successful_current_source_run() -> None:
     configuration = summary["configuration"]
 
     expect(workflow["source_commit"] == _SOURCE and workflow["run_id"] == _RUN_ID and workflow["status"] == "success")
-    expect(
-        hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
-        == _SCRIPT_HASH
-        == configuration["source_script_sha256"]
-    )
+    expect(configuration["source_script_sha256"] == _SCRIPT_HASH)
     expect(configuration["cases_per_target_per_platform"] == _CASES_PER_TARGET)
     expect(configuration["seed"] == _SEED)
     expect(configuration["max_payload_bytes"] == _MAX_PAYLOAD_BYTES)

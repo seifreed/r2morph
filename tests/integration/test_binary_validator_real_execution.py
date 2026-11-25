@@ -6,7 +6,6 @@ from tests.utils.assertions import expect
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
-_EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2 = 100.0
 _VALIDATION_TIMEOUT_SECONDS = 60
 
 
@@ -44,7 +43,7 @@ def test_validator_timeout_path(tmp_path):
     result = validator.validate(original, mutated)
     expect(
         result.original_exitcode == result.mutated_exitcode == -1
-        and result.passed
-        and result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2,
-        "identical binaries that both time out should compare as equivalent",
+        and not result.passed
+        and any("runtime did not complete" in error for error in result.errors),
+        "identical binaries that time out must not pass runtime equivalence",
     )

@@ -25,7 +25,7 @@ class ValidationTestCase:
     args: list[str] = field(default_factory=list)
     stdin: str = ""
     env: dict[str, str] = field(default_factory=dict)
-    expected_exitcode: int = 0
+    expected_exitcode: int | None = 0
     description: str = ""
     working_dir: str | None = None
     monitored_files: list[str] = field(default_factory=list)

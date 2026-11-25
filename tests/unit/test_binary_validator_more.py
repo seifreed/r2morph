@@ -152,3 +152,20 @@ def test_binary_validator_fails_when_both_runtimes_miss_expected_exit_code(monke
 
     expect(not result.passed)
     expect("Test 1: original exit code 7 did not match expected 0" in result.errors)
+
+
+def test_binary_validator_can_compare_matching_nonzero_exit_codes(monkeypatch, tmp_path: Path):
+    original = tmp_path / "original.bin"
+    mutated = tmp_path / "mutated.bin"
+    original.write_bytes(b"original")
+    mutated.write_bytes(b"mutated")
+    monkeypatch.setattr(
+        "r2morph.validation.validator.run_binary",
+        lambda *_args, **_kwargs: {"stdout": "same", "stderr": "", "exitcode": 45, "files": {}},
+    )
+    validator = BinaryValidator()
+    validator.add_test_case(expected_exitcode=None, description="compare to original result")
+
+    result = validator.validate(original, mutated)
+
+    expect(result.passed)
