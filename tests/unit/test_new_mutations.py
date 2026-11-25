@@ -29,6 +29,9 @@ _EXPECTED_LEN_INSTRUCTIONS_2 = 2
 _EXPECTED_LEN_INSTRUCTIONS_3 = 3
 _EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2 = 2
 _EXPECTED_LIVE_IN_4096 = 0x1000
+_EXPECTED_PE_ABSOLUTE_REFERENCE = 0x404017
+_EXPECTED_PE_IMAGE_BASE = 0x400000
+_EXPECTED_PE_FILE_OFFSET_REFERENCE = 0x2017
 _EXPECTED_SECTION_ADDRESS = 0x4000
 _EXPECTED_SECTION_SIZE = 6
 _UNTERMINATED_DATA_SIZE = 11
@@ -90,6 +93,14 @@ class _ReferencedStringBinary:
 
     def get_xrefs_to(self, _address: int) -> list[dict[str, object]]:
         return [{"from": 0x1000}]
+
+
+class _PeWithoutImageBase:
+    def is_analyzed(self) -> bool:
+        return True
+
+    def get_arch_info(self) -> dict[str, object]:
+        return {"format": "PE32", "arch": "x86", "bits": 32}
 
 
 class _Arm64InteriorReferenceBinary(_ReferencedStringBinary):
@@ -300,6 +311,11 @@ class TestStringObfuscationPass:
 
         expect(result["strings_obfuscated"] == 0)
 
+    def test_apply_fails_closed_when_pe_image_base_is_unavailable(self):
+        result = StringObfuscationPass({"probability": 1.0}).apply(_PeWithoutImageBase())
+
+        expect(result["skipped"] and result["reason"] == "PE image base unavailable")
+
     def test_apply_skips_arm64_strings_with_interior_instruction_references(self):
         result = StringObfuscationPass({"probability": 1.0}).apply(_Arm64InteriorReferenceBinary())
 
@@ -310,6 +326,15 @@ class TestStringObfuscationPass:
         result = StringObfuscationPass({"probability": 1.0}).apply(binary)
 
         expect(result["strings_obfuscated"] == 0 and binary.writes == [])
+
+    def test_map_pe_file_offsets_to_absolute_virtual_addresses(self):
+        references = StringObfuscationPass._map_file_offset_references(
+            {_EXPECTED_PE_FILE_OFFSET_REFERENCE},
+            [{"paddr": 0x2000, "vaddr": 0x4000, "size": 0x100}],
+            address_base=_EXPECTED_PE_IMAGE_BASE,
+        )
+
+        expect(references is not None and _EXPECTED_PE_ABSOLUTE_REFERENCE in references)
 
     def test_apply_fails_closed_when_arm64_section_offsets_are_missing(self):
         binary = _Arm64IncompleteSectionMetadataBinary()

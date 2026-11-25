@@ -1741,6 +1741,7 @@ jobs:
             tests/integration/test_nop_insertion_pe_real.py::test_register_substitution_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_constant_unfolding_pe_x86_64_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_64_preserves_native_execution `
+            tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_preserves_native_execution `
             tests/integration/test_nop_insertion_pe_real.py::test_tier1_pass_composition_pe_x86_64_preserves_native_execution `
             tests/integration/test_mutation_passes_end_to_end_more2.py::test_multiple_mutation_passes_on_x86_binary `
             tests/integration/test_block_reordering_pe_real.py::test_pe_x86_64_block_reordering_preserves_native_observables `
@@ -1751,7 +1752,7 @@ jobs:
         run: |
           [xml]$suite = Get-Content windows-format-differential.xml
           $cases = @($suite.SelectNodes("//testcase"))
-          if ($cases.Count -ne 18) { throw "Windows PE smoke ran $($cases.Count) cases; expected 18" }
+          if ($cases.Count -ne 19) { throw "Windows PE smoke ran $($cases.Count) cases; expected 19" }
           if ($suite.SelectNodes("//failure").Count -gt 0 -or $suite.SelectNodes("//error").Count -gt 0) {
             throw "Windows PE smoke contains failures or errors"
           }
@@ -1777,6 +1778,7 @@ jobs:
             "test_register_substitution_pe_x86_64_preserves_native_execution",
             "test_constant_unfolding_pe_x86_64_preserves_native_execution",
             "test_string_obfuscation_pe_x86_64_preserves_native_execution",
+            "test_string_obfuscation_pe_x86_preserves_native_execution",
             "test_multiple_mutation_passes_on_x86_binary",
             "test_pe_x86_64_block_reordering_preserves_native_observables"
           )

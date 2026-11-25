@@ -459,3 +459,47 @@ def test_string_obfuscation_pe_x86_64_preserves_native_execution(tmp_path: Path)
         mutated_execution.returncode == original_execution.returncode == 0,
         "PE string obfuscation changed the native execution result",
     )
+
+
+def test_string_obfuscation_pe_x86_preserves_native_execution(tmp_path: Path) -> None:
+    compiler, runtime = _pe_x86_toolchain()
+    source = tmp_path / "string_sample_x86.c"
+    source.write_text(
+        "#include <stdio.h>\n"
+        '__attribute__((used)) static const char evidence[] = "pe-x86-string-evidence";\n'
+        "__attribute__((noinline)) int transform(int value) { return value + 1; }\n"
+        'int main(void) { puts("pe-x86-runtime-evidence"); return transform(41) == 42 ? 0 : 1; }\n',
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "string_sample_x86.exe"
+    run_command([compiler, "-O0", "-fno-inline", "-o", str(binary_path), str(source)], check=True)
+    original_execution = _run_pe(binary_path, runtime)
+    original_bytes = binary_path.read_bytes()
+    expect(
+        original_execution.returncode == 0 and original_execution.stdout.rstrip(b"\r\n") == b"pe-x86-runtime-evidence",
+        f"generated PE x86 fixture had unexpected observables: "
+        f"{(original_execution.returncode, original_execution.stdout)!r}",
+    )
+
+    obfuscator = StringObfuscationPass(
+        {"probability": 1.0, "encoding": "rot13", "max_strings_per_section": 100, "seed": 1337}
+    )
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze("aa")
+        result = obfuscator.apply(binary)
+
+    handler = PEHandler(binary_path)
+    mutated_bytes = binary_path.read_bytes()
+    expect(result["mutations_applied"] > 0)
+    expect(b"pe-x86-string-evidence" in original_bytes)
+    expect(b"pe-x86-string-evidence" not in mutated_bytes)
+    expect(b"pe-x86-runtime-evidence" in mutated_bytes)
+    expect(handler.fix_checksum() and handler.validate_integrity()[0])
+    mutated_execution = _run_pe(binary_path, runtime)
+    expect(
+        (mutated_execution.returncode, mutated_execution.stdout)
+        == (original_execution.returncode, original_execution.stdout),
+        f"PE x86 string obfuscation changed native observables: "
+        f"original={(original_execution.returncode, original_execution.stdout)!r}, "
+        f"mutated={(mutated_execution.returncode, mutated_execution.stdout)!r}",
+    )

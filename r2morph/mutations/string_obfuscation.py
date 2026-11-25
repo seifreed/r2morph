@@ -12,6 +12,7 @@ from typing import Any, ClassVar
 
 import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
+from r2morph.platform.pe_handler_parsing import read_pe_header
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ class StringObfuscationPass(MutationPass):
             ),
         )
 
-    def _find_strings(self, binary: Any, section: dict[str, Any]) -> list[dict[str, Any]]:
+    def _find_strings(self, binary: Any, section: dict[str, Any], *, reference_base: int = 0) -> list[dict[str, Any]]:
         """
         Find printable string candidates in a section.
 
@@ -76,7 +77,7 @@ class StringObfuscationPass(MutationPass):
             List of string dictionaries with addr, size, and content
         """
         strings: list[dict[str, Any]] = []
-        addr = section.get("addr", section.get("vaddr", 0))
+        addr = section.get("vaddr", section.get("addr", 0))
         size = section.get("size", section.get("vsize", 0))
 
         if size == 0:
@@ -103,6 +104,7 @@ class StringObfuscationPass(MutationPass):
                     strings.append(
                         {
                             "addr": addr + current_start,
+                            "reference_addr": addr + current_start + reference_base,
                             "size": len(current_string),
                             "content": bytes(current_string).decode("ascii", errors="ignore"),
                             "offset_in_section": current_start,
@@ -166,7 +168,7 @@ class StringObfuscationPass(MutationPass):
             return data, 0
 
     @staticmethod
-    def _instruction_reference_values(binary: Any) -> frozenset[int] | None:
+    def _instruction_reference_values(binary: Any, address_base: int = 0) -> frozenset[int] | None:
         """Collect conservative instruction operands that may reference data."""
         try:
             functions = binary.get_functions()
@@ -191,13 +193,17 @@ class StringObfuscationPass(MutationPass):
             if analyzed_functions != len(functions):
                 return None
 
-            return StringObfuscationPass._map_file_offset_references(references, binary.get_sections())
+            return StringObfuscationPass._map_file_offset_references(
+                references, binary.get_sections(), address_base=address_base
+            )
         except Exception as error:
             logger.warning("Cannot scan instruction references conservatively: %s", error)
             return None
 
     @staticmethod
-    def _map_file_offset_references(references: set[int], sections: list[dict[str, Any]]) -> frozenset[int] | None:
+    def _map_file_offset_references(
+        references: set[int], sections: list[dict[str, Any]], *, address_base: int = 0
+    ) -> frozenset[int] | None:
         """Map file-offset operands to section virtual addresses, failing closed on incomplete metadata."""
         if not sections:
             return None
@@ -214,7 +220,7 @@ class StringObfuscationPass(MutationPass):
             if not isinstance(file_offset, int) or not isinstance(virtual_address, int):
                 return None
             mapped_references.update(
-                virtual_address + value - file_offset
+                virtual_address + address_base + value - file_offset
                 for value in references
                 if file_offset <= value < file_offset + size
             )
@@ -328,16 +334,17 @@ class StringObfuscationPass(MutationPass):
         binary: Any,
         section: dict[str, Any],
         *,
+        reference_base: int = 0,
         instruction_references: frozenset[int] | None = None,
         instruction_scan_required: bool = False,
     ) -> tuple[bool, int, int]:
         """Process one data section and return candidate, mutation, and byte counts."""
         strings = [
             string
-            for string in self._find_strings(binary, section)
+            for string in self._find_strings(binary, section, reference_base=reference_base)
             if self._is_unreferenced(
                 binary,
-                string["addr"],
+                string.get("reference_addr", string["addr"]),
                 string["size"],
                 instruction_references=instruction_references,
                 instruction_scan_required=instruction_scan_required,
@@ -367,12 +374,24 @@ class StringObfuscationPass(MutationPass):
 
         instruction_scan_required = False
         instruction_references: frozenset[int] | None = None
+        reference_base = 0
         get_arch_info = getattr(binary, "get_arch_info", None)
         if callable(get_arch_info):
             architecture = get_arch_info()
-            instruction_scan_required = architecture.get("arch") == "arm" and architecture.get("bits") == _ARM64_BITS
+            binary_format = str(architecture.get("format", "")).lower()
+            instruction_scan_required = binary_format.startswith("pe") or (
+                architecture.get("arch") == "arm" and architecture.get("bits") == _ARM64_BITS
+            )
+            if binary_format.startswith("pe"):
+                binary_path = getattr(binary, "path", None)
+                header = read_pe_header(binary_path) if binary_path is not None else None
+                image_base = header.get("image_base") if isinstance(header, dict) else None
+                if not isinstance(image_base, int) or image_base <= 0:
+                    logger.warning("Cannot safely obfuscate PE strings without a valid image base")
+                    return {"mutations_applied": 0, "skipped": True, "reason": "PE image base unavailable"}
+                reference_base = image_base
             if instruction_scan_required:
-                instruction_references = self._instruction_reference_values(binary)
+                instruction_references = self._instruction_reference_values(binary, reference_base)
 
         sections = binary.get_sections()
         if not sections:
@@ -391,6 +410,7 @@ class StringObfuscationPass(MutationPass):
             has_candidates, mutation_count, encoded_size = self._process_section(
                 binary,
                 section,
+                reference_base=reference_base,
                 instruction_references=instruction_references,
                 instruction_scan_required=instruction_scan_required,
             )

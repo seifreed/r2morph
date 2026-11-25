@@ -1077,6 +1077,13 @@
           ]
         },
         {
+          "format": "PE",
+          "architecture": "x86",
+          "evidence": [
+            "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_preserves_native_execution"
+          ]
+        },
+        {
           "format": "Mach-O",
           "architecture": "AArch64",
           "evidence": [
@@ -1124,6 +1131,11 @@
         {
           "format": "PE",
           "architecture": "x86-64",
+          "support_status": "preview"
+        },
+        {
+          "format": "PE",
+          "architecture": "x86",
           "support_status": "preview"
         },
         {
@@ -1655,21 +1667,21 @@
     },
     "cell_count": 264,
     "summary": {
-      "declared_support_cells": 65,
-      "unclaimed_cells": 199,
+      "declared_support_cells": 66,
+      "unclaimed_cells": 198,
       "target_support_status_counts": {
         "experimental": 48,
-        "preview": 12,
+        "preview": 13,
         "supported": 5
       },
-      "evidenced_cells": 65,
-      "not_supported_cells": 199,
+      "evidenced_cells": 66,
+      "not_supported_cells": 198,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 43,
-      "non_official_not_supported_cells": 199,
-      "non_official_evidence_percent": 17.77,
+      "non_official_evidenced_cells": 44,
+      "non_official_not_supported_cells": 198,
+      "non_official_evidence_percent": 18.18,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1737,9 +1749,9 @@
         {
           "format": "PE",
           "architecture": "x86",
-          "evidenced_cells": 5,
-          "not_supported_cells": 17,
-          "evidence_percent": 22.73
+          "evidenced_cells": 6,
+          "not_supported_cells": 16,
+          "evidence_percent": 27.27
         },
         {
           "format": "PE",
@@ -1800,9 +1812,9 @@
           {
             "format": "PE",
             "architecture": "x86",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "PE",
@@ -1911,9 +1923,9 @@
           {
             "format": "PE",
             "architecture": "x86",
-            "evidenced_cells": 5,
-            "not_supported_cells": 17,
-            "evidence_percent": 22.73
+            "evidenced_cells": 6,
+            "not_supported_cells": 16,
+            "evidence_percent": 27.27
           },
           {
             "format": "PE",
@@ -1936,7 +1948,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 199,
+        "non_official_missing_evidence_cells": 198,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -4680,10 +4692,12 @@
         "pass": "string-obfuscation",
         "format": "PE",
         "architecture": "x86",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "preview",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_nop_insertion_pe_real.py::test_string_obfuscation_pe_x86_preserves_native_execution"
+        ]
       },
       {
         "pass": "string-obfuscation",

@@ -189,11 +189,12 @@ mnemonics even when lowering replaces them with internal VM opcodes (for example
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
-ELF x86-64 target (100.0% evidence) and 43/242 evidenced cells for non-official
-targets (17.77% evidence). It currently classifies 5 passes as Tier 1 and
+ELF x86-64 target (100.0% evidence) and 44/242 evidenced cells for non-official
+targets (18.18% evidence). It currently classifies 5 passes as Tier 1 and
 17 passes as experimental. ELF ARM32 and AArch64 add QEMU differential cases
 for string obfuscation of unreferenced `.rodata` values; they do not establish
-general ARM parity.
+general ARM parity. PE x86 now has a preview execution fixture for string
+obfuscation; its reference checks normalize section RVAs with the PE ImageBase.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
 native output. These are bounded experimental pass results; they do not
@@ -421,7 +422,7 @@ ineligible because it zero-extends into RAX.
 | **Import Obfuscation** | engine-only | Jump stub indirection for import calls |
 | **Self-Modifying Code** | engine-only | XOR-encrypts function bodies with runtime decryptor |
 | **Stack Strings** | engine-only | Rebuilds string literals on the stack at runtime |
-| **String Obfuscation** | engine-only | Encodes unreferenced string data; referenced strings are unchanged |
+| **String Obfuscation** | engine-only | Encodes only unreferenced strings; PE reference checks normalize RVAs with ImageBase; experimental and no runtime decoder |
 | **Pattern Substitution** | engine-only | Applies size-preserving byte-pattern substitutions |
 | **Polymorphic Engine** | engine-only | Orchestrates iterative experimental mutation passes |
 
