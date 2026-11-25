@@ -115,3 +115,22 @@ def test_binary_validator_fails_when_file_comparison_has_no_monitored_files(tmp_
 
     expect(not result.passed)
     expect("file comparison enabled but no files are monitored" in result.errors[0])
+
+
+def test_binary_validator_fails_when_both_runtimes_timeout(monkeypatch, tmp_path: Path):
+    original = tmp_path / "original.bin"
+    mutated = tmp_path / "mutated.bin"
+    original.write_bytes(b"original")
+    mutated.write_bytes(b"mutated")
+
+    def timed_out(*_args, **_kwargs):
+        return {"stdout": "", "stderr": "Timeout", "exitcode": -1, "files": {}}
+
+    monkeypatch.setattr("r2morph.validation.validator.run_binary", timed_out)
+    validator = BinaryValidator()
+    validator.add_test_case(description="identical timeout")
+
+    result = validator.validate(original, mutated)
+
+    expect(not result.passed)
+    expect("Test 1: runtime did not complete for original, mutated" in result.errors)

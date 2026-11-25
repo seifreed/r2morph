@@ -121,6 +121,14 @@ class BinaryValidator:
 
             original_outputs.append(orig_result)
             mutated_outputs.append(mut_result)
+            failed_runtimes = [
+                label
+                for label, result in (("original", orig_result), ("mutated", mut_result))
+                if result["exitcode"] == -1
+            ]
+            if failed_runtimes:
+                errors.append(f"Test {i + 1}: runtime did not complete for {', '.join(failed_runtimes)}")
+                all_outputs_match = False
             runtime_details.append(
                 {
                     "description": test_case.description,

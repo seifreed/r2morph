@@ -918,6 +918,8 @@ When file-output comparison is enabled, each runtime case must list the output
 paths to monitor in `monitored_files` (or in the validator configuration). The
 validation fails if file comparison is requested without any monitored paths,
 so an empty file set cannot be mistaken for verified filesystem parity.
+Timeouts and other unsuccessful executions also fail validation even when both
+the original and mutated binary produce the same failure result.
 
 ---
 
