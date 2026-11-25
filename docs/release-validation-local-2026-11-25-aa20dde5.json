@@ -12,7 +12,8 @@
     "twine check dist/*",
     "python -m pip install --force-reinstall dist/r2morph-0.4.0a3-py3-none-any.whl",
     "python -c 'import r2morph; print(r2morph.__version__); print(r2morph.__file__)'",
-    "r2morph --version"
+    "r2morph --version",
+    "python -W error -m pytest --no-cov --tb=short"
   ],
   "artifacts": [
     {
@@ -28,13 +29,19 @@
     "twine_check": "passed for wheel and sdist",
     "installed_import_version": "0.4.0-alpha.3",
     "installed_cli_output": "r2morph 0.4.0-alpha.3",
-    "installed_module_origin": "venv site-packages"
+    "installed_module_origin": "venv site-packages",
+    "installed_wheel_test_suite": {
+      "passed": 7294,
+      "skipped": 241,
+      "failed": 0,
+      "duration_seconds": 774.96,
+      "warning_policy": "warnings treated as errors"
+    }
   },
   "not_run": [
-    "full test suite against installed wheel",
     "SBOM generation and dependency audit",
     "GitHub build provenance attestation",
     "current independent human signoff"
   ],
-  "scope": "Local packaging and installed-wheel smoke only; this report does not establish release readiness."
+  "scope": "Local packaging plus the full test suite against the installed wheel in a temporary test tree reconstructed from the same source commit; this report does not establish stable-release readiness."
 }

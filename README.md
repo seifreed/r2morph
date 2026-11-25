@@ -287,9 +287,18 @@ source when measured; no provenance was generated and nothing was published.
 On source `aa20dde5`, a clean Python 3.14.10/macOS arm64 environment built the
 wheel and sdist, passed `twine check` for both, and installed the wheel with
 successful package import and CLI version checks. This bounded packaging smoke
-did not run the full wheel test suite, generate an SBOM, attest provenance, or
-refresh human signoff; hashes and commands are in the
+was followed by the full suite against the installed wheel: 7,294 passed,
+241 skipped, and zero failed in 774.96 seconds with warnings treated as errors.
+The test tree was reconstructed from the same source commit and included its
+`.gitattributes` contract. This does not generate an SBOM, attest provenance,
+or refresh human signoff; hashes and commands are in the
 [`local packaging report`](docs/release-validation-local-2026-11-25-aa20dde5.json).
+The subsequent CI run for current `main` (`4949a003`, GitHub run
+[`45556357218`](https://github.com/seifreed/r2morph/actions/runs/45556357218))
+completed all 19 jobs successfully, including Linux, macOS, Windows, Python
+3.12–3.14, lint, typecheck, installed-wheel smoke, and property/fuzz checks.
+This validates that commit's CI matrix; it does not establish full mutation
+parity or close the stable-release gates.
 The dependency resolution audit now also covers Linux x86-64 on Python 3.12 and
 3.13 plus Windows x86-64 on Python 3.13, alongside the macOS arm64/Python 3.13
 target. All four hash-pinned manifests passed with zero known vulnerabilities
