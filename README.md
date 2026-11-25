@@ -777,6 +777,20 @@ resistance gates. Its [hash-bound manifest](docs/protection-adversarial-run-2026
 and [VM report](docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz)
 pin the results and their limits.
 
+The follow-up adversarial campaign
+[`45608329375`](https://github.com/seifreed/r2morph/actions/runs/45608329375)
+passed all 33 jobs against the same product source as `9c917795` (the source
+commit differs only in documentation). It measured 362 Linux ELF x86-64
+fixtures across 22 passes and 7,964 pass runs. Six analyzers completed all
+7,964 rows; IDA Pro and Binary Ninja were unavailable, and Unicorn could not
+emulate 528 rows. Its maturity report records zero decompiler blockers for
+this measured scope, reducing the earlier 22-blocker result. Ten-seed VM
+measurements found ten opcode assignments, two dispatch variants, and no exact
+normalized cross-seed matches; these structural metrics do not establish
+general resistance. The all-analyzer, platform-parity, and human-review gates
+remain open. The [hash-bound summary](docs/protection-adversarial-run-2026-11-25-45608329375-summary.json)
+links the raw reports and their limits.
+
 The current-source continuous-fuzz run
 [`45581219724`](https://github.com/seifreed/r2morph/actions/runs/45581219724)
 passed on source `c1d7f729` across Ubuntu, macOS 15, and Windows after building

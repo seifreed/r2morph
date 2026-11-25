@@ -6,6 +6,32 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Follow-up adversarial analyzer and VM campaign — 2026-11-25
+
+Workflow
+[`45608329375`](https://github.com/seifreed/r2morph/actions/runs/45608329375)
+completed all 33 jobs on source `36567b7c659df7bff5ef7b4b938f22d33765b990`.
+The product source is unchanged through current `main` (`5c369008`); changes
+after the benchmark commit are documentation-only. The campaign measured 362
+Linux ELF x86-64 fixtures (200 generated) across 22 passes and 7,964 pass runs.
+All 71,676 analyzer rows were classified: 55,220 completed, 16,456 unavailable,
+and zero errors or missing rows. `angr`, custom, Ghidra, objdump, radare2, and
+Triton completed all rows. Unicorn could not emulate 528 rows; IDA Pro and
+Binary Ninja were unavailable for every row. The attached maturity artifact
+records zero decompiler blockers for these 22 measured passes, improving on the
+22 blockers reported by the earlier differential campaign. Ten-seed VM
+measurements found 10 opcode assignments, 2 dispatch variants, 12 handler
+stride variants, and 328/2,295 similarity comparisons above 0.8. These bounded
+structural metrics do not demonstrate generalized resistance. The
+all-named-analyzer, platform-parity, and published-resistance gates remain
+open, as does matching independent human review. The [hash-bound summary](protection-adversarial-run-2026-11-25-45608329375-summary.json),
+[merged report](protection-adversarial-run-2026-11-25-45608329375.json.gz),
+[maturity report](protection-maturity-evidence-2026-11-25-45608329375.json.gz),
+[seed diversity](protection-vm-seed-diversity-2026-11-25-45608329375.json),
+[bytecode grammar](protection-bytecode-grammar-2026-11-25-45608329375.json),
+and [regression test](../tests/unit/test_published_adversarial_run_45608329375.py)
+pin the results and limits.
+
 ## Current-source partial differential snapshot — 2026-11-25
 
 Workflow

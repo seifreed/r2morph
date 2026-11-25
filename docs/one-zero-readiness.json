@@ -173,7 +173,11 @@
         "tests/unit/test_published_differential_run_45602419475.py",
         "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json",
         "docs/protection-adversarial-local-current-9c917.json.gz",
-        "tests/unit/test_published_current_source_ida_one_fixture_9c917.py"
+        "tests/unit/test_published_current_source_ida_one_fixture_9c917.py",
+        "docs/protection-adversarial-run-2026-11-25-45608329375-summary.json",
+        "docs/protection-adversarial-run-2026-11-25-45608329375.json.gz",
+        "docs/protection-maturity-evidence-2026-11-25-45608329375.json.gz",
+        "tests/unit/test_published_adversarial_run_45608329375.py"
       ]
     },
     "complete_compatibility_contract": {
@@ -618,7 +622,11 @@
         "docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz",
         "docs/protection-vm-seed-diversity-run-2026-11-25-45548803519.json",
         "docs/protection-vm-bytecode-grammar-run-2026-11-25-45548803519.json",
-        "docs/protection-vm-resistance-run-2026-11-25-45548803519.xml"
+        "docs/protection-vm-resistance-run-2026-11-25-45548803519.xml",
+        "docs/protection-adversarial-run-2026-11-25-45608329375-summary.json",
+        "docs/protection-vm-seed-diversity-2026-11-25-45608329375.json",
+        "docs/protection-bytecode-grammar-2026-11-25-45608329375.json",
+        "tests/unit/test_published_adversarial_run_45608329375.py"
       ]
     },
     "stable_api_cli": {

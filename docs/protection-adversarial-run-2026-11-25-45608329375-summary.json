@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "workflow": "Adversarial Analysis Benchmark",
+  "run_id": 45608329375,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45608329375",
+  "source_commit": "36567b7c659df7bff5ef7b4b938f22d33765b990",
+  "conclusion": "success",
+  "completed_at_utc": "2026-11-25T15:37:31Z",
+  "jobs": {
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "corpus": {
+    "sample_count": 362,
+    "generated_fixture_count": 200,
+    "families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "pass_count": 22,
+    "pass_names": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ]
+  },
+  "analyzer_matrix": {
+    "pass_runs": 7964,
+    "tools_per_pass": 9,
+    "expected_tool_rows": 71676,
+    "completed_tool_rows": 55220,
+    "unavailable_tool_rows": 16456,
+    "error_tool_rows": 0,
+    "missing_tool_rows": 0,
+    "fully_completed_tools": [
+      "angr",
+      "custom",
+      "ghidra",
+      "objdump",
+      "radare2",
+      "triton"
+    ],
+    "unicorn": {
+      "completed": 7436,
+      "unavailable": 528,
+      "reason": "the installed x86 emulator does not support an instruction in the fixture"
+    },
+    "ida_pro": {
+      "completed": 0,
+      "unavailable": 7964,
+      "reason": "executable 'idat' is unavailable"
+    },
+    "binary_ninja": {
+      "completed": 0,
+      "unavailable": 7964,
+      "reason": "no valid license is available in this environment"
+    }
+  },
+  "pass_results": {
+    "applied_pass_runs": 2360,
+    "error_pass_runs": 0,
+    "missing_pass_runs": 0
+  },
+  "maturity": {
+    "pass_count": 22,
+    "decompiler_blockers": 0,
+    "report": "docs/protection-maturity-evidence-2026-11-25-45608329375.json.gz",
+    "sha256": "5c32de049dd4c226165c0874e64e20e3c122626ae470309e882232f6ded41eaa"
+  },
+  "vm_diversity": {
+    "seed_count": 10,
+    "handlers": 2550,
+    "cross_seed_exact_normalised_matches": 0,
+    "cross_seed_similarity_comparisons": 2295,
+    "similarity_over_0_8": 328,
+    "similarity_over_0_8_percent": 14.291938997821351,
+    "similarity_max": 0.9333333333333333,
+    "opcode_assignment_variants": 10,
+    "dispatch_variants": 2,
+    "handler_stride_variants": 12,
+    "padding_bytes": 2587,
+    "seed_report": "docs/protection-vm-seed-diversity-2026-11-25-45608329375.json",
+    "grammar_report": "docs/protection-bytecode-grammar-2026-11-25-45608329375.json"
+  },
+  "artifacts": {
+    "merged_report": {
+      "id": 15039095353,
+      "name": "adversarial-benchmark-merged-45608329375-1",
+      "path": "docs/protection-adversarial-run-2026-11-25-45608329375.json.gz",
+      "sha256": "60e26dfa02cdc70f730df14677bf26a071bd293db164cc05c897e7d690aeb2f3"
+    },
+    "seed_diversity": {
+      "id": 15023930467,
+      "name": "vm-resistance-seed-diversity-0-45608329375-1",
+      "path": "docs/protection-vm-seed-diversity-2026-11-25-45608329375.json",
+      "sha256": "9a2a6b8aea48d9a4fc1c47a44c07ccf0c5ce2fda423048560b88334ad97ef731"
+    },
+    "bytecode_grammar": {
+      "id": 15023755318,
+      "name": "vm-resistance-bytecode-grammar-0-45608329375-1",
+      "path": "docs/protection-bytecode-grammar-2026-11-25-45608329375.json",
+      "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef"
+    }
+  },
+  "limits": [
+    "This campaign covers the measured repository and generated Linux ELF x86-64 corpus only.",
+    "IDA Pro CLI and Binary Ninja have no completed rows; Unicorn has 528 unavailable rows for unsupported instructions.",
+    "Ten-seed handler and bytecode diversity measurements are bounded structural metrics, not a demonstration of resistance to general or professional reverse engineering.",
+    "A matching independent human review is still required before VM milestone signoff."
+  ]
+}
