@@ -1043,6 +1043,7 @@ jobs:
           import xml.etree.ElementTree as ET
           from pathlib import Path
 
+          from scripts.differential_evidence import require_evidence_files
           from scripts.protection_maturity_baseline import merge_maturity_reports
 
           public_reports = sorted(
@@ -1158,12 +1159,6 @@ jobs:
 
           expected_shards = 48
 
-          def require_files(pattern: str, expected: int) -> list[Path]:
-              paths = sorted(Path(pattern.split("/*")[0]).glob("*/*"))
-              if len(paths) != expected:
-                  raise SystemExit(f"expected {expected} evidence files for {pattern}, found {len(paths)}")
-              return paths
-
           def validate_junit_reports(
               pattern: str,
               minimum_cases: int,
@@ -1173,7 +1168,7 @@ jobs:
           ) -> list[Path]:
               import xml.etree.ElementTree as ET
 
-              paths = require_files(pattern, expected_count)
+              paths = require_evidence_files(pattern, expected_count)
               for path in paths:
                   suite = ET.parse(path).getroot()
                   if len(suite.findall(".//testcase")) < minimum_cases:
@@ -1277,7 +1272,7 @@ jobs:
               "relocations": 64,
               "binary_rewriter": 64,
           }
-          for path in require_files("fuzz-reports", 1):
+          for path in require_evidence_files("fuzz-reports", 1):
               fuzz_report = json.loads(path.read_text(encoding="utf-8"))
               if fuzz_report["failure_count"] != 0 or fuzz_report["target_runs"] != expected_fuzz_targets:
                   raise SystemExit(f"fuzz evidence failed: {path}")
@@ -1298,7 +1293,7 @@ jobs:
           }
           extended_reports = [
               json.loads(path.read_text(encoding="utf-8"))
-              for path in require_files("extended-maturity-reports", expected_shards)
+              for path in require_evidence_files("extended-maturity-reports", expected_shards)
           ]
           for maturity_report in extended_reports:
               if set(maturity_report["pass_names"]) != expected_extended_passes:
@@ -1356,7 +1351,7 @@ jobs:
               encoding="utf-8",
           )
 
-          paths = sorted(Path("differential-reports").glob("*/differential-corpus-*.json"))
+          paths = require_evidence_files("differential-reports", expected_shards)
           if len(paths) != expected_shards:
               raise SystemExit(f"expected {expected_shards} shard reports, found {len(paths)}")
           report = merge_maturity_reports(

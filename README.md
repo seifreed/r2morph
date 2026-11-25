@@ -100,6 +100,8 @@ The 32-shard adversarial analyzer campaign runs at most eight shards at once
 and serializes campaigns by ref, leaving runner capacity for commit validation.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
+The aggregate handles both a single report extracted directly into its target
+directory and multiple reports extracted into per-artifact subdirectories.
 Cross-platform CI runs the complete unit suite on macOS and Windows for Python
 3.12, 3.13, and 3.14, and on Ubuntu/Python 3.13 and 3.14. The broader
 Ubuntu/Python 3.12 job also covers integration, property, and real-binary tests.
