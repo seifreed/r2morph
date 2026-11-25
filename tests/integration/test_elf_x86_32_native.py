@@ -173,13 +173,13 @@ def test_elf_x86_32_block_reordering_preserves_emulated_exit_code(tmp_path: Path
     )
 
 
-def _build_x86_32_expansion_elf(tmp_path: Path) -> Path:
+def _build_x86_32_expansion_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     compiler = shutil.which("clang") or shutil.which("gcc")
     if compiler is None:
         raise RuntimeError("clang or gcc is required for the ELF x86 32-bit expansion fixture")
     target_flags = ["-target", "i386-linux-gnu"] if Path(compiler).name == "clang" else ["-m32"]
     source = tmp_path / "x86_32_expansion.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".globl _start\n"
         ".type _start,@function\n"
@@ -192,6 +192,7 @@ def _build_x86_32_expansion_elf(tmp_path: Path) -> Path:
         "compute:\n"
         "    movl $20, %ecx\n"
         "    movl %ecx, %edx\n"
+        "    movl %ecx, %ecx\n"
         "    xorl %edx, %edx\n"
         "    movl %ecx, %edx\n"
         "    shll $1, %ecx\n"
@@ -199,9 +200,36 @@ def _build_x86_32_expansion_elf(tmp_path: Path) -> Path:
         "    movl %ecx, %eax\n"
         "    nop\n"
         "    ret\n"
-        ".size compute, .-compute\n",
-        encoding="ascii",
+        ".size compute, .-compute\n"
     )
+    complex_source = (
+        ".text\n"
+        ".globl _start\n"
+        ".type _start,@function\n"
+        "_start:\n"
+        "    call compute\n"
+        "    movl %eax, %ebx\n"
+        "    movl $1, %eax\n"
+        "    int $0x80\n"
+        ".type compute,@function\n"
+        "compute:\n"
+        "    movl $20, %ecx\n"
+        "    movl %ecx, %edx\n"
+        "    movl %ecx, %ecx\n"
+        "    cmpl $0, %ecx\n"
+        "    je zero\n"
+        "    shll $1, %ecx\n"
+        "    jmp done\n"
+        "zero:\n"
+        "    shll $1, %ecx\n"
+        "done:\n"
+        "    addl $2, %ecx\n"
+        "    movl %ecx, %eax\n"
+        "    nop\n"
+        "    ret\n"
+        ".size compute, .-compute\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "x86_32_expansion"
     run_command(
         [

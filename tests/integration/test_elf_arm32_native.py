@@ -84,12 +84,12 @@ def _build_arm32_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     return binary_path
 
 
-def _build_arm32_expansion_elf(tmp_path: Path) -> Path:
+def _build_arm32_expansion_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     compiler = shutil.which("arm-linux-gnueabihf-gcc")
     if compiler is None:
         raise RuntimeError("arm-linux-gnueabihf-gcc is required for the expansion fixture")
     source = tmp_path / "arm32_expansion.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".global _start\n"
         ".type _start,%function\n"
@@ -101,14 +101,40 @@ def _build_arm32_expansion_elf(tmp_path: Path) -> Path:
         "compute:\n"
         "    mov r2, #20\n"
         "    mov r3, r2\n"
+        "    mov r4, r4\n"
         "    lsl r2, r2, #1\n"
         "    add r2, r2, #2\n"
         "    mov r4, r3\n"
         "    mov r0, r2\n"
         "    bx lr\n"
-        ".size compute, .-compute\n",
-        encoding="ascii",
+        ".size compute, .-compute\n"
     )
+    complex_source = (
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov r7, #1\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov r2, #20\n"
+        "    mov r3, r2\n"
+        "    mov r4, r4\n"
+        "    cmp r3, #0\n"
+        "    beq zero\n"
+        "    lsl r2, r2, #1\n"
+        "    b done\n"
+        "zero:\n"
+        "    lsl r2, r2, #1\n"
+        "done:\n"
+        "    add r2, r2, #2\n"
+        "    mov r0, r2\n"
+        "    bx lr\n"
+        ".size compute, .-compute\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "arm32_expansion"
     run_command(
         [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
