@@ -24,6 +24,25 @@ and regression test preserve exact artifacts and limits. This is not the
 campaign aggregate or full platform/pass parity; all-named-analyzer,
 cross-platform-parity, and generalized-resistance gates remain open.
 
+## Current-source CI and continuous fuzz validation — 2026-11-25
+
+GitHub CI run
+[`45599431923`](https://github.com/seifreed/r2morph/actions/runs/45599431923)
+completed all 19 jobs successfully on source
+`9c9177952decf745674715563fbfa8e73a92a090`. It covered unit, integration,
+stable-product, installed-wheel, property/fuzz, lint, type-check, and the
+Ubuntu, macOS ARM64, macOS Intel, and Windows Python 3.12–3.14 matrix. This
+includes the Intel macOS Mach-O regression that exposed the unsafe NOP padding
+replacement before the fix. The matching continuous-fuzz workflow
+[`45599431832`](https://github.com/seifreed/r2morph/actions/runs/45599431832)
+passed all three platform jobs on the same source.
+
+These runs validate the tested package paths and bounded fuzz targets for this
+commit. They do not establish full pass-by-platform parity, availability of all
+named analyzers, or generalized resistance. The current-source full
+differential campaign [`45602419475`](https://github.com/seifreed/r2morph/actions/runs/45602419475)
+is still running; the three 1.0 readiness gates remain open.
+
 ## Current-source CI validation — 2026-11-24
 
 GitHub CI run

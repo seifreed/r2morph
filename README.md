@@ -459,6 +459,17 @@ mutated copy, so multicall system binaries continue dispatching the tested apple
 Native x86-64 Mach-O integration checks run on Intel macOS. Apple Silicon
 execution through Rosetta remains experimental and is not covered by CI.
 
+On 2026-11-25, CI run
+[`45599431923`](https://github.com/seifreed/r2morph/actions/runs/45599431923)
+passed all 19 jobs on source `9c917795`, including the installed wheel,
+unit/integration/product tests, quality checks, and the Ubuntu, macOS ARM64,
+macOS Intel, and Windows Python 3.12–3.14 matrix. The matching
+[three-platform continuous-fuzz run](https://github.com/seifreed/r2morph/actions/runs/45599431832)
+also passed. These runs validate this commit's bounded checks; they do not
+establish full pass-by-platform parity or generalized resistance. The 1.0
+readiness ledger remains blocked on the published analyzer, parity, and
+resistance criteria.
+
 The experimental `BinaryRewriter` applies size-preserving instruction
 replacements only when the virtual address maps to file-backed bytes in an
 executable section and the original bytes still match. Short replacements are
