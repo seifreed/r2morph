@@ -362,6 +362,23 @@ failures, errors, or skips. This is bounded execution evidence for three passes
 on one macOS Intel runner. It does not establish full Mach-O pass parity or
 close the cross-platform readiness criterion.
 
+### Selected current-source platform differential jobs — 2026-11-25
+
+Six completed preview jobs from differential workflow
+[`45517036412`](https://github.com/seifreed/r2morph/actions/runs/45517036412)
+ran against source commit `7a278ceaea15a8872a00b9c0d75ed6d2d8dddd6`. Their
+JUnit artifacts contain 78 passing cases with zero failures, errors, or skips:
+ELF x86-32 (8), ELF ARM32 (6), ELF ARM64 (7), macOS ARM64 (36), macOS x86-64
+(3), and Windows PE (18). The raw JUnit reports, GitHub artifact IDs and ZIP
+digests, and per-report SHA-256 values are pinned in
+[`platform-differential-preview-2026-11-25-45517036412.json`](platform-differential-preview-2026-11-25-45517036412.json)
+and checked by
+[`test_published_platform_differential_preview_45517036412.py`](../tests/unit/test_published_platform_differential_preview_45517036412.py).
+This is a partial snapshot: the other jobs in the workflow had not finished
+when it was recorded. The selected checks are bounded previews and do not
+establish full pass-by-platform parity or close the `cross_platform_parity`
+1.0 criterion.
+
 ### Partial cross-platform jobs on current package code
 
 Differential workflow run [`43949336892`](https://github.com/seifreed/r2morph/actions/runs/43949336892)

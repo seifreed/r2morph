@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "measurement": "selected-current-source-platform-differential-jobs",
+  "workflow_run_id": 45517036412,
+  "workflow_run_url": "https://github.com/seifreed/r2morph/actions/runs/45517036412",
+  "source_commit": "7a278ceaea15a8872a00b9c0d75ed6d2d8dddd6",
+  "workflow_aggregate_conclusion_at_capture": null,
+  "jobs": {
+    "elf-x86-32": {
+      "job": "Native ELF x86 32-bit differential",
+      "artifact": {
+        "id": 14978916595,
+        "name": "elf-x86-32-native-45517036412-1",
+        "sha256": "cc0dc01dcb5b85f4c0988dec47774368c7550c2ce4846c7415258dd85b06a9bb",
+        "size_bytes": 520
+      },
+      "junit": {
+        "path": "docs/platform-differential-elf-x86-32-45517036412.xml",
+        "sha256": "3438516b3d60b144ee779a70b69740ff7494af50ed62e09015a47574d069166e",
+        "tests": 8,
+        "passed": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "elf-arm32": {
+      "job": "Native ELF ARM32 differential",
+      "artifact": {
+        "id": 14978751885,
+        "name": "elf-arm-32-native-45517036412-1",
+        "sha256": "6f1fdd424a4292c03a2373e6e969749b3c0627fb9343bbf506507b682a71a96e",
+        "size_bytes": 484
+      },
+      "junit": {
+        "path": "docs/platform-differential-elf-arm32-45517036412.xml",
+        "sha256": "67ea3e84a3eec75fcaf38bdae6b4e0a29fd25d053d9000fea1fbaf08539508fa",
+        "tests": 6,
+        "passed": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "elf-arm64": {
+      "job": "Native ELF ARM64 differential",
+      "artifact": {
+        "id": 14978556862,
+        "name": "elf-arm64-native-45517036412-1",
+        "sha256": "1dd4de3d148c57264ea9d5d3d3548e9b895d97300edfcd3e105690024c8acfcc",
+        "size_bytes": 495
+      },
+      "junit": {
+        "path": "docs/platform-differential-elf-arm64-45517036412.xml",
+        "sha256": "6ee5ef491a8fdefae4ae7fe34b50c8ababb78da8998004aa5e6efbe5e43d1acc",
+        "tests": 7,
+        "passed": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "macos-arm64": {
+      "job": "Cross-platform differential (macOS ARM64)",
+      "artifact": {
+        "id": 14978911965,
+        "name": "cross-platform-differential-macos-arm64-45517036412-1",
+        "sha256": "ae9eebb097976dea2bf7393735909ed1aa166f66fab77925f3e37b1952562f09",
+        "size_bytes": 1210
+      },
+      "junit": {
+        "path": "docs/platform-differential-macos-arm64-45517036412.xml",
+        "sha256": "a1e979c4648572169332ded28da2fa532257ccd35f114c40fc502dd4638fcb8c",
+        "tests": 36,
+        "passed": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "macos-x86-64": {
+      "job": "Cross-platform differential (macOS x86-64)",
+      "artifact": {
+        "id": 14978676991,
+        "name": "cross-platform-differential-macos-x86-64-45517036412-1",
+        "sha256": "0a319cf3e025015fbadf81ce89a8515ec5b732956679dd32f42db8ac62463966",
+        "size_bytes": 495
+      },
+      "junit": {
+        "path": "docs/platform-differential-macos-x86-64-45517036412.xml",
+        "sha256": "253de8de6d936aa805bc9bd3b40cef1552819d061df7edfae0db277fb12715b7",
+        "tests": 3,
+        "passed": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "windows-pe": {
+      "job": "Cross-platform format differential (Windows PE)",
+      "artifact": {
+        "id": 14978193385,
+        "name": "cross-platform-differential-windows-pe-45517036412-1",
+        "sha256": "2c3b362f3688614edb9c401346e4adb570bdc25721d0c152e1a454d5a1c205c6",
+        "size_bytes": 781
+      },
+      "junit": {
+        "path": "docs/platform-differential-windows-pe-45517036412.xml",
+        "sha256": "aa7818f6f28dcaa5db08e05ff50c3e7e0df9c04b657b239ae1be18596ea70001",
+        "tests": 18,
+        "passed": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "totals": {
+    "platform_targets": 6,
+    "cases": 78,
+    "passed": 78,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "This snapshot contains six successful jobs from the workflow; its remaining jobs had not finished when evidence was captured.",
+    "The reports are bounded preview checks and do not establish full pass-by-platform parity or official support for preview targets.",
+    "The 1.0 cross_platform_parity criterion remains open."
+  ]
+}

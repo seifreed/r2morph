@@ -288,7 +288,15 @@
         "docs/platform-smoke-45480009561-elf-x86-32.xml",
         "tests/unit/test_published_platform_preview_45480009561.py",
         "docs/differential-run-2026-11-24-45480009561.json",
-        "tests/unit/test_published_differential_run_45480009561.py"
+        "tests/unit/test_published_differential_run_45480009561.py",
+        "docs/platform-differential-preview-2026-11-25-45517036412.json",
+        "docs/platform-differential-elf-x86-32-45517036412.xml",
+        "docs/platform-differential-elf-arm32-45517036412.xml",
+        "docs/platform-differential-elf-arm64-45517036412.xml",
+        "docs/platform-differential-macos-arm64-45517036412.xml",
+        "docs/platform-differential-macos-x86-64-45517036412.xml",
+        "docs/platform-differential-windows-pe-45517036412.xml",
+        "tests/unit/test_published_platform_differential_preview_45517036412.py"
       ]
     },
     "documented_resistance_scope": {
