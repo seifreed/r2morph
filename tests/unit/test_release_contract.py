@@ -1529,8 +1529,14 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
         "Validate support contract" in workflow
         and "run: python scripts/check_release_contract.py --require-current-human-signoff" in workflow
         and "Require green validation workflows for release commit" in workflow
-        and "for workflow_file in ci.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml"
+        and "timeout-minutes: 120" in workflow
+        and (
+            "for workflow_file in ci.yml fuzz.yml differential-corpus.yml "
+            "adversarial-benchmark.yml independent-review.yml"
+        )
         in workflow
+        and 'if [[ "$workflow_file" == fuzz.yml ]]; then' in workflow
+        and 'Timed out waiting for $workflow_file on $GITHUB_SHA' in workflow
         and '--workflow "$workflow_file"' in workflow
         and '--commit "$GITHUB_SHA"' in workflow
         and 'if [[ "$conclusion" != "success" ]]; then' in workflow

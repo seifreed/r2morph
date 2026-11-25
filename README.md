@@ -90,6 +90,8 @@ CI's dependency audit uses a 60-second PyPI socket timeout to tolerate slow
 responses; the audit still fails on vulnerabilities or service errors.
 CI and continuous fuzzing cancel superseded main-push runs, so runners validate
 the newest source revision instead of spending time on obsolete commits.
+Version tags also trigger the three-platform fuzz campaign, and release
+publication requires that campaign to pass on the exact tagged commit.
 Pull requests and differential campaigns keep distinct concurrency keys where
 their evidence should be retained. Adversarial campaigns serialize by ref,
 allowing one active campaign and one replaceable pending run.

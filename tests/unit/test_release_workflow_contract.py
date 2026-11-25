@@ -11,6 +11,7 @@ from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
 _EXPECTED_PUBLIC_SURFACE_CONTRACT_WORKFLOW_OCCURRENCES = 2
+_RELEASE_FUZZ_TIMEOUT_MINUTES = 120
 
 
 def test_release_tag_must_target_a_commit_reachable_from_main() -> None:
@@ -55,17 +56,21 @@ def test_stable_readiness_gate_runs_before_release_build_and_publish() -> None:
     )
 
     expect(
-        "python scripts/check_release_contract.py" in support_contract_step["run"]
+        workflow["jobs"]["validate-release"]["timeout-minutes"] == _RELEASE_FUZZ_TIMEOUT_MINUTES
+        and "python scripts/check_release_contract.py" in support_contract_step["run"]
         and validation_steps.index(support_contract_step) < validation_steps.index(green_ci_step)
         and all(
             workflow in green_ci_step["run"]
             for workflow in (
                 "ci.yml",
+                "fuzz.yml",
                 "differential-corpus.yml",
                 "adversarial-benchmark.yml",
                 "independent-review.yml",
             )
         )
+        and 'if [[ "$workflow_file" == fuzz.yml ]]; then' in green_ci_step["run"]
+        and '[[ "$status" == completed ]] && break' in green_ci_step["run"]
         and workflow["jobs"]["build"]["needs"] == "validate-release"
         and "validate-release" in workflow["jobs"]["publish-pypi"]["needs"]
         and "validate-release" in workflow["jobs"]["create-release"]["needs"]

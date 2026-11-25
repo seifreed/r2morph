@@ -17,6 +17,7 @@ concurrency:
 jobs:
   validate-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
@@ -76,14 +77,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for workflow_file in ci.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml; do
-            conclusion=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow "$workflow_file" \
-              --commit "$GITHUB_SHA" \
-              --limit 1 \
-              --json conclusion \
-              --jq '.[0].conclusion // ""')
+          for workflow_file in ci.yml fuzz.yml differential-corpus.yml adversarial-benchmark.yml independent-review.yml; do
+            if [[ "$workflow_file" == fuzz.yml ]]; then
+              for attempt in {1..120}; do
+                run_state=$(gh run list \
+                  --repo "$GITHUB_REPOSITORY" \
+                  --workflow "$workflow_file" \
+                  --commit "$GITHUB_SHA" \
+                  --limit 1 \
+                  --json status,conclusion \
+                  --jq 'if length == 0 then "\t" else [.[0].status // "", .[0].conclusion // ""] | @tsv end')
+                status=${run_state%%$'\t'*}
+                conclusion=${run_state#*$'\t'}
+                [[ "$status" == completed ]] && break
+                sleep 30
+              done
+              if [[ "$status" != completed ]]; then
+                echo "::error::Timed out waiting for $workflow_file on $GITHUB_SHA after $attempt polls"
+                exit 1
+              fi
+            else
+              conclusion=$(gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow "$workflow_file" \
+                --commit "$GITHUB_SHA" \
+                --limit 1 \
+                --json conclusion \
+                --jq '.[0].conclusion // ""')
+            fi
             if [[ "$conclusion" != "success" ]]; then
               echo "::error::Required workflow $workflow_file for $GITHUB_SHA concluded '$conclusion'"
               exit 1
