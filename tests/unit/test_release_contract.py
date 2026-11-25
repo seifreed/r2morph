@@ -1839,7 +1839,7 @@ def test_windows_pe_differential_covers_native_mutation_and_composition_passes()
     windows_job = workflow.split("  cross-platform-format-windows:", 1)[1].split("  public-compatibility-corpus:", 1)[0]
 
     expect(
-        "$cases.Count -ne 18" in windows_job
+        "$cases.Count -ne 19" in windows_job
         and "mingw-w64-i686-gcc mingw-w64-x86_64-gcc" in windows_job
         and "Expose 64-bit PE compiler" in windows_job
         and "test_nop_insertion_pe_x86_64_preserves_repaired_integrity" in windows_job
@@ -1849,6 +1849,7 @@ def test_windows_pe_differential_covers_native_mutation_and_composition_passes()
         and "test_register_substitution_pe_x86_64_preserves_native_execution" in windows_job
         and "test_constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "test_string_obfuscation_pe_x86_64_preserves_native_execution" in windows_job
+        and "test_string_obfuscation_pe_x86_preserves_native_execution" in windows_job
         and "test_tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
         and "test_multiple_mutation_passes_on_x86_binary" in windows_job
         and "test_pe_x86_64_block_reordering_preserves_native_observables" in windows_job
@@ -2105,8 +2106,9 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "register_substitution_pe_x86_64_preserves_native_execution" in windows_job
         and "constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "string_obfuscation_pe_x86_64_preserves_native_execution" in windows_job
+        and "string_obfuscation_pe_x86_preserves_native_execution" in windows_job
         and "tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
-        and "expected 18" in windows_job
+        and "expected 19" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
         and "test_instruction_substitution_pe_fixture_preserves_windows_exit_code" in windows_job
         and "test_multiple_mutation_passes_on_x86_binary" in windows_job
