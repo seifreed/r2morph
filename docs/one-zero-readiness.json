@@ -318,7 +318,16 @@
         "docs/protection-platform-preview-2026-11-25-45544822953/elf-x86-32-native.xml",
         "docs/protection-platform-preview-2026-11-25-45544822953/macos-x86-64-differential.xml",
         "docs/protection-platform-preview-2026-11-25-45544822953/windows-format-differential.xml",
-        "tests/unit/test_published_differential_run_45544822953.py"
+        "tests/unit/test_published_differential_run_45544822953.py",
+        "docs/continuous-fuzz-relocation-property-2026-11-25-45583595035-summary.json",
+        "tests/unit/test_published_relocation_property_cross_platform_45583595035.py",
+        "docs/protection-platform-preview-2026-11-25-45531042241/summary.json",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/macos-arm64.xml",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/macos-x86-64.xml",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/windows-pe.xml",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-arm32.xml",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-arm64.xml",
+        "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-x86-32.xml"
       ]
     },
     "documented_resistance_scope": {

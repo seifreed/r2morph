@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "measurement": "bounded-six-slice-platform-preview",
+  "source_commit": "6756d0b636ac3a64b4a96564c2671c1182f1acd2",
+  "workflow": {
+    "run_id": 45531042241,
+    "run_attempt": 1,
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45531042241",
+    "captured_at_utc": "2026-11-25T02:28:19Z",
+    "job_counts_at_capture": {
+      "total": 83,
+      "completed_success": 20,
+      "completed_failure": 0,
+      "in_progress": 4,
+      "queued": 59
+    }
+  },
+  "summary": {
+    "platform_slices": 6,
+    "case_count": 78,
+    "passed_case_count": 78,
+    "failed_case_count": 0,
+    "error_case_count": 0,
+    "skipped_case_count": 0
+  },
+  "reports": [
+    {
+      "target": "macos-arm64",
+      "job_id": 138926126459,
+      "job_name": "Cross-platform differential (macOS ARM64)",
+      "artifact_id": 14984613778,
+      "artifact_name": "cross-platform-differential-macos-arm64-45531042241-1",
+      "artifact_digest": "sha256:debdaec8a6e5ab75f7d0db0e46285d26752c2dc1cb8eca62b5c05c2cdcecd091",
+      "artifact_size_bytes": 1221,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/macos-arm64.xml",
+      "source_report_sha256": "973426c8c0fb662530bdff639df3745027b8dfc00c0b37a7fcc22ee9f65c6299",
+      "report_sha256": "973426c8c0fb662530bdff639df3745027b8dfc00c0b37a7fcc22ee9f65c6299",
+      "case_count": 36
+    },
+    {
+      "target": "macos-x86-64",
+      "job_id": 138926126163,
+      "job_name": "Cross-platform differential (macOS x86-64)",
+      "artifact_id": 14984239532,
+      "artifact_name": "cross-platform-differential-macos-x86-64-45531042241-1",
+      "artifact_digest": "sha256:89f61a03047e19c1c42d33be2993ac7627fcc4842f1206b7de74aee935b30d6a",
+      "artifact_size_bytes": 494,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/macos-x86-64.xml",
+      "source_report_sha256": "cdf5becc604a292a5774c40cfe1bac4946c688a0cb39b49ca708b797887cec5d",
+      "report_sha256": "cdf5becc604a292a5774c40cfe1bac4946c688a0cb39b49ca708b797887cec5d",
+      "case_count": 3
+    },
+    {
+      "target": "windows-pe",
+      "job_id": 138926126319,
+      "job_name": "Cross-platform format differential (Windows PE)",
+      "artifact_id": 14985616165,
+      "artifact_name": "cross-platform-differential-windows-pe-45531042241-1",
+      "artifact_digest": "sha256:f4789ef1ccd4ba45c57e658022a07a1ed4449754811e320abf997581e5ca368d",
+      "artifact_size_bytes": 777,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/windows-pe.xml",
+      "source_report_sha256": "05be45367f88dc93479bb4d73ffe80bedb9e559c3278235c19803635b4034e46",
+      "report_sha256": "05be45367f88dc93479bb4d73ffe80bedb9e559c3278235c19803635b4034e46",
+      "case_count": 18
+    },
+    {
+      "target": "elf-arm32",
+      "job_id": 138926126489,
+      "job_name": "Native ELF ARM32 differential",
+      "artifact_id": 14985528040,
+      "artifact_name": "elf-arm-32-native-45531042241-1",
+      "artifact_digest": "sha256:71bf78bf82591d8ca9c5b90ea13e36a68d1a3989b9150d3c58e718d209e56406",
+      "artifact_size_bytes": 482,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-arm32.xml",
+      "source_report_sha256": "0ade06b2f3f692583bb4ff9aa946ce8e562b46a45b22e41f4ffde782d3fa3f9c",
+      "report_sha256": "0ade06b2f3f692583bb4ff9aa946ce8e562b46a45b22e41f4ffde782d3fa3f9c",
+      "case_count": 6
+    },
+    {
+      "target": "elf-arm64",
+      "job_id": 138926126692,
+      "job_name": "Native ELF ARM64 differential",
+      "artifact_id": 14985002634,
+      "artifact_name": "elf-arm64-native-45531042241-1",
+      "artifact_digest": "sha256:42de6cee9c341d6a5f45c8f08aeedde961a7897f187d9b8975c1d1ad1cfee7bd",
+      "artifact_size_bytes": 493,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-arm64.xml",
+      "source_report_sha256": "1c9b9dd661e006ad09152b7611d835bc1c556f2b5ca5a726e5eaf67fe88b18f3",
+      "report_sha256": "1c9b9dd661e006ad09152b7611d835bc1c556f2b5ca5a726e5eaf67fe88b18f3",
+      "case_count": 7
+    },
+    {
+      "target": "elf-x86-32",
+      "job_id": 138926126422,
+      "job_name": "Native ELF x86 32-bit differential",
+      "artifact_id": 14984482110,
+      "artifact_name": "elf-x86-32-native-45531042241-1",
+      "artifact_digest": "sha256:5d7ea14f10d85b9ee5b00431eb8e4a8b260fc8ad7f78a28de545f77f2294e567",
+      "artifact_size_bytes": 517,
+      "report": "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-x86-32.xml",
+      "source_report_sha256": "d9bd21634469c86ea94638f45bc2f95972a32158b2857c48a5278cb2ab0f9c78",
+      "report_sha256": "d9bd21634469c86ea94638f45bc2f95972a32158b2857c48a5278cb2ab0f9c78",
+      "case_count": 8
+    }
+  ],
+  "limitations": [
+    "All six captured platform preview slices passed, but they are bounded smoke coverage, not every pass on every platform.",
+    "The workflow was still in progress at capture; this snapshot is not the differential campaign aggregate.",
+    "Preview results do not promote experimental targets to official support or close cross-platform parity."
+  ]
+}

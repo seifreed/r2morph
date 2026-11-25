@@ -1737,7 +1737,14 @@ macOS 15, and Windows each built and installed the wheel, then completed 5,000
 cases for each of ten parser, assembler, VM, relocation, and binary-rewriter
 targets: 150,000 target runs total, with zero failures and 103 recoverable
 `macho_load_commands.warning` diagnostics on each platform. The commit's CI
-also passed the Hypothesis property test for overlapping relocation mappings.
+also passed the Hypothesis property test for overlapping relocation mappings
+on Ubuntu. A follow-up workflow
+[`45583595035`](https://github.com/seifreed/r2morph/actions/runs/45583595035)
+on source `300194fa9a4ff5cade7e32535d9137ad7ab99ffe` then passed the same two
+property test items on all three runners. Its [summary](continuous-fuzz-relocation-property-2026-11-25-45583595035-summary.json)
+and [regression test](../tests/unit/test_published_relocation_property_cross_platform_45583595035.py)
+pin each runner result and artifact. This adds evidence for relocation mapping
+only; complete pass-by-platform parity remains open.
 The source script hash, report hashes, artifact IDs and ZIP digests, seed, and
 limits are pinned in the [summary](continuous-fuzz-2026-11-25-45581219724-summary.json),
 three platform reports, and

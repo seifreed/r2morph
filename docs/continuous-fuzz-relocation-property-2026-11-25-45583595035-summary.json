@@ -1,0 +1,69 @@
+{
+  "campaign": "continuous-fuzz-relocation-property-followup",
+  "execution": {
+    "failure_count": 0,
+    "platform_count": 3,
+    "platforms": {
+      "macos-15": {
+        "artifact_archive_sha256": "sha256:6aca97ac8be133d0b8f78bb59ea9ffaeac27315873c8b3f0e07a3abe9493ff53",
+        "artifact_id": 15008275928,
+        "failure_count": 0,
+        "fuzz_validator_status": "success",
+        "job_id": 139099459258,
+        "property_test_items_passed": 2,
+        "property_test_status": "success",
+        "report": "docs/continuous-fuzz-2026-11-25-45581219724-macos-15.json",
+        "report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+        "target_runs": 50000
+      },
+      "ubuntu-latest": {
+        "artifact_archive_sha256": "sha256:d60a6df8f2048ec67575ef7f60acb121d4dd8f2b7e487d2c709caf8b3de2042e",
+        "artifact_id": 15007167690,
+        "failure_count": 0,
+        "fuzz_validator_status": "success",
+        "job_id": 139099459588,
+        "property_test_items_passed": 2,
+        "property_test_status": "success",
+        "report": "docs/continuous-fuzz-2026-11-25-45581219724-ubuntu-latest.json",
+        "report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+        "target_runs": 50000
+      },
+      "windows-latest": {
+        "artifact_archive_sha256": "sha256:5f3dcce59015c4ac2dfe5fa5ead240b2577495da82e534423cbf0ca2f02900e3",
+        "artifact_id": 15008455537,
+        "failure_count": 0,
+        "fuzz_validator_status": "success",
+        "job_id": 139099459763,
+        "property_test_items_passed": 2,
+        "property_test_status": "success",
+        "report": "docs/continuous-fuzz-2026-11-25-45581219724-windows-latest.json",
+        "report_sha256": "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+        "target_runs": 50000
+      }
+    },
+    "property_test_items_passed": 6,
+    "target_runs": 150000
+  },
+  "limits": [
+    "This validates the relocation parser and overlap-mapping property test on three hosted operating systems; it does not establish complete pass-by-platform parity.",
+    "The bounded deterministic fuzz inputs do not prove semantic equivalence for arbitrary transformed binaries or exhaustive input coverage.",
+    "The analyzer availability and published VM resistance release gates remain open."
+  ],
+  "property_test": {
+    "path": "tests/property/test_relocation_parser_properties.py",
+    "pytest_items_passed_per_platform": 2,
+    "sha256": "259b7909ef6070d3c1c57cee8def46c6355f06d3101a752be8bccb21ae13ff60",
+    "workflow_path": ".github/workflows/fuzz.yml",
+    "workflow_sha256": "15a8bebaae934f5679e67947ba759a1b46a5f2482cb556578f47e3aaa819c863"
+  },
+  "schema_version": 1,
+  "workflow": {
+    "event": "push",
+    "name": "Continuous Fuzzing",
+    "run_attempt": 1,
+    "run_id": 45583595035,
+    "source_commit": "300194fa9a4ff5cade7e32535d9137ad7ab99ffe",
+    "status": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45583595035"
+  }
+}

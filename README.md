@@ -226,6 +226,12 @@ Mach-O ARM64/x86-64, Windows PE, and ELF ARM32/ARM64/x86-32. The
 [hash-bound preview manifest](docs/protection-platform-preview-2026-11-24-45480009561.json)
 links each JUnit report; this is preview evidence, not full pass-by-platform
 parity.
+An earlier captured preview, [`45531042241`](https://github.com/seifreed/r2morph/actions/runs/45531042241),
+also contains six sanitized JUnit reports with 78/78 cases passing. The
+[summary](docs/protection-platform-preview-2026-11-25-45531042241/summary.json)
+pins its source and report hashes; the workflow was still in progress when
+captured, so this is historical bounded evidence and does not supersede the
+later completed campaign or close cross-platform parity.
 The preview ELF differential matrix now includes instruction expansion both
 alone and after NOP insertion on ARM32, AArch64, and x86-32, alongside the
 existing substitution, register, and constant-unfolding cases. These tests
@@ -742,17 +748,20 @@ passed on source `c1d7f729` across Ubuntu, macOS 15, and Windows after building
 and installing the wheel. Each platform completed 5,000 cases for each of ten
 parser, assembler, VM, relocation, and rewrite targets (150,000 target runs
 total), with zero failures and 103 recoverable
-`macho_load_commands.warning` diagnostics. The matching CI run also passed the
-Hypothesis relocation property test. The hash-bound [manifest](docs/continuous-fuzz-2026-11-25-45581219724-summary.json),
+`macho_load_commands.warning` diagnostics. Its matching CI property job ran on
+Ubuntu. The hash-bound [manifest](docs/continuous-fuzz-2026-11-25-45581219724-summary.json),
 three platform reports, and [regression test](tests/unit/test_published_continuous_fuzz_45581219724.py)
 pin the source, artifacts, counts, and limits. This bounded campaign does not
 establish arbitrary transformed-program equivalence, exhaustive fuzz
 coverage, full product parity, or adversarial resistance.
 The continuous-fuzz workflow now also runs the relocation mapping Hypothesis
-property test on all three runners before the deterministic campaign. Run
-`45581219724` predates this workflow step; its property-validation job ran on
-Ubuntu only, so cross-platform property execution remains unverified until a
-subsequent workflow run succeeds.
+property test on all three runners before the deterministic campaign. The
+follow-up run [`45583595035`](https://github.com/seifreed/r2morph/actions/runs/45583595035)
+on source `300194fa` passed both property test items on Ubuntu, macOS 15, and
+Windows (six runner-test passes total). Its [summary](docs/continuous-fuzz-relocation-property-2026-11-25-45583595035-summary.json)
+and [regression test](tests/unit/test_published_relocation_property_cross_platform_45583595035.py)
+pin the result. This validates relocation mapping on three runner operating
+systems; it does not close the broader product-parity gate.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
