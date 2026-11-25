@@ -19,7 +19,8 @@ def test_ubuntu_ci_installs_clang_for_compiler_generated_corpus() -> None:
         "Install system dependencies (macOS)", 1
     )[0]
 
-    expect("build-essential clang gcc-arm-linux-gnueabihf" in ubuntu_setup)
+    required_tools = {"build-essential", "clang", "gcc-arm-linux-gnueabihf", "gcc-aarch64-linux-gnu"}
+    expect(required_tools <= set(ubuntu_setup.split()))
 
 
 def test_unicorn_is_unconditionally_installed_by_test_extras() -> None:
