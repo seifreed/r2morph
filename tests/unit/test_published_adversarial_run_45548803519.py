@@ -118,10 +118,7 @@ def test_adversarial_archives_match_run_and_artifact_hashes() -> None:
         and summary["artifacts"]["vm_resistance"]["id"] == _RESISTANCE_ARTIFACT_ID
         and summary["artifacts"]["vm_seed_diversity"]["id"] == _SEED_ARTIFACT_ID
         and summary["artifacts"]["vm_bytecode_grammar"]["id"] == _GRAMMAR_ARTIFACT_ID
-        and all(
-            re.fullmatch(r"[0-9a-f]{64}", artifact["zip_sha256"])
-            for artifact in summary["artifacts"].values()
-        )
+        and all(re.fullmatch(r"[0-9a-f]{64}", artifact["zip_sha256"]) for artifact in summary["artifacts"].values())
         and all(
             archive["sha256"] == _sha256(_ROOT / path)
             and archive["uncompressed_sha256"] == _uncompressed_digest(_ROOT / path)[0]
@@ -130,8 +127,7 @@ def test_adversarial_archives_match_run_and_artifact_hashes() -> None:
             if archive["format"] == "gzip-json"
         )
         and all(
-            archive["sha256"] == _sha256(_ROOT / path)
-            and archive["size_bytes"] == (_ROOT / path).stat().st_size
+            archive["sha256"] == _sha256(_ROOT / path) and archive["size_bytes"] == (_ROOT / path).stat().st_size
             for path, archive in archives.items()
             if archive["format"] != "gzip-json"
         )
@@ -170,8 +166,7 @@ def test_all_analyzer_rows_are_accounted_for_with_gaps_explicit() -> None:
         )
         and report["tool_summary"]["binary-ninja"]["unavailable_reasons"]
         == {"module 'binaryninja' is unavailable": _PASS_RUNS}
-        and report["tool_summary"]["ida-pro"]["unavailable_reasons"]
-        == {"executable 'idat' is unavailable": _PASS_RUNS}
+        and report["tool_summary"]["ida-pro"]["unavailable_reasons"] == {"executable 'idat' is unavailable": _PASS_RUNS}
         and report["tool_summary"]["unicorn"]["unavailable"] == _UNICORN_UNAVAILABLE_RUNS
         and report["pass_summary"]["CodeVirtualization"]["applied"] == _SAMPLE_COUNT
         and report["pass_summary"]["CodeVirtualization"]["functions_virtualized"] == _VIRTUALIZED_FUNCTIONS
@@ -192,12 +187,8 @@ def test_vm_resistance_report_preserves_scope_and_pending_review() -> None:
     evidence = readiness["criteria"]
 
     expect(
-        summary["vm_resistance"]["fixture_count"]
-        == resistance["fixture_count"]
-        == _VM_FIXTURE_COUNT
-        and summary["vm_resistance"]["seed_count"]
-        == resistance["seed_count"]
-        == _SEED_COUNT
+        summary["vm_resistance"]["fixture_count"] == resistance["fixture_count"] == _VM_FIXTURE_COUNT
+        and summary["vm_resistance"]["seed_count"] == resistance["seed_count"] == _SEED_COUNT
         and resistance["semantic_parity"] is True
         and resistance["all_tamper_probes_diverged"] is True
         and resistance["progressive_growth_supported_fixture_count"] == _GROWTH_FIXTURE_COUNT
