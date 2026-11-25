@@ -6,6 +6,24 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source partial differential snapshot — 2026-11-25
+
+Workflow
+[`45528080704`](https://github.com/seifreed/r2morph/actions/runs/45528080704)
+ran on source `da383ba850ad71c4a58cf68d15e1a35dff667770`. At capture, 51 of 83
+jobs had succeeded, 15 were active, 17 were queued, and none had failed. The run
+was later canceled before completion. The captured artifacts include six
+platform smoke slices with 78/78 cases passing;
+23 of 24 VM semantic shards with 963/963 fixture-seed cases passing; and 19 of
+48 Linux ELF x86-64 shard-seed cells for each of the core and extended matrices.
+The captured core rows classified 4,320 runs and the extended rows 5,184 runs;
+each set had complete evidence and zero errors or semantic failures. Six listed
+artifacts were not downloaded at capture. The
+[hash-bound partial manifest](protection-differential-partial-2026-11-25-45528080704/summary.json)
+and regression test preserve exact artifacts and limits. This is not the
+campaign aggregate or full platform/pass parity; all-named-analyzer,
+cross-platform-parity, and generalized-resistance gates remain open.
+
 ## Current-source CI validation — 2026-11-24
 
 GitHub CI run

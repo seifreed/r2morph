@@ -226,6 +226,16 @@ Mach-O ARM64/x86-64, Windows PE, and ELF ARM32/ARM64/x86-32. The
 [hash-bound preview manifest](docs/protection-platform-preview-2026-11-24-45480009561.json)
 links each JUnit report; this is preview evidence, not full pass-by-platform
 parity.
+The later current-source partial run
+[`45528080704`](https://github.com/seifreed/r2morph/actions/runs/45528080704)
+captured 78/78 passing cases across six platform smoke slices, 963/963 passing
+VM fixture-seed cases across 23/24 shards, and 19/48 Linux ELF x86-64
+core/extended shard-seed cells (4,320 core and 5,184 extended classified runs).
+Those captured differential rows had complete evidence and zero errors or
+semantic failures. The workflow was later canceled before completion; this
+does not establish full pass-by-platform parity or promote experimental
+targets to official support. Its [hash-bound partial report](docs/protection-differential-partial-2026-11-25-45528080704/summary.json)
+preserves the scope and open gates.
 Differential workflow run `43949336892` on source `6c60d58d` completed five
 preview jobs with 76/76 cases passed: macOS ARM64 (37), Windows PE (18), ELF
 ARM32 (6), ELF ARM64 (7), and ELF x86-32 (8). Their JUnit hashes are pinned in
