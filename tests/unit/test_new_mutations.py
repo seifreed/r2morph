@@ -30,6 +30,8 @@ _EXPECTED_LEN_INSTRUCTIONS_3 = 3
 _EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2 = 2
 _EXPECTED_LIVE_IN_4096 = 0x1000
 _EXPECTED_PE_ABSOLUTE_REFERENCE = 0x404017
+_EXPECTED_PE_ABSOLUTE_SECTION_ADDRESS = 0x404000
+_EXPECTED_PE_DOUBLE_ADDED_BASE_REFERENCE = 0x804017
 _EXPECTED_PE_IMAGE_BASE = 0x400000
 _EXPECTED_PE_FILE_OFFSET_REFERENCE = 0x2017
 _EXPECTED_SECTION_ADDRESS = 0x4000
@@ -68,6 +70,13 @@ class _Binary:
 class _SectionBinary:
     def read_bytes(self, address: int, size: int) -> bytes:
         if address == _EXPECTED_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
+            return b"hello\x00"
+        return b""
+
+
+class _AbsolutePeSectionBinary:
+    def read_bytes(self, address: int, size: int) -> bytes:
+        if address == _EXPECTED_PE_ABSOLUTE_SECTION_ADDRESS and size == _EXPECTED_SECTION_SIZE:
             return b"hello\x00"
         return b""
 
@@ -298,6 +307,15 @@ class TestStringObfuscationPass:
 
         expect(strings[0]["content"] == "hello")
 
+    def test_find_strings_preserves_absolute_pe_virtual_addresses(self):
+        strings = StringObfuscationPass()._find_strings(
+            _AbsolutePeSectionBinary(),
+            {"name": ".rdata", "vaddr": _EXPECTED_PE_ABSOLUTE_SECTION_ADDRESS, "vsize": _EXPECTED_SECTION_SIZE},
+            reference_base=_EXPECTED_PE_IMAGE_BASE,
+        )
+
+        expect(strings[0]["reference_addr"] == _EXPECTED_PE_ABSOLUTE_SECTION_ADDRESS)
+
     def test_find_strings_ignores_unterminated_binary_data(self):
         strings = StringObfuscationPass()._find_strings(
             _UnterminatedDataBinary(),
@@ -335,6 +353,19 @@ class TestStringObfuscationPass:
         )
 
         expect(references is not None and _EXPECTED_PE_ABSOLUTE_REFERENCE in references)
+
+    def test_map_pe_file_offsets_does_not_double_absolute_virtual_addresses(self):
+        references = StringObfuscationPass._map_file_offset_references(
+            {_EXPECTED_PE_FILE_OFFSET_REFERENCE},
+            [{"paddr": 0x2000, "vaddr": _EXPECTED_PE_ABSOLUTE_SECTION_ADDRESS, "size": 0x100}],
+            address_base=_EXPECTED_PE_IMAGE_BASE,
+        )
+
+        expect(
+            references is not None
+            and _EXPECTED_PE_ABSOLUTE_REFERENCE in references
+            and _EXPECTED_PE_DOUBLE_ADDED_BASE_REFERENCE not in references
+        )
 
     def test_apply_fails_closed_when_arm64_section_offsets_are_missing(self):
         binary = _Arm64IncompleteSectionMetadataBinary()

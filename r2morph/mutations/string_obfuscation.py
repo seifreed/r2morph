@@ -104,7 +104,7 @@ class StringObfuscationPass(MutationPass):
                     strings.append(
                         {
                             "addr": addr + current_start,
-                            "reference_addr": addr + current_start + reference_base,
+                            "reference_addr": self._normalize_reference_address(addr + current_start, reference_base),
                             "size": len(current_string),
                             "content": bytes(current_string).decode("ascii", errors="ignore"),
                             "offset_in_section": current_start,
@@ -133,6 +133,11 @@ class StringObfuscationPass(MutationPass):
             else:
                 result.append(b)
         return bytes(result)
+
+    @staticmethod
+    def _normalize_reference_address(address: int, image_base: int) -> int:
+        """Accept either an RVA or an already absolute PE virtual address."""
+        return address + image_base if address < image_base else address
 
     def _swap_encode(self, data: bytes) -> bytes:
         """Swap byte pairs (simple encoding)."""
@@ -219,8 +224,9 @@ class StringObfuscationPass(MutationPass):
                 continue
             if not isinstance(file_offset, int) or not isinstance(virtual_address, int):
                 return None
+            absolute_address = StringObfuscationPass._normalize_reference_address(virtual_address, address_base)
             mapped_references.update(
-                virtual_address + address_base + value - file_offset
+                absolute_address + value - file_offset
                 for value in references
                 if file_offset <= value < file_offset + size
             )

@@ -195,7 +195,7 @@ targets (18.18% evidence). It currently classifies 5 passes as Tier 1 and
 for string obfuscation of unreferenced `.rodata` values; they do not establish
 general ARM parity. PE x86 now has a preview execution fixture for string
 obfuscation in the Windows PE differential smoke; its reference checks
-normalize section RVAs with the PE ImageBase.
+normalize section RVAs with the PE ImageBase and preserve already absolute VAs.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
 native output. These are bounded experimental pass results; they do not
