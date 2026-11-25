@@ -39,7 +39,7 @@ def _check_ci_contract() -> None:
         '& ".github/scripts/download_verified_artifact.ps1" -Url $url -Output $archive -Sha256 $expectedSha256',
         "Expand-Archive -Path $archive -DestinationPath $destination -Force",
         "$env:GITHUB_PATH",
-        "git build-essential clang gcc-arm-linux-gnueabihf qemu-user",
+        "git build-essential clang gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf qemu-user",
         "python -m pip install --force-reinstall dist/*.whl",
         'tempfile.mkdtemp(prefix="r2morph-cross-platform-wheel-")',
         'for name in ("tests", "fixtures", "scripts", "docs", "README.md", "pyproject.toml")',
