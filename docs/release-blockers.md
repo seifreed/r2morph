@@ -1864,6 +1864,31 @@ and [published release](https://github.com/seifreed/r2morph/releases/tag/v0.4.0-
 This verifies the alpha release path only; `one-zero-readiness.json` continues
 to block stable-major publication until every 1.0 evidence criterion is complete.
 
+## Current-source differential and compatibility campaign — 2026-11-25
+
+Workflow [`45602419475`](https://github.com/seifreed/r2morph/actions/runs/45602419475)
+passed all 86 jobs on source `9c9177952decf745674715563fbfa8e73a92a090`.
+The Linux ELF x86-64 core matrix recorded 10,860 classifications across ten
+passes (3,480 applied, 7,380 omitted); the extended matrix recorded 13,032
+across twelve passes (3,406 applied, 9,626 omitted). All rows had complete
+evidence, with zero transformation errors or semantic failures. The campaign
+also passed 2,208 composition cases, 370 compatibility samples across GCC,
+Clang, C/C++, five optimization levels, PIE/stripped and static/dynamic
+variants, 2,220 radare2 static-recovery measurements, and 1,005 VM/QEMU
+comparisons. Six bounded platform previews passed 78 cases. The
+[hash-bound manifest](differential-run-2026-11-25-45602419475.json),
+[compressed reports](differential-corpus-merged-45602419475.json.gz),
+[extended report](extended-maturity-merged-45602419475.json.gz),
+[public corpus report](public-compatibility-merged-45602419475.json.gz),
+[VM report](vm-semantic-campaign-45602419475.json.gz), and
+[platform summary](platform-evidence-45602419475.json) preserve the evidence.
+
+This establishes correctness only for the measured corpora and selected
+pass/platform combinations. Omitted transformations are not successful
+transformations; optional decompiler runners are absent from the public corpus
+workflow; 22 decompiler maturity blockers remain. Full cross-platform parity,
+all-named-analyzer coverage, and generalized VM resistance remain open.
+
 | ID | Area | Evidence |
 |---|---|---|
 | RB-001 | per-pass maturity | `support-matrix.json` `pass-maturity.md` |

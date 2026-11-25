@@ -734,6 +734,21 @@ remain; omitted transformations are not successful transformations. This
 bounded evidence does not establish full platform/pass parity, all-named-
 analyzer coverage, or generalized adversarial resistance.
 
+The latest source-bound differential campaign,
+[`45602419475`](https://github.com/seifreed/r2morph/actions/runs/45602419475),
+passed all 86 jobs on source `9c917795`. It classified 10,860 core runs and
+13,032 extended runs with complete evidence and no semantic failures; 3,480
+core and 3,406 extended transformations applied, while the other rows were
+explicitly omitted. The run also passed 2,208 composition cases, 370 public
+compatibility samples across six passes, 2,220 radare2 static-recovery
+measurements, 1,005 VM/QEMU comparisons, and 78 bounded cases across six
+platform slices. The hash-bound
+[manifest](docs/differential-run-2026-11-25-45602419475.json) and compressed
+reports preserve the raw evidence. Twenty-two decompiler blockers remain; the
+platform cases are previews and do not establish equivalence across every
+supported platform. Named analyzer
+coverage and generalized resistance remain open.
+
 The latest completed adversarial analyzer and VM campaign,
 [`45548803519`](https://github.com/seifreed/r2morph/actions/runs/45548803519),
 passed all 33 jobs on pinned source `1dabf440`. It measured 362 Linux ELF

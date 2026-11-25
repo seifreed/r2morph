@@ -179,6 +179,14 @@ non-PIE, symbol-preserving and stripped outputs, dynamic linking, and static
 linking when the host toolchain provides it. C and C++ fixtures exercise switch
 dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
+The 2026-11-25 campaign on source `9c9177952decf745674715563fbfa8e73a92a090`
+passed 370 selected build records across six passes. It recorded zero
+differential failures and 2,220 successful radare2 static-recovery
+measurements. These are bounded Linux ELF x86-64 results; the public workflow
+does not run the optional IDA Pro, Binary Ninja, Ghidra, angr, or Triton
+runners. The [source-bound campaign manifest](differential-run-2026-11-25-45602419475.json)
+and its compressed raw compatibility report preserve the counts and hashes.
+
 The completed differential workflow
 [`44676092171`](https://github.com/seifreed/r2morph/actions/runs/44676092171)
 also built 360 generated ELF x86-64 samples with GCC/Clang C and C++ profiles,

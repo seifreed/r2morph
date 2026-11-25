@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45602419475,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45602419475",
+  "source_commit": "9c9177952decf745674715563fbfa8e73a92a090",
+  "conclusion": "success",
+  "completed_at_utc": "2026-11-25T11:51:41Z",
+  "jobs": {
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "core_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 10,
+    "classified_seed_runs": 10860,
+    "applied_runs": 3480,
+    "omitted_runs": 7380,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 10860,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0,
+    "report": "docs/differential-corpus-merged-45602419475.json.gz",
+    "report_sha256": "9a99f5c6334a6149f7fb06207f4e0c4d1721182053789406d5cd88f9a73ff502"
+  },
+  "extended_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 12,
+    "classified_seed_runs": 13032,
+    "applied_runs": 3406,
+    "omitted_runs": 9626,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 13032,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0,
+    "report": "docs/extended-maturity-merged-45602419475.json.gz",
+    "report_sha256": "74533b0922e6e8315cc7666c272f83e8090ec17f8d9d0263a2cec0adafbbbaf9"
+  },
+  "composition": {
+    "directional_pair_count": 44,
+    "case_count": 2208,
+    "failed_cases": 0,
+    "error_cases": 0
+  },
+  "public_compatibility": {
+    "status": "passed",
+    "shards": 4,
+    "sample_count": 370,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "differential_failed_samples": 0,
+    "static_recovery_measurements": 2220,
+    "static_recovery_failed_samples": 0,
+    "report": "docs/public-compatibility-merged-45602419475.json.gz",
+    "report_sha256": "2fcf0a9e5cae6757ce7bfdaf8548ef01771d52daf40c136ad9f6dc2352ef05b8"
+  },
+  "vm_semantic": {
+    "status": "passed",
+    "scope": "Linux ELF x86-64",
+    "fixture_seed_cases": 1005,
+    "seeds": [
+      20260916,
+      20260917,
+      20260918
+    ],
+    "passed_cases": 1005,
+    "failed_cases": 0,
+    "qemu_oracle_pairs": 1005,
+    "qemu_divergent_pairs": 0,
+    "qemu_missing_pairs": 0,
+    "qemu_unavailable_pairs": 0,
+    "report": "docs/vm-semantic-campaign-45602419475.json.gz",
+    "report_sha256": "d02373f7af5b948f06aa1fcada6d06d62c77420bc6bbb262a9ca0e8b8872d871"
+  },
+  "platform_preview": {
+    "scope": "six bounded platform slices",
+    "case_count": 78,
+    "passed_cases": 78,
+    "failed_cases": 0,
+    "error_cases": 0,
+    "skipped_cases": 0,
+    "report": "docs/platform-evidence-45602419475.json",
+    "report_sha256": "cf38e007ffdb0b3f44844da42690bbc776455fe5b3e80f03210e85c523efa33a",
+    "platforms": {
+      "elf-arm-32": 6,
+      "elf-arm64": 7,
+      "elf-x86-32": 8,
+      "macos-arm64": 36,
+      "macos-x86-64": 3,
+      "windows-pe": 18
+    }
+  },
+  "maturity_evidence": {
+    "decompiler_blockers": 22,
+    "report": "docs/maturity-evidence-merged-45602419475.json.gz",
+    "report_sha256": "89ddcb4854a92eb84efb0c86fbf052e8eb8a10a21646ca91492da8ea5e003823"
+  },
+  "evidence_sha256": {
+    "differential-corpus-merged-45602419475.json.gz": "9a99f5c6334a6149f7fb06207f4e0c4d1721182053789406d5cd88f9a73ff502",
+    "extended-maturity-merged-45602419475.json.gz": "74533b0922e6e8315cc7666c272f83e8090ec17f8d9d0263a2cec0adafbbbaf9",
+    "maturity-evidence-merged-45602419475.json.gz": "89ddcb4854a92eb84efb0c86fbf052e8eb8a10a21646ca91492da8ea5e003823",
+    "public-compatibility-merged-45602419475.json.gz": "2fcf0a9e5cae6757ce7bfdaf8548ef01771d52daf40c136ad9f6dc2352ef05b8",
+    "vm-semantic-campaign-45602419475.json.gz": "d02373f7af5b948f06aa1fcada6d06d62c77420bc6bbb262a9ca0e8b8872d871",
+    "platform-evidence-45602419475.json": "cf38e007ffdb0b3f44844da42690bbc776455fe5b3e80f03210e85c523efa33a"
+  },
+  "limits": [
+    "Omitted rows did not transform a sample and are not successful transformations.",
+    "Differential results cover pinned Linux ELF x86-64 corpora and do not cover every real-world input or every platform/pass combination.",
+    "The public compatibility corpus covers 370 selected compiler/build variants, six passes, and radare2 static recovery; named decompilers are omitted because their runners are unavailable in this workflow.",
+    "The six cross-platform slices are bounded smoke previews, not complete platform/pass parity.",
+    "Twenty-two decompiler maturity blockers remain. All-named-analyzer coverage and generalized adversarial resistance remain open."
+  ]
+}
