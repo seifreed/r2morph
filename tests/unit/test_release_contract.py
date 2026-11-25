@@ -1850,6 +1850,7 @@ def test_windows_pe_differential_covers_native_mutation_and_composition_passes()
         and "test_constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "test_string_obfuscation_pe_x86_64_preserves_native_execution" in windows_job
         and "test_string_obfuscation_pe_x86_preserves_native_execution" in windows_job
+        and "or string_obfuscation_pe_x86_preserves_native_execution" in windows_job
         and "test_tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
         and "test_multiple_mutation_passes_on_x86_binary" in windows_job
         and "test_pe_x86_64_block_reordering_preserves_native_observables" in windows_job
@@ -2107,6 +2108,7 @@ def test_differential_workflow_keeps_windows_pe_evidence() -> None:
         and "constant_unfolding_pe_x86_64_preserves_native_execution" in windows_job
         and "string_obfuscation_pe_x86_64_preserves_native_execution" in windows_job
         and "string_obfuscation_pe_x86_preserves_native_execution" in windows_job
+        and "or string_obfuscation_pe_x86_preserves_native_execution" in windows_job
         and "tier1_pass_composition_pe_x86_64_preserves_native_execution" in windows_job
         and "expected 19" in windows_job
         and "test_pe_handler_checksum_and_imports" in windows_job
