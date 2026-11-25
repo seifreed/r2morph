@@ -396,7 +396,7 @@ ineligible because it zero-extends into RAX.
 | **Data Flow Mutation** | engine-only | Data flow analysis-driven safe substitutions |
 | **Short Jump Patching** | engine-only | Patches short jumps to equivalent sequences |
 | **Constant Unfolding** | engine-only | Unfolds constant expressions into multi-instruction equivalents |
-| **Code Mobility** | engine-only | Relocates blocks to code caves with trampolines |
+| **Code Mobility** | engine-only | Relocates blocks to code caves with trampolines; when relocation ranges overlap, the latest registered mapping takes precedence |
 | **Function Outlining** | engine-only | Distributes function chunks across code caves |
 | **API Hashing** | engine-only | Hash trampolines obscuring PLT references |
 | **Import Obfuscation** | engine-only | Jump stub indirection for import calls |

@@ -104,7 +104,7 @@ class RelocationManager:
         if old_address in self.address_map:
             return self.address_map[old_address]
 
-        for reloc in self.relocations:
+        for reloc in reversed(self.relocations):
             if reloc.old_address <= old_address < reloc.old_address + reloc.size:
                 offset = old_address - reloc.old_address
                 return reloc.new_address + offset
