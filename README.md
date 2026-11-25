@@ -736,6 +736,19 @@ resistance gates. Its [hash-bound manifest](docs/protection-adversarial-run-2026
 and [VM report](docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz)
 pin the results and their limits.
 
+The current-source continuous-fuzz run
+[`45581219724`](https://github.com/seifreed/r2morph/actions/runs/45581219724)
+passed on source `c1d7f729` across Ubuntu, macOS 15, and Windows after building
+and installing the wheel. Each platform completed 5,000 cases for each of ten
+parser, assembler, VM, relocation, and rewrite targets (150,000 target runs
+total), with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics. The matching CI run also passed the
+Hypothesis relocation property test. The hash-bound [manifest](docs/continuous-fuzz-2026-11-25-45581219724-summary.json),
+three platform reports, and [regression test](tests/unit/test_published_continuous_fuzz_45581219724.py)
+pin the source, artifacts, counts, and limits. This bounded campaign does not
+establish arbitrary transformed-program equivalence, exhaustive fuzz
+coverage, full product parity, or adversarial resistance.
+
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
 failures, and 103 recoverable Mach-O parser diagnostics. Its report and

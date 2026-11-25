@@ -1728,6 +1728,24 @@ This bounded harness does not establish semantic equivalence for arbitrary
 transformed binaries, exhaustive fuzz coverage, full platform parity, or
 adversarial resistance.
 
+## Current-source three-platform continuous fuzz — 2026-11-25
+
+Continuous Fuzzing workflow
+[`45581219724`](https://github.com/seifreed/r2morph/actions/runs/45581219724)
+passed on source commit `c1d7f7299e36c994aa32fb4a73fbdda7a81996c6`. Ubuntu,
+macOS 15, and Windows each built and installed the wheel, then completed 5,000
+cases for each of ten parser, assembler, VM, relocation, and binary-rewriter
+targets: 150,000 target runs total, with zero failures and 103 recoverable
+`macho_load_commands.warning` diagnostics on each platform. The commit's CI
+also passed the Hypothesis property test for overlapping relocation mappings.
+The source script hash, report hashes, artifact IDs and ZIP digests, seed, and
+limits are pinned in the [summary](continuous-fuzz-2026-11-25-45581219724-summary.json),
+three platform reports, and
+[regression test](../tests/unit/test_published_continuous_fuzz_45581219724.py).
+This bounded campaign does not establish arbitrary transformed-program
+equivalence, exhaustive fuzz coverage, full product parity, or adversarial
+resistance.
+
 ## Current-source local IDA analyzer sample — 2026-11-25
 
 On source `6756d0b636ac3a64b4a96564c2671c1182f1acd2`, the local adversarial

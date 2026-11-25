@@ -1,0 +1,111 @@
+"""Pin the current-source continuous-fuzz evidence to its source and artifacts."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+
+from tests.utils.assertions import expect
+
+_ROOT = Path(__file__).resolve().parents[2]
+_SUMMARY = _ROOT / "docs/continuous-fuzz-2026-11-25-45581219724-summary.json"
+_SOURCE = "c1d7f7299e36c994aa32fb4a73fbdda7a81996c6"
+_RUN_ID = 45_581_219_724
+_SCRIPT_HASH = "19a7e41eaea0d6e4f891c52723597dc75e7626da9b0ec4b2cebd5096ca13a9bf"
+_CASES_PER_TARGET = 5_000
+_SEED = 20_260_827
+_MAX_PAYLOAD_BYTES = 4_096
+_RUNS_PER_PLATFORM = 50_000
+_TOTAL_RUNS = 150_000
+_DIAGNOSTICS = {"macho_load_commands.warning": 103}
+_TARGETS = {
+    "assembling",
+    "binary_parsers",
+    "binary_rewriter",
+    "elf_header_parser",
+    "macho_load_commands",
+    "pe_header_parser",
+    "relocations",
+    "vm_bytecode",
+    "vm_dispatcher",
+    "vm_instruction_decoder",
+}
+_PLATFORMS = {
+    "macos-15": (
+        15006059312,
+        "sha256:e82824d067bd09010193cd90b2284876cba7d7606f21bf35599a41bbc300c8ca",
+        "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+    ),
+    "ubuntu-latest": (
+        15005559990,
+        "sha256:a8a9e0202cb9afd69595f2d3d51dd8a71c43e79f3b317c9c3b700f71c64bc488",
+        "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+    ),
+    "windows-latest": (
+        15006622351,
+        "sha256:4f6e1cc7992728c951ddfef466477b718f8fe0560f73eaf8aa754995186ecf83",
+        "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+    ),
+}
+
+
+def _summary() -> dict[str, object]:
+    return json.loads(_SUMMARY.read_text(encoding="utf-8"))
+
+
+def test_manifest_binds_successful_current_source_run() -> None:
+    summary = _summary()
+    workflow = summary["workflow"]
+    configuration = summary["configuration"]
+
+    expect(
+        workflow["source_commit"] == _SOURCE
+        and workflow["run_id"] == _RUN_ID
+        and workflow["status"] == "success"
+        and workflow["url"] == f"https://github.com/seifreed/r2morph/actions/runs/{_RUN_ID}"
+    )
+    expect(
+        hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
+        == _SCRIPT_HASH
+        == configuration["source_script_sha256"]
+    )
+    expect(configuration["cases_per_target_per_platform"] == _CASES_PER_TARGET)
+    expect(configuration["seed"] == _SEED)
+    expect(configuration["max_payload_bytes"] == _MAX_PAYLOAD_BYTES)
+    expect(set(configuration["targets"]) == _TARGETS)
+
+
+def test_platform_reports_match_artifacts_and_have_no_failures() -> None:
+    summary = _summary()
+    execution = summary["execution"]
+    platforms = execution["platforms"]
+
+    expect(set(platforms) == set(_PLATFORMS))
+    expect(execution["total_target_runs"] == _TOTAL_RUNS)
+    expect(execution["total_failures"] == 0)
+    for platform, (artifact_id, archive_hash, report_hash) in _PLATFORMS.items():
+        entry = platforms[platform]
+        raw = (_ROOT / entry["report"]).read_bytes()
+        report = json.loads(raw)
+
+        expect(entry["artifact_id"] == artifact_id)
+        expect(entry["artifact_archive_sha256"] == archive_hash)
+        expect(hashlib.sha256(raw).hexdigest() == report_hash == entry["report_sha256"])
+        expect(entry["target_runs"] == _RUNS_PER_PLATFORM and entry["failure_count"] == 0)
+        expect(entry["parser_diagnostic_counts"] == _DIAGNOSTICS)
+        expect(report["failures"] == [] and report["failure_count"] == 0)
+        expect(report["seed"] == _SEED and report["cases"] == _CASES_PER_TARGET)
+        expect(report["max_payload"] == _MAX_PAYLOAD_BYTES)
+        expect(set(report["target_runs"]) == _TARGETS)
+        expect(set(report["target_runs"].values()) == {_CASES_PER_TARGET})
+
+
+def test_manifest_preserves_bounded_scope() -> None:
+    limits = " ".join(_summary()["limits"])
+
+    expect(
+        "does not prove semantic equivalence for arbitrary transformed binaries" in limits
+        and "do not establish complete product parity or exhaustive fuzz coverage" in limits
+        and "does not close cross-platform analyzer parity, all-named analyzer, or published resistance gates" in limits
+    )

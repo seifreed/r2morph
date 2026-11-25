@@ -46,8 +46,7 @@ def _xml_counts(path: Path) -> tuple[int, int, int, int]:
     root = DefusedElementTree.parse(path).getroot()
     suites = [root] if root.tag == "testsuite" else list(root.iter("testsuite"))
     return tuple(
-        sum(int(suite.get(key, "0")) for suite in suites)
-        for key in ("tests", "failures", "errors", "skipped")
+        sum(int(suite.get(key, "0")) for suite in suites) for key in ("tests", "failures", "errors", "skipped")
     )
 
 
@@ -78,10 +77,7 @@ def test_run_manifest_binds_successful_campaign_and_complete_classification() ->
             "failed_cases": 0,
             "error_cases": 0,
         }
-        and all(
-            re.fullmatch(r"[0-9a-f]{64}", digest)
-            for digest in report["aggregate_artifact"]["reports"].values()
-        )
+        and all(re.fullmatch(r"[0-9a-f]{64}", digest) for digest in report["aggregate_artifact"]["reports"].values())
         and re.fullmatch(r"[0-9a-f]{64}", report["aggregate_artifact"]["zip_sha256"])
     )
 
@@ -94,7 +90,8 @@ def test_platform_reports_are_hash_bound_and_have_no_failed_or_skipped_cases() -
 
     expect(
         hashlib.sha256(_PLATFORM.read_bytes()).hexdigest() == preview["report_sha256"]
-        and aggregate == {
+        and aggregate
+        == {
             "complete_platforms": 6,
             "incomplete_platforms": [],
             "platform_count": 6,
@@ -110,8 +107,7 @@ def test_platform_reports_are_hash_bound_and_have_no_failed_or_skipped_cases() -
             == platform["platforms"][name]["error_count"]
             == platform["platforms"][name]["skipped_count"]
             == 0
-            and _xml_counts(_PLATFORM_XML / platform["platforms"][name]["report"])
-            == (count, 0, 0, 0)
+            and _xml_counts(_PLATFORM_XML / platform["platforms"][name]["report"]) == (count, 0, 0, 0)
             and hashlib.sha256((_PLATFORM_XML / platform["platforms"][name]["report"]).read_bytes()).hexdigest()
             == preview["junit_reports"][platform["platforms"][name]["report"]]
             for name, count in _PLATFORM_CASES.items()
@@ -145,10 +141,8 @@ def test_compatibility_vm_scope_and_readiness_remain_honest() -> None:
         and readiness["criteria"]["all_named_adversarial_analyzers"]["status"] == "open"
         and readiness["criteria"]["cross_platform_parity"]["status"] == "open"
         and readiness["criteria"]["published_resistance_results"]["status"] == "open"
-        and _REPORT.relative_to(_ROOT).as_posix()
-        in readiness["criteria"]["published_correctness_results"]["evidence"]
+        and _REPORT.relative_to(_ROOT).as_posix() in readiness["criteria"]["published_correctness_results"]["evidence"]
         and _TEST_PATH in readiness["criteria"]["published_correctness_results"]["evidence"]
-        and _PLATFORM.relative_to(_ROOT).as_posix()
-        in readiness["criteria"]["cross_platform_parity"]["evidence"]
+        and _PLATFORM.relative_to(_ROOT).as_posix() in readiness["criteria"]["cross_platform_parity"]["evidence"]
         and _TEST_PATH in readiness["criteria"]["cross_platform_parity"]["evidence"]
     )
