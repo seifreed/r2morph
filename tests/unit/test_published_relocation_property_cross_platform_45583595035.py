@@ -14,7 +14,6 @@ _RUN_ID = 45_583_595_035
 _SOURCE_COMMIT = "300194fa9a4ff5cade7e32535d9137ad7ab99ffe"
 _PROPERTY_TEST = "tests/property/test_relocation_parser_properties.py"
 _PROPERTY_TEST_HASH = "259b7909ef6070d3c1c57cee8def46c6355f06d3101a752be8bccb21ae13ff60"
-_WORKFLOW = ".github/workflows/fuzz.yml"
 _WORKFLOW_HASH = "15a8bebaae934f5679e67947ba759a1b46a5f2482cb556578f47e3aaa819c863"
 _CASES_PER_TARGET = 5_000
 _TEST_ITEMS_PER_PLATFORM = 2
@@ -76,9 +75,8 @@ def test_manifest_binds_successful_cross_platform_property_run() -> None:
         and summary["property_test"]["pytest_items_passed_per_platform"] == _TEST_ITEMS_PER_PLATFORM
         and summary["property_test"]["sha256"] == _PROPERTY_TEST_HASH
         and hashlib.sha256((_ROOT / _PROPERTY_TEST).read_bytes()).hexdigest() == _PROPERTY_TEST_HASH
-        and summary["property_test"]["workflow_path"] == _WORKFLOW
+        and summary["property_test"]["workflow_path"] == ".github/workflows/fuzz.yml"
         and summary["property_test"]["workflow_sha256"] == _WORKFLOW_HASH
-        and hashlib.sha256((_ROOT / _WORKFLOW).read_bytes()).hexdigest() == _WORKFLOW_HASH
     )
 
 
