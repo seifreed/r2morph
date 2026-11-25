@@ -54,7 +54,7 @@ contract until they have equivalent real-fixture coverage.
 | Import obfuscation | Experimental | ELF x86-64 | Format-specific import handling | `README.md` |
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
 | Stack strings | Experimental | ELF x86-64 | Rewrites unique RIP-relative direct-call arguments only; unsupported references, encodings, and targets remain no-op | `README.md`, `tests/integration/test_polymorphic_engine_real.py` |
-| String obfuscation | Experimental | ELF x86-64; ELF x86-32/ARM32, PE x86-64, Mach-O x86-64, and Mach-O ARM64 preview/experimental | Encodes only strings with no discovered references; ARM64 fails closed if its operand scan is incomplete | `tests/integration/test_elf_x86_32_native.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_macho_x86_64_native.py`, `tests/integration/test_macho_arm64_string_obfuscation.py`, `tests/integration/test_nop_insertion_pe_real.py` |
+| String obfuscation | Experimental | ELF x86-64; ELF x86-32/ARM32/AArch64, PE x86-64, Mach-O x86-64, and Mach-O ARM64 preview/experimental | Encodes only strings with no discovered references; ARM64 fails closed if its operand scan is incomplete | `tests/integration/test_elf_x86_32_native.py`, `tests/integration/test_elf_arm32_native.py`, `tests/integration/test_elf_arm64_native.py`, `tests/integration/test_macho_x86_64_native.py`, `tests/integration/test_macho_arm64_string_obfuscation.py`, `tests/integration/test_nop_insertion_pe_real.py` |
 | Pattern substitution | Experimental | ELF x86-64 | Selected by the compatibility corpus and current composition smoke; pattern coverage is intentionally narrow | `README.md`, `docs/compatibility-corpus.md` |
 | Polymorphic engine | Experimental | ELF x86-64 | The current real ELF x86-64 smoke covers 46 cases and 44 directional pairs; arbitrary combinations remain unsupported | `tests/integration/test_polymorphic_engine_real.py`, `README.md` |
 
@@ -66,8 +66,8 @@ including official and non-official targets, so the Linux ELF x86-64 baseline
 and PE, Mach-O, ARM, and AArch64 parity gaps are visible without expanding every
 cell. It also records evidence percentages for official and non-official targets
 so preview coverage cannot look equivalent to the supported baseline. The
-current matrix records 100.0% official evidence, 17.36% non-official evidence,
-42 non-official evidenced cells, and 200 non-official not-supported cells. It
+current matrix records 100.0% official evidence, 17.77% non-official evidence,
+43 non-official evidenced cells, and 199 non-official not-supported cells. It
 also lists 11 non-official format/architecture targets in
 `non_official_gap_targets`; Mach-O AArch64, Mach-O x86-64, PE x86/x86-64, and
 ELF ARM/AArch64/x86 currently have preview evidence. PE x86 has five evidenced

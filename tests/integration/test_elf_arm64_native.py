@@ -10,6 +10,7 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -109,6 +110,33 @@ def _build_arm64_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
         str(source),
     ]
     run_command(command, check=True, text=True)
+    return binary_path
+
+
+def _build_arm64_string_elf(tmp_path: Path) -> Path:
+    compiler = shutil.which("aarch64-linux-gnu-gcc")
+    if compiler is None:
+        raise RuntimeError("aarch64-linux-gnu-gcc is required for the ELF AArch64 string fixture")
+    source = tmp_path / "arm64_string.S"
+    source.write_text(
+        ".section .rodata\n"
+        '.asciz "arm64-unreferenced-string-evidence"\n'
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    mov x0, #42\n"
+        "    mov x8, #93\n"
+        "    svc #0\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "arm64_string"
+    run_command(
+        [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
     return binary_path
 
 
@@ -271,6 +299,29 @@ def test_elf_arm64_nop_insertion_preserves_native_exit_code(tmp_path: Path) -> N
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "native ELF ARM64 NOP insertion changed execution",
+    )
+
+
+def test_elf_arm64_string_obfuscation_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    _require_arm64_execution()
+
+    binary_path = _build_arm64_string_elf(tmp_path)
+    original = _run_arm64(binary_path)
+    original_bytes = binary_path.read_bytes()
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = StringObfuscationPass(config={"probability": 1.0, "encoding": "rot13", "seed": 1337}).apply(binary)
+
+    mutated = _run_arm64(binary_path)
+    expect(result["mutations_applied"] > 0)
+    expect(b"arm64-unreferenced-string-evidence" in original_bytes)
+    expect(b"arm64-unreferenced-string-evidence" not in binary_path.read_bytes())
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF AArch64 string obfuscation changed emulated execution",
     )
 
 
