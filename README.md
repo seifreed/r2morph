@@ -430,11 +430,11 @@ compatibility and resistance gates.
 The ELF x86-64 direct-call target decoder uses scratch registers that preserve
 the System V `AL` vector-argument count. The native Linux floating-point varargs
 integration fixture exposed an offset undercount for VEX scalar arithmetic
-bytecode; the shared size table and an encoder-size regression test now cover
-that case. Linux CI installs GDB so the fixture can capture registers and the
-faulting instruction on a signal failure. The ABI release gate remains open
-until the native integration job passes; this fixture does not establish general
-varargs or ABI parity.
+bytecode; the shared size table and an encoder-size regression test cover that
+case. The exact native regression passed in the Linux/Python 3.12 integration
+suite in [CI run 45586185240](https://github.com/seifreed/r2morph/actions/runs/45586185240)
+on commit `c51e6426`. This verifies the recorded fixture only; it does not
+establish general varargs or ABI parity.
 
 ---
 

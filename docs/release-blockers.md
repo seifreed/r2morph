@@ -1814,13 +1814,17 @@ in a local x86-64 emulated Debian container across 12 `PYTHONHASHSEED` values;
 this does not reproduce the native runner failure and is not sufficient to
 close it.
 
-The integration assertion now attempts to run GDB after a signal termination
-and captures a bounded backtrace, `RIP`/`RSP`/`RAX`, and nearby instructions,
-with the generated binary path redacted. GDB in the local Docker environment is
-blocked from reading registers by the container's ptrace restrictions, so that
-environment cannot validate the register dump. The next native Linux CI result
-will show whether the runner can expose the faulting instruction. Keep the
-varargs/ABI and release gates open.
+The integration assertion attempts to run GDB after a signal termination and
+captures a bounded backtrace, `RIP`/`RSP`/`RAX`, and nearby instructions, with
+the generated binary path redacted. GDB in the local Docker environment is
+blocked from reading registers by the container's ptrace restrictions. The
+exact floating-point varargs regression subsequently passed in the full
+Linux/Python 3.12 integration suite in CI run
+[`45586185240`](https://github.com/seifreed/r2morph/actions/runs/45586185240),
+on source `c51e6426e49f9db932025f9a458a1348c37b493e`; the job log records
+`test_virtualized_elf_preserves_floating_point_varargs_register_and_stack_abi`
+as passed. This closes that reproduced fixture failure. General varargs/ABI
+parity and the broader release gates remain open.
 
 The cross-platform installed-wheel smoke was reproduced on macOS ARM64 from
 source `d57368bd`: all 679 selected tests passed under Python 3.12.16 in 14.18
