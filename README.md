@@ -748,6 +748,11 @@ three platform reports, and [regression test](tests/unit/test_published_continuo
 pin the source, artifacts, counts, and limits. This bounded campaign does not
 establish arbitrary transformed-program equivalence, exhaustive fuzz
 coverage, full product parity, or adversarial resistance.
+The continuous-fuzz workflow now also runs the relocation mapping Hypothesis
+property test on all three runners before the deterministic campaign. Run
+`45581219724` predates this workflow step; its property-validation job ran on
+Ubuntu only, so cross-platform property execution remains unverified until a
+subsequent workflow run succeeds.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

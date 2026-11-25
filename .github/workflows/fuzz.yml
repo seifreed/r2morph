@@ -68,6 +68,9 @@ jobs:
           wheel_path="$(python -c "from pathlib import Path; print(next(Path('dist').glob('*.whl')).resolve().as_posix())")"
           python -m pip install --force-reinstall "$wheel_path"
 
+      - name: Run relocation mapping property test
+        run: python -W error -m pytest -q tests/property/test_relocation_parser_properties.py --no-cov --tb=short
+
       - name: Fuzz assembly, parsers, VM codegen, relocations, and rewriting
         shell: bash
         run: |
