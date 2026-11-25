@@ -284,6 +284,12 @@ passed the 318-test package smoke. The pinned
 [`local release report`](docs/release-validation-local-2026-11-20-5f414ed.json)
 records artifact hashes and open limits. GitHub CI was still pending for that
 source when measured; no provenance was generated and nothing was published.
+On source `aa20dde5`, a clean Python 3.14.10/macOS arm64 environment built the
+wheel and sdist, passed `twine check` for both, and installed the wheel with
+successful package import and CLI version checks. This bounded packaging smoke
+did not run the full wheel test suite, generate an SBOM, attest provenance, or
+refresh human signoff; hashes and commands are in the
+[`local packaging report`](docs/release-validation-local-2026-11-25-aa20dde5.json).
 The dependency resolution audit now also covers Linux x86-64 on Python 3.12 and
 3.13 plus Windows x86-64 on Python 3.13, alongside the macOS arm64/Python 3.13
 target. All four hash-pinned manifests passed with zero known vulnerabilities

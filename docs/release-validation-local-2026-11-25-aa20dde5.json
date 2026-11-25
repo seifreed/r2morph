@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "source_commit": "aa20dde528ed2324d14eb596781c501af2b2ffaa",
+  "created_at": "2026-11-25",
+  "version": "0.4.0-alpha.3",
+  "environment": {
+    "python": "3.14.10",
+    "platform": "macOS arm64"
+  },
+  "commands": [
+    "python -m build --outdir dist .",
+    "twine check dist/*",
+    "python -m pip install --force-reinstall dist/r2morph-0.4.0a3-py3-none-any.whl",
+    "python -c 'import r2morph; print(r2morph.__version__); print(r2morph.__file__)'",
+    "r2morph --version"
+  ],
+  "artifacts": [
+    {
+      "file": "r2morph-0.4.0a3-py3-none-any.whl",
+      "sha256": "a2a91a071f559552cfc33f111feb481e1597d47e8e2a9c8a621d9f934afde010"
+    },
+    {
+      "file": "r2morph-0.4.0a3.tar.gz",
+      "sha256": "980e048155c66e973777e597d5da6b37af1539ae4c7ef30386d7c7be50ef9247"
+    }
+  ],
+  "results": {
+    "twine_check": "passed for wheel and sdist",
+    "installed_import_version": "0.4.0-alpha.3",
+    "installed_cli_output": "r2morph 0.4.0-alpha.3",
+    "installed_module_origin": "venv site-packages"
+  },
+  "not_run": [
+    "full test suite against installed wheel",
+    "SBOM generation and dependency audit",
+    "GitHub build provenance attestation",
+    "current independent human signoff"
+  ],
+  "scope": "Local packaging and installed-wheel smoke only; this report does not establish release readiness."
+}
