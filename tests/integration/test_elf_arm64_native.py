@@ -112,12 +112,12 @@ def _build_arm64_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     return binary_path
 
 
-def _build_arm64_expansion_elf(tmp_path: Path) -> Path:
+def _build_arm64_expansion_elf(tmp_path: Path, complex_fixture: bool = False) -> Path:
     compiler = shutil.which("aarch64-linux-gnu-gcc")
     if compiler is None:
         raise RuntimeError("an AArch64 assembler compiler is required for the expansion fixture")
     source = tmp_path / "arm64_expansion.S"
-    source.write_text(
+    basic_source = (
         ".text\n"
         ".global _start\n"
         ".type _start,%function\n"
@@ -134,9 +134,34 @@ def _build_arm64_expansion_elf(tmp_path: Path) -> Path:
         "    mov w3, w2\n"
         "    mov w0, w1\n"
         "    ret\n"
-        ".size compute, .-compute\n",
-        encoding="ascii",
+        ".size compute, .-compute\n"
     )
+    complex_source = (
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    bl compute\n"
+        "    mov w8, #93\n"
+        "    svc #0\n"
+        ".type compute,%function\n"
+        "compute:\n"
+        "    mov w1, #20\n"
+        "    mov w2, w1\n"
+        "    mov w3, w3\n"
+        "    cmp w2, #0\n"
+        "    b.eq zero\n"
+        "    lsl w1, w1, #1\n"
+        "    b done\n"
+        "zero:\n"
+        "    lsl w1, w1, #1\n"
+        "done:\n"
+        "    add w1, w1, #2\n"
+        "    mov w0, w1\n"
+        "    ret\n"
+        ".size compute, .-compute\n"
+    )
+    source.write_text(complex_source if complex_fixture else basic_source, encoding="ascii")
     binary_path = tmp_path / "arm64_expansion"
     run_command(
         [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],

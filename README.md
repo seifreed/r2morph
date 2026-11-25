@@ -231,8 +231,8 @@ alone and after NOP insertion on ARM32, AArch64, and x86-32, alongside the
 existing substitution, register, and constant-unfolding cases. These tests
 extend regression coverage for declared experimental targets; they do not
 promote those targets or establish full cross-platform parity until the
-updated workflow completes and its artifacts are reviewed. The ARM32 and
-x86-32 expansion cases use dedicated basic and branching fixtures containing
+updated workflow completes and its artifacts are reviewed. Expansion cases on
+ARM32, AArch64, and x86-32 use dedicated basic and branching fixtures containing
 eligible shift instructions, and require the expansion pass to apply before
 comparing the original and mutated execution results.
 The later current-source partial run

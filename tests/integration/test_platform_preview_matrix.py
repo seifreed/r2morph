@@ -17,7 +17,12 @@ from r2morph.mutations.instruction_substitution import InstructionSubstitutionPa
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from tests.integration.test_elf_arm32_native import _build_arm32_elf, _build_arm32_expansion_elf
-from tests.integration.test_elf_arm64_native import _build_arm64_elf, _require_arm64_execution, _run_arm64
+from tests.integration.test_elf_arm64_native import (
+    _build_arm64_elf,
+    _build_arm64_expansion_elf,
+    _require_arm64_execution,
+    _run_arm64,
+)
 from tests.integration.test_elf_x86_32_native import _build_x86_32_elf, _build_x86_32_expansion_elf
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
@@ -107,7 +112,9 @@ def _build_target(
         return binary_path, lambda path: run_command(["qemu-arm", path], text=True, timeout=30)
     if target == "arm64":
         _require_arm64_execution()
-        if mutation_name == "ConstantUnfolding" and not complex_fixture:
+        if mutation_name == "InstructionExpansion":
+            binary_path = _build_arm64_expansion_elf(tmp_path, complex_fixture=complex_fixture)
+        elif mutation_name == "ConstantUnfolding" and not complex_fixture:
             source = tmp_path / "arm64_constant.S"
             source.write_text(
                 ".text\n"
@@ -135,8 +142,9 @@ def _build_target(
                 check=True,
                 text=True,
             )
-            return binary_path, _run_arm64
-        return _build_arm64_elf(tmp_path, complex_fixture=complex_fixture), _run_arm64
+        else:
+            binary_path = _build_arm64_elf(tmp_path, complex_fixture=complex_fixture)
+        return binary_path, _run_arm64
     if target == "x86-32":
         _require_x86_32_execution()
         if mutation_name == "InstructionExpansion":
