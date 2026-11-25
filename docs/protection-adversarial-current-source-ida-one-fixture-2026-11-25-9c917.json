@@ -39,6 +39,7 @@
   "other_analyzer_rows": {
     "completed": [
       "custom",
+      "ghidra",
       "objdump",
       "radare2",
       "unicorn"
@@ -46,18 +47,33 @@
     "unavailable": {
       "angr": "compatibility adapter unavailable",
       "binary-ninja": "valid license unavailable",
-      "ghidra": "CLI executable unavailable to the local benchmark runner",
       "ida-pro": "CLI executable unavailable to the local benchmark runner; IDA MCP/Hex-Rays was measured separately above",
       "triton": "module unavailable"
     }
   },
   "raw_report": {
     "path": "docs/protection-adversarial-local-current-9c917.json.gz",
-    "sha256": "fdd7215b36c7c31ce5b951b93ecf982453dcb7e8f43687219b50e2db1bb8545e"
+    "sha256": "e708f71350c924c79b8db9e0ebc2ae1724895985b8cc45dc0cd785839f1cc22c"
   },
   "limits": [
     "One fixture and one pass only; this does not establish general analyzer coverage or generalized VM resistance.",
     "The CLI benchmark did not have an IDA executable; the two successful IDA/Hex-Rays analyses were made through the local IDA MCP worker.",
-    "Binary Ninja, Triton, angr, and Ghidra CLI were unavailable in the local benchmark environment."
-  ]
+    "Binary Ninja had no valid license; Triton and angr were unavailable in the local benchmark environment."
+  ],
+  "ghidra_12_2": {
+    "original": {
+      "analysis_status": "completed",
+      "function_count": 1,
+      "decompile_status": "completed",
+      "decompiler_lines": 12,
+      "decompiler_bytes": 212
+    },
+    "protected": {
+      "analysis_status": "completed",
+      "function_count": 3,
+      "decompile_status": "completed",
+      "decompiler_lines": 47,
+      "decompiler_bytes": 819
+    }
+  }
 }

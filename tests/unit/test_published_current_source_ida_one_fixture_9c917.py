@@ -52,11 +52,18 @@ def test_spot_check_binds_source_binaries_transformation_and_ida_results() -> No
         and summary["ida_pro_mcp"]["hexrays_ready"]
         and summary["ida_pro_mcp"]["original"]["decompile_status"] == "completed"
         and summary["ida_pro_mcp"]["protected"]["decompile_status"] == "completed"
+        and summary["ghidra_12_2"]["original"]["decompile_status"] == "completed"
+        and summary["ghidra_12_2"]["protected"]["decompile_status"] == "completed"
         and summary["raw_report"]["sha256"] == hashlib.sha256(raw_bytes).hexdigest()
         and raw["passes"][0]["status"] == "applied"
         and raw["tools"]
         and any(
             row["tool"] == "unicorn" and row["original"]["exit_code"] == row["protected"]["exit_code"] == _EXIT_CODE
+            for row in raw["tools"]
+        )
+        and any(
+            row["tool"] == "ghidra"
+            and row["original"]["decompiler_status"] == row["protected"]["decompiler_status"] == "completed"
             for row in raw["tools"]
         )
         and summary["limits"]

@@ -370,9 +370,10 @@ A follow-up on source `9c917795` virtualized one function in the same fixture.
 Unicorn returned exit code 45 for both binaries, and IDA/Hex-Rays through the
 local MCP completed analysis and decompilation for both. The hash-bound
 [supplement](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json)
-records that the CLI benchmark still lacked an IDA executable and that angr,
-Ghidra CLI, Triton, and Binary Ninja were unavailable. This one-fixture check
-does not close analyzer-coverage or resistance gates.
+records that Ghidra 12.2 headless also completed analysis and decompilation;
+the CLI benchmark still lacked an IDA executable. angr, Triton, and Binary
+Ninja were unavailable. This one-fixture check does not close analyzer-coverage
+or resistance gates.
 
 ### Instruction Equivalence Rules
 

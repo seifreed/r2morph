@@ -1796,8 +1796,11 @@ through the local MCP completed analysis and decompilation for both; IDA found
 one function in the original and two in the protected sample. The local CLI
 benchmark still reports IDA unavailable because `idat` is not installed, so
 the MCP measurements are supplemental and do not fill the complete analyzer
-matrix. Binary Ninja had no valid license; Triton, angr, and the Ghidra CLI were
-unavailable. The hash-bound [summary](protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json),
+matrix. Ghidra 12.2 headless completed both analyses and decompilations
+(1→3 functions, 12→47 decompiler lines) when configured with its Homebrew
+headless executable. Binary Ninja had no valid license; Triton and angr were
+unavailable. The hash-bound
+[summary](protection-adversarial-current-source-ida-one-fixture-2026-11-25-9c917.json),
 [raw CLI report](protection-adversarial-local-current-9c917.json.gz), and
 [regression test](../tests/unit/test_published_current_source_ida_one_fixture_9c917.py)
 pin the source, binary hashes, outcomes, and limits. One fixture/pass does not
