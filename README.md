@@ -717,6 +717,25 @@ remain; omitted transformations are not successful transformations. This
 bounded evidence does not establish full platform/pass parity, all-named-
 analyzer coverage, or generalized adversarial resistance.
 
+The latest completed adversarial analyzer and VM campaign,
+[`45548803519`](https://github.com/seifreed/r2morph/actions/runs/45548803519),
+passed all 33 jobs on pinned source `1dabf440`. It measured 362 Linux ELF
+x86-64 fixtures (200 generated) across 22 passes: 7,964 pass runs and 71,676
+analyzer slots. The report accounts for every slot, with 55,220 completed,
+16,456 unavailable, and zero errors or missing rows. `angr`, Ghidra, objdump,
+radare2, Triton, and the custom analyzer completed all rows; Unicorn completed
+7,436 and could not emulate 528 unsupported-instruction rows. Binary Ninja and
+IDA were unavailable for all rows. Code virtualization applied to all 362
+fixtures, while 14 functions retained unsupported exception/unwinding or
+SSA-liveness capabilities. The VM smoke preserved semantic parity across 15
+fixtures and ten seeds, and all tamper probes diverged; progressive growth was
+supported for six fixtures. Human adversarial review remains pending, so this
+campaign does not establish generalized resistance or close the analyzer and
+resistance gates. Its [hash-bound manifest](docs/protection-adversarial-run-2026-11-25-45548803519-summary.json),
+[merged analyzer report](docs/protection-adversarial-run-2026-11-25-45548803519.json.gz),
+and [VM report](docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz)
+pin the results and their limits.
+
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero
 failures, and 103 recoverable Mach-O parser diagnostics. Its report and

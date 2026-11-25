@@ -41,12 +41,10 @@ passed all three platform jobs on the same source commit.
 These checks validate the current dependency and package configuration and
 regression suites; they do not establish all-pass analyzer availability,
 binary-format/architecture parity, or generalized resistance. The separate
-adversarial benchmark
-[`45488041450`](https://github.com/seifreed/r2morph/actions/runs/45488041450)
-is still running on source `4d456ac818845e6fdd92ccce9411dc60612d7105` (29 of
-30 jobs completed when this entry was recorded); its results will remain
-source-bound and require artifact validation before use. The three 1.0
-readiness gates remain open.
+adversarial benchmark `45488041450` later completed on source
+`4d456ac818845e6fdd92ccce9411dc60612d7105`; it used the older dependency stack
+and is superseded for current analyzer results by the 2026-11-25 campaign below.
+The three 1.0 readiness gates remain open.
 
 ## Completed differential campaign — 2026-11-25
 
@@ -103,6 +101,41 @@ only. The hash-bound [summary](protection-adversarial-run-2026-11-24-45488041450
 [bytecode-grammar report](protection-vm-bytecode-grammar-2026-11-24-45488041450.json),
 and [regression test](../tests/unit/test_published_adversarial_run_45488041450.py)
 preserve the evidence and its limits. All three 1.0 readiness gates remain open.
+
+## Current-dependency adversarial analyzer and VM campaign — 2026-11-25
+
+Workflow [`45548803519`](https://github.com/seifreed/r2morph/actions/runs/45548803519)
+completed all 32 analyzer shards and its aggregate job (33/33) on source
+`1dabf440aa7b2a9443a67c692fa14c03d24c9fe5`, which uses the current dependency
+bounds. The merged report covers 362 Linux ELF x86-64 fixtures, including 200
+generated C/C++ fixtures, across all 22 passes and 7,964 pass runs. All 71,676
+expected analyzer slots were present: 55,220 completed, 16,456 unavailable,
+and zero errored or missing rows. `angr`, custom, Ghidra, objdump, radare2, and
+Triton completed all 7,964 rows. Unicorn completed 7,436 rows and could not
+emulate 528 unsupported-instruction rows. Binary Ninja and IDA Pro were
+unavailable for all 7,964 rows. Code virtualization applied to all 362
+fixtures and virtualized 639 functions; 14 functions reported unsupported
+exception/unwinding or SSA-liveness capabilities.
+
+The attached maturity evidence records 46/46 composition cases without
+failure, error, or skip for its measured scope. Separately, the automated VM
+smoke covered 15 fixtures and ten seeds, preserved semantic parity, and saw all
+tamper probes diverge. Progressive bytecode growth was supported for 6/15
+fixtures. There were no exact normalized cross-seed matches; 328/2,295
+comparisons exceeded the 0.8 similarity threshold (maximum 0.933). The report
+still marks human adversarial review pending. These bounded results do not
+establish full analyzer availability, platform parity, or generalized
+resistance.
+
+The [hash-bound summary](protection-adversarial-run-2026-11-25-45548803519-summary.json),
+[merged report](protection-adversarial-run-2026-11-25-45548803519.json.gz),
+[maturity report](protection-maturity-adversarial-run-2026-11-25-45548803519.json.gz),
+[VM resistance report](protection-vm-resistance-run-2026-11-25-45548803519.json.gz),
+[seed-diversity report](protection-vm-seed-diversity-run-2026-11-25-45548803519.json),
+[bytecode-grammar report](protection-vm-bytecode-grammar-run-2026-11-25-45548803519.json),
+and [regression test](../tests/unit/test_published_adversarial_run_45548803519.py)
+pin the artifacts and limits. The analyzer and published-resistance gates
+remain open.
 
 ## Current-source partial differential snapshot — 2026-11-20
 

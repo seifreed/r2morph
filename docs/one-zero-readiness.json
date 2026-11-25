@@ -164,7 +164,10 @@
         "tests/unit/test_published_adversarial_run_45488041450.py",
         "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-summary.json",
         "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25.json",
-        "tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py"
+        "tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py",
+        "docs/protection-adversarial-run-2026-11-25-45548803519-summary.json",
+        "tests/unit/test_published_adversarial_run_45548803519.py",
+        "docs/protection-adversarial-run-2026-11-25-45548803519.json.gz"
       ]
     },
     "complete_compatibility_contract": {
@@ -583,7 +586,15 @@
         "tests/unit/test_published_adversarial_run_45488041450.py",
         "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-summary.json",
         "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25.json",
-        "tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py"
+        "tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py",
+        "docs/protection-adversarial-run-2026-11-25-45548803519-summary.json",
+        "tests/unit/test_published_adversarial_run_45548803519.py",
+        "docs/protection-adversarial-run-2026-11-25-45548803519.json.gz",
+        "docs/protection-maturity-adversarial-run-2026-11-25-45548803519.json.gz",
+        "docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz",
+        "docs/protection-vm-seed-diversity-run-2026-11-25-45548803519.json",
+        "docs/protection-vm-bytecode-grammar-run-2026-11-25-45548803519.json",
+        "docs/protection-vm-resistance-run-2026-11-25-45548803519.xml"
       ]
     },
     "stable_api_cli": {

@@ -1,0 +1,531 @@
+{
+  "schema_version": 1,
+  "workflow": "Adversarial Analysis Benchmark",
+  "run_id": 45548803519,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45548803519",
+  "source_commit": "1dabf440aa7b2a9443a67c692fa14c03d24c9fe5",
+  "conclusion": "success",
+  "completed_at_utc": "2026-11-25T08:42:26Z",
+  "jobs": {
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0
+  },
+  "shards": {
+    "count": 32,
+    "successful": 32,
+    "indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "artifacts": [
+      {
+        "index": 0,
+        "id": 14995274136,
+        "name": "adversarial-benchmark-0-45548803519-1",
+        "zip_sha256": "bab7ff7a43456a2381a9aac57a123ba3792eac08aef21e8781670f60f1d05a09",
+        "size_bytes": 51457
+      },
+      {
+        "index": 1,
+        "id": 14994216534,
+        "name": "adversarial-benchmark-1-45548803519-1",
+        "zip_sha256": "4039abd30f4a895edd363f0f740800ddde21f2e13b4c6a6f82f7699002d80cad",
+        "size_bytes": 50700
+      },
+      {
+        "index": 2,
+        "id": 14993538323,
+        "name": "adversarial-benchmark-2-45548803519-1",
+        "zip_sha256": "ebce56bce156a7b7ee674eaeecfe846dc965633b6c9d0ea33591ceb18f7d6b09",
+        "size_bytes": 51960
+      },
+      {
+        "index": 3,
+        "id": 14994700091,
+        "name": "adversarial-benchmark-3-45548803519-1",
+        "zip_sha256": "f46dcb701584cfaa9946c40b4cad6819cdae4540f6445b82d01d360d652b1f87",
+        "size_bytes": 51328
+      },
+      {
+        "index": 4,
+        "id": 14998684269,
+        "name": "adversarial-benchmark-4-45548803519-1",
+        "zip_sha256": "4dd50d854a5612efd4e0ac7aeebfe102c5a1f34d919aa8b18c5006cfd0a27d34",
+        "size_bytes": 52748
+      },
+      {
+        "index": 5,
+        "id": 14993397591,
+        "name": "adversarial-benchmark-5-45548803519-1",
+        "zip_sha256": "4c4c59c82d60e32ac70caa6fbf065bb95c893daa52da7154b645ad1c87e08a6b",
+        "size_bytes": 50966
+      },
+      {
+        "index": 6,
+        "id": 14993462701,
+        "name": "adversarial-benchmark-6-45548803519-1",
+        "zip_sha256": "6d1d9f5ae697c53be651b35c9ee57a8ed907d21fb1b16aa0b690ed6895e99d6f",
+        "size_bytes": 52534
+      },
+      {
+        "index": 7,
+        "id": 14993309551,
+        "name": "adversarial-benchmark-7-45548803519-1",
+        "zip_sha256": "b48b3769b43f712e600af063fcd249c3ed494dc4a8d30e24522f292c8d2ae04f",
+        "size_bytes": 51732
+      },
+      {
+        "index": 8,
+        "id": 14996189568,
+        "name": "adversarial-benchmark-8-45548803519-1",
+        "zip_sha256": "a08393ed87b9c834f296fb8fefb8f1ceb932e37ea7364b54abb25446261cb2b5",
+        "size_bytes": 53233
+      },
+      {
+        "index": 9,
+        "id": 14994744723,
+        "name": "adversarial-benchmark-9-45548803519-1",
+        "zip_sha256": "f25c935b96963e1fa4b725ec3e2a11da863b8690b45292c35fb905e27ccbb9fd",
+        "size_bytes": 51762
+      },
+      {
+        "index": 10,
+        "id": 14995211428,
+        "name": "adversarial-benchmark-10-45548803519-1",
+        "zip_sha256": "498ab5d43b9585a9f08c36fbfd9b1417929beb0e82d4a38c8c0f4743413bbf67",
+        "size_bytes": 48014
+      },
+      {
+        "index": 11,
+        "id": 14995510302,
+        "name": "adversarial-benchmark-11-45548803519-1",
+        "zip_sha256": "405f39e14abaf888f233be2def23a72cae04129367972dbdf4ef9b5067475736",
+        "size_bytes": 47377
+      },
+      {
+        "index": 12,
+        "id": 15000063159,
+        "name": "adversarial-benchmark-12-45548803519-1",
+        "zip_sha256": "1ff41c71862b01866eeb5d8c423f95f23dcedaded43983e708116a05b4ad138f",
+        "size_bytes": 49316
+      },
+      {
+        "index": 13,
+        "id": 14995672571,
+        "name": "adversarial-benchmark-13-45548803519-1",
+        "zip_sha256": "1dc63647b5ceb1e58a12bc1955656c0e197144223d9a1456d44c204b6458fc06",
+        "size_bytes": 48058
+      },
+      {
+        "index": 14,
+        "id": 14995743902,
+        "name": "adversarial-benchmark-14-45548803519-1",
+        "zip_sha256": "616dc1833905a44ea17e39f230f396caab83dcdef77583c969f2b31f842ba973",
+        "size_bytes": 48184
+      },
+      {
+        "index": 15,
+        "id": 14996491424,
+        "name": "adversarial-benchmark-15-45548803519-1",
+        "zip_sha256": "44a7d49fa7a3891c768ae86a217a9764363d24a7e1707af860ff2b088f5f6892",
+        "size_bytes": 48072
+      },
+      {
+        "index": 16,
+        "id": 14999891929,
+        "name": "adversarial-benchmark-16-45548803519-1",
+        "zip_sha256": "5732fba8ecc176f8479b7eca5b495fb70cfd0e949fe2db575ed5693da6f492be",
+        "size_bytes": 48707
+      },
+      {
+        "index": 17,
+        "id": 14996372637,
+        "name": "adversarial-benchmark-17-45548803519-1",
+        "zip_sha256": "94a0da95b8fc2e7271fcba3d567e4ba4aa4cba9a89bcc30d06193456e03b9c3a",
+        "size_bytes": 47439
+      },
+      {
+        "index": 18,
+        "id": 14997407883,
+        "name": "adversarial-benchmark-18-45548803519-1",
+        "zip_sha256": "b763c3f3bbf37edc746925c8ac2edcd0876c0a96f7591346ade458938fab4a66",
+        "size_bytes": 48825
+      },
+      {
+        "index": 19,
+        "id": 14996799698,
+        "name": "adversarial-benchmark-19-45548803519-1",
+        "zip_sha256": "852faa3e87d6994fff7c3ffeae7e81c286b5e309afc7bd9e1eaa65c0dd98662a",
+        "size_bytes": 48073
+      },
+      {
+        "index": 20,
+        "id": 15001532805,
+        "name": "adversarial-benchmark-20-45548803519-1",
+        "zip_sha256": "5f524adbabbc932f5c6478fa8d8d73d5fe0bdc8ebc0166df4a4adc5026029fea",
+        "size_bytes": 48573
+      },
+      {
+        "index": 21,
+        "id": 14998145032,
+        "name": "adversarial-benchmark-21-45548803519-1",
+        "zip_sha256": "96af69139ea8a0971f55bdcb6abfa5e5748459a5e577bac1988f1cefd69474f7",
+        "size_bytes": 47888
+      },
+      {
+        "index": 22,
+        "id": 14997967139,
+        "name": "adversarial-benchmark-22-45548803519-1",
+        "zip_sha256": "9a900aa4fa23676fd060b406cf81c0efd336b9581b92dd06fe57db4281feb853",
+        "size_bytes": 48009
+      },
+      {
+        "index": 23,
+        "id": 14999041576,
+        "name": "adversarial-benchmark-23-45548803519-1",
+        "zip_sha256": "026322f01829344d14941cfb9819302debbf4b20753cf5d17b7026423139dfbe",
+        "size_bytes": 48449
+      },
+      {
+        "index": 24,
+        "id": 15001801010,
+        "name": "adversarial-benchmark-24-45548803519-1",
+        "zip_sha256": "3fadd0f035e38883746f7d5afc7b9c00bce38b53b4671f46d78ad8ea7d4194ce",
+        "size_bytes": 49887
+      },
+      {
+        "index": 25,
+        "id": 14998677872,
+        "name": "adversarial-benchmark-25-45548803519-1",
+        "zip_sha256": "1834d0d7d7b41fa5a9e455bf782a6a5b346ad9ff866bac332d6a349f8ec4c863",
+        "size_bytes": 48348
+      },
+      {
+        "index": 26,
+        "id": 14998819939,
+        "name": "adversarial-benchmark-26-45548803519-1",
+        "zip_sha256": "b439dba66f75d86db100587d6b2b0f16399389e280b254727590456669d6140f",
+        "size_bytes": 47583
+      },
+      {
+        "index": 27,
+        "id": 14999852385,
+        "name": "adversarial-benchmark-27-45548803519-1",
+        "zip_sha256": "ce90f8b96b084c8e045fae19138e7745d3b5d7ab46d677305d5311ec9b52a5b9",
+        "size_bytes": 47891
+      },
+      {
+        "index": 28,
+        "id": 15005575947,
+        "name": "adversarial-benchmark-28-45548803519-1",
+        "zip_sha256": "1a936658caf4978dc44af33aedfe2a7ff4a4b208fbe2ec7d3d5c33c232f92873",
+        "size_bytes": 49116
+      },
+      {
+        "index": 29,
+        "id": 14999238712,
+        "name": "adversarial-benchmark-29-45548803519-1",
+        "zip_sha256": "50ebc99f22c922e213c6efcd5860649d35136a8cc7239ef8b16ea61e1cd6b6b5",
+        "size_bytes": 48258
+      },
+      {
+        "index": 30,
+        "id": 15000551746,
+        "name": "adversarial-benchmark-30-45548803519-1",
+        "zip_sha256": "8e70939cdf6972361e01e8db1d043542bbbce150072135cd3e8e2d026309281f",
+        "size_bytes": 47776
+      },
+      {
+        "index": 31,
+        "id": 15000697286,
+        "name": "adversarial-benchmark-31-45548803519-1",
+        "zip_sha256": "31cc74b4f79ac955bc0bcee1aeeb347b3be216cd9e35f8084d2a7125ceb34f30",
+        "size_bytes": 47600
+      }
+    ]
+  },
+  "scope": {
+    "platform": "Linux ELF x86-64",
+    "sample_count": 362,
+    "generated_fixture_count": 200,
+    "corpus_families": [
+      "repository-fixtures",
+      "generated-elf-x86-64",
+      "generated-cpp-x86-64"
+    ],
+    "pass_count": 22,
+    "expected_pass_runs": 7964,
+    "expected_tool_count": 9,
+    "expected_tool_runs": 71676
+  },
+  "results": {
+    "applied_pass_runs": 2360,
+    "applied_pass_run_percent": 29.63,
+    "omitted_pass_runs": 0,
+    "error_pass_runs": 0,
+    "observed_pass_runs": 7964,
+    "pass_run_coverage_percent": 100.0,
+    "completed_tool_runs": 55220,
+    "completed_tool_run_coverage_percent": 77.04,
+    "unavailable_tool_runs": 16456,
+    "unavailable_tool_run_percent": 22.96,
+    "error_tool_runs": 0,
+    "missing_tool_runs": 0,
+    "observed_tool_runs": 71676,
+    "tool_run_coverage_percent": 100.0,
+    "completed_tool_count": 7,
+    "unavailable_tool_count": 3,
+    "error_tool_count": 0
+  },
+  "tool_results": {
+    "angr": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "binary-ninja": {
+      "runs": 7964,
+      "completed": 0,
+      "unavailable": 7964,
+      "errors": 0,
+      "unavailable_reasons": {
+        "module 'binaryninja' is unavailable": 7964
+      }
+    },
+    "custom": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "ghidra": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "ida-pro": {
+      "runs": 7964,
+      "completed": 0,
+      "unavailable": 7964,
+      "errors": 0,
+      "unavailable_reasons": {
+        "executable 'idat' is unavailable": 7964
+      }
+    },
+    "objdump": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "radare2": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "triton": {
+      "runs": 7964,
+      "completed": 7964,
+      "unavailable": 0,
+      "errors": 0,
+      "unavailable_reasons": {}
+    },
+    "unicorn": {
+      "runs": 7964,
+      "completed": 7436,
+      "unavailable": 528,
+      "errors": 0,
+      "unavailable_reasons": {
+        "the installed x86 emulator does not support an instruction in this fixture": 528
+      }
+    }
+  },
+  "code_virtualization": {
+    "applied": 362,
+    "errors": 0,
+    "functions_virtualized": 639,
+    "no_op": 0,
+    "omitted": 0,
+    "partial_virtualization": 0,
+    "samples": 362,
+    "unsupported_capabilities": {
+      "exceptions_and_unwinding": 14,
+      "ssa_liveness": 14
+    },
+    "unsupported_functions": 14,
+    "unsupported_severities": {
+      "error": 28
+    }
+  },
+  "maturity_evidence": {
+    "blockers": {},
+    "blocker_totals": {
+      "affected_instructions": 0,
+      "behavioral_false_positive": 0,
+      "composition": 0,
+      "decompiler": 0,
+      "performance": 0
+    },
+    "composition": {
+      "case_count": 46,
+      "directional_pair_count": 44,
+      "failure_count": 0,
+      "error_count": 0,
+      "skipped_count": 0
+    },
+    "report_sha256": "dbd749e657837872034c40aba6673e884b6903b8ab0aa0e1083e681c8514868d"
+  },
+  "vm_resistance": {
+    "fixture_count": 15,
+    "seed_count": 10,
+    "semantic_parity": true,
+    "tamper_evidence_status": "completed",
+    "all_tamper_probes_diverged": true,
+    "progressive_growth_observed": true,
+    "progressive_growth_supported_fixture_count": 6,
+    "automated_validation_status": "completed",
+    "human_adversarial_review": {
+      "evidence_quality": "automated-adversarial-smoke",
+      "pending_scope": [
+        "human-adversarial-validation",
+        "isa-opcode-diversity",
+        "handler-diversity",
+        "dispatcher-diversity",
+        "anti-tamper",
+        "progressive-bytecode-protection"
+      ],
+      "status": "pending-human-adversarial-review"
+    },
+    "seed_diversity": {
+      "exact_normalised_matches": 0,
+      "similarity_comparisons": 2295,
+      "similarity_above_0_8": 328,
+      "maximum_similarity": 0.9333333333333333,
+      "opcode_assignment_unique_count": 10
+    },
+    "bytecode_grammar": {
+      "total_handlers": 2550,
+      "all_handler_stride_unique_count": 12,
+      "target_stride_unique_count": 3,
+      "target_stride_diverse": true
+    }
+  },
+  "artifacts": {
+    "aggregate": {
+      "id": 15006095271,
+      "name": "adversarial-benchmark-merged-45548803519-1",
+      "zip_sha256": "e723a7bf506ba5d26cc1f02c4782c6482c121831dddd4b4e348b11191c4ae4d3",
+      "size_bytes": 1370098
+    },
+    "vm_resistance": {
+      "id": 14995289075,
+      "name": "vm-resistance-adversarial-0-45548803519-1",
+      "zip_sha256": "48d57e64011176c30d29f20b26546665acff8f420fedab9a94c2ff15550ba42f",
+      "size_bytes": 17027
+    },
+    "vm_seed_diversity": {
+      "id": 14995049836,
+      "name": "vm-resistance-seed-diversity-0-45548803519-1",
+      "zip_sha256": "da8fab401c4d8ea5246635095d1232e49c9740be22630b49b776cf4f44a59d95",
+      "size_bytes": 716
+    },
+    "vm_bytecode_grammar": {
+      "id": 14995773249,
+      "name": "vm-resistance-bytecode-grammar-0-45548803519-1",
+      "zip_sha256": "e3df405d22e5636e8b9468858c62fa84efc8f152b65e3a5351773aa1c662410e",
+      "size_bytes": 887
+    }
+  },
+  "archives": {
+    "docs/protection-adversarial-run-2026-11-25-45548803519.json.gz": {
+      "format": "gzip-json",
+      "sha256": "9c782ffe84c2b97bbadb407f4d9b4128634dde0dae347e36dbc0188d0a973cff",
+      "size_bytes": 1218165,
+      "uncompressed_sha256": "a59723a0c04e3ffb79804b36ea0b4650745971733c281d32c92f28b7c3294607",
+      "uncompressed_size_bytes": 44752799
+    },
+    "docs/protection-maturity-adversarial-run-2026-11-25-45548803519.json.gz": {
+      "format": "gzip-json",
+      "sha256": "524bcd7858b39f9d9bc3e54ea4e353a2fb6f611fe4ffa5bcd32480d85532852a",
+      "size_bytes": 16312,
+      "uncompressed_sha256": "dbd749e657837872034c40aba6673e884b6903b8ab0aa0e1083e681c8514868d",
+      "uncompressed_size_bytes": 159424
+    },
+    "docs/protection-vm-resistance-run-2026-11-25-45548803519.json.gz": {
+      "format": "gzip-json",
+      "sha256": "85eadc9bdbc97d4d3eb8e6a7d29f18a4d4451e3189857d89d76b4f8a6b589b9a",
+      "size_bytes": 15528,
+      "uncompressed_sha256": "4187d1266793ad9de1c459ad623af16f73c80b47a68eaba684026f30c56abff4",
+      "uncompressed_size_bytes": 381626
+    },
+    "docs/protection-vm-seed-diversity-run-2026-11-25-45548803519.json": {
+      "format": "json",
+      "sha256": "9a2a6b8aea48d9a4fc1c47a44c07ccf0c5ce2fda423048560b88334ad97ef731",
+      "size_bytes": 3096
+    },
+    "docs/protection-vm-bytecode-grammar-run-2026-11-25-45548803519.json": {
+      "format": "json",
+      "sha256": "cfbcbf49c32c391f97611b4c4a61639f2f8fa689adda22228f66666674d3f3ef",
+      "size_bytes": 3771
+    },
+    "docs/protection-vm-resistance-run-2026-11-25-45548803519.xml": {
+      "format": "junit-xml",
+      "sha256": "f4f19b33bc303a189062d1645a3a66a15394b0d4c82d38b49944ee4928613071",
+      "size_bytes": 1811
+    }
+  },
+  "readiness": {
+    "all_named_adversarial_analyzers": "open",
+    "cross_platform_parity": "open",
+    "published_resistance_results": "open"
+  },
+  "limits": [
+    "The run covers Linux ELF x86-64 only and cannot establish platform parity.",
+    "Binary Ninja was unavailable for all 7,964 rows because the binaryninja module was unavailable; do not treat this as a measurement.",
+    "IDA Pro was unavailable for all 7,964 rows because the idat executable was unavailable; local IDALib samples are separate evidence.",
+    "Unicorn could not emulate 528 rows containing unsupported instructions; these rows are unavailable, not passes.",
+    "Code virtualization applied to all 362 fixtures, but 14 functions reported unsupported exception/unwinding or SSA-liveness capabilities.",
+    "The automated VM campaign records parity and tamper/diversity probes, while human adversarial review remains pending; it does not establish generalized resistance."
+  ]
+}
