@@ -14,6 +14,7 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
@@ -144,6 +145,33 @@ def _build_arm32_expansion_elf(tmp_path: Path, complex_fixture: bool = False) ->
     return binary_path
 
 
+def _build_arm32_string_elf(tmp_path: Path) -> Path:
+    compiler = shutil.which("arm-linux-gnueabihf-gcc")
+    if compiler is None:
+        raise RuntimeError("arm-linux-gnueabihf-gcc is required for the ELF ARM32 string fixture")
+    source = tmp_path / "arm32_string.S"
+    source.write_text(
+        ".section .rodata\n"
+        '.asciz "arm32-unreferenced-string-evidence"\n'
+        ".text\n"
+        ".global _start\n"
+        ".type _start,%function\n"
+        "_start:\n"
+        "    mov r0, #42\n"
+        "    mov r7, #1\n"
+        "    svc #0\n"
+        ".size _start, .-_start\n",
+        encoding="ascii",
+    )
+    binary_path = tmp_path / "arm32_string"
+    run_command(
+        [compiler, "-nostdlib", "-static", "-Wl,-e,_start", "-x", "assembler", "-o", binary_path, source],
+        check=True,
+        text=True,
+    )
+    return binary_path
+
+
 def test_elf_arm32_instruction_substitution_preserves_emulated_exit_code(tmp_path: Path) -> None:
     if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
@@ -167,6 +195,32 @@ def test_elf_arm32_instruction_substitution_preserves_emulated_exit_code(tmp_pat
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (42, "", ""),
         "ELF ARM32 instruction substitution changed emulated execution",
+    )
+
+
+def test_elf_arm32_string_obfuscation_preserves_emulated_exit_code(tmp_path: Path) -> None:
+    if platform.system() != "Linux" or platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("ELF ARM32 differential execution requires a Linux x86-64 runner with qemu-arm")
+    if shutil.which("qemu-arm") is None:
+        raise RuntimeError("qemu-arm is required for the ELF ARM32 differential fixture")
+
+    binary_path = _build_arm32_string_elf(tmp_path)
+    original = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    original_bytes = binary_path.read_bytes()
+
+    with Binary(binary_path, writable=True) as binary:
+        binary.analyze()
+        result = StringObfuscationPass(config={"probability": 1.0, "encoding": "rot13", "seed": 1337}).apply(binary)
+
+    mutated = run_command(["qemu-arm", binary_path], text=True, timeout=30)
+    expect(result["mutations_applied"] > 0)
+    expect(b"arm32-unreferenced-string-evidence" in original_bytes)
+    expect(b"arm32-unreferenced-string-evidence" not in binary_path.read_bytes())
+    expect(
+        (original.returncode, original.stdout, original.stderr)
+        == (mutated.returncode, mutated.stdout, mutated.stderr)
+        == (42, "", ""),
+        "ELF ARM32 string obfuscation changed emulated execution",
     )
 
 

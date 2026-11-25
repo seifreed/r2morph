@@ -54,7 +54,7 @@ class StringObfuscationPass(MutationPass):
         self.preserve_null = self.config.get("preserve_null", True)
         self.set_support(
             formats=("ELF", "Mach-O", "PE"),
-            architectures=("x86_64", "x86", "arm64"),
+            architectures=("x86_64", "x86", "arm64", "arm32"),
             validators=("structural",),
             stability="experimental",
             notes=(

@@ -189,9 +189,11 @@ mnemonics even when lowering replaces them with internal VM opcodes (for example
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
-ELF x86-64 target (100.0% evidence) and 41/242 evidenced cells for non-official
-targets (16.94% evidence). It currently classifies 5 passes as Tier 1 and
-17 passes as experimental.
+ELF x86-64 target (100.0% evidence) and 42/242 evidenced cells for non-official
+targets (17.36% evidence). It currently classifies 5 passes as Tier 1 and
+17 passes as experimental. ELF ARM32 adds a QEMU differential case for string
+obfuscation of an unreferenced `.rodata` value; it does not establish general
+ARM32 parity.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
 native output. These are bounded experimental pass results; they do not

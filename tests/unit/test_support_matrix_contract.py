@@ -11,14 +11,14 @@ _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
 _STRING_OBFUSCATION_ID = "string-obfuscation"
-_EXPECTED_EVIDENCED_CELLS = 63
-_EXPECTED_NOT_SUPPORTED_CELLS = 201
-_EXPECTED_DECLARED_SUPPORT_CELLS = 63
-_EXPECTED_UNCLAIMED_CELLS = 201
-_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 46, "preview": 12, "supported": 5}
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 41
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 201
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 201
+_EXPECTED_EVIDENCED_CELLS = 64
+_EXPECTED_NOT_SUPPORTED_CELLS = 200
+_EXPECTED_DECLARED_SUPPORT_CELLS = 64
+_EXPECTED_UNCLAIMED_CELLS = 200
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 47, "preview": 12, "supported": 5}
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 42
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 200
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 200
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -402,7 +402,7 @@ def test_support_matrix_records_preview_cells_backed_by_native_smoke() -> None:
     )
 
 
-def test_support_matrix_records_native_macho_string_obfuscation_evidence() -> None:
+def test_support_matrix_records_native_string_obfuscation_evidence() -> None:
     document = json.loads(_MATRIX.read_text(encoding="utf-8"))
     entry = next(item for item in document["passes"] if item["name"] == "string-obfuscation")
     cells = {
@@ -422,7 +422,15 @@ def test_support_matrix_records_native_macho_string_obfuscation_evidence() -> No
             "tests/integration/test_macho_arm64_string_obfuscation.py::"
             "test_macho_arm64_string_obfuscation_preserves_native_observables"
         ]
+        and cells[("ELF", "ARM")]["evidence"]
+        == [
+            "tests/integration/test_elf_arm32_native.py::"
+            "test_elf_arm32_string_obfuscation_preserves_emulated_exit_code"
+        ]
         and any(target.get("architecture") == "AArch64" for target in entry["target_cells"])
+        and any(
+            target.get("format") == "ELF" and target.get("architecture") == "ARM" for target in entry["target_cells"]
+        )
     )
 
 
