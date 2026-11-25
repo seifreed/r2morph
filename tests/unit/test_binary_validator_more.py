@@ -134,3 +134,21 @@ def test_binary_validator_fails_when_both_runtimes_timeout(monkeypatch, tmp_path
 
     expect(not result.passed)
     expect("Test 1: runtime did not complete for original, mutated" in result.errors)
+
+
+def test_binary_validator_fails_when_both_runtimes_miss_expected_exit_code(monkeypatch, tmp_path: Path):
+    original = tmp_path / "original.bin"
+    mutated = tmp_path / "mutated.bin"
+    original.write_bytes(b"original")
+    mutated.write_bytes(b"mutated")
+    monkeypatch.setattr(
+        "r2morph.validation.validator.run_binary",
+        lambda *_args, **_kwargs: {"stdout": "same", "stderr": "", "exitcode": 7, "files": {}},
+    )
+    validator = BinaryValidator()
+    validator.add_test_case(description="same unexpected exit")
+
+    result = validator.validate(original, mutated)
+
+    expect(not result.passed)
+    expect("Test 1: original exit code 7 did not match expected 0" in result.errors)

@@ -129,6 +129,16 @@ class BinaryValidator:
             if failed_runtimes:
                 errors.append(f"Test {i + 1}: runtime did not complete for {', '.join(failed_runtimes)}")
                 all_outputs_match = False
+            if (
+                self.comparison.compare_exitcode
+                and orig_result["exitcode"] != -1
+                and orig_result["exitcode"] != test_case.expected_exitcode
+            ):
+                errors.append(
+                    f"Test {i + 1}: original exit code {orig_result['exitcode']} "
+                    f"did not match expected {test_case.expected_exitcode}"
+                )
+                all_outputs_match = False
             runtime_details.append(
                 {
                     "description": test_case.description,

@@ -922,6 +922,8 @@ Monitored paths must resolve inside the per-run directory; absolute paths,
 parent traversal, and symlinks that escape it are rejected.
 Timeouts and other unsuccessful executions also fail validation even when both
 the original and mutated binary produce the same failure result.
+When exit-code comparison is enabled, the original run must also match the
+test case's `expected_exitcode`; matching the same unexpected code is a failure.
 
 ---
 
