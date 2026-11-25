@@ -1536,7 +1536,7 @@ def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
         )
         in workflow
         and 'if [[ "$workflow_file" == fuzz.yml ]]; then' in workflow
-        and 'Timed out waiting for $workflow_file on $GITHUB_SHA' in workflow
+        and "Timed out waiting for $workflow_file on $GITHUB_SHA" in workflow
         and '--workflow "$workflow_file"' in workflow
         and '--commit "$GITHUB_SHA"' in workflow
         and 'if [[ "$conclusion" != "success" ]]; then' in workflow
