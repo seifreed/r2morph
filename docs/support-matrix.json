@@ -2046,7 +2046,7 @@
             "tests/integration/test_elf_arm64_native.py",
             "tests/integration/test_elf_x86_32_native.py",
             "tests/integration/test_elf_arm32_native.py",
-            "tests/integration/test_platform_tier1_matrix.py"
+            "tests/integration/test_platform_preview_matrix.py"
           ],
           "status": "preview-smoke-only"
         },
@@ -2086,7 +2086,7 @@
             "tests/integration/test_elf_arm64_native.py",
             "tests/integration/test_elf_x86_32_native.py",
             "tests/integration/test_elf_arm32_native.py",
-            "tests/integration/test_platform_tier1_matrix.py"
+            "tests/integration/test_platform_preview_matrix.py"
           ]
         },
         "platform_gap_scope": {

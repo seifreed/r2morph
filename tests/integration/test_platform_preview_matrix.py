@@ -1,4 +1,4 @@
-"""Differential matrix for Tier 1 passes on preview ELF architectures."""
+"""Differential matrix for mutation passes on preview ELF architectures."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -23,13 +24,14 @@ from tests.utils.process import run_command
 
 _EXPECTED_EXIT_CODE = 42
 _PassFactory = Callable[[int], MutationPass]
-_TIER1_PASS_NAMES = (
+_PREVIEW_PASS_NAMES = (
     "InstructionSubstitution",
     "NopInsertion",
     "RegisterSubstitution",
     "ConstantUnfolding",
+    "InstructionExpansion",
 )
-_COMPOSITION_PASS_NAMES = tuple(name for name in _TIER1_PASS_NAMES if name != "NopInsertion")
+_COMPOSITION_PASS_NAMES = tuple(name for name in _PREVIEW_PASS_NAMES if name != "NopInsertion")
 
 
 def _build_pass(mutation_name: str, seed: int) -> MutationPass:
@@ -43,7 +45,9 @@ def _build_pass(mutation_name: str, seed: int) -> MutationPass:
         return RegisterSubstitutionPass(config={"max_substitutions_per_function": 2, "probability": 1.0, "seed": seed})
     if mutation_name == "ConstantUnfolding":
         return ConstantUnfoldingPass(config={"probability": 1.0, "seed": seed})
-    raise ValueError(f"unknown Tier 1 pass: {mutation_name}")
+    if mutation_name == "InstructionExpansion":
+        return InstructionExpansionPass(config={"max_expansions_per_function": 1, "probability": 1.0, "seed": seed})
+    raise ValueError(f"unknown preview pass: {mutation_name}")
 
 
 def _require_arm32_execution() -> None:
@@ -140,7 +144,7 @@ def _build_target(
 @pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
 @pytest.mark.parametrize("mutation_name", _COMPOSITION_PASS_NAMES)
 @pytest.mark.parametrize("complex_fixture", (False, True), ids=("basic", "complex"))
-def test_tier1_pass_preview_target_preserves_exit_code(
+def test_platform_pass_preview_target_preserves_exit_code(
     target: str,
     mutation_name: str,
     complex_fixture: bool,
@@ -166,7 +170,7 @@ def test_tier1_pass_preview_target_preserves_exit_code(
 
 @pytest.mark.parametrize("target", ("arm32", "arm64", "x86-32"))
 @pytest.mark.parametrize("mutation_name", _COMPOSITION_PASS_NAMES)
-def test_tier1_pass_composition_preview_target_preserves_exit_code(
+def test_platform_pass_composition_preview_target_preserves_exit_code(
     target: str,
     mutation_name: str,
     tmp_path: Path,
@@ -196,5 +200,5 @@ def test_tier1_pass_composition_preview_target_preserves_exit_code(
         and (original.returncode, original.stdout, original.stderr)
         == (mutated.returncode, mutated.stdout, mutated.stderr)
         == (_EXPECTED_EXIT_CODE, "", ""),
-        f"{mutation_name} composition changed {target} execution: " f"{first_result=}, {second_result=}",
+        f"{mutation_name} composition changed {target} execution: {first_result=}, {second_result=}",
     )

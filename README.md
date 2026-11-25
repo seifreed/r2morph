@@ -226,6 +226,12 @@ Mach-O ARM64/x86-64, Windows PE, and ELF ARM32/ARM64/x86-32. The
 [hash-bound preview manifest](docs/protection-platform-preview-2026-11-24-45480009561.json)
 links each JUnit report; this is preview evidence, not full pass-by-platform
 parity.
+The preview ELF differential matrix now includes instruction expansion both
+alone and after NOP insertion on ARM32, AArch64, and x86-32, alongside the
+existing substitution, register, and constant-unfolding cases. These tests
+extend regression coverage for declared experimental targets; they do not
+promote those targets or establish full cross-platform parity until the
+updated workflow completes and its artifacts are reviewed.
 The later current-source partial run
 [`45528080704`](https://github.com/seifreed/r2morph/actions/runs/45528080704)
 captured 78/78 passing cases across six platform smoke slices, 963/963 passing
