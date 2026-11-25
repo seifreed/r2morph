@@ -48,23 +48,26 @@ is still running on source `4d456ac818845e6fdd92ccce9411dc60612d7105` (29 of
 source-bound and require artifact validation before use. The three 1.0
 readiness gates remain open.
 
-## Current-source differential campaign — 2026-11-24
+## Completed differential campaign — 2026-11-25
 
-Workflow [`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
-completed all 86 jobs successfully on source
-`a4f4dcba12020cda4fa7717c4361c027d4b09081`. The Linux ELF x86-64 core matrix
+Workflow [`45544822953`](https://github.com/seifreed/r2morph/actions/runs/45544822953)
+completed all 86 jobs successfully on pinned source
+`1dabf440aa7b2a9443a67c692fa14c03d24c9fe5`. The Linux ELF x86-64 core matrix
 classified 10,860 runs across ten passes (3,480 applied, 7,380 omitted); its
 twelve extended passes classified 13,032 runs (3,406 applied, 9,626 omitted).
 Every row had complete evidence, with zero errors or semantic failures. The run
 also passed 2,208 composition cases, 370 public compatibility samples with
 2,220 radare2 recovery measurements, 1,005/1,005 VM fixture-seed cases with
-all QEMU oracle pairs matching, and 78/78 cases in six platform preview slices.
-The [hash-bound manifest](differential-run-2026-11-24-45480009561.json) records
-the source, artifact IDs, report hashes, and bounded scope. The maturity report
-still has 22 decompiler blockers; public-corpus optional decompiler runners
-were omitted. This campaign does not establish universal correctness or full
-pass-by-platform parity. The all-named-analyzers, cross-platform-parity, and
-published-resistance gates remain open.
+all QEMU oracle pairs matching, and 78/78 cases in six bounded platform preview
+slices. The public compatibility report is byte-identical to the previous
+campaign's aggregate. The [hash-bound manifest](differential-run-2026-11-25-45544822953.json)
+records artifact identities, digests, and scope; the
+[platform summary and JUnit reports](protection-platform-preview-2026-11-25-45544822953.json)
+pin each platform slice. The maturity report still has 22 decompiler blockers;
+public-corpus optional decompiler runners were omitted. This campaign does not
+establish universal correctness or full pass-by-platform parity. The
+all-named-analyzers, cross-platform-parity, and published-resistance gates
+remain open.
 
 ## Completed adversarial analyzer and VM campaign — 2026-11-24
 

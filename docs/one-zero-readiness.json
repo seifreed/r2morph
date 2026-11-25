@@ -306,7 +306,16 @@
         "docs/protection-differential-partial-2026-11-25-45528080704/platform/elf-x86-32.xml",
         "docs/protection-differential-partial-2026-11-25-45528080704/platform/macos-arm64.xml",
         "docs/protection-differential-partial-2026-11-25-45528080704/platform/macos-x86-64.xml",
-        "docs/protection-differential-partial-2026-11-25-45528080704/platform/windows-pe.xml"
+        "docs/protection-differential-partial-2026-11-25-45528080704/platform/windows-pe.xml",
+        "docs/differential-run-2026-11-25-45544822953.json",
+        "docs/protection-platform-preview-2026-11-25-45544822953.json",
+        "docs/protection-platform-preview-2026-11-25-45544822953/cross-platform-differential.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-arm-32-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-arm64-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-x86-32-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/macos-x86-64-differential.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/windows-format-differential.xml",
+        "tests/unit/test_published_differential_run_45544822953.py"
       ]
     },
     "documented_resistance_scope": {
@@ -434,7 +443,16 @@
         "docs/protection-differential-partial-2026-11-25-45528080704/extended/shard-13-seed-20260901.json.gz",
         "docs/protection-differential-partial-2026-11-25-45528080704/extended/shard-13-seed-20260903.json.gz",
         "docs/protection-differential-partial-2026-11-25-45528080704/extended/shard-14-seed-20260901.json.gz",
-        "docs/protection-differential-partial-2026-11-25-45528080704/extended/shard-14-seed-20260902.json.gz"
+        "docs/protection-differential-partial-2026-11-25-45528080704/extended/shard-14-seed-20260902.json.gz",
+        "docs/differential-run-2026-11-25-45544822953.json",
+        "docs/protection-platform-preview-2026-11-25-45544822953.json",
+        "docs/protection-platform-preview-2026-11-25-45544822953/cross-platform-differential.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-arm-32-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-arm64-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/elf-x86-32-native.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/macos-x86-64-differential.xml",
+        "docs/protection-platform-preview-2026-11-25-45544822953/windows-format-differential.xml",
+        "tests/unit/test_published_differential_run_45544822953.py"
       ]
     },
     "published_resistance_results": {

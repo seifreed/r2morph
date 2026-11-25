@@ -701,20 +701,21 @@ on source `acafac289598b2ca22ec66498873ccfba4775bd3`: 370 samples across six
 selected passes, zero differential failures, and 2,220 complete static
 recovery measurements with zero failures. The hash-bound result is recorded in
 [`public-compatibility-corpus-2026-11-24-45428767299.json`](docs/public-compatibility-corpus-2026-11-24-45428767299.json).
-The latest completed current-source differential run, [`45480009561`](https://github.com/seifreed/r2morph/actions/runs/45480009561)
-on source `a4f4dcba`, passed all 86 jobs. Its Linux ELF x86-64 core matrix
-classified 10,860 runs across ten passes (3,480 applied and 7,380 omitted);
-the extended matrix classified 13,032 runs across twelve passes (3,406 applied
-and 9,626 omitted). Both have complete evidence for every row and zero errors
-or semantic failures. The same run passed the 46-case composition smoke in all
-48 jobs (2,208 executions), a 370-sample
-public corpus with 2,220 successful radare2 recovery measurements, 1,005/1,005
-VM fixture-seed cases with all QEMU pairs matching, and 78/78 bounded platform
-preview cases. Its [hash-bound manifest](docs/differential-run-2026-11-24-45480009561.json)
-records artifact IDs, report hashes, and scope. The run still records 22
-decompiler maturity blockers; omitted transformations are not passes. This
-evidence does not close full platform parity, all-named-analyzer coverage, or
-general adversarial resistance.
+The latest completed full differential campaign, [`45544822953`](https://github.com/seifreed/r2morph/actions/runs/45544822953),
+passed all 86 jobs on pinned source `1dabf440`. Its Linux ELF x86-64 core
+matrix classified 10,860 runs across ten passes (3,480 applied, 7,380 omitted),
+and its extended matrix classified 13,032 runs across twelve passes (3,406
+applied, 9,626 omitted). Every row had complete evidence, with zero errors or
+semantic failures. The campaign also passed 2,208 composition cases, 370
+public compatibility samples, 1,005/1,005 VM fixture-seed cases with matching
+QEMU oracle pairs, and 78/78 bounded cases across six platform slices. The
+public compatibility report was byte-identical to the prior campaign. The
+[hash-bound manifest](docs/differential-run-2026-11-25-45544822953.json) and
+[platform JUnit reports](docs/protection-platform-preview-2026-11-25-45544822953/)
+pin the run artifacts and results. Twenty-two decompiler maturity blockers
+remain; omitted transformations are not successful transformations. This
+bounded evidence does not establish full platform/pass parity, all-named-
+analyzer coverage, or generalized adversarial resistance.
 
 A local current-main rerun on 2026-11-19 used Python 3.14.10 on macOS ARM64 and
 recorded 50,000 target runs (5,000 for each of the same ten fuzz targets), zero

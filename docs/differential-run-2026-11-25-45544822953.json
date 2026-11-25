@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "workflow": "Differential Corpus By Pass",
+  "run_id": 45544822953,
+  "run_attempt": 1,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45544822953",
+  "source_commit": "1dabf440aa7b2a9443a67c692fa14c03d24c9fe5",
+  "conclusion": "success",
+  "completed_at_utc": "2026-11-25T04:44:14Z",
+  "jobs": {
+    "total": 86,
+    "passed": 86,
+    "failed": 0,
+    "cancelled": 0
+  },
+  "core_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 10,
+    "classified_seed_runs": 10860,
+    "applied_runs": 3480,
+    "omitted_runs": 7380,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 10860,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0,
+    "report_sha256": "f3225a1ec3924f8cd9a50f634e28fdc08dc3e292cc8d0fc32faae95f68d1874b"
+  },
+  "extended_differential": {
+    "scope": "Linux ELF x86-64",
+    "pass_count": 12,
+    "classified_seed_runs": 13032,
+    "applied_runs": 3406,
+    "omitted_runs": 9626,
+    "failed_seed_runs": 0,
+    "error_runs": 0,
+    "complete_evidence_runs": 13032,
+    "complete_evidence_coverage_percent": 100.0,
+    "semantic_failures": 0,
+    "report_sha256": "5473bcf5e7237c107e7552561bfa08a8a2202955898eb672c4029956565d42e1"
+  },
+  "composition": {
+    "directional_pair_count": 44,
+    "case_count": 2208,
+    "failed_cases": 0,
+    "error_cases": 0
+  },
+  "public_compatibility": {
+    "status": "passed",
+    "shards": 4,
+    "sample_count": 370,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "differential_failed_samples": 0,
+    "static_recovery_measurements": 2220,
+    "static_recovery_failed_samples": 0,
+    "artifact": {
+      "id": 14993136300,
+      "name": "public-compatibility-corpus-aggregate-45544822953-1",
+      "zip_sha256": "6e7b1ac6cfd1dd8ce0b1e74885831ff966bc76460cbfcfb3548e4ef8c0e04b35",
+      "report_sha256": "005cb955ff08fb81a11a3f259dfda829db63bc7b7be64705ffca2382314315df",
+      "report_reused_from": "docs/public-compatibility-aggregate-45480009561.json"
+    }
+  },
+  "vm_semantic": {
+    "status": "passed",
+    "scope": "Linux ELF x86-64",
+    "fixture_seed_cases": 1005,
+    "seeds": [20260916, 20260917, 20260918],
+    "passed_cases": 1005,
+    "failed_cases": 0,
+    "qemu_oracle_pairs": 1005,
+    "qemu_divergent_pairs": 0,
+    "qemu_missing_pairs": 0,
+    "qemu_unavailable_pairs": 0,
+    "artifact": {
+      "id": 14993065372,
+      "name": "vm-semantic-campaign-merged-45544822953-1",
+      "zip_sha256": "8996461f059df11ddd89f103cf624376b4c5abe151113f855c316fe2cc62bfee",
+      "report_sha256": "47a20cd147dcacbbdb47924c8b463702a50c657a435cbd1576bac293942e32c0"
+    }
+  },
+  "platform_preview": {
+    "scope": "six bounded platform slices",
+    "case_count": 78,
+    "passed_cases": 78,
+    "failed_cases": 0,
+    "error_cases": 0,
+    "skipped_cases": 0,
+    "report": "docs/protection-platform-preview-2026-11-25-45544822953.json",
+    "report_sha256": "cf38e007ffdb0b3f44844da42690bbc776455fe5b3e80f03210e85c523efa33a",
+    "artifact": {
+      "id": 14992036659,
+      "name": "differential-platform-aggregate-45544822953-1",
+      "zip_sha256": "174c5198df56144de2b11c0468d66d09bd1c93bf505a03d09eaec7ca3725ee98"
+    },
+    "platforms": {
+      "elf-arm-32": 6,
+      "elf-arm64": 7,
+      "elf-x86-32": 8,
+      "macos-arm64": 36,
+      "macos-x86-64": 3,
+      "windows-pe": 18
+    },
+    "junit_reports": {
+      "cross-platform-differential.xml": "64be84a252d013c6129765b7e020a3ce711206a0150f3ee77e8a09dfbc29bf91",
+      "elf-arm-32-native.xml": "6bfddf7d8fd82188665c3d80bf37dd7772c7ee7ca54d7d36108cdce1e1244cc1",
+      "elf-arm64-native.xml": "9747e9904ecbe070904fc83d49d9998523f75fe73a01cdbb878f04ac64d980f8",
+      "elf-x86-32-native.xml": "2ebb80a6160a598698bb2f1348b608ebbc906441e1c943d255875853f4d1a720",
+      "macos-x86-64-differential.xml": "ea781e37bcf6ee9294604e1ce443d610f84b124ed387da573702fd6cb6ac30f8",
+      "windows-format-differential.xml": "bb8683b798531c8e417668ebca513e4a1c01a8300c86b897b53fc09a2895d711"
+    }
+  },
+  "maturity_evidence": {
+    "composition_blockers": 0,
+    "decompiler_blockers": 22,
+    "report_sha256": "5559c2788c7fe0079d81be46cf6bde3fd6b42e8214bbe1ba7fbff30370ba6e86"
+  },
+  "aggregate_artifact": {
+    "id": 14991908717,
+    "name": "differential-corpus-merged-45544822953-1",
+    "zip_sha256": "6c4dcc606e4b9ae9de7607631140dfdedf25cb84a1c84285c7802e995f08edc8",
+    "reports": {
+      "differential-corpus-merged.json": "f3225a1ec3924f8cd9a50f634e28fdc08dc3e292cc8d0fc32faae95f68d1874b",
+      "extended-maturity-merged.json": "5473bcf5e7237c107e7552561bfa08a8a2202955898eb672c4029956565d42e1",
+      "maturity-evidence-merged.json": "5559c2788c7fe0079d81be46cf6bde3fd6b42e8214bbe1ba7fbff30370ba6e86",
+      "public-compatibility-merged.json": "789f01ebf05dbb5635e8d98cfa4f7b7ef8ea28dd8c338b4bba106cbee4d6dbea",
+      "vm-semantic-contracts-merged.json": "c33bbe548a96c91d92b1cea5420179c75a5872f803c0cbd11758e1a511861fcf"
+    }
+  },
+  "limits": [
+    "Omitted rows did not transform a sample and are not successful transformations.",
+    "Core and extended differential results cover the pinned Linux ELF x86-64 corpora and do not cover every real-world input or platform/pass combination.",
+    "The six platform previews cover bounded selected tests and do not establish full platform/pass parity.",
+    "The public compatibility aggregate was byte-identical to the previously published run; only its current run artifact identity is new.",
+    "Twenty-two decompiler maturity blockers remain. Full cross-platform parity, all-named-analyzer coverage, and generalized resistance remain open."
+  ]
+}
