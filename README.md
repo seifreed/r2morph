@@ -910,6 +910,11 @@ r2morph report report.json --only-pass nop --summary-only
 r2morph report report.json --format sarif -o report.sarif
 ```
 
+When file-output comparison is enabled, each runtime case must list the output
+paths to monitor in `monitored_files` (or in the validator configuration). The
+validation fails if file comparison is requested without any monitored paths,
+so an empty file set cannot be mistaken for verified filesystem parity.
+
 ---
 
 ## CLI Reference

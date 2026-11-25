@@ -150,6 +150,9 @@ class BinaryValidator:
 
             if self.comparison.compare_files:
                 expected_files = set(self.comparison.monitored_files) | set(test_case.monitored_files)
+                if not expected_files:
+                    errors.append(f"Test {i + 1}: file comparison enabled but no files are monitored")
+                    all_outputs_match = False
                 for rel_path in expected_files:
                     orig_file = orig_result["files"].get(rel_path, "")
                     mut_file = mut_result["files"].get(rel_path, "")

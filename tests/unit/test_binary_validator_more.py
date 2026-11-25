@@ -90,3 +90,28 @@ def test_binary_validator_detects_monitored_file_difference(tmp_path: Path):
     expect(not (result.passed is not False))
     expect(not ("side_effect.txt" not in result.file_differences))
     expect(not (result.compared_signals["files"] is not True))
+
+
+def test_binary_validator_fails_when_file_comparison_has_no_monitored_files(tmp_path: Path):
+    original = tmp_path / "original.exe"
+    mutated = tmp_path / "mutated.exe"
+    shutil.copy2(sys.executable, original)
+    shutil.copy2(sys.executable, mutated)
+
+    validator = BinaryValidator(
+        timeout=3,
+        comparison=RuntimeComparisonConfig(compare_files=True),
+    )
+    validator.load_test_cases(
+        [
+            {
+                "args": ["-c", "pass"],
+                "env": python_runtime_environment(),
+            }
+        ]
+    )
+
+    result = validator.validate(original, mutated)
+
+    expect(not result.passed)
+    expect("file comparison enabled but no files are monitored" in result.errors[0])
