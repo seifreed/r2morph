@@ -435,6 +435,10 @@ be reported as supported. A no-patch rewrite copies the input bytes exactly.
 The continuous-fuzz `binary_rewriter` target also applies bounded byte-level
 replacements and checks stale-byte rejection and that surrounding bytes remain
 unchanged; it does not fuzz complete executable semantics.
+The `assembling` target exercises `AssemblyService` normalization and result
+handling against a bounded Keystone-backed `rasm2` test double, including
+invalid instructions. It does not replace integration tests using native
+radare2.
 
 The scheduled and manually dispatched differential corpus runs `--passes all`, `--require-applied`, and
 `--require-complete-evidence`; complete evidence covers runtime, output size,

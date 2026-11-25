@@ -15,6 +15,7 @@ from importlib import import_module
 from pathlib import Path
 
 from r2morph.core import randomness
+from r2morph.core.assembly import AssemblyService
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter
 from r2morph.devirtualization.binary_rewriter_models import CodePatch, RewriteOperation
@@ -86,6 +87,28 @@ _FORMAT_PARSER_FIXTURES = {
     "pe_header_parser": _DATASET / "pe_x86_64.exe",
     "macho_load_commands": _DATASET / "macho_arm64",
 }
+
+
+class _FuzzRasm:
+    def cmd(self, command: str) -> str:
+        instruction = command.removeprefix('"pa ').removesuffix('"')
+        try:
+            encoded, _ = _X86_64_ASSEMBLER.asm(instruction)
+        except KsError:
+            return ""
+        return bytes(encoded).hex()
+
+
+class _FuzzAssemblyBinary:
+    r2 = _FuzzRasm()
+
+    @staticmethod
+    def _resolve_symbolic_vars(instruction: str, function_addr: int | None = None) -> str:
+        return instruction
+
+    @staticmethod
+    def get_arch_family() -> tuple[str, int]:
+        return "x86_64", 64
 
 
 class _ParserDiagnosticCounter(logging.Handler):
@@ -204,9 +227,19 @@ def _rewrite_case(seed: int, index: int) -> None:
 
 def _assembly_case(seed: int, index: int) -> None:
     if index % _ASSEMBLY_INVALID_SAMPLE_RATE == 0:
+        instruction = f"r2morph_invalid_{_bounded_value(seed, index, 35, 0xFFFF):x}"
         try:
-            _X86_64_ASSEMBLER.asm(f"r2morph_invalid_{_bounded_value(seed, index, 35, 0xFFFF):x}")
-        except KsError:
+            _X86_64_ASSEMBLER.asm(instruction)
+        except KsError as error:
+            service_logger = logging.getLogger("r2morph.core.assembly")
+            previous_level = service_logger.level
+            service_logger.setLevel(logging.CRITICAL + 1)
+            try:
+                service_encoded = AssemblyService().assemble(_FuzzAssemblyBinary(), instruction)
+            finally:
+                service_logger.setLevel(previous_level)
+            if service_encoded is not None:
+                raise AssertionError("assembly service accepted an invalid generated instruction") from error
             return
         raise AssertionError("assembler accepted an invalid generated instruction")
 
@@ -221,6 +254,9 @@ def _assembly_case(seed: int, index: int) -> None:
     encoded, instruction_count = _X86_64_ASSEMBLER.asm(assembly)
     if not encoded or instruction_count != _ASSEMBLY_INSTRUCTION_COUNT:
         raise AssertionError("assembler did not encode all generated instructions")
+    service_encoded = AssemblyService().assemble(_FuzzAssemblyBinary(), assembly)
+    if service_encoded != bytes(encoded):
+        raise AssertionError("assembly service output differs from the generated valid instruction sequence")
 
 
 def _dispatcher_case(seed: int, index: int) -> None:
