@@ -42,8 +42,8 @@ def test_fixed_smokes_run_once_per_differential_campaign() -> None:
         and '"cross-format-reports",\n              10,' in aggregator
         and '"vm-semantic-reports", 56, expected_count=1' in aggregator
         and '"composition-reports", 46, expected_count=1' in aggregator
-        and 'require_files("fuzz-reports", 1)' in aggregator
-        and 'require_files("extended-maturity-reports", expected_shards)' in aggregator
+        and 'require_evidence_files("fuzz-reports", 1)' in aggregator
+        and 'require_evidence_files("extended-maturity-reports", expected_shards)' in aggregator
     )
 
 
