@@ -618,6 +618,19 @@ This bounded campaign does not establish arbitrary transformed-program
 equivalence, exhaustive fuzz coverage, full platform parity, or adversarial
 resistance.
 
+The current-source commit `83f5bdf0` passed two three-platform campaigns on
+Ubuntu, macOS 15, and Windows, each with 5,000 cases for ten parser, assembler,
+VM, relocation, and rewrite targets. That is 300,000 target runs across two
+seeds with zero failures; the reports retain 103 or 104 recoverable Mach-O
+parser warnings per platform. The source hash, run IDs, artifact digests,
+report hashes, and scope limits are pinned in
+[`docs/continuous-fuzz-2026-11-25-83f5bdf0-summary.json`](docs/continuous-fuzz-2026-11-25-83f5bdf0-summary.json)
+and verified by
+[`tests/unit/test_published_continuous_fuzz_83f5bdf0.py`](tests/unit/test_published_continuous_fuzz_83f5bdf0.py).
+These bounded inputs do not establish exhaustive fuzz coverage, arbitrary
+transformed-program equivalence, complete platform parity, or general
+resistance.
+
 The next main commit's differential workflow (`44308008537`) failed its
 aggregate check because independently built corpus shards repeated fixture and
 seed rows. The previous size-weighted shard assignment could change when

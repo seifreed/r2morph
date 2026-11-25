@@ -1798,6 +1798,23 @@ This bounded campaign does not establish arbitrary transformed-program
 equivalence, exhaustive fuzz coverage, full product parity, or adversarial
 resistance.
 
+## Current-source two-seed three-platform fuzz — 2026-11-25
+
+Two successful Continuous Fuzzing runs on source commit
+`83f5bdf0eab7e6a6bba875125674a68ba9fd0489` each exercised 5,000 inputs for ten
+parser, assembler, VM, relocation, and rewrite targets on Ubuntu, macOS 15, and
+Windows. Across seeds `20260827` and `20261125`, the campaigns recorded 300,000
+target runs and zero failures. They retained 103 and 104 recoverable
+`macho_load_commands.warning` diagnostics per platform, respectively. The
+[hash-bound summary](continuous-fuzz-2026-11-25-83f5bdf0-summary.json) records
+workflow run IDs `45713863534` and `45713965616`, platform artifact digests,
+report hashes, and scope limits; the
+[regression test](../tests/unit/test_published_continuous_fuzz_83f5bdf0.py)
+checks the published reports. This expands bounded fuzz evidence only; it does
+not establish exhaustive fuzz coverage, arbitrary transformed-program
+equivalence, full platform parity, analyzer completeness, or generalized
+resistance.
+
 ## Current-source local IDA analyzer sample — 2026-11-25
 
 On source `6756d0b636ac3a64b4a96564c2671c1182f1acd2`, the local adversarial
