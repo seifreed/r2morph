@@ -1692,6 +1692,21 @@ This bounded harness does not establish semantic equivalence for arbitrary
 transformed binaries, exhaustive fuzz coverage, full platform parity, or
 adversarial resistance.
 
+## Current-source local IDA analyzer sample — 2026-11-25
+
+On source `6756d0b636ac3a64b4a96564c2671c1182f1acd2`, the local adversarial
+benchmark applied `CodeVirtualization` to `elf_vm_arith_x86_64` and measured all
+nine analyzer slots. IDA Pro 9.5 completed analysis and decompilation on both
+files: function count changed 1→2, pseudocode changed 4→30 lines, and neither
+decompilation reported errors. `angr`, `custom`, `objdump`, radare2, and Unicorn
+also completed. Binary Ninja was unavailable because no valid license is
+installed; Triton and Ghidra were unavailable in this environment. The sample
+uses one fixture and one pass, so it does not measure generalized resistance or
+close the all-analyzer or published-resistance gates. The [manifest](protection-adversarial-current-source-ida-one-fixture-2026-11-25-summary.json),
+[raw report](protection-adversarial-current-source-ida-one-fixture-2026-11-25.json),
+and [regression test](../tests/unit/test_published_adversarial_current_source_ida_one_fixture_2026_11_25.py)
+bind its scope, hashes, and unavailable analyzers.
+
 ## Blocker index
 
 ### Linux timeout integration fixture — 2026-11-18

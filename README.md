@@ -328,6 +328,14 @@ including 290 skipped cases. These bounded results do not close cross-platform,
 named-analyzer, or resistance gates; Binary Ninja remains unavailable without a
 valid license. See the [current-run evidence summary](docs/differential-run-2026-11-18-44213229027-summary.json).
 
+A local current-source analyzer sample applied `CodeVirtualization` to one ELF
+fixture. IDA Pro 9.5 completed analysis and decompilation for both original and
+protected binaries (1→2 functions, 4→30 pseudocode lines, zero decompiler
+errors). Six of nine analyzer slots completed; Binary Ninja, Triton, and Ghidra
+were unavailable. This single-fixture result does not establish generalized
+resistance or close any 1.0 gate. See the [hash-bound summary](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25-summary.json)
+and [report](docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25.json).
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence

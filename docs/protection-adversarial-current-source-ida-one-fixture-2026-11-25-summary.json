@@ -1,0 +1,55 @@
+{
+  "benchmark_scripts": {
+    "scripts/adversarial_benchmark.py": "3dc9fff8b22889ec32ac9394fbad1ea4eac270c07426cecbf67ef93abdfd9565",
+    "scripts/adversarial_benchmark_constants.py": "8107b4f7042076242c17c662e4a94a140b7341ac12b9cef3d03bb8f3995efe4c",
+    "scripts/adversarial_benchmark_tools.py": "42adefbe0ec65735efebeced81367b3e7f70819b0e13e02dbcc7f0f5283ed3a7"
+  },
+  "captured_at_utc": "2026-11-25T02:39:38Z",
+  "fixture": {
+    "path": "fixtures/dataset/elf_vm_arith_x86_64",
+    "sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00"
+  },
+  "ida": {
+    "decompiler_errors": 0,
+    "original_decompiler_bytes": 43,
+    "original_decompiler_lines": 4,
+    "original_functions": 1,
+    "protected_decompiler_bytes": 982,
+    "protected_decompiler_lines": 30,
+    "protected_functions": 2,
+    "status": "completed"
+  },
+  "limitations": [
+    "One fixture and one pass; this does not establish general analyzer effectiveness or VM resistance.",
+    "Binary Ninja, Triton, and Ghidra were unavailable in this local environment and remain explicit blockers.",
+    "This local sample does not close the all-named-analyzers, cross-platform-parity, or published-resistance release gates."
+  ],
+  "measurement": "current-source-single-fixture-adversarial-analyzer-sample",
+  "report": {
+    "path": "docs/protection-adversarial-current-source-ida-one-fixture-2026-11-25.json",
+    "sha256": "78362f588416c33d84f83ceb17013240bad1b93415a2070958cb4fafb5f23bfd"
+  },
+  "schema_version": 1,
+  "scope": {
+    "analyzer_slots": 9,
+    "completed_tools": [
+      "angr",
+      "custom",
+      "ida-pro",
+      "objdump",
+      "radare2",
+      "unicorn"
+    ],
+    "fixtures": 1,
+    "passes": [
+      "CodeVirtualization"
+    ],
+    "unavailable_tools": {
+      "binary-ninja": "analyzer license is unavailable",
+      "ghidra": "executable 'ghidra' is unavailable",
+      "triton": "module 'triton' is unavailable"
+    },
+    "virtualized_functions": 1
+  },
+  "source_commit": "6756d0b636ac3a64b4a96564c2671c1182f1acd2"
+}
