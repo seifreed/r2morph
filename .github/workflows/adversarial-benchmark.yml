@@ -105,6 +105,7 @@ jobs:
             --passes all \
             --require-applied \
             --require-tool-slots \
+            --artifact-dir "$GITHUB_WORKSPACE/adversarial-artifacts" \
             --fixture-shard-index "${{ matrix.fixture_shard }}" \
             --fixture-shard-count 32 \
             --output "$GITHUB_WORKSPACE/adversarial-benchmark.json"
@@ -425,6 +426,15 @@ jobs:
         with:
           name: adversarial-benchmark-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: adversarial-benchmark.json
+
+      - name: Upload hash-bound analyzer replay inputs
+        uses: actions/upload-artifact@v7
+        if: always() && !cancelled() && hashFiles('adversarial-artifacts/manifest.json') != ''
+        with:
+          name: adversarial-replay-inputs-${{ matrix.fixture_shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: adversarial-artifacts/
+          retention-days: 7
+          compression-level: 6
 
       - name: Upload VM resistance seed-diversity evidence
         uses: actions/upload-artifact@v7

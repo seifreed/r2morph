@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import sys
 from pathlib import Path
 
 from r2morph.adapters.process import ProcessContext, ProcessExecutionError, ProcessTimeoutError, run_process
 from scripts.adversarial_benchmark_constants import _EXPECTED_TOOLS
 from scripts.adversarial_benchmark_metrics import _measure_pair_tools
+from scripts.adversarial_benchmark_models import BenchmarkOptions
 from scripts.adversarial_benchmark_tools import _file_digest
 
 _MUTATION_WORKER_TIMEOUT_SECONDS = 180.0
@@ -93,6 +96,7 @@ def _benchmark_passes(
     directory: Path,
     pass_names: tuple[str, ...],
     timeout_seconds: float = _MUTATION_WORKER_TIMEOUT_SECONDS,
+    options: BenchmarkOptions | None = None,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
     pass_rows: list[dict[str, object]] = []
     tools: list[dict[str, object]] = []
@@ -119,6 +123,14 @@ def _benchmark_passes(
             continue
         protected_sha256 = _file_digest(protected_path)
         pass_row["protected_sha256"] = protected_sha256
+        if options is not None and options.artifact_directory is not None:
+            pass_row["artifacts"] = _export_pair_artifacts(
+                original,
+                protected_path,
+                options.artifact_directory,
+                pass_name,
+                protected_sha256,
+            )
         pass_rows.append(pass_row)
         tools.extend(
             {
@@ -132,6 +144,46 @@ def _benchmark_passes(
                 original_metrics,
                 measurement_cache,
                 protected_sha256,
+                options,
             )
         )
     return pass_rows, tools
+
+
+def _export_pair_artifacts(
+    original: Path,
+    protected: Path,
+    artifact_directory: Path,
+    pass_name: str,
+    protected_sha256: str,
+) -> dict[str, object]:
+    """Export immutable content-addressed inputs for analyzer replay on another host."""
+    original_sha256 = _file_digest(original)
+    original_relative = Path("originals") / f"{original_sha256}.bin"
+    protected_relative = Path("protected") / f"{protected_sha256}.bin"
+    for source, relative, expected in (
+        (original, original_relative, original_sha256),
+        (protected, protected_relative, protected_sha256),
+    ):
+        destination = artifact_directory / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            if _file_digest(destination) != expected:
+                raise ProcessExecutionError(f"artifact digest collision at {relative}")
+            continue
+        temporary = destination.with_suffix(f".tmp-{os.getpid()}")
+        try:
+            shutil.copyfile(source, temporary)
+            if _file_digest(temporary) != expected:
+                raise ProcessExecutionError(f"exported artifact digest mismatch at {relative}")
+            os.replace(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return {
+        "pass_name": pass_name,
+        "original_name": original.name,
+        "original": original_relative.as_posix(),
+        "original_sha256": original_sha256,
+        "protected": protected_relative.as_posix(),
+        "protected_sha256": protected_sha256,
+    }

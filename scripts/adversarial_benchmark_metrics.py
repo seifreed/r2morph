@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.adversarial_benchmark_constants import _EXPECTED_TOOLS, _FULL_COVERAGE_PERCENT
+from scripts.adversarial_benchmark_models import BenchmarkOptions
 from scripts.adversarial_benchmark_tools import _measure_tool
 
 
@@ -291,38 +292,18 @@ def _missing_tool_slot_error(report: dict[str, object]) -> str | None:
     return "missing analyzer tool runs"
 
 
-def _measure_pair_tools(
+def _measure_pair_tools(  # noqa: PLR0913
     original: Path,
     protected: Path,
     original_metrics: dict[str, dict[str, object]] | None = None,
     measurement_cache: dict[tuple[str, str], dict[str, object]] | None = None,
     protected_digest: str | None = None,
+    options: BenchmarkOptions | None = None,
 ) -> list[dict[str, object]]:
     cache = original_metrics if original_metrics is not None else {}
     rows = []
-    for tool in (*_EXPECTED_TOOLS, "custom"):
-        cache_key = (tool, protected_digest) if protected_digest is not None else None
-        cached_row = measurement_cache.get(cache_key) if measurement_cache is not None and cache_key else None
-        row = dict(cached_row) if cached_row is not None else _measure_tool(tool, original, protected, cache.get(tool))
-        if measurement_cache is not None and cache_key is not None and cached_row is None:
-            measurement_cache[cache_key] = dict(row)
-        metric = row.get("original")
-        if row.get("status") == "completed" and isinstance(metric, dict):
-            cache[tool] = metric
-        rows.append(row)
-    return rows
-
-
-def _measure_pair_tools(
-    original: Path,
-    protected: Path,
-    original_metrics: dict[str, dict[str, object]] | None = None,
-    measurement_cache: dict[tuple[str, str], dict[str, object]] | None = None,
-    protected_digest: str | None = None,
-) -> list[dict[str, object]]:
-    cache = original_metrics if original_metrics is not None else {}
-    rows = []
-    for tool in (*_EXPECTED_TOOLS, "custom"):
+    tool_names = options.tool_names if options is not None else None
+    for tool in tool_names or (*_EXPECTED_TOOLS, "custom"):
         cache_key = (tool, protected_digest) if protected_digest is not None else None
         cached_row = measurement_cache.get(cache_key) if measurement_cache is not None and cache_key else None
         row = dict(cached_row) if cached_row is not None else _measure_tool(tool, original, protected, cache.get(tool))

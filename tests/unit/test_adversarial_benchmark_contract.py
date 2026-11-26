@@ -8,7 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from scripts import adversarial_benchmark
 from scripts import adversarial_benchmark_execution as adversarial_execution
+from scripts import adversarial_benchmark_metrics as adversarial_metrics
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
@@ -28,6 +30,7 @@ from scripts.adversarial_benchmark import (
     _measure_tool_bounded,
     _missing_tool_slot_error,
     _parse_adversarial_pass_names,
+    _parse_adversarial_tool_names,
     _parse_ghidra_decompiler_metrics,
     _parse_ghidra_function_count,
     _parse_ghidra_function_counts,
@@ -47,6 +50,8 @@ from scripts.adversarial_benchmark import (
 from scripts.adversarial_benchmark import (
     main as adversarial_main,
 )
+from scripts.adversarial_benchmark_execution import _export_pair_artifacts
+from scripts.adversarial_benchmark_models import BenchmarkOptions
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
@@ -103,6 +108,166 @@ def test_adversarial_benchmark_reports_hashes_for_an_explicit_pair(monkeypatch: 
         and report["protected_sha256"] == _file_digest(_FIXTURE)
         and report["original_sha256"] == report["protected_sha256"]
     )
+
+
+def test_analyzer_selection_is_validated_and_deduplicated() -> None:
+    expect(_parse_adversarial_tool_names("ida-pro,ghidra,ida-pro") == ("ida-pro", "ghidra"))
+    expect(_parse_adversarial_tool_names("all") is None)
+    with pytest.raises(ValueError, match="unknown analyzer tools"):
+        _parse_adversarial_tool_names("ida-pro,unknown")
+
+
+def test_analyzer_selection_limits_pair_measurement(monkeypatch: pytest.MonkeyPatch) -> None:
+    measured: list[str] = []
+
+    def measure(tool: str, *_args: object, **_kwargs: object) -> dict[str, object]:
+        measured.append(tool)
+        return {"tool": tool, "status": "unavailable"}
+
+    monkeypatch.setattr(adversarial_metrics, "_measure_tool", measure)
+    rows = adversarial_metrics._measure_pair_tools(
+        _FIXTURE,
+        _FIXTURE,
+        options=BenchmarkOptions(tool_names=("ida-pro",)),
+    )
+
+    expect(measured == ["ida-pro"] and [row["tool"] for row in rows] == measured)
+
+
+def test_exported_pair_artifacts_are_content_addressed_and_verified(tmp_path: Path) -> None:
+    protected = tmp_path / "protected-input"
+    protected.write_bytes(_FIXTURE.read_bytes() + b"protected")
+    output = tmp_path / "artifacts"
+
+    manifest_row = _export_pair_artifacts(
+        _FIXTURE,
+        protected,
+        output,
+        "CodeVirtualization",
+        _file_digest(protected),
+    )
+    original_artifact = output / manifest_row["original"]
+    protected_artifact = output / manifest_row["protected"]
+    expect(
+        manifest_row["original_name"] == _FIXTURE.name
+        and original_artifact.read_bytes() == _FIXTURE.read_bytes()
+        and protected_artifact.read_bytes() == protected.read_bytes()
+        and manifest_row["original_sha256"] == _file_digest(original_artifact)
+        and manifest_row["protected_sha256"] == _file_digest(protected_artifact)
+    )
+
+
+def test_benchmark_pair_includes_exported_artifact_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    protected = tmp_path / "protected-input"
+    protected.write_bytes(_FIXTURE.read_bytes() + b"protected")
+    output = tmp_path / "artifacts"
+
+    def benchmark_passes(
+        original: Path,
+        _directory: Path,
+        pass_names: tuple[str, ...],
+        *,
+        options: BenchmarkOptions | None = None,
+    ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+        if options is None or options.artifact_directory is None:
+            raise AssertionError("artifact output options were not forwarded")
+        artifact = _export_pair_artifacts(
+            original,
+            protected,
+            options.artifact_directory,
+            pass_names[0],
+            _file_digest(protected),
+        )
+        return [
+            {
+                "pass_name": pass_names[0],
+                "status": "applied",
+                "protected_sha256": _file_digest(protected),
+                "artifacts": artifact,
+            }
+        ], [{"tool": "custom", "status": "completed"}]
+
+    monkeypatch.setattr(adversarial_execution, "_benchmark_passes", benchmark_passes)
+    report = benchmark_pair(
+        _FIXTURE,
+        pass_names=("CodeVirtualization",),
+        options=BenchmarkOptions(tool_names=("custom",), artifact_directory=output),
+    )
+
+    artifact = report["artifacts"][0]
+    expect(
+        _file_digest(output / artifact["original"]) == artifact["original_sha256"]
+        and _file_digest(output / artifact["protected"]) == artifact["protected_sha256"]
+    )
+
+
+def test_cli_writes_artifact_manifest_bound_to_report(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "report.json"
+    artifact_directory = tmp_path / "artifacts"
+    report = {
+        "artifacts": [
+            {
+                "original": "originals/example.bin",
+                "original_sha256": "a" * _SHA256_HEX_LENGTH,
+                "protected": "protected/example.bin",
+                "protected_sha256": "b" * _SHA256_HEX_LENGTH,
+            }
+        ]
+    }
+    monkeypatch.setattr(adversarial_benchmark, "_run_selected_benchmark", lambda *_args: report)
+
+    adversarial_benchmark.main(
+        [
+            str(_FIXTURE),
+            "--tools",
+            "custom",
+            "--artifact-dir",
+            str(artifact_directory),
+            "--output",
+            str(report_path),
+        ]
+    )
+
+    manifest = json.loads((artifact_directory / "manifest.json").read_text(encoding="utf-8"))
+    expect(
+        manifest["artifacts"] == report["artifacts"]
+        and manifest["report_sha256"] == hashlib.sha256(report_path.read_bytes()).hexdigest()
+    )
+
+
+def test_protected_replay_requires_an_explicit_pass_name(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(adversarial_benchmark, "_measure_pair_tools", lambda *_args: [])
+    report_path = tmp_path / "replay.json"
+
+    with pytest.raises(SystemExit):
+        adversarial_benchmark.main(
+            [str(_FIXTURE), "--protected", str(_FIXTURE), "--tools", "custom", "--output", str(report_path)]
+        )
+
+    adversarial_benchmark.main(
+        [
+            str(_FIXTURE),
+            "--protected",
+            str(_FIXTURE),
+            "--pass-name",
+            "CodeVirtualization",
+            "--tools",
+            "custom",
+            "--output",
+            str(report_path),
+        ]
+    )
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    expect(report["pass_names"] == ["CodeVirtualization"] and report["tools"] == [])
 
 
 def test_adversarial_benchmark_rejects_a_missing_protected_binary() -> None:

@@ -25,6 +25,44 @@ It contains source programs, the build matrix, SHA-256 manifests, differential
 execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.
 
+## Cross-host analyzer replay
+
+The adversarial benchmark normally deletes temporary protected binaries after
+measuring them. To preserve the exact inputs for a tool available only on a
+different host, export each pair while generating it:
+
+```bash
+python scripts/adversarial_benchmark.py --all \
+  --dataset fixtures/dataset \
+  --passes CodeVirtualization \
+  --tools triton,ghidra,radare2 \
+  --artifact-dir /tmp/r2morph-replay/shard-00 \
+  --fixture-shard-index 0 --fixture-shard-count 32 \
+  --output /tmp/r2morph-replay/shard-00-report.json
+```
+
+The output directory contains originals and protected binaries named by their
+SHA-256 digest, plus `manifest.json` linking each pair, fixture name, and pass
+to the report digest. Copy that directory to the replay host, then run one
+analyzer against a manifest pair:
+
+```bash
+python scripts/adversarial_benchmark.py \
+  /tmp/r2morph-replay/shard-00/originals/<original-sha256>.bin \
+  --protected /tmp/r2morph-replay/shard-00/protected/<protected-sha256>.bin \
+  --pass-name CodeVirtualization --tools ida-pro \
+  --output /tmp/r2morph-replay/ida-replay.json
+```
+
+The replay report records the original hash, protected hash, pass name, and
+selected tool. It is a separate measurement with its own environment metadata;
+do not merge its rows into another campaign unless the original and protected
+hashes, pass, and fixture identity match. Binary Ninja remains optional and is
+not required for this workflow.
+The scheduled adversarial workflow retains each shard's replay bundle for
+seven days so locally available analyzers can inspect the exact Linux-generated
+outputs while the campaign is current.
+
 The scheduled `public-compatibility-corpus` job checks out that immutable commit,
 builds its full GCC/Clang matrix, then selects a deterministic bounded matrix
 with five variants per source/compiler: `O0` and `O1` non-PIE with symbols and

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -78,6 +79,7 @@ from scripts.adversarial_benchmark_metrics import (
     _tool_metric_pair_counts,
     _tool_summary,
 )
+from scripts.adversarial_benchmark_models import BenchmarkOptions
 from scripts.adversarial_benchmark_passes import (
     _capability_counts,
     _diagnostic_reason,
@@ -227,6 +229,7 @@ def benchmark_pair(
     original: Path,
     protected: Path | None = None,
     pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
+    options: BenchmarkOptions | None = None,
 ) -> dict[str, object]:
     """Benchmark every configured analyzer and preserve unavailable evidence."""
     if not original.is_file():
@@ -234,19 +237,28 @@ def benchmark_pair(
     if protected is not None and not protected.is_file():
         raise ValueError(f"protected binary does not exist: {protected}")
     original_sha256 = _file_digest(original)
+    if protected is not None and len(pass_names) != 1:
+        raise ValueError("protected-binary replay requires exactly one pass name")
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
         if protected is None:
-            pass_rows, tools = _benchmark_passes(original, Path(directory), pass_names)
+            pass_rows, tools = _benchmark_passes(
+                original,
+                Path(directory),
+                pass_names,
+                options=options,
+            )
             protected_path = Path(directory) / "protected"
             protected_sha256 = None
         else:
             protected_path = protected
             protected_sha256 = _file_digest(protected_path)
-            tools = _measure_pair_tools(original, protected_path)
+            tools = _measure_pair_tools(original, protected_path, None, None, protected_sha256, options)
+            tools = [{**tool, "pass_name": pass_names[0]} for tool in tools]
     tool_summary = _tool_summary([{"tools": tools}])
     release_signoff_blockers = _release_signoff_blockers(tool_summary)
     report: dict[str, object] = {
         "schema_version": 3,
+        "measurement_environment": _measurement_environment(),
         "original": original.name,
         "original_sha256": original_sha256,
         "protected": protected_path.name,
@@ -257,21 +269,37 @@ def benchmark_pair(
             release_signoff_blockers,
             "total_release_signoff_blockers",
         ),
+        "pass_names": list(pass_names),
+        "tool_selection": list(
+            options.tool_names if options is not None and options.tool_names else (*_EXPECTED_TOOLS, "custom")
+        ),
     }
     if protected is None:
         report["passes"] = pass_rows
-        report["pass_names"] = list(pass_names)
+        if options is not None and options.artifact_directory is not None:
+            original_sha256 = _file_digest(original)
+            original_relative = Path("originals") / f"{original_sha256}.bin"
+            _export_original_artifact(original, options.artifact_directory, original_relative, original_sha256)
+            report["artifacts"] = [
+                {
+                    **pass_row["artifacts"],
+                    "original": original_relative.as_posix(),
+                }
+                for pass_row in pass_rows
+                if isinstance(pass_row.get("artifacts"), dict)
+            ]
     else:
         report["protected_sha256"] = protected_sha256
     return report
 
 
-def benchmark_corpus(
+def benchmark_corpus(  # noqa: PLR0913
     dataset: Path,
     pass_names: tuple[str, ...] = (DEFAULT_MUTATION_NAME,),
     fixture_shard_index: int = 0,
     fixture_shard_count: int = 1,
     generated_corpus: bool = False,
+    options: BenchmarkOptions | None = None,
 ) -> dict[str, object]:
     """Run the pair benchmark for every supported executable in the corpus."""
     if fixture_shard_count < 1:
@@ -298,8 +326,15 @@ def benchmark_corpus(
             fixtures = _select_fixture_shard(fixtures, fixture_shard_index, fixture_shard_count)
         if not fixtures:
             raise ValueError(f"no supported executable fixtures found in {dataset}")
-        samples = [benchmark_pair(fixture, pass_names=pass_names) for fixture in fixtures]
-    return {
+        samples = [
+            benchmark_pair(
+                fixture,
+                pass_names=pass_names,
+                options=options,
+            )
+            for fixture in fixtures
+        ]
+    report: dict[str, object] = {
         "schema_version": 3,
         "measurement": "protection-adversarial-corpus",
         "measurement_environment": _measurement_environment(),
@@ -314,6 +349,9 @@ def benchmark_corpus(
             "generated_fixture_names": generated_fixture_names,
         },
         "pass_names": list(pass_names),
+        "tool_selection": list(
+            options.tool_names if options is not None and options.tool_names else (*_EXPECTED_TOOLS, "custom")
+        ),
         "fixture_shard": {"index": fixture_shard_index, "count": fixture_shard_count},
         "sample_count": len(samples),
         "samples": samples,
@@ -321,6 +359,29 @@ def benchmark_corpus(
         "tool_summary": _tool_summary(samples),
         "summary": _campaign_summary(samples, len(fixtures), pass_names),
     }
+    if options is not None and options.artifact_directory is not None:
+        report["artifacts"] = [
+            artifact for sample in samples for artifact in sample.get("artifacts", []) if isinstance(artifact, dict)
+        ]
+    return report
+
+
+def _export_original_artifact(original: Path, artifact_directory: Path, relative_path: Path, digest: str) -> None:
+    """Write and verify a content-addressed original binary artifact."""
+    destination = artifact_directory / relative_path
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if _file_digest(destination) != digest:
+            raise ValueError(f"original artifact digest collision at {relative_path}")
+        return
+    temporary = destination.with_suffix(f".tmp-{os.getpid()}")
+    try:
+        shutil.copyfile(original, temporary)
+        if _file_digest(temporary) != digest:
+            raise ValueError(f"exported original artifact digest mismatch at {relative_path}")
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _measurement_environment() -> dict[str, str | None]:
@@ -434,6 +495,56 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
     return merged
 
 
+def _parse_adversarial_tool_names(value: str) -> tuple[str, ...] | None:
+    """Parse analyzer selection, with ``None`` representing all supported tools."""
+    if value.strip().lower() == "all":
+        return None
+    allowed = (*_EXPECTED_TOOLS, "custom")
+    selected = tuple(dict.fromkeys(name.strip() for name in value.split(",") if name.strip()))
+    if not selected:
+        raise ValueError("at least one analyzer tool is required")
+    unknown = sorted(set(selected).difference(allowed))
+    if unknown:
+        raise ValueError("unknown analyzer tools: " + ", ".join(unknown))
+    return selected
+
+
+def _run_selected_benchmark(args: argparse.Namespace, parser: argparse.ArgumentParser) -> dict[str, object]:
+    if args.all_fixtures and args.protected:
+        parser.error("--protected is valid only with one original binary")
+    if args.require_tool_slots and not args.all_fixtures:
+        parser.error("--require-tool-slots requires --all")
+    if args.require_tool_slots and args.tools.strip().lower() != "all":
+        parser.error("--require-tool-slots requires --tools all")
+    if args.fixture_shard_count > 1 and not args.all_fixtures:
+        parser.error("fixture sharding requires --all")
+    if args.protected and args.artifact_dir:
+        parser.error("--artifact-dir is only valid when the benchmark generates protected binaries")
+    if args.protected and not args.pass_name:
+        parser.error("--protected replay requires an explicit --pass-name")
+    if args.pass_name and not args.protected:
+        parser.error("--pass-name is only valid with --protected")
+    try:
+        pass_names = _parse_adversarial_pass_names(args.pass_name or args.passes)
+    except ValueError as error:
+        parser.error(str(error))
+    try:
+        tool_names = _parse_adversarial_tool_names(args.tools)
+    except ValueError as error:
+        parser.error(str(error))
+    options = BenchmarkOptions(tool_names=tool_names, artifact_directory=args.artifact_dir)
+    if args.all_fixtures:
+        return benchmark_corpus(
+            args.dataset,
+            pass_names,
+            args.fixture_shard_index,
+            args.fixture_shard_count,
+            args.generated_corpus,
+            options,
+        )
+    return benchmark_pair(args.original, args.protected, pass_names, options)
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     selection = parser.add_mutually_exclusive_group(required=True)
@@ -448,9 +559,23 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--protected", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument(
+        "--tools",
+        default="all",
+        help="comma-separated analyzer tool names or 'all' (default: all configured analyzers)",
+    )
+    parser.add_argument(
+        "--artifact-dir",
+        type=Path,
+        help="export hash-verified original/protected pairs and a replay manifest",
+    )
+    parser.add_argument(
         "--passes",
         default=DEFAULT_MUTATION_NAME,
         help="comma-separated pass names or 'all' (default: CodeVirtualization)",
+    )
+    parser.add_argument(
+        "--pass-name",
+        help="explicit single pass associated with --protected analyzer replay",
     )
     parser.add_argument(
         "--require-applied",
@@ -475,27 +600,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="number of deterministic corpus shards for parallel campaigns",
     )
     args = parser.parse_args(argv)
-    if args.all_fixtures and args.protected:
-        parser.error("--protected is valid only with one original binary")
-    if args.require_tool_slots and not args.all_fixtures:
-        parser.error("--require-tool-slots requires --all")
-    if args.fixture_shard_count > 1 and not args.all_fixtures:
-        parser.error("fixture sharding requires --all")
-    try:
-        pass_names = _parse_adversarial_pass_names(args.passes)
-    except ValueError as error:
-        parser.error(str(error))
-    report = (
-        benchmark_corpus(
-            args.dataset,
-            pass_names,
-            args.fixture_shard_index,
-            args.fixture_shard_count,
-            args.generated_corpus,
-        )
-        if args.all_fixtures
-        else benchmark_pair(args.original, args.protected, pass_names)
-    )
+    report = _run_selected_benchmark(args, parser)
     if args.require_applied and args.fixture_shard_count == 1:
         passes_without_mutations = _passes_without_applications(report)
         if passes_without_mutations:
@@ -503,6 +608,18 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.require_tool_slots and (error := _missing_tool_slot_error(report)):
         parser.error(error)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    if args.artifact_dir:
+        args.artifact_dir.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "schema_version": 1,
+            "measurement": "protection-adversarial-artifacts",
+            "report_sha256": hashlib.sha256(rendered.encode("utf-8")).hexdigest(),
+            "artifacts": report.get("artifacts", []),
+        }
+        (args.artifact_dir / "manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")
     else:

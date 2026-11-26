@@ -100,6 +100,14 @@ installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
 The 32-shard adversarial analyzer campaign runs at most eight shards at once
 and serializes campaigns by ref, leaving runner capacity for commit validation.
+For reproducible analyzer replay across hosts, the adversarial benchmark can
+export content-addressed original/protected files and a SHA-256-bound manifest
+with `--artifact-dir`. A second run can select a specific analyzer using
+`--tools ida-pro` (or another configured tool) and pass the exported original
+and protected files with `--protected`; reports retain both binary hashes and
+the pass name. See [compatibility corpus replay guidance](docs/compatibility-corpus.md#cross-host-analyzer-replay).
+Scheduled adversarial shards upload these replay bundles with a seven-day
+retention period.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 The aggregate handles both a single report extracted directly into its target
