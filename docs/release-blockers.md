@@ -1866,6 +1866,19 @@ required to verify the fixture correction and determine whether the VM failure
 persists. Related analyzer, VM resistance, human signoff, and stable-release
 gates remain open.
 
+## Current-source two-seed continuous fuzz — 2026-11-25
+
+Continuous fuzz workflow [`45718344351`](https://github.com/seifreed/r2morph/actions/runs/45718344351)
+and the second-seed run [`45725093314`](https://github.com/seifreed/r2morph/actions/runs/45725093314)
+both passed on source `a1e0099574190f2a9a426750b8286e5bc24ab40d`. Each tested
+5,000 deterministic inputs for ten assembly, parser, rewriter, relocation, and
+VM targets on Ubuntu, macOS 15, and Windows: 300,000 total target runs with
+zero failures. The reports record 103 recoverable Mach-O parser warnings for
+seed `20260827` and 104 for seed `20261125`. The [hash-bound summary](continuous-fuzz-2026-11-25-a1e00995-summary.json)
+and six raw reports pin their content hashes and workflow artifact digests.
+This evidence covers the named fuzz targets; it does not imply exhaustive
+fuzzing of all formats or implementations.
+
 The timeout fixture now uses identical generated shell scripts instead of
 copies of `/bin/sleep`. Local macOS execution showed that copying the signed
 system utility is terminated immediately with signal 9, which made the Linux
@@ -1960,3 +1973,30 @@ all-named-analyzer coverage, and generalized VM resistance remain open.
 | RB-005 | adversarial benchmark | `compatibility-corpus.md` `adversarial-benchmark.yml` |
 | RB-006 | VM resistance | `protection-handler-clustering.json` `protection-bytecode-grammar.json` |
 | RB-007 | human VM signoff | `independent-review.json` `independent-review-packet.md` |
+
+## Completed current-source differential campaign — 2026-11-25
+
+Workflow [`45718368428`](https://github.com/seifreed/r2morph/actions/runs/45718368428)
+passed all 86 jobs on source `a1e0099574190f2a9a426750b8286e5bc24ab40d`.
+Its Linux ELF x86-64 core matrix classified 10,860 rows across ten passes
+(3,480 applied; 7,380 omitted); the twelve-pass extended matrix classified
+13,032 rows (3,406 applied; 9,626 omitted). All 23,892 rows had complete
+evidence and zero errors or semantic failures. The run also passed 46
+composition cases, 370 public compatibility samples across six selected passes,
+2,220 radare2 recovery measurements, and 1,005 VM/QEMU comparisons over three
+seeds with no divergence. Six bounded platform slices passed 81/81 cases.
+
+The hash-bound [manifest](differential-run-2026-11-25-45718368428.json),
+[core report](differential-corpus-merged-45718368428.json.gz),
+[extended report](extended-maturity-merged-45718368428.json.gz),
+[public-corpus report](public-compatibility-merged-45718368428.json.gz),
+[VM report](vm-semantic-campaign-merged-45718368428.json.gz),
+[maturity report](maturity-evidence-merged-45718368428.json.gz),
+[VM contracts](vm-semantic-contracts-merged-45718368428.json.gz),
+[composition JUnit](composition-differential-45718368428.xml), and
+[platform summary](platform-evidence-45718368428.json) retain the measurements.
+The public workflow ran radare2; optional angr, Binary Ninja, Ghidra, IDA Pro,
+and Triton runners were omitted. The maturity report retains 22 decompiler
+blockers. These results do not establish full pass-by-platform parity,
+availability of every named analyzer, or generalized resistance; those release
+gates remain open.

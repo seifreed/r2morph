@@ -177,7 +177,10 @@
         "docs/protection-adversarial-run-2026-11-25-45608329375-summary.json",
         "docs/protection-adversarial-run-2026-11-25-45608329375.json.gz",
         "docs/protection-maturity-evidence-2026-11-25-45608329375.json.gz",
-        "tests/unit/test_published_adversarial_run_45608329375.py"
+        "tests/unit/test_published_adversarial_run_45608329375.py",
+        "docs/differential-run-2026-11-25-45718368428.json",
+        "tests/unit/test_published_differential_run_45718368428.py",
+        "docs/public-compatibility-merged-45718368428.json.gz"
       ]
     },
     "complete_compatibility_contract": {
@@ -186,7 +189,10 @@
         "docs/support-matrix.json",
         "docs/compatibility-corpus.md",
         "tests/unit/test_support_matrix_contract.py",
-        "scripts/support_matrix.py"
+        "scripts/support_matrix.py",
+        "docs/differential-run-2026-11-25-45718368428.json",
+        "tests/unit/test_published_differential_run_45718368428.py",
+        "docs/public-compatibility-merged-45718368428.json.gz"
       ]
     },
     "cross_platform_parity": {
@@ -340,7 +346,10 @@
         "docs/protection-platform-preview-2026-11-25-45531042241/platform/elf-x86-32.xml",
         "docs/differential-run-2026-11-25-45602419475.json",
         "docs/platform-evidence-45602419475.json",
-        "tests/unit/test_published_differential_run_45602419475.py"
+        "tests/unit/test_published_differential_run_45602419475.py",
+        "docs/differential-run-2026-11-25-45718368428.json",
+        "tests/unit/test_published_differential_run_45718368428.py",
+        "docs/platform-evidence-45718368428.json"
       ]
     },
     "documented_resistance_scope": {
@@ -483,7 +492,15 @@
         "docs/extended-maturity-merged-45602419475.json.gz",
         "docs/public-compatibility-merged-45602419475.json.gz",
         "docs/vm-semantic-campaign-45602419475.json.gz",
-        "tests/unit/test_published_differential_run_45602419475.py"
+        "tests/unit/test_published_differential_run_45602419475.py",
+        "docs/differential-run-2026-11-25-45718368428.json",
+        "tests/unit/test_published_differential_run_45718368428.py",
+        "docs/differential-corpus-merged-45718368428.json.gz",
+        "docs/extended-maturity-merged-45718368428.json.gz",
+        "docs/composition-differential-45718368428.xml",
+        "docs/vm-semantic-campaign-merged-45718368428.json.gz",
+        "docs/continuous-fuzz-2026-11-25-a1e00995-summary.json",
+        "tests/unit/test_published_continuous_fuzz_a1e00995.py"
       ]
     },
     "published_resistance_results": {

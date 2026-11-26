@@ -1,0 +1,129 @@
+{
+  "campaign": "continuous-fuzz-two-seed-current-source",
+  "configuration": {
+    "cases_per_target_per_platform": 5000,
+    "max_payload_bytes": 4096,
+    "python": "3.12",
+    "seeds": [
+      20260827,
+      20261125
+    ],
+    "source_script": "scripts/continuous_fuzz.py",
+    "source_script_sha256": "19a7e41eaea0d6e4f891c52723597dc75e7626da9b0ec4b2cebd5096ca13a9bf",
+    "targets": [
+      "assembling",
+      "binary_parsers",
+      "binary_rewriter",
+      "elf_header_parser",
+      "macho_load_commands",
+      "pe_header_parser",
+      "relocations",
+      "vm_bytecode",
+      "vm_dispatcher",
+      "vm_instruction_decoder"
+    ]
+  },
+  "execution": {
+    "runs": [
+      {
+        "completed_at_utc": "2026-11-25T23:06:50Z",
+        "created_at_utc": "2026-11-25T23:03:38Z",
+        "event": "push",
+        "platforms": {
+          "macos-15": {
+            "artifact_archive_sha256": "sha256:5020ccbe05d1cba8b9c05a0f9c3259ad067eb38b0c1092beda4ac49848a69d94",
+            "artifact_id": 15070514088,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 103
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20260827-macos-15.json",
+            "report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+            "target_runs": 50000
+          },
+          "ubuntu-latest": {
+            "artifact_archive_sha256": "sha256:bdac92642d1c54909b2abf1833d66b1efe6d28fd8487f7b3b558fd268aae685d",
+            "artifact_id": 15071256889,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 103
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20260827-ubuntu.json",
+            "report_sha256": "dc81e6ec70777b5547eb2ed9f07fcb33ec9566865f1d73ccfa8aa7618a79fa53",
+            "target_runs": 50000
+          },
+          "windows-latest": {
+            "artifact_archive_sha256": "sha256:86fd40e9503f807225225a033e864240a63b434067900ad1b14bfe73e26b8dec",
+            "artifact_id": 15071795217,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 103
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20260827-windows.json",
+            "report_sha256": "03cdcbe0b6a4fe2a373d605ba4bc1ed40d669674ba30614feb61988b7a1bd21c",
+            "target_runs": 50000
+          }
+        },
+        "run_id": 45718344351,
+        "seed": 20260827,
+        "source_commit": "a1e0099574190f2a9a426750b8286e5bc24ab40d",
+        "status": "success",
+        "url": "https://github.com/seifreed/r2morph/actions/runs/45718344351"
+      },
+      {
+        "completed_at_utc": "2026-11-25T23:58:53Z",
+        "created_at_utc": "2026-11-25T23:56:27Z",
+        "event": "workflow_dispatch",
+        "platforms": {
+          "macos-15": {
+            "artifact_archive_sha256": "sha256:a0dfa987bfaa116b1312fa22439322a4c906d9c97f0fc19be4ace96653797975",
+            "artifact_id": 15074247170,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 104
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20261125-macos-15.json",
+            "report_sha256": "0e06f51e9bccbb917383b51aac0a1fb758092bc0cf2a279b55f98bb6c988ecfb",
+            "target_runs": 50000
+          },
+          "ubuntu-latest": {
+            "artifact_archive_sha256": "sha256:d5351236b27fb7804e200f0c955797c5c8bbb3f283d9b1aa6e97b443195eae0f",
+            "artifact_id": 15074336259,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 104
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20261125-ubuntu.json",
+            "report_sha256": "0e06f51e9bccbb917383b51aac0a1fb758092bc0cf2a279b55f98bb6c988ecfb",
+            "target_runs": 50000
+          },
+          "windows-latest": {
+            "artifact_archive_sha256": "sha256:5d677707d25cfeddbdd6266edf49388928db77b4dade3cbd8ac42e7837489180",
+            "artifact_id": 15073723434,
+            "failure_count": 0,
+            "parser_diagnostic_counts": {
+              "macho_load_commands.warning": 104
+            },
+            "report": "docs/continuous-fuzz-2026-11-25-a1e00995-20261125-windows.json",
+            "report_sha256": "f5a780a5418a936c5908eee68852babb6625011a9249d090b1a288576fa7969a",
+            "target_runs": 50000
+          }
+        },
+        "run_id": 45725093314,
+        "seed": 20261125,
+        "source_commit": "a1e0099574190f2a9a426750b8286e5bc24ab40d",
+        "status": "success",
+        "url": "https://github.com/seifreed/r2morph/actions/runs/45725093314"
+      }
+    ],
+    "total_failures": 0,
+    "total_target_runs": 300000
+  },
+  "limits": [
+    "Fuzz targets are bounded to the ten named parser, rewriting, assembly, relocation, and VM targets.",
+    "The 103/104 recoverable Mach-O parser diagnostics are recorded by the fuzzer and were not counted as failures.",
+    "These runs do not replace corpus coverage, platform/pass parity, or adversarial analyzer measurements."
+  ],
+  "schema_version": 1,
+  "source_commit": "a1e0099574190f2a9a426750b8286e5bc24ab40d"
+}

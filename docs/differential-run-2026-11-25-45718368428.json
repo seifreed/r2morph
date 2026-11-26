@@ -1,0 +1,260 @@
+{
+  "artifact_archives": [
+    {
+      "digest": "sha256:87e8cca8008f3ff297def4b8942cd1ced52cb615dbfd174dd11451a9fbd3d816",
+      "id": 15073491821,
+      "name": "differential-corpus-merged-45718368428-1",
+      "size_bytes": 17740797
+    },
+    {
+      "digest": "sha256:0754fbd4c725fa28a8784f6ab104cd2f444bc5f82efe6b5836fadcb619691c0f",
+      "id": 15072698202,
+      "name": "differential-platform-aggregate-45718368428-1",
+      "size_bytes": 5622
+    },
+    {
+      "digest": "sha256:48343b1a3f86bc0809f369357d7bdfee6f3b7c953bbb0a6bbc315828a54e6919",
+      "id": 15072118954,
+      "name": "vm-semantic-campaign-merged-45718368428-1",
+      "size_bytes": 110805
+    },
+    {
+      "digest": "sha256:fcd7b167aedbcec32e9340ca5c93b44469ef6d8c5ef5674f8ac286c8a15ddc48",
+      "id": 15072462906,
+      "name": "public-compatibility-corpus-aggregate-45718368428-1",
+      "size_bytes": 379
+    },
+    {
+      "digest": "sha256:737808b0adb17b95e8c5ad9795a1a05dea4896fcf9645e6610a43d78972d2fe0",
+      "id": 15073245384,
+      "name": "public-compatibility-corpus-45718368428-1-0",
+      "size_bytes": 333189
+    },
+    {
+      "digest": "sha256:ba0e1aedd60d6e259352ce95e8b1b532b952b27bb2f3f00e7f61fe21e68f948e",
+      "id": 15072362267,
+      "name": "public-compatibility-corpus-45718368428-1-1",
+      "size_bytes": 331777
+    },
+    {
+      "digest": "sha256:4edb359251523eeeae7a578da6d7b2535080be453b60a2dc41fa79e549f08fb9",
+      "id": 15072396508,
+      "name": "public-compatibility-corpus-45718368428-1-2",
+      "size_bytes": 330854
+    },
+    {
+      "digest": "sha256:63f44497328d5b89d921c204c925c8ed6ee83cb88f2b8acda58df8cd7862e3df",
+      "id": 15071993621,
+      "name": "public-compatibility-corpus-45718368428-1-3",
+      "size_bytes": 330001
+    }
+  ],
+  "ci_validation": {
+    "conclusion": "success",
+    "jobs": {
+      "cancelled": 0,
+      "failed": 0,
+      "passed": 19,
+      "total": 19
+    },
+    "run_id": 45718344391,
+    "run_url": "https://github.com/seifreed/r2morph/actions/runs/45718344391",
+    "source_commit": "a1e0099574190f2a9a426750b8286e5bc24ab40d"
+  },
+  "completed_at_utc": "2026-11-25T23:46:35Z",
+  "composition": {
+    "case_count": 46,
+    "error_cases": 0,
+    "failed_cases": 0,
+    "path": "docs/composition-differential-45718368428.xml",
+    "sha256": "48c968e27f2bb579218e2a545ff05829c639981c344d2859d3dd172760ba8e23",
+    "skipped_cases": 0
+  },
+  "conclusion": "success",
+  "core_differential": {
+    "applied_runs": 3480,
+    "classified_seed_runs": 10860,
+    "complete_evidence_coverage_percent": 100.0,
+    "complete_evidence_runs": 10860,
+    "error_runs": 0,
+    "failed_seed_runs": 0,
+    "omitted_runs": 7380,
+    "pass_count": 10,
+    "path": "docs/differential-corpus-merged-45718368428.json.gz",
+    "scope": "Linux ELF x86-64",
+    "semantic_false_positive_observations": 0,
+    "sha256": "034e5f87c22bf014b3eac1b8e9aa67956187e3dfbf026307e820666bb4263e99"
+  },
+  "created_at_utc": "2026-11-25T23:03:49Z",
+  "extended_differential": {
+    "applied_runs": 3406,
+    "classified_seed_runs": 13032,
+    "complete_evidence_coverage_percent": 100.0,
+    "complete_evidence_runs": 13032,
+    "error_runs": 0,
+    "failed_seed_runs": 0,
+    "omitted_runs": 9626,
+    "pass_count": 12,
+    "path": "docs/extended-maturity-merged-45718368428.json.gz",
+    "scope": "Linux ELF x86-64",
+    "semantic_false_positive_observations": 0,
+    "sha256": "19b657ec6e1bd353789f0860ef20303bf3b0eb205c83f2655020e33ed1f533cc"
+  },
+  "jobs": {
+    "cancelled": 0,
+    "failed": 0,
+    "passed": 86,
+    "total": 86
+  },
+  "limits": [
+    "Core and extended pass results measure Linux ELF x86-64 only; the six platform slices are bounded smoke previews and do not establish full pass-by-platform parity.",
+    "The maturity report retains 22 decompiler blockers.",
+    "The public corpus workflow measured radare2 only; optional angr, Binary Ninja, Ghidra, IDA Pro, and Triton runners were omitted.",
+    "These correctness and compatibility measurements do not establish generalized VM resistance."
+  ],
+  "maturity_evidence": {
+    "decompiler_blockers": 22,
+    "other_blockers": {
+      "affected_instructions": 0,
+      "behavioral_false_positive": 0,
+      "composition": 0,
+      "performance": 0
+    },
+    "pass_count": 22,
+    "path": "docs/maturity-evidence-merged-45718368428.json.gz",
+    "sha256": "f7d8dee923b5bceff12e939b08ffc92bef7621647feed2569c5dbb811ca15db8"
+  },
+  "platform_preview": {
+    "case_count": 81,
+    "error_cases": 0,
+    "failed_cases": 0,
+    "passed_cases": 81,
+    "path": "docs/platform-evidence-45718368428.json",
+    "platform_count": 6,
+    "platforms": {
+      "elf-arm-32": {
+        "case_count": 7,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      },
+      "elf-arm64": {
+        "case_count": 8,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      },
+      "elf-x86-32": {
+        "case_count": 8,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      },
+      "macos-arm64": {
+        "case_count": 36,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      },
+      "macos-x86-64": {
+        "case_count": 3,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      },
+      "windows-pe": {
+        "case_count": 19,
+        "error_count": 0,
+        "failure_count": 0,
+        "missing_required_cases": []
+      }
+    },
+    "sha256": "93bb6d2d223b4320574903c95fa829c5db3bddb00610abf212a110dd50bbee2f",
+    "skipped_cases": 0
+  },
+  "public_compatibility": {
+    "corpus_revision": "5f16a6fdcccbe2c3c97100f339a68ab916ca2e19",
+    "differential_failed_samples": 0,
+    "optional_runners": {
+      "angr": {
+        "reason": "runner is not configured in the public corpus workflow",
+        "status": "omitted"
+      },
+      "binary_ninja": {
+        "reason": "runner is not configured in the public corpus workflow",
+        "status": "omitted"
+      },
+      "ghidra": {
+        "reason": "runner is not configured in the public corpus workflow",
+        "status": "omitted"
+      },
+      "ida_pro": {
+        "reason": "runner is not configured in the public corpus workflow",
+        "status": "omitted"
+      },
+      "triton": {
+        "reason": "runner is not configured in the public corpus workflow",
+        "status": "omitted"
+      }
+    },
+    "pass_count": 6,
+    "passes": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "RegisterSubstitution"
+    ],
+    "path": "docs/public-compatibility-merged-45718368428.json.gz",
+    "sample_count": 370,
+    "sha256": "b737d271a05862b5d12f3bed72f8f12ecdbd2539d93b2bfa5a2d3bb176c2dc81",
+    "shards": 4,
+    "static_recovery_analyzer": "radare2",
+    "static_recovery_failed_samples": 0,
+    "static_recovery_rows": 2220
+  },
+  "run_attempt": 1,
+  "run_id": 45718368428,
+  "run_url": "https://github.com/seifreed/r2morph/actions/runs/45718368428",
+  "schema_version": 1,
+  "source_commit": "a1e0099574190f2a9a426750b8286e5bc24ab40d",
+  "vm_regression_contracts": {
+    "capabilities": {
+      "abi-varargs": "regression-covered",
+      "direct-calls": "regression-covered",
+      "fp-simd": "regression-covered",
+      "indirect-calls": "regression-covered",
+      "memory": "regression-covered",
+      "ssa-liveness": "regression-covered",
+      "threads": "regression-covered",
+      "tls-signals": "regression-covered",
+      "unwinding-exceptions": "regression-covered"
+    },
+    "capability_count": 9,
+    "path": "docs/vm-semantic-contracts-merged-45718368428.json.gz",
+    "sha256": "fd591eb4de6b27c305caf72aae15b8313820461b4cfb56ce7d2913c2905f5f85"
+  },
+  "vm_semantic": {
+    "failed_count": 0,
+    "fixture_count": 1005,
+    "fixture_names": 335,
+    "passed_count": 1005,
+    "path": "docs/vm-semantic-campaign-merged-45718368428.json.gz",
+    "qemu": {
+      "completed_pairs": 1005,
+      "divergent_pairs": 0,
+      "missing_pairs": 0,
+      "oracle": "qemu-x86_64",
+      "unavailable_pairs": 0
+    },
+    "seed_count": 3,
+    "sha256": "97f5226d95ee9d6dd9fe3ea58eccfbab0dc2ff36741ddd4cea0f9a66cbdd3924",
+    "target": {
+      "architecture": "x86-64",
+      "format": "ELF",
+      "os": "linux"
+    }
+  },
+  "workflow": "Differential Corpus By Pass"
+}

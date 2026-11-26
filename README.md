@@ -762,7 +762,7 @@ remain; omitted transformations are not successful transformations. This
 bounded evidence does not establish full platform/pass parity, all-named-
 analyzer coverage, or generalized adversarial resistance.
 
-The latest source-bound differential campaign,
+The previous source-bound differential campaign,
 [`45602419475`](https://github.com/seifreed/r2morph/actions/runs/45602419475),
 passed all 86 jobs on source `9c917795`. It classified 10,860 core runs and
 13,032 extended runs with complete evidence and no semantic failures; 3,480
@@ -776,6 +776,31 @@ reports preserve the raw evidence. Twenty-two decompiler blockers remain; the
 platform cases are previews and do not establish equivalence across every
 supported platform. Named analyzer
 coverage and generalized resistance remain open.
+
+The latest source-bound differential campaign,
+[`45718368428`](https://github.com/seifreed/r2morph/actions/runs/45718368428),
+passed all 86 jobs on source `a1e00995`. Its Linux ELF x86-64 core and extended
+matrices classified 10,860 and 13,032 runs respectively, with complete evidence
+for every row and no errors or semantic failures; 3,480 core and 3,406 extended
+transformations applied. The run also passed 46 composition cases, 370 public
+compatibility samples and 2,220 radare2 static-recovery measurements, and
+1,005 VM/QEMU comparisons across three seeds. Six bounded platform previews
+passed 81/81 cases across Windows PE, macOS ARM64/x86-64, and ELF ARM32, ARM64,
+and x86-32. The [hash-bound manifest](docs/differential-run-2026-11-25-45718368428.json)
+and its compressed reports retain report hashes and GitHub artifact digests.
+The maturity report still records 22 decompiler blockers; the public corpus
+omitted optional analyzer runners. The core matrices cover Linux ELF x86-64,
+and the platform rows are bounded previews, so full cross-platform/pass parity,
+all-named analyzer coverage, and generalized resistance remain open.
+The matching [CI run](https://github.com/seifreed/r2morph/actions/runs/45718344391)
+also passed all 19 jobs on that source commit.
+The same source passed two three-platform continuous-fuzz runs with seeds
+`20260827` and `20261125`: 5,000 inputs for each of ten targets on Ubuntu,
+macOS, and Windows, totaling 300,000 target runs with zero failures. The
+fuzzer recorded 103 and 104 recoverable Mach-O parser diagnostics for those
+seeds. Its [hash-bound report set](docs/continuous-fuzz-2026-11-25-a1e00995-summary.json)
+pins each raw report and workflow artifact. This is bounded fuzz evidence for
+the named targets and does not cover every parser or binary format.
 
 The latest completed adversarial analyzer and VM campaign,
 [`45548803519`](https://github.com/seifreed/r2morph/actions/runs/45548803519),
