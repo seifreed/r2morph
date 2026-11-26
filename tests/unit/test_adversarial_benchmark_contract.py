@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts import adversarial_benchmark
+from scripts import adversarial_benchmark, merge_adversarial_replays
 from scripts import adversarial_benchmark_execution as adversarial_execution
 from scripts import adversarial_benchmark_metrics as adversarial_metrics
 from scripts.adversarial_benchmark import (
@@ -45,6 +45,7 @@ from scripts.adversarial_benchmark import (
     _ToolCapabilityUnavailableError,
     benchmark_corpus,
     benchmark_pair,
+    merge_adversarial_replay_reports,
     merge_adversarial_reports,
 )
 from scripts.adversarial_benchmark import (
@@ -268,6 +269,105 @@ def test_protected_replay_requires_an_explicit_pass_name(
     )
     report = json.loads(report_path.read_text(encoding="utf-8"))
     expect(report["pass_names"] == ["CodeVirtualization"] and report["tools"] == [])
+
+
+def _replay_merge_fixtures() -> tuple[dict[str, object], dict[str, object]]:
+    original_sha256 = "a" * _SHA256_HEX_LENGTH
+    protected_sha256 = "b" * _SHA256_HEX_LENGTH
+    environment: dict[str, object] = {
+        "python_implementation": "CPython",
+        "python_version": "3.14.10",
+        "system": "Darwin",
+        "machine": "arm64",
+        "python_hash_seed": "0",
+        "radare2_version": "radare2 6.2.6",
+    }
+    base_tools = [
+        {
+            "tool": tool,
+            "status": "unavailable" if tool == "ida-pro" else "completed",
+            "pass_name": "CodeVirtualization",
+            "pass_status": "applied",
+        }
+        for tool in (*_EXPECTED_TOOLS, "custom")
+    ]
+    base = {
+        "schema_version": 3,
+        "measurement": "protection-adversarial-corpus",
+        "measurement_environment": {**environment, "system": "Linux", "machine": "x86_64"},
+        "corpus": "fixtures",
+        "pass_names": ["CodeVirtualization"],
+        "sample_count": 1,
+        "samples": [
+            {
+                "original": "fixture.elf",
+                "original_sha256": original_sha256,
+                "passes": [
+                    {
+                        "pass_name": "CodeVirtualization",
+                        "status": "applied",
+                        "protected_sha256": protected_sha256,
+                    }
+                ],
+                "tools": base_tools,
+            }
+        ],
+    }
+    replay = {
+        "schema_version": 3,
+        "measurement": "protection-adversarial-pair",
+        "measurement_environment": environment,
+        "original": f"{original_sha256}.bin",
+        "original_sha256": original_sha256,
+        "protected": f"{protected_sha256}.bin",
+        "protected_sha256": protected_sha256,
+        "pass_names": ["CodeVirtualization"],
+        "tool_selection": ["ida-pro"],
+        "tools": [{"tool": "ida-pro", "status": "completed", "original": {}, "protected": {}}],
+    }
+    return base, replay
+
+
+def test_replay_merge_replaces_missing_tool_only_on_matching_binary_hashes() -> None:
+    base, replay = _replay_merge_fixtures()
+
+    merged = merge_adversarial_replay_reports(base, [replay])
+    sample = merged["samples"][0]
+    ida_row = next(row for row in sample["tools"] if row["tool"] == "ida-pro")
+
+    expect(
+        ida_row["status"] == "completed"
+        and ida_row["measurement_environment"] == replay["measurement_environment"]
+        and sample["tool_replay_history"][0]["row"]["status"] == "unavailable"
+        and merged["replay_measurements"][0]["protected_sha256"] == replay["protected_sha256"]
+        and merged["summary"]["completed_tool_runs_by_tool"]["ida-pro"] == 1
+        and next(row for row in base["samples"][0]["tools"] if row["tool"] == "ida-pro")["status"] == "unavailable"
+    )
+
+
+def test_replay_merge_rejects_mismatched_protected_hash() -> None:
+    base, replay = _replay_merge_fixtures()
+    replay["protected_sha256"] = "c" * _SHA256_HEX_LENGTH
+
+    with pytest.raises(ValueError, match="hashes do not match"):
+        merge_adversarial_replay_reports(base, [replay])
+
+
+def test_replay_merge_cli_writes_merged_report(tmp_path: Path) -> None:
+    base, replay = _replay_merge_fixtures()
+    base_path = tmp_path / "base.json"
+    replay_path = tmp_path / "replay.json"
+    output_path = tmp_path / "nested" / "merged.json"
+    base_path.write_text(json.dumps(base), encoding="utf-8")
+    replay_path.write_text(json.dumps(replay), encoding="utf-8")
+
+    merge_adversarial_replays.main(
+        ["--base", str(base_path), "--replay", str(replay_path), "--output", str(output_path)]
+    )
+    merged = json.loads(output_path.read_text(encoding="utf-8"))
+    ida_row = next(row for row in merged["samples"][0]["tools"] if row["tool"] == "ida-pro")
+
+    expect(ida_row["status"] == "completed" and len(merged["replay_measurements"]) == 1)
 
 
 def test_adversarial_benchmark_rejects_a_missing_protected_binary() -> None:

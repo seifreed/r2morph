@@ -107,7 +107,9 @@ with `--artifact-dir`. A second run can select a specific analyzer using
 and protected files with `--protected`; reports retain both binary hashes and
 the pass name. See [compatibility corpus replay guidance](docs/compatibility-corpus.md#cross-host-analyzer-replay).
 Scheduled adversarial shards upload these replay bundles with a seven-day
-retention period.
+retention period. [The replay merger](docs/compatibility-corpus.md#cross-host-analyzer-replay)
+validates both hashes, the fixture, and the pass before it fills incomplete
+analyzer rows in the aggregate.
 The full differential corpus runs weekly or by manual dispatch; each push still
 runs the general CI checks without queuing the long corpus campaign.
 The aggregate handles both a single report extracted directly into its target

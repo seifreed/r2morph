@@ -63,6 +63,21 @@ The scheduled adversarial workflow retains each shard's replay bundle for
 seven days so locally available analyzers can inspect the exact Linux-generated
 outputs while the campaign is current.
 
+After collecting replay reports, merge them into the aggregate only when their
+fixture, pass, and both hashes match the base report:
+
+```bash
+python scripts/merge_adversarial_replays.py \
+  --base adversarial-benchmark-merged.json \
+  --replay ida-replay.json \
+  --output adversarial-benchmark-with-replays.json
+```
+
+The merger replaces an incomplete base tool row only with a completed replay,
+retains the superseded row and each host environment, and rejects duplicate
+completed measurements or any hash mismatch. Non-completed replay results are
+kept as diagnostics without improving analyzer coverage.
+
 The scheduled `public-compatibility-corpus` job checks out that immutable commit,
 builds its full GCC/Clang matrix, then selects a deterministic bounded matrix
 with five variants per source/compiler: `O0` and `O1` non-PIE with symbols and

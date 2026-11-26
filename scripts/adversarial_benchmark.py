@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -224,6 +226,8 @@ from scripts.protection_maturity_baseline import (
     discover_executables,
 )
 
+_ADVERSARIAL_REPORT_SCHEMA_VERSION = 3
+
 
 def benchmark_pair(
     original: Path,
@@ -257,7 +261,8 @@ def benchmark_pair(
     tool_summary = _tool_summary([{"tools": tools}])
     release_signoff_blockers = _release_signoff_blockers(tool_summary)
     report: dict[str, object] = {
-        "schema_version": 3,
+        "schema_version": _ADVERSARIAL_REPORT_SCHEMA_VERSION,
+        "measurement": "protection-adversarial-pair",
         "measurement_environment": _measurement_environment(),
         "original": original.name,
         "original_sha256": original_sha256,
@@ -335,7 +340,7 @@ def benchmark_corpus(  # noqa: PLR0913
             for fixture in fixtures
         ]
     report: dict[str, object] = {
-        "schema_version": 3,
+        "schema_version": _ADVERSARIAL_REPORT_SCHEMA_VERSION,
         "measurement": "protection-adversarial-corpus",
         "measurement_environment": _measurement_environment(),
         "corpus": dataset.name,
@@ -478,7 +483,7 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
         samples.extend(report_samples)
     pass_names = tuple(first_pass_names)
     merged: dict[str, object] = {
-        "schema_version": 3,
+        "schema_version": _ADVERSARIAL_REPORT_SCHEMA_VERSION,
         "measurement": "protection-adversarial-corpus",
         "corpus": corpus,
         "pass_names": first_pass_names,
@@ -492,6 +497,230 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
         merged["corpus_scope"] = corpus_scope
     if environment is not None:
         merged["measurement_environment"] = environment
+    return merged
+
+
+def _replay_report_identity(
+    report: dict[str, object],
+) -> tuple[str, str, str, dict[str, object], list[str], list[dict[str, object]]]:
+    if report.get("schema_version") != _ADVERSARIAL_REPORT_SCHEMA_VERSION:
+        raise ValueError("replay report uses an unsupported schema version")
+    original_sha256 = report.get("original_sha256")
+    protected_sha256 = report.get("protected_sha256")
+    pass_names = report.get("pass_names")
+    tool_selection = report.get("tool_selection")
+    environment = report.get("measurement_environment")
+    tools = report.get("tools")
+    if not isinstance(original_sha256, str) or not isinstance(protected_sha256, str):
+        raise ValueError("replay report is missing original/protected hashes")
+    if (
+        not isinstance(pass_names, list)
+        or len(pass_names) != 1
+        or not isinstance(pass_names[0], str)
+        or not isinstance(tool_selection, list)
+        or not tool_selection
+        or not all(isinstance(tool, str) for tool in tool_selection)
+    ):
+        raise ValueError("replay report must identify exactly one pass and selected analyzer tools")
+    if (
+        not isinstance(environment, dict)
+        or not isinstance(tools, list)
+        or not all(isinstance(row, dict) for row in tools)
+    ):
+        raise ValueError("replay report is missing environment or analyzer rows")
+    row_tools = [row.get("tool") for row in tools]
+    if (
+        any(tool not in tool_selection for tool in row_tools)
+        or len(set(row_tools)) != len(row_tools)
+        or set(row_tools) != set(tool_selection)
+    ):
+        raise ValueError("replay report rows do not match its declared analyzer selection")
+    if not _is_sha256(original_sha256) or not _is_sha256(protected_sha256):
+        raise ValueError("replay report contains invalid binary hashes")
+    return original_sha256, protected_sha256, pass_names[0], environment, tool_selection, tools
+
+
+def _is_sha256(value: str) -> bool:
+    return len(value) == _SHA256_HEX_LENGTH and all(character in "0123456789abcdef" for character in value)
+
+
+_SHA256_HEX_LENGTH = 64
+
+
+def _find_replay_target(
+    samples_by_hash: dict[str, dict[str, object]],
+    original_sha256: str,
+    pass_name: str,
+    protected_sha256: str,
+) -> tuple[dict[str, object], dict[str, object]]:
+    sample = samples_by_hash.get(original_sha256)
+    if sample is None:
+        raise ValueError(f"replay original hash is absent from base corpus: {original_sha256}")
+    if not _is_sha256(original_sha256) or not _is_sha256(protected_sha256):
+        raise ValueError("base corpus contains an invalid binary hash")
+    pass_rows = sample.get("passes")
+    if not isinstance(pass_rows, list) or not all(isinstance(row, dict) for row in pass_rows):
+        raise ValueError("base corpus sample has invalid pass rows")
+    matching = [row for row in pass_rows if row.get("pass_name") == pass_name]
+    if len(matching) != 1 or matching[0].get("protected_sha256") != protected_sha256:
+        raise ValueError("replay hashes do not match the base sample and pass")
+    return sample, matching[0]
+
+
+@dataclass
+class _ReplayMergeContext:
+    original_sha256: str
+    pass_name: str
+    pass_status: str
+    environment: dict[str, object]
+    base_environment: object
+    seen_rows: set[tuple[str, str, str]]
+    diagnostics: list[object]
+    history: list[object]
+
+
+def _merge_one_replay_row(
+    sample_tools: list[dict[str, object]],
+    row: dict[str, object],
+    context: _ReplayMergeContext,
+) -> None:
+    tool_name = row.get("tool")
+    if not isinstance(tool_name, str):
+        raise ValueError("replay analyzer row has no tool name")
+    identity = (context.original_sha256, context.pass_name, tool_name)
+    if identity in context.seen_rows:
+        raise ValueError(f"duplicate replay for {tool_name} on {context.original_sha256}/{context.pass_name}")
+    context.seen_rows.add(identity)
+    replay_row = {**row, "pass_name": context.pass_name, "pass_status": context.pass_status}
+    if row.get("status") != "completed":
+        context.diagnostics.append({"row": replay_row, "measurement_environment": context.environment})
+        return
+    replay_row["measurement_environment"] = context.environment
+    existing = [
+        index
+        for index, base_row in enumerate(sample_tools)
+        if base_row.get("tool") == tool_name and base_row.get("pass_name") == context.pass_name
+    ]
+    if len(existing) > 1:
+        raise ValueError(f"base corpus has duplicate analyzer rows for {tool_name}/{context.pass_name}")
+    if existing:
+        index = existing[0]
+        if sample_tools[index].get("status") == "completed":
+            raise ValueError(f"base corpus already has a completed {tool_name} measurement")
+        context.history.append({"row": sample_tools[index], "measurement_environment": context.base_environment})
+        sample_tools[index] = replay_row
+        return
+    sample_tools.append(replay_row)
+
+
+def _replay_sample_state(
+    sample: dict[str, object],
+    pass_row: dict[str, object],
+) -> tuple[list[dict[str, object]], str, str, list[object], list[object]]:
+    sample_tools = sample.get("tools")
+    if not isinstance(sample_tools, list) or not all(isinstance(row, dict) for row in sample_tools):
+        raise ValueError("base corpus sample has invalid analyzer rows")
+    original_sha256 = sample.get("original_sha256")
+    if not isinstance(original_sha256, str) or not isinstance(pass_row.get("protected_sha256"), str):
+        raise ValueError("base corpus sample is missing binary hashes")
+    pass_status = pass_row.get("status")
+    if not isinstance(pass_status, str):
+        raise ValueError("base corpus pass has no status")
+    diagnostics = sample.setdefault("tool_replay_diagnostics", [])
+    history = sample.setdefault("tool_replay_history", [])
+    if not isinstance(diagnostics, list) or not isinstance(history, list):
+        raise ValueError("base corpus replay metadata has an invalid shape")
+    return sample_tools, original_sha256, pass_status, diagnostics, history
+
+
+def merge_adversarial_replay_reports(
+    base_report: dict[str, object],
+    replay_reports: list[dict[str, object]],
+) -> dict[str, object]:
+    """Fill incomplete analyzer rows only when replayed binary/pass hashes match."""
+    if not replay_reports:
+        raise ValueError("at least one analyzer replay report is required")
+    if base_report.get("measurement") != "protection-adversarial-corpus":
+        raise ValueError("base report is not an adversarial corpus report")
+    samples = base_report.get("samples")
+    pass_names = base_report.get("pass_names")
+    if (
+        not isinstance(samples, list)
+        or not all(isinstance(sample, dict) for sample in samples)
+        or not isinstance(pass_names, list)
+        or not all(isinstance(name, str) for name in pass_names)
+    ):
+        raise ValueError("base corpus report has invalid samples or pass scope")
+    merged = copy.deepcopy(base_report)
+    merged_samples = cast(list[dict[str, object]], merged["samples"])
+    samples_by_hash: dict[str, dict[str, object]] = {}
+    for sample in merged_samples:
+        original_sha256 = sample.get("original_sha256")
+        if (
+            not isinstance(original_sha256, str)
+            or not _is_sha256(original_sha256)
+            or original_sha256 in samples_by_hash
+        ):
+            raise ValueError("base corpus has missing or duplicate original hashes")
+        samples_by_hash[original_sha256] = sample
+    base_environment = merged.get("measurement_environment")
+    existing_replay_measurements = merged.get("replay_measurements", [])
+    if not isinstance(existing_replay_measurements, list) or not all(
+        isinstance(item, dict) for item in existing_replay_measurements
+    ):
+        raise ValueError("base report has invalid replay measurement metadata")
+    replay_measurements: list[dict[str, object]] = list(existing_replay_measurements)
+    seen_rows: set[tuple[str, str, str]] = set()
+    for replay in replay_reports:
+        if replay.get("measurement") not in (None, "protection-adversarial-pair"):
+            raise ValueError("replay report has an unexpected measurement type")
+        original_sha256, protected_sha256, pass_name, environment, tool_selection, replay_tools = (
+            _replay_report_identity(replay)
+        )
+        if pass_name not in pass_names:
+            raise ValueError(f"replay pass is absent from the base corpus: {pass_name}")
+        sample, pass_row = _find_replay_target(samples_by_hash, original_sha256, pass_name, protected_sha256)
+        sample_tools, sample_sha256, pass_status, diagnostics, history = _replay_sample_state(sample, pass_row)
+        context = _ReplayMergeContext(
+            original_sha256=sample_sha256,
+            pass_name=pass_name,
+            pass_status=pass_status,
+            environment=environment,
+            base_environment=base_environment,
+            seen_rows=seen_rows,
+            diagnostics=diagnostics,
+            history=history,
+        )
+        for row in replay_tools:
+            _merge_one_replay_row(sample_tools, row, context)
+        fingerprint = hashlib.sha256(
+            json.dumps(replay, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        ).hexdigest()
+        replay_measurements.append(
+            {
+                "report_sha256": fingerprint,
+                "original_sha256": original_sha256,
+                "protected_sha256": protected_sha256,
+                "pass_name": pass_name,
+                "tools": tool_selection,
+                "measurement_environment": environment,
+            }
+        )
+    for sample in merged_samples:
+        sample_tools = sample.get("tools")
+        if not isinstance(sample_tools, list):
+            raise ValueError("merged sample has invalid analyzer rows")
+        sample_tool_summary = _tool_summary([{"tools": sample_tools}])
+        sample["tool_summary"] = sample_tool_summary
+        sample["release_signoff_blockers"] = _release_signoff_blockers(sample_tool_summary)
+        sample["release_signoff_blocker_totals"] = _blocker_totals(
+            sample["release_signoff_blockers"],
+            "total_release_signoff_blockers",
+        )
+    merged["replay_measurements"] = replay_measurements
+    merged["tool_summary"] = _tool_summary(merged_samples)
+    merged["pass_summary"] = _pass_summary(merged_samples)
+    merged["summary"] = _campaign_summary(merged_samples, len(merged_samples), tuple(pass_names))
     return merged
 
 
