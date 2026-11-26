@@ -10,6 +10,13 @@ all-named-analyzer release criterion. Historical campaign results below retain
 the availability facts and release policy that applied when those reports were
 generated.
 
+The Linux adversarial workflow installs the required dynamic binary-analysis
+library `triton-library==1.0.0rc4` separately from r2morph's runtime
+dependencies. It verifies an x86-64 instruction before the campaign and pins
+the CPython 3.12 Linux wheel by SHA-256. The measured Triton rows include that
+analyzer version. This prerelease analyzer build is benchmark tooling, not a
+production dependency of the package.
+
 Adversarial corpus reports record Python implementation/version, operating
 system, architecture, `PYTHONHASHSEED`, and the radare2 version used to produce
 the protected binaries. The shard merger rejects mixed or missing environment

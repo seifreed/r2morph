@@ -12,7 +12,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
-from importlib import import_module
+from importlib import import_module, metadata
 from pathlib import Path
 from queue import Empty
 from typing import Any
@@ -337,6 +337,7 @@ def _executable_segment_bytes(path: Path) -> tuple[tuple[int, bytes], ...]:
 
 def _triton_metric(path: Path) -> dict[str, object]:
     triton = import_module("triton")
+    analyzer_version = metadata.version("triton-library")
     context = triton.TritonContext(triton.ARCH.X86_64)
     started = time.perf_counter()
     decoded = 0
@@ -370,6 +371,7 @@ def _triton_metric(path: Path) -> dict[str, object]:
             break
     return {
         "status": "completed",
+        "analyzer_version": analyzer_version,
         "decoded_instructions": decoded,
         "semantically_supported_instructions": supported,
         "symbolic_expressions": symbolic_expressions,

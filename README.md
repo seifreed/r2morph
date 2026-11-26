@@ -100,6 +100,10 @@ installs the pinned radare2 6.2.2 Debian package after verifying its SHA-256;
 other hosts retain the source-build path.
 The 32-shard adversarial analyzer campaign runs at most eight shards at once
 and serializes campaigns by ref, leaving runner capacity for commit validation.
+Its Linux benchmark installs the dynamic binary-analysis library
+`triton-library==1.0.0rc4` with a SHA-256 pin and exercises an x86-64 instruction
+before measurement. This analyzer-only prerequisite is not part of the r2morph
+runtime dependencies; each completed Triton row records the analyzer version.
 For reproducible analyzer replay across hosts, the adversarial benchmark can
 export content-addressed original/protected files and a SHA-256-bound manifest
 with `--artifact-dir`. A second run can select a specific analyzer using

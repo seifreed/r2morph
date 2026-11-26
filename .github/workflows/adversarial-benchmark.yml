@@ -90,6 +90,22 @@ jobs:
           python -m build
           python -m pip install --force-reinstall dist/*.whl
 
+      - name: Install and verify required Triton binary analyzer
+        run: |
+          printf '%s\n' 'triton-library==1.0.0rc4 --hash=sha256:e0f828c8c1c037ccf8881d1b9e2a8565791e31d1594bd548b168bbfddcc653a5' > "$RUNNER_TEMP/triton-requirements.txt"
+          python -m pip install --only-binary=:all: --require-hashes -r "$RUNNER_TEMP/triton-requirements.txt"
+          python - <<'PY'
+          from importlib.metadata import version
+
+          from triton import ARCH, EXCEPTION, Instruction, TritonContext
+
+          context = TritonContext(ARCH.X86_64)
+          instruction = Instruction(0x1000, b"\x90")
+          if context.processing(instruction) != EXCEPTION.NO_FAULT or instruction.getSize() != 1:
+              raise SystemExit("Triton x86-64 smoke test failed")
+          print(f"triton-library {version('triton-library')}: x86-64 instruction semantics passed")
+          PY
+
       - name: Run benchmark
         run: |
           wheel_root=/tmp/r2morph-adversarial-wheel-check

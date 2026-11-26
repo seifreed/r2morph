@@ -66,6 +66,28 @@ def test_adversarial_campaign_yields_runner_capacity_to_ci() -> None:
     )
 
 
+def test_adversarial_campaign_installs_hash_pinned_binary_triton() -> None:
+    workflow = yaml.safe_load(
+        (_ROOT / ".github" / "workflows" / "adversarial-benchmark.yml").read_text(encoding="utf-8")
+    )
+    steps = workflow["jobs"]["benchmark"]["steps"]
+    triton_step_index = next(
+        index
+        for index, step in enumerate(steps)
+        if step.get("name") == "Install and verify required Triton binary analyzer"
+    )
+    triton_run = steps[triton_step_index]["run"]
+    benchmark_step_index = next(index for index, step in enumerate(steps) if step.get("name") == "Run benchmark")
+
+    expect(
+        triton_step_index < benchmark_step_index
+        and "triton-library==1.0.0rc4" in triton_run
+        and "e0f828c8c1c037ccf8881d1b9e2a8565791e31d1594bd548b168bbfddcc653a5" in triton_run
+        and "pip install --only-binary=:all: --require-hashes" in triton_run
+        and "context.processing(instruction)" in triton_run
+    )
+
+
 def test_ci_supersedes_obsolete_push_validation() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 

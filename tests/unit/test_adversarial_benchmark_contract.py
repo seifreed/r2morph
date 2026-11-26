@@ -5,12 +5,14 @@ import json
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts import adversarial_benchmark, merge_adversarial_replays
 from scripts import adversarial_benchmark_execution as adversarial_execution
 from scripts import adversarial_benchmark_metrics as adversarial_metrics
+from scripts import adversarial_benchmark_tools as adversarial_tools
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
@@ -843,6 +845,39 @@ def test_adversarial_benchmark_runs_triton_when_available() -> None:
             and result["protected"]["semantically_supported_instructions"] > 0
         )
     )
+
+
+def test_triton_measurement_records_the_installed_analyzer_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeInstruction:
+        def __init__(self, _address: int, _code: bytes) -> None:
+            pass
+
+        @staticmethod
+        def getSize() -> int:  # noqa: N802 - mirrors the Triton binding API
+            return 1
+
+        @staticmethod
+        def getSymbolicExpressions() -> list[object]:  # noqa: N802 - mirrors the Triton binding API
+            return []
+
+    class FakeContext:
+        @staticmethod
+        def processing(_instruction: FakeInstruction) -> str:
+            return "no-fault"
+
+    fake_triton = SimpleNamespace(
+        ARCH=SimpleNamespace(X86_64="x86-64"),
+        EXCEPTION=SimpleNamespace(NO_FAULT="no-fault"),
+        TritonContext=lambda _architecture: FakeContext(),
+        Instruction=FakeInstruction,
+    )
+    monkeypatch.setattr(adversarial_tools, "import_module", lambda _module: fake_triton)
+    monkeypatch.setattr(adversarial_tools.metadata, "version", lambda _distribution: "1.0.0rc4")
+    monkeypatch.setattr(adversarial_tools, "_executable_segment_bytes", lambda _path: ((0x1000, b"\x90"),))
+
+    result = adversarial_tools._triton_metric(Path("fixture.elf"))
+
+    expect(result["status"] == "completed" and result["analyzer_version"] == "1.0.0rc4")
 
 
 def test_adversarial_benchmark_records_angr_decompiler_output_when_available() -> None:
