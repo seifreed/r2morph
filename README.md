@@ -401,6 +401,17 @@ semantic equivalence, or generalized resistance. See the [summary](docs/protecti
 [compressed report](docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz),
 and [regression test](tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py).
 
+A repository-only shard-0 run on current `main` (`14e8e052`) expanded this
+measurement to six ELF fixtures across all 22 passes: IDA Pro and Ghidra each
+completed 132/132 rows without errors. The nine analyzer slots contained
+1,188 rows: 924 completed, 264 unavailable, zero errors, and no missing rows.
+The unavailable rows were Triton (required) and Binary Ninja (optional). This
+is shard 0/32 and excludes the generated ELF/C++ corpus, which requires a Linux
+x86-64 toolchain; the complete analyzer and release gates remain open. See the
+[hash-bound summary](docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shard_00_14e8e0.py).
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence

@@ -196,7 +196,10 @@
         "docs/public-compatibility-merged-45718368428.json.gz",
         "docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33-summary.json",
         "docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz",
-        "tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py"
+        "tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py",
+        "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json",
+        "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz",
+        "tests/unit/test_published_current_main_repository_shard_00_14e8e0.py"
       ]
     },
     "complete_compatibility_contract": {
