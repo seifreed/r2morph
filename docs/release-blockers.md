@@ -6,6 +6,17 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source CI and Intel Mach-O smoke — 2026-11-26
+
+CI run
+[`45732733952`](https://github.com/seifreed/r2morph/actions/runs/45732733952)
+passed all 19 jobs on source `ba3e7cfac5edec624816fcdbd4b4797bea5246b4`.
+The Intel macOS installed-package smoke includes native x86-64 Mach-O
+constant-unfolding and dead-code-injection cases; both are now recorded as
+experimental pass/target evidence in [`support-matrix.json`](support-matrix.json).
+This is evidence for those two cells only. It does not close full platform
+parity, all-analyzer availability, or published generalized VM resistance.
+
 ## Follow-up adversarial analyzer and VM campaign — 2026-11-25
 
 Workflow

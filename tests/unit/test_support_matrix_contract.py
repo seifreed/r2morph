@@ -11,14 +11,14 @@ _README = Path(__file__).resolve().parents[2] / "README.md"
 _PASS_MATURITY = Path(__file__).resolve().parents[2] / "docs" / "pass-maturity.md"
 _MATRIX = Path(__file__).resolve().parents[2] / "docs" / "support-matrix.json"
 _STRING_OBFUSCATION_ID = "string-obfuscation"
-_EXPECTED_EVIDENCED_CELLS = 66
-_EXPECTED_NOT_SUPPORTED_CELLS = 198
-_EXPECTED_DECLARED_SUPPORT_CELLS = 66
-_EXPECTED_UNCLAIMED_CELLS = 198
-_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 48, "preview": 13, "supported": 5}
-_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 44
-_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 198
-_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 198
+_EXPECTED_EVIDENCED_CELLS = 68
+_EXPECTED_NOT_SUPPORTED_CELLS = 196
+_EXPECTED_DECLARED_SUPPORT_CELLS = 68
+_EXPECTED_UNCLAIMED_CELLS = 196
+_EXPECTED_TARGET_SUPPORT_STATUS_COUNTS = {"experimental": 50, "preview": 13, "supported": 5}
+_EXPECTED_NON_OFFICIAL_EVIDENCED_CELLS = 46
+_EXPECTED_NON_OFFICIAL_NOT_SUPPORTED_CELLS = 196
+_EXPECTED_NON_OFFICIAL_MISSING_EVIDENCE_CELLS = 196
 _EXPECTED_STABILITY_COUNTS = {"experimental": 17, "tier-1": 5}
 _EXPECTED_MATURITY_PROFILE_COUNTS = {
     "anti-disassembly-instruction-catalogued": 1,
@@ -78,6 +78,32 @@ def test_support_matrix_records_pe_x86_nop_evidence_as_preview() -> None:
         and cell["evidence"]
         == ["tests/integration/test_nop_insertion_pe_real.py::test_nop_insertion_pe_x86_preserves_native_execution"]
     )
+
+
+def test_support_matrix_records_native_intel_macho_experimental_evidence() -> None:
+    document = json.loads(_MATRIX.read_text(encoding="utf-8"))
+    matrix = build_matrix(document)
+    cases = {
+        "dead-code-injection": (
+            "tests/integration/test_macho_x86_64_dead_code.py",
+            "test_macho_x86_64_dead_code_injection_preserves_native_observables",
+        ),
+        "constant-unfolding": (
+            "tests/integration/test_macho_x86_64_constant_unfolding.py",
+            "test_macho_x86_64_constant_unfolding_preserves_native_observables",
+        ),
+    }
+
+    for pass_name, (test_module, test_name) in cases.items():
+        cell = next(
+            cell
+            for cell in matrix["cells"]
+            if (cell["pass"], cell["format"], cell["architecture"]) == (pass_name, "Mach-O", "x86-64")
+        )
+        test_id = f"{test_module}::{test_name}"
+        expect(
+            cell["status"] == "evidenced" and cell["support_status"] == "experimental" and test_id in cell["evidence"]
+        )
 
 
 def test_support_matrix_records_pe_x86_tier1_mutation_evidence() -> None:

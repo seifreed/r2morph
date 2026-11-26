@@ -189,8 +189,8 @@ mnemonics even when lowering replaces them with internal VM opcodes (for example
 
 The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json):
 the generated matrix currently records 22/22 evidenced cells for the official
-ELF x86-64 target (100.0% evidence) and 44/242 evidenced cells for non-official
-targets (18.18% evidence). It currently classifies 5 passes as Tier 1 and
+ELF x86-64 target (100.0% evidence) and 46/242 evidenced cells for non-official
+targets (19.01% evidence). It currently classifies 5 passes as Tier 1 and
 17 passes as experimental. ELF ARM32 and AArch64 add QEMU differential cases
 for string obfuscation of unreferenced `.rodata` values; they do not establish
 general ARM parity. PE x86 now has a preview execution fixture for string
@@ -198,9 +198,10 @@ obfuscation in the Windows PE differential smoke; its reference checks
 normalize section RVAs with the PE ImageBase and preserve already absolute VAs.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
-native output. The Intel Mach-O suite now also exercises constant unfolding
-against native output; its support-matrix evidence remains unchanged until that
-runner passes the new case. These are bounded experimental pass results; they do not
+native output. Current-source CI also passed native constant-unfolding and
+dead-code-injection smokes in [run 45732733952](https://github.com/seifreed/r2morph/actions/runs/45732733952).
+The support matrix records those two pass/target cells as experimental. These
+are bounded experimental pass results; they do not
 establish full Mach-O or cross-platform parity. It runs in a fresh pytest
 process. Apple Silicon CI checks the installed package without claiming
 Rosetta x86-64 execution coverage.

@@ -579,7 +579,8 @@
       "name": "dead-code-injection",
       "stability": "experimental",
       "formats": [
-        "ELF"
+        "ELF",
+        "Mach-O"
       ],
       "architectures": [
         "x86-64"
@@ -588,6 +589,13 @@
         {
           "format": "ELF",
           "architecture": "x86-64"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_macho_x86_64_dead_code.py::test_macho_x86_64_dead_code_injection_preserves_native_observables"
+          ]
         }
       ],
       "evidence": [
@@ -597,6 +605,11 @@
       "target_cells": [
         {
           "format": "ELF",
+          "architecture": "x86-64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
           "architecture": "x86-64",
           "support_status": "experimental"
         }
@@ -813,6 +826,13 @@
           ]
         },
         {
+          "format": "Mach-O",
+          "architecture": "x86-64",
+          "evidence": [
+            "tests/integration/test_macho_x86_64_constant_unfolding.py::test_macho_x86_64_constant_unfolding_preserves_native_observables"
+          ]
+        },
+        {
           "format": "PE",
           "architecture": "x86-64",
           "evidence": [
@@ -860,6 +880,11 @@
         {
           "format": "Mach-O",
           "architecture": "AArch64",
+          "support_status": "experimental"
+        },
+        {
+          "format": "Mach-O",
+          "architecture": "x86-64",
           "support_status": "experimental"
         },
         {
@@ -1667,21 +1692,21 @@
     },
     "cell_count": 264,
     "summary": {
-      "declared_support_cells": 66,
-      "unclaimed_cells": 198,
+      "declared_support_cells": 68,
+      "unclaimed_cells": 196,
       "target_support_status_counts": {
-        "experimental": 48,
+        "experimental": 50,
         "preview": 13,
         "supported": 5
       },
-      "evidenced_cells": 66,
-      "not_supported_cells": 198,
+      "evidenced_cells": 68,
+      "not_supported_cells": 196,
       "official_evidenced_cells": 22,
       "official_not_supported_cells": 0,
       "official_evidence_percent": 100.0,
-      "non_official_evidenced_cells": 44,
-      "non_official_not_supported_cells": 198,
-      "non_official_evidence_percent": 18.18,
+      "non_official_evidenced_cells": 46,
+      "non_official_not_supported_cells": 196,
+      "non_official_evidence_percent": 19.01,
       "non_official_gap_targets": [
         {
           "format": "ELF",
@@ -1728,9 +1753,9 @@
         {
           "format": "Mach-O",
           "architecture": "x86-64",
-          "evidenced_cells": 6,
-          "not_supported_cells": 16,
-          "evidence_percent": 27.27
+          "evidenced_cells": 8,
+          "not_supported_cells": 14,
+          "evidence_percent": 36.36
         },
         {
           "format": "PE",
@@ -1805,9 +1830,9 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 6,
-            "not_supported_cells": 16,
-            "evidence_percent": 27.27
+            "evidenced_cells": 8,
+            "not_supported_cells": 14,
+            "evidence_percent": 36.36
           },
           {
             "format": "PE",
@@ -1902,9 +1927,9 @@
           {
             "format": "Mach-O",
             "architecture": "x86-64",
-            "evidenced_cells": 6,
-            "not_supported_cells": 16,
-            "evidence_percent": 27.27
+            "evidenced_cells": 8,
+            "not_supported_cells": 14,
+            "evidence_percent": 36.36
           },
           {
             "format": "PE",
@@ -1948,7 +1973,7 @@
         }
       },
       "parity_blocker_totals": {
-        "non_official_missing_evidence_cells": 198,
+        "non_official_missing_evidence_cells": 196,
         "non_official_gap_targets": 11,
         "parity_gap_architectures": 3,
         "parity_gap_formats": 2,
@@ -3136,10 +3161,12 @@
         "pass": "dead-code-injection",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "experimental",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_macho_x86_64_dead_code.py::test_macho_x86_64_dead_code_injection_preserves_native_observables"
+        ]
       },
       {
         "pass": "dead-code-injection",
@@ -3929,10 +3956,12 @@
         "pass": "constant-unfolding",
         "format": "Mach-O",
         "architecture": "x86-64",
-        "declared_support": false,
-        "support_status": null,
-        "status": "not-supported",
-        "evidence": []
+        "declared_support": true,
+        "support_status": "experimental",
+        "status": "evidenced",
+        "evidence": [
+          "tests/integration/test_macho_x86_64_constant_unfolding.py::test_macho_x86_64_constant_unfolding_preserves_native_observables"
+        ]
       },
       {
         "pass": "constant-unfolding",
