@@ -12,6 +12,7 @@ _REQUIRED_WHEEL_GATED_SMOKES = (
     "Run parser and rewriter fuzz smoke",
     "Run extended maturity pass smoke",
 )
+_FUZZ_VALIDATOR_COUNT = 2
 
 
 def _workflow_step(workflow: str, name: str) -> str:
@@ -64,4 +65,4 @@ def test_full_differential_corpus_runs_on_schedule_or_manual_dispatch() -> None:
 def test_differential_fuzz_validators_cover_high_level_rewriter_target() -> None:
     workflow = (_ROOT / ".github" / "workflows" / "differential-corpus.yml").read_text(encoding="utf-8")
 
-    expect(workflow.count('"binary_rewriter_output": 2,') == 2)
+    expect(workflow.count('"binary_rewriter_output": 2,') == _FUZZ_VALIDATOR_COUNT)
