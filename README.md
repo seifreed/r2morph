@@ -642,6 +642,11 @@ unchanged. A second `binary_rewriter_output` target runs the high-level rewrite
 and atomic output path every 32 inputs against a real ELF fixture, verifies that
 only the selected byte changed, and reparses the output. It checks file-output
 integration, not execution equivalence of the mutated ELF.
+The 64-case differential-corpus fuzz smoke validates both rewriter targets;
+`binary_rewriter_output` runs twice at that size. The Nov 26, 2026 run exposed
+stale target inventories in both campaign validators. The fuzz report itself had
+zero failures; the workflow rejected it because those inventories omitted the
+high-level output target.
 The `assembling` target exercises `AssemblyService` normalization and result
 handling against a bounded Keystone-backed `rasm2` test double, including
 invalid instructions. It does not replace integration tests using native

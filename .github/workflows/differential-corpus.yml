@@ -498,6 +498,7 @@ jobs:
               "vm_instruction_decoder": 64,
               "relocations": 64,
               "binary_rewriter": 64,
+              "binary_rewriter_output": 2,
           }
           if report["failure_count"] != 0:
               raise SystemExit(f"fuzz smoke failures: {report['failures']}")
@@ -1280,6 +1281,7 @@ jobs:
               "vm_instruction_decoder": 64,
               "relocations": 64,
               "binary_rewriter": 64,
+              "binary_rewriter_output": 2,
           }
           for path in require_evidence_files("fuzz-reports", 1):
               fuzz_report = json.loads(path.read_text(encoding="utf-8"))
