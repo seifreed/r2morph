@@ -6,6 +6,24 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+## Current-source file-output fuzz campaign — 2026-11-26
+
+Continuous Fuzzing run
+[45737909955](https://github.com/seifreed/r2morph/actions/runs/45737909955)
+passed on source `3b23bd501b41dbda8b4feda1480acd88ce1f8e57` on Ubuntu,
+macOS 15, and Windows. Each runner completed 5,000 cases per target, including
+157 sampled calls through the high-level binary file-output path, for 150,471
+target runs total and zero failures. That target checked the selected patch
+bytes and reparsed each result using one ELF fixture; it does not test execution
+equivalence. The [hash-bound manifest](continuous-fuzz-2026-11-26-45737909955-summary.json),
+three [raw platform reports](continuous-fuzz-2026-11-26-45737909955-ubuntu-latest.json),
+[macOS](continuous-fuzz-2026-11-26-45737909955-macos-15.json),
+[Windows](continuous-fuzz-2026-11-26-45737909955-windows-latest.json), and
+[regression test](../tests/unit/test_published_continuous_fuzz_45737909955.py)
+pin the evidence. This bounded campaign does not establish exhaustive fuzz
+coverage, full compatibility, semantic equivalence, or generalized resistance;
+those release gates remain open.
+
 ## Current-source CI and Intel Mach-O smoke — 2026-11-26
 
 CI run

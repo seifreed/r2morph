@@ -1,0 +1,82 @@
+{
+  "campaign": "continuous-fuzz-main-push",
+  "configuration": {
+    "cases_per_target_per_platform": 5000,
+    "max_payload_bytes": 4096,
+    "seed": 20260827,
+    "source_script": "scripts/continuous_fuzz.py",
+    "source_script_sha256": "63b320087dc0acf6fd8bb87c3db8c7b6e4f9359391f45585879a9d6822d50f7c",
+    "targets": [
+      "assembling",
+      "binary_parsers",
+      "binary_rewriter",
+      "binary_rewriter_output",
+      "elf_header_parser",
+      "macho_load_commands",
+      "pe_header_parser",
+      "relocations",
+      "vm_bytecode",
+      "vm_dispatcher",
+      "vm_instruction_decoder"
+    ]
+  },
+  "execution": {
+    "platforms": {
+      "ubuntu-latest": {
+        "artifact_id": 15079119872,
+        "artifact_archive_sha256": "sha256:150893ec83aba884a3aab9b498df1136ab741b83041dead4f213b9dea567bb18",
+        "report": "docs/continuous-fuzz-2026-11-26-45737909955-ubuntu-latest.json",
+        "report_sha256": "b4e9211dc48e4a7825b5c35ef18ae455b93cfbfda16ad19251649316c0ef9761",
+        "report_size_bytes": 572,
+        "target_runs": 50157,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 103
+        }
+      },
+      "macos-15": {
+        "artifact_id": 15079482549,
+        "artifact_archive_sha256": "sha256:ea4949caff8aca56d059df3c4bfc8eae030a4b23cd08ef447449a646fd21d9b6",
+        "report": "docs/continuous-fuzz-2026-11-26-45737909955-macos-15.json",
+        "report_sha256": "b4e9211dc48e4a7825b5c35ef18ae455b93cfbfda16ad19251649316c0ef9761",
+        "report_size_bytes": 572,
+        "target_runs": 50157,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 103
+        }
+      },
+      "windows-latest": {
+        "artifact_id": 15079098539,
+        "artifact_archive_sha256": "sha256:c87d52d9883e452b368f341ad568b3f02d28c2cf80e915fca473adabb40d5ea7",
+        "report": "docs/continuous-fuzz-2026-11-26-45737909955-windows-latest.json",
+        "report_sha256": "7192900a7b66a1b9bf26a2b3108c9e4e54e1bebf6a02e85334f6809707434fb3",
+        "report_size_bytes": 597,
+        "target_runs": 50157,
+        "failure_count": 0,
+        "parser_diagnostic_counts": {
+          "macho_load_commands.warning": 103
+        }
+      }
+    },
+    "total_failures": 0,
+    "total_target_runs": 150471
+  },
+  "limits": [
+    "The deterministic campaign covers bounded generated parser, assembler, VM, relocation, and rewrite inputs; it does not prove semantic equivalence for arbitrary transformed binaries.",
+    "The binary_rewriter_output target samples the high-level file-output path every 32 generated cases and uses one ELF fixture; it checks patch-byte scope and reparsing, not execution equivalence.",
+    "The three runners exercise the listed targets but do not establish complete product parity or exhaustive fuzz coverage.",
+    "Recoverable macho_load_commands.warning diagnostics are retained and are not counted as fuzz failures.",
+    "This evidence is pinned to the source commit and does not close cross-platform analyzer parity, all-named analyzer, or published resistance gates."
+  ],
+  "schema_version": 1,
+  "workflow": {
+    "event": "push",
+    "name": "Continuous Fuzzing",
+    "run_attempt": 1,
+    "run_id": 45737909955,
+    "source_commit": "3b23bd501b41dbda8b4feda1480acd88ce1f8e57",
+    "status": "success",
+    "url": "https://github.com/seifreed/r2morph/actions/runs/45737909955"
+  }
+}

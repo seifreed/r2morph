@@ -579,6 +579,19 @@ pinned in
 This bounded campaign does not prove arbitrary-input semantic equivalence,
 exhaustive fuzz coverage, complete platform parity, or adversarial resistance.
 
+On source `3b23bd50`, Continuous Fuzzing passed on Ubuntu, macOS 15, and
+Windows with 5,000 cases per target, zero failures, and 150,471 target runs
+across the three runners. This campaign adds 157 sampled calls per runner to
+the high-level `rewrite_binary` file-output path, checking the selected patch
+bytes and reparsing the result. The [hash-bound summary](docs/continuous-fuzz-2026-11-26-45737909955-summary.json),
+[Ubuntu report](docs/continuous-fuzz-2026-11-26-45737909955-ubuntu-latest.json),
+[macOS report](docs/continuous-fuzz-2026-11-26-45737909955-macos-15.json),
+[Windows report](docs/continuous-fuzz-2026-11-26-45737909955-windows-latest.json),
+and [manifest regression test](tests/unit/test_published_continuous_fuzz_45737909955.py)
+pin the source, artifacts, counts, and limits. The output-path sample uses one
+ELF fixture and does not establish execution equivalence, exhaustive fuzzing,
+complete platform parity, or generalized VM resistance.
+
 The current-source fuzz run on `a61f599e` completed on Ubuntu, macOS 15, and
 Windows using the installed wheel: 5,000 deterministic cases for each of ten
 parser, assembler, VM, relocation, and rewrite targets per platform (150,000
