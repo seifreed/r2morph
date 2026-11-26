@@ -206,7 +206,7 @@ def _validate_independent_review_freshness(report: dict[str, object]) -> None:
 
 
 def _check_independent_review_artifact(require_current_human_signoff: bool = False) -> None:
-    report = json.loads((ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads((ROOT / "docs" / "independent-review-current.json").read_text(encoding="utf-8"))
     _validate_independent_review_artifact(report, require_current_human_signoff)
     _validate_independent_review_freshness(report)
 

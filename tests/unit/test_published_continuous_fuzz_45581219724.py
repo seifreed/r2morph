@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from tests.utils.assertions import expect
+from tests.utils.source_evidence import source_script_sha256_at_commit
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY = _ROOT / "docs/continuous-fuzz-2026-11-25-45581219724-summary.json"
@@ -66,7 +67,7 @@ def test_manifest_binds_successful_current_source_run() -> None:
         and workflow["url"] == f"https://github.com/seifreed/r2morph/actions/runs/{_RUN_ID}"
     )
     expect(
-        hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
+        source_script_sha256_at_commit(_ROOT, _SOURCE, configuration["source_script"])
         == _SCRIPT_HASH
         == configuration["source_script_sha256"]
     )

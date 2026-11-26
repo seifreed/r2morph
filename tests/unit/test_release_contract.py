@@ -46,6 +46,7 @@ from scripts.support_matrix import build_matrix
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
+_CURRENT_INDEPENDENT_REVIEW = _ROOT / "docs" / "independent-review-current.json"
 _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
@@ -1451,14 +1452,14 @@ def test_release_contract_rejects_vm_resistance_without_pending_adversarial_scop
 
 
 def test_release_contract_validates_independent_review_artifact() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
 
     _validate_independent_review_artifact(report)
     _check_independent_review_artifact()
 
 
 def test_release_contract_rejects_failed_independent_review_check() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
     report["checks"][0]["status"] = "failed"
 
     rejected = False
@@ -1471,7 +1472,7 @@ def test_release_contract_rejects_failed_independent_review_check() -> None:
 
 
 def test_release_contract_rejects_signoff_decision_without_current_attestation() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
     report["release_decision"]["status"] = "signoff-recorded"
 
     rejected = False
@@ -1484,7 +1485,7 @@ def test_release_contract_rejects_signoff_decision_without_current_attestation()
 
 
 def test_release_contract_blocks_release_for_stale_human_signoff() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
 
     rejected = False
     try:
@@ -1496,7 +1497,7 @@ def test_release_contract_blocks_release_for_stale_human_signoff() -> None:
 
 
 def test_release_contract_rejects_independent_review_without_human_review_reason() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
     report["release_decision"]["reason"] = "automated checks are sufficient"
 
     rejected = False
@@ -1509,7 +1510,7 @@ def test_release_contract_rejects_independent_review_without_human_review_reason
 
 
 def test_release_contract_rejects_stale_independent_review_artifact() -> None:
-    report = json.loads((_ROOT / "docs" / "independent-review.json").read_text(encoding="utf-8"))
+    report = json.loads(_CURRENT_INDEPENDENT_REVIEW.read_text(encoding="utf-8"))
     report["checks"][0]["detail"] = "stale detail"
 
     rejected = False

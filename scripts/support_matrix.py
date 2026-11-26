@@ -116,6 +116,7 @@ _VM_RESISTANCE_GAP_EVIDENCE = {
         "evidence_quality": "automated-adversarial-smoke",
         "evidence": [
             "docs/independent-review.json",
+            "docs/independent-review-current.json",
             "docs/protection-bytecode-grammar.json",
             "docs/protection-handler-clustering.json",
             "docs/protection-vm-resistance-2026-09-22-e3a491b3.json",

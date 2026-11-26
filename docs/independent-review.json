@@ -61,7 +61,7 @@
       "status": "passed"
     },
     {
-      "detail": "required analyzer gaps block signoff; Binary Ninja availability is informational",
+      "detail": "unavailable analyzers block adversarial signoff",
       "name": "adversarial_signoff_blockers",
       "status": "passed"
     },
@@ -71,12 +71,12 @@
       "status": "passed"
     },
     {
-      "detail": "Binary Ninja remains an informational slot and is optional for release signoff",
+      "detail": "binary-ninja is an expected analyzer slot",
       "name": "binary_ninja_benchmark_contract",
       "status": "passed"
     },
     {
-      "detail": "angr is measured; Binary Ninja remains reported as unavailable when no license is present",
+      "detail": "angr is measured; Binary Ninja remains an unavailable analyzer slot",
       "name": "angr_binary_ninja_availability",
       "status": "passed"
     },

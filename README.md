@@ -463,6 +463,12 @@ establish general varargs or ABI parity.
 
 ## Validation
 
+Published review evidence is kept immutable when its workflow manifest records
+the report hash. The earlier `docs/independent-review.json` remains that
+hash-bound snapshot; `docs/independent-review-current.json` is regenerated from
+the current source and is the report checked by the release contract. Its
+automated result does not substitute for a matching human signoff.
+
 | Mode | Flag | Status | Description |
 |------|------|--------|-------------|
 | **Structural** | `--validation-mode structural` | Stable | Binary format integrity checks (always runs) |

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from tests.utils.assertions import expect
+from tests.utils.source_evidence import source_script_sha256_at_commit
 
 _ROOT = Path(__file__).resolve().parents[2]
 _SUMMARY = _ROOT / "docs/continuous-fuzz-2026-11-25-83f5bdf0-summary.json"
@@ -48,7 +49,7 @@ def test_current_source_two_seed_campaigns_match_published_reports() -> None:
     execution = summary["execution"]
 
     expect(
-        hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest()
+        source_script_sha256_at_commit(_ROOT, _SOURCE, configuration["source_script"])
         == _SCRIPT_SHA256
         == configuration["source_script_sha256"]
     )

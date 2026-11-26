@@ -11,6 +11,12 @@ release signoff; its unavailable status does not block the analyzer criterion;
 other required analyzer gaps still do. This project does not require or request
 a Binary Ninja license.
 
+The hash-bound historical [`independent-review.json`](independent-review.json)
+is preserved for its workflow manifest. The release contract checks the
+separate [`independent-review-current.json`](independent-review-current.json)
+snapshot generated from current source; it does not count that automated report
+as a human signoff.
+
 ## Current-source file-output fuzz campaign — 2026-11-26
 
 Continuous Fuzzing run

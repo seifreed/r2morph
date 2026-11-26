@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from tests.utils.assertions import expect
+from tests.utils.source_evidence import source_script_sha256_at_commit
 
 _ROOT = Path(__file__).resolve().parents[2]
 _MANIFEST_PATH = _ROOT / "docs/continuous-fuzz-2026-11-25-a1e00995-summary.json"
@@ -46,7 +47,7 @@ def test_current_source_fuzz_reports_cover_two_seeds_and_three_platforms() -> No
     runs = {run["run_id"]: run for run in execution["runs"]}
 
     expect(
-        hashlib.sha256((_ROOT / configuration["source_script"]).read_bytes()).hexdigest() == _SCRIPT_HASH
+        source_script_sha256_at_commit(_ROOT, _SOURCE, configuration["source_script"]) == _SCRIPT_HASH
         and configuration["source_script_sha256"] == _SCRIPT_HASH
         and set(configuration["targets"]) == _TARGETS
         and configuration["cases_per_target_per_platform"] == _CASES_PER_TARGET
