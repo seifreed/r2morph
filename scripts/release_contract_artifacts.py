@@ -23,6 +23,7 @@ try:
         INDEPENDENT_REVIEW_CHECKS,
         MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT,
         MINIMUM_VM_VARIANT_COUNT,
+        OPTIONAL_ADVERSARIAL_TOOL_SLOTS,
         REQUIRED_VM_TARGET_OPERATION,
         REQUIRED_VM_TARGET_STRIDE_VALUES,
         ROOT,
@@ -36,6 +37,7 @@ except ModuleNotFoundError:
         INDEPENDENT_REVIEW_CHECKS,
         MAXIMUM_VM_HANDLER_SIMILARITY_ABOVE_THRESHOLD_PERCENT,
         MINIMUM_VM_VARIANT_COUNT,
+        OPTIONAL_ADVERSARIAL_TOOL_SLOTS,
         REQUIRED_VM_TARGET_OPERATION,
         REQUIRED_VM_TARGET_STRIDE_VALUES,
         ROOT,
@@ -275,6 +277,7 @@ def _adversarial_release_signoff_blockers(report: dict[str, object]) -> dict[str
         tool: summary["unavailable_reasons"]
         for tool, summary in tool_summary.items()
         if isinstance(tool, str)
+        and tool not in OPTIONAL_ADVERSARIAL_TOOL_SLOTS
         and isinstance(summary, dict)
         and summary.get("unavailable", 0) > 0
         and isinstance(summary.get("unavailable_reasons"), dict)

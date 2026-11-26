@@ -69,6 +69,8 @@ ADVERSARIAL_TOOL_SLOTS = {
     "triton",
     "unicorn",
 }
+OPTIONAL_ADVERSARIAL_TOOL_SLOTS = {"binary-ninja"}
+REQUIRED_ADVERSARIAL_TOOL_SLOTS = ADVERSARIAL_TOOL_SLOTS - OPTIONAL_ADVERSARIAL_TOOL_SLOTS
 
 INDEPENDENT_REVIEW_CHECKS = {
     "adversarial_benchmark_evidence",
@@ -152,7 +154,7 @@ _RELEASE_BLOCKER_FRAGMENTS = (
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
     "parity_evidence_blockers",
     "parity_blocker_totals",
-    "Binary Ninja is deliberately on hold for",
+    "Binary Ninja is optional for release signoff",
     "adversarial_evidence_blockers",
     "adversarial_evidence_blocker_totals",
     "adversarial_validation",

@@ -2257,18 +2257,14 @@
       },
       "adversarial_evidence_blockers": {
         "incomplete_tool_coverage": [],
-        "binary_ninja_unavailable": [
-          "binary-ninja"
-        ],
         "comparable_campaign_scope": [
           "full-pass-full-tool-completion"
         ]
       },
       "adversarial_blocker_totals": {
         "incomplete_tool_coverage": 0,
-        "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": 2
+        "total_adversarial_blockers": 1
       },
       "vm_semantic_gap_scope": [],
       "vm_semantic_fixture_coverage": {

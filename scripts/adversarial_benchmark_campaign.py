@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from scripts.adversarial_benchmark_constants import _EXPECTED_TOOLS
+from scripts.adversarial_benchmark_constants import _EXPECTED_TOOLS, _OPTIONAL_TOOLS
 from scripts.adversarial_benchmark_metrics import (
     _analyzer_effectiveness_by_pass,
     _coverage_percent,
@@ -202,6 +202,7 @@ def _release_signoff_blockers(tool_summary: dict[str, object]) -> dict[str, obje
         tool: summary["unavailable_reasons"]
         for tool, summary in tool_summary.items()
         if isinstance(tool, str)
+        and tool not in _OPTIONAL_TOOLS
         and isinstance(summary, dict)
         and summary.get("unavailable", 0) > 0
         and isinstance(summary.get("unavailable_reasons"), dict)

@@ -50,7 +50,7 @@ _MIN_CONCRETE_PASSES = 20
 _FULL_COVERAGE_PERCENT = 100.0
 _EXPECTED_VM_FIXTURE_COUNT = 151
 _EXPECTED_DIFFERENTIAL_BLOCKERS = 5
-_EXPECTED_ADVERSARIAL_BLOCKERS = 2
+_EXPECTED_ADVERSARIAL_BLOCKERS = 1
 _EXPECTED_TOTAL_MATURITY_BLOCKERS = 0
 _DIFFERENTIAL_SYSTEM_DEPENDENCY_JOBS = 6
 _EXPECTED_EXTENDED_FALSE_POSITIVE_MEASURED_PASSES = 12
@@ -812,7 +812,7 @@ def test_support_matrix_names_adversarial_benchmark_gaps() -> None:
         and evidence["measured_available_tools"]["ida-pro"]["status"] == "completed"
         and evidence["measured_available_tools"]["triton"]["status"] == "completed"
         and evidence["unavailable_reference_tools"]["binary-ninja"]["status"] == "unavailable"
-        and "binary-ninja" in summary["adversarial_evidence_blockers"]["binary_ninja_unavailable"]
+        and "binary_ninja_unavailable" not in summary["adversarial_evidence_blockers"]
         and "binary-ninja" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and "angr" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
         and "unicorn" not in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]

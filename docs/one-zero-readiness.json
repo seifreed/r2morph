@@ -9,6 +9,19 @@
   "criteria": {
     "all_named_adversarial_analyzers": {
       "status": "open",
+      "required_analyzers": [
+        "angr",
+        "custom",
+        "ghidra",
+        "ida-pro",
+        "objdump",
+        "radare2",
+        "triton",
+        "unicorn"
+      ],
+      "optional_analyzers": [
+        "binary-ninja"
+      ],
       "evidence": [
         "docs/compatibility-corpus.md",
         "docs/protection-ida-targeted-2026-11-11-c70a113b.json",

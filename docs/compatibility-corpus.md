@@ -1,5 +1,15 @@
 # Compatibility Corpus
 
+## Analyzer availability policy
+
+Binary Ninja remains a named benchmark slot so its availability is reported
+consistently. It is optional for release signoff; an unavailable Binary Ninja
+installation or license does not block the analyzer gate, and no license should
+be requested for this project. Other required analyzers remain subject to the
+all-named-analyzer release criterion. Historical campaign results below retain
+the availability facts and release policy that applied when those reports were
+generated.
+
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit

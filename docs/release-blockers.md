@@ -6,6 +6,11 @@ The machine-readable [1.0 readiness ledger](one-zero-readiness.json) records
 the evidence requirements and keeps stable-major releases blocked while any
 criterion remains open or in progress.
 
+Binary Ninja remains an explicit benchmark result. Binary Ninja is optional for
+release signoff; its unavailable status does not block the analyzer criterion;
+other required analyzer gaps still do. This project does not require or request
+a Binary Ninja license.
+
 ## Current-source file-output fuzz campaign — 2026-11-26
 
 Continuous Fuzzing run

@@ -288,6 +288,21 @@ def test_one_zero_gate_accepts_complete_linked_evidence(tmp_path: Path) -> None:
         evidence_path = tmp_path / f"{name}.md"
         evidence_path.write_text("verified evidence\n", encoding="utf-8")
         criteria[name] = {"status": "complete", "evidence": [evidence_path.name]}
+    criteria["all_named_adversarial_analyzers"].update(
+        {
+            "required_analyzers": [
+                "angr",
+                "custom",
+                "ghidra",
+                "ida-pro",
+                "objdump",
+                "radare2",
+                "triton",
+                "unicorn",
+            ],
+            "optional_analyzers": ["binary-ninja"],
+        }
+    )
     report = {
         "schema_version": 1,
         "status": "ready",

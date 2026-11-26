@@ -547,7 +547,6 @@ def _adversarial_benchmark_evidence() -> dict[str, object]:
 def _adversarial_evidence_blockers() -> dict[str, object]:
     return {
         "incomplete_tool_coverage": list(_ADVERSARIAL_INCOMPLETE_TOOLS),
-        "binary_ninja_unavailable": ["binary-ninja"],
         "comparable_campaign_scope": ["full-pass-full-tool-completion"],
     }
 
@@ -555,9 +554,8 @@ def _adversarial_evidence_blockers() -> dict[str, object]:
 def _adversarial_blocker_totals() -> dict[str, int]:
     return {
         "incomplete_tool_coverage": len(_ADVERSARIAL_INCOMPLETE_TOOLS),
-        "binary_ninja_unavailable": 1,
         "comparable_campaign_scope": 1,
-        "total_adversarial_blockers": len(_ADVERSARIAL_INCOMPLETE_TOOLS) + 2,
+        "total_adversarial_blockers": len(_ADVERSARIAL_INCOMPLETE_TOOLS) + 1,
     }
 
 

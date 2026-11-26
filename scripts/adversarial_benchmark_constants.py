@@ -9,6 +9,7 @@ from scripts.protection_maturity_baseline import (
     CORPUS_PASS_NAMES,
     EXTENDED_MATURITY_PASS_NAMES,
 )
+from scripts.release_contract_common import OPTIONAL_ADVERSARIAL_TOOL_SLOTS
 
 _COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "idat", "ghidra": "ghidra"}
 _COMMAND_ENVIRONMENT = {"ida-pro": "IDA_HEADLESS", "ghidra": "GHIDRA_HEADLESS"}
@@ -21,6 +22,7 @@ _PYTHON_MODULES = {
 _BINARY_NINJA_PYTHON_PATH_ENV = "BINARY_NINJA_PYTHON_PATH"
 _BINARY_NINJA_PYTHON_PATHS = (Path("/Applications/Binary Ninja.app/Contents/Resources/python"),)
 _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "binary-ninja", "unicorn", "triton", "ida-pro", "ghidra")
+_OPTIONAL_TOOLS = OPTIONAL_ADVERSARIAL_TOOL_SLOTS
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
 _GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60

@@ -230,17 +230,15 @@ def _check_adversarial_benchmark_evidence(matrix: dict[str, object]) -> None:
     blockers = summary["adversarial_evidence_blockers"]
     if unavailable.get("binary-ninja", {}).get("status") != "unavailable":
         raise ValueError("Binary Ninja must remain an explicit unavailable analyzer slot")
-    if blockers["binary_ninja_unavailable"] != ["binary-ninja"]:
-        raise ValueError("Binary Ninja unavailable blocker must remain explicit")
+    if "binary_ninja_unavailable" in blockers:
+        raise ValueError("optional Binary Ninja availability must not block release signoff")
     totals = summary["adversarial_blocker_totals"]
     incomplete_tool_count = len(blockers["incomplete_tool_coverage"])
-    binary_ninja_count = len(blockers["binary_ninja_unavailable"])
     campaign_scope_count = len(blockers["comparable_campaign_scope"])
     if (
         totals["incomplete_tool_coverage"] != incomplete_tool_count
-        or totals["binary_ninja_unavailable"] != binary_ninja_count
         or totals["comparable_campaign_scope"] != campaign_scope_count
-        or totals["total_adversarial_blockers"] != incomplete_tool_count + binary_ninja_count + campaign_scope_count
+        or totals["total_adversarial_blockers"] != incomplete_tool_count + campaign_scope_count
     ):
         raise ValueError("adversarial blocker totals must match declared benchmark blockers")
     for tool, row in measured.items():

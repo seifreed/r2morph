@@ -6,6 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.release_contract_common import OPTIONAL_ADVERSARIAL_TOOL_SLOTS, REQUIRED_ADVERSARIAL_TOOL_SLOTS
+except ModuleNotFoundError:
+    from release_contract_common import OPTIONAL_ADVERSARIAL_TOOL_SLOTS, REQUIRED_ADVERSARIAL_TOOL_SLOTS
+
 _REQUIRED_CRITERIA = {
     "cross_platform_parity",
     "all_named_adversarial_analyzers",
@@ -50,6 +55,13 @@ def _validate_criteria(criteria: dict[str, Any], evidence_root: Path) -> list[st
         _validate_evidence_paths(name, evidence, evidence_root)
         if criterion["status"] != "complete":
             blockers.append(name)
+        if name == "all_named_adversarial_analyzers":
+            optional = criterion.get("optional_analyzers")
+            required = criterion.get("required_analyzers")
+            if not isinstance(optional, list) or set(optional) != OPTIONAL_ADVERSARIAL_TOOL_SLOTS:
+                raise ValueError("adversarial analyzer policy must list Binary Ninja as optional")
+            if not isinstance(required, list) or set(required) != REQUIRED_ADVERSARIAL_TOOL_SLOTS:
+                raise ValueError("adversarial analyzer policy must require every non-optional analyzer")
     return blockers
 
 

@@ -33,6 +33,7 @@ from scripts.adversarial_benchmark import (
     _passes_without_applications,
     _prepare_optional_module_path,
     _protected_copy,
+    _release_signoff_blockers,
     _tool_failure_result,
     _tool_summary,
     _ToolCapabilityUnavailableError,
@@ -455,10 +456,23 @@ def test_adversarial_benchmark_pair_report_summarizes_release_signoff_blockers()
         isinstance(blockers, dict)
         and isinstance(unavailable, dict)
         and isinstance(totals, dict)
+        and report["tool_summary"]["binary-ninja"]["unavailable"] == 1
+        and "binary-ninja" not in unavailable
         and totals["blocker_categories"] == len(blockers)
         and totals["unavailable_analyzers"] == len(unavailable)
         and totals["total_release_signoff_blockers"] == len(unavailable)
     )
+
+
+def test_optional_binary_ninja_does_not_hide_required_analyzer_blockers() -> None:
+    blockers = _release_signoff_blockers(
+        {
+            "binary-ninja": {"unavailable": 1, "unavailable_reasons": {"license": 1}},
+            "ghidra": {"unavailable": 1, "unavailable_reasons": {"missing executable": 1}},
+        }
+    )
+
+    expect(blockers == {"unavailable_analyzers": {"ghidra": {"missing executable": 1}}})
 
 
 def test_adversarial_benchmark_artifact_summary_matches_tool_rows() -> None:

@@ -368,8 +368,9 @@ across 5,540 core differential classifications, 7,572 extended-maturity
 classifications, 2,450 VM-semantic tests, 1,288 composition tests, and 1,728
 differential-fuzz cases. Supplemental cross-format smoke reported 2,146 cases,
 including 290 skipped cases. These bounded results do not close cross-platform,
-named-analyzer, or resistance gates; Binary Ninja remains unavailable without a
-valid license. See the [current-run evidence summary](docs/differential-run-2026-11-18-44213229027-summary.json).
+required-analyzer, or resistance gates; Binary Ninja remains unavailable without a
+valid license and is optional for release signoff. Other required-analyzer gaps
+continue to block the analyzer-coverage gate. See the [current-run evidence summary](docs/differential-run-2026-11-18-44213229027-summary.json).
 
 A local current-source analyzer sample applied `CodeVirtualization` to one ELF
 fixture. IDA Pro 9.5 completed analysis and decompilation for both original and
@@ -903,8 +904,10 @@ That focused fixture records 5 completed analyzer slots and 4 unavailable analyz
 Binary Ninja is an explicit analyzer slot; the focused local
 fixture records `binary-ninja` as unavailable because `module 'binaryninja' is unavailable`.
 The current installed API is importable, but the headless benchmark reports
-`analyzer license is unavailable`; this remains an explicit evidence gap while
-the slot is on hold. The 2026-11-14 adversarial campaign summary records 362
+`analyzer license is unavailable`. Binary Ninja remains an explicit analyzer
+slot and is optional for release signoff; its unavailable result is informational.
+Other required-analyzer gaps and the incomplete campaign-scope gate remain release
+blockers. The 2026-11-14 adversarial campaign summary records 362
 samples across 22 passes, with `7964 completed Ghidra tool runs` and
 `7964 completed Triton tool runs`; Binary Ninja, IDA Pro, and some Unicorn rows
 remain unavailable. The separate 159-sample IDA MCP campaign records

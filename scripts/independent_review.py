@@ -21,6 +21,7 @@ from scripts.adversarial_benchmark import (
     _EXPECTED_TOOLS,
     _decompiler_evidence_complete,
 )
+from scripts.adversarial_benchmark_constants import _OPTIONAL_TOOLS
 from scripts.continuous_fuzz import run_campaign
 from scripts.protection_maturity_baseline import (
     _DIFFERENTIAL_PLATFORM_GAP_SCOPE,
@@ -67,7 +68,7 @@ _EXPECTED_RELEASE_BLOCKER_FRAGMENTS = (
     "Differential corpus coverage remains incomplete",
     "VM semantic coverage is complete for the declared ELF x86-64 scope",
     "PE, Mach-O, ARM, and AArch64 remain preview or experimental",
-    "Binary Ninja is deliberately on hold",
+    "Binary Ninja is optional for release signoff",
     "anti-tamper and progressive bytecode protection",
     "Independent human review records approval",
 )
@@ -406,12 +407,23 @@ def _review_adversarial_signoff_blockers(root: Path) -> dict[str, object]:
         for tool, summary in tool_summary.items()
         if isinstance(tool, str)
         and isinstance(summary, dict)
+        and tool not in _OPTIONAL_TOOLS
         and summary.get("unavailable", 0) > 0
         and isinstance(summary.get("unavailable_reasons"), dict)
     }
     blockers = document.get("release_signoff_blockers", {})
-    passed = blockers == {"unavailable_analyzers": expected_unavailable} and "binary-ninja" in expected_unavailable
-    return _check("adversarial_signoff_blockers", passed, "unavailable analyzers block adversarial signoff")
+    binary_ninja_reported = (
+        tool_summary.get("binary-ninja", {}).get("unavailable", 0) > 0
+        if isinstance(tool_summary.get("binary-ninja"), dict)
+        else False
+    )
+    expected_blockers = {"unavailable_analyzers": expected_unavailable} if expected_unavailable else {}
+    passed = blockers == expected_blockers and binary_ninja_reported
+    return _check(
+        "adversarial_signoff_blockers",
+        passed,
+        "required analyzer gaps block signoff; Binary Ninja availability is informational",
+    )
 
 
 def _review_adversarial_continuous_evidence(root: Path) -> dict[str, object]:
@@ -433,8 +445,12 @@ def _review_adversarial_continuous_evidence(root: Path) -> dict[str, object]:
 
 
 def _review_binary_ninja_contract() -> dict[str, object]:
-    passed = "binary-ninja" in _EXPECTED_TOOLS
-    return _check("binary_ninja_benchmark_contract", passed, "binary-ninja is an expected analyzer slot")
+    passed = "binary-ninja" in _EXPECTED_TOOLS and "binary-ninja" in _OPTIONAL_TOOLS
+    return _check(
+        "binary_ninja_benchmark_contract",
+        passed,
+        "Binary Ninja remains an informational slot and is optional for release signoff",
+    )
 
 
 def _review_angr_binary_ninja_availability(root: Path) -> dict[str, object]:
@@ -453,7 +469,7 @@ def _review_angr_binary_ninja_availability(root: Path) -> dict[str, object]:
     return _check(
         "angr_binary_ninja_availability",
         passed,
-        "angr is measured; Binary Ninja remains an unavailable analyzer slot",
+        "angr is measured; Binary Ninja remains reported as unavailable when no license is present",
     )
 
 

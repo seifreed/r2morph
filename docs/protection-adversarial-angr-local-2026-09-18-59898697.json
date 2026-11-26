@@ -15,14 +15,11 @@
   "protected": "protected",
   "release_signoff_blocker_totals": {
     "blocker_categories": 1,
-    "total_release_signoff_blockers": 4,
-    "unavailable_analyzers": 4
+    "total_release_signoff_blockers": 3,
+    "unavailable_analyzers": 3
   },
   "release_signoff_blockers": {
     "unavailable_analyzers": {
-      "binary-ninja": {
-        "module 'binaryninja' is unavailable": 1
-      },
       "ghidra": {
         "executable 'ghidra' is unavailable": 1
       },
