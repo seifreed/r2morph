@@ -14,6 +14,6 @@ def test_hash_bound_text_files_preserve_platform_artifact_bytes() -> None:
         (_ROOT / ".gitattributes").read_text(encoding="utf-8").splitlines()
         == [
             "* text=auto eol=lf",
-            "docs/*-windows-latest.json -text -eol whitespace=cr-at-eol",
+            "docs/*-windows*.json -text -eol whitespace=cr-at-eol",
         ]
     )
