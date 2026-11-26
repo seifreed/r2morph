@@ -17,6 +17,22 @@ separate [`independent-review-current.json`](independent-review-current.json)
 snapshot generated from current source; it does not count that automated report
 as a human signoff.
 
+## Current-main local all-pass analyzer sample — 2026-11-26
+
+On source `d15c33bdf4932c25ba89e212ab808e2ad7c42814`, the CLI benchmark
+classified all 22 adversarial passes on the single repository fixture
+`elf_vm_arith_x86_64`. IDA Pro 9.5 and Ghidra 12.2 each completed 22/22 rows
+with zero tool errors; IDA's decompiler error-count delta was zero. The complete
+set of nine analyzer slots contained 198 rows: 154 completed, 44 unavailable,
+and zero errors. The unavailable rows were Triton (22) and optional Binary
+Ninja (22); Binary Ninja availability does not block release signoff. Two
+passes applied and 20 were no-ops on this fixture. The analyzer release gate
+remains open because required Triton is unavailable and this sample does not
+cover the full corpus. The [hash-bound summary](protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33-summary.json),
+[compressed raw report](protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz),
+and [regression test](../tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py)
+pin the result and its limits.
+
 ## Current-source file-output fuzz campaign — 2026-11-26
 
 Continuous Fuzzing run

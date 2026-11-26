@@ -1,0 +1,219 @@
+{
+  "limits": [
+    "One repository fixture only; not full-corpus analyzer coverage.",
+    "The report classifies transformation and analyzer outcomes; it does not prove semantic equivalence or generalized resistance.",
+    "Twenty of the twenty-two selected passes were no-op on this fixture; only CodeVirtualization and InstructionSubstitution applied.",
+    "The 1.0 analyzer, cross-platform parity, and published resistance gates remain open."
+  ],
+  "raw_report": {
+    "path": "docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz",
+    "sha256": "d6deb190d8c20dac2b07f973e5089062061581a8bec3553aac92a565d962fa12"
+  },
+  "release_gate": {
+    "all_named_adversarial_analyzers": "open",
+    "binary_ninja": "optional; unavailable license reported for all rows and does not block release signoff",
+    "triton": "required; unavailable module reported for all rows"
+  },
+  "run_date": "2026-11-26",
+  "schema_version": 1,
+  "scope": {
+    "analyzers": {
+      "angr": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_failures_pairs": 22,
+        "metric_decompiler_function_limit_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 792,
+        "total_decompiler_entrypoints_delta": 3,
+        "total_decompiler_failures_delta": 0,
+        "total_decompiler_function_limit_delta": 0,
+        "total_decompiler_lines_delta": 21,
+        "total_duration_seconds": 2.002365513209952,
+        "total_functions_delta": 4,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "changed": 0,
+        "completed": 0,
+        "duration_pairs": 0,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "unavailable": 22,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 22
+        }
+      },
+      "custom": {
+        "changed": 1,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "total_functions_delta": 2,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 607,
+        "total_decompiler_entrypoints_delta": 2,
+        "total_decompiler_lines_delta": 35,
+        "total_duration_seconds": 158.01923687518865,
+        "total_functions_delta": 2,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_error_count_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 939,
+        "total_decompiler_entrypoints_delta": 1,
+        "total_decompiler_error_count_delta": 0,
+        "total_decompiler_lines_delta": 26,
+        "total_duration_seconds": 119.89255820889957,
+        "total_functions_delta": 1,
+        "unavailable": 0
+      },
+      "objdump": {
+        "changed": 2,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_instruction_lines_pairs": 22,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "total_instruction_lines_delta": 7,
+        "unavailable": 0
+      },
+      "radare2": {
+        "changed": 1,
+        "completed": 22,
+        "duration_pairs": 0,
+        "errors": 0,
+        "metric_decompiler_bytes_pairs": 22,
+        "metric_decompiler_entrypoints_pairs": 22,
+        "metric_decompiler_lines_pairs": 22,
+        "metric_functions_pairs": 22,
+        "runs": 22,
+        "total_decompiler_bytes_delta": 1838,
+        "total_decompiler_entrypoints_delta": 0,
+        "total_decompiler_lines_delta": 78,
+        "total_duration_seconds": 0.0,
+        "total_functions_delta": 2,
+        "unavailable": 0
+      },
+      "triton": {
+        "changed": 0,
+        "completed": 0,
+        "duration_pairs": 0,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.0,
+        "unavailable": 22,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 22
+        }
+      },
+      "unicorn": {
+        "changed": 22,
+        "completed": 22,
+        "duration_pairs": 22,
+        "errors": 0,
+        "runs": 22,
+        "total_duration_seconds": 0.2522484720975626,
+        "unavailable": 0
+      }
+    },
+    "completed_tool_rows": 154,
+    "errored_tool_rows": 0,
+    "fixture": "fixtures/dataset/elf_vm_arith_x86_64",
+    "fixture_sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+    "pass_count": 22,
+    "pass_names": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "passes_requested": "all",
+    "tool_rows": 198,
+    "unavailable_tool_rows": 44
+  },
+  "source_commit": "d15c33bdf4932c25ba89e212ab808e2ad7c42814",
+  "transformations": {
+    "applied_passes": [
+      "CodeVirtualization",
+      "InstructionSubstitution"
+    ],
+    "code_virtualization": {
+      "functions_virtualized": 1,
+      "partial_virtualization": 0,
+      "status": "applied",
+      "unsupported_functions": 0
+    },
+    "no_op_passes": [
+      "BlockReordering",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ]
+  }
+}

@@ -193,7 +193,10 @@
         "tests/unit/test_published_adversarial_run_45608329375.py",
         "docs/differential-run-2026-11-25-45718368428.json",
         "tests/unit/test_published_differential_run_45718368428.py",
-        "docs/public-compatibility-merged-45718368428.json.gz"
+        "docs/public-compatibility-merged-45718368428.json.gz",
+        "docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33-summary.json",
+        "docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz",
+        "tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py"
       ]
     },
     "complete_compatibility_contract": {

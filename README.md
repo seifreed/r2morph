@@ -389,6 +389,18 @@ the CLI benchmark still lacked an IDA executable. angr, Triton, and Binary
 Ninja were unavailable. This one-fixture check does not close analyzer-coverage
 or resistance gates.
 
+On current `main` (`d15c33bd`), the CLI benchmark measured all 22 passes on
+that one ELF fixture: IDA Pro 9.5 and Ghidra 12.2 each completed 22/22 rows
+without tool errors, and IDA reported zero decompiler errors. Across all nine
+analyzer slots, 154/198 rows completed, 44 were unavailable, and none errored.
+Only CodeVirtualization and InstructionSubstitution applied to this fixture;
+the other 20 passes were no-ops. Binary Ninja remained optional and unavailable
+without a license; Triton was unavailable and remains a required analyzer gap.
+This hash-bound, one-fixture evidence does not establish corpus coverage,
+semantic equivalence, or generalized resistance. See the [summary](docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz),
+and [regression test](tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py).
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence
