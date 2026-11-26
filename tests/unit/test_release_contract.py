@@ -1278,6 +1278,8 @@ def test_independent_review_packet_binds_approval_to_reviewed_commit() -> None:
     expect(
         "Reviewed commit: `a111f923df43a66826b71ab70db8a484532fbf3b`" in packet
         and "This approval applies to the reviewed commit only" in packet
+        and "current automated report lists `human_signoff: not-attested`" in packet
+        and "do not treat the historical approval as current sign-off" in packet
     )
 
 

@@ -1,8 +1,11 @@
 # Independent Review Packet
 
-This packet records the completed independent human review of VM resistance
-evidence. Automated checks remain separate evidence and do not replace the
-approval recorded below.
+This packet preserves the independent human review of VM resistance evidence
+for the exact historical commit listed below. The current production tree has
+changed since that review. The current automated report lists
+`human_signoff: not-attested`; do not treat the historical approval as current
+sign-off. Automated checks remain separate evidence and do not replace a
+current human review.
 
 ## Target
 
