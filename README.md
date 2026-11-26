@@ -435,13 +435,13 @@ gates. See the [hash-bound summary](docs/protection-adversarial-local-current-ma
 [compressed report](docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py).
 
-Across shards 0–7, 42 unique fixtures have 8,316 analyzer rows: 6,468
-completed, 1,848 unavailable, zero errors, and no missing rows. IDA Pro and
-Ghidra completed all 924 rows each. Triton accounts for 924 required
-unavailable rows; Binary Ninja accounts for 924 optional rows. The [aggregate
-summary](docs/protection-adversarial-local-current-main-repository-shards-00-07-2026-11-26-summary.json)
-records the benchmark-script revision boundary and source-tree hashes. Eight
-of 32 fixture shards are covered, so this does not close the analyzer gate.
+Across shards 0–8, 47 unique fixtures have 9,306 analyzer rows: 7,238
+completed, 2,068 unavailable, zero errors, and no missing rows. IDA Pro and
+Ghidra completed all 1,034 rows each. Triton accounts for 1,034 required
+unavailable rows; Binary Ninja accounts for 1,034 optional rows. The [aggregate
+summary](docs/protection-adversarial-local-current-main-repository-shards-00-08-2026-11-26-summary.json)
+records the benchmark-script revision boundary and source-tree hashes. Nine of
+32 fixture shards are covered, so this does not close the analyzer gate.
 
 Binary Ninja is an optional, informational analyzer slot. Its missing license
 does not block benchmarks or release signoff; no Binary Ninja license is
@@ -473,6 +473,14 @@ and excluded from blocker totals. Nine of 110 pass-fixture rows applied a
 transformation. See the [shard summary](docs/protection-adversarial-local-current-main-repository-shard-07-2026-11-26-ba677ef7-summary.json),
 [compressed report](docs/protection-adversarial-local-current-main-repository-shard-07-2026-11-26-ba677ef7.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shards_00_07_20261126.py).
+
+Shard 8/32 measured five more fixtures across all 22 passes. IDA Pro and Ghidra
+each completed 110/110 rows; 110 Triton rows remain unavailable and required.
+Binary Ninja's 110 unavailable rows remain diagnostic only and are excluded
+from blocker totals. Twelve of 110 pass-fixture rows applied a transformation.
+See the [shard summary](docs/protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shards_00_08_20261126.py).
 
 ### Instruction Equivalence Rules
 

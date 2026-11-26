@@ -1358,8 +1358,30 @@ The combined [shards 0–7 summary](protection-adversarial-local-current-main-re
 tracks 42 fixtures and 8,316 analyzer rows: 6,468 completed and 1,848
 unavailable (924 required Triton, 924 optional Binary Ninja), with zero errors
 or missing rows. Eight of 32 shards are covered. Earlier reports preserve
-their historical blocker schema; shards 5–7 apply the corrected optional
+their historical blocker schema; shards 5–8 apply the corrected optional
 analyzer blocker policy.
+
+## Current-main repository-only analyzer shard 8 — 2026-11-26
+
+On source commit `3eead60d92f42c4dd729ae469bad82e498fd5f62`, deterministic
+repository fixture shard 8/32 measured all 22 passes over five ELF x86-64
+fixtures. Its 110 pass rows produced 990 analyzer rows: 770 completed, 220
+unavailable, zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2 each
+completed all 110 rows. Triton (required) and Binary Ninja (optional) were
+unavailable for 110 rows each. Binary Ninja remains in availability diagnostics
+and is excluded from blocker totals; Triton remains required. Twelve
+pass-fixture rows applied a transformation. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_08_20261126.py)
+pin this bounded evidence. It does not establish complete corpus coverage or
+generalized resistance; no Binary Ninja license is required or requested.
+
+The combined [shards 0–8 summary](protection-adversarial-local-current-main-repository-shards-00-08-2026-11-26-summary.json)
+tracks 47 fixtures and 9,306 analyzer rows: 7,238 completed and 2,068
+unavailable (1,034 required Triton, 1,034 optional Binary Ninja), with zero
+errors or missing rows. Nine of 32 deterministic shards are covered. Earlier
+reports retain their historical blocker schema; shards 5–8 exclude optional
+analyzer availability from blocker totals.
 
 ## Current-main repository-only analyzer shard 6 — 2026-11-26
 

@@ -186,6 +186,26 @@ establish universal correctness or full pass-by-platform parity. The
 all-named-analyzers, cross-platform-parity, and published-resistance gates
 remain open.
 
+## Current-main repository-only analyzer shard 8 — 2026-11-26
+
+Shard 8/32 measured five repository ELF x86-64 fixtures across 22 passes. Its
+110 pass rows produced 990 analyzer rows: 770 completed, 220 unavailable,
+zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2 each completed
+all 110 rows. Triton was unavailable for 110 required rows. Binary Ninja was
+unavailable for 110 optional rows; its diagnostic status is retained while it
+is excluded from blocker totals. Twelve pass-fixture rows applied a
+transformation. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-08-2026-11-26-3eead60d.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_08_20261126.py)
+pin this bounded result. It does not close corpus coverage, platform parity, or
+generalized resistance.
+
+The combined [shards 0–8 summary](protection-adversarial-local-current-main-repository-shards-00-08-2026-11-26-summary.json)
+contains 47 fixtures and 9,306 analyzer rows: 7,238 completed, 2,068
+unavailable, zero errors, and no missing rows. Binary Ninja's 1,034 unavailable
+rows are optional; the 1,034 Triton rows are required. The analyzer, parity,
+and resistance gates remain open.
+
 ## Current-main repository-only analyzer shard 7 — 2026-11-26
 
 Shard 7/32 measured five repository ELF x86-64 fixtures across 22 passes. Its
