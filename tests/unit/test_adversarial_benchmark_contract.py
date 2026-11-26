@@ -854,18 +854,24 @@ def test_adversarial_benchmark_campaign_summary_separates_errors_from_missing_ro
         and summary["error_reasons_by_tool"] == {"ida-pro": {"RuntimeError": 1}}
         and summary["adversarial_evidence_blockers"]["passes_without_applied_runs"] == ["PatternSubstitution"]
         and "missing_passes" not in summary["adversarial_evidence_blockers"]
-        and summary["adversarial_evidence_blockers"]["missing_tool_runs_by_tool"]["binary-ninja"] == 1
+        and "binary-ninja" not in summary["adversarial_evidence_blockers"]["missing_tool_runs_by_tool"]
+        and summary["adversarial_evidence_blockers"]["missing_tool_runs_by_tool"]["angr"]
+        == _EXPECTED_MISSING_RUNS_PER_UNOBSERVED_TOOL
         and "incomplete_tool_coverage" in summary["adversarial_evidence_blockers"]
+        and all(
+            row["tool"] != "binary-ninja"
+            for row in summary["adversarial_evidence_blockers"]["incomplete_tool_coverage"]
+        )
         and "non_completed_tool_runs_by_tool" in summary["adversarial_evidence_blockers"]
-        and summary["adversarial_evidence_blockers"]["tools_without_full_completion"]
-        == summary["tools_without_full_completion"]
+        and "binary-ninja" in summary["tools_without_full_completion"]
+        and "binary-ninja" not in summary["adversarial_evidence_blockers"]["tools_without_full_completion"]
         and summary["adversarial_evidence_blockers"]["unavailable_tool_runs_by_tool"] == {"ghidra": 1}
         and summary["adversarial_evidence_blockers"]["unavailable_reasons_by_tool"]
         == {"ghidra": {"missing local executable": 1}}
         and summary["adversarial_evidence_blocker_totals"]["blocker_categories"]
         == len(summary["adversarial_evidence_blockers"])
-        and summary["adversarial_evidence_blocker_totals"]["tools_without_full_completion"] == _EXPECTED_TOOL_COUNT
-        and summary["adversarial_evidence_blocker_totals"]["incomplete_tool_coverage"] == _EXPECTED_TOOL_COUNT
+        and summary["adversarial_evidence_blocker_totals"]["tools_without_full_completion"] == _EXPECTED_TOOL_COUNT - 1
+        and summary["adversarial_evidence_blocker_totals"]["incomplete_tool_coverage"] == _EXPECTED_TOOL_COUNT - 1
         and summary["adversarial_evidence_blocker_totals"]["total_adversarial_evidence_blockers"]
         == sum(
             count

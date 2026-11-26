@@ -192,9 +192,33 @@ def _adversarial_evidence_blockers(
         "decompiler_baseline_unavailable_pairs_by_pass",
     ):
         value = summary.get(field)
+        value = _exclude_optional_analyzer_gaps(field, value)
         if isinstance(value, (list, dict)) and value:
             blockers[field] = value
     return blockers
+
+
+def _exclude_optional_analyzer_gaps(field: str, value: object) -> object:
+    """Keep optional analyzer availability in diagnostics, not release blockers."""
+    if field in {
+        "missing_tool_runs_by_tool",
+        "non_completed_tool_runs_by_tool",
+        "unavailable_tool_runs_by_tool",
+        "unavailable_reasons_by_tool",
+    } and isinstance(value, dict):
+        return {tool: detail for tool, detail in value.items() if tool not in _OPTIONAL_TOOLS}
+    if field == "incomplete_tool_coverage" and isinstance(value, list):
+        return [row for row in value if not isinstance(row, dict) or row.get("tool") not in _OPTIONAL_TOOLS]
+    if field == "tools_without_full_completion" and isinstance(value, list):
+        return [tool for tool in value if tool not in _OPTIONAL_TOOLS]
+    if field == "decompiler_baseline_unavailable_pairs_by_pass" and isinstance(value, dict):
+        return {
+            pass_name: filtered
+            for pass_name, gaps in value.items()
+            if isinstance(gaps, dict)
+            and (filtered := {tool: count for tool, count in gaps.items() if tool not in _OPTIONAL_TOOLS})
+        }
+    return value
 
 
 def _release_signoff_blockers(tool_summary: dict[str, object]) -> dict[str, object]:

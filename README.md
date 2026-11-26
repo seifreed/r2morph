@@ -447,6 +447,8 @@ Binary Ninja is an optional, informational analyzer slot. Its missing license
 does not block benchmarks or release signoff; no Binary Ninja license is
 required or requested. The analyzer gate remains open for required Triton rows
 and incomplete corpus coverage.
+Benchmark reports retain optional analyzer outcomes in availability diagnostics
+but exclude them from `adversarial_evidence_blockers`.
 
 ### Instruction Equivalence Rules
 
