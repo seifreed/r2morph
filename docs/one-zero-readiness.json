@@ -206,7 +206,12 @@
         "tests/unit/test_published_current_main_repository_shards_00_01_45a58d.py",
         "docs/protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840-summary.json",
         "docs/protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz",
-        "tests/unit/test_published_current_main_repository_shard_02_68dd840.py"
+        "tests/unit/test_published_current_main_repository_shard_02_68dd840.py",
+        "docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1-summary.json",
+        "docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz",
+        "tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py",
+        "docs/protection-adversarial-local-current-main-repository-shards-00-03-2026-11-26-summary.json",
+        "tests/unit/test_published_current_main_repository_shards_00_03_20261126.py"
       ]
     },
     "complete_compatibility_contract": {

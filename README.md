@@ -425,6 +425,25 @@ does not close the analyzer gate or establish generalized resistance. See the
 [compressed report](docs/protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shard_02_68dd840.py).
 
+A fourth repository-only shard (3 of 32) on source `9ff28e1e` covers five
+additional fixtures across the 22 passes. IDA Pro 9.5 and Ghidra 12.2 again
+completed 110/110 rows each without errors. Overall, 770/990 analyzer rows
+completed, with zero errors or missing rows; Triton (required) and Binary Ninja
+(optional) were unavailable for 110 rows each. Nine fixture-pass rows applied
+a transformation. This bounded shard does not close the analyzer or resistance
+gates. See the [hash-bound summary](docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py).
+
+Across shards 0–3, 22 unique fixtures have 4,356 analyzer rows: 3,388
+completed, 968 unavailable, zero errors, and no missing rows. IDA Pro and
+Ghidra completed all 484 rows each. Triton accounts for 484 required
+unavailable rows; Binary Ninja accounts for 484 optional rows. The [aggregate
+summary](docs/protection-adversarial-local-current-main-repository-shards-00-03-2026-11-26-summary.json)
+also records the benchmark-script revision boundary and source-tree hashes.
+Only four of 32 fixture shards are covered, so this does not close the analyzer
+gate.
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence

@@ -1953,6 +1953,25 @@ the [summary](protection-adversarial-local-current-main-repository-shard-02-2026
 [compressed report](protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz),
 and [regression test](../tests/unit/test_published_current_main_repository_shard_02_68dd840.py).
 
+## Current-main repository-only analyzer shard 3 — 2026-11-26
+
+The local macOS ARM64 campaign for source commit `9ff28e1ece39824f19b8b2dd9eca60588b517c8f`
+completed deterministic shard 3/32: five additional ELF x86-64 fixtures, all
+22 passes, and 990 analyzer rows. 770 completed; 220 were unavailable; none
+errored or were missing. IDA Pro 9.5 and Ghidra 12.2 each completed 110/110
+rows. Triton remains required and unavailable (110 rows); Binary Ninja remains
+optional (110 unavailable rows). The all-analyzer, cross-platform parity, and
+published resistance gates remain open. See the [summary](protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py).
+
+The combined [shards 0–3 summary](protection-adversarial-local-current-main-repository-shards-00-03-2026-11-26-summary.json)
+records 22 fixtures, 4,356 analyzer rows, 3,388 completed rows, and 968
+unavailable rows. All rows are accounted for without errors or omissions; IDA
+Pro and Ghidra each completed all 484 rows. Only four of 32 fixture shards are
+covered and the required Triton rows remain unavailable, so this does not close
+the analyzer gate.
+
 ## Current-source two-seed continuous fuzz — 2026-11-25
 
 Continuous fuzz workflow [`45718344351`](https://github.com/seifreed/r2morph/actions/runs/45718344351)
