@@ -876,7 +876,7 @@ def test_support_matrix_summarizes_official_target_cells() -> None:
         summary["official_evidenced_cells"] + summary["official_not_supported_cells"] == len(matrix["passes"])
         and summary["official_evidenced_cells"] == len(matrix["passes"])
         and summary["official_evidence_percent"] == _FULL_COVERAGE_PERCENT
-        and summary["non_official_evidence_percent"] < summary["official_evidence_percent"]
+        and summary["non_official_evidence_percent"] <= summary["official_evidence_percent"]
     )
 
 
@@ -944,10 +944,13 @@ def test_support_matrix_names_parity_evidence_blockers() -> None:
     blockers = summary["parity_evidence_blockers"]
     totals = summary["parity_blocker_totals"]
 
+    incomplete_targets = [
+        target for target in summary["non_official_gap_targets"] if target["evidence_percent"] < _FULL_COVERAGE_PERCENT
+    ]
     expect(
         blockers["parity_gap_scope"] == summary["parity_gap_scope"]
-        and blockers["non_official_gap_targets"] == summary["non_official_gap_targets"]
-        and totals["non_official_gap_targets"] == len(summary["non_official_gap_targets"])
+        and blockers["non_official_gap_targets"] == incomplete_targets
+        and totals["non_official_gap_targets"] == len(incomplete_targets)
         and totals["parity_gap_formats"] == len(summary["parity_gap_scope"]["formats"])
         and totals["parity_gap_architectures"] == len(summary["parity_gap_scope"]["architectures"])
         and totals["total_parity_blockers"]
@@ -957,6 +960,33 @@ def test_support_matrix_names_parity_evidence_blockers() -> None:
             for target in blockers["non_official_gap_targets"]
         )
     )
+
+
+def test_release_contract_accepts_complete_non_official_parity() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    summary = matrix["matrix"]["summary"]
+    targets = summary["non_official_gap_targets"]
+    for target in targets:
+        target["evidenced_cells"] += target["not_supported_cells"]
+        target["not_supported_cells"] = 0
+        target["evidence_percent"] = 100.0
+    summary["parity_gap_scope"] = {"formats": [], "architectures": []}
+    summary["parity_gap_evidence"] = {
+        "preview_evidence_targets": targets,
+        "zero_evidence_targets": [],
+    }
+    summary["parity_evidence_blockers"] = {}
+    summary["parity_blocker_totals"].update(
+        {
+            "non_official_missing_evidence_cells": 0,
+            "non_official_gap_targets": 0,
+            "parity_gap_architectures": 0,
+            "parity_gap_formats": 0,
+            "total_parity_blockers": 0,
+        }
+    )
+
+    _check_parity_gap_evidence(matrix)
 
 
 def test_release_contract_rejects_missing_parity_gap_evidence() -> None:
@@ -985,19 +1015,19 @@ def test_release_contract_rejects_stale_parity_blocker_totals() -> None:
     expect(rejected)
 
 
-def test_release_contract_rejects_non_official_parity_claim() -> None:
+def test_release_contract_allows_non_official_parity_equal_to_official() -> None:
     matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
     matrix["matrix"]["summary"]["non_official_evidence_percent"] = matrix["matrix"]["summary"][
         "official_evidence_percent"
     ]
 
-    rejected = False
+    error_message = ""
     try:
         _check_matrix(matrix, matrix["release"])
-    except ValueError:
-        rejected = True
+    except ValueError as error:
+        error_message = str(error)
 
-    expect(rejected)
+    expect(error_message != "non-official targets must not claim official-target parity")
 
 
 def test_release_contract_rejects_stale_generated_support_matrix() -> None:

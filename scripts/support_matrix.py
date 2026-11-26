@@ -599,15 +599,20 @@ def _non_official_gap_targets(
 
 
 def _parity_gap_scope(
-    formats: tuple[str, ...],
-    architectures: tuple[str, ...],
+    gap_targets: list[dict[str, object]],
     official_format: object,
     official_architecture: object,
 ) -> dict[str, list[str]]:
+    incomplete = [
+        target
+        for target in gap_targets
+        if isinstance(target.get("evidence_percent"), int | float)
+        and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
+    ]
     return {
-        "formats": sorted(binary_format for binary_format in formats if binary_format != official_format),
+        "formats": sorted({str(target["format"]) for target in incomplete if target["format"] != official_format}),
         "architectures": sorted(
-            architecture for architecture in architectures if architecture != official_architecture
+            {str(target["architecture"]) for target in incomplete if target["architecture"] != official_architecture}
         ),
     }
 
@@ -842,7 +847,7 @@ def build_matrix(document: dict[str, Any]) -> dict[str, Any]:
             target_support_status_counts[support_status] = target_support_status_counts.get(support_status, 0) + 1
     declared_support_cells = sum(1 for cell in cells if cell["declared_support"])
     non_official_gap_targets = _non_official_gap_targets(cells, official_format, official_architecture)
-    parity_gap_scope = _parity_gap_scope(formats, architectures, official_format, official_architecture)
+    parity_gap_scope = _parity_gap_scope(non_official_gap_targets, official_format, official_architecture)
     vm_semantic_gap_scope = _vm_semantic_gap_scope(document)
     vm_semantic_fixture_coverage = _vm_semantic_fixture_coverage(document)
     vm_semantic_gap_evidence = _vm_semantic_gap_evidence(document)

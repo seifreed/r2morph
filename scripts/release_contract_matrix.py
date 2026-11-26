@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 
 try:
-    from scripts.support_matrix import build_matrix
+    from scripts.support_matrix import _parity_gap_scope, build_matrix
 except ModuleNotFoundError:
-    from support_matrix import build_matrix
+    from support_matrix import _parity_gap_scope, build_matrix
 
 try:
     from scripts.release_contract_common import (
@@ -306,12 +306,28 @@ def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
     parity_targets = sorted(preview_targets + zero_targets, key=lambda row: (row["format"], row["architecture"]))
     if parity_targets != summary["non_official_gap_targets"]:
         raise ValueError("parity gap evidence must cover every non-official target")
-    if blockers["parity_gap_scope"] != summary["parity_gap_scope"]:
+    incomplete_targets = [
+        target
+        for target in summary["non_official_gap_targets"]
+        if isinstance(target.get("evidence_percent"), int | float)
+        and target["evidence_percent"] < FULL_EVIDENCE_PERCENT
+    ]
+    expected_blockers: dict[str, object] = {}
+    if incomplete_targets:
+        expected_blockers["non_official_gap_targets"] = incomplete_targets
+    if summary["parity_gap_scope"]["formats"] or summary["parity_gap_scope"]["architectures"]:
+        expected_blockers["parity_gap_scope"] = summary["parity_gap_scope"]
+    if blockers != expected_blockers:
+        raise ValueError("parity blockers must match incomplete evidence")
+    official = matrix["official_target"]
+    if summary["parity_gap_scope"] != _parity_gap_scope(
+        incomplete_targets,
+        official["format"],
+        official["architecture"],
+    ):
         raise ValueError("parity gap scope blockers must match summary")
-    if blockers["non_official_gap_targets"] != summary["non_official_gap_targets"]:
-        raise ValueError("parity target blockers must match summary")
     totals = summary["parity_blocker_totals"]
-    if totals["non_official_gap_targets"] != len(summary["non_official_gap_targets"]):
+    if totals["non_official_gap_targets"] != len(incomplete_targets):
         raise ValueError("parity target blocker total must match summary")
     parity_gap_formats = len(summary["parity_gap_scope"]["formats"])
     parity_gap_architectures = len(summary["parity_gap_scope"]["architectures"])
@@ -322,10 +338,8 @@ def _check_parity_gap_evidence(matrix: dict[str, object]) -> None:
         != totals["non_official_gap_targets"] + parity_gap_formats + parity_gap_architectures
     ):
         raise ValueError("parity blocker totals must match declared gap scope")
-    if any(
-        row["evidence_percent"] >= summary["official_evidence_percent"] for row in blockers["non_official_gap_targets"]
-    ):
-        raise ValueError("non-official targets must remain below official parity")
+    if any(row["evidence_percent"] > summary["official_evidence_percent"] for row in parity_targets):
+        raise ValueError("non-official evidence cannot exceed official-target evidence")
 
 
 def _check_vm_semantic_fixture_coverage(matrix: dict[str, object]) -> None:
@@ -372,8 +386,8 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
     summary = matrix["matrix"]["summary"]
     if summary["official_evidence_percent"] != FULL_EVIDENCE_PERCENT:
         raise ValueError("official target must retain complete evidence")
-    if summary["non_official_evidence_percent"] >= summary["official_evidence_percent"]:
-        raise ValueError("non-official targets must not claim official-target parity")
+    if summary["non_official_evidence_percent"] > summary["official_evidence_percent"]:
+        raise ValueError("non-official evidence cannot exceed official-target evidence")
     _check_adversarial_benchmark_evidence(matrix)
     _check_differential_gap_evidence(matrix)
     _check_maturity_gap_evidence(matrix)

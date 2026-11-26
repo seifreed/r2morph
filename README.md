@@ -202,6 +202,10 @@ native output. These are bounded experimental pass results; they do not
 establish full Mach-O or cross-platform parity. It runs in a fresh pytest
 process. Apple Silicon CI checks the installed package without claiming
 Rosetta x86-64 execution coverage.
+`parity_gap_scope` names only formats and architectures whose target evidence
+is incomplete, and becomes empty when every non-official target is fully
+evidenced. This is a readiness calculation; it does not itself add compatibility
+evidence.
 The workflow selection is covered by
 [`test_macos_native_macho_smoke_runs_in_a_fresh_bounded_pytest_process`](tests/unit/test_macos_macho_smoke_workflow_contract.py).
 On source `848d0f5b`, the complete native ARM64 Mach-O integration module passed

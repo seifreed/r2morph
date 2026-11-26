@@ -173,9 +173,10 @@ every sample where that pass actually applied. It retains
 optional analyzers remain visible under RB-005 without removing the required
 three-tool per-pass measurement.
 
-The generated summary also exposes `parity_gap_scope`, naming Mach-O and PE as
-format gaps and AArch64, ARM, and x86 as architecture gaps. Maturity-profile
-summaries also count declared formats and architectures, making the current ELF
+The generated summary also exposes `parity_gap_scope`, listing only formats and
+architectures with incomplete non-official target evidence; it becomes empty
+when all non-official targets are fully evidenced. Maturity-profile summaries
+also count declared formats and architectures, making the current ELF
 x86-64 scope explicit instead of implying PE, Mach-O, ARM, or AArch64 parity.
 They also count declared unit and end-to-end evidence paths so test coverage
 gaps are visible at release-gate level. The completed differential run
