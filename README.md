@@ -799,8 +799,10 @@ The same source passed two three-platform continuous-fuzz runs with seeds
 macOS, and Windows, totaling 300,000 target runs with zero failures. The
 fuzzer recorded 103 and 104 recoverable Mach-O parser diagnostics for those
 seeds. Its [hash-bound report set](docs/continuous-fuzz-2026-11-25-a1e00995-summary.json)
-pins each raw report and workflow artifact. This is bounded fuzz evidence for
-the named targets and does not cover every parser or binary format.
+pins each raw report and workflow artifact. Git preserves the original bytes
+of Windows reports so their published SHA-256 values remain verifiable. This
+is bounded fuzz evidence for the named targets and does not cover every parser
+or binary format.
 
 The latest completed adversarial analyzer and VM campaign,
 [`45548803519`](https://github.com/seifreed/r2morph/actions/runs/45548803519),

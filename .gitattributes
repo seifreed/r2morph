@@ -1,2 +1,3 @@
 * text=auto eol=lf
 docs/*-windows-latest.json -text -eol whitespace=cr-at-eol
+docs/*-windows.json -text -eol whitespace=cr-at-eol
