@@ -70,17 +70,24 @@ def test_current_source_fuzz_reports_cover_two_seeds_and_three_platforms() -> No
             raw = (_ROOT / artifact["report"]).read_bytes()
             report = json.loads(raw)
             archive_digests[artifact["artifact_id"]] = artifact["artifact_archive_sha256"]
-            expect(
-                hashlib.sha256(raw).hexdigest() == artifact["report_sha256"]
-                and artifact["failure_count"] == report["failure_count"] == 0
-                and artifact["target_runs"] == _RUNS_PER_PLATFORM
-                and report["seed"] == seed
-                and report["cases"] == _CASES_PER_TARGET
-                and report["max_payload"] == _MAX_PAYLOAD_BYTES
-                and report["failures"] == []
-                and set(report["target_runs"]) == _TARGETS
-                and set(report["target_runs"].values()) == {_CASES_PER_TARGET}
-                and report["parser_diagnostic_counts"] == {"macho_load_commands.warning": expected_diagnostics}
-            )
+            checks = {
+                "report_sha256": (hashlib.sha256(raw).hexdigest(), artifact["report_sha256"]),
+                "failure_count": (artifact["failure_count"], report["failure_count"], 0),
+                "target_runs": (artifact["target_runs"], _RUNS_PER_PLATFORM),
+                "seed": (report["seed"], seed),
+                "cases": (report["cases"], _CASES_PER_TARGET),
+                "max_payload": (report["max_payload"], _MAX_PAYLOAD_BYTES),
+                "failures": (report["failures"], []),
+                "target_names": (set(report["target_runs"]), _TARGETS),
+                "target_counts": (set(report["target_runs"].values()), {_CASES_PER_TARGET}),
+                "parser_diagnostic_counts": (
+                    report["parser_diagnostic_counts"],
+                    {"macho_load_commands.warning": expected_diagnostics},
+                ),
+            }
+            failures = {
+                name: values for name, values in checks.items() if any(value != values[0] for value in values[1:])
+            }
+            expect(not failures, f"invalid fuzz report {artifact['report']}: {failures}")
 
     expect(archive_digests == _ARCHIVE_DIGESTS)
