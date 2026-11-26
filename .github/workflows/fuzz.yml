@@ -114,6 +114,7 @@ jobs:
               "vm_instruction_decoder": cases,
               "relocations": cases,
               "binary_rewriter": cases,
+              "binary_rewriter_output": (cases + 31) // 32,
           }
           if report["schema_version"] != 1:
               raise SystemExit(f"unexpected fuzz report schema: {report['schema_version']}")

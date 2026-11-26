@@ -13,6 +13,7 @@ _CASE_COUNT = 32
 _SEED = 20260827
 _SMALL_PAYLOAD = 7
 _MAX_FAILURES = 128
+_EXPECTED_REWRITE_OUTPUT_SAMPLES = 2
 _ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -42,7 +43,17 @@ def test_continuous_fuzz_campaign_reports_bounded_scope() -> None:
             "vm_instruction_decoder": 1,
             "relocations": 1,
             "binary_rewriter": 1,
+            "binary_rewriter_output": 1,
         }
+    )
+
+
+def test_continuous_fuzz_samples_full_rewrite_output_on_interval() -> None:
+    report = run_campaign(cases=33, seed=_SEED, max_payload=512)
+
+    expect(
+        report["target_runs"]["binary_rewriter_output"] == _EXPECTED_REWRITE_OUTPUT_SAMPLES
+        and report["failure_count"] == 0
     )
 
 
@@ -79,6 +90,7 @@ def test_continuous_fuzz_workflow_runs_on_all_three_platforms() -> None:
         and 'wheel_root="$(cygpath -u "$RUNNER_TEMP")/r2morph-fuzz-wheel-check"' in workflow
         and "Path('dist').glob('*.whl')" in workflow
         and "name: continuous-fuzz-report-${{ matrix.os }}" in workflow
+        and '"binary_rewriter_output": (cases + 31) // 32' in workflow
     )
 
 

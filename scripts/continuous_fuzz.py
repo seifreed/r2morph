@@ -11,8 +11,11 @@ import struct
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from functools import lru_cache
 from importlib import import_module
 from pathlib import Path
+
+import lief
 
 from r2morph.core import randomness
 from r2morph.core.assembly import AssemblyService
@@ -78,7 +81,10 @@ _FUZZ_TARGETS = (
     "vm_instruction_decoder",
     "relocations",
     "binary_rewriter",
+    "binary_rewriter_output",
 )
+# shortcut: samples every 32 inputs, widen after measuring full CI runner cost.
+_REWRITER_OUTPUT_SAMPLE_INTERVAL = 32
 _X86_64_ASSEMBLER = Ks(KS_ARCH_X86, KS_MODE_64)
 _DATASET = Path(__file__).parents[1] / "fixtures" / "dataset"
 _ELF_FIXTURE = _DATASET / "elf_x86_64"
@@ -223,6 +229,71 @@ def _rewrite_case(seed: int, index: int) -> None:
     rewriter.sections[".text"]["perm"] = "r--"
     if rewriter._apply_single_patch(non_executable_patch):
         raise AssertionError("binary rewriter accepted a non-executable section")
+
+
+@lru_cache(maxsize=1)
+def _elf_text_mapping() -> tuple[int, int, int]:
+    parsed = lief.parse(str(_ELF_FIXTURE))
+    section = parsed.get_section(".text") if parsed is not None else None
+    if section is None or section.size < 1:
+        raise AssertionError("fuzz ELF fixture has no file-backed .text section")
+    return int(section.virtual_address), int(section.offset), int(section.size)
+
+
+class _FuzzELFAnalyzer:
+    def __init__(self, virtual_address: int, file_offset: int, size: int) -> None:
+        self._section = {
+            "name": ".text",
+            "perm": "r-x",
+            "vaddr": virtual_address,
+            "paddr": file_offset,
+            "size": size,
+            "vsize": size,
+        }
+
+    def cmdj(self, command: str) -> object:
+        if command == "ij":
+            return {"bin": {"class": "ELF64", "arch": "x86", "bits": 64, "endian": "little"}}
+        if command == "iSj":
+            return [self._section]
+        if command == "irj":
+            return []
+        raise AssertionError(f"unexpected analyzer command: {command}")
+
+
+class _FuzzELFBinary:
+    def __init__(self, path: Path, virtual_address: int, file_offset: int, size: int) -> None:
+        self.filepath = path
+        self.r2 = _FuzzELFAnalyzer(virtual_address, file_offset, size)
+
+
+def _rewrite_output_case(seed: int, index: int) -> None:
+    virtual_address, file_offset, section_size = _elf_text_mapping()
+    offset = _bounded_value(seed, index, 49, section_size - 1)
+    original = _ELF_FIXTURE.read_bytes()
+    old_byte = original[file_offset + offset]
+    replacement = old_byte ^ (_bounded_value(seed, index, 50, 0xFF) or 1)
+    patch = CodePatch(
+        address=virtual_address + offset,
+        operation=RewriteOperation.INSTRUCTION_REPLACE,
+        original_bytes=bytes([old_byte]),
+        new_bytes=bytes([replacement]),
+    )
+
+    with tempfile.TemporaryDirectory(prefix="r2morph-rewrite-fuzz-") as directory:
+        output = Path(directory) / "rewritten.elf"
+        rewriter = BinaryRewriter(_FuzzELFBinary(_ELF_FIXTURE, virtual_address, file_offset, section_size))
+        result = rewriter.rewrite_binary(str(output), [patch], preserve_original=False)
+        if not result.success or result.patches_applied != 1 or not result.integrity_checks.get("file_exists"):
+            raise AssertionError(f"full binary rewrite failed: {result.errors}")
+
+        expected = bytearray(original)
+        expected[file_offset + offset] = replacement
+        if output.read_bytes() != expected:
+            raise AssertionError("full binary rewrite changed bytes outside the requested patch")
+        reparsed = lief.parse(str(output))
+        if reparsed is None or reparsed.get_section(".text") is None:
+            raise AssertionError("full binary rewrite output is not a parseable ELF")
 
 
 def _assembly_case(seed: int, index: int) -> None:
@@ -421,7 +492,7 @@ def _case_targets(
     index: int,
     parser_diagnostics: dict[str, int],
 ) -> tuple[tuple[str, Callable[[], None]], ...]:
-    return (
+    targets = (
         ("assembling", lambda: _assembly_case(seed, index)),
         ("binary_parsers", lambda: _parser_case(payload, parser_diagnostics)),
         (
@@ -442,6 +513,9 @@ def _case_targets(
         ("relocations", lambda: _relocation_case(seed, index)),
         ("binary_rewriter", lambda: _rewrite_case(seed, index)),
     )
+    if index % _REWRITER_OUTPUT_SAMPLE_INTERVAL == 0:
+        return (*targets, ("binary_rewriter_output", lambda: _rewrite_output_case(seed, index)))
+    return targets
 
 
 def _record_failure(

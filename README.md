@@ -503,7 +503,10 @@ operations need format-aware relocation and metadata handling before they can
 be reported as supported. A no-patch rewrite copies the input bytes exactly.
 The continuous-fuzz `binary_rewriter` target also applies bounded byte-level
 replacements and checks stale-byte rejection and that surrounding bytes remain
-unchanged; it does not fuzz complete executable semantics.
+unchanged. A second `binary_rewriter_output` target runs the high-level rewrite
+and atomic output path every 32 inputs against a real ELF fixture, verifies that
+only the selected byte changed, and reparses the output. It checks file-output
+integration, not execution equivalence of the mutated ELF.
 The `assembling` target exercises `AssemblyService` normalization and result
 handling against a bounded Keystone-backed `rasm2` test double, including
 invalid instructions. It does not replace integration tests using native
