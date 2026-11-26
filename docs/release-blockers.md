@@ -1970,11 +1970,26 @@ cross-platform parity, or generalized resistance. The [hash-bound summary](prote
 and [regression test](../tests/unit/test_published_current_main_repository_shards_00_05_20261126.py)
 pin the measurements.
 
-The combined [shards 0–5 summary](protection-adversarial-local-current-main-repository-shards-00-05-2026-11-26-summary.json)
-contains 32 fixtures and 6,336 analyzer rows: 4,928 completed, 1,408
-unavailable, zero errors, and no missing rows. Binary Ninja's 704 unavailable
-rows are optional; the 704 Triton rows are required. Earlier raw reports retain
-their historical blocker fields. The analyzer, parity, and resistance gates
+## Current-main repository-only analyzer shard 6 — 2026-11-26
+
+Shard 6/32 measured five repository ELF x86-64 fixtures across 22 passes. Its
+110 pass rows produced 990 analyzer rows: 770 completed, 220 unavailable,
+zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2 completed all
+110 rows each. Triton was unavailable for 110 required rows. Binary Ninja was
+unavailable for 110 optional rows; its status remains visible in diagnostic
+counts and is excluded from adversarial blocker totals. Five pass-fixture rows
+applied a transformation. This sample does not close corpus coverage,
+cross-platform parity, or generalized resistance. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-06-2026-11-26-06e2a344-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-06-2026-11-26-06e2a344.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_06_20261126.py)
+pin the measurements.
+
+The combined [shards 0–6 summary](protection-adversarial-local-current-main-repository-shards-00-06-2026-11-26-summary.json)
+contains 37 fixtures and 7,326 analyzer rows: 5,698 completed, 1,628
+unavailable, zero errors, and no missing rows. Binary Ninja's 814 unavailable
+rows are optional; the 814 Triton rows are required. Earlier raw reports retain
+their historical blocker fields; shard 5 onward excludes optional analyzer
+availability from blocker totals. The analyzer, parity, and resistance gates
 remain open.
 
 ## Current-main repository-only analyzer shard 2 — 2026-11-26

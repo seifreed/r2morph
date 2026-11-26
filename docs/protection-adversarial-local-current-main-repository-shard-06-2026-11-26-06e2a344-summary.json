@@ -1,0 +1,371 @@
+{
+  "corpus_scope": {
+    "families": [
+      "repository-fixtures"
+    ],
+    "generated_fixture_count": 0,
+    "generated_fixture_names": []
+  },
+  "fixture_shard": {
+    "count": 32,
+    "index": 6
+  },
+  "host_scope": "macOS ARM64 local toolchain; Python 3.14.10; IDA Pro 9.5; Ghidra 12.2",
+  "limits": [
+    "This covers five repository ELF x86-64 fixtures in deterministic shard 6 of 32, not the full repository or generated corpus.",
+    "IDA Pro and Ghidra each completed all 110 original/protected pass comparisons with zero errors.",
+    "The 220 unavailable rows are 110 required Triton rows and 110 optional Binary Ninja rows; no Binary Ninja license is required or requested.",
+    "Binary Ninja remains visible in availability diagnostics but is excluded from adversarial release-blocker totals.",
+    "The result is bounded analyzer coverage and does not establish full corpus coverage or generalized resistance.",
+    "Nine of 110 pass-fixture rows applied a transformation; other rows were no-ops."
+  ],
+  "measurement": "current-main-adversarial-repository-fixture-shard",
+  "release_gate": {
+    "all_named_adversarial_analyzers": "open",
+    "optional_analyzers": [
+      "binary-ninja"
+    ],
+    "required_analyzers_unavailable": [
+      "triton"
+    ]
+  },
+  "report": {
+    "compressed_path": "docs/protection-adversarial-local-current-main-repository-shard-06-2026-11-26-06e2a344.json.gz",
+    "compressed_sha256": "1486cba715091b7aa62a7058f6a05bc6c5da6f92be2a27db134b611f031649fa",
+    "schema_version": 3,
+    "uncompressed_sha256": "359d5e152c068178170f9e3997ca23d3f18f15b4282ecfc3de87140f5cc70c86"
+  },
+  "schema_version": 1,
+  "scope": {
+    "completed_tool_rows": 770,
+    "completed_tool_run_coverage_percent": 77.78,
+    "completed_tool_runs_by_tool": {
+      "angr": 110,
+      "custom": 110,
+      "ghidra": 110,
+      "ida-pro": 110,
+      "objdump": 110,
+      "radare2": 110,
+      "unicorn": 110
+    },
+    "errored_tool_rows": 0,
+    "expected_pass_runs": 110,
+    "expected_tool_rows": 990,
+    "fixture_count": 5,
+    "fixtures": [
+      {
+        "name": "elf_multiret_jccdiamond_x86_64",
+        "path": "fixtures/dataset/elf_multiret_jccdiamond_x86_64",
+        "protected_output_hashes_present": true,
+        "sha256": "01f9d0abab05f0d01ab8f8fc267a884d3fc4b53f17046ecfd9644aa9b4542134"
+      },
+      {
+        "name": "elf_vm_fparithriprel_x86_64",
+        "path": "fixtures/dataset/elf_vm_fparithriprel_x86_64",
+        "protected_output_hashes_present": true,
+        "sha256": "21933e97626743bc489e0dbebc0065abe683baee373f9cfa77ae9f7e54d40a36"
+      },
+      {
+        "name": "elf_vm_gs_tlsidxnb_x86_64",
+        "path": "fixtures/dataset/elf_vm_gs_tlsidxnb_x86_64",
+        "protected_output_hashes_present": true,
+        "sha256": "882b6ba50d1c9897119771aa1c9ac953471d7ed21389058d616ee75765001e64"
+      },
+      {
+        "name": "elf_vm_multiexit_x86_64",
+        "path": "fixtures/dataset/elf_vm_multiexit_x86_64",
+        "protected_output_hashes_present": true,
+        "sha256": "da69f24e60ccd15355e16cae20df3e3d0358d6f068c37ca3f06a36fb2dc4515c"
+      },
+      {
+        "name": "elf_vm_simdmove_x86_64",
+        "path": "fixtures/dataset/elf_vm_simdmove_x86_64",
+        "protected_output_hashes_present": true,
+        "sha256": "c6be2dd5a63c6a5f68fd63132d1e06c54084542ba53b1d958aef4fd98bf57455"
+      }
+    ],
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "observed_pass_runs": 110,
+    "pass_count": 22,
+    "pass_names": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "pass_summary": {
+      "APIHashing": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "AntiDisassembly": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "BlockReordering": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "CodeMobility": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "CodeVirtualization": {
+        "applied": 5,
+        "errors": 0,
+        "functions_virtualized": 5,
+        "no_op": 0,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "ConstantUnfolding": {
+        "applied": 1,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 1,
+        "no_op": 4,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "ControlFlowFlattening": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "DataFlowMutation": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "DeadCodeInjection": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "FunctionOutlining": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "ImportObfuscation": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "InstructionExpansion": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "InstructionSubstitution": {
+        "applied": 1,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 1,
+        "no_op": 4,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "NopInsertion": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "OpaquePredicates": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "PatternSubstitution": {
+        "applied": 2,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 2,
+        "no_op": 3,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "PolymorphicEngine": {
+        "applied": 2,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 3,
+        "no_op": 3,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "RegisterSubstitution": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "SelfModifyingCode": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "ShortJumpPatching": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "StackStrings": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      },
+      "StringObfuscation": {
+        "applied": 0,
+        "errors": 0,
+        "functions_virtualized": 0,
+        "mutations_applied": 0,
+        "no_op": 5,
+        "omitted": 0,
+        "partial_virtualization": 0,
+        "samples": 5,
+        "unsupported_functions": 0
+      }
+    },
+    "unavailable_tool_rows": 220,
+    "unavailable_tool_runs_by_tool": {
+      "binary-ninja": 110,
+      "triton": 110
+    }
+  },
+  "source_commit": "06e2a3442365d7114c543a99bf3f81cd16591880",
+  "source_tree_oids": {
+    "fixtures/dataset": "4599b46090109de0b42c58d034a8eb3f1f321512",
+    "r2morph": "54b5c7eb2cdcf56a684757f0147a539dec05ab87",
+    "scripts": "352a1c7888f71bf6bdaea0e4be96cc0ae9e90342"
+  },
+  "validation_date_utc": "2026-11-26"
+}
