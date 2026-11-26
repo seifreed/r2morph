@@ -1,5 +1,6 @@
 """Regression contract for complete analyzer benchmark reporting."""
 
+import hashlib
 import json
 import os
 import sys
@@ -7,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts import adversarial_benchmark_execution as adversarial_execution
 from scripts.adversarial_benchmark import (
     _ADVERSARIAL_ALL_PASS_NAMES,
     _EXPECTED_TOOLS,
@@ -19,6 +21,7 @@ from scripts.adversarial_benchmark import (
     _campaign_summary,
     _decompiler_evidence_complete,
     _decompiler_observations,
+    _file_digest,
     _is_binary_ninja_license_error,
     _measure_pair_tools,
     _measure_tool,
@@ -77,6 +80,7 @@ _EXPECTED_DECOMPILER_LINE_DELTA = 3
 _EXPECTED_FUNCTION_COUNT_DELTA = 1
 _EXPECTED_BINARY_NINJA_DECOMPILER_ENTRYPOINTS = 2
 _EXPECTED_BINARY_NINJA_DECOMPILER_LINES = 6
+_SHA256_HEX_LENGTH = 64
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -87,6 +91,52 @@ def test_adversarial_benchmark_reports_every_tool_slot() -> None:
         len(tools) == _EXPECTED_TOOL_COUNT
         and {item["tool"] for item in tools} >= {"radare2", "angr", "binary-ninja", "unicorn", "triton"}
     )
+
+
+def test_adversarial_benchmark_reports_hashes_for_an_explicit_pair(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("scripts.adversarial_benchmark._measure_pair_tools", lambda *_args: [])
+
+    report = benchmark_pair(_FIXTURE, _FIXTURE)
+
+    expect(
+        report["original_sha256"] == _file_digest(_FIXTURE)
+        and report["protected_sha256"] == _file_digest(_FIXTURE)
+        and report["original_sha256"] == report["protected_sha256"]
+    )
+
+
+def test_adversarial_benchmark_rejects_a_missing_protected_binary() -> None:
+    with pytest.raises(ValueError, match="protected binary does not exist"):
+        benchmark_pair(_FIXTURE, _FIXTURE.parent / "missing-protected-fixture")
+
+
+def test_adversarial_pass_rows_bind_the_protected_binary_hash(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    protected_bytes = b"protected benchmark fixture"
+
+    def protected_copy(
+        original: Path,
+        directory: Path,
+        pass_name: str,
+        timeout_seconds: float,
+    ) -> tuple[Path, dict[str, object]]:
+        del original, timeout_seconds
+        protected_path = directory / f"protected-{pass_name}"
+        protected_path.write_bytes(protected_bytes)
+        return protected_path, {"pass_name": pass_name, "status": "applied"}
+
+    monkeypatch.setattr(adversarial_execution, "_protected_copy", protected_copy)
+    monkeypatch.setattr(adversarial_execution, "_measure_pair_tools", lambda *_args: [])
+
+    passes, tools = adversarial_execution._benchmark_passes(_FIXTURE, tmp_path, ("CodeVirtualization",))
+
+    expect(
+        passes[0]["protected_sha256"] == hashlib.sha256(protected_bytes).hexdigest()
+        and passes[0]["status"] == "applied"
+    )
+    expect(not tools)
 
 
 def test_adversarial_all_pass_selection_covers_extended_maturity_passes() -> None:
@@ -607,7 +657,11 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
         and "binary-ninja" in report["tool_summary"]
     )
     sample = report["samples"][0]
-    expect("CodeVirtualization" in sample["passes"][0].values())
+    expect(
+        sample["original_sha256"] == _file_digest(dataset / _FIXTURE.name)
+        and len(sample["passes"][0]["protected_sha256"]) == _SHA256_HEX_LENGTH
+        and "CodeVirtualization" in sample["passes"][0].values()
+    )
 
 
 def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:

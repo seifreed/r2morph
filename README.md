@@ -501,6 +501,12 @@ automated result does not substitute for a matching human signoff.
 | **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
 | **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
 
+Adversarial benchmark JSON records the SHA-256 of each original fixture and of
+each pass's protected output. Explicit original/protected pair reports include
+both hashes at the report level. The digest is computed in bounded chunks so
+large inputs do not need to be loaded into memory; these hashes let campaigns
+verify that analyzer results used the same bytes across runs.
+
 Runtime validation fails if either process times out. A test case's
 `expected_exitcode` defaults to `0`; set it to `null` when no absolute exit code
 is known, and the validator will still require the original and mutated

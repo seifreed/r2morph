@@ -117,6 +117,8 @@ def _benchmark_passes(
                     tools.extend(failed_tools)
                 break
             continue
+        protected_sha256 = _file_digest(protected_path)
+        pass_row["protected_sha256"] = protected_sha256
         pass_rows.append(pass_row)
         tools.extend(
             {
@@ -129,7 +131,7 @@ def _benchmark_passes(
                 protected_path,
                 original_metrics,
                 measurement_cache,
-                _file_digest(protected_path),
+                protected_sha256,
             )
         )
     return pass_rows, tools

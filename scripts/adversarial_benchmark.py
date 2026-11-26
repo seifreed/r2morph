@@ -228,18 +228,24 @@ def benchmark_pair(
     """Benchmark every configured analyzer and preserve unavailable evidence."""
     if not original.is_file():
         raise ValueError(f"original binary does not exist: {original}")
+    if protected is not None and not protected.is_file():
+        raise ValueError(f"protected binary does not exist: {protected}")
+    original_sha256 = _file_digest(original)
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
         if protected is None:
             pass_rows, tools = _benchmark_passes(original, Path(directory), pass_names)
             protected_path = Path(directory) / "protected"
+            protected_sha256 = None
         else:
             protected_path = protected
+            protected_sha256 = _file_digest(protected_path)
             tools = _measure_pair_tools(original, protected_path)
     tool_summary = _tool_summary([{"tools": tools}])
     release_signoff_blockers = _release_signoff_blockers(tool_summary)
     report: dict[str, object] = {
         "schema_version": 3,
         "original": original.name,
+        "original_sha256": original_sha256,
         "protected": protected_path.name,
         "tools": tools,
         "tool_summary": tool_summary,
@@ -252,6 +258,8 @@ def benchmark_pair(
     if protected is None:
         report["passes"] = pass_rows
         report["pass_names"] = list(pass_names)
+    else:
+        report["protected_sha256"] = protected_sha256
     return report
 
 
