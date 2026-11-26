@@ -1,0 +1,186 @@
+{
+  "command": [
+    "python3.14",
+    "scripts/adversarial_benchmark.py",
+    "--all",
+    "--dataset",
+    "fixtures/dataset",
+    "--passes",
+    "all",
+    "--require-tool-slots",
+    "--fixture-shard-index",
+    "1",
+    "--fixture-shard-count",
+    "32"
+  ],
+  "environment": {
+    "ghidra": "12.2",
+    "host": "macOS ARM64",
+    "ida_pro": "9.5",
+    "python": "3.14.10"
+  },
+  "limits": [
+    "Repository fixtures only; generated ELF/C++ fixtures were excluded because this macOS host is not the Linux x86-64 toolchain required by the generated corpus.",
+    "This is deterministic shard 1 of 32 over repository fixtures, not the full corpus or a complete analyzer matrix.",
+    "The run classifies transform/analyzer outcomes and does not establish semantic equivalence or generalized resistance.",
+    "The all-analyzer, cross-platform parity, and published resistance gates remain open."
+  ],
+  "raw_report": {
+    "path": "docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz",
+    "sha256": "3a9e5e09fb0c055f90f4577c4e1f37bde9d013c7d0520302142c240054878d08"
+  },
+  "release_gate": {
+    "all_named_adversarial_analyzers": "open",
+    "binary_ninja": "optional; its 132 unavailable rows do not block signoff",
+    "triton": "required; 132 rows unavailable because the module is not installed"
+  },
+  "run_date": "2026-11-26",
+  "schema_version": 1,
+  "scope": {
+    "analyzers": {
+      "angr": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "binary-ninja": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 132,
+        "unavailable_reasons": {
+          "analyzer license is unavailable": 132
+        }
+      },
+      "custom": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "ghidra": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "ida-pro": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "objdump": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "radare2": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      },
+      "triton": {
+        "completed": 0,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 132,
+        "unavailable_reasons": {
+          "module 'triton' is unavailable": 132
+        }
+      },
+      "unicorn": {
+        "completed": 132,
+        "errors": 0,
+        "runs": 132,
+        "unavailable": 0
+      }
+    },
+    "completed_tool_rows": 924,
+    "corpus_families": [
+      "repository-fixtures"
+    ],
+    "errored_tool_rows": 0,
+    "expected_pass_runs": 132,
+    "expected_tool_rows": 1188,
+    "fixture_count": 6,
+    "fixture_shard": {
+      "count": 32,
+      "index": 1
+    },
+    "fixtures": [
+      {
+        "name": "elf_cff_flagdead_x86_64",
+        "path": "fixtures/dataset/elf_cff_flagdead_x86_64",
+        "sha256": "25c25a65e9ae2581c3ebc9091c969cf7e1d4232ce325c0d3b343303e22fb13e0"
+      },
+      {
+        "name": "elf_vm_flagsynth_x86_64",
+        "path": "fixtures/dataset/elf_vm_flagsynth_x86_64",
+        "sha256": "2acc5497c7262a204bf2209b273859c7a1be22b5ae2bc3e4f609e1152617000f"
+      },
+      {
+        "name": "elf_vm_fppackedmem_x86_64",
+        "path": "fixtures/dataset/elf_vm_fppackedmem_x86_64",
+        "sha256": "6abe22f72dae4fe7fc64786a9877cca36ae6e6475a8629b0094fe7662dca1bdc"
+      },
+      {
+        "name": "elf_vm_movq_x86_64",
+        "path": "fixtures/dataset/elf_vm_movq_x86_64",
+        "sha256": "0afab0583612312c1b669fae39b8ac0bf5c08e3e729d8e83c5442e67e551ab88"
+      },
+      {
+        "name": "elf_vm_shiftmicroop_x86_64",
+        "path": "fixtures/dataset/elf_vm_shiftmicroop_x86_64",
+        "sha256": "1a7b31b591a2fd82a6c53b792e409a1ebf7af959ca2e5bd62218c6e6a8cfe0a8"
+      },
+      {
+        "name": "elf_x86_64",
+        "path": "fixtures/dataset/elf_x86_64",
+        "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a"
+      }
+    ],
+    "generated_fixture_count": 0,
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "pass_count": 22,
+    "pass_names": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "PatternSubstitution",
+      "RegisterSubstitution",
+      "AntiDisassembly",
+      "APIHashing",
+      "CodeMobility",
+      "DataFlowMutation",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "OpaquePredicates",
+      "PolymorphicEngine",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "passes_with_at_least_one_application": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution"
+    ],
+    "unavailable_tool_rows": 264
+  },
+  "source_commit": "45a58d95ebed7c95d12c642e86fc07f415788137"
+}

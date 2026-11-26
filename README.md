@@ -401,16 +401,18 @@ semantic equivalence, or generalized resistance. See the [summary](docs/protecti
 [compressed report](docs/protection-adversarial-local-current-main-allpasses-one-fixture-2026-11-26-d15c33.json.gz),
 and [regression test](tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py).
 
-A repository-only shard-0 run on current `main` (`14e8e052`) expanded this
-measurement to six ELF fixtures across all 22 passes: IDA Pro and Ghidra each
-completed 132/132 rows without errors. The nine analyzer slots contained
-1,188 rows: 924 completed, 264 unavailable, zero errors, and no missing rows.
-The unavailable rows were Triton (required) and Binary Ninja (optional). This
-is shard 0/32 and excludes the generated ELF/C++ corpus, which requires a Linux
-x86-64 toolchain; the complete analyzer and release gates remain open. See the
-[hash-bound summary](docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json),
-[compressed report](docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz),
-and [regression test](tests/unit/test_published_current_main_repository_shard_00_14e8e0.py).
+Two repository-only shards (0 and 1 of 32) on source commits `14e8e052` and
+`45a58d95` covered 12 ELF fixtures across all 22 passes. The product source and
+benchmark scripts were identical across those commits. IDA Pro and Ghidra each
+completed 264/264 rows without errors. Across nine analyzer slots, 2,376 rows
+were classified: 1,848 completed, 528 unavailable, zero errors, and no missing
+rows. The unavailable rows were Triton (required) and Binary Ninja (optional).
+These two shards exclude the remaining repository fixtures and the generated
+ELF/C++ corpus, which requires a Linux x86-64 toolchain; the analyzer and release
+gates remain open. See the [combined summary](docs/protection-adversarial-local-current-main-repository-shards-00-01-2026-11-26-summary.json),
+[shard 0 report](docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz),
+[shard 1 report](docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shards_00_01_45a58d.py).
 
 ### Instruction Equivalence Rules
 

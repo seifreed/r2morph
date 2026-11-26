@@ -1,0 +1,360 @@
+{
+  "environment": {
+    "ghidra": "12.2",
+    "host": "macOS ARM64",
+    "ida_pro": "9.5",
+    "python": "3.14.10"
+  },
+  "limits": [
+    "The 12 fixtures are deterministic shard 0/32 and 1/32 from the repository-only corpus; 150 additional repository fixtures and the generated ELF/C++ corpus were not measured here.",
+    "Generated fixtures were excluded because the macOS host lacks the Linux x86-64 toolchain required by this workflow.",
+    "The report classifies transform/analyzer outcomes; it does not establish semantic equivalence or generalized resistance.",
+    "All-analyzer, cross-platform parity, and published resistance readiness criteria remain open."
+  ],
+  "production_source_identical": true,
+  "production_source_tree_oids": {
+    "r2morph": "54b5c7eb2cdcf56a684757f0147a539dec05ab87",
+    "scripts": "bd7fda8c7353e5dd43dcc1ef66e78fd55655f317"
+  },
+  "release_gate": {
+    "all_named_adversarial_analyzers": "open",
+    "binary_ninja": "optional; 264 unavailable rows do not block signoff",
+    "triton": "required; 264 rows unavailable because the module is not installed"
+  },
+  "run_date": "2026-11-26",
+  "schema_version": 1,
+  "scope": {
+    "completed_tool_rows": 1848,
+    "completed_tool_runs_by_tool": {
+      "angr": 264,
+      "binary-ninja": 0,
+      "custom": 264,
+      "ghidra": 264,
+      "ida-pro": 264,
+      "objdump": 264,
+      "radare2": 264,
+      "triton": 0,
+      "unicorn": 264
+    },
+    "corpus_families": [
+      "repository-fixtures"
+    ],
+    "error_tool_runs_by_tool": {
+      "angr": 0,
+      "binary-ninja": 0,
+      "custom": 0,
+      "ghidra": 0,
+      "ida-pro": 0,
+      "objdump": 0,
+      "radare2": 0,
+      "triton": 0,
+      "unicorn": 0
+    },
+    "errored_tool_rows": 0,
+    "expected_pass_runs": 264,
+    "expected_tool_rows": 2376,
+    "fixture_count": 12,
+    "fixture_shard_count": 32,
+    "fixture_shards": [
+      0,
+      1
+    ],
+    "fixtures": [
+      {
+        "name": "elf_blockswap_x86_64",
+        "path": "fixtures/dataset/elf_blockswap_x86_64",
+        "sha256": "618a267134029c141bd916248100350c9e2402b655c1448451c16fbc7e64c52e"
+      },
+      {
+        "name": "elf_cff_flagdead_x86_64",
+        "path": "fixtures/dataset/elf_cff_flagdead_x86_64",
+        "sha256": "25c25a65e9ae2581c3ebc9091c969cf7e1d4232ce325c0d3b343303e22fb13e0"
+      },
+      {
+        "name": "elf_vm_engarithimm_x86_64",
+        "path": "fixtures/dataset/elf_vm_engarithimm_x86_64",
+        "sha256": "66913c6141fd7999f2f504d9de222aa0bc108a35a88074073b0d3b2227b1209a"
+      },
+      {
+        "name": "elf_vm_flagsynth_x86_64",
+        "path": "fixtures/dataset/elf_vm_flagsynth_x86_64",
+        "sha256": "2acc5497c7262a204bf2209b273859c7a1be22b5ae2bc3e4f609e1152617000f"
+      },
+      {
+        "name": "elf_vm_fppackedidxnb_x86_64",
+        "path": "fixtures/dataset/elf_vm_fppackedidxnb_x86_64",
+        "sha256": "a5b98d15463806174fdf87a6ac74ada040ac46690d2dfd0bbbbce4be6a7d63c7"
+      },
+      {
+        "name": "elf_vm_fppackedmem_x86_64",
+        "path": "fixtures/dataset/elf_vm_fppackedmem_x86_64",
+        "sha256": "6abe22f72dae4fe7fc64786a9877cca36ae6e6475a8629b0094fe7662dca1bdc"
+      },
+      {
+        "name": "elf_vm_movidxnb_x86_64",
+        "path": "fixtures/dataset/elf_vm_movidxnb_x86_64",
+        "sha256": "7bcecfbd2888d7198ed6822f68e14693bc70911bfebfc1ee8a687fe374335047"
+      },
+      {
+        "name": "elf_vm_movq_x86_64",
+        "path": "fixtures/dataset/elf_vm_movq_x86_64",
+        "sha256": "0afab0583612312c1b669fae39b8ac0bf5c08e3e729d8e83c5442e67e551ab88"
+      },
+      {
+        "name": "elf_vm_shift_x86_64",
+        "path": "fixtures/dataset/elf_vm_shift_x86_64",
+        "sha256": "e69081768bdeabbbd59cd7611c6780857b20601969c0aa9d66ec50aefcf1cc29"
+      },
+      {
+        "name": "elf_vm_shiftmicroop_x86_64",
+        "path": "fixtures/dataset/elf_vm_shiftmicroop_x86_64",
+        "sha256": "1a7b31b591a2fd82a6c53b792e409a1ebf7af959ca2e5bd62218c6e6a8cfe0a8"
+      },
+      {
+        "name": "elf_vm_word16_x86_64",
+        "path": "fixtures/dataset/elf_vm_word16_x86_64",
+        "sha256": "35b7b1e2eafc74fa66de8b8317a9a6c1c906ba40a43148353d6bb6d334fd95cc"
+      },
+      {
+        "name": "elf_x86_64",
+        "path": "fixtures/dataset/elf_x86_64",
+        "sha256": "7b2dd51db978d08f362c2b7a0b6062521340207faf1955407361ae3a3268f50a"
+      }
+    ],
+    "generated_fixture_count": 0,
+    "missing_pass_runs": 0,
+    "missing_tool_runs": 0,
+    "pass_count": 22,
+    "pass_names": [
+      "APIHashing",
+      "AntiDisassembly",
+      "BlockReordering",
+      "CodeMobility",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DataFlowMutation",
+      "DeadCodeInjection",
+      "FunctionOutlining",
+      "ImportObfuscation",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "NopInsertion",
+      "OpaquePredicates",
+      "PatternSubstitution",
+      "PolymorphicEngine",
+      "RegisterSubstitution",
+      "SelfModifyingCode",
+      "ShortJumpPatching",
+      "StackStrings",
+      "StringObfuscation"
+    ],
+    "pass_outcomes": {
+      "APIHashing": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "AntiDisassembly": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "BlockReordering": {
+        "applied": 2,
+        "errors": 0,
+        "no_op": 10,
+        "omitted": 0,
+        "samples": 12
+      },
+      "CodeMobility": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "CodeVirtualization": {
+        "applied": 12,
+        "errors": 0,
+        "no_op": 0,
+        "omitted": 0,
+        "samples": 12
+      },
+      "ConstantUnfolding": {
+        "applied": 1,
+        "errors": 0,
+        "no_op": 11,
+        "omitted": 0,
+        "samples": 12
+      },
+      "ControlFlowFlattening": {
+        "applied": 1,
+        "errors": 0,
+        "no_op": 11,
+        "omitted": 0,
+        "samples": 12
+      },
+      "DataFlowMutation": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "DeadCodeInjection": {
+        "applied": 1,
+        "errors": 0,
+        "no_op": 11,
+        "omitted": 0,
+        "samples": 12
+      },
+      "FunctionOutlining": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "ImportObfuscation": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "InstructionExpansion": {
+        "applied": 2,
+        "errors": 0,
+        "no_op": 10,
+        "omitted": 0,
+        "samples": 12
+      },
+      "InstructionSubstitution": {
+        "applied": 4,
+        "errors": 0,
+        "no_op": 8,
+        "omitted": 0,
+        "samples": 12
+      },
+      "NopInsertion": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "OpaquePredicates": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "PatternSubstitution": {
+        "applied": 1,
+        "errors": 0,
+        "no_op": 11,
+        "omitted": 0,
+        "samples": 12
+      },
+      "PolymorphicEngine": {
+        "applied": 1,
+        "errors": 0,
+        "no_op": 11,
+        "omitted": 0,
+        "samples": 12
+      },
+      "RegisterSubstitution": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "SelfModifyingCode": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "ShortJumpPatching": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "StackStrings": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      },
+      "StringObfuscation": {
+        "applied": 0,
+        "errors": 0,
+        "no_op": 12,
+        "omitted": 0,
+        "samples": 12
+      }
+    },
+    "passes_with_at_least_one_application": [
+      "BlockReordering",
+      "CodeVirtualization",
+      "ConstantUnfolding",
+      "ControlFlowFlattening",
+      "DeadCodeInjection",
+      "InstructionExpansion",
+      "InstructionSubstitution",
+      "PatternSubstitution",
+      "PolymorphicEngine"
+    ],
+    "unavailable_tool_rows": 528,
+    "unavailable_tool_runs_by_tool": {
+      "angr": 0,
+      "binary-ninja": 264,
+      "custom": 0,
+      "ghidra": 0,
+      "ida-pro": 0,
+      "objdump": 0,
+      "radare2": 0,
+      "triton": 264,
+      "unicorn": 0
+    }
+  },
+  "shards": [
+    {
+      "completed_tool_rows": 924,
+      "fixture_count": 6,
+      "pass_runs": 132,
+      "raw_path": "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz",
+      "raw_sha256": "0d16685c5fd813945a35c5ab146a8814512491d210e6165b85e7c85aae446856",
+      "shard_index": 0,
+      "source_commit": "14e8e052540d7df6daa47e532fd48ac2d8fbc3a6",
+      "summary_path": "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json",
+      "unavailable_tool_rows": 264
+    },
+    {
+      "completed_tool_rows": 924,
+      "fixture_count": 6,
+      "pass_runs": 132,
+      "raw_path": "docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz",
+      "raw_sha256": "3a9e5e09fb0c055f90f4577c4e1f37bde9d013c7d0520302142c240054878d08",
+      "shard_index": 1,
+      "source_commit": "45a58d95ebed7c95d12c642e86fc07f415788137",
+      "summary_path": "docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d-summary.json",
+      "unavailable_tool_rows": 264
+    }
+  ],
+  "source_commits": [
+    "14e8e052540d7df6daa47e532fd48ac2d8fbc3a6",
+    "45a58d95ebed7c95d12c642e86fc07f415788137"
+  ]
+}

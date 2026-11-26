@@ -33,20 +33,23 @@ cover the full corpus. The [hash-bound summary](protection-adversarial-local-cur
 and [regression test](../tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py)
 pin the result and its limits.
 
-## Current-main repository-only analyzer shard — 2026-11-26
+## Current-main repository-only analyzer shards 0–1 — 2026-11-26
 
-On source `14e8e052540d7df6daa47e532fd48ac2d8fbc3a6`, deterministic shard 0/32
-covered six repository ELF fixtures across all 22 passes (132 pass rows and
-1,188 analyzer rows). IDA Pro 9.5 and Ghidra 12.2 completed 132/132 rows each;
-all analyzers reported zero errors, with no missing pass or tool rows. In total,
-924 rows completed and 264 were unavailable: Triton (required) and Binary Ninja
-(optional) each account for 132 unavailable rows. This Mac run excluded the
-generated ELF/C++ fixtures because those require the Linux x86-64 toolchain.
-It is a partial shard and does not close analyzer coverage, semantic parity,
-or generalized resistance. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json),
-[compressed report](protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz),
-and [regression test](../tests/unit/test_published_current_main_repository_shard_00_14e8e0.py)
-pin the exact fixture hashes and row counts.
+Two deterministic shards (0/32 on `14e8e052540d7df6daa47e532fd48ac2d8fbc3a6`
+and 1/32 on `45a58d95ebed7c95d12c642e86fc07f415788137`) covered 12 repository
+ELF fixtures across all 22 passes. The product source and benchmark scripts
+were identical across both commits. The sample contains 264 pass rows and 2,376
+analyzer rows: 1,848 completed, 528 unavailable, zero errors, and no missing
+rows. IDA Pro 9.5 and Ghidra 12.2 each completed all 264 rows. Triton (required)
+and Binary Ninja (optional) account for the unavailable rows. This macOS run
+excluded the remaining repository fixtures and generated ELF/C++ corpus, which
+requires the Linux x86-64 toolchain. The evidence does not close analyzer
+coverage, semantic parity, or generalized resistance. The [combined
+summary](protection-adversarial-local-current-main-repository-shards-00-01-2026-11-26-summary.json),
+[shard 0 report](protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz),
+[shard 1 report](protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_01_45a58d.py)
+pin the fixture hashes, tool rows, and limits.
 
 ## Current-source file-output fuzz campaign — 2026-11-26
 

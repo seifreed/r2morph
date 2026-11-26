@@ -199,7 +199,11 @@
         "tests/unit/test_published_current_main_allpasses_one_fixture_d15c33.py",
         "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0-summary.json",
         "docs/protection-adversarial-local-current-main-repository-shard-00-2026-11-26-14e8e0.json.gz",
-        "tests/unit/test_published_current_main_repository_shard_00_14e8e0.py"
+        "tests/unit/test_published_current_main_repository_shard_00_14e8e0.py",
+        "docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d-summary.json",
+        "docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz",
+        "docs/protection-adversarial-local-current-main-repository-shards-00-01-2026-11-26-summary.json",
+        "tests/unit/test_published_current_main_repository_shards_00_01_45a58d.py"
       ]
     },
     "complete_compatibility_contract": {
