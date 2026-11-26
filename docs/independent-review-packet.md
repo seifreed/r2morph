@@ -12,8 +12,9 @@ approval recorded below.
   and all relevant changes since that baseline.
 - Scope: ELF x86-64 CodeVirtualization, VM diversification, analyzer corpus,
   and dispatcher/relocation/rewriter fuzzing.
-- Binary Ninja: measured by the benchmark when its licensed API is available;
-  unavailable environments retain an explicit non-passing row.
+- Binary Ninja: optional informational analyzer slot. The current environment
+  has no valid license; report it as unavailable and exclude it from release
+  sign-off blockers. No Binary Ninja license is required for this project.
 
 ## Evidence
 

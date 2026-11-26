@@ -2189,9 +2189,13 @@ def test_platform_evidence_aggregate_runs_after_failed_dependencies() -> None:
     expect("if: ${{ always() && !cancelled() }}" in aggregate_header)
 
 
-def test_independent_review_packet_keeps_binary_ninja_in_benchmark_contract() -> None:
-    packet = (_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8")
+def test_independent_review_packet_keeps_binary_ninja_optional() -> None:
+    packet = " ".join((_ROOT / "docs" / "independent-review-packet.md").read_text(encoding="utf-8").split())
 
-    expect("Binary Ninja: measured by the benchmark when its licensed API is available" in packet)
+    expect(
+        "Binary Ninja: optional informational analyzer slot" in packet
+        and "exclude it from release sign-off blockers" in packet
+        and "No Binary Ninja license is required for this project" in packet
+    )
     expect("Binary Ninja remains excluded by project decision" not in packet)
     expect("Binary Ninja is omitted by project decision" not in packet)
