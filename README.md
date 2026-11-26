@@ -435,13 +435,13 @@ gates. See the [hash-bound summary](docs/protection-adversarial-local-current-ma
 [compressed report](docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py).
 
-Across shards 0–4, 27 unique fixtures have 5,346 analyzer rows: 4,158
-completed, 1,188 unavailable, zero errors, and no missing rows. IDA Pro and
-Ghidra completed all 594 rows each. Triton accounts for 594 required
-unavailable rows; Binary Ninja accounts for 594 optional rows. The [aggregate
-summary](docs/protection-adversarial-local-current-main-repository-shards-00-04-2026-11-26-summary.json)
-records the benchmark-script revision boundary and source-tree hashes. Only
-five of 32 fixture shards are covered, so this does not close the analyzer gate.
+Across shards 0–5, 32 unique fixtures have 6,336 analyzer rows: 4,928
+completed, 1,408 unavailable, zero errors, and no missing rows. IDA Pro and
+Ghidra completed all 704 rows each. Triton accounts for 704 required
+unavailable rows; Binary Ninja accounts for 704 optional rows. The [aggregate
+summary](docs/protection-adversarial-local-current-main-repository-shards-00-05-2026-11-26-summary.json)
+records the benchmark-script revision boundary and source-tree hashes. Six of
+32 fixture shards are covered, so this does not close the analyzer gate.
 
 Binary Ninja is an optional, informational analyzer slot. Its missing license
 does not block benchmarks or release signoff; no Binary Ninja license is
@@ -449,6 +449,14 @@ required or requested. The analyzer gate remains open for required Triton rows
 and incomplete corpus coverage.
 Benchmark reports retain optional analyzer outcomes in availability diagnostics
 but exclude them from `adversarial_evidence_blockers`.
+
+The updated blocker behavior was measured on repository shard 5/32: IDA Pro 9.5
+and Ghidra 12.2 completed all 110 rows each; 110 Triton rows remain required
+and unavailable. Binary Ninja's 110 unavailable rows remain visible in tool
+diagnostics and are absent from blocker totals. Nine of 110 pass-fixture rows
+applied a transformation. See the [shard summary](docs/protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shards_00_05_20261126.py).
 
 ### Instruction Equivalence Rules
 

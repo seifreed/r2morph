@@ -1956,6 +1956,27 @@ resistance gates remain open. The [aggregate summary](protection-adversarial-loc
 and [regression test](../tests/unit/test_published_current_main_repository_shards_00_04_20261126.py)
 pin the evidence and limits.
 
+## Current-main repository-only analyzer shard 5 — 2026-11-26
+
+Shard 5/32 measured five repository ELF x86-64 fixtures across 22 passes. Its
+110 pass rows produced 990 analyzer rows: 770 completed, 220 unavailable,
+zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2 completed all
+110 rows each. Triton was unavailable for 110 required rows. Binary Ninja was
+unavailable for 110 optional rows; its status remains visible in diagnostic
+counts and is excluded from adversarial blocker totals. Nine pass-fixture rows
+applied a transformation. This sample does not close corpus coverage,
+cross-platform parity, or generalized resistance. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_05_20261126.py)
+pin the measurements.
+
+The combined [shards 0–5 summary](protection-adversarial-local-current-main-repository-shards-00-05-2026-11-26-summary.json)
+contains 32 fixtures and 6,336 analyzer rows: 4,928 completed, 1,408
+unavailable, zero errors, and no missing rows. Binary Ninja's 704 unavailable
+rows are optional; the 704 Triton rows are required. Earlier raw reports retain
+their historical blocker fields. The analyzer, parity, and resistance gates
+remain open.
+
 ## Current-main repository-only analyzer shard 2 — 2026-11-26
 
 The local macOS ARM64 campaign for source commit `68dd840a1ef117cae24289514976cbee4d8ef8a2`

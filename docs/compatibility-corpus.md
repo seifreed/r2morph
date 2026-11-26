@@ -1321,3 +1321,26 @@ unavailable (594 required Triton, 594 optional Binary Ninja), with zero errors
 or missing rows. Five of 32 deterministic shards are measured; the analyzer
 gate remains open because Triton is unavailable and the remaining corpus is
 not covered.
+
+## Current-main repository-only analyzer shard 5 — 2026-11-26
+
+On source commit `2cf345c8`, deterministic repository fixture shard 5/32
+measured all 22 passes over five ELF x86-64 fixtures. Its 110 pass rows
+produced 990 analyzer rows: 770 completed, 220 unavailable, zero errors, and
+no missing rows. IDA Pro 9.5 and Ghidra 12.2 each completed 110/110 rows.
+Triton (required) and Binary Ninja (optional) were unavailable for 110 rows
+each. The updated report keeps Binary Ninja in availability diagnostics while
+excluding it from adversarial blocker totals; Triton remains a required blocker.
+Nine pass-fixture rows applied a transformation. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8-summary.json),
+[compressed raw report](protection-adversarial-local-current-main-repository-shard-05-2026-11-26-2cf345c8.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_05_20261126.py)
+pin hashes, counts, and limits. This bounded sample does not establish full
+corpus coverage or generalized resistance. No Binary Ninja license is required
+or requested.
+
+The combined [shards 0–5 summary](protection-adversarial-local-current-main-repository-shards-00-05-2026-11-26-summary.json)
+tracks 32 fixtures and 6,336 analyzer rows: 4,928 completed and 1,408
+unavailable (704 required Triton, 704 optional Binary Ninja), with zero errors
+or missing rows. Earlier raw shard reports retain the blocker schema used when
+they were measured; the shard 5 report records the corrected optional-analyzer
+policy. Six of 32 shards are covered and required Triton remains unavailable.
