@@ -10,6 +10,13 @@ all-named-analyzer release criterion. Historical campaign results below retain
 the availability facts and release policy that applied when those reports were
 generated.
 
+Adversarial corpus reports record Python implementation/version, operating
+system, architecture, `PYTHONHASHSEED`, and the radare2 version used to produce
+the protected binaries. The shard merger rejects mixed or missing environment
+metadata once a campaign uses this field. This prevents reports from different
+toolchains from being treated as one reproducible campaign; the protected
+binary SHA-256 remains the identity for analyzer measurements.
+
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit

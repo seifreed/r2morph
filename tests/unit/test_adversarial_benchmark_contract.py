@@ -634,6 +634,15 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
 
     expect(
         report["sample_count"] == 1
+        and set(report["measurement_environment"])
+        == {
+            "python_implementation",
+            "python_version",
+            "system",
+            "machine",
+            "python_hash_seed",
+            "radare2_version",
+        }
         and report["corpus_scope"]
         == {
             "families": ["repository-fixtures"],
@@ -665,10 +674,19 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
 
 
 def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:
+    environment = {
+        "python_implementation": "CPython",
+        "python_version": "3.14.0",
+        "system": "Darwin",
+        "machine": "arm64",
+        "python_hash_seed": "0",
+        "radare2_version": "radare2 6.2.6",
+    }
     reports = [
         {
             "corpus": "dataset",
             "pass_names": ["CodeVirtualization"],
+            "measurement_environment": environment,
             "samples": [
                 {
                     "original": "fixture-a",
@@ -680,6 +698,7 @@ def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:
         {
             "corpus": "dataset",
             "pass_names": ["CodeVirtualization"],
+            "measurement_environment": environment,
             "samples": [
                 {
                     "original": "fixture-b",
@@ -695,7 +714,29 @@ def test_merge_adversarial_reports_rechecks_disjoint_sample_scope() -> None:
     expect(
         merged["sample_count"] == _EXPECTED_MERGED_SAMPLE_COUNT
         and merged["summary"]["expected_pass_runs"] == _EXPECTED_MERGED_SAMPLE_COUNT
+        and merged["measurement_environment"] == environment
     )
+
+
+def test_merge_adversarial_reports_rejects_mismatched_measurement_environments() -> None:
+    report_template = {
+        "corpus": "dataset",
+        "pass_names": ["CodeVirtualization"],
+        "samples": [],
+    }
+    reports = [
+        {
+            **report_template,
+            "measurement_environment": {"radare2_version": "radare2 6.2.2"},
+        },
+        {
+            **report_template,
+            "measurement_environment": {"radare2_version": "radare2 6.2.6"},
+        },
+    ]
+
+    with pytest.raises(ValueError, match="different measurement environments"):
+        merge_adversarial_reports(reports)
 
 
 def test_merge_adversarial_reports_rejects_missing_fixture_shards() -> None:

@@ -443,6 +443,13 @@ summary](docs/protection-adversarial-local-current-main-repository-shards-00-09-
 records the benchmark-script revision boundary and source-tree hashes. Ten of
 32 fixture shards are covered, so this does not close the analyzer gate.
 
+Adversarial corpus reports now bind each shard to its Python version,
+platform/architecture, `PYTHONHASHSEED`, and radare2 version. The aggregate
+rejects shards whose recorded environments differ. A matched Linux ELF sample
+produced different virtualized bytes under radare2 6.2.2 and 6.2.6, so analyzer
+measurements are comparable only when they refer to the same protected-binary
+hash.
+
 Binary Ninja is an optional, informational analyzer slot. Its missing license
 does not block benchmarks or release signoff; no Binary Ninja license is
 required or requested. The analyzer gate remains open for required Triton rows

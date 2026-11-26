@@ -5,7 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import platform
 import shutil
+import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
@@ -299,6 +302,7 @@ def benchmark_corpus(
     return {
         "schema_version": 3,
         "measurement": "protection-adversarial-corpus",
+        "measurement_environment": _measurement_environment(),
         "corpus": dataset.name,
         "corpus_scope": {
             "families": (
@@ -319,6 +323,69 @@ def benchmark_corpus(
     }
 
 
+def _measurement_environment() -> dict[str, str | None]:
+    """Capture host and disassembler versions that can affect mutation output."""
+    radare2_version: str | None = None
+    radare2_path = shutil.which("r2")
+    if radare2_path is not None:
+        try:
+            result = subprocess.run(  # noqa: S603 - trusted PATH binary, fixed -v argument
+                [radare2_path, "-v"],
+                capture_output=True,
+                check=False,
+                text=True,
+                timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        else:
+            output = result.stdout or result.stderr
+            if result.returncode == 0 and output:
+                radare2_version = output.splitlines()[0].strip()
+    return {
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "system": platform.system(),
+        "machine": platform.machine(),
+        "python_hash_seed": os.environ.get("PYTHONHASHSEED"),
+        "radare2_version": radare2_version,
+    }
+
+
+def _common_measurement_environment(reports: list[dict[str, object]]) -> dict[str, object] | None:
+    environments = [report.get("measurement_environment") for report in reports]
+    if not any(environment is not None for environment in environments):
+        return None
+    first = environments[0]
+    if not isinstance(first, dict) or not all(
+        isinstance(environment, dict) and environment == first for environment in environments
+    ):
+        raise ValueError("adversarial reports use different measurement environments")
+    return first
+
+
+def _validate_shard_metadata(reports: list[dict[str, object]]) -> None:
+    shard_metadata = [report.get("fixture_shard") for report in reports]
+    if not any(metadata is not None for metadata in shard_metadata):
+        return
+    if not all(
+        isinstance(metadata, dict)
+        and isinstance(metadata.get("index"), int)
+        and isinstance(metadata.get("count"), int)
+        and metadata["count"] > 0
+        and 0 <= metadata["index"] < metadata["count"]
+        for metadata in shard_metadata
+    ):
+        raise ValueError("adversarial reports have incomplete fixture shard metadata")
+    valid_shards = cast(list[dict[str, int]], shard_metadata)
+    shard_count = valid_shards[0]["count"]
+    shard_indices = [metadata["index"] for metadata in valid_shards]
+    if any(metadata["count"] != shard_count for metadata in valid_shards):
+        raise ValueError("adversarial reports use different fixture shard counts")
+    if len(set(shard_indices)) != len(shard_indices) or set(shard_indices) != set(range(shard_count)):
+        raise ValueError("adversarial reports do not cover every fixture shard")
+
+
 def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, object]:
     """Merge disjoint adversarial corpus reports before evaluating campaign gates."""
     if not reports:
@@ -328,24 +395,8 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
         raise ValueError("adversarial report is missing pass names")
     corpus = reports[0].get("corpus")
     corpus_scope = reports[0].get("corpus_scope")
-    shard_metadata = [report.get("fixture_shard") for report in reports]
-    if any(metadata is not None for metadata in shard_metadata):
-        if not all(
-            isinstance(metadata, dict)
-            and isinstance(metadata.get("index"), int)
-            and isinstance(metadata.get("count"), int)
-            and metadata["count"] > 0
-            and 0 <= metadata["index"] < metadata["count"]
-            for metadata in shard_metadata
-        ):
-            raise ValueError("adversarial reports have incomplete fixture shard metadata")
-        valid_shards = cast(list[dict[str, int]], shard_metadata)
-        shard_count = valid_shards[0]["count"]
-        shard_indices = [metadata["index"] for metadata in valid_shards]
-        if any(metadata["count"] != shard_count for metadata in valid_shards):
-            raise ValueError("adversarial reports use different fixture shard counts")
-        if len(set(shard_indices)) != len(shard_indices) or set(shard_indices) != set(range(shard_count)):
-            raise ValueError("adversarial reports do not cover every fixture shard")
+    environment = _common_measurement_environment(reports)
+    _validate_shard_metadata(reports)
     samples: list[dict[str, object]] = []
     seen_samples: set[str] = set()
     for report in reports:
@@ -378,6 +429,8 @@ def merge_adversarial_reports(reports: list[dict[str, object]]) -> dict[str, obj
     }
     if corpus_scope is not None:
         merged["corpus_scope"] = corpus_scope
+    if environment is not None:
+        merged["measurement_environment"] = environment
     return merged
 
 
