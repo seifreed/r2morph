@@ -423,6 +423,7 @@ jobs:
               native_macho_target = [
                   "tests/integration/test_macho_x86_64_native.py",
                   "tests/integration/test_macho_x86_64_dead_code.py",
+                  "tests/integration/test_macho_x86_64_constant_unfolding.py",
               ]
           pytest_command = [
               sys.executable,

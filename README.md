@@ -198,7 +198,9 @@ obfuscation in the Windows PE differential smoke; its reference checks
 normalize section RVAs with the PE ImageBase and preserve already absolute VAs.
 The installed-wheel smoke executes x86-64 Mach-O natively on Intel
 `macos-15-intel` and checks instruction and register substitution against
-native output. These are bounded experimental pass results; they do not
+native output. The Intel Mach-O suite now also exercises constant unfolding
+against native output; its support-matrix evidence remains unchanged until that
+runner passes the new case. These are bounded experimental pass results; they do not
 establish full Mach-O or cross-platform parity. It runs in a fresh pytest
 process. Apple Silicon CI checks the installed package without claiming
 Rosetta x86-64 execution coverage.
