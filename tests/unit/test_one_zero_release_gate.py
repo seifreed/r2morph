@@ -315,6 +315,19 @@ def test_one_zero_gate_accepts_complete_linked_evidence(tmp_path: Path) -> None:
     expect(_check_one_zero_release_gate("1.0.0", report_path, tmp_path) is None)
 
 
+def test_binary_ninja_is_optional_and_never_a_release_blocker() -> None:
+    readiness = json.loads(_READINESS.read_text(encoding="utf-8"))
+    analyzer_criterion = readiness["criteria"]["all_named_adversarial_analyzers"]
+    required = set(analyzer_criterion["required_analyzers"])
+    optional = set(analyzer_criterion["optional_analyzers"])
+
+    expect(
+        "binary-ninja" not in required
+        and "binary-ninja" in optional
+        and "all_named_adversarial_analyzers" in readiness["blocking_criteria"]
+    )
+
+
 def test_one_zero_gate_rejects_evidence_paths_outside_the_readiness_root(tmp_path: Path) -> None:
     report = json.loads(_READINESS.read_text(encoding="utf-8"))
     report["criteria"][_CRITERIA[0]]["evidence"] = ["../outside.md"]

@@ -1940,6 +1940,22 @@ required to verify the fixture correction and determine whether the VM failure
 persists. Related analyzer, VM resistance, human signoff, and stable-release
 gates remain open.
 
+## Current-main repository-only analyzer shards 0–4 — 2026-11-26
+
+The five deterministic reports cover 27 repository ELF x86-64 fixtures across
+all 22 passes. Their 594 pass rows produced 5,346 analyzer rows: 4,158
+completed, 1,188 unavailable, zero errors, and no missing rows. IDA Pro 9.5 and
+Ghidra 12.2 each completed all 594 rows. The unavailable rows are 594 required
+Triton rows and 594 optional Binary Ninja rows. Binary Ninja availability is
+not a release blocker and no license is requested. These macOS ARM64 local
+shards exclude the rest of the 32-shard corpus and generated Linux ELF/C++
+fixtures. The required-analyzer, cross-platform parity, and published
+resistance gates remain open. The [aggregate summary](protection-adversarial-local-current-main-repository-shards-00-04-2026-11-26-summary.json),
+[shard 4 report](protection-adversarial-local-current-main-repository-shard-04-2026-11-26-71549123.json.gz),
+[shard 4 summary](protection-adversarial-local-current-main-repository-shard-04-2026-11-26-71549123-summary.json),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_04_20261126.py)
+pin the evidence and limits.
+
 ## Current-main repository-only analyzer shard 2 — 2026-11-26
 
 The local macOS ARM64 campaign for source commit `68dd840a1ef117cae24289514976cbee4d8ef8a2`

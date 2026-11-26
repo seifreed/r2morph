@@ -435,14 +435,18 @@ gates. See the [hash-bound summary](docs/protection-adversarial-local-current-ma
 [compressed report](docs/protection-adversarial-local-current-main-repository-shard-03-2026-11-26-9ff28e1.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shard_03_9ff28e1.py).
 
-Across shards 0–3, 22 unique fixtures have 4,356 analyzer rows: 3,388
-completed, 968 unavailable, zero errors, and no missing rows. IDA Pro and
-Ghidra completed all 484 rows each. Triton accounts for 484 required
-unavailable rows; Binary Ninja accounts for 484 optional rows. The [aggregate
-summary](docs/protection-adversarial-local-current-main-repository-shards-00-03-2026-11-26-summary.json)
-also records the benchmark-script revision boundary and source-tree hashes.
-Only four of 32 fixture shards are covered, so this does not close the analyzer
-gate.
+Across shards 0–4, 27 unique fixtures have 5,346 analyzer rows: 4,158
+completed, 1,188 unavailable, zero errors, and no missing rows. IDA Pro and
+Ghidra completed all 594 rows each. Triton accounts for 594 required
+unavailable rows; Binary Ninja accounts for 594 optional rows. The [aggregate
+summary](docs/protection-adversarial-local-current-main-repository-shards-00-04-2026-11-26-summary.json)
+records the benchmark-script revision boundary and source-tree hashes. Only
+five of 32 fixture shards are covered, so this does not close the analyzer gate.
+
+Binary Ninja is an optional, informational analyzer slot. Its missing license
+does not block benchmarks or release signoff; no Binary Ninja license is
+required or requested. The analyzer gate remains open for required Triton rows
+and incomplete corpus coverage.
 
 ### Instruction Equivalence Rules
 

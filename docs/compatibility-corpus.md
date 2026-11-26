@@ -1299,3 +1299,25 @@ Binary Ninja optional), with zero errors or missing rows. The same r2morph and
 fixture trees were used throughout; the benchmark script changed before shard
 2 to report hashes for original and protected bytes. Four of 32 shards are
 measured, so the analyzer gate remains open.
+
+## Current-main repository-only analyzer shard 4 — 2026-11-26
+
+On source commit `71549123e274fe36f471b8793d94043978af9779`, deterministic
+repository fixture shard 4/32 measured all 22 passes over five ELF x86-64
+fixtures. The report has 110 pass rows and 990 analyzer rows: 770 completed,
+220 unavailable, zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2
+each completed 110/110 rows. Triton (required) and Binary Ninja (optional)
+were unavailable for 110 rows each. Ten pass-fixture rows applied a
+transformation. The [hash-bound summary](protection-adversarial-local-current-main-repository-shard-04-2026-11-26-71549123-summary.json),
+[compressed raw report](protection-adversarial-local-current-main-repository-shard-04-2026-11-26-71549123.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shards_00_04_20261126.py)
+pin fixture/output hashes, tool counts, and scope. This bounded shard does not
+close analyzer coverage or establish generalized resistance. Binary Ninja is
+not a release requirement; no license is requested.
+
+The combined [shards 0–4 summary](protection-adversarial-local-current-main-repository-shards-00-04-2026-11-26-summary.json)
+tracks 27 unique fixtures and 5,346 analyzer rows: 4,158 completed and 1,188
+unavailable (594 required Triton, 594 optional Binary Ninja), with zero errors
+or missing rows. Five of 32 deterministic shards are measured; the analyzer
+gate remains open because Triton is unavailable and the remaining corpus is
+not covered.
