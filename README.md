@@ -414,6 +414,17 @@ gates remain open. See the [combined summary](docs/protection-adversarial-local-
 [shard 1 report](docs/protection-adversarial-local-current-main-repository-shard-01-2026-11-26-45a58d.json.gz),
 and [regression test](tests/unit/test_published_current_main_repository_shards_00_01_45a58d.py).
 
+A third repository-only shard (2 of 32) on source `68dd840a` covers five more
+fixtures across the same 22 passes. IDA Pro 9.5 and Ghidra 12.2 each completed
+110/110 rows without errors. In total, 770/990 analyzer rows completed; all
+110 Triton rows remain unavailable (required), while 110 Binary Ninja rows are
+optional and unavailable. All pass and analyzer rows are present, with no
+errors; 11/110 fixture-pass rows applied a transformation. This bounded result
+does not close the analyzer gate or establish generalized resistance. See the
+[hash-bound summary](docs/protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840-summary.json),
+[compressed report](docs/protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz),
+and [regression test](tests/unit/test_published_current_main_repository_shard_02_68dd840.py).
+
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence

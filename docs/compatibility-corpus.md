@@ -1258,3 +1258,20 @@ The macOS ARM64 job later exposed that the x86-64 Mach-O NOP smoke fixture used
 redundant instruction. The fixture now uses the native-width `mov rax, rax`;
 the pass eligibility rule is unchanged. The corrected native smoke must pass
 before this platform slice is counted as successful.
+
+## Current-main repository-only analyzer shard 2 — 2026-11-26
+
+On source commit `68dd840a1ef117cae24289514976cbee4d8ef8a2`, deterministic
+repository fixture shard 2/32 measured all 22 passes over five ELF x86-64
+fixtures. The report contains 110 pass rows and 990 analyzer rows: 770 completed,
+220 unavailable, zero errors, and no missing rows. IDA Pro 9.5 and Ghidra 12.2
+each completed all 110 rows. Triton was unavailable for all 110 rows; Binary
+Ninja was unavailable for all 110 rows but remains optional. Eleven pass-fixture
+rows applied a transformation; the remaining rows were no-ops. The [hash-bound
+summary](protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840-summary.json),
+[compressed raw report](protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shard_02_68dd840.py)
+bind fixture and output hashes, tool counts, and limits. This is one bounded
+repository shard; it does not close `all_named_adversarial_analyzers`, establish
+full corpus coverage, or demonstrate generalized resistance. Binary Ninja is
+not a release requirement and no license is requested.

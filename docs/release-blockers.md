@@ -1940,6 +1940,19 @@ required to verify the fixture correction and determine whether the VM failure
 persists. Related analyzer, VM resistance, human signoff, and stable-release
 gates remain open.
 
+## Current-main repository-only analyzer shard 2 — 2026-11-26
+
+The local macOS ARM64 campaign for source commit `68dd840a1ef117cae24289514976cbee4d8ef8a2`
+completed deterministic shard 2/32: five repository ELF x86-64 fixtures, all
+22 passes, 110 pass rows, and 990 analyzer rows. 770 rows completed; 220 were
+unavailable; none errored or were missing. IDA Pro 9.5 and Ghidra 12.2 completed
+110/110 each. Triton remains required and unavailable (110 rows); Binary Ninja
+is optional and unavailable (110 rows). This evidence improves current-source
+coverage but does not close the all-analyzer or resistance release gates. See
+the [summary](protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840-summary.json),
+[compressed report](protection-adversarial-local-current-main-repository-shard-02-2026-11-26-68dd840.json.gz),
+and [regression test](../tests/unit/test_published_current_main_repository_shard_02_68dd840.py).
+
 ## Current-source two-seed continuous fuzz — 2026-11-25
 
 Continuous fuzz workflow [`45718344351`](https://github.com/seifreed/r2morph/actions/runs/45718344351)
