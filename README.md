@@ -585,6 +585,11 @@ establish general varargs or ABI parity.
 
 ## Validation
 
+The cross-platform Python unit-test job writes a JUnit report for each Windows
+runtime and uploads it as a five-day artifact, including when tests fail. This
+keeps runner-specific failures inspectable without relying on the Actions log
+stream.
+
 Published review evidence is kept immutable when its workflow manifest records
 the report hash. The earlier `docs/independent-review.json` remains that
 hash-bound snapshot; `docs/independent-review-current.json` is regenerated from

@@ -322,7 +322,19 @@ jobs:
       - name: Run cross-platform unit tests
         if: runner.os != 'Linux' || matrix.python-version != '3.12'
         timeout-minutes: 30
-        run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60
+        run: >-
+          python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short
+          -o faulthandler_timeout=60
+          --junitxml="${{ runner.temp }}/cross-platform-unit-${{ matrix.python-version }}.xml"
+
+      - name: Upload cross-platform unit test report
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-unit-tests-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/cross-platform-unit-${{ matrix.python-version }}.xml
+          if-no-files-found: ignore
+          retention-days: 5
 
       - name: Run native ARM64 Mach-O string smoke
         if: runner.os == 'macOS' && runner.arch == 'ARM64' && matrix.python-version == '3.12'

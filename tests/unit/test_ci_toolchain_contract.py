@@ -11,6 +11,7 @@ from tests.utils.assertions import expect
 _ROOT = Path(__file__).resolve().parents[2]
 _INTEGRATION_REPRO_RETENTION_DAYS = 5
 _EXPECTED_ANGR_OPTIONAL_EXTRA_COUNT = 3
+_WINDOWS_TEST_REPORT_RETENTION_DAYS = 5
 
 
 def test_ubuntu_ci_installs_clang_for_compiler_generated_corpus() -> None:
@@ -54,8 +55,23 @@ def test_ci_runs_unit_suite_on_non_linux_and_non_312_targets() -> None:
 
     expect(
         "if: runner.os != 'Linux' || matrix.python-version != '3.12'" in cross_platform_step
-        and 'run: python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short -o faulthandler_timeout=60'
+        and 'python -W error -m pytest -v tests/unit -m "not slow" --no-cov --tb=short'
         in cross_platform_step
+        and '--junitxml="${{ runner.temp }}/cross-platform-unit-${{ matrix.python-version }}.xml"'
+        in cross_platform_step
+    )
+
+
+def test_windows_cross_platform_unit_tests_publish_junit_report() -> None:
+    workflow = yaml.safe_load((_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["cross-platform-tests"]["steps"]
+    report_step = next(step for step in steps if step["name"] == "Upload cross-platform unit test report")
+
+    expect(
+        report_step["if"] == "always() && runner.os == 'Windows'"
+        and report_step["with"]["path"]
+        == "${{ runner.temp }}/cross-platform-unit-${{ matrix.python-version }}.xml"
+        and report_step["with"]["retention-days"] == _WINDOWS_TEST_REPORT_RETENTION_DAYS
     )
 
 
